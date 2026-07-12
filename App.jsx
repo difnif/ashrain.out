@@ -59,6 +59,6 @@ export default function App() {
   }
   if (hash.startsWith("#/admin/qna")) return <AdminQna theme={theme} />;
   if (hash.startsWith("#/admin/concepts")) return <AdminConcepts theme={theme} />;
-  if (hash.startsWith("#/me")) return <MyPage theme={theme} />;
+  if (hash.startsWith("#/me")) return <MyPage theme={theme} onToggleTheme={toggle} />;
   return <Home theme={theme} onToggleTheme={toggle} />;
 }

@@ -13,7 +13,8 @@ const CSS = `
 .mp-dark  { background:#0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#FFE03C; --in:#101116; --inbd:#2B2E36; }
 .mp-wrap { max-width: 460px; margin: 0 auto; }
 .mp-h { color: var(--ink); font-size: 19px; margin: 0 0 14px; }
-.mp-card { background: var(--card); border: 1px solid var(--bd); border-radius: 16px; padding: 20px; margin-bottom: 14px; }
+.mp-card { background: var(--card); border: 1px solid var(--bd); border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; }
+.mp-sec { font-size: 11px; letter-spacing: 1.5px; color: var(--mut); font-weight: 700; margin: 0 0 10px; }
 .mp-ava { display: flex; align-items: center; gap: 14px; }
 .mp-ava img, .mp-ava-ph { width: 64px; height: 64px; border-radius: 9999px; object-fit: cover;
   background: var(--in); border: 1px solid var(--inbd); display: flex; align-items: center; justify-content: center;
@@ -21,7 +22,6 @@ const CSS = `
 .mp-ava-btns { display: flex; flex-direction: column; gap: 6px; }
 .mp-mini { background: var(--in); border: 1px solid var(--inbd); border-radius: 8px; color: var(--mut);
   font-size: 12px; padding: 7px 12px; cursor: pointer; text-align: center; text-decoration: none; }
-.mp-sec { font-size: 11px; letter-spacing: 1.5px; color: var(--mut); font-weight: 700; margin: 0 0 8px; }
 .mp-in, .mp-sel { width: 100%; background: var(--in); border: 1px solid var(--inbd); border-radius: 10px;
   color: var(--ink); font-size: 14.5px; padding: 11px 13px; outline: none; margin-bottom: 8px; }
 .mp-in:focus, .mp-sel:focus { border-color: var(--ac); }
@@ -40,9 +40,22 @@ const CSS = `
 .mp-msg { font-size: 12.5px; color: var(--ac); margin: 8px 2px 0; }
 .mp-err { color: #DC2626; }
 .mp-back { color: var(--mut); font-size: 12.5px; cursor: pointer; text-decoration: underline; }
+.mp-tgl { display: flex; align-items: center; justify-content: space-between; padding: 10px 2px; }
+.mp-tgl span { color: var(--ink); font-size: 14px; }
+.mp-tgl small { display: block; color: var(--mut); font-size: 11.5px; margin-top: 2px; }
+.mp-sw { position: relative; width: 44px; height: 24px; border-radius: 9999px; border: none; cursor: pointer;
+  background: var(--inbd); transition: background .15s; flex-shrink: 0; }
+.mp-sw.on { background: var(--ac); }
+.mp-sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+  border-radius: 9999px; background: #fff; transition: left .15s; }
+.mp-sw.on::after { left: 23px; }
 `;
 
-export default function MyPage({ theme }) {
+function Toggle({ on, onChange }) {
+  return <button className={"mp-sw" + (on ? " on" : "")} onClick={() => onChange(!on)} aria-pressed={on} />;
+}
+
+export default function MyPage({ theme, onToggleTheme }) {
   const [p, setP] = useState(null);
   const [pw, setPw] = useState(""); const [pw2, setPw2] = useState("");
   const [msg, setMsg] = useState(""); const [err, setErr] = useState("");
@@ -54,7 +67,7 @@ export default function MyPage({ theme }) {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-      setP(prof);
+      setP(prof ? { ...prof, settings: prof.settings || {} } : prof);
     });
   }, []);
 
@@ -65,6 +78,12 @@ export default function MyPage({ theme }) {
       gender: p.gender || null, birth_year: p.birth_year || null,
     }).eq("id", p.id);
     error ? setErr("저장 실패: " + error.message) : setMsg("✓ 저장했어요.");
+  };
+
+  const setSetting = async (key, value) => {
+    const settings = { ...p.settings, [key]: value };
+    setP((s) => ({ ...s, settings }));
+    await supabase.from("profiles").update({ settings }).eq("id", p.id);
   };
 
   const changePw = async () => {
@@ -80,14 +99,15 @@ export default function MyPage({ theme }) {
     const f = e.target.files?.[0];
     if (!f || !p) return;
     const { error } = await supabase.storage.from("avatars").upload(`${p.id}/profile.png`, f, { upsert: true });
-    if (error) { setErr("사진 업로드 실패"); return; }
+    if (error) { setErr("사진 업로드에 실패했어요."); return; }
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(`${p.id}/profile.png`);
-    const url = pub.publicUrl + "?t=" + Date.now(); // 캐시 갱신
+    const url = pub.publicUrl + "?t=" + Date.now();
     await supabase.from("profiles").update({ avatar_url: url }).eq("id", p.id);
     setP((s) => ({ ...s, avatar_url: url }));
   };
 
   if (!p) return <div className={`mp-root mp-${theme}`}><style>{CSS}</style></div>;
+  const st = p.settings;
 
   return (
     <div className={`mp-root mp-${theme}`}>
@@ -96,11 +116,12 @@ export default function MyPage({ theme }) {
         <h1 className="mp-h">마이페이지 <span className="mp-back" style={{ float: "right", fontWeight: 400 }} onClick={() => (location.hash = "")}>← 홈</span></h1>
 
         <div className="mp-card">
+          <p className="mp-sec">프로필</p>
           <div className="mp-ava">
             {p.avatar_url ? <img src={p.avatar_url} alt="프로필" /> : <span className="mp-ava-ph">👤</span>}
             <div className="mp-ava-btns">
               <button className="mp-mini" onClick={() => fileRef.current?.click()}>사진 바꾸기</button>
-              <a className="mp-mini" href="#/portrait">🖼 리브드 글라스 초상화 만들기</a>
+              <a className="mp-mini" href="#/portrait">🖼 초상화 필터로 만들기</a>
             </div>
             <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={pickPhoto} />
           </div>
@@ -134,7 +155,23 @@ export default function MyPage({ theme }) {
         </div>
 
         <div className="mp-card">
-          <p className="mp-sec">비밀번호 변경</p>
+          <p className="mp-sec">환경설정</p>
+          <div className="mp-tgl">
+            <span>다크 테마<small>재의 밤 · 검정 바탕에 노란 손글씨</small></span>
+            <Toggle on={theme === "dark"} onChange={() => onToggleTheme?.()} />
+          </div>
+          <div className="mp-tgl">
+            <span>알림 받기<small>숙제·답변 알림 (기능 준비 중)</small></span>
+            <Toggle on={st.notify !== false} onChange={(v) => setSetting("notify", v)} />
+          </div>
+          <div className="mp-tgl">
+            <span>효과음<small>정답·오답 사운드 (기능 준비 중)</small></span>
+            <Toggle on={st.sound !== false} onChange={(v) => setSetting("sound", v)} />
+          </div>
+        </div>
+
+        <div className="mp-card">
+          <p className="mp-sec">계정</p>
           <div className="mp-row">
             <input className="mp-in" type="password" placeholder="새 비밀번호" value={pw} onChange={(e) => setPw(e.target.value)} />
             <input className="mp-in" type="password" placeholder="한 번 더" value={pw2} onChange={(e) => setPw2(e.target.value)} />
