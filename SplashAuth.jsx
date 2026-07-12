@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import { idToEmail } from "../lib/auth";
 
 // ASH RAIN 스플래시 + 로그인 (듀얼 테마)
 // props: theme('light'|'dark'), onToggleTheme(), onSuccess(session)
@@ -149,7 +150,7 @@ export default function SplashAuth({ theme = "light", onToggleTheme, onSuccess }
   const login = async () => {
     if (!id || !pw) { setMsg("아이디와 비밀번호를 입력해 주세요."); return; }
     setBusy(true); setMsg("");
-    const { data, error } = await supabase.auth.signInWithPassword({ email: id, password: pw });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: idToEmail(id), password: pw });
     setBusy(false);
     if (error) { setMsg("로그인에 실패했어요. 아이디/비밀번호를 확인해 주세요."); return; }
     onSuccess?.(data.session);
@@ -185,7 +186,7 @@ export default function SplashAuth({ theme = "light", onToggleTheme, onSuccess }
           </div>
           <div className="ar-or"><span>또는 이메일로</span></div>
           <div className="ar-field">
-            <label className="ar-label" htmlFor="ar-id">ID (이메일)</label>
+            <label className="ar-label" htmlFor="ar-id">아이디</label>
             <input id="ar-id" className="ar-input" placeholder="아이디" value={id} onChange={(e) => setId(e.target.value)} />
           </div>
           <div className="ar-field">
@@ -196,7 +197,7 @@ export default function SplashAuth({ theme = "light", onToggleTheme, onSuccess }
           <button className="ar-btn" onClick={login} disabled={busy}>{busy ? "확인 중..." : "로그인"}</button>
           {msg && <p className="ar-msg">{msg}</p>}
           <div className="ar-links">
-            <a href="#/reset">ID/PW 찾기</a><span className="ar-sep">|</span><a href="#/signup">회원가입</a>
+            <a href="#/signup">회원가입</a><span className="ar-sep">|</span><span style={{ color: "var(--muted)" }}>비밀번호 분실 시 선생님께 문의</span>
           </div>
         </div>
       </div>
