@@ -10,9 +10,11 @@ const CSS = `
 .hm-light { background: #EDEFF2; --ink:#1F2937; --mut:#8A929C; --card:#fff; --bd:#DFE3E8; --ac:#0DA95F; }
 .hm-dark  { background: #0B0C0F; --ink:#E2E8F0; --mut:#6B7280; --card:#15171C; --bd:#23262D; --ac:#FFE03C; }
 .hm-wrap { max-width: 768px; margin: 0 auto; }
-.hm-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.hm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
 .hm-logo { height: 34px; }
-.hm-btns { display: flex; gap: 8px; }
+.hm-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.hm-me { display: flex; align-items: center; gap: 5px; }
+.hm-me img { width: 20px; height: 20px; border-radius: 9999px; object-fit: cover; }
 .hm-btn { background: var(--card); border: 1px solid var(--bd); color: var(--mut); font-size: 12px;
   border-radius: 8px; padding: 6px 12px; cursor: pointer; }
 .hm-unit { font-size: 13px; font-weight: 800; color: var(--mut); letter-spacing: 1px; margin: 20px 0 8px; }
@@ -27,11 +29,12 @@ export default function Home({ theme, onToggleTheme }) {
   const [concepts, setConcepts] = useState([]);
   const [err, setErr] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [me, setMe] = useState(null);
   useEffect(() => {
     listConcepts().then(setConcepts).catch(() => setErr("목록을 불러오지 못했어요."));
     supabase.auth.getUser().then(({ data }) =>
-      data.user && supabase.from("profiles").select("role").eq("id", data.user.id).single()
-        .then(({ data: p }) => setIsAdmin(p?.role === "admin")));
+      data.user && supabase.from("profiles").select("role, name, avatar_url").eq("id", data.user.id).single()
+        .then(({ data: p }) => { setIsAdmin(p?.role === "admin"); setMe(p); }));
   }, []);
 
   const units = [...new Set(concepts.map((c) => c.unit_id))];
@@ -44,9 +47,10 @@ export default function Home({ theme, onToggleTheme }) {
           <div className="hm-btns">
             {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 개념 등록</button>}
             {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 질문 검토</button>}
-            <button className="hm-btn" onClick={() => (location.hash = "#/portrait")}>🖼 내 초상화</button>
+            <button className="hm-btn hm-me" onClick={() => (location.hash = "#/me")}>
+              {me?.avatar_url ? <img src={me.avatar_url} alt="" /> : "👤"} {me?.name || "마이페이지"}
+            </button>
             <button className="hm-btn" onClick={onToggleTheme}>{theme === "light" ? "🌙" : "🌧"}</button>
-            <button className="hm-btn" onClick={() => supabase.auth.signOut()}>로그아웃</button>
           </div>
         </div>
         {err && <p className="hm-empty">{err}</p>}

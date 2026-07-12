@@ -7,6 +7,7 @@ import Home from "./components/Home";
 import ConceptViewer from "./components/ConceptViewer";
 import AdminQna from "./components/AdminQna";
 import AdminConcepts from "./components/AdminConcepts";
+import MyPage from "./components/MyPage";
 import PortraitStudio from "./features/portrait/PortraitStudio";
 
 function useHash() {
@@ -58,5 +59,6 @@ export default function App() {
   }
   if (hash.startsWith("#/admin/qna")) return <AdminQna theme={theme} />;
   if (hash.startsWith("#/admin/concepts")) return <AdminConcepts theme={theme} />;
+  if (hash.startsWith("#/me")) return <MyPage theme={theme} />;
   return <Home theme={theme} onToggleTheme={toggle} />;
 }
