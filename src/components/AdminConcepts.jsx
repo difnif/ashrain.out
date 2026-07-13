@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 
-// ashrain.out — 관리자 개념 등록/삭제 화면 (patch v0.1.6)
+// ashrain.out — 관리자 개념 등록/삭제 화면 (patch v0.1.7)
 // 이 파일 하나만 src/components/AdminConcepts.jsx 에 덮어쓰면 됩니다.
-// - 등록: JSON 붙여넣기 → 검증 후 저장(같은 id는 덮어쓰기), 채택 QnA는 중복 자동 건너뜀
+// - 등록: JSON 파일 선택(권장, 여러 개 동시 가능) 또는 붙여넣기 → 검증 후 저장(같은 id는 덮어쓰기), 채택 QnA는 중복 자동 건너뜀
 // - 삭제: 등록된 개념 목록에서 버튼으로 삭제(연결된 QnA도 함께 삭제됨)
 // - 백업: concepts + concept_qna 전체를 JSON 파일로 내려받기
 
@@ -68,6 +68,7 @@ export default function AdminConcepts() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
 
   const load = () =>
     supabase
@@ -99,9 +100,45 @@ export default function AdminConcepts() {
     try {
       parsed = JSON.parse(text);
     } catch (e) {
-      setErr("JSON 형식 오류: " + e.message);
+      setErr(
+        "JSON 형식 오류: " +
+          e.message +
+          (text.length > 5000
+            ? "\n붙여넣은 내용이 중간에 잘렸을 수 있습니다(현재 " +
+              text.length.toLocaleString() +
+              "자). 아래 '파일에서 불러오기'로 JSON 파일을 직접 선택하면 잘림 없이 등록됩니다."
+            : "")
+      );
       return;
     }
+    await saveItems(parsed);
+  }
+
+  async function handleFiles(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ""; // 같은 파일 재선택 허용
+    if (!files.length) return;
+    setMsg("");
+    setErr("");
+    const merged = [];
+    const problems = [];
+    for (const f of files) {
+      try {
+        const raw = await f.text();
+        const parsed = JSON.parse(raw);
+        merged.push(...(Array.isArray(parsed) ? parsed : [parsed]));
+      } catch (ex) {
+        problems.push(f.name + ": " + ex.message);
+      }
+    }
+    if (problems.length) {
+      setErr("파일을 읽지 못했습니다.\n" + problems.join("\n"));
+      return;
+    }
+    await saveItems(merged);
+  }
+
+  async function saveItems(parsed) {
     const { list: items, errors } = validateConcepts(parsed);
     if (errors.length) {
       setErr("저장 전 검증에서 문제를 찾았습니다.\n" + errors.join("\n"));
@@ -250,9 +287,23 @@ export default function AdminConcepts() {
 
       <div className="acx-card">
         <p className="acx-desc">
-          개념 JSON을 붙여넣고 저장하세요. 하나(객체)든 여러 개(배열)든 되고, 같은 id는 덮어쓰기됩니다.
-          채택 QnA가 포함돼 있으면 함께 등록되며, 이미 있는 QnA는 자동으로 건너뜁니다.
+          <b>파일에서 불러오기</b>로 개념 JSON 파일을 선택하면 바로 검증·저장됩니다(여러 파일 동시 선택 가능).
+          모바일에서는 복사·붙여넣기 시 긴 내용이 잘릴 수 있어 파일 선택을 권장해요.
+          직접 붙여넣기도 가능하며, 같은 id는 덮어쓰기되고 이미 있는 QnA는 자동으로 건너뜁니다.
         </p>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".json,application/json"
+          multiple
+          style={{ display: "none" }}
+          onChange={handleFiles}
+        />
+        <div className="acx-row">
+          <button className="acx-btn acx-pri" onClick={() => fileRef.current?.click()} disabled={busy}>
+            파일에서 불러오기
+          </button>
+        </div>
         <textarea
           className="acx-ta"
           value={text}
