@@ -2,21 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import { listConcepts } from "../lib/concepts";
 import { supabase } from "../supabaseClient";
 
-// ashrain.out — 홈(개념 목록) 화면 (patch v0.1.9)
-// 이 파일을 src/components/Home.jsx 에 덮어쓰면 됩니다. 이번 패치는 SQL 실행이 필요 없습니다.
+// ashrain.out — 홈 화면 (patch v0.2.0)
+// 이 파일을 src/components/Home.jsx 에 덮어쓰면 됩니다.
+// 사전 조건: schema_v020.sql 실행(완료하셨음) + 아래 [v0.2.0 SQL] 한 줄 실행.
 //
-// [v0.1.9 변경]
-// - 중3(m3-*)·고등(h1~h3-*) 라벨과 대단원(CHAPTERS) 추가 — 공통수학1/2, 대수, 미적분1/2, 확률과 통계, 기하
-// - 학년 라벨을 접두사 매핑(m→중, h→고)으로 교체, 정렬은 중등 → 고등 순
-// - 고등 학기 행에는 "N학기" 대신 과목명 표시, 즐겨찾기 칩 약칭도 고등 대응
+// [v0.2.0 변경]
+// - 상단에 카테고리 4탭 추가: 📖개념 · 🧮연산 · 📕오답 · 💡힌트 (개념이 기본 탭)
+// - 개념 탭: v0.1.9의 트리·즐겨찾기 로직 그대로 (변경 없음)
+// - 연산 탭: 등록된 세트 목록 + 내 최근 기록 3건 / 오답·힌트 탭: 친구 공유 자료 열람(1차)
+// - 헤더 ⚙ 환경설정: 데이터 공유 4토글 (user_settings, 계정별 격리·기본 전부 OFF)
+// - 촬영·풀이 등 무거운 기능은 v0.2.1(오답) → v0.2.2(힌트) → v0.2.3(연산)에서 단계 활성화
 //
-// [모든 유저 공통]
-// - 학년 → 학기 → 대단원 3단계 트리, 기본은 전부 접힘, 여러 개 동시 열기 가능
-// [유저별 개인 설정 — 계정 단위 저장, 다른 유저에게 영향 없음]
-// - 대단원 우측 별표로 즐겨찾기(최대 10개), 상단 즐겨찾기 탭에 칩으로 표시
-// - 10개 초과 등록 시 팝업에서 해제할 항목 선택 또는 등록 취소
-// - 칩을 꾹 누르면 편집 모드: 노출 순서 이동 + 색상 변경 (전체 트리에도 색 반영)
-// - 즐겨찾기 해제 시 색상은 기본값으로 복귀. 트리 구조 자체는 절대 변하지 않음.
+// [v0.2.0 SQL — 관리자 판별을 기존 profiles.role 방식으로 통일 (SQL Editor에서 실행)]
+// create or replace function is_admin() returns boolean
+// language sql stable security definer set search_path = public as
+// $$ select exists (select 1 from profiles where id = auth.uid() and role = 'admin') $$;
+// ※ 이걸 실행하면 admin_users에 uid를 넣을 필요가 없습니다. (테이블은 남아 있어도 무해)
 
 const UNIT_NAMES = {
   "m1-1": "중1 1학기", "m1-2": "중1 2학기", "m2-1": "중2 1학기", "m2-2": "중2 2학기",
@@ -72,19 +73,77 @@ const unitShort = (u) => (u[0] === "m" ? u.slice(1) : "고" + u.slice(1));
 // 즐겨찾기 색상 팔레트 (첫 항목 null = 기본색)
 const PALETTE = [null, "#F472B6", "#F87171", "#F59E0B", "#34D399", "#60A5FA", "#A78BFA"];
 
+// 카테고리 탭
+const CATS = [
+  ["concept", "📖", "개념"],
+  ["calc", "🧮", "연산"],
+  ["wrong", "📕", "오답"],
+  ["hint", "💡", "힌트"],
+];
+
+// 환경설정 — 공유 토글 (키, 제목, 설명)
+const TOGGLES = [
+  ["share_wrong_notes", "오답 사진·분류 공유", "내 오답 사진과 분류(단원·원인·태그·복습 상태)를 선생님이 볼 수 있어요."],
+  ["share_wrong_memo", "오답 메모까지 공유", "위 항목이 켜져 있을 때만, 오답에 적은 메모가 함께 보여요."],
+  ["share_hint_data", "힌트 기록 공유", "힌트로 질문한 문제 사진과 AI 답변 기록을 선생님이 볼 수 있어요."],
+  ["share_calc_records", "연산 기록 공유", "연산 세트의 점수와 걸린 시간을 선생님이 볼 수 있어요."],
+];
+const DEFAULT_SHARE = { share_wrong_notes: false, share_wrong_memo: false, share_hint_data: false, share_calc_records: false };
+
+const fmtSec = (s) => `${Math.floor(s / 60)}분 ${String(s % 60).padStart(2, "0")}초`;
+
 const CSS = `
 .hm-root { min-height: 100vh; padding: 20px 14px 40px; box-sizing: border-box;
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
 .hm-light { background: #EDEFF2; --ink:#1F2937; --mut:#8A929C; --card:#fff; --bd:#DFE3E8; --ac:#0DA95F; }
 .hm-dark  { background: #0B0C0F; --ink:#E2E8F0; --mut:#6B7280; --card:#15171C; --bd:#23262D; --ac:#FFE03C; }
 .hm-wrap { max-width: 768px; margin: 0 auto; }
-.hm-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
+.hm-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
 .hm-logo { height: 34px; }
 .hm-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .hm-btn { background: var(--card); border: 1px solid var(--bd); color: var(--mut); font-size: 12px;
   border-radius: 8px; padding: 6px 12px; cursor: pointer; }
 .hm-me img { width: 18px; height: 18px; border-radius: 50%; vertical-align: -4px; margin-right: 3px; }
 .hm-empty { color: var(--mut); font-size: 14px; text-align: center; padding: 40px 0; }
+
+/* 카테고리 4탭 */
+.hm-cats { display: flex; gap: 6px; margin-bottom: 16px; }
+.hm-cat { flex: 1; text-align: center; padding: 10px 2px; border-radius: 12px; border: 1px solid var(--bd);
+  background: var(--card); color: var(--mut); font-size: 13.5px; font-weight: 700; cursor: pointer;
+  user-select: none; -webkit-user-select: none; }
+.hm-cat.on { color: var(--ac); border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac) inset; }
+
+/* 카테고리 패널 공통 */
+.hm-acts { display: flex; gap: 8px; margin: 2px 0 14px; }
+.hm-act { flex: 1; padding: 13px 8px; border-radius: 12px; border: 1px solid var(--ac); background: transparent;
+  color: var(--ac); font-weight: 800; font-size: 14px; cursor: pointer; }
+.hm-card { display: block; width: 100%; text-align: left; background: var(--card); border: 1px solid var(--bd);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; color: var(--ink); cursor: pointer; box-sizing: border-box; }
+.hm-card b { font-size: 14.5px; }
+.hm-card span { display: block; color: var(--mut); font-size: 12.5px; margin-top: 2px; }
+.hm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.hm-shot { border: 1px solid var(--bd); border-radius: 12px; overflow: hidden; background: var(--card);
+  cursor: pointer; padding: 0; text-align: left; }
+.hm-shot img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; display: block; background: rgba(0,0,0,.06); }
+.hm-shot p { margin: 0; padding: 8px 10px 9px; font-size: 12.5px; color: var(--ink); }
+.hm-vimg { width: 100%; border-radius: 10px; border: 1px solid var(--bd); margin-bottom: 10px; }
+.hm-vtxt { white-space: pre-wrap; font-size: 13.5px; line-height: 1.65; color: var(--ink);
+  background: rgba(127,127,127,.07); border-radius: 10px; padding: 12px; }
+
+/* 환경설정 — 스위치 */
+.hm-srow { display: flex; align-items: flex-start; gap: 10px; padding: 11px 0; border-bottom: 1px dashed var(--bd); }
+.hm-srow:last-of-type { border-bottom: none; }
+.hm-stxt { flex: 1; min-width: 0; }
+.hm-stxt b { font-size: 14px; color: var(--ink); display: block; margin-bottom: 2px; }
+.hm-stxt span { font-size: 12px; color: var(--mut); line-height: 1.5; }
+.hm-sw { position: relative; width: 44px; height: 26px; border-radius: 999px; border: 1px solid var(--bd);
+  background: var(--bd); cursor: pointer; flex: none; padding: 0; transition: background .15s; margin-top: 2px; }
+.hm-sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--card); transition: left .15s; }
+.hm-sw.on { background: var(--ac); border-color: var(--ac); }
+.hm-sw.on::after { left: 20px; }
+.hm-sw:disabled { opacity: .35; cursor: default; }
+.hm-snote { color: var(--mut); font-size: 11.5px; margin: 10px 2px 0; line-height: 1.6; }
 
 /* 즐겨찾기 탭 */
 .hm-sec { font-size: 13px; font-weight: 800; color: var(--mut); letter-spacing: 1px; margin: 4px 0 8px; }
@@ -133,7 +192,7 @@ const CSS = `
 .hm-item span { display: block; color: var(--mut); font-size: 12.5px; margin-top: 2px; }
 .hm-small { color: var(--mut); font-size: 12.5px; padding: 6px 2px; }
 
-/* 팝업(즐겨찾기 초과) */
+/* 팝업 */
 .hm-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center;
   justify-content: center; z-index: 50; padding: 20px; }
 .hm-modal { background: var(--card); border: 1px solid var(--bd); border-radius: 16px; max-width: 420px;
@@ -159,6 +218,7 @@ export default function Home({ theme, onToggleTheme }) {
   const [me, setMe] = useState(null);
   const [uid, setUid] = useState(null);
 
+  const [cat, setCat] = useState("concept");         // 현재 카테고리 탭
   const [open, setOpen] = useState(() => new Set()); // 기본: 전부 접힘
   const [favs, setFavs] = useState([]);              // [{cat_id, position, color}]
   const [selCat, setSelCat] = useState(null);        // 즐겨찾기 탭에서 열어 둔 카테고리
@@ -167,6 +227,19 @@ export default function Home({ theme, onToggleTheme }) {
   const [pick, setPick] = useState(() => new Set()); // 팝업에서 해제 선택
   const [toast, setToast] = useState("");
   const lp = useRef({ t: null, fired: false });
+
+  // v0.2.0 — 카테고리 데이터 (탭 첫 진입 시에만 로드)
+  const [calcSets, setCalcSets] = useState(null);
+  const [calcRecent, setCalcRecent] = useState([]);
+  const [myWrong, setMyWrong] = useState(null);
+  const [sharedWrong, setSharedWrong] = useState(null);
+  const [sharedHint, setSharedHint] = useState(null);
+  const [imgUrl, setImgUrl] = useState({});          // storage path → 서명 URL
+  const [viewer, setViewer] = useState(null);        // 공유 자료 상세 {title, path, comment, extra}
+
+  // v0.2.0 — 환경설정(공유) 모달
+  const [cfgOpen, setCfgOpen] = useState(false);
+  const [share, setShare] = useState(null);
 
   useEffect(() => {
     listConcepts().then(setConcepts).catch(() => setErr("목록을 불러오지 못했어요."));
@@ -182,7 +255,66 @@ export default function Home({ theme, onToggleTheme }) {
     });
   }, []);
 
-  function say(msg) { setToast(msg); setTimeout(() => setToast(""), 2000); }
+  // 탭 진입 시 해당 카테고리 데이터 로드
+  useEffect(() => {
+    if (cat === "calc" && calcSets === null) {
+      supabase.from("calc_sets").select("id, unit_id, title, time_limit_sec, problems").order("id")
+        .then(({ data }) => setCalcSets(data || []));
+      if (uid) {
+        supabase.from("calc_records").select("set_id, correct, total, seconds, created_at")
+          .eq("user_id", uid).order("created_at", { ascending: false }).limit(3)
+          .then(({ data }) => setCalcRecent(data || []));
+      }
+    }
+    if (cat === "wrong" && sharedWrong === null) {
+      supabase.from("shared_wrong_notes").select("*")
+        .order("created_at", { ascending: false }).limit(12)
+        .then(({ data }) => { setSharedWrong(data || []); signAll(data); });
+      if (uid) {
+        supabase.from("wrong_notes").select("id", { count: "exact", head: true }).eq("user_id", uid)
+          .then(({ count }) => setMyWrong(count ?? 0));
+      }
+    }
+    if (cat === "hint" && sharedHint === null) {
+      supabase.from("shared_hints").select("*")
+        .order("created_at", { ascending: false }).limit(12)
+        .then(({ data }) => { setSharedHint(data || []); signAll(data); });
+    }
+  }, [cat, uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function signAll(rows) {
+    for (const r of rows || []) {
+      if (!r.image_path) continue;
+      const { data } = await supabase.storage.from("notes").createSignedUrl(r.image_path, 3600);
+      if (data?.signedUrl) setImgUrl((m) => ({ ...m, [r.image_path]: data.signedUrl }));
+    }
+  }
+
+  function say(msg) { setToast(msg); setTimeout(() => setToast(""), 2200); }
+
+  // ── 환경설정(공유) ──
+  async function openCfg() {
+    if (!uid) { say("로그인하면 설정할 수 있어요"); return; }
+    setCfgOpen(true);
+    if (share === null) {
+      const { data } = await supabase.from("user_settings").select("*").eq("user_id", uid).maybeSingle();
+      setShare(data ? { ...DEFAULT_SHARE, ...data } : { ...DEFAULT_SHARE });
+    }
+  }
+  async function flipShare(key) {
+    const next = { ...share, [key]: !share[key] };
+    if (key === "share_wrong_notes" && share.share_wrong_notes) next.share_wrong_memo = false; // 사진 공유를 끄면 메모도 함께 OFF
+    setShare(next);
+    const { error } = await supabase.from("user_settings").upsert({
+      user_id: uid,
+      share_wrong_notes: next.share_wrong_notes,
+      share_wrong_memo: next.share_wrong_memo,
+      share_hint_data: next.share_hint_data,
+      share_calc_records: next.share_calc_records,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) { setShare(share); say("저장 실패: " + error.message); }
+  }
 
   // ── 트리 헬퍼 ──
   const units = [...new Set(concepts.map((c) => c.unit_id))].sort();
@@ -274,6 +406,7 @@ export default function Home({ theme, onToggleTheme }) {
 
   const selInfo = selCat ? catInfo(selCat) : null;
   const selList = selInfo?.ch ? inChapter(selInfo.unit, selInfo.ch) : [];
+  const calcTitle = (setId) => calcSets?.find((s) => s.id === setId)?.title || setId;
 
   return (
     <div className={`hm-root hm-${theme}`}>
@@ -284,6 +417,7 @@ export default function Home({ theme, onToggleTheme }) {
           <div className="hm-btns">
             {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 개념 등록</button>}
             {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 질문 검토</button>}
+            <button className="hm-btn" onClick={openCfg}>⚙ 설정</button>
             <button className="hm-btn hm-me" onClick={() => (location.hash = "#/me")}>
               {me?.avatar_url ? <img src={me.avatar_url} alt="" /> : "👤"} {me?.name || "마이페이지"}
             </button>
@@ -291,132 +425,278 @@ export default function Home({ theme, onToggleTheme }) {
           </div>
         </div>
 
-        {err && <p className="hm-empty">{err}</p>}
-        {!err && concepts.length === 0 && <p className="hm-empty">아직 등록된 개념이 없어요.</p>}
+        {/* ── 카테고리 4탭 ── */}
+        <div className="hm-cats">
+          {CATS.map(([id, icon, label]) => (
+            <button key={id} className={"hm-cat" + (cat === id ? " on" : "")} onClick={() => setCat(id)}>
+              {icon} {label}
+            </button>
+          ))}
+        </div>
 
-        {/* ── 즐겨찾기 탭 (개인 설정) ── */}
-        {uid && favs.length > 0 && (
-          <div className="hm-favwrap" onContextMenu={(e) => e.preventDefault()}>
-            <p className="hm-sec">⭐ 즐겨찾기</p>
+        {/* ════════ 📖 개념 ════════ */}
+        {cat === "concept" && (
+          <>
+            {err && <p className="hm-empty">{err}</p>}
+            {!err && concepts.length === 0 && <p className="hm-empty">아직 등록된 개념이 없어요.</p>}
 
-            {!editMode && (
-              <>
-                <div className="hm-chips">
-                  {favs.map((f) => {
-                    const info = catInfo(f.cat_id);
-                    return (
-                      <button
-                        key={f.cat_id}
-                        className={"hm-chip" + (selCat === f.cat_id ? " on" : "")}
-                        style={f.color ? { background: f.color + "22", borderColor: f.color } : null}
-                        onPointerDown={chipDown}
-                        onPointerUp={() => chipUp(f.cat_id)}
-                        onPointerMove={chipCancel}
-                        onPointerLeave={chipCancel}
-                      >
-                        <small>{info.short}</small>{info.title}
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="hm-hint">칩을 누르면 개념이 펼쳐지고, 꾹 누르면 순서·색상을 편집할 수 있어요.</p>
-                {selCat && selInfo && (
-                  <div className="hm-panel">
-                    <p className="hm-ptitle">{UNIT_NAMES[selInfo.unit] || selInfo.unit} · {selInfo.title}</p>
-                    {selList.map((c) => (
-                      <a key={c.id} className="hm-item" href={`#/c/${c.id}`}>
-                        <b>{String(c.sort_order).padStart(2, "0")}. {c.title}</b>
-                        <span>{c.subtitle}</span>
-                      </a>
-                    ))}
-                    {selList.length === 0 && <p className="hm-small">이 단원에는 아직 개념이 없어요.</p>}
-                  </div>
-                )}
-              </>
-            )}
+            {/* 즐겨찾기 탭 (개인 설정) */}
+            {uid && favs.length > 0 && (
+              <div className="hm-favwrap" onContextMenu={(e) => e.preventDefault()}>
+                <p className="hm-sec">⭐ 즐겨찾기</p>
 
-            {editMode && (
-              <>
-                {favs.map((f, i) => {
-                  const info = catInfo(f.cat_id);
-                  return (
-                    <div key={f.cat_id} className="hm-erow">
-                      <button className="hm-ebtn" onClick={() => move(i, -1)} disabled={i === 0}>▲</button>
-                      <button className="hm-ebtn" onClick={() => move(i, 1)} disabled={i === favs.length - 1}>▼</button>
-                      <span className="hm-ename"><small>{info.short}</small>{info.title}</span>
-                      <div className="hm-dots">
-                        {PALETTE.map((col) => (
+                {!editMode && (
+                  <>
+                    <div className="hm-chips">
+                      {favs.map((f) => {
+                        const info = catInfo(f.cat_id);
+                        return (
                           <button
-                            key={col || "def"}
-                            className={"hm-dot" + ((f.color || null) === col ? " sel" : "")}
-                            style={col ? { background: col, borderColor: col } : null}
-                            title={col ? "" : "기본색"}
-                            onClick={() => setColor(f.cat_id, col)}
-                          />
-                        ))}
-                      </div>
+                            key={f.cat_id}
+                            className={"hm-chip" + (selCat === f.cat_id ? " on" : "")}
+                            style={f.color ? { background: f.color + "22", borderColor: f.color } : null}
+                            onPointerDown={chipDown}
+                            onPointerUp={() => chipUp(f.cat_id)}
+                            onPointerMove={chipCancel}
+                            onPointerLeave={chipCancel}
+                          >
+                            <small>{info.short}</small>{info.title}
+                          </button>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-                <button className="hm-done" onClick={() => setEditMode(false)}>편집 완료</button>
+                    <p className="hm-hint">칩을 누르면 개념이 펼쳐지고, 꾹 누르면 순서·색상을 편집할 수 있어요.</p>
+                    {selCat && selInfo && (
+                      <div className="hm-panel">
+                        <p className="hm-ptitle">{UNIT_NAMES[selInfo.unit] || selInfo.unit} · {selInfo.title}</p>
+                        {selList.map((c) => (
+                          <a key={c.id} className="hm-item" href={`#/c/${c.id}`}>
+                            <b>{String(c.sort_order).padStart(2, "0")}. {c.title}</b>
+                            <span>{c.subtitle}</span>
+                          </a>
+                        ))}
+                        {selList.length === 0 && <p className="hm-small">이 단원에는 아직 개념이 없어요.</p>}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {editMode && (
+                  <>
+                    {favs.map((f, i) => {
+                      const info = catInfo(f.cat_id);
+                      return (
+                        <div key={f.cat_id} className="hm-erow">
+                          <button className="hm-ebtn" onClick={() => move(i, -1)} disabled={i === 0}>▲</button>
+                          <button className="hm-ebtn" onClick={() => move(i, 1)} disabled={i === favs.length - 1}>▼</button>
+                          <span className="hm-ename"><small>{info.short}</small>{info.title}</span>
+                          <div className="hm-dots">
+                            {PALETTE.map((col) => (
+                              <button
+                                key={col || "def"}
+                                className={"hm-dot" + ((f.color || null) === col ? " sel" : "")}
+                                style={col ? { background: col, borderColor: col } : null}
+                                title={col ? "" : "기본색"}
+                                onClick={() => setColor(f.cat_id, col)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <button className="hm-done" onClick={() => setEditMode(false)}>편집 완료</button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* 전체 트리: 학년 → 학기 → 대단원 */}
+            {grades.map((g) => (
+              <div key={g}>
+                <div className="hm-row" onClick={() => toggleOpen(g)}>
+                  <span className="hm-car">{open.has(g) ? "▾" : "▸"}</span>
+                  <span className="hm-tw">{gradeLabel(g)}</span>
+                  <span className="hm-cnt">{semestersOf(g).reduce((s, u) => s + inUnit(u).length, 0)}개</span>
+                </div>
+
+                {open.has(g) && semestersOf(g).map((u) => (
+                  <div key={u} className="hm-lv2">
+                    <div className="hm-row" onClick={() => toggleOpen(u)}>
+                      <span className="hm-car">{open.has(u) ? "▾" : "▸"}</span>
+                      <span className="hm-tw">{semLabel(u)}</span>
+                      <span className="hm-cnt">{inUnit(u).length}개</span>
+                    </div>
+
+                    {open.has(u) && chaptersOf(u).map((ch, i) => {
+                      const catId = `${u}:${i}`;
+                      const fav = favMap[catId];
+                      const list = inChapter(u, ch);
+                      return (
+                        <div key={catId} className="hm-lv3">
+                          <div className="hm-row" style={fav?.color ? { borderLeftColor: fav.color } : null}
+                            onClick={() => toggleOpen(catId)}>
+                            <span className="hm-car">{open.has(catId) ? "▾" : "▸"}</span>
+                            <span className="hm-tw">{ch[0]}</span>
+                            <span className="hm-cnt">{list.length}개</span>
+                            <button
+                              className={"hm-star" + (fav ? " on" : "")}
+                              style={fav?.color ? { color: fav.color } : null}
+                              onClick={(e) => { e.stopPropagation(); toggleFav(catId); }}
+                              aria-label="즐겨찾기"
+                            >{fav ? "★" : "☆"}</button>
+                          </div>
+                          {open.has(catId) && (
+                            <div className="hm-list">
+                              {list.map((c) => (
+                                <a key={c.id} className="hm-item" href={`#/c/${c.id}`}>
+                                  <b>{String(c.sort_order).padStart(2, "0")}. {c.title}</b>
+                                  <span>{c.subtitle}</span>
+                                </a>
+                              ))}
+                              {list.length === 0 && <p className="hm-small">이 단원에는 아직 개념이 없어요.</p>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* ════════ 🧮 연산 ════════ */}
+        {cat === "calc" && (
+          <>
+            {uid && calcRecent.length > 0 && (
+              <>
+                <p className="hm-sec">🏁 내 최근 기록</p>
+                {calcRecent.map((r) => (
+                  <div key={r.created_at} className="hm-card" style={{ cursor: "default" }}>
+                    <b>{calcTitle(r.set_id)}</b>
+                    <span>{r.correct} / {r.total} 정답 · {fmtSec(r.seconds)} · {new Date(r.created_at).toLocaleDateString()}</span>
+                  </div>
+                ))}
               </>
             )}
+            <p className="hm-sec">🧮 연산 세트</p>
+            {calcSets === null && <p className="hm-empty">불러오는 중…</p>}
+            {calcSets !== null && calcSets.length === 0 && (
+              <p className="hm-empty">아직 등록된 연산 세트가 없어요.</p>
+            )}
+            {(calcSets || []).map((s) => (
+              <button key={s.id} className="hm-card"
+                onClick={() => say("풀이 화면은 다음 업데이트(v0.2.3)에서 열려요")}>
+                <b>{s.title}</b>
+                <span>{UNIT_NAMES[s.unit_id] || s.unit_id} · {Array.isArray(s.problems) ? s.problems.length : 0}문제 · 제한 {fmtSec(s.time_limit_sec)}</span>
+              </button>
+            ))}
+          </>
+        )}
+
+        {/* ════════ 📕 오답 ════════ */}
+        {cat === "wrong" && (
+          <>
+            <div className="hm-acts">
+              <button className="hm-act" onClick={() => say("오답 촬영·등록은 다음 업데이트(v0.2.1)에서 열려요")}>
+                📷 오답 추가하기
+              </button>
+            </div>
+            {uid && (
+              <button className="hm-card" onClick={() => say("내 오답노트 화면은 v0.2.1에서 열려요")}>
+                <b>📕 내 오답노트</b>
+                <span>{myWrong === null ? "…" : `${myWrong}개 저장됨`} · 사진은 나와 (공유 허용 시) 선생님만 볼 수 있어요</span>
+              </button>
+            )}
+            <p className="hm-sec" style={{ marginTop: 14 }}>👥 친구의 오답에서 배우기</p>
+            {sharedWrong === null && <p className="hm-empty">불러오는 중…</p>}
+            {sharedWrong !== null && sharedWrong.length === 0 && (
+              <p className="hm-empty">아직 공유된 친구 오답이 없어요.</p>
+            )}
+            <div className="hm-grid">
+              {(sharedWrong || []).map((w) => (
+                <button key={w.id} className="hm-shot"
+                  onClick={() => setViewer({ title: w.title, path: w.image_path, comment: w.comment, extra: null })}>
+                  {imgUrl[w.image_path] && <img src={imgUrl[w.image_path]} alt="" />}
+                  <p><b>{w.title}</b>{w.unit_id ? ` · ${UNIT_NAMES[w.unit_id] || w.unit_id}` : ""}</p>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ════════ 💡 힌트 ════════ */}
+        {cat === "hint" && (
+          <>
+            <div className="hm-acts">
+              <button className="hm-act" onClick={() => say("사진으로 힌트 받기는 다음 업데이트(v0.2.2)에서 열려요")}>
+                💡 문제 사진으로 힌트 받기
+              </button>
+            </div>
+            <p className="hm-small" style={{ marginBottom: 12 }}>
+              정답을 알려주지 않아요 — 문제의 문장과 단서를 분석해서, 어떤 개념으로 어떻게 접근할지까지만 안내해요.
+            </p>
+            <p className="hm-sec">👥 친구들이 고민한 문제</p>
+            {sharedHint === null && <p className="hm-empty">불러오는 중…</p>}
+            {sharedHint !== null && sharedHint.length === 0 && (
+              <p className="hm-empty">아직 공유된 문제가 없어요.</p>
+            )}
+            <div className="hm-grid">
+              {(sharedHint || []).map((h) => (
+                <button key={h.id} className="hm-shot"
+                  onClick={() => setViewer({ title: h.title, path: h.image_path, comment: h.comment, extra: h.ai_response })}>
+                  {imgUrl[h.image_path] && <img src={imgUrl[h.image_path]} alt="" />}
+                  <p><b>{h.title}</b>{h.unit_id ? ` · ${UNIT_NAMES[h.unit_id] || h.unit_id}` : ""}</p>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ── 공유 자료 상세 뷰어 ── */}
+        {viewer && (
+          <div className="hm-modal-bg" onClick={() => setViewer(null)}>
+            <div className="hm-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>{viewer.title}</h3>
+              {imgUrl[viewer.path] && <img className="hm-vimg" src={imgUrl[viewer.path]} alt="" />}
+              {viewer.comment && <p>💬 {viewer.comment}</p>}
+              {viewer.extra && <div className="hm-vtxt">{viewer.extra}</div>}
+              <div className="hm-mbtns">
+                <button className="hm-mbtn pri" onClick={() => setViewer(null)}>닫기</button>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ── 전체 트리: 학년 → 학기 → 대단원 (모든 유저 공통, 기본 접힘) ── */}
-        {grades.map((g) => (
-          <div key={g}>
-            <div className="hm-row" onClick={() => toggleOpen(g)}>
-              <span className="hm-car">{open.has(g) ? "▾" : "▸"}</span>
-              <span className="hm-tw">{gradeLabel(g)}</span>
-              <span className="hm-cnt">{semestersOf(g).reduce((s, u) => s + inUnit(u).length, 0)}개</span>
-            </div>
-
-            {open.has(g) && semestersOf(g).map((u) => (
-              <div key={u} className="hm-lv2">
-                <div className="hm-row" onClick={() => toggleOpen(u)}>
-                  <span className="hm-car">{open.has(u) ? "▾" : "▸"}</span>
-                  <span className="hm-tw">{semLabel(u)}</span>
-                  <span className="hm-cnt">{inUnit(u).length}개</span>
-                </div>
-
-                {open.has(u) && chaptersOf(u).map((ch, i) => {
-                  const catId = `${u}:${i}`;
-                  const fav = favMap[catId];
-                  const list = inChapter(u, ch);
-                  return (
-                    <div key={catId} className="hm-lv3">
-                      <div className="hm-row" style={fav?.color ? { borderLeftColor: fav.color } : null}
-                        onClick={() => toggleOpen(catId)}>
-                        <span className="hm-car">{open.has(catId) ? "▾" : "▸"}</span>
-                        <span className="hm-tw">{ch[0]}</span>
-                        <span className="hm-cnt">{list.length}개</span>
-                        <button
-                          className={"hm-star" + (fav ? " on" : "")}
-                          style={fav?.color ? { color: fav.color } : null}
-                          onClick={(e) => { e.stopPropagation(); toggleFav(catId); }}
-                          aria-label="즐겨찾기"
-                        >{fav ? "★" : "☆"}</button>
-                      </div>
-                      {open.has(catId) && (
-                        <div className="hm-list">
-                          {list.map((c) => (
-                            <a key={c.id} className="hm-item" href={`#/c/${c.id}`}>
-                              <b>{String(c.sort_order).padStart(2, "0")}. {c.title}</b>
-                              <span>{c.subtitle}</span>
-                            </a>
-                          ))}
-                          {list.length === 0 && <p className="hm-small">이 단원에는 아직 개념이 없어요.</p>}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+        {/* ── 환경설정: 데이터 공유 ── */}
+        {cfgOpen && (
+          <div className="hm-modal-bg" onClick={() => setCfgOpen(false)}>
+            <div className="hm-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>⚙ 데이터 공유 설정</h3>
+              <p>선생님(관리자)에게 내 학습 데이터를 보여줄지 항목별로 정해요. 다른 친구들은 어떤 경우에도 내 데이터를 볼 수 없어요.</p>
+              {share === null && <p className="hm-small">불러오는 중…</p>}
+              {share !== null && TOGGLES.map(([key, title, desc]) => {
+                const dep = key === "share_wrong_memo" && !share.share_wrong_notes;
+                return (
+                  <div key={key} className="hm-srow">
+                    <div className="hm-stxt"><b>{title}</b><span>{desc}</span></div>
+                    <button
+                      className={"hm-sw" + (share[key] && !dep ? " on" : "")}
+                      disabled={dep}
+                      onClick={() => flipShare(key)}
+                      aria-label={title}
+                    />
+                  </div>
+                );
+              })}
+              <p className="hm-snote">기본값은 전부 꺼짐이에요. 켜고 끄는 즉시 저장되며, 언제든 다시 끌 수 있어요.</p>
+              <div className="hm-mbtns">
+                <button className="hm-mbtn pri" onClick={() => setCfgOpen(false)}>완료</button>
               </div>
-            ))}
+            </div>
           </div>
-        ))}
+        )}
 
         {/* ── 즐겨찾기 10개 초과 팝업 ── */}
         {pending && (
