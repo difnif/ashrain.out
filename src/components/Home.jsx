@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { listConcepts } from "../lib/concepts";
 import { supabase } from "../supabaseClient";
 import WrongNote from "./WrongNote";
+import Calc from "./Calc";
 
-// ashrain.out — 홈 화면 (patch v0.2.1)
-// 이 파일을 src/components/Home.jsx 에 덮어쓰세요. WrongNote.jsx / AdminWrongNotes.jsx 와 함께 배포!
+// ashrain.out — 홈 화면 (patch v0.2.2)
+// 이 파일을 src/components/Home.jsx 에 덮어쓰세요. Calc.jsx / AdminCalc.jsx 와 함께 배포!
+// (v0.2.1의 WrongNote.jsx / AdminWrongNotes.jsx 는 그대로 두면 됩니다)
 //
-// [v0.2.1 변경]
-// - 오답 탭이 실제 오답노트로 연결: 촬영 → 4점 스캔 보정 → 필터 → 분류·메모 → 저장 (WrongNote.jsx)
-// - 관리자: 오답 탭 안의 🛠 버튼 → 공유 허용 학생 오답 열람 + 친구 오답 등록 (AdminWrongNotes.jsx)
-// - v0.2.0의 오답 탭 인라인 코드는 WrongNote로 이동, 나머지(개념·연산·힌트·설정)는 동일
+// [v0.2.2 변경]
+// - 연산 탭이 실제 풀이 화면으로 연결: 단원 선택 → 문제 수·난이도 → 랜덤 추출 → 문제별 타이머 → 채점 → 틀린 것만 다시 (Calc.jsx)
+// - 관리자: 연산 탭 안의 🛠 버튼 → 문제 JSON 파일 등록·유닛 관리 (AdminCalc.jsx)
+// - 세트 방식 → 문제 은행 방식 전환: 이전 세트 테이블 참조 제거, calc_units/calc_problems 사용 (schema_calc_v2.sql 필요)
 //
 // [v0.2.1 SQL — 학생 이름 포함 버전으로 RPC 교체 (SQL Editor에서 실행)]
 // drop function if exists admin_list_wrong_notes();
@@ -94,7 +96,6 @@ const TOGGLES = [
 ];
 const DEFAULT_SHARE = { share_wrong_notes: false, share_wrong_memo: false, share_hint_data: false, share_calc_records: false };
 
-const fmtSec = (s) => `${Math.floor(s / 60)}분 ${String(s % 60).padStart(2, "0")}초`;
 
 const CSS = `
 .hm-root { min-height: 100vh; padding: 20px 14px 40px; box-sizing: border-box;
@@ -233,8 +234,6 @@ export default function Home({ theme, onToggleTheme }) {
   const lp = useRef({ t: null, fired: false });
 
   // v0.2.0 — 카테고리 데이터 (탭 첫 진입 시에만 로드)
-  const [calcSets, setCalcSets] = useState(null);
-  const [calcRecent, setCalcRecent] = useState([]);
   const [sharedHint, setSharedHint] = useState(null);
   const [imgUrl, setImgUrl] = useState({});          // storage path → 서명 URL
   const [viewer, setViewer] = useState(null);        // 공유 자료 상세 {title, path, comment, extra}
@@ -259,15 +258,6 @@ export default function Home({ theme, onToggleTheme }) {
 
   // 탭 진입 시 해당 카테고리 데이터 로드
   useEffect(() => {
-    if (cat === "calc" && calcSets === null) {
-      supabase.from("calc_sets").select("id, unit_id, title, time_limit_sec, problems").order("id")
-        .then(({ data }) => setCalcSets(data || []));
-      if (uid) {
-        supabase.from("calc_records").select("set_id, correct, total, seconds, created_at")
-          .eq("user_id", uid).order("created_at", { ascending: false }).limit(3)
-          .then(({ data }) => setCalcRecent(data || []));
-      }
-    }
     if (cat === "hint" && sharedHint === null) {
       supabase.from("shared_hints").select("*")
         .order("created_at", { ascending: false }).limit(12)
@@ -399,7 +389,6 @@ export default function Home({ theme, onToggleTheme }) {
 
   const selInfo = selCat ? catInfo(selCat) : null;
   const selList = selInfo?.ch ? inChapter(selInfo.unit, selInfo.ch) : [];
-  const calcTitle = (setId) => calcSets?.find((s) => s.id === setId)?.title || setId;
 
   return (
     <div className={`hm-root hm-${theme}`}>
@@ -561,31 +550,7 @@ export default function Home({ theme, onToggleTheme }) {
 
         {/* ════════ 🧮 연산 ════════ */}
         {cat === "calc" && (
-          <>
-            {uid && calcRecent.length > 0 && (
-              <>
-                <p className="hm-sec">🏁 내 최근 기록</p>
-                {calcRecent.map((r) => (
-                  <div key={r.created_at} className="hm-card" style={{ cursor: "default" }}>
-                    <b>{calcTitle(r.set_id)}</b>
-                    <span>{r.correct} / {r.total} 정답 · {fmtSec(r.seconds)} · {new Date(r.created_at).toLocaleDateString()}</span>
-                  </div>
-                ))}
-              </>
-            )}
-            <p className="hm-sec">🧮 연산 세트</p>
-            {calcSets === null && <p className="hm-empty">불러오는 중…</p>}
-            {calcSets !== null && calcSets.length === 0 && (
-              <p className="hm-empty">아직 등록된 연산 세트가 없어요.</p>
-            )}
-            {(calcSets || []).map((s) => (
-              <button key={s.id} className="hm-card"
-                onClick={() => say("풀이 화면은 다음 업데이트(v0.2.3)에서 열려요")}>
-                <b>{s.title}</b>
-                <span>{UNIT_NAMES[s.unit_id] || s.unit_id} · {Array.isArray(s.problems) ? s.problems.length : 0}문제 · 제한 {fmtSec(s.time_limit_sec)}</span>
-              </button>
-            ))}
-          </>
+          <Calc uid={uid} isAdmin={isAdmin} unitNames={UNIT_NAMES} say={say} />
         )}
 
         {/* ════════ 📕 오답 ════════ */}
