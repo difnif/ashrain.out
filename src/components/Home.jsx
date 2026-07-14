@@ -1,23 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import { listConcepts } from "../lib/concepts";
 import { supabase } from "../supabaseClient";
+import WrongNote from "./WrongNote";
 
-// ashrain.out — 홈 화면 (patch v0.2.0)
-// 이 파일을 src/components/Home.jsx 에 덮어쓰면 됩니다.
-// 사전 조건: schema_v020.sql 실행(완료하셨음) + 아래 [v0.2.0 SQL] 한 줄 실행.
+// ashrain.out — 홈 화면 (patch v0.2.1)
+// 이 파일을 src/components/Home.jsx 에 덮어쓰세요. WrongNote.jsx / AdminWrongNotes.jsx 와 함께 배포!
 //
-// [v0.2.0 변경]
-// - 상단에 카테고리 4탭 추가: 📖개념 · 🧮연산 · 📕오답 · 💡힌트 (개념이 기본 탭)
-// - 개념 탭: v0.1.9의 트리·즐겨찾기 로직 그대로 (변경 없음)
-// - 연산 탭: 등록된 세트 목록 + 내 최근 기록 3건 / 오답·힌트 탭: 친구 공유 자료 열람(1차)
-// - 헤더 ⚙ 환경설정: 데이터 공유 4토글 (user_settings, 계정별 격리·기본 전부 OFF)
-// - 촬영·풀이 등 무거운 기능은 v0.2.1(오답) → v0.2.2(힌트) → v0.2.3(연산)에서 단계 활성화
+// [v0.2.1 변경]
+// - 오답 탭이 실제 오답노트로 연결: 촬영 → 4점 스캔 보정 → 필터 → 분류·메모 → 저장 (WrongNote.jsx)
+// - 관리자: 오답 탭 안의 🛠 버튼 → 공유 허용 학생 오답 열람 + 친구 오답 등록 (AdminWrongNotes.jsx)
+// - v0.2.0의 오답 탭 인라인 코드는 WrongNote로 이동, 나머지(개념·연산·힌트·설정)는 동일
 //
-// [v0.2.0 SQL — 관리자 판별을 기존 profiles.role 방식으로 통일 (SQL Editor에서 실행)]
-// create or replace function is_admin() returns boolean
-// language sql stable security definer set search_path = public as
-// $$ select exists (select 1 from profiles where id = auth.uid() and role = 'admin') $$;
-// ※ 이걸 실행하면 admin_users에 uid를 넣을 필요가 없습니다. (테이블은 남아 있어도 무해)
+// [v0.2.1 SQL — 학생 이름 포함 버전으로 RPC 교체 (SQL Editor에서 실행)]
+// drop function if exists admin_list_wrong_notes();
+// create or replace function admin_list_wrong_notes()
+// returns table ( id uuid, user_id uuid, student_name text, image_path text, unit_id text,
+//   concept_id text, reason text, source text, tags text[], status text, memo text, created_at timestamptz )
+// language sql stable security definer set search_path = public as $$
+//   select w.id, w.user_id, p.name, w.image_path, w.unit_id, w.concept_id, w.reason, w.source,
+//          w.tags, w.status, case when s.share_wrong_memo then w.memo else null end, w.created_at
+//   from wrong_notes w join user_settings s on s.user_id = w.user_id
+//   left join profiles p on p.id = w.user_id
+//   where is_admin() and s.share_wrong_notes order by w.created_at desc $$;
 
 const UNIT_NAMES = {
   "m1-1": "중1 1학기", "m1-2": "중1 2학기", "m2-1": "중2 1학기", "m2-2": "중2 2학기",
@@ -231,8 +235,6 @@ export default function Home({ theme, onToggleTheme }) {
   // v0.2.0 — 카테고리 데이터 (탭 첫 진입 시에만 로드)
   const [calcSets, setCalcSets] = useState(null);
   const [calcRecent, setCalcRecent] = useState([]);
-  const [myWrong, setMyWrong] = useState(null);
-  const [sharedWrong, setSharedWrong] = useState(null);
   const [sharedHint, setSharedHint] = useState(null);
   const [imgUrl, setImgUrl] = useState({});          // storage path → 서명 URL
   const [viewer, setViewer] = useState(null);        // 공유 자료 상세 {title, path, comment, extra}
@@ -264,15 +266,6 @@ export default function Home({ theme, onToggleTheme }) {
         supabase.from("calc_records").select("set_id, correct, total, seconds, created_at")
           .eq("user_id", uid).order("created_at", { ascending: false }).limit(3)
           .then(({ data }) => setCalcRecent(data || []));
-      }
-    }
-    if (cat === "wrong" && sharedWrong === null) {
-      supabase.from("shared_wrong_notes").select("*")
-        .order("created_at", { ascending: false }).limit(12)
-        .then(({ data }) => { setSharedWrong(data || []); signAll(data); });
-      if (uid) {
-        supabase.from("wrong_notes").select("id", { count: "exact", head: true }).eq("user_id", uid)
-          .then(({ count }) => setMyWrong(count ?? 0));
       }
     }
     if (cat === "hint" && sharedHint === null) {
@@ -597,33 +590,7 @@ export default function Home({ theme, onToggleTheme }) {
 
         {/* ════════ 📕 오답 ════════ */}
         {cat === "wrong" && (
-          <>
-            <div className="hm-acts">
-              <button className="hm-act" onClick={() => say("오답 촬영·등록은 다음 업데이트(v0.2.1)에서 열려요")}>
-                📷 오답 추가하기
-              </button>
-            </div>
-            {uid && (
-              <button className="hm-card" onClick={() => say("내 오답노트 화면은 v0.2.1에서 열려요")}>
-                <b>📕 내 오답노트</b>
-                <span>{myWrong === null ? "…" : `${myWrong}개 저장됨`} · 사진은 나와 (공유 허용 시) 선생님만 볼 수 있어요</span>
-              </button>
-            )}
-            <p className="hm-sec" style={{ marginTop: 14 }}>👥 친구의 오답에서 배우기</p>
-            {sharedWrong === null && <p className="hm-empty">불러오는 중…</p>}
-            {sharedWrong !== null && sharedWrong.length === 0 && (
-              <p className="hm-empty">아직 공유된 친구 오답이 없어요.</p>
-            )}
-            <div className="hm-grid">
-              {(sharedWrong || []).map((w) => (
-                <button key={w.id} className="hm-shot"
-                  onClick={() => setViewer({ title: w.title, path: w.image_path, comment: w.comment, extra: null })}>
-                  {imgUrl[w.image_path] && <img src={imgUrl[w.image_path]} alt="" />}
-                  <p><b>{w.title}</b>{w.unit_id ? ` · ${UNIT_NAMES[w.unit_id] || w.unit_id}` : ""}</p>
-                </button>
-              ))}
-            </div>
-          </>
+          <WrongNote uid={uid} isAdmin={isAdmin} unitNames={UNIT_NAMES} say={say} />
         )}
 
         {/* ════════ 💡 힌트 ════════ */}
