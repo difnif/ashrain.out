@@ -2,9 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { listConcepts } from "../lib/concepts";
 import { supabase } from "../supabaseClient";
 
-// ashrain.out — 홈(개념 목록) 화면 (patch v0.1.8)
-// 이 파일을 src/components/Home.jsx 에 덮어쓰고,
-// 동봉된 2026-07_fav_categories.sql 을 Supabase SQL Editor에서 1회 실행하면 됩니다.
+// ashrain.out — 홈(개념 목록) 화면 (patch v0.1.9)
+// 이 파일을 src/components/Home.jsx 에 덮어쓰면 됩니다. 이번 패치는 SQL 실행이 필요 없습니다.
+//
+// [v0.1.9 변경]
+// - 중3(m3-*)·고등(h1~h3-*) 라벨과 대단원(CHAPTERS) 추가 — 공통수학1/2, 대수, 미적분1/2, 확률과 통계, 기하
+// - 학년 라벨을 접두사 매핑(m→중, h→고)으로 교체, 정렬은 중등 → 고등 순
+// - 고등 학기 행에는 "N학기" 대신 과목명 표시, 즐겨찾기 칩 약칭도 고등 대응
 //
 // [모든 유저 공통]
 // - 학년 → 학기 → 대단원 3단계 트리, 기본은 전부 접힘, 여러 개 동시 열기 가능
@@ -14,7 +18,13 @@ import { supabase } from "../supabaseClient";
 // - 칩을 꾹 누르면 편집 모드: 노출 순서 이동 + 색상 변경 (전체 트리에도 색 반영)
 // - 즐겨찾기 해제 시 색상은 기본값으로 복귀. 트리 구조 자체는 절대 변하지 않음.
 
-const UNIT_NAMES = { "m1-1": "중1 1학기", "m1-2": "중1 2학기", "m2-1": "중2 1학기", "m2-2": "중2 2학기" };
+const UNIT_NAMES = {
+  "m1-1": "중1 1학기", "m1-2": "중1 2학기", "m2-1": "중2 1학기", "m2-2": "중2 2학기",
+  "m3-1": "중3 1학기", "m3-2": "중3 2학기",
+  "h1-1": "공통수학1", "h1-2": "공통수학2",
+  "h2-1": "대수", "h2-2": "미적분1",
+  "h3-1": "미적분2", "h3-2": "확률과 통계", "h3-3": "기하",
+};
 
 // 대단원 구성: [제목, 시작 번호, 끝 번호] — 표준 교육과정 기준
 const CHAPTERS = {
@@ -40,8 +50,24 @@ const CHAPTERS = {
     ["도형의 닮음과 피타고라스 정리", 5, 11],
     ["확률", 12, 14],
   ],
+  "m3-1": [["제곱근과 실수", 1, 6], ["다항식의 곱셈과 인수분해", 7, 13], ["이차방정식", 14, 21], ["이차함수", 22, 30]],
+  "m3-2": [["삼각비", 1, 5], ["원의 성질", 6, 11], ["통계", 12, 14]],
+  "h1-1": [["다항식", 1, 3], ["방정식과 부등식", 4, 13], ["경우의 수", 14, 16], ["행렬", 17, 18]],
+  "h1-2": [["도형의 방정식", 1, 7], ["집합과 명제", 8, 15], ["함수", 16, 20]],
+  "h2-1": [["지수함수와 로그함수", 1, 7], ["삼각함수", 8, 11], ["수열", 12, 17]],
+  "h2-2": [["함수의 극한과 연속", 1, 4], ["미분", 5, 12], ["적분", 13, 15]],
+  "h3-1": [["수열의 극한", 1, 4], ["미분법", 5, 12], ["적분법", 13, 18]],
+  "h3-2": [["경우의 수", 1, 3], ["확률", 4, 7], ["통계", 8, 14]],
+  "h3-3": [["이차곡선", 1, 7], ["공간도형과 공간좌표", 8, 13], ["벡터", 14, 21]],
 };
 const chaptersOf = (unit) => CHAPTERS[unit] || [["전체", 1, 999]];
+
+// 학년·학기 라벨 (m→중, h→고 / 정렬은 중등 먼저, 학년 순)
+const GRADE_PREFIX = { m: "중", h: "고" };
+const gradeLabel = (g) => (GRADE_PREFIX[g[0]] || "") + g[1];
+const gradeRank = (g) => (g[0] === "m" ? 0 : 100) + Number(g[1]);
+const semLabel = (u) => (u[0] === "m" ? `${u.slice(-1)}학기` : UNIT_NAMES[u] || u);
+const unitShort = (u) => (u[0] === "m" ? u.slice(1) : "고" + u.slice(1));
 
 // 즐겨찾기 색상 팔레트 (첫 항목 null = 기본색)
 const PALETTE = [null, "#F472B6", "#F87171", "#F59E0B", "#34D399", "#60A5FA", "#A78BFA"];
@@ -160,7 +186,7 @@ export default function Home({ theme, onToggleTheme }) {
 
   // ── 트리 헬퍼 ──
   const units = [...new Set(concepts.map((c) => c.unit_id))].sort();
-  const grades = [...new Set(units.map((u) => u.slice(0, 2)))].sort();
+  const grades = [...new Set(units.map((u) => u.slice(0, 2)))].sort((a, b) => gradeRank(a) - gradeRank(b));
   const semestersOf = (g) => units.filter((u) => u.startsWith(g + "-"));
   const inUnit = (u) => concepts.filter((c) => c.unit_id === u);
   const inChapter = (u, ch) =>
@@ -170,7 +196,7 @@ export default function Home({ theme, onToggleTheme }) {
   function catInfo(catId) {
     const [unit, idx] = catId.split(":");
     const ch = chaptersOf(unit)[+idx];
-    return { unit, title: ch ? ch[0] : catId, short: unit.replace("m", ""), ch };
+    return { unit, title: ch ? ch[0] : catId, short: unitShort(unit), ch };
   }
   function toggleOpen(key) {
     setOpen((prev) => {
@@ -343,7 +369,7 @@ export default function Home({ theme, onToggleTheme }) {
           <div key={g}>
             <div className="hm-row" onClick={() => toggleOpen(g)}>
               <span className="hm-car">{open.has(g) ? "▾" : "▸"}</span>
-              <span className="hm-tw">중{g[1]}</span>
+              <span className="hm-tw">{gradeLabel(g)}</span>
               <span className="hm-cnt">{semestersOf(g).reduce((s, u) => s + inUnit(u).length, 0)}개</span>
             </div>
 
@@ -351,7 +377,7 @@ export default function Home({ theme, onToggleTheme }) {
               <div key={u} className="hm-lv2">
                 <div className="hm-row" onClick={() => toggleOpen(u)}>
                   <span className="hm-car">{open.has(u) ? "▾" : "▸"}</span>
-                  <span className="hm-tw">{u.slice(-1)}학기</span>
+                  <span className="hm-tw">{semLabel(u)}</span>
                   <span className="hm-cnt">{inUnit(u).length}개</span>
                 </div>
 
