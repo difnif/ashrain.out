@@ -2,10 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import AdminCalc from "./AdminCalc";
 
-// ashrain.out — 연산 (v0.2.2)
-// src/components/Calc.jsx — Home.jsx(v0.2.2)가 연산 탭에서 import 합니다.
-// 흐름: 단원 선택 → 문제 수·난이도 → 은행에서 랜덤 추출 → 문제별 제한시간 풀이 → 채점 → 틀린 것만 다시
-// 데이터: calc_units / calc_problems / calc_records (schema_calc_v2.sql)
+// ashrain.out — 연산 (v0.3.0)
+// src/components/Calc.jsx — Home.jsx가 연산 탭에서 import 합니다. (v0.2.2를 완전히 대체)
+//
+// [v0.3.0 변경]
+// - 이미지 문제 지원: 선생님 자료(image_path)가 있으면 문제 사진을 띄우고 그대로 풀이·채점
+// - 객관식(choices 없음) = 자료 문제의 ①~⑤: 큰 동그라미 버튼으로 답 선택
+// - 📝 답안지 채점(OMR): 종이로 푼 자료를 골라 답만 입력 → 일괄 채점 → 기록 저장
+//   · 🖨 인쇄용 답안지 양식 / 📷 손글씨 답안지 사진 → AI가 자동 입력(확인 후 제출)
+// - 결과 화면: 틀린 "자료" 문제를 원터치로 오답노트에 담기 (사진 촬영 없이 자동 등록)
+// - 사전 조건: schema_v030.sql 실행 + api/ai.js 업로드
 
 const GRADE_ORDER = ["초등", "중1", "중2", "중3", "고1", "고2", "고3"];
 const N_OPTIONS = [10, 20, 30];
@@ -19,6 +25,7 @@ function norm(s) {
     .replace(/\s+/g, "")
     .replace(/−/g, "-")          // 유니코드 마이너스
     .replace(/×/g, "*")
+    .replace(/°/g, "")           // 각도 단위 유무 허용 (60° = 60)
     .replace(/≥/g, ">=").replace(/≤/g, "<=")
     .replace(/^x=/i, "")          // 방정식 답의 x= 접두 허용
     .toLowerCase();
@@ -46,6 +53,20 @@ function isCorrect(user, answer) {
 }
 const fmtSec = (s) => `${Math.floor(s / 60)}분 ${String(s % 60).padStart(2, "0")}초`;
 
+async function aiCall(body) {
+  const { data: sess } = await supabase.auth.getSession();
+  const token = sess?.session?.access_token;
+  if (!token) throw new Error("세션이 만료됐어요 — 다시 로그인해 주세요");
+  const r = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j?.error || "요청 실패");
+  return j;
+}
+
 const CSS = `
 .cl-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
 .cl-title { font-size:15px; font-weight:800; color:var(--ink); }
@@ -62,7 +83,11 @@ const CSS = `
 .cl-chip.on { color:var(--ac); border-color:var(--ac); font-weight:800; }
 .cl-go { width:100%; padding:13px; border-radius:12px; border:1px solid var(--ac); background:transparent;
   color:var(--ac); font-weight:800; font-size:14.5px; cursor:pointer; }
+.cl-go:disabled { opacity:.45; }
 .cl-lab { font-size:12.5px; color:var(--mut); margin:12px 0 6px; font-weight:700; }
+.cl-banner { border:1px dashed var(--ac); color:var(--ac); border-radius:11px; padding:10px 12px;
+  font-size:13px; font-weight:700; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.cl-banner button { background:none; border:none; color:var(--mut); font-size:12px; cursor:pointer; }
 
 /* 풀이 화면 */
 .cl-stage { background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:16px 14px; }
@@ -70,6 +95,8 @@ const CSS = `
 .cl-tbar { height:6px; border-radius:999px; background:var(--bd); overflow:hidden; margin-bottom:16px; }
 .cl-tfill { height:100%; background:var(--ac); transition:width .2s linear; }
 .cl-q { font-size:17px; line-height:1.75; color:var(--ink); white-space:pre-line; min-height:56px; margin-bottom:16px; word-break:keep-all; }
+.cl-img { width:100%; border-radius:10px; border:1px solid var(--bd); display:block; margin-bottom:8px; background:#fff; }
+.cl-cap { font-size:13px; color:var(--mut); margin:0 0 14px; }
 .cl-in { width:100%; box-sizing:border-box; background:transparent; border:1.5px solid var(--bd); border-radius:12px;
   padding:13px 14px; color:var(--ink); font-size:16px; }
 .cl-in:focus { outline:none; border-color:var(--ac); }
@@ -78,12 +105,26 @@ const CSS = `
 .cl-ox { display:flex; gap:10px; }
 .cl-ox button { flex:1; padding:20px 0; border-radius:14px; border:1.5px solid var(--bd); background:transparent;
   color:var(--ink); font-size:26px; font-weight:800; cursor:pointer; }
+.cl-circ { display:flex; gap:8px; }
+.cl-circ button { flex:1; padding:16px 0; border-radius:14px; border:1.5px solid var(--bd); background:transparent;
+  color:var(--ink); font-size:22px; font-weight:800; cursor:pointer; }
 .cl-opt { display:block; width:100%; text-align:left; margin-bottom:8px; padding:12px 14px; border-radius:12px;
   border:1.5px solid var(--bd); background:transparent; color:var(--ink); font-size:14.5px; cursor:pointer; line-height:1.5; }
 .cl-opt small { color:var(--mut); margin-right:8px; }
 .cl-flash-o { border-color:#0DA95F !important; box-shadow:0 0 0 1px #0DA95F inset; }
 .cl-flash-x { border-color:#E5484D !important; box-shadow:0 0 0 1px #E5484D inset; }
 .cl-skip { margin-top:12px; width:100%; background:none; border:none; color:var(--mut); font-size:12px; cursor:pointer; }
+
+/* 답안지(OMR) */
+.cl-om-row { display:flex; align-items:center; gap:8px; border:1px solid var(--bd); border-radius:11px;
+  padding:8px 10px; margin-bottom:6px; background:var(--card); }
+.cl-om-num { width:34px; text-align:center; font-weight:800; color:var(--mut); font-size:13.5px; flex:none; }
+.cl-om-in { flex:1; box-sizing:border-box; background:transparent; border:1px solid var(--bd); border-radius:9px;
+  padding:9px 11px; color:var(--ink); font-size:14.5px; min-width:0; }
+.cl-om-mini { display:flex; gap:5px; flex:1; }
+.cl-om-mini button { flex:1; padding:9px 0; border-radius:9px; border:1px solid var(--bd); background:transparent;
+  color:var(--ink); font-size:15px; cursor:pointer; }
+.cl-om-mini button.on { color:var(--ac); border-color:var(--ac); font-weight:800; box-shadow:0 0 0 1px var(--ac) inset; }
 
 /* 결과 */
 .cl-score { text-align:center; padding:14px 0 4px; }
@@ -92,6 +133,7 @@ const CSS = `
 .cl-wrow { border:1px solid var(--bd); border-radius:12px; padding:11px 13px; margin-bottom:8px; }
 .cl-wrow p { margin:0; font-size:13.5px; color:var(--ink); white-space:pre-line; word-break:keep-all; }
 .cl-wrow span { display:block; font-size:12.5px; margin-top:5px; }
+.cl-wimg { width:100%; border-radius:9px; border:1px solid var(--bd); display:block; margin-bottom:8px; background:#fff; }
 .cl-wrong { color:#E5484D; }
 .cl-right { color:#0DA95F; }
 .cl-acts { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
@@ -102,13 +144,14 @@ const CSS = `
 
 export default function Calc({ uid, isAdmin, unitNames, say }) {
   const [adminView, setAdminView] = useState(false);
-  const [view, setView] = useState("units");      // units | setup | play | result
+  const [view, setView] = useState("units");      // units | setup | play | result | omr
   const [units, setUnits] = useState(null);
   const [recent, setRecent] = useState([]);
   const [unit, setUnit] = useState(null);         // 선택한 단원 row
+  const [pickMode, setPickMode] = useState(null); // null | 'omr' — 단원 카드 탭의 의미
   const [nOpt, setNOpt] = useState(20);
   const [dOpt, setDOpt] = useState("all");
-  const [probs, setProbs] = useState([]);         // 이번 라운드 문제
+  const [probs, setProbs] = useState([]);         // 이번 라운드(또는 채점 대상) 문제
   const [idx, setIdx] = useState(0);
   const [left, setLeft] = useState(0);            // 남은 초 (현재 문제)
   const [input, setInput] = useState("");
@@ -116,9 +159,15 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
   const [wrongs, setWrongs] = useState([]);       // {p, my}
   const [startAt, setStartAt] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+  const [imgs, setImgs] = useState({});           // image_path → 서명 URL (라운드 간 유지)
+  const [omrProbs, setOmrProbs] = useState([]);
+  const [omrAns, setOmrAns] = useState({});       // problem.id → 입력값
+  const [omrBusy, setOmrBusy] = useState(false);
+  const [savedWrong, setSavedWrong] = useState(false);
   const timerRef = useRef(null);
   const lockRef = useRef(false);
   const inRef = useRef(null);
+  const omrFileRef = useRef(null);
 
   useEffect(() => {
     supabase.from("calc_units").select("*").order("sort")
@@ -136,6 +185,17 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
   const grades = units ? [...new Set(units.map((u) => u.grade || "기타"))]
     .sort((a, b) => (GRADE_ORDER.indexOf(a) + 99 * (GRADE_ORDER.indexOf(a) < 0)) - (GRADE_ORDER.indexOf(b) + 99 * (GRADE_ORDER.indexOf(b) < 0))) : [];
 
+  async function signImages(list) {
+    const paths = [...new Set(list.map((p) => p.image_path).filter((p) => p && !imgs[p]))];
+    if (!paths.length) return;
+    const { data } = await supabase.storage.from("notes").createSignedUrls(paths, 3600);
+    if (data) {
+      const add = {};
+      data.forEach((d) => { if (d.signedUrl && d.path) add[d.path] = d.signedUrl; });
+      setImgs((m) => ({ ...m, ...add }));
+    }
+  }
+
   // ── 라운드 시작 ──
   async function startRound() {
     let q = supabase.from("calc_problems").select("*").eq("calc_unit", unit.id);
@@ -144,10 +204,11 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
     if (error || !data?.length) { say(error ? "문제 로드 실패: " + error.message : "이 조건의 문제가 아직 없어요"); return; }
     const picked = [...data].sort(() => Math.random() - 0.5).slice(0, nOpt);
     if (picked.length < nOpt) say(`이 조건에는 ${picked.length}문제만 있어요 — 전부 출제할게요`);
+    await signImages(picked);
     beginPlay(picked);
   }
   function beginPlay(list) {
-    setProbs(list); setIdx(0); setWrongs([]); setElapsed(0);
+    setProbs(list); setIdx(0); setWrongs([]); setElapsed(0); setSavedWrong(false);
     setStartAt(Date.now()); setView("play");
     armProblem(list, 0);
   }
@@ -208,6 +269,133 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
     beginPlay([...list].sort(() => Math.random() - 0.5));
   }
 
+  // ── 답안지(OMR) ──
+  async function startOmr(u) {
+    const { data, error } = await supabase.from("calc_problems").select("*")
+      .eq("calc_unit", u.id).order("id");
+    if (error || !data?.length) { say(error ? "문제 로드 실패: " + error.message : "이 단원에는 문제가 없어요"); return; }
+    setUnit(u); setPickMode(null);
+    setOmrProbs(data); setOmrAns({});
+    await signImages(data);
+    setView("omr");
+  }
+  const omrType = (p) => (p.type === "choice" ? "choice" : p.type === "ox" ? "ox" : "calc");
+  const circVal = (p, i) => (p.choices ? p.choices[i] : CIRCLED[i]);   // 은행 5지선다는 보기 텍스트로 채점
+
+  function submitOmr() {
+    const w = [];
+    omrProbs.forEach((p) => {
+      const my = omrAns[p.id];
+      const has = my != null && String(my).trim() !== "";
+      if (!(has && isCorrect(my, p.answer))) w.push({ p, my: has ? my : "(빈칸)" });
+    });
+    setProbs(omrProbs); setWrongs(w); setElapsed(0); setSavedWrong(false);
+    setView("result");
+    if (uid) {
+      supabase.from("calc_records").insert({
+        user_id: uid, calc_unit: unit.id,
+        correct: omrProbs.length - w.length, total: omrProbs.length, seconds: 0,
+        wrong_ids: w.map((x) => x.p.id),
+      }).then(({ error }) => { if (error) say("기록 저장 실패: " + error.message); });
+    }
+  }
+
+  // 인쇄용 답안지 양식 (종이로 풀 때)
+  function printSheet() {
+    const rows = omrProbs.map((p, i) => {
+      const t = omrType(p);
+      const cell = t === "choice" ? "① &nbsp; ② &nbsp; ③ &nbsp; ④ &nbsp; ⑤"
+        : t === "ox" ? "O &nbsp;&nbsp; / &nbsp;&nbsp; X"
+        : "답: ______________________";
+      return `<tr><td class="n">${i + 1}</td><td class="a">${cell}</td></tr>`;
+    }).join("");
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>답안지</title><style>
+      body { font-family:'Malgun Gothic',sans-serif; padding:28px; color:#111; }
+      h2 { margin:0 0 4px; font-size:18px; } .sub { color:#666; font-size:12px; margin:0 0 16px; }
+      table { width:100%; border-collapse:collapse; }
+      td { border:1px solid #bbb; padding:9px 10px; font-size:14px; }
+      td.n { width:44px; text-align:center; font-weight:700; }
+      td.a { letter-spacing:1px; }
+      @media print { body { padding:10mm; } }
+    </style></head><body>
+      <h2>${unit?.name || "답안지"}</h2>
+      <p class="sub">이름: ______________ &nbsp;&nbsp; 날짜: ______________ &nbsp;&nbsp; 객관식은 번호에 ○, 단답은 또박또박!</p>
+      <table>${rows}</table>
+      <script>window.onload = function(){ window.print(); };</scr` + `ipt>
+    </body></html>`;
+    const win = window.open("", "_blank");
+    if (!win) { say("팝업이 차단됐어요 — 브라우저에서 팝업을 허용해 주세요"); return; }
+    win.document.write(html);
+    win.document.close();
+  }
+
+  // 손글씨 답안지 사진 → AI 자동 입력
+  function pickOmrPhoto(e) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    const im = new Image();
+    im.onload = async () => {
+      const cap = 1200, sc = Math.min(1, cap / Math.max(im.width, im.height));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(im.width * sc); cv.height = Math.round(im.height * sc);
+      cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(im.src);
+      setOmrBusy(true);
+      try {
+        const base64 = cv.toDataURL("image/jpeg", 0.8).split(",")[1];
+        const { answers } = await aiCall({
+          task: "omr", image: base64,
+          items: omrProbs.map((p, i) => ({ no: i + 1, type: omrType(p) })),
+        });
+        let filled = 0;
+        const add = {};
+        (answers || []).forEach(({ no, answer }) => {
+          const p = omrProbs[no - 1];
+          if (!p || !answer) return;
+          const t = omrType(p);
+          let val = null;
+          if (t === "choice") {
+            const ci = CIRCLED.indexOf(answer);
+            if (ci >= 0) val = circVal(p, ci);
+          } else if (t === "ox") {
+            if (/^[OX]$/i.test(answer)) val = answer.toUpperCase();
+          } else {
+            val = answer;
+          }
+          if (val != null) { add[p.id] = val; filled++; }
+        });
+        setOmrAns((m) => ({ ...m, ...add }));
+        say(filled ? `${filled}개를 자동으로 채웠어요 — 꼭 확인한 뒤 제출하세요!` : "답을 읽지 못했어요 — 더 밝고 반듯하게 다시 찍어 보세요");
+      } catch (err) {
+        say("사진 인식 실패: " + (err?.message || String(err)));
+      }
+      setOmrBusy(false);
+    };
+    im.onerror = () => say("사진을 열 수 없어요");
+    im.src = URL.createObjectURL(f);
+  }
+
+  // 틀린 자료 문제 → 오답노트 원터치 담기
+  async function saveWrongNotes() {
+    const targets = wrongs.filter((w) => w.p.image_path);
+    if (!uid || !targets.length) return;
+    const rows = targets.map((w) => ({
+      user_id: uid,
+      image_path: w.p.image_path,
+      unit_id: unit?.unit_id || null,
+      reason: "etc",
+      source: unit?.name || "연산",
+      tags: ["자료"],
+      status: "new",
+      memo: `${w.p.question} · 내 답: ${w.my}`,
+    }));
+    const { error } = await supabase.from("wrong_notes").insert(rows);
+    if (error) { say("오답노트 저장 실패: " + error.message); return; }
+    setSavedWrong(true);
+    say(`📕 ${rows.length}문제를 오답노트에 담았어요 — 오답 탭에서 확인!`);
+  }
+
   // ── 관리자 ──
   if (adminView) {
     return (
@@ -227,21 +415,31 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
   return (
     <div>
       <style>{CSS}</style>
+      <input ref={omrFileRef} type="file" accept="image/*" capture="environment" hidden onChange={pickOmrPhoto} />
 
       {/* ── 단원 목록 ── */}
       {view === "units" && (
         <>
           <div className="cl-top">
             <span className="cl-title">🧮 연산 스피드</span>
-            {isAdmin && <button className="cl-btn" onClick={() => setAdminView(true)}>🛠 관리자</button>}
+            <span style={{ display: "flex", gap: 6 }}>
+              <button className="cl-btn" onClick={() => setPickMode(pickMode === "omr" ? null : "omr")}>📝 답안지 채점</button>
+              {isAdmin && <button className="cl-btn" onClick={() => setAdminView(true)}>🛠 관리자</button>}
+            </span>
           </div>
-          {uid && recent.length > 0 && (
+          {pickMode === "omr" && (
+            <div className="cl-banner">
+              <span>채점할 자료(단원)를 아래에서 선택하세요 — 종이로 푼 답을 옮겨 적으면 한 번에 채점돼요.</span>
+              <button onClick={() => setPickMode(null)}>취소 ✕</button>
+            </div>
+          )}
+          {!pickMode && uid && recent.length > 0 && (
             <>
               <p className="cl-sec" style={{ marginTop: 4 }}>🏁 내 최근 기록</p>
               {recent.map((r, i) => (
                 <div key={i} className="cl-card" style={{ cursor: "default" }}>
                   <b>{unitName(r.calc_unit)}</b>
-                  <span>{r.correct} / {r.total} 정답 · {fmtSec(r.seconds)} · {new Date(r.created_at).toLocaleDateString()}</span>
+                  <span>{r.correct} / {r.total} 정답 · {r.seconds ? fmtSec(r.seconds) : "답안지 채점"} · {new Date(r.created_at).toLocaleDateString()}</span>
                 </div>
               ))}
             </>
@@ -254,9 +452,10 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
             <div key={g}>
               <p className="cl-sec">{g}</p>
               {units.filter((u) => (u.grade || "기타") === g).map((u) => (
-                <button key={u.id} className="cl-card" onClick={() => { setUnit(u); setView("setup"); }}>
+                <button key={u.id} className="cl-card"
+                  onClick={() => { if (pickMode === "omr") startOmr(u); else { setUnit(u); setView("setup"); } }}>
                   <b>{u.name}</b>
-                  <span>{unitNames?.[u.unit_id] ? `개념 트리: ${unitNames[u.unit_id]}` : "탭해서 시작 옵션 고르기"}</span>
+                  <span>{pickMode === "omr" ? "탭해서 이 자료 답안지 작성" : unitNames?.[u.unit_id] ? `개념 트리: ${unitNames[u.unit_id]}` : "탭해서 시작 옵션 고르기"}</span>
                 </button>
               ))}
             </div>
@@ -299,7 +498,15 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
             <span>⏱ {left}초</span>
           </div>
           <div className="cl-tbar"><div className="cl-tfill" style={{ width: `${(left / cur.time_limit) * 100}%` }} /></div>
-          <p className="cl-q">{cur.question}</p>
+
+          {cur.image_path ? (
+            <>
+              {imgs[cur.image_path] && <img className="cl-img" src={imgs[cur.image_path]} alt="" />}
+              <p className="cl-cap">{cur.question}</p>
+            </>
+          ) : (
+            <p className="cl-q">{cur.question}</p>
+          )}
 
           {cur.type === "calc" && (
             <>
@@ -322,7 +529,14 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
               <button onClick={() => submit("X")}>X</button>
             </div>
           )}
-          {cur.type === "choice" && (cur.choices || []).map((c, i) => (
+          {cur.type === "choice" && !cur.choices && (
+            <div className="cl-circ">
+              {CIRCLED.map((c) => (
+                <button key={c} onClick={() => submit(c)}>{c}</button>
+              ))}
+            </div>
+          )}
+          {cur.type === "choice" && cur.choices && cur.choices.map((c, i) => (
             <button key={i} className="cl-opt" onClick={() => submit(c)}>
               <small>{CIRCLED[i]}</small>{c}
             </button>
@@ -331,25 +545,87 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
         </div>
       )}
 
+      {/* ── 답안지(OMR) 작성 ── */}
+      {view === "omr" && unit && (
+        <>
+          <div className="cl-top">
+            <span className="cl-title">📝 {unit.name}</span>
+            <button className="cl-btn" onClick={() => setView("units")}>← 단원</button>
+          </div>
+          <p className="cl-mini" style={{ marginBottom: 10, lineHeight: 1.6 }}>
+            종이로 푼 답을 옮겨 적고 제출하면 한 번에 채점돼요. 사진으로 불러온 답은 <b>반드시 확인한 뒤</b> 제출!
+          </p>
+          <div className="cl-acts" style={{ marginTop: 0, marginBottom: 12 }}>
+            <button onClick={printSheet}>🖨 인쇄용 답안지</button>
+            <button onClick={() => omrFileRef.current.click()} disabled={omrBusy}>
+              {omrBusy ? "⏳ 사진 읽는 중…" : "📷 사진으로 불러오기"}
+            </button>
+          </div>
+          {omrProbs.map((p, i) => {
+            const t = omrType(p);
+            return (
+              <div key={p.id} className="cl-om-row">
+                <span className="cl-om-num">{i + 1}</span>
+                {t === "choice" && (
+                  <div className="cl-om-mini">
+                    {CIRCLED.map((c, ci) => (
+                      <button key={c} className={omrAns[p.id] === circVal(p, ci) ? "on" : ""}
+                        onClick={() => setOmrAns((m) => ({ ...m, [p.id]: m[p.id] === circVal(p, ci) ? "" : circVal(p, ci) }))}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {t === "ox" && (
+                  <div className="cl-om-mini">
+                    {["O", "X"].map((c) => (
+                      <button key={c} className={omrAns[p.id] === c ? "on" : ""}
+                        onClick={() => setOmrAns((m) => ({ ...m, [p.id]: m[p.id] === c ? "" : c }))}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {t === "calc" && (
+                  <input className="cl-om-in" placeholder="답" value={omrAns[p.id] || ""}
+                    onChange={(e) => setOmrAns((m) => ({ ...m, [p.id]: e.target.value }))} />
+                )}
+              </div>
+            );
+          })}
+          <button className="cl-go" style={{ marginTop: 8 }} onClick={submitOmr}>✅ 제출하고 채점</button>
+        </>
+      )}
+
       {/* ── 결과 ── */}
       {view === "result" && (
         <>
           <div className="cl-stage">
             <div className="cl-score">
               <b>{probs.length - wrongs.length} / {probs.length}</b>
-              <p>{unit?.name} · {fmtSec(elapsed)} 걸렸어요{wrongs.length === 0 ? " · 완벽해요! 🎉" : ""}</p>
+              <p>{unit?.name} · {elapsed ? `${fmtSec(elapsed)} 걸렸어요` : "답안지 채점"}{wrongs.length === 0 ? " · 완벽해요! 🎉" : ""}</p>
             </div>
             <div className="cl-acts">
               {wrongs.length > 0 && <button className="pri" onClick={retryWrong}>🔁 틀린 것만 다시 ({wrongs.length})</button>}
-              <button onClick={startRound}>🎲 같은 설정으로 다시</button>
+              {elapsed > 0
+                ? <button onClick={startRound}>🎲 같은 설정으로 다시</button>
+                : <button onClick={() => setView("omr")}>📝 답안지 다시</button>}
               <button onClick={() => setView("units")}>단원 목록</button>
             </div>
+            {uid && wrongs.some((w) => w.p.image_path) && (
+              <button className="cl-go" style={{ marginTop: 12 }} disabled={savedWrong} onClick={saveWrongNotes}>
+                {savedWrong
+                  ? "📕 오답노트에 담았어요 ✓"
+                  : `📕 틀린 자료 문제 오답노트에 담기 (${wrongs.filter((w) => w.p.image_path).length})`}
+              </button>
+            )}
           </div>
           {wrongs.length > 0 && (
             <>
               <p className="cl-sec">✍️ 틀린 문제 복기</p>
               {wrongs.map((w, i) => (
                 <div key={i} className="cl-wrow">
+                  {w.p.image_path && imgs[w.p.image_path] && <img className="cl-wimg" src={imgs[w.p.image_path]} alt="" />}
                   <p>{w.p.question}</p>
                   <span className="cl-wrong">내 답: {w.my || "(빈칸)"}</span>
                   <span className="cl-right">정답: {w.p.answer}</span>
