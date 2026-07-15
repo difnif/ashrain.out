@@ -3,8 +3,12 @@ import { listConcepts } from "../lib/concepts";
 import { supabase } from "../supabaseClient";
 import WrongNote from "./WrongNote";
 import Calc from "./Calc";
+import Hint from "./Hint";
 
-// ashrain.out — 홈 화면 (patch v0.2.2)
+// ashrain.out — 홈 화면 (patch v0.3.0)
+// [v0.3.0 변경]
+// - 힌트 탭이 실제 기능으로 연결: 문제 사진 → AI 접근법 힌트 + 내 기록 (Hint.jsx, api/ai.js 필요)
+// - 연산 탭은 Calc.jsx v0.3.0과 함께 배포 (선생님 자료 · 답안지 채점 · 오답노트 연동)
 // 이 파일을 src/components/Home.jsx 에 덮어쓰세요. Calc.jsx / AdminCalc.jsx 와 함께 배포!
 // (v0.2.1의 WrongNote.jsx / AdminWrongNotes.jsx 는 그대로 두면 됩니다)
 //
@@ -234,7 +238,6 @@ export default function Home({ theme, onToggleTheme }) {
   const lp = useRef({ t: null, fired: false });
 
   // v0.2.0 — 카테고리 데이터 (탭 첫 진입 시에만 로드)
-  const [sharedHint, setSharedHint] = useState(null);
   const [imgUrl, setImgUrl] = useState({});          // storage path → 서명 URL
   const [viewer, setViewer] = useState(null);        // 공유 자료 상세 {title, path, comment, extra}
 
@@ -258,11 +261,6 @@ export default function Home({ theme, onToggleTheme }) {
 
   // 탭 진입 시 해당 카테고리 데이터 로드
   useEffect(() => {
-    if (cat === "hint" && sharedHint === null) {
-      supabase.from("shared_hints").select("*")
-        .order("created_at", { ascending: false }).limit(12)
-        .then(({ data }) => { setSharedHint(data || []); signAll(data); });
-    }
   }, [cat, uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function signAll(rows) {
@@ -560,30 +558,7 @@ export default function Home({ theme, onToggleTheme }) {
 
         {/* ════════ 💡 힌트 ════════ */}
         {cat === "hint" && (
-          <>
-            <div className="hm-acts">
-              <button className="hm-act" onClick={() => say("사진으로 힌트 받기는 다음 업데이트(v0.2.2)에서 열려요")}>
-                💡 문제 사진으로 힌트 받기
-              </button>
-            </div>
-            <p className="hm-small" style={{ marginBottom: 12 }}>
-              정답을 알려주지 않아요 — 문제의 문장과 단서를 분석해서, 어떤 개념으로 어떻게 접근할지까지만 안내해요.
-            </p>
-            <p className="hm-sec">👥 친구들이 고민한 문제</p>
-            {sharedHint === null && <p className="hm-empty">불러오는 중…</p>}
-            {sharedHint !== null && sharedHint.length === 0 && (
-              <p className="hm-empty">아직 공유된 문제가 없어요.</p>
-            )}
-            <div className="hm-grid">
-              {(sharedHint || []).map((h) => (
-                <button key={h.id} className="hm-shot"
-                  onClick={() => setViewer({ title: h.title, path: h.image_path, comment: h.comment, extra: h.ai_response })}>
-                  {imgUrl[h.image_path] && <img src={imgUrl[h.image_path]} alt="" />}
-                  <p><b>{h.title}</b>{h.unit_id ? ` · ${UNIT_NAMES[h.unit_id] || h.unit_id}` : ""}</p>
-                </button>
-              ))}
-            </div>
-          </>
+          <Hint uid={uid} isAdmin={isAdmin} unitNames={UNIT_NAMES} say={say} />
         )}
 
         {/* ── 공유 자료 상세 뷰어 ── */}
