@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { GEN_UNITS, generateProblems } from "../lib/calcGen";
+import AdminMaterials from "./AdminMaterials";
 
-// ashrain.out — 연산 관리 (v0.2.3)
+// ashrain.out — 연산 관리 (v0.3.0)
+// [v0.3.0] 📄 자료 탭 추가 — 문제 PDF를 AI가 분해해 자료 등록 (AdminMaterials.jsx, api/ai.js 필요)
 // src/components/AdminCalc.jsx — Calc.jsx의 🛠 관리자 화면에서 사용.
 // [v0.2.3 변경] 🤖 AI 생성 탭 추가: 문제지 PDF → 페이지 골라(최대 3장) 이미지 전송 →
 //   AI가 유형 분석 후 "신규" 문항 생성 → 미리보기에서 항목별 제외 → 등록 (origin: ai)
@@ -368,6 +370,7 @@ export default function AdminCalc({ say }) {
         <button className={"ac-tab" + (tab === "file" ? " on" : "")} onClick={() => setTab("file")}>📂 파일</button>
         <button className={"ac-tab" + (tab === "gen" ? " on" : "")} onClick={() => setTab("gen")}>🎲 생성</button>
         <button className={"ac-tab" + (tab === "ai" ? " on" : "")} onClick={() => setTab("ai")}>🤖 AI</button>
+        <button className={"ac-tab" + (tab === "mat" ? " on" : "")} onClick={() => setTab("mat")}>📄 자료</button>
         <button className={"ac-tab" + (tab === "manage" ? " on" : "")} onClick={() => setTab("manage")}>🗂 관리</button>
       </div>
 
@@ -552,6 +555,9 @@ export default function AdminCalc({ say }) {
           )}
         </>
       )}
+
+      {/* ══════════ 자료 등록 ══════════ */}
+      {tab === "mat" && <AdminMaterials say={say} />}
 
       {/* ══════════ 관리 ══════════ */}
       {tab === "manage" && (
