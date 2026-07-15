@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import AdminCalc from "./AdminCalc";
 
-// ashrain.out — 연산 (v0.3.0)
+// ashrain.out — 연산 (v0.3.1)
 // src/components/Calc.jsx — Home.jsx가 연산 탭에서 import 합니다. (v0.2.2를 완전히 대체)
 //
 // [v0.3.0 변경]
@@ -12,6 +12,7 @@ import AdminCalc from "./AdminCalc";
 //   · 🖨 인쇄용 답안지 양식 / 📷 손글씨 답안지 사진 → AI가 자동 입력(확인 후 제출)
 // - 결과 화면: 틀린 "자료" 문제를 원터치로 오답노트에 담기 (사진 촬영 없이 자동 등록)
 // - 사전 조건: schema_v030.sql 실행 + api/ai.js 업로드
+// [v0.3.1] 답안지 채점 선택 목록을 선생님 자료(mat-*)로 한정 — 은행 유닛은 랜덤 출제라 종이 순서와 무관
 
 const GRADE_ORDER = ["초등", "중1", "중2", "중3", "고1", "고2", "고3"];
 const N_OPTIONS = [10, 20, 30];
@@ -182,7 +183,9 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
   useEffect(() => () => clearInterval(timerRef.current), []);
 
   const unitName = (id) => units?.find((u) => u.id === id)?.name || id;
-  const grades = units ? [...new Set(units.map((u) => u.grade || "기타"))]
+  // 답안지 채점은 종이 순서 = DB 순서인 "선생님 자료"에서만 의미가 있어요 (은행 유닛 제외)
+  const visUnits = pickMode === "omr" ? (units || []).filter((u) => u.id.startsWith("mat-")) : (units || []);
+  const grades = units ? [...new Set(visUnits.map((u) => u.grade || "기타"))]
     .sort((a, b) => (GRADE_ORDER.indexOf(a) + 99 * (GRADE_ORDER.indexOf(a) < 0)) - (GRADE_ORDER.indexOf(b) + 99 * (GRADE_ORDER.indexOf(b) < 0))) : [];
 
   async function signImages(list) {
@@ -433,6 +436,9 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
               <button onClick={() => setPickMode(null)}>취소 ✕</button>
             </div>
           )}
+          {pickMode === "omr" && units !== null && visUnits.length === 0 && (
+            <p className="cl-empty">아직 등록된 선생님 자료가 없어요 — 자료가 등록되면 여기서 답안지로 채점할 수 있어요.</p>
+          )}
           {!pickMode && uid && recent.length > 0 && (
             <>
               <p className="cl-sec" style={{ marginTop: 4 }}>🏁 내 최근 기록</p>
@@ -451,7 +457,7 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
           {grades.map((g) => (
             <div key={g}>
               <p className="cl-sec">{g}</p>
-              {units.filter((u) => (u.grade || "기타") === g).map((u) => (
+              {visUnits.filter((u) => (u.grade || "기타") === g).map((u) => (
                 <button key={u.id} className="cl-card"
                   onClick={() => { if (pickMode === "omr") startOmr(u); else { setUnit(u); setView("setup"); } }}>
                   <b>{u.name}</b>
