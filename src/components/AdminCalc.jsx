@@ -3,8 +3,9 @@ import { supabase } from "../supabaseClient";
 import { GEN_UNITS, generateProblems } from "../lib/calcGen";
 import AdminMaterials from "./AdminMaterials";
 
-// ashrain.out — 연산 관리 (v0.3.0)
+// ashrain.out — 연산 관리 (v0.3.2)
 // [v0.3.0] 📄 자료 탭 추가 — 문제 PDF를 AI가 분해해 자료 등록 (AdminMaterials.jsx, api/ai.js 필요)
+// [v0.3.2] 파일 선택 자리(JSON·PDF)에 드래그앤드롭 지원
 // src/components/AdminCalc.jsx — Calc.jsx의 🛠 관리자 화면에서 사용.
 // [v0.2.3 변경] 🤖 AI 생성 탭 추가: 문제지 PDF → 페이지 골라(최대 3장) 이미지 전송 →
 //   AI가 유형 분석 후 "신규" 문항 생성 → 미리보기에서 항목별 제외 → 등록 (origin: ai)
@@ -35,6 +36,7 @@ function loadPdfJs() {
 }
 
 const CSS = `
+.ac-file.dragon { border-color:var(--ac) !important; color:var(--ac); border-style:dashed; }
 .ac-tabs { display:flex; gap:6px; margin-bottom:14px; }
 .ac-tab { flex:1; padding:9px 0; border-radius:10px; border:1px solid var(--bd); background:var(--card);
   color:var(--mut); font-size:12px; cursor:pointer; }
@@ -136,10 +138,28 @@ export default function AdminCalc({ say }) {
     }
   }
 
+  // ── 드래그앤드롭 (v0.3.2) ──
+  const [drag, setDrag] = useState(null);           // 'json' | 'pdf' | null
+  useEffect(() => {                                 // 빗나간 드롭이 페이지를 덮지 않게
+    const stop = (e) => e.preventDefault();
+    window.addEventListener("dragover", stop);
+    window.addEventListener("drop", stop);
+    return () => { window.removeEventListener("dragover", stop); window.removeEventListener("drop", stop); };
+  }, []);
+  const dropProps = (kind, ok, handler) => ({
+    onDragOver: (e) => { e.preventDefault(); setDrag(kind); },
+    onDragLeave: () => setDrag(null),
+    onDrop: (e) => {
+      e.preventDefault(); setDrag(null);
+      const f = e.dataTransfer.files?.[0];
+      if (!f) return;
+      if (!ok(f)) { say(kind === "json" ? "JSON 파일만 올릴 수 있어요" : "PDF 파일만 올릴 수 있어요"); return; }
+      handler(f);
+    },
+  });
+
   // ══════════ ① 파일 등록 ══════════
-  async function onFile(e) {
-    const f = e.target.files?.[0];
-    e.target.value = "";
+  async function onFile(f) {
     if (!f) return;
     setParsed(null); setErrors([]); setProg(null);
     let obj;
@@ -241,9 +261,7 @@ export default function AdminCalc({ say }) {
   })() : null;
 
   // ══════════ ③ AI 생성 ══════════
-  async function onAiPdf(e) {
-    const f = e.target.files?.[0];
-    e.target.value = "";
+  async function onAiPdf(f) {
     if (!f) return;
     const token = ++fileTokenRef.current;
     setAiName(f.name); setThumbs([]); setAiSel([]); setAiOut(null); setThumbProg({ done: 0, total: 0 });
@@ -378,9 +396,9 @@ export default function AdminCalc({ say }) {
       {tab === "file" && (
         <>
           <div className="ac-box">
-            <label className="ac-file">
-              {parsed ? `📄 ${parsed.fileName}` : "탭해서 문제 JSON 파일 선택 (calc_problems_m1.json 등)"}
-              <input type="file" accept=".json,application/json" onChange={onFile} style={{ display: "none" }} />
+            <label className={"ac-file" + (drag === "json" ? " dragon" : "")} {...dropProps("json", (f) => /\.json$/i.test(f.name) || (f.type || "").includes("json"), onFile)}>
+              {parsed ? `📄 ${parsed.fileName}` : "탭하거나 JSON 파일을 끌어다 놓으세요 (calc_problems_m1.json 등)"}
+              <input type="file" accept=".json,application/json" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = ""; }} style={{ display: "none" }} />
             </label>
             <p className="ac-mini">
               형식: {'{ units: […], problems: […] }'} — 같은 id는 덮어쓰기(upsert)라 재등록해도 안전해요.
@@ -495,9 +513,9 @@ export default function AdminCalc({ say }) {
                   onClick={() => setAiCount(n)}>{n}개</button>
               ))}
             </div>
-            <label className="ac-file" style={{ marginTop: 12 }}>
-              {aiName ? `📄 ${aiName}` : "탭해서 문제지 PDF 선택"}
-              <input type="file" accept=".pdf,application/pdf" onChange={onAiPdf} style={{ display: "none" }} />
+            <label className={"ac-file" + (drag === "pdf" ? " dragon" : "")} style={{ marginTop: 12 }} {...dropProps("pdf", (f) => /\.pdf$/i.test(f.name) || f.type === "application/pdf", onAiPdf)}>
+              {aiName ? `📄 ${aiName}` : "탭하거나 문제지 PDF를 끌어다 놓으세요"}
+              <input type="file" accept=".pdf,application/pdf" onChange={(e) => { onAiPdf(e.target.files?.[0]); e.target.value = ""; }} style={{ display: "none" }} />
             </label>
             {thumbProg && thumbProg.total > 0 && thumbProg.done < thumbProg.total && (
               <p className="ac-mini">페이지 준비 중… {thumbProg.done} / {thumbProg.total}</p>
