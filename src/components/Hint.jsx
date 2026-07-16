@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 
-// ashrain.out — 힌트 (v0.3.0)
+// ashrain.out — 힌트 (v0.3.2)
+// [v0.3.2] 컴퓨터에서 사진 파일을 버튼에 끌어다 놓기 지원
 // src/components/Hint.jsx — Home.jsx(v0.3.0)가 힌트 탭에서 import 합니다.
 // 흐름: 문제 사진 촬영/선택 → (선택) 질문 입력 → /api/ai(task:hint) → 접근법 힌트 (정답 없음)
 // 저장: storage notes/{uid}/hint/{id}.jpg + hint_logs (계정별 격리, 공유 토글 시 관리자만 열람)
@@ -10,6 +11,7 @@ import { supabase } from "../supabaseClient";
 const fmtDate = (s) => new Date(s).toLocaleDateString();
 
 const CSS = `
+.ht-act.dragon { border-style:dashed; background:rgba(127,127,127,.08); }
 .ht-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
 .ht-title { font-size:15px; font-weight:800; color:var(--ink); }
 .ht-act { width:100%; padding:13px 8px; border-radius:12px; border:1px solid var(--ac); background:transparent;
@@ -55,6 +57,26 @@ export default function Hint({ uid, isAdmin, unitNames, say }) {
   const [urls, setUrls] = useState({});
   const [detail, setDetail] = useState(null);     // {title, path, body, comment}
   const fileRef = useRef(null);
+  const [drag, setDrag] = useState(false);
+
+  useEffect(() => {                                 // 빗나간 드롭이 페이지를 덮지 않게
+    const stop = (e) => e.preventDefault();
+    window.addEventListener("dragover", stop);
+    window.addEventListener("drop", stop);
+    return () => { window.removeEventListener("dragover", stop); window.removeEventListener("drop", stop); };
+  }, []);
+  const dropProps = {
+    onDragOver: (e) => { e.preventDefault(); setDrag(true); },
+    onDragLeave: () => setDrag(false),
+    onDrop: (e) => {
+      e.preventDefault(); setDrag(false);
+      const f = e.dataTransfer.files?.[0];
+      if (!f) return;
+      if (!f.type.startsWith("image/")) { say("사진 파일만 올릴 수 있어요"); return; }
+      if (!uid) { say("로그인 후 이용할 수 있어요"); return; }
+      pickFile(f);
+    },
+  };
 
   useEffect(() => { loadMine(); loadShared(); }, [uid]); // eslint-disable-line
 
@@ -83,9 +105,7 @@ export default function Hint({ uid, isAdmin, unitNames, say }) {
   }
 
   // ── 사진 선택 → 1200px 축소 ──
-  function pickFile(e) {
-    const f = e.target.files?.[0];
-    e.target.value = "";
+  function pickFile(f) {
     if (!f) return;
     const im = new Image();
     im.onload = () => {
@@ -145,7 +165,7 @@ export default function Hint({ uid, isAdmin, unitNames, say }) {
   return (
     <div>
       <style>{CSS}</style>
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={pickFile} />
+      <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = ""; }} />
 
       {/* ── 촬영 → 질문 → 결과 ── */}
       {step && (
@@ -190,12 +210,13 @@ export default function Hint({ uid, isAdmin, unitNames, say }) {
           <div className="ht-top">
             <span className="ht-title">💡 힌트</span>
           </div>
-          <button className="ht-act" onClick={() => (uid ? fileRef.current.click() : say("로그인 후 이용할 수 있어요"))}>
+          <button className={"ht-act" + (drag ? " dragon" : "")} {...dropProps}
+            onClick={() => (uid ? fileRef.current.click() : say("로그인 후 이용할 수 있어요"))}>
             💡 문제 사진으로 힌트 받기
           </button>
           <p className="ht-note">
             정답을 알려주지 않아요 — 문제의 문장과 단서를 분석해서, 어떤 개념으로 어떻게 접근할지까지만 안내해요.
-            사진은 내 계정에만 저장되고, 환경설정에서 공유를 켠 경우에만 선생님이 볼 수 있어요.
+            사진은 내 계정에만 저장되고, 환경설정에서 공유를 켠 경우에만 선생님이 볼 수 있어요. 컴퓨터에서는 사진 파일을 위 버튼에 끌어다 놓아도 돼요.
           </p>
 
           {uid && (
