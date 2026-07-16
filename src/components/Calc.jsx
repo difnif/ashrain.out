@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import AdminCalc from "./AdminCalc";
 
-// ashrain.out — 연산 (v0.3.1)
+// ashrain.out — 연산 (v0.3.2)
 // src/components/Calc.jsx — Home.jsx가 연산 탭에서 import 합니다. (v0.2.2를 완전히 대체)
 //
 // [v0.3.0 변경]
@@ -13,6 +13,7 @@ import AdminCalc from "./AdminCalc";
 // - 결과 화면: 틀린 "자료" 문제를 원터치로 오답노트에 담기 (사진 촬영 없이 자동 등록)
 // - 사전 조건: schema_v030.sql 실행 + api/ai.js 업로드
 // [v0.3.1] 답안지 채점 선택 목록을 선생님 자료(mat-*)로 한정 — 은행 유닛은 랜덤 출제라 종이 순서와 무관
+// [v0.3.2] 📷 답안지 사진 버튼에 드래그앤드롭 지원
 
 const GRADE_ORDER = ["초등", "중1", "중2", "중3", "고1", "고2", "고3"];
 const N_OPTIONS = [10, 20, 30];
@@ -69,6 +70,7 @@ async function aiCall(body) {
 }
 
 const CSS = `
+.cl-acts button.cl-dragon { border-color:var(--ac); color:var(--ac); border-style:dashed; }
 .cl-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
 .cl-title { font-size:15px; font-weight:800; color:var(--ink); }
 .cl-mini { font-size:12px; color:var(--mut); }
@@ -164,6 +166,7 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
   const [omrProbs, setOmrProbs] = useState([]);
   const [omrAns, setOmrAns] = useState({});       // problem.id → 입력값
   const [omrBusy, setOmrBusy] = useState(false);
+  const [omrDrag, setOmrDrag] = useState(false);
   const [savedWrong, setSavedWrong] = useState(false);
   const timerRef = useRef(null);
   const lockRef = useRef(false);
@@ -181,6 +184,14 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
   }, [uid]);
 
   useEffect(() => () => clearInterval(timerRef.current), []);
+
+  useEffect(() => {                                 // 빗나간 드롭이 페이지를 덮지 않게
+    const stop = (e) => e.preventDefault();
+    window.addEventListener("dragover", stop);
+    window.addEventListener("drop", stop);
+    return () => { window.removeEventListener("dragover", stop); window.removeEventListener("drop", stop); };
+  }, []);
+
 
   const unitName = (id) => units?.find((u) => u.id === id)?.name || id;
   // 답안지 채점은 종이 순서 = DB 순서인 "선생님 자료"에서만 의미가 있어요 (은행 유닛 제외)
@@ -333,9 +344,7 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
   }
 
   // 손글씨 답안지 사진 → AI 자동 입력
-  function pickOmrPhoto(e) {
-    const f = e.target.files?.[0];
-    e.target.value = "";
+  function pickOmrPhoto(f) {
     if (!f) return;
     const im = new Image();
     im.onload = async () => {
@@ -418,7 +427,7 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
   return (
     <div>
       <style>{CSS}</style>
-      <input ref={omrFileRef} type="file" accept="image/*" capture="environment" hidden onChange={pickOmrPhoto} />
+      <input ref={omrFileRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { pickOmrPhoto(e.target.files?.[0]); e.target.value = ""; }} />
 
       {/* ── 단원 목록 ── */}
       {view === "units" && (
@@ -563,7 +572,16 @@ export default function Calc({ uid, isAdmin, unitNames, say }) {
           </p>
           <div className="cl-acts" style={{ marginTop: 0, marginBottom: 12 }}>
             <button onClick={printSheet}>🖨 인쇄용 답안지</button>
-            <button onClick={() => omrFileRef.current.click()} disabled={omrBusy}>
+            <button className={omrDrag ? "cl-dragon" : ""} disabled={omrBusy}
+              onDragOver={(e) => { e.preventDefault(); setOmrDrag(true); }}
+              onDragLeave={() => setOmrDrag(false)}
+              onDrop={(e) => {
+                e.preventDefault(); setOmrDrag(false);
+                const f = e.dataTransfer.files?.[0];
+                if (f && f.type.startsWith("image/")) pickOmrPhoto(f);
+                else if (f) say("사진 파일만 올릴 수 있어요");
+              }}
+              onClick={() => omrFileRef.current.click()}>
               {omrBusy ? "⏳ 사진 읽는 중…" : "📷 사진으로 불러오기"}
             </button>
           </div>
