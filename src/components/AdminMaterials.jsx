@@ -1,7 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 
-// ashrain.out — 선생님 자료 등록 (v0.3.0)
+// ashrain.out — 선생님 자료 등록 (v0.3.2)
+// [v0.3.2] 드래그앤드롭 — 문제 PDF는 상자에, 정답 PDF는 버튼에 끌어다 놓기 지원
 // src/components/AdminMaterials.jsx — AdminCalc.jsx(v0.3.0)의 📄 자료 탭이 import 합니다.
 // 흐름: 문제 PDF 열기 → 문제 페이지 선택(최대 6장) → AI가 문제별로 잘라줌(경계 확인·조정·제외)
 //      → 정답 페이지 선택(같은 PDF or 별도 PDF or 직접 입력) → AI가 정답 읽음 → 검토 → 등록
@@ -46,6 +47,10 @@ async function aiCall(body) {
 }
 
 const CSS = `
+.am-drop { border:1.5px dashed var(--bd); border-radius:14px; padding:14px; margin-top:12px; text-align:center; }
+.am-drop.on { border-color:var(--ac); background:rgba(127,127,127,.08); }
+.am-dropTxt { margin:9px 0 0; font-size:12px; color:var(--mut); }
+.am-ghost.dragon { border-color:var(--ac); color:var(--ac); border-style:dashed; }
 .am-note { color:var(--mut); font-size:12px; line-height:1.65; margin:0 2px 12px; }
 .am-lab { font-size:12.5px; color:var(--mut); margin:12px 0 6px; font-weight:700; }
 .am-in { width:100%; box-sizing:border-box; background:transparent; border:1px solid var(--bd); border-radius:10px;
@@ -89,11 +94,28 @@ export default function AdminMaterials({ say }) {
   const fullCache = useRef(new Map());           // 현재 문서의 pageNo → 1400px 캔버스
   const probFileRef = useRef(null);
   const ansFileRef = useRef(null);
+  const [drag, setDrag] = useState(false);
+
+  useEffect(() => {                                 // 빗나간 드롭이 페이지를 덮지 않게
+    const stop = (e) => e.preventDefault();
+    window.addEventListener("dragover", stop);
+    window.addEventListener("drop", stop);
+    return () => { window.removeEventListener("dragover", stop); window.removeEventListener("drop", stop); };
+  }, []);
+  const dropProps = (forAnswers) => ({
+    onDragOver: (e) => { e.preventDefault(); setDrag(true); },
+    onDragLeave: () => setDrag(false),
+    onDrop: (e) => {
+      e.preventDefault(); setDrag(false);
+      const f = e.dataTransfer.files?.[0];
+      if (!f) return;
+      if (!(f.type === "application/pdf" || /\.pdf$/i.test(f.name))) { say("PDF 파일만 올릴 수 있어요"); return; }
+      openPdf(f, forAnswers);
+    },
+  });
 
   // ── PDF 열기 (문제용 / 정답용 공용) ──
-  async function openPdf(e, forAnswers) {
-    const f = e.target.files?.[0];
-    e.target.value = "";
+  async function openPdf(f, forAnswers) {
     if (!f) return;
     try {
       setProg("PDF 여는 중…");
@@ -293,8 +315,8 @@ export default function AdminMaterials({ say }) {
   return (
     <div>
       <style>{CSS}</style>
-      <input ref={probFileRef} type="file" accept="application/pdf" hidden onChange={(e) => openPdf(e, false)} />
-      <input ref={ansFileRef} type="file" accept="application/pdf" hidden onChange={(e) => openPdf(e, true)} />
+      <input ref={probFileRef} type="file" accept="application/pdf" hidden onChange={(e) => { openPdf(e.target.files?.[0], false); e.target.value = ""; }} />
+      <input ref={ansFileRef} type="file" accept="application/pdf" hidden onChange={(e) => { openPdf(e.target.files?.[0], true); e.target.value = ""; }} />
 
       {step === "setup" && (
         <>
@@ -310,7 +332,10 @@ export default function AdminMaterials({ say }) {
               <button key={g} className={"am-chip" + (grade === g ? " on" : "")} onClick={() => setGrade(g)}>{g}</button>
             ))}
           </div>
-          <button className="am-go" onClick={() => probFileRef.current.click()}>📂 문제 PDF 열기</button>
+          <div className={"am-drop" + (drag ? " on" : "")} {...dropProps(false)}>
+            <button className="am-go" style={{ marginTop: 0 }} onClick={() => probFileRef.current.click()}>📂 문제 PDF 열기</button>
+            <p className="am-dropTxt">또는 PDF 파일을 이 상자에 끌어다 놓으세요</p>
+          </div>
         </>
       )}
 
@@ -361,7 +386,7 @@ export default function AdminMaterials({ say }) {
                   </button>
                 ))}
               </div>
-              <button className="am-ghost" onClick={() => ansFileRef.current.click()}>📂 정답 PDF 따로 열기</button>
+              <button className={"am-ghost" + (drag ? " dragon" : "")} {...dropProps(true)} onClick={() => ansFileRef.current.click()}>📂 정답 PDF 따로 열기 (끌어다 놓기 가능)</button>
               <button className="am-ghost" onClick={() => setStep("review")}>건너뛰고 정답 직접 입력 →</button>
             </>
           )}
