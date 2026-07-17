@@ -4,11 +4,13 @@ import { supabase } from "../supabaseClient";
 import WrongNote from "./WrongNote";
 import Calc from "./Calc";
 import Hint from "./Hint";
+import ConceptSearch from "./ConceptSearch";
 
-// ashrain.out — 홈 화면 (patch v0.3.0)
+// ashrain.out — 홈 화면 (patch v0.3.3)
 // [v0.3.0 변경]
 // - 힌트 탭이 실제 기능으로 연결: 문제 사진 → AI 접근법 힌트 + 내 기록 (Hint.jsx, api/ai.js 필요)
 // - 연산 탭은 Calc.jsx v0.3.0과 함께 배포 (선생님 자료 · 답안지 채점 · 오답노트 연동)
+// [v0.3.3] 개념 탭 상단 검색 — 로컬 매칭 + AI 개념 찾기 (ConceptSearch.jsx, api/ai.js v0.3.3, schema_v033.sql 필요)
 // 이 파일을 src/components/Home.jsx 에 덮어쓰세요. Calc.jsx / AdminCalc.jsx 와 함께 배포!
 // (v0.2.1의 WrongNote.jsx / AdminWrongNotes.jsx 는 그대로 두면 됩니다)
 //
@@ -419,6 +421,10 @@ export default function Home({ theme, onToggleTheme }) {
           <>
             {err && <p className="hm-empty">{err}</p>}
             {!err && concepts.length === 0 && <p className="hm-empty">아직 등록된 개념이 없어요.</p>}
+
+            {concepts.length > 0 && (
+              <ConceptSearch uid={uid} concepts={concepts} unitNames={UNIT_NAMES} say={say} />
+            )}
 
             {/* 즐겨찾기 탭 (개인 설정) */}
             {uid && favs.length > 0 && (
