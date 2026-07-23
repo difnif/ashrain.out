@@ -152,7 +152,7 @@ export function verifyCode(code, { region, ver = 'v1' }) {
   if (!quickCheck(c)) return { ok: false, why: 'checksum' };
   const base = c.slice(0, 12);
   const roleType = +c[5];
-  if (![1, 2, 3, 5, 9].includes(roleType)) return { ok: false, why: 'role' };
+  if (![1, 2, 3, 5, 7, 9].includes(roleType)) return { ok: false, why: 'role' };
   if (signPart(base, `${region}|${roleType}`, ver) !== c.slice(13)) {
     return { ok: false, why: 'signature' };
   }
@@ -182,7 +182,7 @@ export function decodeCode(code, { ver = 'v1' } = {}) {
   };
 }
 
-export const ROLE_MAP = { 1: 'student', 2: 'parent', 3: 'assistant', 5: 'teacher', 9: 'trial' };
+export const ROLE_MAP = { 1: 'student', 2: 'parent', 3: 'assistant', 5: 'teacher', 7: 'point', 9: 'trial' };
 
 // ============================================================
 // SMS 어댑터  (SMS_PROVIDER = 'solapi'(기본) | 'aligo')
