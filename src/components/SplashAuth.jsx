@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { idToEmail } from "../lib/auth";
+import { api, getLastLoginMethod, recordLoginMethod } from "../lib/authx";
 
 // ASH RAIN 스플래시 + 로그인 (듀얼 테마)
 // props: theme('light'|'dark'), onToggleTheme(), onSuccess(session)
@@ -92,6 +93,9 @@ const CSS = `
 .ar-links a:hover { color: var(--link-h); text-decoration: underline; }
 .ar-sep { color: var(--sep); }
 .ar-msg { margin: 12px 2px 0; font-size: 12.5px; color: var(--link); }
+.ar-last { margin-left: 6px; font-size: 10px; font-style: normal; font-weight: 700;
+  background: rgba(0,0,0,.14); padding: 2px 7px; border-radius: 999px; vertical-align: 1px; }
+.ar-last-inv { background: rgba(255,255,255,.28); }
 .ar-ver { position: absolute; bottom: 18px; right: 22px; font-size: 11px; color: var(--muted); font-style: italic; }
 .ar-ctrl, .ar-themebtn { position: absolute; top: 16px; background: var(--ctrl-bg); border: 1px solid var(--card-bd);
   color: var(--ctrl-tx); font-size: 12px; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
@@ -140,6 +144,7 @@ export default function SplashAuth({ theme = "light", onToggleTheme, onSuccess }
 
   const oauth = async (provider) => {
     setMsg("");
+    recordLoginMethod(provider);
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: window.location.origin },
@@ -150,11 +155,28 @@ export default function SplashAuth({ theme = "light", onToggleTheme, onSuccess }
   const login = async () => {
     if (!id || !pw) { setMsg("아이디와 비밀번호를 입력해 주세요."); return; }
     setBusy(true); setMsg("");
-    const { data, error } = await supabase.auth.signInWithPassword({ email: idToEmail(id), password: pw });
-    setBusy(false);
-    if (error) { setMsg("로그인에 실패했어요. 아이디/비밀번호를 확인해 주세요."); return; }
-    onSuccess?.(data.session);
+    try {
+      // 서버 경유: 아이디→이메일 해석(구계정 가상이메일 + 신계정 실이메일 모두), 레이트리밋 포함
+      const r = await api("account", { action: "login", username: id, password: pw });
+      const { error } = await supabase.auth.setSession({
+        access_token: r.session.access_token,
+        refresh_token: r.session.refresh_token,
+      });
+      if (error) throw new Error(error.message);
+      recordLoginMethod("id");
+      setBusy(false);
+      onSuccess?.(r.session);
+    } catch (e1) {
+      // 서버 미배포 등 예외 시 구방식 폴백
+      const { data, error } = await supabase.auth.signInWithPassword({ email: idToEmail(id), password: pw });
+      setBusy(false);
+      if (error) { setMsg(e1.message || "로그인에 실패했어요. 아이디/비밀번호를 확인해 주세요."); return; }
+      recordLoginMethod("id");
+      onSuccess?.(data.session);
+    }
   };
+
+  const last = getLastLoginMethod();
 
   return (
     <div className={`ar-root th-${theme}` + (done ? " ar-done" : "")} key={run}>
@@ -174,10 +196,10 @@ export default function SplashAuth({ theme = "light", onToggleTheme, onSuccess }
         <div className="ar-card">
           <div className="ar-social">
             <button className="ar-so ar-so-kakao" onClick={() => oauth("kakao")}>
-              <span className="ar-so-ic">💬</span> 카카오로 시작하기
+              <span className="ar-so-ic">💬</span> 카카오로 시작하기{last === "kakao" && <em className="ar-last">최근</em>}
             </button>
             <button className="ar-so ar-so-google" onClick={() => oauth("google")}>
-              <span className="ar-so-ic">G</span> Google로 시작하기
+              <span className="ar-so-ic">G</span> Google로 시작하기{last === "google" && <em className="ar-last">최근</em>}
             </button>
             {/* 애플 로그인: Apple 개발자 계정 + Supabase Provider 설정 후 아래 주석 해제
             <button className="ar-so ar-so-apple" onClick={() => oauth("apple")}>
@@ -194,10 +216,13 @@ export default function SplashAuth({ theme = "light", onToggleTheme, onSuccess }
             <input id="ar-pw" className="ar-input" type="password" placeholder="비밀번호" value={pw}
               onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && login()} />
           </div>
-          <button className="ar-btn" onClick={login} disabled={busy}>{busy ? "확인 중..." : "로그인"}</button>
+          <button className="ar-btn" onClick={login} disabled={busy}>{busy ? "확인 중..." : "로그인"}{!busy && last === "id" && <em className="ar-last ar-last-inv">최근</em>}</button>
           {msg && <p className="ar-msg">{msg}</p>}
           <div className="ar-links">
-            <a href="#/signup">회원가입</a><span className="ar-sep">|</span><span style={{ color: "var(--muted)" }}>비밀번호 분실 시 선생님께 문의</span>
+            <a href="#/signup">회원가입</a><span className="ar-sep">|</span>
+            <a href="#/find">아이디·비번 찾기</a><span className="ar-sep">|</span>
+            <a href="#/trial">무료체험</a><span className="ar-sep">|</span>
+            <a href="#/qr">QR 로그인</a>
           </div>
         </div>
       </div>
