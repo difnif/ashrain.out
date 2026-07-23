@@ -4,7 +4,7 @@ import { supabase, api, fmtCode } from '../lib/authx';
 
 const ROLE_OPTS = [
   { v: 1, label: '학생' }, { v: 2, label: '학부모' }, { v: 3, label: '조교' },
-  { v: 5, label: '선생님' }, { v: 9, label: '체험' },
+  { v: 5, label: '선생님' }, { v: 7, label: '포인트 쿠폰' }, { v: 9, label: '체험' },
 ];
 const STATUS_LABEL = { issued: '발급됨', reserved: '가입중', used: '사용됨', revoked: '중지' };
 
@@ -17,6 +17,7 @@ export default function AdminCodes() {
   const [roleType, setRoleType] = useState(1);
   const [birthYear, setBirthYear] = useState('');
   const [count, setCount] = useState(10);
+  const [pointValue, setPointValue] = useState(1000);
   const [note, setNote] = useState('');
   const [issued, setIssued] = useState([]);
   const [warning, setWarning] = useState('');
@@ -48,7 +49,8 @@ export default function AdminCodes() {
   const issue = () => run(async () => {
     setIssued([]); setWarning('');
     const body = { action: 'issue-codes', role_type: roleType, count: +count || 1, note };
-    if (roleType !== 9 && birthYear) body.birth_year = +birthYear;
+    if (roleType !== 9 && roleType !== 7 && birthYear) body.birth_year = +birthYear;
+    if (roleType === 7) body.point_value = +pointValue || 0;
     const r = await api('admin', body, { auth: true });
     setIssued(r.codes || []);
     setWarning(r.warning || '');
@@ -99,9 +101,13 @@ export default function AdminCodes() {
           <select className="ac-input" value={roleType} onChange={(e) => setRoleType(+e.target.value)}>
             {ROLE_OPTS.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
           </select>
-          {roleType !== 9 && (
+          {roleType !== 9 && roleType !== 7 && (
             <input className="ac-input" inputMode="numeric" placeholder="출생년도 (예: 2012)"
               value={birthYear} onChange={(e) => setBirthYear(e.target.value)} />
+          )}
+          {roleType === 7 && (
+            <input className="ac-input" inputMode="numeric" placeholder="쿠폰 포인트 (예: 1000)"
+              value={pointValue} onChange={(e) => setPointValue(e.target.value)} />
           )}
         </div>
         <div className="ac-row">
@@ -126,9 +132,9 @@ export default function AdminCodes() {
           <div className="ac-coupons">
             {issued.map((c) => (
               <div className="ac-coupon" key={c}>
-                <div className="ac-coupon-brand">ashrain.out {roleType === 9 ? '체험권' : '가입 코드'}</div>
+                <div className="ac-coupon-brand">ashrain.out {roleType === 9 ? '체험권' : roleType === 7 ? `${(+pointValue).toLocaleString()}P 포인트 쿠폰` : '가입 코드'}</div>
                 <div className="ac-coupon-code">{c}</div>
-                <div className="ac-coupon-hint">{roleType === 9 ? '로그인 화면 → 체험으로 시작하기' : '회원가입에서 입력'}</div>
+                <div className="ac-coupon-hint">{roleType === 9 ? '로그인 화면 → 체험으로 시작하기' : roleType === 7 ? '마이페이지 → 포인트에서 등록' : '회원가입에서 입력'}</div>
               </div>
             ))}
           </div>
@@ -154,6 +160,7 @@ export default function AdminCodes() {
             </div>
             <div className="ac-item-sub">
               {(ROLE_OPTS.find((o) => o.v === r.role_type) || {}).label || r.role_type}
+              {r.point_value ? ` ${r.point_value.toLocaleString()}P` : ''}
               {r.note ? ` · ${r.note}` : ''} · {new Date(r.issued_at).toLocaleDateString('ko-KR')}
               {decoded[r.code] && (
                 <b> · 해독: {decoded[r.code].regYear}년 등록{decoded[r.code].birthYear ? ` / ${decoded[r.code].birthYear}년생` : ''}</b>
