@@ -41,6 +41,16 @@ export default function AdminUsers() {
     setUsers(r.users || []);
   });
 
+  const grantPoints = (uid) => run(async () => {
+    const raw = window.prompt('지급할 포인트 (회수는 음수, 예: 1000 / -500)');
+    if (raw === null) return;
+    const amount = Math.round(+raw);
+    if (!amount) throw new Error('0이 아닌 숫자를 입력해주세요');
+    const memo = window.prompt('메모 (선택)') || '';
+    const r = await api('admin', { action: 'grant-points', user_id: uid, amount, memo }, { auth: true });
+    alert(`처리 완료 — 현재 잔액 ${r.balance.toLocaleString()}P`);
+  });
+
   const resetPw = (uid) => run(async () => {
     if (!window.confirm('이 회원의 비밀번호를 임시 비밀번호로 바꿀까요?')) return;
     const r = await api('admin', { action: 'reset-user-pw', user_id: uid }, { auth: true });
@@ -112,6 +122,7 @@ export default function AdminUsers() {
             {tempPw[u.id] && <p className="au-ok">임시 비밀번호: <b>{tempPw[u.id]}</b> (회원에게 전달 후 변경 안내)</p>}
             <div className="au-row">
               <button className="au-btn au-mini" onClick={() => resetPw(u.id)}>임시 비번</button>
+              <button className="au-btn au-mini" onClick={() => grantPoints(u.id)}>포인트</button>
               <button className={'au-btn au-mini' + (pick.primary === u.id ? ' on' : '')}
                 onClick={() => setPick((p) => ({ ...p, primary: p.primary === u.id ? null : u.id }))}>
                 남길 계정{pick.primary === u.id ? ' ✓' : ''}
