@@ -313,6 +313,88 @@ export default async function handler(req, res) {
       return json(res, 200, { email, password, expires_at: expires });
     }
 
+    // ---------------- 스태프 가입 (초대코드, /#/staff-join) ----------------
+    if (action === 'staff-join') {
+      const vt = phoneTok(req.body, 'signup');
+      if (!vt) return bad(res, '전화번호 인증이 필요합니다', 401);
+
+      const inviteCode = String(req.body.invite_code || '').trim();
+      const username = String(req.body.username || '').toLowerCase();
+      const password = String(req.body.password || '');
+      const email = String(req.body.email || '').trim().toLowerCase();
+      const nickname = String(req.body.nickname || '').trim() || null;
+      if (!inviteCode) return bad(res, '초대코드를 입력해주세요');
+      if (!USERNAME_RE.test(username)) return bad(res, '아이디는 영문 소문자/숫자/_ 4~20자입니다');
+      if (password.length < 8) return bad(res, '비밀번호는 8자 이상이어야 합니다');
+      if (!EMAIL_RE.test(email)) return bad(res, '이메일 형식이 올바르지 않습니다');
+
+      const { data: inv } = await db.from('staff_invites')
+        .select('*').eq('code', inviteCode).maybeSingle();
+      if (!inv) return bad(res, '유효하지 않은 초대코드입니다', 404);
+      if (inv.used_by) return bad(res, '이미 사용된 초대코드입니다', 409);
+      if (inv.expires_at && new Date(inv.expires_at) < new Date()) {
+        return bad(res, '만료된 초대코드입니다', 410);
+      }
+
+      const { data: dupU } = await db.from('profiles').select('id').eq('username', username).limit(1);
+      if (dupU?.length) return bad(res, '이미 사용 중인 아이디입니다');
+
+      const { data: created, error: cErr } = await db.auth.admin.createUser({
+        email, password, email_confirm: true,
+        user_metadata: { username, staff: true },
+      });
+      if (cErr || !created?.user) {
+        return bad(res, '계정 생성 실패: ' + (cErr?.message || ''), 500);
+      }
+
+      const { error: pErr } = await db.from('profiles').upsert({
+        id: created.user.id,
+        username, nickname,
+        phone: vt.phone, phone_verified: true,
+        real_email: email,
+        role: inv.role || 'admin',
+        academy_code: inv.academy_code || null,
+      }, { onConflict: 'id' });
+      if (pErr) return bad(res, '프로필 저장 실패: ' + pErr.message, 500);
+
+      await db.from('staff_invites').update({
+        used_by: created.user.id, used_at: new Date().toISOString(),
+      }).eq('code', inviteCode);
+
+      const { data: signed, error: sErr } = await anon().auth.signInWithPassword({ email, password });
+      if (sErr || !signed?.session) {
+        return json(res, 200, { done: true, session: null }); // 생성은 성공 — 로그인 화면에서 진행
+      }
+      return json(res, 200, { done: true, session: signed.session });
+    }
+
+    // ---------------- 계정 통합 신청 (로그인 상태, 관리자 처리 대기) ----------------
+    if (action === 'merge-request') {
+      const user = await getUser(req);
+      if (!user) return bad(res, '로그인이 필요합니다', 401);
+      const vt = verifyToken(req.body.phone_token);
+      if (!vt || vt.t !== 'phone' || !['social', 'merge', 'signup'].includes(vt.purpose)) {
+        return bad(res, '전화번호 인증이 필요합니다', 401);
+      }
+
+      const { data: others } = await db.from('profiles')
+        .select('id, username, role').eq('phone', vt.phone).is('merged_into', null);
+      const target = (others || []).find((p) => p.id !== user.id && p.role !== 'admin');
+      if (!target) return bad(res, '통합 대상 계정을 찾지 못했습니다', 404);
+
+      const { data: dup } = await db.from('merge_requests')
+        .select('id').eq('merged_user', user.id).eq('primary_user', target.id)
+        .eq('status', 'pending').limit(1);
+      if (dup?.length) return json(res, 200, { requested: true, already: true });
+
+      const { error } = await db.from('merge_requests').insert({
+        primary_user: target.id, merged_user: user.id,
+        reason: 'phone', requested_by: user.id, status: 'pending',
+      });
+      if (error) return bad(res, error.message, 500);
+      return json(res, 200, { requested: true, target: maskName(target.username) });
+    }
+
     return bad(res, 'unknown action');
   } catch (e) {
     return bad(res, '서버 오류: ' + (e?.message || e), 500);
