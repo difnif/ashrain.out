@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../supabaseClient";
+import SecurityCard from "./SecurityCard";
+import { fmtCode } from "../lib/authx";
 
 const GRADES = ["초3","초4","초5","초6","중1","중2","중3","기타"];
 const THIS_YEAR = new Date().getFullYear();
@@ -130,6 +132,9 @@ export default function MyPage({ theme, onToggleTheme }) {
         <div className="mp-card">
           <p className="mp-sec">내 정보</p>
           <input className="mp-in" value={p.username || ""} disabled placeholder="아이디" />
+          {p.phone && <input className="mp-in" value={p.phone.replace(/(\d{3})(\d{3,4})(\d{4})/, "$1-$2-$3")} disabled placeholder="전화번호" />}
+          {p.real_email && <input className="mp-in" value={p.real_email} disabled placeholder="이메일" />}
+          {p.member_code && <input className="mp-in" value={"고유번호 " + fmtCode(p.member_code)} disabled />}
           <div className="mp-row">
             <input className="mp-in" value={p.name || ""} onChange={set("name")} placeholder="이름" />
             <select className="mp-sel" value={p.grade || ""} onChange={set("grade")}>
@@ -169,6 +174,8 @@ export default function MyPage({ theme, onToggleTheme }) {
             <Toggle on={st.sound !== false} onChange={(v) => setSetting("sound", v)} />
           </div>
         </div>
+
+        <SecurityCard profile={p} />
 
         <div className="mp-card">
           <p className="mp-sec">계정</p>
