@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../supabaseClient";
 import SecurityCard from "./SecurityCard";
+import PointsCard from "./PointsCard";
 import { fmtCode } from "../lib/authx";
 
 const GRADES = ["초3","초4","초5","초6","중1","중2","중3","기타"];
@@ -174,6 +175,8 @@ export default function MyPage({ theme, onToggleTheme }) {
             <Toggle on={st.sound !== false} onChange={(v) => setSetting("sound", v)} />
           </div>
         </div>
+
+        <PointsCard />
 
         <SecurityCard profile={p} />
 
