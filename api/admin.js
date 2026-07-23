@@ -57,12 +57,21 @@ export default async function handler(req, res) {
 
       const now = new Date();
       const regYear = now.getFullYear();
-      const birthYear = roleType === 9
-        ? 2000 + (now.getMonth() + 1)          // 체험: 발급 월 인코딩
+      const birthYear = (roleType === 9 || roleType === 7)
+        ? 2000 + (now.getMonth() + 1)          // 체험·포인트쿠폰: 발급 월 인코딩
         : (+req.body.birth_year || null);
       if (roleType === 1 && !birthYear) return bad(res, '학생 코드는 출생년도(예: 2012)가 필요합니다');
 
       const note = String(req.body.note || '').slice(0, 200) || null;
+
+      // 포인트 쿠폰(7): 금액 필수 (100 ~ 100,000P)
+      let pointValue = null;
+      if (roleType === 7) {
+        pointValue = Math.round(+req.body.point_value || 0);
+        if (pointValue < 100 || pointValue > 100000) {
+          return bad(res, '쿠폰 포인트는 100~100000 사이로 입력해주세요');
+        }
+      }
 
       const out = [];
       let guard = 0;
@@ -74,8 +83,9 @@ export default async function handler(req, res) {
         });
         const { error } = await db.from('member_codes').insert({
           code, academy_code: academy.code, role_type: roleType,
-          reg_year: regYear, birth_year: roleType === 9 ? null : birthYear,
+          reg_year: regYear, birth_year: (roleType === 9 || roleType === 7) ? null : birthYear,
           key_ver: 'v1', status: 'issued', note, issued_by: g.user.id,
+          point_value: pointValue,
         });
         if (!error) out.push(fmtCode(code));
         else if (!String(error.message || '').toLowerCase().includes('duplicate')) {
@@ -216,6 +226,24 @@ export default async function handler(req, res) {
         if (!error) blocked++;
       }
       return json(res, 200, { blocked });
+    }
+
+    // ---------------- 포인트 직접 지급/회수 ----------------
+    if (action === 'grant-points') {
+      const uid = String(req.body.user_id || '');
+      const amount = Math.round(+req.body.amount || 0);
+      const memo = String(req.body.memo || '').slice(0, 100) || null;
+      if (!uid) return bad(res, 'user_id 필요');
+      if (!amount || Math.abs(amount) > 100000) return bad(res, '지급량은 ±100000 이내, 0 제외');
+
+      const { error } = await db.from('point_ledger').insert({
+        user_id: uid, delta: amount,
+        reason: 'admin_grant', memo, created_by: g.user.id,
+      });
+      if (error) return bad(res, error.message, 500);
+
+      const { data: bal } = await db.rpc('point_balance', { p_uid: uid });
+      return json(res, 200, { balance: bal ?? 0 });
     }
 
     return bad(res, 'unknown action');
