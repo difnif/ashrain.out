@@ -17,7 +17,15 @@ import { createClient } from "@supabase/supabase-js";
 
 const VISION_MODEL = process.env.CALC_GEN_MODEL || "claude-sonnet-4-6";
 const FIND_MODEL = "claude-haiku-4-5";                 // 개념 라우팅은 하이쿠로 충분 (호출당 ~0.1원)
-const DAILY_CAP = { hint: 10, find: 30, omr: 20 };     // 학생 1인당 하루 한도 — 숫자만 바꿔서 재배포하면 조정됨
+const DAILY_CAP = { hint: 10, find: 30, omr: 20 };     // 학생 1인당 하루 "무료" 한도 — 숫자만 바꿔서 재배포하면 조정됨
+const POINT_COST = { hint: 10, find: 1, omr: 5 };      // 무료 한도 소진 후 1회당 차감 포인트 — 숫자만 조정
+
+function svcClient() {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
 
 // ── 일일 한도 (KST 자정 기준 리셋) ──
 function kstDayStartISO() {
@@ -29,8 +37,24 @@ async function checkCap(sb, uid, task) {
   if (!cap) return null;
   const { count } = await sb.from("ai_calls").select("*", { count: "exact", head: true })
     .eq("user_id", uid).eq("task", task).gte("created_at", kstDayStartISO());
-  if ((count ?? 0) >= cap) return `오늘 사용 한도(${cap}회)를 다 썼어요 — 내일 다시 이용할 수 있어요`;
-  await sb.from("ai_calls").insert({ user_id: uid, task });   // 호출 전에 기록 → 오류 재시도 남용도 차단
+
+  if ((count ?? 0) < cap) {
+    // 무료 구간
+    await sb.from("ai_calls").insert({ user_id: uid, task });   // 호출 전에 기록 → 오류 재시도 남용도 차단
+    return null;
+  }
+
+  // 무료 한도 소진 → 포인트 차감 (서비스 롤 필요)
+  const cost = POINT_COST[task] ?? 0;
+  const db = svcClient();
+  if (!cost || !db) return `오늘 사용 한도(${cap}회)를 다 썼어요 — 내일 다시 이용할 수 있어요`;
+
+  const { data: bal } = await db.rpc("point_balance", { p_uid: uid });
+  if ((bal ?? 0) < cost) {
+    return `오늘 무료 한도(${cap}회)를 다 썼어요 — 포인트로 계속하려면 ${cost}P가 필요해요 (보유 ${bal ?? 0}P). 마이페이지에서 쿠폰을 등록할 수 있어요`;
+  }
+  await sb.from("ai_calls").insert({ user_id: uid, task });
+  await db.from("point_ledger").insert({ user_id: uid, delta: -cost, reason: "spend:" + task });
   return null;
 }
 
