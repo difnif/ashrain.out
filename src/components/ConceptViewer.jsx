@@ -261,6 +261,11 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
         </header>
         <main className="cv-main">
           {concept.blocks.map((b) => <BlockShell key={b.id} b={b} qna={byBlock(b.id)} theme={theme} conceptId={conceptId} />)}
+          <a className="cv-span2" href={`#/p/${encodeURIComponent(concept.id)}`}
+            style={{ display: "block", textAlign: "center", padding: "14px 0", borderRadius: 12,
+              background: "#0D9488", color: "#fff", fontWeight: 800, fontSize: 15, textDecoration: "none" }}>
+            ✏️ 예제·유제 풀러 가기
+          </a>
           <footer className="cv-footer cv-span2">
             <span>물음표 ? 를 누르면 질문을 보거나 보낼 수 있어요</span><span>{concept.id}</span>
           </footer>
