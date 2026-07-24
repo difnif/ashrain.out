@@ -18,6 +18,8 @@ import QrApprove from "./pages/QrApprove";
 import QrLogin from "./pages/QrLogin";
 import AdminCodes from "./pages/AdminCodes";
 import AdminUsers from "./pages/AdminUsers";
+import PracticeViewer from "./pages/PracticeViewer";
+import AdminPractice from "./pages/AdminPractice";
 
 function useHash() {
   const [hash, setHash] = useState(location.hash);
@@ -177,6 +179,9 @@ export default function App() {
   if (hash.startsWith("#/onboarding")) return <Rx theme={theme}><Onboarding /></Rx>;
   if (hash.startsWith("#/qr-approve")) return <Rx theme={theme}><QrApprove /></Rx>;
   if (hash.startsWith("#/find")) return <Rx theme={theme}><FindAccount /></Rx>;
+  const pm = hash.match(/^#\/p\/(.+)$/);
+  if (pm) return <Rx theme={theme}><PracticeViewer conceptId={decodeURIComponent(pm[1])} /></Rx>;
+  if (hash.startsWith("#/admin/practice")) return <Rx theme={theme}><AdminPractice /></Rx>;
   if (hash.startsWith("#/admin/codes")) return <Rx theme={theme}><AdminCodes /></Rx>;
   if (hash.startsWith("#/admin/users")) return <Rx theme={theme}><AdminUsers /></Rx>;
 
