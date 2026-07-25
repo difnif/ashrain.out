@@ -236,7 +236,7 @@ export default function PracticeViewer({ conceptId }) {
           {(p.text || []).map((seg, i) => (
             seg.br ? <br key={i} /> : (
               <span key={i}
-                className={segHl[i] !== undefined ? "pv-seg on" : "pv-seg"}
+                className={"pv-seg" + (segHl[i] !== undefined ? " on" : "") + (/\{\{/.test(seg.t || "") ? " tall" : "")}
                 style={segHl[i] !== undefined ? { background: HL[segHl[i]], color: HL_INK } : undefined}>
                 {rich(seg.t)}
               </span>
@@ -409,7 +409,8 @@ function Style() {
       .pv-frac{display:inline-flex;flex-direction:column;vertical-align:middle;
         text-align:center;margin:0 3px;line-height:1.1;font-size:.78em}
       .pv-seg.on{box-decoration-break:clone;-webkit-box-decoration-break:clone}
-      .pv-seg.on .pv-frac{color:inherit}
+      .pv-seg.tall{display:inline-block;vertical-align:middle;line-height:1.25}
+      .pv-seg.on.tall{padding:4px 8px;border-radius:8px}
       .pv-fr-n{padding:0 4px;border-bottom:1.6px solid currentColor}
       .pv-fr-d{padding:0 4px}
       .pv-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:12px 16px;
