@@ -4,7 +4,7 @@
 // {
 //   "id": "p01", "level": "기본"|"표준"|"상", "kind": "예제"|"유제",
 //   "review": ["소인수분해"],
-//   "text": [ {"t":"문장 조각"}, ... ],           // {{2/3}} 토큰 → 세로 분수로 렌더
+//   "text": [ {"t":"문장 조각"}, {"br":true}, ... ], // {{2/3}} 토큰 → 세로 분수 / {"br":true} → 줄바꿈
 //   "svg": "<svg ...>", 
 //   "choices": ["㉠", "㉠, ㉡", ...],             // 있으면 객관식 — 답은 번호로
 //   "steps": [ { "hl":[..], "svgHl":[..], "svgCls":[..], "note":"...", "expr":"식" | ["줄1","= 줄2"] } ],
@@ -234,11 +234,13 @@ export default function PracticeViewer({ conceptId }) {
 
         <p className="pv-text">
           {(p.text || []).map((seg, i) => (
-            <span key={i}
-              className={segHl[i] !== undefined ? "pv-seg on" : "pv-seg"}
-              style={segHl[i] !== undefined ? { background: HL[segHl[i]], color: HL_INK } : undefined}>
-              {rich(seg.t)}
-            </span>
+            seg.br ? <br key={i} /> : (
+              <span key={i}
+                className={segHl[i] !== undefined ? "pv-seg on" : "pv-seg"}
+                style={segHl[i] !== undefined ? { background: HL[segHl[i]], color: HL_INK } : undefined}>
+                {rich(seg.t)}
+              </span>
+            )
           ))}
         </p>
 
@@ -379,7 +381,7 @@ function Style() {
       .pv-kind{font-size:12px;color:var(--muted,#8a8f98);font-weight:700}
       .pv-review{font-size:11px;background:var(--surface2,#f1f2f4);color:var(--muted,#6b7280);
         padding:3px 8px;border-radius:999px}
-      .pv-text{font-size:16.5px;line-height:2.05;margin:0 0 6px;word-break:keep-all}
+      .pv-text{font-size:16.5px;line-height:2.2;margin:0 0 6px;word-break:keep-all}
       .pv-seg{border-radius:5px;padding:1px 2px;transition:background .35s}
       .pv-choices{display:flex;flex-direction:column;gap:6px;margin:8px 0 4px;
         border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:12px 14px}
@@ -405,7 +407,8 @@ function Style() {
         font-family:'Pretendard Variable',ui-monospace,monospace;line-height:1.9;
         font-variant-numeric:tabular-nums}
       .pv-frac{display:inline-flex;flex-direction:column;vertical-align:middle;
-        text-align:center;margin:0 2px;line-height:1.15;font-size:.86em}
+        text-align:center;margin:0 2px;line-height:1.12;font-size:.8em}
+      .pv-seg.on .pv-frac{background:inherit;border-radius:4px;padding:2px 4px;margin:0 1px}
       .pv-fr-n{padding:0 4px;border-bottom:1.6px solid currentColor}
       .pv-fr-d{padding:0 4px}
       .pv-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:12px 16px;
