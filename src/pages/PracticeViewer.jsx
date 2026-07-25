@@ -407,8 +407,9 @@ function Style() {
         font-family:'Pretendard Variable',ui-monospace,monospace;line-height:1.9;
         font-variant-numeric:tabular-nums}
       .pv-frac{display:inline-flex;flex-direction:column;vertical-align:middle;
-        text-align:center;margin:0 2px;line-height:1.12;font-size:.8em}
-      .pv-seg.on .pv-frac{background:inherit;border-radius:4px;padding:2px 4px;margin:0 1px}
+        text-align:center;margin:0 3px;line-height:1.1;font-size:.78em}
+      .pv-seg.on{box-decoration-break:clone;-webkit-box-decoration-break:clone}
+      .pv-seg.on .pv-frac{color:inherit}
       .pv-fr-n{padding:0 4px;border-bottom:1.6px solid currentColor}
       .pv-fr-d{padding:0 4px}
       .pv-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:12px 16px;
