@@ -1,5 +1,5 @@
 // src/pages/AdminPractice.jsx — 예제·유제 세트 관리 (해시 라우트: #/admin/practice, admin 전용)
-// 세트 JSON 파일( { concept_id, title, problems:[...] } )을 여러 개 선택해 일괄 등록
+// 세트 JSON 파일을 여러 개 선택해 일괄 등록 — 단일 세트 { concept_id, ... } / 배열 [ {...}, ... ] / 묶음 { "sets": [ {...}, ... ] } 모두 지원
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/authx";
 import { listConcepts } from "../lib/concepts";
@@ -61,18 +61,22 @@ export default function AdminPractice() {
     for (const f of files) {
       try {
         const j = JSON.parse(await f.text());
-        const why = validate(j);
-        if (why) { out.push(`✗ ${f.name}: ${why}`); continue; }
-        const { error } = await supabase.from("practice_sets").upsert({
-          concept_id: j.concept_id,
-          title: j.title || "",
-          problems: j.problems,
-          updated_by: s?.session?.user?.id || null,
-          updated_at: new Date().toISOString(),
-        });
-        if (error) { out.push(`✗ ${f.name}: ${error.message}`); continue; }
-        const linked = conceptTitle(j.concept_id);
-        out.push(`✓ ${f.name}: ${j.concept_id} · ${j.problems.length}문제${linked ? ` · 개념 연결됨(${linked})` : " · ⚠ 개념 미연결(#/p/ 직접 접근만 가능)"}`);
+        const sets = Array.isArray(j) ? j : Array.isArray(j?.sets) ? j.sets : [j];
+        if (!sets.length) { out.push(`✗ ${f.name}: 세트가 없음`); continue; }
+        for (const set of sets) {
+          const why = validate(set);
+          if (why) { out.push(`✗ ${f.name} › ${set?.concept_id || "?"}: ${why}`); continue; }
+          const { error } = await supabase.from("practice_sets").upsert({
+            concept_id: set.concept_id,
+            title: set.title || "",
+            problems: set.problems,
+            updated_by: s?.session?.user?.id || null,
+            updated_at: new Date().toISOString(),
+          });
+          if (error) { out.push(`✗ ${f.name} › ${set.concept_id}: ${error.message}`); continue; }
+          const linked = conceptTitle(set.concept_id);
+          out.push(`✓ ${f.name} › ${set.concept_id} · ${set.problems.length}문제${linked ? ` · 개념 연결됨(${linked})` : " · ⚠ 개념 미연결(#/p/ 직접 접근만 가능)"}`);
+        }
       } catch (err) {
         out.push(`✗ ${f.name}: JSON 해석 실패 (${err.message})`);
       }
