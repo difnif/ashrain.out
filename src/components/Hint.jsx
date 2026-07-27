@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 
-// ashrain.out — 힌트 (v0.3.2)
+// ashrain.out — 힌트 (v0.4.0)
+// [v0.4.0] 힌트 결과에서 바로 오답노트 등록 (확인 → 단원·이유 선택 → 저장, 전부 선택사항)
 // [v0.3.2] 컴퓨터에서 사진 파일을 버튼에 끌어다 놓기 지원
 // src/components/Hint.jsx — Home.jsx(v0.3.0)가 힌트 탭에서 import 합니다.
 // 흐름: 문제 사진 촬영/선택 → (선택) 질문 입력 → /api/ai(task:hint) → 접근법 힌트 (정답 없음)
@@ -9,6 +10,10 @@ import { supabase } from "../supabaseClient";
 // 모델: DB app_settings.hint_model 값 사용 — SQL 한 줄로 소넷↔오푸스 전환 가능
 
 const fmtDate = (s) => new Date(s).toLocaleDateString();
+const WN_REASONS = [
+  ["calc", "계산 실수"], ["concept", "개념 부족"], ["reading", "문제 해석"],
+  ["time", "시간 부족"], ["guess", "찍음"], ["etc", "기타"],
+];
 
 const CSS = `
 .ht-act.dragon { border-style:dashed; background:rgba(127,127,127,.08); }
@@ -39,6 +44,18 @@ const CSS = `
   background:rgba(127,127,127,.07); border-radius:10px; padding:13px; margin-top:12px; word-break:keep-all; }
 .ht-model { font-size:11px; color:var(--mut); text-align:right; margin-top:6px; }
 
+/* 오답노트 등록 패널 */
+.ht-wn { margin-top:12px; border:1px solid var(--bd); border-radius:12px; padding:12px; background:rgba(127,127,127,.05); }
+.ht-wn-t { font-size:13.5px; font-weight:800; color:var(--ink); margin:0 0 8px; }
+.ht-lab { font-size:12px; color:var(--mut); margin:10px 2px 5px; }
+.ht-sel { width:100%; box-sizing:border-box; background:var(--card); border:1px solid var(--bd); border-radius:10px;
+  padding:9px 10px; color:var(--ink); font-size:13.5px; }
+.ht-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.ht-chip { padding:6px 11px; border-radius:999px; border:1px solid var(--bd); background:transparent;
+  color:var(--mut); font-size:12.5px; cursor:pointer; }
+.ht-chip.on { border-color:var(--ac); color:var(--ac); font-weight:700; }
+.ht-done { color:var(--ac); font-size:13px; font-weight:700; text-align:center; margin-top:12px; }
+
 /* 상세 모달 */
 .ht-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:70; padding:18px; }
 .ht-modal { background:var(--card); border:1px solid var(--bd); border-radius:16px; max-width:460px; width:100%;
@@ -58,6 +75,9 @@ export default function Hint({ uid, isAdmin, unitNames, say }) {
   const [detail, setDetail] = useState(null);     // {title, path, body, comment}
   const fileRef = useRef(null);
   const [drag, setDrag] = useState(false);
+  const [wn, setWn] = useState(null);             // null | form | saving | done — 오답노트 등록 단계
+  const [wnMeta, setWnMeta] = useState({ unit: "", reason: "" });
+  const wnUnitIds = Object.keys(unitNames || {}).sort((a, b) => (a[0] === b[0] ? a.localeCompare(b) : a[0] === "m" ? -1 : 1));
 
   useEffect(() => {                                 // 빗나간 드롭이 페이지를 덮지 않게
     const stop = (e) => e.preventDefault();
@@ -160,7 +180,35 @@ export default function Hint({ uid, isAdmin, unitNames, say }) {
       setStep("ask");
     }
   }
-  function resetAsk() { setStep(null); setImgCv(null); setImgUrlLocal(""); setQuestion(""); setResult(null); }
+  function resetAsk() { setStep(null); setImgCv(null); setImgUrlLocal(""); setQuestion(""); setResult(null); setWn(null); setWnMeta({ unit: "", reason: "" }); }
+
+  // ── 오답노트에 추가 ──
+  async function saveToWrongNote() {
+    if (!uid || !imgCv) return;
+    setWn("saving");
+    try {
+      const blob = await new Promise((res, rej) =>
+        imgCv.toBlob((b) => (b ? res(b) : rej(new Error("이미지 변환 실패"))), "image/jpeg", 0.85));
+      const path = `${uid}/wrong/${crypto.randomUUID()}.jpg`;
+      const { error: e1 } = await supabase.storage.from("notes")
+        .upload(path, blob, { contentType: "image/jpeg" });
+      if (e1) throw e1;
+      const memoParts = [];
+      if (question.trim()) memoParts.push(`내 질문: ${question.trim()}`);
+      if (result?.hint) memoParts.push(`힌트 요약: ${result.hint.slice(0, 500)}${result.hint.length > 500 ? "…" : ""}`);
+      const { error: e2 } = await supabase.from("wrong_notes").insert({
+        user_id: uid, image_path: path,
+        unit_id: wnMeta.unit || null, reason: wnMeta.reason || null,
+        source: "힌트", tags: [], memo: memoParts.join("\n\n") || null,
+      });
+      if (e2) throw e2;
+      say("오답노트에 추가됐어요 📕");
+      setWn("done");
+    } catch (err) {
+      say("오답노트 저장 실패: " + (err?.message || String(err)));
+      setWn("form");
+    }
+  }
 
   return (
     <div>
@@ -195,10 +243,45 @@ export default function Hint({ uid, isAdmin, unitNames, say }) {
               <img className="ht-img" src={imgUrlLocal} alt="" />
               <div className="ht-ans">{result.hint}</div>
               <p className="ht-model">답변 모델: {result.model}</p>
-              <div className="ht-row">
-                <button className="ht-back" onClick={resetAsk}>닫기</button>
-                <button className="ht-go" onClick={() => fileRef.current.click()}>📷 다른 문제 힌트 받기</button>
-              </div>
+              {wn === null && (
+                <div className="ht-row">
+                  <button className="ht-back" onClick={resetAsk}>닫기</button>
+                  <button className="ht-back" onClick={() => setWn("form")}>📕 오답노트에 추가</button>
+                  <button className="ht-go" onClick={() => fileRef.current.click()}>📷 다른 문제</button>
+                </div>
+              )}
+              {(wn === "form" || wn === "saving") && (
+                <div className="ht-wn">
+                  <p className="ht-wn-t">이 문제를 오답노트에 추가할까요?</p>
+                  <p className="ht-lab">단원 (선택 사항)</p>
+                  <select className="ht-sel" value={wnMeta.unit} onChange={(e) => setWnMeta({ ...wnMeta, unit: e.target.value })}>
+                    <option value="">선택 안 함</option>
+                    {wnUnitIds.map((u) => <option key={u} value={u}>{unitNames[u]}</option>)}
+                  </select>
+                  <p className="ht-lab">왜 틀렸을까요? (선택 사항)</p>
+                  <div className="ht-chips">
+                    {WN_REASONS.map(([k, label]) => (
+                      <button key={k} className={"ht-chip" + (wnMeta.reason === k ? " on" : "")}
+                        onClick={() => setWnMeta({ ...wnMeta, reason: wnMeta.reason === k ? "" : k })}>{label}</button>
+                    ))}
+                  </div>
+                  <div className="ht-row">
+                    <button className="ht-back" onClick={() => setWn(null)} disabled={wn === "saving"}>취소</button>
+                    <button className="ht-go" onClick={saveToWrongNote} disabled={wn === "saving"}>
+                      {wn === "saving" ? "저장 중…" : "추가하기 ✓"}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {wn === "done" && (
+                <>
+                  <p className="ht-done">✓ 오답노트에 추가됐어요 — 오답노트 탭에서 확인할 수 있어요</p>
+                  <div className="ht-row">
+                    <button className="ht-back" onClick={resetAsk}>닫기</button>
+                    <button className="ht-go" onClick={() => fileRef.current.click()}>📷 다른 문제</button>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
