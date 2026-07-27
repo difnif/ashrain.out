@@ -228,3 +228,25 @@ export async function sendSMS(phone, msg) {
   const provider = (process.env.SMS_PROVIDER || 'solapi').toLowerCase();
   return provider === 'aligo' ? sendViaAligo(phone, msg) : sendViaSolapi(phone, msg);
 }
+
+// ── 이메일 발송 (Resend) ─────────────────────────────
+//   Vercel 환경변수: RESEND_API_KEY, RESEND_FROM (예: "ashrain <no-reply@도메인>")
+//   도메인 인증 전 테스트는 RESEND_FROM=onboarding@resend.dev 사용 가능
+export async function sendEmail(to, subject, text) {
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM;
+  if (!key || !from) {
+    return { ok: false, raw: { message: '이메일 발송 설정이 필요합니다 (RESEND_API_KEY / RESEND_FROM)' } };
+  }
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: JSON.stringify({ from, to: [to], subject, text }),
+    });
+    const j = await r.json().catch(() => null);
+    return r.ok ? { ok: true, raw: j } : { ok: false, raw: { message: j?.message || `HTTP ${r.status}` } };
+  } catch (e) {
+    return { ok: false, raw: { message: e?.message || String(e) } };
+  }
+}
