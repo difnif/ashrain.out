@@ -9,11 +9,14 @@
 //  reset-pw        : { phone_token(reset), username, new_password } → { done }
 //  social-complete : (JWT 필요) { phone_token(social), member_code, nickname? } → { done, role }
 //  trial-start     : { member_code(유형9) } → { email, password, expires_at }  (클라이언트가 즉시 로그인)
+//  contact-otp-send: (JWT) { kind:'phone'|'email', target } → { sent }   연락처 변경용 인증번호
+//  contact-change  : (JWT) { kind, target, code } → { done, kind, target }  인증 확인 + 즉시 반영
 
 import {
   admin, anon, getUser, bad, json, clientIp,
   verifyToken, randToken, randPassword,
   normCode, quickCheck, verifyCode, ROLE_MAP,
+  normPhone, sha, randCode6, sendSMS, sendEmail,
 } from './_lib/core.js';
 
 const USERNAME_RE = /^[a-z0-9_]{4,20}$/;
@@ -270,6 +273,93 @@ export default async function handler(req, res) {
     }
 
     // ---------------- 체험 시작 (유형 9, 24시간) ----------------
+    // ---------------- 연락처 변경: 인증번호 발송 (JWT) ----------------
+    if (action === 'contact-otp-send') {
+      const user = await getUser(req);
+      if (!user) return bad(res, '로그인이 필요합니다', 401);
+      const kind = req.body.kind === 'email' ? 'email' : req.body.kind === 'phone' ? 'phone' : null;
+      if (!kind) return bad(res, '변경 대상이 올바르지 않습니다');
+
+      let target;
+      if (kind === 'phone') {
+        target = normPhone(req.body.target);
+        if (!target) return bad(res, '휴대폰 번호 형식이 올바르지 않습니다');
+      } else {
+        target = String(req.body.target || '').trim().toLowerCase();
+        if (!EMAIL_RE.test(target)) return bad(res, '이메일 형식이 올바르지 않습니다');
+      }
+
+      const { data: me } = await db.from('profiles').select('phone, real_email').eq('id', user.id).maybeSingle();
+      if (kind === 'phone' && me?.phone === target) return bad(res, '현재 등록된 번호와 같습니다');
+      if (kind === 'email' && (me?.real_email || '').toLowerCase() === target) return bad(res, '현재 등록된 이메일과 같습니다');
+
+      if (kind === 'phone') {
+        const { data: dup } = await db.from('profiles')
+          .select('id, role').eq('phone', target).is('merged_into', null);
+        if ((dup || []).some((x) => x.id !== user.id && x.role !== 'admin'))
+          return bad(res, '이미 다른 계정에서 사용 중인 번호입니다', 409);
+      }
+
+      const t1m = new Date(Date.now() - 60e3).toISOString();
+      const t24 = new Date(Date.now() - 864e5).toISOString();
+      const { count: c1 } = await db.from('contact_otp_codes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id).gte('created_at', t1m);
+      if ((c1 ?? 0) >= 1) return bad(res, '잠시 후 다시 시도해주세요 (1분에 1회)', 429);
+      const { count: c24 } = await db.from('contact_otp_codes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id).gte('created_at', t24);
+      if ((c24 ?? 0) >= 8) return bad(res, '오늘 발송 한도를 초과했습니다', 429);
+
+      const code = randCode6();
+      const { error: insErr } = await db.from('contact_otp_codes').insert({
+        user_id: user.id, kind, target, ip: clientIp(req),
+        code_hash: sha(code),
+        expires_at: new Date(Date.now() + 5 * 60e3).toISOString(),
+      });
+      if (insErr) return bad(res, 'DB 오류: ' + insErr.message, 500);
+
+      const r = kind === 'phone'
+        ? await sendSMS(target, `[ashrain] 인증번호 ${code} (5분 내 입력)`)
+        : await sendEmail(target, '[ashrain] 이메일 인증번호', `ashrain.out 이메일 인증번호는 ${code} 입니다. (5분 내 입력)`);
+      if (!r.ok) return bad(res, (kind === 'phone' ? '문자' : '이메일') + ' 발송에 실패했습니다: ' + (r.raw?.message || '알 수 없는 오류'), 502);
+      return json(res, 200, { sent: true });
+    }
+
+    // ---------------- 연락처 변경: 인증 확인 + 반영 (JWT) ----------------
+    if (action === 'contact-change') {
+      const user = await getUser(req);
+      if (!user) return bad(res, '로그인이 필요합니다', 401);
+      const kind = req.body.kind === 'email' ? 'email' : req.body.kind === 'phone' ? 'phone' : null;
+      const code = String(req.body.code || '').trim();
+      if (!kind || !/^\d{6}$/.test(code)) return bad(res, '인증번호를 다시 확인해주세요');
+      const target = kind === 'phone'
+        ? normPhone(req.body.target)
+        : String(req.body.target || '').trim().toLowerCase();
+      if (!target) return bad(res, '대상 정보가 올바르지 않습니다');
+
+      const { data: row } = await db.from('contact_otp_codes').select('*')
+        .eq('user_id', user.id).eq('kind', kind).eq('target', target).eq('used', false)
+        .gte('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (!row || row.code_hash !== sha(code)) return bad(res, '인증번호가 올바르지 않거나 만료됐습니다');
+
+      await db.from('contact_otp_codes').update({ used: true }).eq('id', row.id);
+
+      if (kind === 'phone') {
+        const { data: dup } = await db.from('profiles')
+          .select('id, role').eq('phone', target).is('merged_into', null);
+        if ((dup || []).some((x) => x.id !== user.id && x.role !== 'admin'))
+          return bad(res, '이미 다른 계정에서 사용 중인 번호입니다', 409);
+        const { error } = await db.from('profiles').update({ phone: target }).eq('id', user.id);
+        if (error) return bad(res, '변경 실패: ' + error.message, 500);
+      } else {
+        const { error } = await db.from('profiles').update({ real_email: target }).eq('id', user.id);
+        if (error) return bad(res, '변경 실패: ' + error.message, 500);
+      }
+      return json(res, 200, { done: true, kind, target });
+    }
+
     if (action === 'trial-start') {
       const chk = await loadValidCode(db, req.body.member_code, { allowTrial: true });
       if (chk.err) return bad(res, chk.err);
