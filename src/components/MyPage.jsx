@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "../supabaseClient";
 import SecurityCard from "./SecurityCard";
 import PointsCard from "./PointsCard";
-import { fmtCode } from "../lib/authx";
+import { fmtCode, api } from "../lib/authx";
 
 const GRADES = ["초3","초4","초5","초6","중1","중2","중3","기타"];
 const THIS_YEAR = new Date().getFullYear();
@@ -52,6 +52,11 @@ const CSS = `
 .mp-sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
   border-radius: 9999px; background: #fff; transition: left .15s; }
 .mp-sw.on::after { left: 23px; }
+.mp-ct { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.mp-ct .mp-in { margin-bottom: 0; flex: 1; }
+.mp-ct .mp-mini { flex-shrink: 0; white-space: nowrap; }
+.mp-ctp { background: var(--in); border: 1px solid var(--inbd); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+.mp-ctp-t { font-size: 12.5px; color: var(--mut); margin: 0 0 8px; line-height: 1.5; }
 `;
 
 function Toggle({ on, onChange }) {
@@ -87,6 +92,28 @@ export default function MyPage({ theme, onToggleTheme }) {
     const settings = { ...p.settings, [key]: value };
     setP((s) => ({ ...s, settings }));
     await supabase.from("profiles").update({ settings }).eq("id", p.id);
+  };
+
+  // ── 연락처(전화·이메일) 변경 — 인증 필수 ──
+  const [ct, setCt] = useState(null); // { kind, val, sent, code, busy, msg }
+  const openCt = (kind) => setCt({ kind, val: "", sent: false, code: "", busy: false, msg: "" });
+  const sendCtCode = async () => {
+    if (!ct.val.trim()) { setCt((s) => ({ ...s, msg: "새 " + (ct.kind === "phone" ? "전화번호를" : "이메일을") + " 입력해주세요" })); return; }
+    setCt((s) => ({ ...s, busy: true, msg: "" }));
+    try {
+      await api("account", { action: "contact-otp-send", kind: ct.kind, target: ct.val.trim() }, { auth: true });
+      setCt((s) => ({ ...s, busy: false, sent: true, msg: "인증번호를 보냈어요 — 5분 내 입력해주세요" }));
+    } catch (e) { setCt((s) => ({ ...s, busy: false, msg: e.message })); }
+  };
+  const applyCt = async () => {
+    if (!/^\d{6}$/.test(ct.code.trim())) { setCt((s) => ({ ...s, msg: "인증번호 6자리를 입력해주세요" })); return; }
+    setCt((s) => ({ ...s, busy: true, msg: "" }));
+    try {
+      const r = await api("account", { action: "contact-change", kind: ct.kind, target: ct.val.trim(), code: ct.code.trim() }, { auth: true });
+      setP((s) => ({ ...s, ...(r.kind === "phone" ? { phone: r.target } : { real_email: r.target }) }));
+      setCt(null);
+      setMsg("✓ " + (r.kind === "phone" ? "전화번호를" : "이메일을") + " 변경했어요.");
+    } catch (e) { setCt((s) => ({ ...s, busy: false, msg: e.message })); }
   };
 
   const changePw = async () => {
@@ -133,8 +160,37 @@ export default function MyPage({ theme, onToggleTheme }) {
         <div className="mp-card">
           <p className="mp-sec">내 정보</p>
           <input className="mp-in" value={p.username || ""} disabled placeholder="아이디" />
-          {p.phone && <input className="mp-in" value={p.phone.replace(/(\d{3})(\d{3,4})(\d{4})/, "$1-$2-$3")} disabled placeholder="전화번호" />}
-          {p.real_email && <input className="mp-in" value={p.real_email} disabled placeholder="이메일" />}
+          <div className="mp-ct">
+            <input className="mp-in" value={p.phone ? p.phone.replace(/(\d{3})(\d{3,4})(\d{4})/, "$1-$2-$3") : ""} disabled placeholder="전화번호 미등록" />
+            <button className="mp-mini" onClick={() => openCt("phone")}>{p.phone ? "변경" : "추가"}</button>
+          </div>
+          <div className="mp-ct">
+            <input className="mp-in" value={p.real_email || ""} disabled placeholder="이메일 미등록" />
+            <button className="mp-mini" onClick={() => openCt("email")}>{p.real_email ? "변경" : "추가"}</button>
+          </div>
+          {ct && (
+            <div className="mp-ctp">
+              <p className="mp-ctp-t">
+                {ct.kind === "phone" ? "전화번호" : "이메일"} {((ct.kind === "phone" && p.phone) || (ct.kind === "email" && p.real_email)) ? "변경" : "등록"}
+                &nbsp;— 본인 확인을 위해 {ct.kind === "phone" ? "새 번호로 문자" : "새 주소로 메일"} 인증이 필요해요.
+              </p>
+              <div className="mp-ct">
+                <input className="mp-in" inputMode={ct.kind === "phone" ? "numeric" : "email"}
+                  placeholder={ct.kind === "phone" ? "새 전화번호 (숫자만)" : "새 이메일 주소"}
+                  value={ct.val} onChange={(e) => setCt((s) => ({ ...s, val: e.target.value }))} disabled={ct.busy} />
+                <button className="mp-mini" onClick={sendCtCode} disabled={ct.busy}>{ct.sent ? "재전송" : "인증번호 받기"}</button>
+              </div>
+              {ct.sent && (
+                <div className="mp-ct">
+                  <input className="mp-in" inputMode="numeric" maxLength={6} placeholder="인증번호 6자리"
+                    value={ct.code} onChange={(e) => setCt((s) => ({ ...s, code: e.target.value }))} disabled={ct.busy} />
+                  <button className="mp-mini" onClick={applyCt} disabled={ct.busy}>{ct.busy ? "확인 중…" : "확인"}</button>
+                </div>
+              )}
+              {ct.msg && <p className={"mp-msg" + (ct.msg.startsWith("인증번호를 보냈") ? "" : " mp-err")}>{ct.msg}</p>}
+              <span className="mp-back" onClick={() => setCt(null)}>취소</span>
+            </div>
+          )}
           {p.member_code && <input className="mp-in" value={"고유번호 " + fmtCode(p.member_code)} disabled />}
           <div className="mp-row">
             <input className="mp-in" value={p.name || ""} onChange={set("name")} placeholder="이름" />
