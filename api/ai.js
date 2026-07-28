@@ -101,14 +101,66 @@ export default async function handler(req, res) {
     if (!process.env.ANTHROPIC_API_KEY)
       return res.status(500).json({ error: "ANTHROPIC_API_KEY가 Vercel에 설정되지 않았어요" });
 
-    const { task, image, question, items } = req.body || {};
-    if (task !== "find" && (!image || typeof image !== "string"))
+    const { task, image, question, items, concept_id, block_id, block_json, messages } = req.body || {};
+    if (task !== "find" && task !== "qchat" && (!image || typeof image !== "string"))
       return res.status(400).json({ error: "이미지가 없어요" });
 
     // ── 2) 관리자 전용 태스크 확인 ──
-    if (task === "slice" || task === "answers") {
+    if (task === "slice" || task === "answers" || task === "qchat") {
       const { data: prof } = await sb.from("profiles").select("role").eq("id", userData.user.id).single();
       if (prof?.role !== "admin") return res.status(403).json({ error: "관리자만 사용할 수 있어요" });
+    }
+
+    // ══════════ qchat — 관리자 개념 질문 대화 (블록 단위, 다회전) ══════════
+    if (task === "qchat") {
+      if (!Array.isArray(messages) || !messages.length)
+        return res.status(400).json({ error: "대화 내용이 없어요" });
+
+      // 정리: user/assistant만, 문자열만, 최근 40턴, 같은 역할 연속은 병합, 첫 메시지는 user 보장
+      const cleaned = [];
+      for (const m of messages.slice(-40)) {
+        const role = m?.role === "assistant" ? "assistant" : m?.role === "user" ? "user" : null;
+        const text = typeof m?.content === "string" ? m.content.trim() : "";
+        if (!role || !text) continue;
+        const last = cleaned[cleaned.length - 1];
+        if (last && last.role === role) last.content += "\n\n" + text;
+        else cleaned.push({ role, content: text });
+      }
+      while (cleaned.length && cleaned[0].role !== "user") cleaned.shift();
+      if (!cleaned.length) return res.status(400).json({ error: "질문이 비어 있어요" });
+
+      const { data: ms } = await sb.from("app_settings").select("value").eq("key", "qchat_model").maybeSingle();
+      const model = ms?.value || "claude-sonnet-4-6";
+
+      const system = [
+        "당신은 수학 학원 원장의 교재 집필을 돕는 협업 조수입니다.",
+        "아래는 ashrain.out 플랫폼(대상: 수학이 어려운 중·고등학생)의 개념 페이지 중 한 단락(JSON)입니다.",
+        "원장의 질문에 한국어로 정확하고 간결하게 답하세요.",
+        "- 학생 눈높이 설명, 자주 나오는 오개념, 좋은 예시, 문구 개선안을 제안할 수 있습니다.",
+        "- 수식은 일반 텍스트로 씁니다 (예: x^2, 1/2, √2).",
+        "- 단락 수정안을 제안할 때는 기존 JSON 구조를 존중합니다.",
+        "",
+        `[개념 ID] ${String(concept_id || "").slice(0, 60)}`,
+        `[단락 ID] ${String(block_id || "").slice(0, 60)}`,
+        "[단락 JSON]",
+        String(block_json || "").slice(0, 8000),
+      ].join("\n");
+
+      const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": process.env.ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({ model, max_tokens: 1500, system, messages: cleaned }),
+      });
+      const aiJson = await aiRes.json();
+      if (!aiRes.ok)
+        return res.status(502).json({ error: "AI 호출 실패: " + (aiJson?.error?.message || aiRes.status) });
+      const reply = (aiJson.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+      if (!reply) return res.status(502).json({ error: "빈 응답을 받았어요 — 다시 시도해 주세요" });
+      return res.status(200).json({ reply, model });
     }
 
     // ══════════ hint — 학생 힌트 (정답 절대 금지) ══════════
