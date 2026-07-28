@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getConcept, getAdoptedQna, askQuestion } from "../lib/concepts";
+import { supabase } from "../supabaseClient";
 
 // 개념 뷰어: concepts.blocks(jsonb) 렌더링 + 채택 QnA 말풍선 + 질문 접수
 // props: conceptId, theme('light'|'dark')
@@ -166,7 +167,7 @@ function ImageBlock({ b, sz, t }) {
 }
 const RENDER = { text: TextBlock, definition: DefinitionBlock, warning: WarningBlock, check: CheckBlock, image: ImageBlock };
 
-function BlockShell({ b, qna, theme, conceptId }) {
+function BlockShell({ b, qna, theme, conceptId, isAdmin }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [sent, setSent] = useState(false);
@@ -200,7 +201,8 @@ function BlockShell({ b, qna, theme, conceptId }) {
             : <span className="cv-icon" style={{ background: t.bg, borderColor: t.border }}>{b.icon.value}</span>)}
           <h2 className="cv-label" style={{ color: t.text }}>{b.label}</h2>
         </div>
-        <button className={"cv-qmark" + (open ? " on" : "")} onClick={() => setOpen((v) => !v)}
+        <button className={"cv-qmark" + (open ? " on" : "")}
+          onClick={() => { if (isAdmin) { location.hash = `#/qchat/${encodeURIComponent(conceptId)}/${encodeURIComponent(b.id)}`; return; } setOpen((v) => !v); }}
           aria-label="질문 보기/하기">
           ?{qna.length > 1 && <span className="cv-qbadge">{qna.length}</span>}
         </button>
@@ -234,6 +236,14 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
   const [concept, setConcept] = useState(null);
   const [qna, setQna] = useState([]);
   const [err, setErr] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data?.user) return;
+      const { data: prof } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
+      setIsAdmin(prof?.role === "admin");
+    });
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -260,7 +270,7 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
           </div>
         </header>
         <main className="cv-main">
-          {concept.blocks.map((b) => <BlockShell key={b.id} b={b} qna={byBlock(b.id)} theme={theme} conceptId={conceptId} />)}
+          {concept.blocks.map((b) => <BlockShell key={b.id} b={b} qna={byBlock(b.id)} theme={theme} conceptId={conceptId} isAdmin={isAdmin} />)}
           <a className="cv-span2" href={`#/p/${encodeURIComponent(concept.id)}`}
             style={{ display: "block", textAlign: "center", padding: "14px 0", borderRadius: 12,
               background: "#0D9488", color: "#fff", fontWeight: 800, fontSize: 15, textDecoration: "none" }}>
