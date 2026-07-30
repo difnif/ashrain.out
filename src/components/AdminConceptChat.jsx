@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import { getConcept } from "../lib/concepts";
 import { api } from "../lib/authx";
+import { BlockPreview } from "./ConceptViewer";
 
 const CSS = `
 .qc-root { min-height:100vh; padding:16px 12px 90px; box-sizing:border-box;
@@ -18,10 +19,15 @@ const CSS = `
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .qc-card { background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:14px; margin-bottom:10px; }
 .qc-sec { font-size:11px; letter-spacing:1.2px; color:var(--mut); font-weight:700; margin:0 0 8px; }
-.qc-block details { font-size:12.5px; color:var(--mut); }
-.qc-block summary { cursor:pointer; color:var(--ink); font-weight:700; font-size:13.5px; }
+.qc-btabs { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
+.qc-btab { background:transparent; border:1px solid var(--inbd); border-radius:8px; color:var(--mut);
+  font-size:12.5px; font-weight:700; padding:7px 12px; cursor:pointer; }
+.qc-btab.on { border-color:var(--ac); color:var(--ac); }
+.qc-copybtn { margin-left:auto; background:var(--in); border:1px solid var(--inbd); border-radius:8px;
+  color:var(--mut); font-size:12px; padding:6px 10px; cursor:pointer; white-space:nowrap; }
+.qc-bview { max-height:360px; overflow:auto; border:1px solid var(--bd); border-radius:10px; padding:10px 12px; background:var(--in); }
 .qc-block pre { white-space:pre-wrap; word-break:break-all; background:var(--in); border:1px solid var(--inbd);
-  border-radius:10px; padding:10px; max-height:220px; overflow:auto; font-size:11.5px; }
+  border-radius:10px; padding:10px; max-height:360px; overflow:auto; font-size:11.5px; color:var(--mut); margin:0; }
 .qc-new { width:100%; background:var(--ac); border:none; border-radius:10px; font-weight:800; font-size:14px;
   padding:11px 0; cursor:pointer; margin-bottom:8px; }
 .qc-light .qc-new { color:#fff; } .qc-dark .qc-new { color:#14140F; }
@@ -72,6 +78,8 @@ export default function AdminConceptChat({ conceptId, blockId, theme = "light" }
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);  // { id, text }
   const [reqMode, setReqMode] = useState(false); // 📌 요청사항으로 남기기
+  const [bTab, setBTab] = useState("view");      // 단락 미리보기: view | json
+  const [copied, setCopied] = useState(false);
   const [err, setErr] = useState("");
   const endRef = useRef(null);
 
@@ -168,6 +176,17 @@ export default function AdminConceptChat({ conceptId, blockId, theme = "light" }
     setMsgs((s) => s.filter((x) => x.id !== m.id));
   };
 
+  const copyJson = async () => {
+    const txt = block ? JSON.stringify(block, null, 2) : "";
+    try { await navigator.clipboard.writeText(txt); }
+    catch {
+      const ta = document.createElement("textarea");
+      ta.value = txt; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+    }
+    setCopied(true); setTimeout(() => setCopied(false), 1500);
+  };
+
   const download = () => {
     const L = [];
     L.push("# ashrain 개념 단락 대화");
@@ -210,10 +229,16 @@ export default function AdminConceptChat({ conceptId, blockId, theme = "light" }
         </div>
 
         <div className="qc-card qc-block">
-          <details>
-            <summary>단락 내용 보기 {block ? "" : "(⚠ 현재 개념에서 단락을 찾지 못했어요)"}</summary>
-            <pre>{block ? JSON.stringify(block, null, 2) : "블록이 수정/삭제된 것 같아요. 대화 기록은 그대로 볼 수 있어요."}</pre>
-          </details>
+          <div className="qc-btabs">
+            <button className={"qc-btab" + (bTab === "view" ? " on" : "")} onClick={() => setBTab("view")}>보이는 화면</button>
+            <button className={"qc-btab" + (bTab === "json" ? " on" : "")} onClick={() => setBTab("json")}>JSON 코드</button>
+            {bTab === "json" && block && (
+              <button className="qc-copybtn" onClick={copyJson}>{copied ? "✓ 복사됨" : "📋 복사"}</button>
+            )}
+          </div>
+          {!block && <p className="qc-empty">⚠ 현재 개념에서 이 단락을 찾지 못했어요 (수정/삭제됨). 대화 기록은 그대로 볼 수 있어요.</p>}
+          {block && bTab === "view" && <div className="qc-bview"><BlockPreview b={block} theme={theme} /></div>}
+          {block && bTab === "json" && <pre>{JSON.stringify(block, null, 2)}</pre>}
         </div>
 
         {!cur && (
