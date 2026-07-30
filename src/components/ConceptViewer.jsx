@@ -53,6 +53,7 @@ const CSS = `
 .cv-fig { margin: 12px 0 0; } .cv-fig img { width: 100%; max-height: 256px; object-fit: contain; border-radius: 8px; display: block; }
 .cv-fig figcaption { margin-top: 4px; font-size: 11px; color: var(--mut); text-align: center; }
 .cv-qmark { position: relative; width: 28px; height: 28px; border-radius: 9999px; font-size: 14px; font-weight: 700;
+  text-decoration: none; box-sizing: border-box;
   flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
   background: transparent; color: #14B8A6; border: 2px solid #2DD4BF; }
 .cv-qmark.on { background: #0D9488; color: #fff; }
@@ -201,11 +202,17 @@ function BlockShell({ b, qna, theme, conceptId, isAdmin }) {
             : <span className="cv-icon" style={{ background: t.bg, borderColor: t.border }}>{b.icon.value}</span>)}
           <h2 className="cv-label" style={{ color: t.text }}>{b.label}</h2>
         </div>
-        <button className={"cv-qmark" + (open ? " on" : "")}
-          onClick={() => { if (isAdmin) { location.hash = `#/qchat/${encodeURIComponent(conceptId)}/${encodeURIComponent(b.id)}`; return; } setOpen((v) => !v); }}
-          aria-label="질문 보기/하기">
-          ?{qna.length > 1 && <span className="cv-qbadge">{qna.length}</span>}
-        </button>
+        {isAdmin ? (
+          <a className="cv-qmark" href={`#/qchat/${encodeURIComponent(conceptId)}/${encodeURIComponent(b.id)}`}
+            aria-label="질문 대화 열기" title="이 단락의 질문 대화 (우클릭: 새 탭)">
+            ?{qna.length > 1 && <span className="cv-qbadge">{qna.length}</span>}
+          </a>
+        ) : (
+          <button className={"cv-qmark" + (open ? " on" : "")} onClick={() => setOpen((v) => !v)}
+            aria-label="질문 보기/하기">
+            ?{qna.length > 1 && <span className="cv-qbadge">{qna.length}</span>}
+          </button>
+        )}
       </div>
       <R b={b} sz={sz} t={t} theme={theme} />
       {open && (
