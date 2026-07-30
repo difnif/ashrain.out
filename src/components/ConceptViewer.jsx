@@ -168,6 +168,32 @@ function ImageBlock({ b, sz, t }) {
 }
 const RENDER = { text: TextBlock, definition: DefinitionBlock, warning: WarningBlock, check: CheckBlock, image: ImageBlock };
 
+// 관리자 도구용: 학생 화면과 동일한 단락 미리보기 (물음표·질문 말풍선 제외)
+export function BlockPreview({ b, theme = "light" }) {
+  if (!b) return null;
+  const st = b.style || {};
+  const t = tone(st.tone, theme);
+  const sz = SIZES[st.size] || SIZES.md;
+  const R = RENDER[b.type];
+  return (
+    <div className={"cv-" + theme} style={{ background: "transparent" }}>
+      <style>{CSS}</style>
+      <section>
+        <div className="cv-bh">
+          <div className="cv-bh-l">
+            {b.icon && (b.icon.kind === "image" && b.icon.src
+              ? <img className="cv-icon" src={b.icon.src} alt="" style={{ objectFit: "cover", borderColor: t.border }} />
+              : <span className="cv-icon" style={{ background: t.bg, borderColor: t.border }}>{b.icon.value}</span>)}
+            <h2 className="cv-label" style={{ color: t.text }}>{b.label}</h2>
+          </div>
+        </div>
+        {R ? <R b={b} sz={sz} t={t} theme={theme} />
+           : <p style={{ color: "var(--mut)", fontSize: 13 }}>알 수 없는 단락 유형: {String(b.type)}</p>}
+      </section>
+    </div>
+  );
+}
+
 function BlockShell({ b, qna, theme, conceptId, isAdmin }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
