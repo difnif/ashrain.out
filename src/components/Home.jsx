@@ -399,6 +399,7 @@ export default function Home({ theme, onToggleTheme }) {
           <div className="hm-btns">
             {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 개념 등록</button>}
             {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 질문 검토</button>}
+            {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/chats")}>🗂 질문대화</button>}
             <button className="hm-btn" onClick={() => (location.hash = "#/board")}>📋 질문게시판</button>
             <button className="hm-btn" onClick={openCfg}>⚙ 설정</button>
             <button className="hm-btn hm-me" onClick={() => (location.hash = "#/me")}>

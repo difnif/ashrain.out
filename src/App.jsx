@@ -20,7 +20,7 @@ import AdminCodes from "./pages/AdminCodes";
 import AdminUsers from "./pages/AdminUsers";
 import PracticeViewer from "./pages/PracticeViewer";
 import AdminPractice from "./pages/AdminPractice";
-import AdminConceptChat from "./components/AdminConceptChat";
+import AdminChats from "./components/AdminChats";
 import QnaBoard from "./components/QnaBoard";
 
 function useHash() {
@@ -189,8 +189,7 @@ export default function App() {
 
   const bd = hash.match(/^#\/board(?:\/(.+))?$/);
   if (bd) return <Rx theme={theme}><QnaBoard theme={theme} initialId={bd[1] ? decodeURIComponent(bd[1]) : null} /></Rx>;
-  const qc = hash.match(/^#\/qchat\/([^/]+)\/(.+)$/);
-  if (qc) return <Rx theme={theme}><AdminConceptChat conceptId={decodeURIComponent(qc[1])} blockId={decodeURIComponent(qc[2])} theme={theme} /></Rx>;
+  if (hash === "#/admin/chats") return <Rx theme={theme}><AdminChats theme={theme} /></Rx>;
   const c = hash.match(/^#\/c\/(.+)$/);
   if (c) return <ConceptViewer conceptId={decodeURIComponent(c[1])} theme={theme} />;
   if (hash.startsWith("#/portrait")) {

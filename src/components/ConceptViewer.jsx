@@ -233,17 +233,9 @@ function BlockShell({ b, qna, theme, conceptId, isAdmin, onAsk }) {
           <h2 className="cv-label" style={{ color: t.text }}>{b.label}</h2>
         </div>
         <span className="cv-qcode">{qcode(conceptId, b.id)}</span>
-        {isAdmin ? (
-          <a className="cv-qmark" href={`#/qchat/${encodeURIComponent(conceptId)}/${encodeURIComponent(b.id)}`}
-            aria-label="질문 대화 열기" title="이 단락의 질문 대화 (우클릭: 새 탭)">
-            ?{qna.length > 1 && <span className="cv-qbadge">{qna.length}</span>}
-          </a>
-        ) : (
-          <button className="cv-qmark" onClick={() => onAsk(b)}
-            aria-label="질문하기">
-            ?{qna.length > 1 && <span className="cv-qbadge">{qna.length}</span>}
-          </button>
-        )}
+        <button className="cv-qmark" onClick={() => onAsk(b)} aria-label="질문하기">
+          ?{qna.length > 1 && <span className="cv-qbadge">{qna.length}</span>}
+        </button>
       </div>
       <R b={b} sz={sz} t={t} theme={theme} />
       {open && (
@@ -321,7 +313,7 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
         </main>
       </div>
       {chatBlock && (
-        <QuestionChat conceptId={conceptId} block={chatBlock} theme={theme}
+        <QuestionChat conceptId={conceptId} block={chatBlock} theme={theme} isAdmin={isAdmin}
           answered={byBlock(chatBlock.id)} onClose={() => setChatBlock(null)} />
       )}
     </div>
