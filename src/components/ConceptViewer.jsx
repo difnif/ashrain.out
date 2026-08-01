@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getConcept, getAdoptedQna, askQuestion } from "../lib/concepts";
 import { supabase } from "../supabaseClient";
+import { qcode } from "../lib/qcode";
+import QuestionChat from "./QuestionChat";
 
 // 개념 뷰어: concepts.blocks(jsonb) 렌더링 + 채택 QnA 말풍선 + 질문 접수
 // props: conceptId, theme('light'|'dark')
@@ -52,6 +54,8 @@ const CSS = `
   font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .cv-fig { margin: 12px 0 0; } .cv-fig img { width: 100%; max-height: 256px; object-fit: contain; border-radius: 8px; display: block; }
 .cv-fig figcaption { margin-top: 4px; font-size: 11px; color: var(--mut); text-align: center; }
+.cv-qcode { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; color: var(--mut);
+  opacity: .8; align-self: center; margin-right: 7px; white-space: nowrap; }
 .cv-qmark { position: relative; width: 28px; height: 28px; border-radius: 9999px; font-size: 14px; font-weight: 700;
   text-decoration: none; box-sizing: border-box;
   flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -194,7 +198,7 @@ export function BlockPreview({ b, theme = "light" }) {
   );
 }
 
-function BlockShell({ b, qna, theme, conceptId, isAdmin }) {
+function BlockShell({ b, qna, theme, conceptId, isAdmin, onAsk }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [sent, setSent] = useState(false);
@@ -228,14 +232,15 @@ function BlockShell({ b, qna, theme, conceptId, isAdmin }) {
             : <span className="cv-icon" style={{ background: t.bg, borderColor: t.border }}>{b.icon.value}</span>)}
           <h2 className="cv-label" style={{ color: t.text }}>{b.label}</h2>
         </div>
+        <span className="cv-qcode">{qcode(conceptId, b.id)}</span>
         {isAdmin ? (
           <a className="cv-qmark" href={`#/qchat/${encodeURIComponent(conceptId)}/${encodeURIComponent(b.id)}`}
             aria-label="질문 대화 열기" title="이 단락의 질문 대화 (우클릭: 새 탭)">
             ?{qna.length > 1 && <span className="cv-qbadge">{qna.length}</span>}
           </a>
         ) : (
-          <button className={"cv-qmark" + (open ? " on" : "")} onClick={() => setOpen((v) => !v)}
-            aria-label="질문 보기/하기">
+          <button className="cv-qmark" onClick={() => onAsk(b)}
+            aria-label="질문하기">
             ?{qna.length > 1 && <span className="cv-qbadge">{qna.length}</span>}
           </button>
         )}
@@ -270,6 +275,7 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
   const [qna, setQna] = useState([]);
   const [err, setErr] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [chatBlock, setChatBlock] = useState(null); // 질문챗이 열린 단락
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data?.user) return;
@@ -303,7 +309,7 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
           </div>
         </header>
         <main className="cv-main">
-          {concept.blocks.map((b) => <BlockShell key={b.id} b={b} qna={byBlock(b.id)} theme={theme} conceptId={conceptId} isAdmin={isAdmin} />)}
+          {concept.blocks.map((b) => <BlockShell key={b.id} b={b} qna={byBlock(b.id)} theme={theme} conceptId={conceptId} isAdmin={isAdmin} onAsk={setChatBlock} />)}
           <a className="cv-span2" href={`#/p/${encodeURIComponent(concept.id)}`}
             style={{ display: "block", textAlign: "center", padding: "14px 0", borderRadius: 12,
               background: "#0D9488", color: "#fff", fontWeight: 800, fontSize: 15, textDecoration: "none" }}>
@@ -314,6 +320,10 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
           </footer>
         </main>
       </div>
+      {chatBlock && (
+        <QuestionChat conceptId={conceptId} block={chatBlock} theme={theme}
+          answered={byBlock(chatBlock.id)} onClose={() => setChatBlock(null)} />
+      )}
     </div>
   );
 }

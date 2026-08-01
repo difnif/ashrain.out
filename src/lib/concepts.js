@@ -19,7 +19,7 @@ export async function getAdoptedQna(conceptId) {
   const { data, error } = await supabase
     .from("concept_qna")
     .select("id, block_id, question, answer")
-    .eq("concept_id", conceptId).eq("status", "adopted")
+    .eq("concept_id", conceptId).eq("status", "answered")
     .order("created_at");
   if (error) throw error;
   return data;
@@ -59,7 +59,7 @@ export async function upsertConcepts(list) {
   // qna 필드가 있으면 채택 QnA도 함께 등록 (id 없는 신규만)
   const qna = list.flatMap((c) => (c.qna || []).map((q) => ({
     concept_id: c.id, block_id: q.anchor ?? q.block_id, question: q.q ?? q.question,
-    answer: q.a ?? q.answer, status: q.status ?? "adopted",
+    answer: q.a ?? q.answer, status: q.status ?? ((q.a ?? q.answer) ? "answered" : "adopted"),
   })));
   if (qna.length) {
     const { error: e2 } = await supabase.from("concept_qna").insert(qna);

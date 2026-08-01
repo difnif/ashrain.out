@@ -5,6 +5,7 @@ import { supabase } from "../supabaseClient";
 import { getConcept } from "../lib/concepts";
 import { api } from "../lib/authx";
 import { BlockPreview } from "./ConceptViewer";
+import { qcode } from "../lib/qcode";
 
 const CSS = `
 .qc-root { min-height:100vh; padding:16px 12px 90px; box-sizing:border-box;
@@ -191,7 +192,7 @@ export default function AdminConceptChat({ conceptId, blockId, theme = "light" }
     const L = [];
     L.push("# ashrain 개념 단락 대화");
     L.push(`개념: ${conceptId} — ${concept?.title || ""}`);
-    L.push(`단락: ${blockId} — ${block?.label || "(단락 없음)"}`);
+    L.push(`단락: ${blockId} — ${block?.label || "(단락 없음)"} (질문코드 ${qcode(conceptId, blockId)})`);
     L.push(`내보낸 시각: ${new Date().toLocaleString("ko-KR")}`);
     L.push("");
     L.push("─── 단락 JSON ───");
@@ -224,7 +225,7 @@ export default function AdminConceptChat({ conceptId, blockId, theme = "light" }
           <span className="qc-back" onClick={() => (cur ? (setCur(null), setMsgs([])) : (location.hash = `#/c/${encodeURIComponent(conceptId)}`))}>
             ← {cur ? "대화 목록" : "개념으로"}
           </span>
-          <h1 className="qc-h">{concept?.title || conceptId} · {block?.label || blockId}</h1>
+          <h1 className="qc-h">[{qcode(conceptId, blockId)}] {concept?.title || conceptId} · {block?.label || blockId}</h1>
           {cur && <button className="qc-mini" onClick={download}>⬇ 다운로드</button>}
         </div>
 
