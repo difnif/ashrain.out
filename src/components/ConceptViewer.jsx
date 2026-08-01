@@ -3,7 +3,7 @@ import { getConcept, getAdoptedQna, askQuestion } from "../lib/concepts";
 import { supabase } from "../supabaseClient";
 import { qcode } from "../lib/qcode";
 import QuestionChat from "./QuestionChat";
-import AnimFigure from "./AnimFigure";
+import { AnimScene } from "./AnimFigure";
 
 // 개념 뷰어: concepts.blocks(jsonb) 렌더링 + 채택 QnA 말풍선 + 질문 접수
 // props: conceptId, theme('light'|'dark')
@@ -96,8 +96,7 @@ function Rich({ text, tn, theme }) {
 }
 
 function Figure({ figure, conceptId, blockId, isAdmin, theme }) {
-  if (figure?.kind === "animset")
-    return <AnimFigure figure={figure} conceptId={conceptId} blockId={blockId} isAdmin={isAdmin} theme={theme} />;
+  if (figure?.kind === "animset") return null; // animset은 본문 [[fig:씬id]] 마커 자리에서 렌더
   if (!figure?.src) return null;
   return (
     <figure className="cv-fig">
@@ -110,7 +109,11 @@ function Figure({ figure, conceptId, blockId, isAdmin, theme }) {
 function TextBlock({ b, sz, t, theme, conceptId, isAdmin }) {
   return (
     <div className="cv-card" style={{ background: t.bg, borderColor: t.border, padding: sz.pad }}>
-      {b.lines.map((l, i) => <p key={i} className="cv-p" style={{ fontSize: sz.body, color: "var(--ink)" }}><Rich text={l} tn={b.style?.tone} theme={theme} /></p>)}
+      {b.lines.map((l, i) => {
+        const fm = typeof l === "string" && l.match(/^\[\[fig:([\w-]+)\]\]$/);
+        if (fm) return <AnimScene key={i} sceneId={fm[1]} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />;
+        return <p key={i} className="cv-p" style={{ fontSize: sz.body, color: "var(--ink)" }}><Rich text={l} tn={b.style?.tone} theme={theme} /></p>;
+      })}
       <Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
     </div>
   );

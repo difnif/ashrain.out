@@ -1,33 +1,29 @@
-// ashrain.out — 이미지 슬롯 애니메이션 figure (v1.0)
-// 개념 blocks의 figure.kind === "animset" 렌더러.
-// - 이미지 없으면: 씬 설명이 담긴 점선 플레이스홀더(레이아웃 검토용)
-// - 이미지 있으면: 씬 순차 재생(컷 크로스페이드) + 다이어그램 씬(equal-bars)
-// - 관리자: 우상단 ✏️ → [순서대로 넣기 | 드래그앤드롭(zip 지원)] → 미리보기 확인(Enter/ESC)
-// 저장: Supabase Storage 'figures' 버킷, 경로 {conceptId}/{blockId}/{씬id}{n}.png
+// ashrain.out — 인라인 씬 시스템 (v2.0)
+// 본문 lines 사이 [[fig:씬id]] 마커 자리에 씬이 삽입되는 "글·그림 교차" 구조.
+// - sequence 씬: 업로드 컷 크로스페이드 (화면에 보일 때 재생) / 미업로드 시 설명 플레이스홀더
+// - diagram 씬: 코드 다이어그램 (equal-bars, hanja-modify) — 이미지 불필요
+// - 관리자: sequence 씬 우상단 ✏️ → 업로드 에디터 (순서대로 / 드래그앤드롭·zip, Enter/ESC 확인)
+// 저장: Supabase Storage 'figures' 버킷, {conceptId}/{blockId}/{씬id}{n}.png
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 
 const CSS = `
-.af-wrap { margin-top: 12px; }
-.af-stage { position: relative; border: 1px solid var(--bd, #DFE3E8); border-radius: 14px;
-  background: #F8FAFC; padding: 14px 14px 10px; }
-.af-grid { display: flex; gap: 12px; flex-wrap: wrap; }
-.af-scene { flex: 1 1 180px; min-width: 150px; }
-.af-lab { font-size: 13px; font-weight: 800; color: #1F2937; margin: 0 0 6px; line-height: 1.4; }
-.af-frame { position: relative; width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; overflow: hidden;
-  background: #fff; border: 1px solid #E2E8F0; }
-.af-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+.afs { margin: 14px auto; max-width: 430px; }
+.afs-frame { position: relative; width: 100%; height: 205px; border-radius: 12px; overflow: hidden;
+  background: #FFFFFF; border: 1px solid #E2E8F0; }
+.afs-frame.diag { height: auto; padding: 10px 8px; box-sizing: border-box; }
+.afs-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
   opacity: 0; transition: opacity .6s ease; }
-.af-frame img.on { opacity: 1; }
-.af-scene.dim .af-frame { opacity: .5; }
-.af-empty { display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 6px; width: 100%; aspect-ratio: 1 / 1; border: 2px dashed #CBD5E1; border-radius: 10px;
-  background: transparent; padding: 10px; box-sizing: border-box; }
-.af-empty-t { font-size: 12px; color: #64748B; text-align: center; line-height: 1.5; }
-.af-empty-n { font-size: 11px; font-weight: 800; color: #94A3B8; }
-.af-cap { font-size: 12px; color: #64748B; text-align: center; margin: 10px 2px 2px; }
-.af-pen { position: absolute; top: 8px; right: 8px; z-index: 5; background: #fff; border: 1px solid #E2E8F0;
-  border-radius: 8px; font-size: 13px; padding: 5px 8px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.afs-frame img.on { opacity: 1; }
+.afs-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; height: 205px; border: 2px dashed #CBD5E1; border-radius: 12px; padding: 12px; box-sizing: border-box; }
+.afs-empty-l { font-size: 13px; font-weight: 800; color: #475569; text-align: center; }
+.afs-empty-t { font-size: 12px; color: #64748B; text-align: center; line-height: 1.55; }
+.afs-empty-n { font-size: 11px; font-weight: 800; color: #94A3B8; }
+.afs-cap { font-size: 12px; color: var(--mut, #64748B); text-align: center; margin: 7px 4px 0; line-height: 1.5; }
+.afs-pen { position: absolute; top: 7px; right: 7px; z-index: 5; background: #fff; border: 1px solid #E2E8F0;
+  border-radius: 8px; font-size: 12.5px; padding: 4px 7px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+.afs-penwrap { position: relative; }
 /* ── 에디터 모달 ── */
 .af-dim2 { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 80; }
 .af-modal { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: 81;
@@ -67,42 +63,69 @@ const CSS = `
 .af-hint { font-size: 11.5px; color: var(--mut, #8A929C); margin-top: 6px; }
 `;
 
-const FRAME_MS = 1500, HOLD_MS = 900;
+const FRAME_MS = 1600;
 
-// ── 약분 등가 막대 다이어그램 ──
-function EqualBars({ params, active }) {
+/* ══════════ 코드 다이어그램들 ══════════ */
+function EqualBars({ params, play }) {
   const [t, b] = [params?.top || [6, 8], params?.bottom || [3, 4]];
-  const W = 240, H = 26, fillW = (n, d) => (W * n) / d;
-  const cell = (d, y, color) => Array.from({ length: d - 1 }, (_, i) => (
-    <line key={i} x1={(W * (i + 1)) / d} y1={y} x2={(W * (i + 1)) / d} y2={y + H} stroke={color} strokeWidth="1.5" />
+  const W = 250, H = 26, fw = (n, d) => (W * n) / d;
+  const cells = (d, color) => Array.from({ length: d - 1 }, (_, i) => (
+    <line key={i} x1={(W * (i + 1)) / d} y1={0} x2={(W * (i + 1)) / d} y2={H} stroke={color} strokeWidth="1.5" />
   ));
   return (
-    <svg viewBox="0 0 300 120" style={{ width: "100%", height: "100%" }}>
-      <g transform="translate(8,18)">
+    <svg viewBox="0 0 330 122" style={{ width: "100%", display: "block" }}>
+      <g transform="translate(10,14)">
         <rect width={W} height={H} rx="5" fill="#fff" stroke="#94A3B8" strokeWidth="2" />
-        <rect width={fillW(t[0], t[1])} height={H} rx="5" fill="#99F6E4" style={{ transition: "width 1s", width: active ? fillW(t[0], t[1]) : 0 }} />
-        {cell(t[1], 0, "#94A3B8")}
+        <rect width={play ? fw(t[0], t[1]) : 0} height={H} rx="5" fill="#99F6E4" style={{ transition: "width .9s ease" }} />
+        <g>{cells(t[1], "#94A3B8")}</g>
         <text x={W + 10} y={H - 7} fontSize="15" fontWeight="700" fill="#64748B">{t[0]}/{t[1]}</text>
       </g>
-      <g transform="translate(8,64)">
+      <g transform="translate(10,60)">
         <rect width={W} height={H} rx="5" fill="#fff" stroke="#0D9488" strokeWidth="2.5" />
-        <rect width={fillW(b[0], b[1])} height={H} rx="5" fill="#5EEAD4" style={{ transition: "width 1s .4s", width: active ? fillW(b[0], b[1]) : 0 }} />
-        {cell(b[1], 0, "#0D9488")}
+        <rect width={play ? fw(b[0], b[1]) : 0} height={H} rx="5" fill="#5EEAD4" style={{ transition: "width .9s ease .5s" }} />
+        <g>{cells(b[1], "#0D9488")}</g>
         <text x={W + 10} y={H - 6} fontSize="15" fontWeight="800" fill="#0D9488">{b[0]}/{b[1]}</text>
       </g>
-      <text x="128" y="112" textAnchor="middle" fontSize="11.5" fontWeight="700" fill="#0D9488">색칠된 크기 똑같죠? 칸만 줄었을 뿐!</text>
+      <text x="135" y="112" textAnchor="middle" fontSize="12" fontWeight="700" fill="#0D9488">색칠된 크기 똑같죠? 칸만 줄었을 뿐!</text>
     </svg>
   );
 }
 
-export default function AnimFigure({ figure, conceptId, blockId, isAdmin = false, theme = "light" }) {
-  const scenes = figure?.scenes || [];
+function HanjaModify({ params, play }) {
+  const p = { left: "約", leftSub: "줄일 약", right: "數", rightSub: "셈 수",
+    note: "約이 數를 꾸며요", result: '= "줄여 주는 수"', ...(params || {}) };
+  const st = (d) => ({ opacity: play ? 1 : 0, transition: `opacity .6s ease ${d}s` });
+  return (
+    <svg viewBox="0 0 340 150" style={{ width: "100%", display: "block" }}>
+      <g style={st(0)}>
+        <text x="105" y="58" textAnchor="middle" fontSize="46" fontWeight="800" fill="#1F2937">{p.left}</text>
+        <text x="235" y="58" textAnchor="middle" fontSize="46" fontWeight="800" fill="#1F2937">{p.right}</text>
+        <text x="105" y="82" textAnchor="middle" fontSize="13" fontWeight="800" fill="#D97706">{p.leftSub}</text>
+        <text x="235" y="82" textAnchor="middle" fontSize="13" fontWeight="800" fill="#64748B">{p.rightSub}</text>
+      </g>
+      <g style={st(0.7)}>
+        <path d="M 122 92 C 150 112, 190 112, 218 94" fill="none" stroke="#0D9488" strokeWidth="3" strokeLinecap="round" />
+        <path d="M 218 94 l -13 2 l 7 11 z" fill="#0D9488" />
+        <text x="170" y="126" textAnchor="middle" fontSize="12.5" fontWeight="700" fill="#0D9488">{p.note}</text>
+      </g>
+      <text x="170" y="146" textAnchor="middle" fontSize="17" fontWeight="800" fill="#0D9488" style={st(1.4)}>{p.result}</text>
+    </svg>
+  );
+}
+const DIAGRAMS = { "equal-bars": EqualBars, "hanja-modify": HanjaModify };
+
+/* ══════════ 인라인 씬 ══════════ */
+export function AnimScene({ sceneId, figure, conceptId, blockId, isAdmin = false, theme = "light" }) {
+  const scene = (figure?.scenes || []).find((s) => s.id === sceneId);
   const dir = `${conceptId}/${blockId}`;
-  const [files, setFiles] = useState({});     // "a1" -> { url }
-  const [tick, setTick] = useState(0);
+  const [files, setFiles] = useState(null);
+  const [frame, setFrame] = useState(0);
+  const [play, setPlay] = useState(false);
   const [edit, setEdit] = useState(false);
+  const ref = useRef(null);
 
   const refresh = useCallback(async () => {
+    if (!scene || scene.anim === "diagram") { setFiles({}); return; }
     const { data } = await supabase.storage.from("figures").list(dir, { limit: 100 });
     const map = {};
     for (const f of data || []) {
@@ -111,75 +134,64 @@ export default function AnimFigure({ figure, conceptId, blockId, isAdmin = false
       map[key] = { name: f.name, url: pu.publicUrl + "?v=" + encodeURIComponent(f.updated_at || "") };
     }
     setFiles(map);
-  }, [dir]);
+  }, [dir, scene?.id]); // eslint-disable-line
   useEffect(() => { refresh(); }, [refresh]);
 
-  // 씬별 프레임 목록
-  const frames = scenes.map((s) =>
-    s.anim === "diagram" ? ["diagram"] :
-    Array.from({ length: s.count || 0 }, (_, i) => files[`${s.id}${i + 1}`]?.url).filter(Boolean));
-  const durations = frames.map((f) => Math.max(f.length, 1) * FRAME_MS + HOLD_MS);
-  const total = durations.reduce((a, b) => a + b, 0) || 1;
+  // 화면에 보일 때만 재생
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") { setPlay(true); return; }
+    const ob = new IntersectionObserver(([e]) => setPlay(e.isIntersecting), { threshold: 0.35 });
+    ob.observe(el);
+    return () => ob.disconnect();
+  }, []);
+
+  const urls = scene && scene.anim !== "diagram" && files
+    ? Array.from({ length: scene.count || 0 }, (_, i) => files[`${scene.id}${i + 1}`]?.url).filter(Boolean) : [];
 
   useEffect(() => {
-    const iv = setInterval(() => setTick((t) => (t + 100) % total), 100);
+    if (!play || urls.length < 2) return;
+    const iv = setInterval(() => setFrame((f) => (f + 1) % urls.length), FRAME_MS);
     return () => clearInterval(iv);
-  }, [total]);
+  }, [play, urls.length]);
 
-  let acc = 0, activeScene = 0, activeFrame = 0;
-  for (let i = 0; i < durations.length; i++) {
-    if (tick < acc + durations[i]) {
-      activeScene = i;
-      activeFrame = Math.min(Math.floor((tick - acc) / FRAME_MS), Math.max(frames[i].length - 1, 0));
-      break;
-    }
-    acc += durations[i];
-  }
+  if (!scene) return null;
+  const Diag = scene.anim === "diagram" ? DIAGRAMS[scene.diagram] : null;
 
   return (
-    <div className="af-wrap">
+    <div className="afs" ref={ref}>
       <style>{CSS}</style>
-      <div className="af-stage">
-        {isAdmin && <button className="af-pen" onClick={() => setEdit(true)} title="이미지 업로드/수정">✏️</button>}
-        <div className="af-grid">
-          {scenes.map((s, si) => {
-            const fr = frames[si];
-            const has = s.anim === "diagram" || fr.length > 0;
-            return (
-              <div key={s.id} className={"af-scene" + (si === activeScene ? "" : " dim")}>
-                <p className="af-lab">{s.label}</p>
-                {!has ? (
-                  <div className="af-empty">
-                    <span className="af-empty-t">{s.desc}</span>
-                    <span className="af-empty-n">🖼 이미지 {s.count}장 자리{isAdmin ? " — ✏️로 업로드" : " (준비 중)"}</span>
-                  </div>
-                ) : s.anim === "diagram" ? (
-                  <div className="af-frame"><EqualBars params={s.params} active={si === activeScene} /></div>
-                ) : (
-                  <div className="af-frame">
-                    {fr.map((u, fi) => (
-                      <img key={u} src={u} alt="" className={si === activeScene && fi === activeFrame ? "on" : fi === fr.length - 1 && si !== activeScene ? "on" : ""} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {figure.caption && <p className="af-cap">{figure.caption}</p>}
+      <div className="afs-penwrap">
+        {isAdmin && scene.anim !== "diagram" && (
+          <button className="afs-pen" onClick={() => setEdit(true)} title="이미지 업로드/수정">✏️</button>
+        )}
+        {Diag ? (
+          <div className="afs-frame diag"><Diag params={scene.params} play={play} /></div>
+        ) : urls.length ? (
+          <div className="afs-frame">
+            {urls.map((u, i) => <img key={u} src={u} alt="" className={i === (urls.length > 1 ? frame : 0) ? "on" : ""} />)}
+          </div>
+        ) : (
+          <div className="afs-empty">
+            <span className="afs-empty-l">{scene.label}</span>
+            <span className="afs-empty-t">{scene.desc}</span>
+            <span className="afs-empty-n">🖼 이미지 {scene.count}장 자리{isAdmin ? " — ✏️로 업로드" : " (준비 중)"}</span>
+          </div>
+        )}
       </div>
-      {edit && <Editor scenes={scenes} dir={dir} files={files} onClose={() => setEdit(false)} onSaved={() => { setEdit(false); refresh(); }} theme={theme} />}
+      {(scene.caption || (urls.length && scene.label)) ? <p className="afs-cap">{scene.caption || scene.label}</p> : null}
+      {edit && <Editor scenes={(figure.scenes || []).filter((s) => s.anim !== "diagram")} dir={dir}
+        files={files || {}} onClose={() => setEdit(false)} onSaved={() => { setEdit(false); refresh(); }} />}
     </div>
   );
 }
 
-// ══════════════ 관리자 에디터 ══════════════
-function Editor({ scenes, dir, files, onClose, onSaved, theme }) {
-  const imgScenes = scenes.filter((s) => s.anim !== "diagram");
-  const keys = imgScenes.flatMap((s) => Array.from({ length: s.count }, (_, i) => `${s.id}${i + 1}`));
-  const [mode, setMode] = useState("cells");        // cells | drop
-  const [pending, setPending] = useState({});       // key -> File
-  const [removed, setRemoved] = useState({});       // key -> true
+/* ══════════ 관리자 에디터 (블록의 이미지 씬 전체) ══════════ */
+function Editor({ scenes, dir, files, onClose, onSaved }) {
+  const keys = scenes.flatMap((s) => Array.from({ length: s.count }, (_, i) => `${s.id}${i + 1}`));
+  const [mode, setMode] = useState("cells");
+  const [pending, setPending] = useState({});
+  const [removed, setRemoved] = useState({});
   const [warn, setWarn] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -188,13 +200,11 @@ function Editor({ scenes, dir, files, onClose, onSaved, theme }) {
   const fileRef = useRef(null);
 
   const assign = (fileList) => {
-    const w = [];
-    const next = { ...pending };
+    const w = []; const next = { ...pending };
     for (const f of fileList) {
       const base = f.name.replace(/\.[^.]+$/, "").toLowerCase();
       const hit = keys.find((k) => base === k || base.endsWith("_" + k) || base.endsWith(k));
-      if (hit) next[hit] = f;
-      else w.push(f.name);
+      if (hit) next[hit] = f; else w.push(f.name);
     }
     setPending(next);
     setWarn(w.length ? "규칙에 안 맞아 건너뜀: " + w.join(", ") : "");
@@ -218,7 +228,7 @@ function Editor({ scenes, dir, files, onClose, onSaved, theme }) {
             plain.push(new File([blob], name.split("/").pop(), { type: "image/png" }));
           }
         }
-      } catch { setWarn("zip 해제에 실패했어요 — 개별 파일로 드래그해 주세요"); }
+      } catch { setWarn("zip 해제 실패 — 개별 파일로 드래그해 주세요"); }
     }
     assign(plain);
   };
@@ -234,9 +244,8 @@ function Editor({ scenes, dir, files, onClose, onSaved, theme }) {
         const { error } = await supabase.storage.from("figures")
           .upload(`${dir}/${k}${ext}`, f, { upsert: true, contentType: f.type || "image/png" });
         if (error) throw error;
-        if (files[k] && files[k].name !== `${k}${ext}`) {
+        if (files[k] && files[k].name !== `${k}${ext}`)
           await supabase.storage.from("figures").remove([`${dir}/${files[k].name}`]);
-        }
       }
       onSaved();
     } catch (e) {
@@ -275,15 +284,18 @@ function Editor({ scenes, dir, files, onClose, onSaved, theme }) {
     );
   };
 
-  const changes = Object.keys(pending).length + Object.keys(removed).filter((k) => !pending[k] && files[k]).length;
+  const delCount = Object.keys(removed).filter((k) => !pending[k] && files[k]).length;
+  const changes = Object.keys(pending).length + delCount;
 
   return (
     <>
       <div className="af-dim2" onClick={busy ? undefined : onClose} />
       <div className="af-modal">
-        <style>{CSS}</style>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f && pickKey.current) { setPending((s) => ({ ...s, [pickKey.current]: f })); setRemoved((s) => { const n = { ...s }; delete n[pickKey.current]; return n; }); } e.target.value = ""; }} />
+          onChange={(e) => { const f = e.target.files?.[0]; if (f && pickKey.current) {
+            setPending((s) => ({ ...s, [pickKey.current]: f }));
+            setRemoved((s) => { const n = { ...s }; delete n[pickKey.current]; return n; });
+          } e.target.value = ""; }} />
         {!confirming ? (
           <>
             <div className="af-mh"><h3 className="af-mt">🖼 이미지 업로드 / 수정</h3><button className="af-x" onClick={onClose}>✕</button></div>
@@ -291,7 +303,7 @@ function Editor({ scenes, dir, files, onClose, onSaved, theme }) {
               <button className={"af-tab" + (mode === "cells" ? " on" : "")} onClick={() => setMode("cells")}>순서대로 넣기</button>
               <button className={"af-tab" + (mode === "drop" ? " on" : "")} onClick={() => setMode("drop")}>드래그앤드롭</button>
             </div>
-            {mode === "cells" && imgScenes.map((s) => (
+            {mode === "cells" && scenes.map((s) => (
               <div key={s.id}>
                 <p className="af-slab">{s.label}</p>
                 <div className="af-cells">{Array.from({ length: s.count }, (_, i) => cellView(`${s.id}${i + 1}`))}</div>
@@ -318,7 +330,7 @@ function Editor({ scenes, dir, files, onClose, onSaved, theme }) {
           <>
             <div className="af-mh"><h3 className="af-mt">이 이미지가 맞나요?</h3></div>
             <div className="af-cells">{keys.filter((k) => pending[k] || (!removed[k] && files[k])).map(cellView)}</div>
-            <p className="af-hint">Enter = 업로드 · ESC = 취소{Object.keys(removed).filter((k)=>!pending[k]&&files[k]).length ? ` · 삭제 예정 ${Object.keys(removed).filter((k)=>!pending[k]&&files[k]).length}건 포함` : ""}</p>
+            <p className="af-hint">Enter = 업로드 · ESC = 취소{delCount ? ` · 삭제 예정 ${delCount}건 포함` : ""}</p>
             <div className="af-foot">
               <button className="af-btn af-cancel" onClick={() => setConfirming(false)} disabled={busy}>취소</button>
               <button className="af-btn af-ok" onClick={doSave} disabled={busy}>{busy ? "업로드 중…" : "확인 — 업로드"}</button>
@@ -329,3 +341,5 @@ function Editor({ scenes, dir, files, onClose, onSaved, theme }) {
     </>
   );
 }
+
+export default AnimScene;
