@@ -3,6 +3,7 @@ import { getConcept, getAdoptedQna, askQuestion } from "../lib/concepts";
 import { supabase } from "../supabaseClient";
 import { qcode } from "../lib/qcode";
 import QuestionChat from "./QuestionChat";
+import AnimFigure from "./AnimFigure";
 
 // 개념 뷰어: concepts.blocks(jsonb) 렌더링 + 채택 QnA 말풍선 + 질문 접수
 // props: conceptId, theme('light'|'dark')
@@ -94,7 +95,9 @@ function Rich({ text, tn, theme }) {
   })}</>);
 }
 
-function Figure({ figure }) {
+function Figure({ figure, conceptId, blockId, isAdmin, theme }) {
+  if (figure?.kind === "animset")
+    return <AnimFigure figure={figure} conceptId={conceptId} blockId={blockId} isAdmin={isAdmin} theme={theme} />;
   if (!figure?.src) return null;
   return (
     <figure className="cv-fig">
@@ -104,15 +107,15 @@ function Figure({ figure }) {
   );
 }
 
-function TextBlock({ b, sz, t, theme }) {
+function TextBlock({ b, sz, t, theme, conceptId, isAdmin }) {
   return (
     <div className="cv-card" style={{ background: t.bg, borderColor: t.border, padding: sz.pad }}>
       {b.lines.map((l, i) => <p key={i} className="cv-p" style={{ fontSize: sz.body, color: "var(--ink)" }}><Rich text={l} tn={b.style?.tone} theme={theme} /></p>)}
-      <Figure figure={b.figure} />
+      <Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
     </div>
   );
 }
-function DefinitionBlock({ b, sz, t, theme }) {
+function DefinitionBlock({ b, sz, t, theme, conceptId, isAdmin }) {
   return (
     <div className="cv-card" style={{ background: t.bg, borderColor: t.border, padding: sz.pad, height: "100%" }}>
       <p style={{ fontSize: sz.head, lineHeight: 1.45, color: "var(--ink)", margin: 0 }}>
@@ -123,11 +126,11 @@ function DefinitionBlock({ b, sz, t, theme }) {
       </p>
       <p className="cv-chiplab">{b.chipLabel}</p>
       <div className="cv-chips">{b.chips?.map((n) => <span key={n} className="cv-chip" style={{ background: t.solid }}>{n}</span>)}</div>
-      <Figure figure={b.figure} />
+      <Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
     </div>
   );
 }
-function WarningBlock({ b, sz, t, theme }) {
+function WarningBlock({ b, sz, t, theme, conceptId, isAdmin }) {
   return (
     <div className="cv-card" style={{ background: t.bg, borderColor: t.border, padding: sz.pad }}>
       {b.items.map((it, i) => (
@@ -136,11 +139,11 @@ function WarningBlock({ b, sz, t, theme }) {
           <p className="cv-p" style={{ fontSize: sz.body, margin: 0, color: "var(--ink)" }}><Rich text={it} tn={b.style?.tone} theme={theme} /></p>
         </div>
       ))}
-      <Figure figure={b.figure} />
+      <Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
     </div>
   );
 }
-function CheckBlock({ b, sz, t, theme }) {
+function CheckBlock({ b, sz, t, theme, conceptId, isAdmin }) {
   const [show, setShow] = useState(false);
   return (
     <div className="cv-card" style={{ background: "var(--surface)", borderColor: t.border, padding: sz.pad }}>
@@ -191,7 +194,7 @@ export function BlockPreview({ b, theme = "light" }) {
             <h2 className="cv-label" style={{ color: t.text }}>{b.label}</h2>
           </div>
         </div>
-        {R ? <R b={b} sz={sz} t={t} theme={theme} />
+        {R ? <R b={b} sz={sz} t={t} theme={theme} conceptId={conceptId} isAdmin={isAdmin} />
            : <p style={{ color: "var(--mut)", fontSize: 13 }}>알 수 없는 단락 유형: {String(b.type)}</p>}
       </section>
     </div>
@@ -237,7 +240,7 @@ function BlockShell({ b, qna, theme, conceptId, isAdmin, onAsk }) {
           ?{qna.length > 1 && <span className="cv-qbadge">{qna.length}</span>}
         </button>
       </div>
-      <R b={b} sz={sz} t={t} theme={theme} />
+      <R b={b} sz={sz} t={t} theme={theme} conceptId={conceptId} isAdmin={isAdmin} />
       {open && (
         <div className="cv-bubblewrap">
           <div className="cv-tail" />
