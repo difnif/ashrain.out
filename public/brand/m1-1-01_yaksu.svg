@@ -1,101 +1,98 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 470" font-family="'Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 560" font-family="sans-serif">
   <style>
-    .g0{opacity:0;animation:kIn 13s linear infinite}
-    .gL{animation:kSplitL 13s ease-in-out infinite}
-    .gR{animation:kSplitR 13s ease-in-out infinite}
-    .lab{opacity:0;animation:kLab 13s linear infinite}
-    .arr{opacity:0;animation:kArr 13s linear infinite}
-    .arrp{stroke-dasharray:230;stroke-dashoffset:230;animation:kDraw 13s linear infinite}
-    .res{opacity:0;animation:kRes 13s linear infinite}
-    .m1{opacity:0;animation:kM1 13s linear infinite}
-    .m2{opacity:0;animation:kM2 13s linear infinite}
-    .m3{opacity:0;animation:kM3 13s linear infinite}
-    .dim68{animation:kDim 13s linear infinite}
-    @keyframes kIn{0%{opacity:0}3%{opacity:1}94%{opacity:1}98%,100%{opacity:0}}
-    @keyframes kSplitL{0%,15%{transform:translateX(0)}25%{transform:translateX(-118px)}94%,100%{transform:translateX(-118px)}}
-    @keyframes kSplitR{0%,15%{transform:translateX(0)}25%{transform:translateX(118px)}94%,100%{transform:translateX(118px)}}
-    @keyframes kLab{0%,26%{opacity:0}30%{opacity:1}94%{opacity:1}98%,100%{opacity:0}}
-    @keyframes kArr{0%,35%{opacity:0}37%{opacity:1}94%{opacity:1}98%,100%{opacity:0}}
-    @keyframes kDraw{0%,35%{stroke-dashoffset:230}45%{stroke-dashoffset:0}94%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
-    @keyframes kRes{0%,44%{opacity:0;transform:translateY(10px)}49%{opacity:1;transform:translateY(0)}94%{opacity:1}98%,100%{opacity:0}}
-    @keyframes kM1{0%,53%{opacity:0}57%{opacity:1}94%{opacity:1}98%,100%{opacity:0}}
-    @keyframes kM2{0%,64%{opacity:0}68%{opacity:1}94%{opacity:1}98%,100%{opacity:0}}
-    @keyframes kM3{0%,75%{opacity:0}79%{opacity:1}94%{opacity:1}98%,100%{opacity:0}}
-    @keyframes kDim{0%,84%{opacity:1}88%{opacity:.3}94%{opacity:.3}98%,100%{opacity:1}}
+    /* 기본 상태 = 완성 장면 (애니메이션 미지원 환경에서도 온전히 보임)
+       브라우저에서는 15초 루프 프레젠테이션으로 순차 등장 */
+    .s1{animation:sh 15s linear infinite}
+    .s2{animation:s2 15s linear infinite}
+    .s3{animation:s3 15s linear infinite}
+    .s4{animation:s4 15s linear infinite}
+    .s5{animation:s5 15s linear infinite}
+    .thread{stroke-dasharray:520;animation:wind 15s linear infinite}
+    .boxsh{transform-box:fill-box;transform-origin:center;animation:shrink 15s ease-in-out infinite}
+    .halfL{transform-box:fill-box;transform-origin:center;animation:hL 15s ease-in-out infinite}
+    .halfR{transform-box:fill-box;transform-origin:center;animation:hR 15s ease-in-out infinite}
+    .cut{animation:cut 15s linear infinite}
+    .guide{stroke-dasharray:150;animation:gd 15s linear infinite}
+    @keyframes sh{0%{opacity:0}2%,96%{opacity:1}100%{opacity:1}}
+    @keyframes s2{0%,22%{opacity:0}26%,96%{opacity:1}100%{opacity:1}}
+    @keyframes s3{0%,36%{opacity:0}40%,96%{opacity:1}100%{opacity:1}}
+    @keyframes s4{0%,56%{opacity:0}60%,96%{opacity:1}100%{opacity:1}}
+    @keyframes s5{0%,73%{opacity:0}77%,96%{opacity:1}100%{opacity:1}}
+    @keyframes wind{0%,38%{stroke-dashoffset:520}52%,100%{stroke-dashoffset:0}}
+    @keyframes shrink{0%,40%{transform:scale(1)}54%,100%{transform:scale(.8)}}
+    @keyframes hL{0%,58%{transform:translateX(14px) rotate(0deg)}66%,100%{transform:translateX(0) rotate(-7deg)}}
+    @keyframes hR{0%,58%{transform:translateX(-14px) rotate(0deg)}66%,100%{transform:translateX(0) rotate(7deg)}}
+    @keyframes cut{0%,58%{opacity:0}61%{opacity:1}66%{opacity:0}96%{opacity:0}100%{opacity:0}}
+    @keyframes gd{0%,80%{stroke-dashoffset:150}90%,100%{stroke-dashoffset:0}}
     text{user-select:none}
   </style>
 
-  <!-- 패널 배경 -->
-  <rect x="1.5" y="1.5" width="757" height="467" rx="18" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="3"/>
+  <rect x="1.5" y="1.5" width="757" height="557" rx="18" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="3"/>
 
-  <!-- 1) 한자 등장 → 쪼개짐 -->
-  <g class="g0">
-    <g class="gL"><text x="345" y="118" text-anchor="middle" font-size="86" font-weight="800" fill="#1F2937">約</text></g>
-    <g class="gR"><text x="425" y="118" text-anchor="middle" font-size="86" font-weight="800" fill="#1F2937">數</text></g>
+  <!-- ① 한자 분해 + 수식 관계 -->
+  <g class="s1">
+    <text x="235" y="92" text-anchor="middle" font-size="70" font-weight="800" fill="#1F2937">約</text>
+    <text x="525" y="92" text-anchor="middle" font-size="70" font-weight="800" fill="#1F2937">數</text>
+    <text x="235" y="124" text-anchor="middle" font-size="18" font-weight="800" fill="#D97706">줄일 약</text>
+    <text x="525" y="124" text-anchor="middle" font-size="18" font-weight="800" fill="#64748B">셈 수</text>
+  </g>
+  <g class="s2">
+    <path d="M 268 118 C 330 152, 430 152, 492 120" fill="none" stroke="#0D9488" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M 492 120 l -15 3 l 8 13 z" fill="#0D9488"/>
+    <text x="380" y="163" text-anchor="middle" font-size="16" font-weight="700" fill="#0D9488">約이 數를 꾸며요</text>
+    <text x="380" y="192" text-anchor="middle" font-size="24" font-weight="800" fill="#0D9488">= "줄여 주는 수"</text>
   </g>
 
-  <!-- 2) 글자별 뜻 -->
-  <g class="lab">
-    <text x="227" y="152" text-anchor="middle" font-size="21" font-weight="800" fill="#D97706">줄일 약</text>
-    <text x="543" y="152" text-anchor="middle" font-size="21" font-weight="800" fill="#64748B">셈 수</text>
-  </g>
-
-  <!-- 3) 수식 화살표: 約이 數를 꾸며요 -->
-  <g class="arr">
-    <path class="arrp" d="M 260 165 C 320 205, 450 205, 512 168" fill="none" stroke="#0D9488" stroke-width="4" stroke-linecap="round"/>
-    <path d="M 512 168 l -16 2 l 9 14 z" fill="#0D9488"/>
-    <text x="385" y="218" text-anchor="middle" font-size="18" font-weight="700" fill="#0D9488">約이 數를 꾸며 줘요</text>
-  </g>
-
-  <!-- 4) 해석 -->
-  <g class="res">
-    <text x="380" y="262" text-anchor="middle" font-size="30" font-weight="800" fill="#0D9488">= "줄여 주는 수"</text>
-  </g>
-
-  <!-- 5) 일상어 미니 그림 -->
-  <!-- 요약: 종이 3장 → 1장 -->
-  <g class="m1">
-    <rect x="76" y="306" width="34" height="44" rx="4" fill="#FFFFFF" stroke="#94A3B8" stroke-width="2" transform="rotate(-8 93 328)"/>
-    <rect x="92" y="302" width="34" height="44" rx="4" fill="#FFFFFF" stroke="#94A3B8" stroke-width="2"/>
-    <rect x="108" y="306" width="34" height="44" rx="4" fill="#FFFFFF" stroke="#94A3B8" stroke-width="2" transform="rotate(8 125 328)"/>
-    <text x="163" y="332" font-size="20" fill="#64748B">→</text>
-    <rect x="186" y="302" width="34" height="44" rx="4" fill="#CCFBF1" stroke="#0D9488" stroke-width="2"/>
-    <line x1="192" y1="314" x2="214" y2="314" stroke="#0D9488" stroke-width="2.5"/>
-    <line x1="192" y1="324" x2="214" y2="324" stroke="#0D9488" stroke-width="2.5"/>
-    <line x1="192" y1="334" x2="206" y2="334" stroke="#0D9488" stroke-width="2.5"/>
-    <text x="148" y="382" text-anchor="middle" font-size="16.5" font-weight="700" fill="#1F2937">요약 — 내용 줄이기</text>
-  </g>
-
-  <!-- 절약: 동전 4개 → 2개 -->
-  <g class="m2">
-    <circle cx="318" cy="318" r="14" fill="#FDE68A" stroke="#D97706" stroke-width="2"/>
-    <circle cx="348" cy="318" r="14" fill="#FDE68A" stroke="#D97706" stroke-width="2"/>
-    <g class="dim68">
-      <circle cx="318" cy="345" r="14" fill="#FDE68A" stroke="#D97706" stroke-width="2"/>
-      <circle cx="348" cy="345" r="14" fill="#FDE68A" stroke="#D97706" stroke-width="2"/>
+  <!-- ② 約의 어원: 실(糸)로 묶으면 부피가 준다 -->
+  <g class="s3">
+    <text x="185" y="242" text-anchor="middle" font-size="16.5" font-weight="800" fill="#1F2937">約 — 실(糸)로 <tspan fill="#0D9488">묶어서 줄이기</tspan></text>
+    <g class="boxsh">
+      <rect x="130" y="258" width="110" height="76" rx="8" fill="#FDE68A" stroke="#D97706" stroke-width="2.5"/>
     </g>
-    <text x="318" y="324" text-anchor="middle" font-size="13" font-weight="800" fill="#B45309">₩</text>
-    <text x="348" y="324" text-anchor="middle" font-size="13" font-weight="800" fill="#B45309">₩</text>
-    <text x="333" y="382" text-anchor="middle" font-size="16.5" font-weight="700" fill="#1F2937">절약 — 씀씀이 줄이기</text>
+    <path class="thread" d="M 118 272 Q 185 258 252 272 Q 185 288 118 288 Q 185 274 252 296 Q 185 312 118 306 Q 185 296 252 318"
+      fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"/>
+    <text x="185" y="360" text-anchor="middle" font-size="13.5" fill="#64748B">감을수록 꽉 — 부피가 줄어요</text>
+    <rect x="112" y="372" width="146" height="24" rx="12" fill="#CCFBF1"/>
+    <text x="185" y="388" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0F766E">약속(約束)의 그 約!</text>
   </g>
 
-  <!-- 약분: 6/8 → 3/4 -->
-  <g class="m3">
-    <g class="dim68">
-      <text x="508" y="320" text-anchor="middle" font-size="25" font-weight="700" fill="#64748B">6</text>
-      <line x1="490" y1="328" x2="526" y2="328" stroke="#64748B" stroke-width="2.5"/>
-      <text x="508" y="352" text-anchor="middle" font-size="25" font-weight="700" fill="#64748B">8</text>
+  <!-- ③ 分 대비: 물리적으로 쪼개기 -->
+  <g class="s4">
+    <text x="575" y="242" text-anchor="middle" font-size="16.5" font-weight="800" fill="#1F2937">分 — 칼로 <tspan fill="#DC2626">쪼개기</tspan></text>
+    <g class="halfL"><path d="M 512 258 h 56 l -10 76 h -46 z" fill="#FECACA" stroke="#DC2626" stroke-width="2.5"/></g>
+    <g class="halfR"><path d="M 582 258 h 56 v 76 h -66 z" fill="#FECACA" stroke="#DC2626" stroke-width="2.5"/></g>
+    <path class="cut" d="M 578 246 l -8 24 l 10 -6 l -9 26 l 11 -7 l -8 26" fill="none" stroke="#DC2626" stroke-width="3" stroke-linecap="round"/>
+    <text x="575" y="360" text-anchor="middle" font-size="13.5" fill="#64748B">조각이 나뉘어요 — 개수가 늘어남</text>
+  </g>
+
+  <!-- ④ 約의 결정타: 값은 그대로, 모양만 — 약분 -->
+  <g class="s5">
+    <text x="380" y="432" text-anchor="middle" font-size="16.5" font-weight="800" fill="#1F2937">約은 <tspan fill="#0D9488">값은 그대로, 모양만 줄여요</tspan> — 약분 6/8 = 3/4</text>
+    <!-- 6/8 막대 -->
+    <g>
+      <rect x="200" y="448" width="270" height="26" rx="5" fill="#FFFFFF" stroke="#94A3B8" stroke-width="2"/>
+      <rect x="200" y="448" width="202.5" height="26" rx="5" fill="#99F6E4"/>
+      <line x1="233.75" y1="448" x2="233.75" y2="474" stroke="#94A3B8" stroke-width="1.5"/>
+      <line x1="267.5" y1="448" x2="267.5" y2="474" stroke="#94A3B8" stroke-width="1.5"/>
+      <line x1="301.25" y1="448" x2="301.25" y2="474" stroke="#94A3B8" stroke-width="1.5"/>
+      <line x1="335" y1="448" x2="335" y2="474" stroke="#94A3B8" stroke-width="1.5"/>
+      <line x1="368.75" y1="448" x2="368.75" y2="474" stroke="#94A3B8" stroke-width="1.5"/>
+      <line x1="402.5" y1="448" x2="402.5" y2="474" stroke="#94A3B8" stroke-width="1.5"/>
+      <line x1="436.25" y1="448" x2="436.25" y2="474" stroke="#94A3B8" stroke-width="1.5"/>
+      <text x="490" y="467" font-size="16" font-weight="700" fill="#64748B">6/8</text>
     </g>
-    <text x="553" y="338" font-size="20" fill="#64748B">→</text>
-    <text x="600" y="320" text-anchor="middle" font-size="25" font-weight="800" fill="#0D9488">3</text>
-    <line x1="582" y1="328" x2="618" y2="328" stroke="#0D9488" stroke-width="3"/>
-    <text x="600" y="352" text-anchor="middle" font-size="25" font-weight="800" fill="#0D9488">4</text>
-    <text x="576" y="382" text-anchor="middle" font-size="16.5" font-weight="700" fill="#1F2937">약분 — 분수 줄이기</text>
-    <text x="576" y="404" text-anchor="middle" font-size="13.5" font-weight="700" fill="#0D9488">(크기는 그대로, 모양만 간단히!)</text>
-  </g>
-
-  <!-- 하단 캡션 -->
-  <g class="m3">
-    <text x="380" y="443" text-anchor="middle" font-size="15" fill="#64748B">셋 다 약수(約數)의 '約' — 같은 글자예요</text>
+    <!-- 3/4 막대 (같은 폭!) -->
+    <g>
+      <rect x="200" y="486" width="270" height="26" rx="5" fill="#FFFFFF" stroke="#0D9488" stroke-width="2.5"/>
+      <rect x="200" y="486" width="202.5" height="26" rx="5" fill="#5EEAD4"/>
+      <line x1="267.5" y1="486" x2="267.5" y2="512" stroke="#0D9488" stroke-width="1.5"/>
+      <line x1="335" y1="486" x2="335" y2="512" stroke="#0D9488" stroke-width="1.5"/>
+      <line x1="402.5" y1="486" x2="402.5" y2="512" stroke="#0D9488" stroke-width="1.5"/>
+      <text x="490" y="505" font-size="16" font-weight="800" fill="#0D9488">3/4</text>
+    </g>
+    <!-- 같은 크기 가이드 -->
+    <line class="guide" x1="402.5" y1="442" x2="402.5" y2="518" stroke="#0D9488" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="560" y="482" font-size="13.5" font-weight="700" fill="#0D9488">색칠된 크기 똑같죠?</text>
+    <text x="380" y="541" text-anchor="middle" font-size="13" fill="#64748B">칸만 줄었을 뿐(8칸→4칸), 양은 그대로 — 이게 '줄일 約'이에요</text>
   </g>
 </svg>
