@@ -1,6 +1,6 @@
 // ashrain.out — 질문챗 (v2.0)
 // 학생: 질문 입력 → [AI에게 바로 / 선생님께 남기기 / 비슷한 질문 찾기] (전면 무료, 안전 한도만)
-// 관리자: 같은 시트에서 바로 AI 집필 대화 — 자동 저장 + 📌 요청사항 태그, 목록은 #/admin/chats
+// 관리자: Fable 집필 대화 — 초안 자동 저장·이어쓰기, [✅ 마무리]에서 제목 확정 (자동 제안 포함)
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { askQuestion } from "../lib/concepts";
@@ -56,6 +56,14 @@ const CSS = `
 .qch-reqmark { display: inline-block; font-size: 10.5px; font-weight: 800; color: var(--ac);
   border: 1px solid var(--ac); border-radius: 999px; padding: 0 7px; margin-bottom: 3px; }
 .qch-warn { color: #DC2626; font-size: 12px; margin: 2px 0 10px; }
+.qch-fin { border-top: 1px solid var(--bd); padding: 12px 14px; background: var(--card); }
+.qch-fin-t { font-size: 12.5px; font-weight: 800; color: var(--ink); margin: 0 0 8px; }
+.qch-fin-row { display: flex; gap: 8px; }
+.qch-fin-in { flex: 1; background: var(--in); border: 1px solid var(--inbd); border-radius: 10px;
+  color: var(--ink); font-size: 14px; padding: 10px 12px; outline: none; box-sizing: border-box; }
+.qch-sug { margin-top: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--mut); }
+.qch-sug-chip { background: transparent; border: 1px solid var(--ac); color: var(--ac); border-radius: 999px;
+  font-size: 12px; font-weight: 700; padding: 5px 11px; cursor: pointer; }
 `;
 
 let seq = 0;
@@ -71,17 +79,44 @@ export default function QuestionChat({ conceptId, block, theme = "light", answer
   const [hist, setHist] = useState([]);          // AI용 { role, content, tag? }
   const [reqMode, setReqMode] = useState(false); // (관리자) 📌 요청사항으로 기록
   const [saveWarn, setSaveWarn] = useState("");
+  const [started, setStarted] = useState(false); // (관리자) 저장 중인 초안 존재
+  const [fin, setFin] = useState(null);          // (관리자) { title, sug, busy } — 마무리 패널
   const uidRef = useRef(null);
   const chatIdRef = useRef(null);                // (관리자) 저장 중인 대화 id
   const endRef = useRef(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => { uidRef.current = data?.user?.id || null; });
-    const first = isAdmin
-      ? [mk("bot", `무엇이든 물어보세요 — 이 대화는 자동 저장돼요.\n📌 버튼을 켜고 보내면 "요청사항"으로만 기록돼요 (AI 응답 없음).`)]
-      : [mk("bot", `이 단락에서 무엇이 궁금한가요?\n편하게 물어보세요 😊`)];
-    if (answered.length) first.push(mk("chips", "", { chips: [["seen", `💬 이 단락의 질문 ${answered.length}개 보기`]], sub: true }));
-    setMsgs(first);
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      uidRef.current = data?.user?.id || null;
+      // (관리자) 이 단락의 마무리 전 초안이 있으면 이어쓰기
+      if (isAdmin && uidRef.current) {
+        const { data: draft } = await supabase.from("concept_chats").select("*")
+          .eq("concept_id", conceptId).eq("block_id", String(block.id))
+          .eq("created_by", uidRef.current).eq("status", "draft")
+          .order("updated_at", { ascending: false }).limit(1).maybeSingle();
+        if (draft) {
+          chatIdRef.current = draft.id; setStarted(true);
+          const { data: ms2 } = await supabase.from("concept_chat_messages").select("*")
+            .eq("chat_id", draft.id).order("created_at", { ascending: true });
+          const restored = []; const h = [];
+          for (const m of ms2 || []) {
+            if (m.role === "user") {
+              restored.push(mk("me", m.content, m.tag === "request" ? { req: true } : undefined));
+              h.push({ role: "user", content: m.content, ...(m.tag === "request" ? { tag: "request" } : {}) });
+            } else { restored.push(mk("ai", m.content)); h.push({ role: "assistant", content: m.content }); }
+          }
+          setHist(h);
+          setMsgs([mk("bot", "저장된 초안을 이어서 계속해요 — [✅ 마무리]를 누르기 전까지 한 대화로 이어져요."), ...restored]);
+          return;
+        }
+      }
+      const first = isAdmin
+        ? [mk("bot", `무엇이든 물어보세요 — 대화는 초안으로 자동 저장되고, [✅ 마무리]에서 제목을 붙여 확정해요.\n📌 버튼을 켜고 보내면 "요청사항"으로만 기록돼요 (AI 응답 없음).`)]
+        : [mk("bot", `이 단락에서 무엇이 궁금한가요?\n편하게 물어보세요 😊`)];
+      if (answered.length) first.push(mk("chips", "", { chips: [["seen", `💬 이 단락의 질문 ${answered.length}개 보기`]], sub: true }));
+      setMsgs(first);
+    })();
   }, []); // eslint-disable-line
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [msgs, busy]);
@@ -92,10 +127,10 @@ export default function QuestionChat({ conceptId, block, theme = "light", answer
   const ensureChat = async (firstText) => {
     if (chatIdRef.current || !uidRef.current) return chatIdRef.current;
     const { data, error } = await supabase.from("concept_chats")
-      .insert({ concept_id: conceptId, block_id: String(block.id), created_by: uidRef.current, title: firstText.slice(0, 40) })
+      .insert({ concept_id: conceptId, block_id: String(block.id), created_by: uidRef.current, status: "draft" })
       .select().single();
     if (error) { setSaveWarn("저장 실패: " + error.message + " (concept_chats SQL 실행 여부 확인)"); return null; }
-    chatIdRef.current = data.id;
+    chatIdRef.current = data.id; setStarted(true);
     return data.id;
   };
   const saveMsg = async (role, content, tag = null) => {
@@ -103,6 +138,7 @@ export default function QuestionChat({ conceptId, block, theme = "light", answer
     const { error } = await supabase.from("concept_chat_messages")
       .insert({ chat_id: chatIdRef.current, role, content, tag });
     if (error) setSaveWarn("저장 실패: " + error.message);
+    else supabase.from("concept_chats").update({ updated_at: new Date().toISOString() }).eq("id", chatIdRef.current).then(() => {});
   };
 
   const callAI = async (history) => {
@@ -120,6 +156,24 @@ export default function QuestionChat({ conceptId, block, theme = "light", answer
     } catch (e) {
       push(mk("bot", "⚠ " + e.message));
     } finally { setBusy(false); }
+  };
+
+  const openFinish = async () => {
+    if (!chatIdRef.current) return;
+    const firstUser = hist.find((m) => m.role === "user")?.content || "";
+    setFin({ title: firstUser.slice(0, 28), sug: "", busy: true }); // 즉시 폴백 → AI 제안으로 보강
+    try {
+      const transcript = hist.map((m) => `[${m.role === "user" ? "질문" : "답"}] ${m.content}`).join("\n").slice(-4000);
+      const r = await api("ai", { task: "title", transcript }, { auth: true });
+      setFin((s) => (s ? { ...s, sug: r.title, busy: false } : s));
+    } catch { setFin((s) => (s ? { ...s, busy: false } : s)); }
+  };
+  const finish = async () => {
+    const t = (fin?.title || "").trim() || "제목 없는 대화";
+    await supabase.from("concept_chats")
+      .update({ title: t, status: "done", updated_at: new Date().toISOString() }).eq("id", chatIdRef.current);
+    chatIdRef.current = null; setStarted(false); setHist([]); setFin(null); setReqMode(false);
+    setMsgs([mk("bot", `대화를 마무리했어요 ✅ "${t}"\n🗂 질문대화 목록에서 볼 수 있어요. 새 대화를 시작하려면 이어서 입력하세요.`)]);
   };
 
   const send = async () => {
@@ -189,6 +243,10 @@ export default function QuestionChat({ conceptId, block, theme = "light", answer
         <div className="qch-head">
           <span className="qch-code">{code}</span>
           <span className="qch-t">{block?.label || "질문하기"}</span>
+          {isAdmin && started && !fin && (
+            <button className="qch-list" style={{ color: "var(--ac)", fontWeight: 800, textDecoration: "none" }}
+              onClick={openFinish}>✅ 마무리</button>
+          )}
           {isAdmin && <button className="qch-list" onClick={() => { onClose(); location.hash = "#/admin/chats"; }}>🗂 목록</button>}
           <button className="qch-x" onClick={onClose}>✕</button>
         </div>
@@ -227,14 +285,30 @@ export default function QuestionChat({ conceptId, block, theme = "light", answer
           {saveWarn && <p className="qch-warn">⚠ {saveWarn}</p>}
           <div ref={endRef} />
         </div>
+        {fin && (
+          <div className="qch-fin">
+            <p className="qch-fin-t">이 대화의 제목을 붙여 마무리할까요?</p>
+            <div className="qch-fin-row">
+              <input className="qch-fin-in" value={fin.title} placeholder="대화 제목"
+                onChange={(e) => setFin((s) => ({ ...s, title: e.target.value }))} />
+              <button className="qch-send" onClick={finish}>저장</button>
+              <button className="qch-req" onClick={() => setFin(null)}>취소</button>
+            </div>
+            <div className="qch-sug">
+              {fin.busy ? "🤖 제안 만드는 중…" : fin.sug ? (
+                <>제안: <button className="qch-sug-chip" onClick={() => setFin((s) => ({ ...s, title: s.sug }))}>🤖 {fin.sug}</button></>
+              ) : null}
+            </div>
+          </div>
+        )}
         <div className="qch-inbar">
           {isAdmin && <button className={"qch-req" + (reqMode ? " on" : "")} title="요청사항으로 기록"
             onClick={() => setReqMode((v) => !v)}>📌</button>}
-          <textarea className="qch-ta" value={input}
+          <textarea className="qch-ta" value={input} disabled={!!fin}
             placeholder={isAdmin ? (reqMode ? "요청사항으로 기록 (AI 응답 없음)" : "무엇이든 물어보세요 — 자동 저장돼요") : aiMode ? "꼬리 질문을 이어서 물어보세요" : "궁금한 점을 적어보세요"}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} />
-          <button className="qch-send" onClick={send} disabled={busy || !input.trim()}>보내기</button>
+          <button className="qch-send" onClick={send} disabled={busy || !!fin || !input.trim()}>보내기</button>
         </div>
       </div>
     </>

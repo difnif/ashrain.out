@@ -5,6 +5,7 @@ import { supabase } from "../supabaseClient";
 import { getConcept } from "../lib/concepts";
 import { qcode, UNIT_LETTER, UNIT_NAME } from "../lib/qcode";
 import { BlockPreview } from "./ConceptViewer";
+import { api } from "../lib/authx";
 
 const CSS = `
 .ah-root { min-height: 100vh; padding: 18px 12px 60px; box-sizing: border-box;
@@ -57,6 +58,16 @@ const CSS = `
 .ah-b { border: 1px solid var(--bd); border-radius: 12px; padding: 10px 12px; font-size: 14px;
   line-height: 1.65; color: var(--ink); white-space: pre-wrap; word-break: break-word; background: var(--in); }
 .ah-me .ah-b { background: var(--me); }
+.ah-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.ah-tab { background: transparent; border: 1px solid var(--bd); border-radius: 999px; color: var(--mut);
+  font-size: 12.5px; font-weight: 700; padding: 7px 13px; cursor: pointer; }
+.ah-tab.on { border-color: var(--ac); color: var(--ac); }
+.ah-draft { font-size: 10.5px; font-weight: 800; color: var(--amber, #B45309); border: 1px solid currentColor;
+  border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+.ah-dark .ah-draft { color: #FBBF24; }
+.ah-finrow { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.ah-fin-in { flex: 1; min-width: 160px; background: var(--in); border: 1px solid var(--inbd); border-radius: 10px;
+  color: var(--ink); font-size: 13.5px; padding: 9px 11px; outline: none; box-sizing: border-box; }
 .ah-edit { width: 100%; min-height: 90px; background: var(--in); border: 1px solid var(--inbd); border-radius: 10px;
   color: var(--ink); font-size: 14px; padding: 10px; outline: none; resize: vertical; }
 `;
@@ -69,6 +80,9 @@ export default function AdminChats({ theme = "light" }) {
   const [titles, setTitles] = useState({});
   const [checked, setChecked] = useState(new Set());
   const [f, setF] = useState({ letter: "", q: "" });
+  const [st, setSt] = useState("done");           // done | draft | "" (전체)
+  const [finT, setFinT] = useState("");           // (초안) 마무리 제목
+  const [finBusy, setFinBusy] = useState(false);
   const [sel, setSel] = useState(null);
   const [msgs, setMsgs] = useState([]);
   const [editing, setEditing] = useState(null);
@@ -94,17 +108,37 @@ export default function AdminChats({ theme = "light" }) {
   }, [load]);
 
   const shown = items.filter((r) =>
+    (!st || (r.status || "done") === st) &&
     (!f.letter || qcode(r.concept_id, r.block_id).startsWith(f.letter)) &&
     (!f.q || (r.title || "").toLowerCase().includes(f.q.toLowerCase()) || r.concept_id.includes(f.q)));
 
   const toggle = (id) => setChecked((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const openItem = async (r) => {
-    setSel(r); setEditing(null); setSelConcept(null);
+    setSel(r); setEditing(null); setSelConcept(null); setFinBusy(false);
     const { data } = await supabase.from("concept_chat_messages").select("*")
       .eq("chat_id", r.id).order("created_at", { ascending: true });
     setMsgs(data || []);
+    setFinT(r.title || ((data || []).find((m) => m.role === "user")?.content || "").slice(0, 28));
     getConcept(r.concept_id).then(setSelConcept).catch(() => setSelConcept(null));
+  };
+
+  const suggestT = async () => {
+    if (finBusy || !msgs.length) return;
+    setFinBusy(true);
+    try {
+      const transcript = msgs.map((m) => `[${m.role === "user" ? "질문" : "답"}] ${m.content}`).join("\n").slice(-4000);
+      const r = await api("ai", { task: "title", transcript }, { auth: true });
+      setFinT(r.title);
+    } catch { /* 무시 */ }
+    setFinBusy(false);
+  };
+  const finishSel = async () => {
+    const t = finT.trim() || "제목 없는 대화";
+    await supabase.from("concept_chats")
+      .update({ title: t, status: "done", updated_at: new Date().toISOString() }).eq("id", sel.id);
+    setSel((s) => ({ ...s, title: t, status: "done" }));
+    load();
   };
 
   const buildExport = async (rows) => {
@@ -122,7 +156,7 @@ export default function AdminChats({ theme = "light" }) {
         id: r.id, q_code: qcode(r.concept_id, r.block_id),
         concept_id: r.concept_id, concept_title: con?.title || titles[r.concept_id] || "",
         block_id: r.block_id, block: blk,
-        title: r.title, created_at: r.created_at,
+        title: r.title, status: r.status || "done", created_at: r.created_at,
         requests: (ms || []).filter((m) => m.tag === "request").map((m) => m.content),
         messages: ms || [],
       });
@@ -182,6 +216,11 @@ export default function AdminChats({ theme = "light" }) {
 
         {!sel && (
           <>
+            <div className="ah-tabs">
+              {[["done", "✅ 마무리됨"], ["draft", "📝 작성 중"], ["", "전체"]].map(([k, label]) => (
+                <button key={k || "all"} className={"ah-tab" + (st === k ? " on" : "")} onClick={() => setSt(k)}>{label}</button>
+              ))}
+            </div>
             <div className="ah-filters">
               <select className="ah-sel" value={f.letter} onChange={(e) => setF((s) => ({ ...s, letter: e.target.value }))}>
                 <option value="">전체 과정</option>
@@ -204,7 +243,10 @@ export default function AdminChats({ theme = "light" }) {
                 <input type="checkbox" className="ah-chk" checked={checked.has(r.id)} onChange={() => toggle(r.id)} />
                 <span className="ah-code">{qcode(r.concept_id, r.block_id)}</span>
                 <div className="ah-main" onClick={() => openItem(r)}>
-                  <p className="ah-t">{r.title || "(제목 없는 대화)"}</p>
+                  <p className="ah-t">
+                    {(r.status || "done") === "draft" && <span className="ah-draft">작성 중</span>}
+                    {" "}{r.title || ((r.status || "done") === "draft" ? "제목 미정 — 마무리 필요" : "(제목 없는 대화)")}
+                  </p>
                   <p className="ah-c">{titles[r.concept_id] || r.concept_id} · {r.block_id}</p>
                 </div>
                 <span className="ah-date">{fmtD(r.updated_at)}</span>
@@ -224,6 +266,14 @@ export default function AdminChats({ theme = "light" }) {
               <button className="ah-mini" disabled={busy} onClick={() => exportChats([sel])}>⬇ 이 대화 JSON</button>
               <button className="ah-mini" onClick={() => delChats([sel.id])}>🗑 삭제</button>
             </div>
+            {(sel.status || "done") === "draft" && (
+              <div className="ah-finrow">
+                <input className="ah-fin-in" placeholder="대화 제목" value={finT}
+                  onChange={(e) => setFinT(e.target.value)} />
+                <button className="ah-mini" onClick={suggestT} disabled={finBusy}>{finBusy ? "…" : "🤖 제안"}</button>
+                <button className="ah-act ah-exp" onClick={finishSel}>✅ 마무리 저장</button>
+              </div>
+            )}
             <div className="ah-block">
               <details>
                 <summary>단락 미리보기 {selBlock ? "" : "(단락을 찾지 못함)"}</summary>

@@ -102,13 +102,37 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "ANTHROPIC_API_KEY가 Vercel에 설정되지 않았어요" });
 
     const { task, image, question, items, concept_id, block_id, block_json, messages } = req.body || {};
-    if (task !== "find" && task !== "qchat" && task !== "ask" && (!image || typeof image !== "string"))
+    if (task !== "find" && task !== "qchat" && task !== "ask" && task !== "title" && (!image || typeof image !== "string"))
       return res.status(400).json({ error: "이미지가 없어요" });
 
     // ── 2) 관리자 전용 태스크 확인 ──
-    if (task === "slice" || task === "answers" || task === "qchat") {
+    if (task === "slice" || task === "answers" || task === "qchat" || task === "title") {
       const { data: prof } = await sb.from("profiles").select("role").eq("id", userData.user.id).single();
       if (prof?.role !== "admin") return res.status(403).json({ error: "관리자만 사용할 수 있어요" });
+    }
+
+    // ══════════ title — 대화 제목 자동 제안 (관리자, Haiku) ══════════
+    if (task === "title") {
+      const text = String(req.body.transcript || "").slice(0, 4000);
+      if (!text.trim()) return res.status(400).json({ error: "내용이 비어 있어요" });
+      const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": process.env.ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: FIND_MODEL, max_tokens: 60,
+          system: "아래 수학 교재 집필 대화의 핵심 논제를 한국어 명사구 제목으로 요약하세요. 8~18자, 따옴표·마침표 없이 제목만 출력.",
+          messages: [{ role: "user", content: text }],
+        }),
+      });
+      const aiJson = await aiRes.json();
+      if (!aiRes.ok) return res.status(502).json({ error: "제목 생성 실패" });
+      const title = (aiJson.content || []).filter((b) => b.type === "text").map((b) => b.text).join("")
+        .trim().replace(/^["'「]+|["'」]+$/g, "").slice(0, 30);
+      return res.status(200).json({ title: title || "제목 없는 대화" });
     }
 
     // ══════════ qchat — 관리자 개념 질문 대화 (블록 단위, 다회전) ══════════
@@ -130,7 +154,7 @@ export default async function handler(req, res) {
       if (!cleaned.length) return res.status(400).json({ error: "질문이 비어 있어요" });
 
       const { data: ms } = await sb.from("app_settings").select("value").eq("key", "qchat_model").maybeSingle();
-      const model = ms?.value || "claude-sonnet-4-6";
+      const model = ms?.value || "claude-fable-5";   // 집필 대화는 Fable (app_settings로 변경 가능)
 
       const system = [
         "당신은 수학 학원 원장의 교재 집필을 돕는 협업 조수입니다.",
