@@ -70,6 +70,12 @@ const CSS = `
 .cv-plink { background: var(--card); border: 1.5px solid var(--ac); border-radius: 10px; color: var(--ac);
   font-size: 12.5px; font-weight: 800; padding: 8px 12px; cursor: pointer; }
 .cv-extwrap { margin-top: 18px; }
+.cv-twrap { overflow-x: auto; margin-top: 8px; }
+.cv-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.cv-table th, .cv-table td { border: 1px solid var(--bd); padding: 5px 9px; color: var(--ink); text-align: left; line-height: 1.5; }
+.cv-table th { background: rgba(127,127,127,.07); font-weight: 800; white-space: nowrap; }
+.cv-table td:first-child { white-space: nowrap; }
+.cv-sp { height: 10px; }
 .cv-qcode { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; color: var(--mut);
   opacity: .8; align-self: center; margin-right: 7px; white-space: nowrap; }
 .cv-qmark { position: relative; width: 28px; height: 28px; border-radius: 9999px; font-size: 14px; font-weight: 700;
@@ -126,10 +132,23 @@ function Panels({ panels, figure, conceptId, blockId, isAdmin, theme, sz }) {
       {panels.map((p) => open[p.id] && (
         <div key={p.id} className="cv-panel">
           {(p.lines || []).map((l, i) => {
+            if (l === "") return <div key={i} className="cv-sp" />;
             const fm = typeof l === "string" && l.match(/^\[\[fig:([\w-]+)\]\]$/);
             if (fm) return <AnimScene key={i} sceneId={fm[1]} figure={figure} conceptId={conceptId} blockId={blockId} isAdmin={isAdmin} theme={theme} />;
             return <p key={i} className="cv-p" style={{ fontSize: (sz?.body || 15) - 0.5, color: "var(--ink)" }}><Rich text={l} tn="slate" theme={theme} /></p>;
           })}
+          {p.kind === "table" && p.table && (
+            <div className="cv-twrap">
+              <table className="cv-table">
+                <thead><tr>{p.table.headers.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {p.table.rows.map((r, ri) => (
+                    <tr key={ri}>{r.map((c, ci) => <td key={ci}><Rich text={String(c)} tn="slate" theme={theme} /></td>)}</tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           {p.kind === "grid" && (
             <div className="cv-grid">{(p.items || []).map((it, i) => <span key={i} className="cv-gitem"><Rich text={it} tn="slate" theme={theme} /></span>)}</div>
           )}
@@ -163,6 +182,7 @@ function TextBlock({ b, sz, t, theme, conceptId, isAdmin }) {
   return (
     <div className="cv-card" style={{ background: t.bg, borderColor: t.border, padding: sz.pad }}>
       {b.lines.map((l, i) => {
+        if (l === "") return <div key={i} className="cv-sp" />;
         const fm = typeof l === "string" && l.match(/^\[\[fig:([\w-]+)\]\]$/);
         if (fm) return <AnimScene key={i} sceneId={fm[1]} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />;
         return <p key={i} className="cv-p" style={{ fontSize: sz.body, color: "var(--ink)" }}><Rich text={l} tn={b.style?.tone} theme={theme} /></p>;
