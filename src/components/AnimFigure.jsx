@@ -64,6 +64,7 @@ const CSS = `
 `;
 
 const FRAME_MS = 1600;
+export const MJ_STYLE = "flat minimal vector illustration, thick clean outlines, white background, teal and warm amber accent colors, no text, no letters, no numbers, simple friendly educational style for a middle school math app, square 1:1 --style raw --no text, letters, numbers, watermark";
 
 /* ══════════ 코드 다이어그램들 ══════════ */
 function EqualBars({ params, play }) {
@@ -285,6 +286,28 @@ function Editor({ scenes, dir, files, onClose, onSaved }) {
   };
 
   const delCount = Object.keys(removed).filter((k) => !pending[k] && files[k]).length;
+  // eslint-disable-next-line
+  function PromptCard({ scene }) {
+    const [ok, setOk] = useState(false);
+    const full = (scene.prompt ? scene.prompt + ", " : "") + MJ_STYLE;
+    const copy = async () => {
+      try { await navigator.clipboard.writeText(full); }
+      catch { const ta = document.createElement("textarea"); ta.value = full; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); }
+      setOk(true); setTimeout(() => setOk(false), 1400);
+    };
+    return (
+      <div style={{ border: "1px solid var(--bd,#DFE3E8)", borderRadius: 10, padding: "10px 12px", marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <b style={{ fontSize: 12.5, color: "var(--ink,#1F2937)", flex: 1 }}>{scene.label} ({scene.count}컷: {Array.from({length: scene.count}, (_,i)=>scene.id+(i+1)).join(", ")})</b>
+          <button className="af-tab" onClick={copy}>{ok ? "✓ 복사됨" : "📋 복사"}</button>
+        </div>
+        <p style={{ fontSize: 11.5, color: "var(--mut,#8A929C)", margin: 0, lineHeight: 1.6, wordBreak: "break-all" }}>
+          {scene.prompt ? full : "(프롬프트 미작성 — 개념 JSON의 scenes[].prompt)"}
+        </p>
+        {scene.cuts && <p style={{ fontSize: 11.5, color: "var(--mut,#8A929C)", margin: "6px 0 0" }}>컷 구성: {scene.cuts.join(" → ")}</p>}
+      </div>
+    );
+  }
   const changes = Object.keys(pending).length + delCount;
 
   return (
@@ -302,7 +325,11 @@ function Editor({ scenes, dir, files, onClose, onSaved }) {
             <div className="af-tabs">
               <button className={"af-tab" + (mode === "cells" ? " on" : "")} onClick={() => setMode("cells")}>순서대로 넣기</button>
               <button className={"af-tab" + (mode === "drop" ? " on" : "")} onClick={() => setMode("drop")}>드래그앤드롭</button>
+              <button className={"af-tab" + (mode === "prompt" ? " on" : "")} onClick={() => setMode("prompt")}>🎨 프롬프트</button>
             </div>
+            {mode === "prompt" && scenes.map((s) => (
+              <PromptCard key={s.id} scene={s} />
+            ))}
             {mode === "cells" && scenes.map((s) => (
               <div key={s.id}>
                 <p className="af-slab">{s.label}</p>

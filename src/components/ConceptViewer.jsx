@@ -55,6 +55,21 @@ const CSS = `
   font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .cv-fig { margin: 12px 0 0; } .cv-fig img { width: 100%; max-height: 256px; object-fit: contain; border-radius: 8px; display: block; }
 .cv-fig figcaption { margin-top: 4px; font-size: 11px; color: var(--mut); text-align: center; }
+.cv-panelbar { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.cv-pbtn { background: transparent; border: 1px solid var(--bd); border-radius: 999px; color: var(--mut);
+  font-size: 12.5px; font-weight: 700; padding: 7px 13px; cursor: pointer; }
+.cv-pbtn.on { border-color: var(--ac); color: var(--ac); }
+.cv-panel { margin-top: 10px; border: 1px solid var(--bd); border-radius: 12px; padding: 13px 14px;
+  background: rgba(127,127,127,.045); }
+.cv-panel .cv-p { margin: 0 0 9px; }
+.cv-panel .cv-p:last-child { margin-bottom: 0; }
+.cv-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.cv-gitem { border: 1px solid var(--bd); border-radius: 8px; padding: 5px 9px; font-size: 12.5px;
+  color: var(--ink); background: var(--card); line-height: 1.5; }
+.cv-plinks { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.cv-plink { background: var(--card); border: 1.5px solid var(--ac); border-radius: 10px; color: var(--ac);
+  font-size: 12.5px; font-weight: 800; padding: 8px 12px; cursor: pointer; }
+.cv-extwrap { margin-top: 18px; }
 .cv-qcode { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; color: var(--mut);
   opacity: .8; align-self: center; margin-right: 7px; white-space: nowrap; }
 .cv-qmark { position: relative; width: 28px; height: 28px; border-radius: 9999px; font-size: 14px; font-weight: 700;
@@ -95,6 +110,44 @@ function Rich({ text, tn, theme }) {
   })}</>);
 }
 
+function Panels({ panels, figure, conceptId, blockId, isAdmin, theme, sz }) {
+  const [open, setOpen] = useState({});
+  if (!panels?.length) return null;
+  return (
+    <>
+      <div className="cv-panelbar">
+        {panels.map((p) => (
+          <button key={p.id} className={"cv-pbtn" + (open[p.id] ? " on" : "")}
+            onClick={() => setOpen((s) => ({ ...s, [p.id]: !s[p.id] }))}>
+            {p.title} {open[p.id] ? "▴" : "▾"}
+          </button>
+        ))}
+      </div>
+      {panels.map((p) => open[p.id] && (
+        <div key={p.id} className="cv-panel">
+          {(p.lines || []).map((l, i) => {
+            const fm = typeof l === "string" && l.match(/^\[\[fig:([\w-]+)\]\]$/);
+            if (fm) return <AnimScene key={i} sceneId={fm[1]} figure={figure} conceptId={conceptId} blockId={blockId} isAdmin={isAdmin} theme={theme} />;
+            return <p key={i} className="cv-p" style={{ fontSize: (sz?.body || 15) - 0.5, color: "var(--ink)" }}><Rich text={l} tn="slate" theme={theme} /></p>;
+          })}
+          {p.kind === "grid" && (
+            <div className="cv-grid">{(p.items || []).map((it, i) => <span key={i} className="cv-gitem"><Rich text={it} tn="slate" theme={theme} /></span>)}</div>
+          )}
+          {p.links?.length > 0 && (
+            <div className="cv-plinks">
+              {p.links.map((lk) => (
+                <button key={lk.id} className="cv-plink" onClick={() => (location.hash = `#/c/${encodeURIComponent(lk.id)}`)}>
+                  {lk.label} →
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
 function Figure({ figure, conceptId, blockId, isAdmin, theme }) {
   if (figure?.kind === "animset") return null; // animset은 본문 [[fig:씬id]] 마커 자리에서 렌더
   if (!figure?.src) return null;
@@ -115,6 +168,7 @@ function TextBlock({ b, sz, t, theme, conceptId, isAdmin }) {
         return <p key={i} className="cv-p" style={{ fontSize: sz.body, color: "var(--ink)" }}><Rich text={l} tn={b.style?.tone} theme={theme} /></p>;
       })}
       <Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
+      <Panels panels={b.panels} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} sz={sz} />
     </div>
   );
 }
@@ -318,6 +372,12 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
           </footer>
         </main>
       </div>
+      {concept.ext_panels?.length > 0 && (
+        <div className="cv-extwrap">
+          <Panels panels={concept.ext_panels} figure={concept.ext_figure || null}
+            conceptId={conceptId} blockId="ext" isAdmin={isAdmin} theme={theme} />
+        </div>
+      )}
       {chatBlock && (
         <QuestionChat conceptId={conceptId} block={chatBlock} theme={theme} isAdmin={isAdmin}
           answered={byBlock(chatBlock.id)} onClose={() => setChatBlock(null)} />
