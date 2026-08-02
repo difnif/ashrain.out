@@ -56,11 +56,16 @@ const CSS = `
 .cv-fig { margin: 12px 0 0; } .cv-fig img { width: 100%; max-height: 256px; object-fit: contain; border-radius: 8px; display: block; }
 .cv-fig figcaption { margin-top: 4px; font-size: 11px; color: var(--mut); text-align: center; }
 .cv-panelbar { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
-.cv-pbtn { background: transparent; border: 1px solid var(--bd); border-radius: 999px; color: var(--mut);
-  font-size: 12.5px; font-weight: 700; padding: 7px 13px; cursor: pointer; }
-.cv-pbtn.on { border-color: var(--ac); color: var(--ac); }
-.cv-panel { margin-top: 10px; border: 1px solid var(--bd); border-radius: 12px; padding: 13px 14px;
-  background: rgba(127,127,127,.045); }
+.cv-pbtn { background: transparent; border-style: solid; border-radius: 999px;
+  font-size: 12.5px; font-weight: 700; padding: 7px 13px; cursor: pointer; transition: all .15s ease; }
+.cv-pbtn.on { font-weight: 800; }
+.cv-panel { margin-top: 10px; border-style: solid; border-radius: 12px; padding: 12px 14px 13px;
+  background: rgba(127,127,127,.03); }
+.cv-ph { display: flex; align-items: center; margin: 0 0 9px; }
+.cv-picon { width: 26px; height: 26px; border-radius: 8px; border: 1px solid; display: flex;
+  align-items: center; justify-content: center; font-size: 14px; }
+.cv-pfold { margin-left: auto; width: 26px; height: 26px; border-radius: 8px; border: 1px solid;
+  background: transparent; cursor: pointer; font-size: 11px; line-height: 1; padding: 0; }
 .cv-panel .cv-p { margin: 0 0 9px; }
 .cv-panel .cv-p:last-child { margin-bottom: 0; }
 .cv-grid { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -119,50 +124,73 @@ function Rich({ text, tn, theme }) {
 function Panels({ panels, figure, conceptId, blockId, isAdmin, theme, sz }) {
   const [open, setOpen] = useState({});
   if (!panels?.length) return null;
+  const PTONES = ["amber", "teal", "coral", "slate"];
+  const toggle = (id) => setOpen((s) => ({ ...s, [id]: !s[id] }));
   return (
     <>
       <div className="cv-panelbar">
-        {panels.map((p) => (
-          <button key={p.id} className={"cv-pbtn" + (open[p.id] ? " on" : "")}
-            onClick={() => setOpen((s) => ({ ...s, [p.id]: !s[p.id] }))}>
-            {p.title} {open[p.id] ? "▴" : "▾"}
-          </button>
-        ))}
+        {panels.map((p, pi) => {
+          const t = tone(p.tone || PTONES[pi % PTONES.length], theme);
+          const on = !!open[p.id];
+          return (
+            <button key={p.id} className={"cv-pbtn" + (on ? " on" : "")}
+              style={{
+                borderColor: on ? t.solid : t.border,
+                borderWidth: on ? 2 : 1.5,
+                color: on ? t.text : "var(--mut)",
+                background: on ? t.bg : "transparent",
+              }}
+              onClick={() => toggle(p.id)}>
+              {p.title} {on ? "▴" : "▾"}
+            </button>
+          );
+        })}
       </div>
-      {panels.map((p) => open[p.id] && (
-        <div key={p.id} className="cv-panel">
-          {(p.lines || []).map((l, i) => {
-            if (l === "") return <div key={i} className="cv-sp" />;
-            const fm = typeof l === "string" && l.match(/^\[\[fig:([\w-]+)\]\]$/);
-            if (fm) return <AnimScene key={i} sceneId={fm[1]} figure={figure} conceptId={conceptId} blockId={blockId} isAdmin={isAdmin} theme={theme} />;
-            return <p key={i} className="cv-p" style={{ fontSize: (sz?.body || 15) - 0.5, color: "var(--ink)" }}><Rich text={l} tn="slate" theme={theme} /></p>;
-          })}
-          {p.kind === "table" && p.table && (
-            <div className="cv-twrap">
-              <table className="cv-table">
-                <thead><tr>{p.table.headers.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
-                <tbody>
-                  {p.table.rows.map((r, ri) => (
-                    <tr key={ri}>{r.map((c, ci) => <td key={ci}><Rich text={String(c)} tn="slate" theme={theme} /></td>)}</tr>
-                  ))}
-                </tbody>
-              </table>
+      {panels.map((p, pi) => {
+        if (!open[p.id]) return null;
+        const t = tone(p.tone || PTONES[pi % PTONES.length], theme);
+        const icon = p.icon || p.title.trim().split(" ")[0];
+        return (
+          <div key={p.id} className="cv-panel" style={{ borderColor: t.solid, borderWidth: 1.5 }}>
+            <div className="cv-ph">
+              <span className="cv-picon" style={{ background: t.bg, borderColor: t.border }}>{icon}</span>
+              <button className="cv-pfold" style={{ color: t.solid, borderColor: t.border }}
+                aria-label="접기" title="접기" onClick={() => toggle(p.id)}>▲</button>
             </div>
-          )}
-          {p.kind === "grid" && (
-            <div className="cv-grid">{(p.items || []).map((it, i) => <span key={i} className="cv-gitem"><Rich text={it} tn="slate" theme={theme} /></span>)}</div>
-          )}
-          {p.links?.length > 0 && (
-            <div className="cv-plinks">
-              {p.links.map((lk) => (
-                <button key={lk.id} className="cv-plink" onClick={() => (location.hash = `#/c/${encodeURIComponent(lk.id)}`)}>
-                  {lk.label} →
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+            {(p.lines || []).map((l, i) => {
+              if (l === "") return <div key={i} className="cv-sp" />;
+              const fm = typeof l === "string" && l.match(/^\[\[fig:([\w-]+)\]\]$/);
+              if (fm) return <AnimScene key={i} sceneId={fm[1]} figure={figure} conceptId={conceptId} blockId={blockId} isAdmin={isAdmin} theme={theme} />;
+              return <p key={i} className="cv-p" style={{ fontSize: (sz?.body || 15) - 0.5, color: "var(--ink)" }}><Rich text={l} tn={p.tone || PTONES[pi % PTONES.length]} theme={theme} /></p>;
+            })}
+            {p.kind === "table" && p.table && (
+              <div className="cv-twrap">
+                <table className="cv-table">
+                  <thead><tr>{p.table.headers.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    {p.table.rows.map((r, ri) => (
+                      <tr key={ri}>{r.map((c, ci) => <td key={ci}><Rich text={String(c)} tn={p.tone || "slate"} theme={theme} /></td>)}</tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {p.kind === "grid" && (
+              <div className="cv-grid">{(p.items || []).map((it, i) => <span key={i} className="cv-gitem"><Rich text={it} tn={p.tone || "slate"} theme={theme} /></span>)}</div>
+            )}
+            {p.links?.length > 0 && (
+              <div className="cv-plinks">
+                {p.links.map((lk) => (
+                  <button key={lk.id} className="cv-plink" onClick={() => (location.hash = `#/c/${encodeURIComponent(lk.id)}`)}
+                    style={{ borderColor: t.solid, color: t.text }}>
+                    {lk.label} →
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }
