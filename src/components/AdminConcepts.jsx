@@ -122,10 +122,28 @@ export default function AdminConcepts() {
     setErr("");
     const merged = [];
     const problems = [];
+    // zip이면 브라우저에서 풀어서 내부 .json들을 꺼냄
+    const texts = []; // { name, raw }
     for (const f of files) {
+      if (/\.zip$/i.test(f.name)) {
+        try {
+          const mod = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm");
+          const zip = await mod.default.loadAsync(f);
+          for (const name of Object.keys(zip.files)) {
+            const entry = zip.files[name];
+            if (entry.dir || !/\.json$/i.test(name) || name.includes("__MACOSX")) continue;
+            texts.push({ name: name.split("/").pop(), raw: await entry.async("string") });
+          }
+        } catch (ex) {
+          problems.push(f.name + ": zip 해제 실패 — " + ex.message);
+        }
+      } else {
+        texts.push({ name: f.name, raw: await f.text() });
+      }
+    }
+    for (const f of texts) {
       try {
-        const raw = await f.text();
-        const parsed = JSON.parse(raw);
+        const parsed = JSON.parse(f.raw);
         merged.push(...(Array.isArray(parsed) ? parsed : [parsed]));
       } catch (ex) {
         problems.push(f.name + ": " + ex.message);
@@ -294,7 +312,7 @@ export default function AdminConcepts() {
         <input
           ref={fileRef}
           type="file"
-          accept=".json,application/json"
+          accept=".json,.zip,application/json,application/zip"
           multiple
           style={{ display: "none" }}
           onChange={handleFiles}
