@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { getConcept, getAdoptedQna, askQuestion } from "../lib/concepts";
+import { getConcept, getAdoptedQna, askQuestion, listConcepts } from "../lib/concepts";
 import { supabase } from "../supabaseClient";
 import { qcode } from "../lib/qcode";
 import QuestionChat from "./QuestionChat";
@@ -34,6 +34,17 @@ const CSS = `
 .cv-cover { position: relative; border-radius: 16px 16px 0 0; overflow: hidden; background: var(--head-bg); }
 .cv-cover-body { position: relative; padding: 22px 20px; color: #fff; }
 .cv-eyebrow { font-size: 11px; letter-spacing: 2px; color: #99F6E4; font-weight: 700; margin: 0; }
+.cv-crumb { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.cv-backlist { position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.4); color: #fff; border-radius: 999px; font-size: 12px;
+  font-weight: 700; padding: 6px 12px; cursor: pointer; }
+.cv-pn { display: flex; border: 1px solid rgba(127,127,127,.3); border-radius: 12px; overflow: hidden; }
+.cv-pnbtn { flex: 1; background: transparent; border: none; padding: 13px 12px; font-size: 12.5px;
+  color: var(--ink); cursor: pointer; text-align: left; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.cv-pnbtn b { margin: 0 3px; }
+.cv-pnbtn.r { text-align: right; border-left: 1px solid rgba(127,127,127,.3); }
+.cv-pnbtn:disabled { opacity: .35; cursor: default; }
 .cv-title { font-size: 25px; font-weight: 800; margin: 4px 0 0; }
 .cv-subtitle { font-size: 13px; color: rgba(240,253,250,.85); margin: 4px 0 0; }
 .cv-main { background: var(--surface); border: 1px solid var(--surface-bd); border-top: none;
@@ -215,7 +226,7 @@ function TextBlock({ b, sz, t, theme, conceptId, isAdmin }) {
         if (fm) return <AnimScene key={i} sceneId={fm[1]} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />;
         return <p key={i} className="cv-p" style={{ fontSize: sz.body, color: "var(--ink)" }}><Rich text={l} tn={b.style?.tone} theme={theme} /></p>;
       })}
-      <Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
+<Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
       <Panels panels={b.panels} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} sz={sz} />
     </div>
   );
@@ -232,6 +243,7 @@ function DefinitionBlock({ b, sz, t, theme, conceptId, isAdmin }) {
       <p className="cv-chiplab">{b.chipLabel}</p>
       <div className="cv-chips">{b.chips?.map((n) => <span key={n} className="cv-chip" style={{ background: t.solid }}>{n}</span>)}</div>
       <Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
+      <Panels panels={b.panels} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} sz={sz} />
     </div>
   );
 }
@@ -245,6 +257,7 @@ function WarningBlock({ b, sz, t, theme, conceptId, isAdmin }) {
         </div>
       ))}
       <Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
+      <Panels panels={b.panels} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} sz={sz} />
     </div>
   );
 }
@@ -376,6 +389,15 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
   const [err, setErr] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [chatBlock, setChatBlock] = useState(null); // 질문챗이 열린 단락
+  const [sibs, setSibs] = useState([]);             // 같은 학기 개념 목록 (이전/다음용)
+  useEffect(() => { window.scrollTo(0, 0); }, [conceptId]);
+  useEffect(() => {
+    if (!concept?.unit_id) return;
+    listConcepts().then((all) => {
+      setSibs(all.filter((x) => x.unit_id === concept.unit_id).sort((a, b) => a.sort_order - b.sort_order));
+    }).catch(() => {});
+  }, [concept?.unit_id]);
+  const goHome = (focus) => { sessionStorage.setItem("home_focus", focus); location.hash = ""; };
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data?.user) return;
@@ -403,7 +425,12 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
         <header className="cv-cover">
           {concept.cover?.src && <img src={concept.cover.src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .45 }} />}
           <div className="cv-cover-body">
-            <p className="cv-eyebrow">{concept.unit_id.toUpperCase()} · 개념 {String(concept.sort_order).padStart(2, "0")}</p>
+            <button className="cv-backlist" onClick={() => goHome(concept.id)}>← 목록</button>
+            <p className="cv-eyebrow">
+              <span className="cv-crumb" onClick={() => goHome(concept.unit_id)}>{concept.unit_id.toUpperCase()}</span>
+              {" · "}
+              <span className="cv-crumb" onClick={() => goHome(concept.id)}>개념 {String(concept.sort_order).padStart(2, "0")}</span>
+            </p>
             <h1 className="cv-title">{concept.title}</h1>
             <p className="cv-subtitle">{concept.subtitle}</p>
           </div>
@@ -420,6 +447,23 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
           </footer>
         </main>
       </div>
+      {sibs.length > 0 && (() => {
+        const idx = sibs.findIndex((s) => s.id === concept.id);
+        const prev = idx > 0 ? sibs[idx - 1] : null;
+        const next = idx >= 0 && idx < sibs.length - 1 ? sibs[idx + 1] : null;
+        return (
+          <div className="cv-pn cv-span2" style={{ marginTop: 4 }}>
+            <button className="cv-pnbtn" disabled={!prev}
+              onClick={() => prev && (location.hash = `#/c/${encodeURIComponent(prev.id)}`)}>
+              {prev ? <>← <b>{String(prev.sort_order).padStart(2, "0")}</b>{prev.title}</> : "첫 개념이에요"}
+            </button>
+            <button className="cv-pnbtn r" disabled={!next}
+              onClick={() => next && (location.hash = `#/c/${encodeURIComponent(next.id)}`)}>
+              {next ? <><b>{String(next.sort_order).padStart(2, "0")}</b>{next.title} →</> : "마지막 개념이에요"}
+            </button>
+          </div>
+        );
+      })()}
       {concept.ext_panels?.length > 0 && (
         <div className="cv-extwrap">
           <Panels panels={concept.ext_panels} figure={concept.ext_figure || null}

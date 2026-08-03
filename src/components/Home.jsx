@@ -321,6 +321,26 @@ export default function Home({ theme, onToggleTheme }) {
     });
   }
 
+  // ── 개념 페이지에서 돌아올 때: 읽던 위치까지 트리 펼침 + 스크롤 ──
+  useEffect(() => {
+    const f = sessionStorage.getItem("home_focus");
+    if (!f || !concepts.length) return;
+    sessionStorage.removeItem("home_focus");
+    const c = concepts.find((x) => x.id === f);
+    const unit = c ? c.unit_id : (units.includes(f) ? f : null);
+    if (!unit) return;
+    const keys = [unit.slice(0, 2), unit];
+    if (c) {
+      const idx = chaptersOf(unit).findIndex((ch) => c.sort_order >= ch[1] && c.sort_order <= ch[2]);
+      if (idx >= 0) keys.push(unit + ":" + idx);
+    }
+    setOpen((prev) => new Set([...prev, ...keys]));
+    setTimeout(() => {
+      document.getElementById(c ? "hc-" + c.id : "hu-" + unit)
+        ?.scrollIntoView({ block: c ? "center" : "start", behavior: "smooth" });
+    }, 150);
+  }, [concepts]); // eslint-disable-line
+
   // ── 즐겨찾기 ──
   async function toggleFav(catId) {
     if (!uid) { say("로그인하면 즐겨찾기를 쓸 수 있어요"); return; }
@@ -459,7 +479,7 @@ export default function Home({ theme, onToggleTheme }) {
                       <div className="hm-panel">
                         <p className="hm-ptitle">{UNIT_NAMES[selInfo.unit] || selInfo.unit} · {selInfo.title}</p>
                         {selList.map((c) => (
-                          <a key={c.id} className="hm-item" href={`#/c/${c.id}`}>
+                          <a key={c.id} id={"hc-" + c.id} className="hm-item" href={`#/c/${c.id}`}>
                             <b>{String(c.sort_order).padStart(2, "0")}. {c.title}</b>
                             <span>{c.subtitle}</span>
                           </a>
@@ -509,7 +529,7 @@ export default function Home({ theme, onToggleTheme }) {
                 </div>
 
                 {open.has(g) && semestersOf(g).map((u) => (
-                  <div key={u} className="hm-lv2">
+                  <div key={u} id={"hu-" + u} className="hm-lv2">
                     <div className="hm-row" onClick={() => toggleOpen(u)}>
                       <span className="hm-car">{open.has(u) ? "▾" : "▸"}</span>
                       <span className="hm-tw">{semLabel(u)}</span>
@@ -537,7 +557,7 @@ export default function Home({ theme, onToggleTheme }) {
                           {open.has(catId) && (
                             <div className="hm-list">
                               {list.map((c) => (
-                                <a key={c.id} className="hm-item" href={`#/c/${c.id}`}>
+                                <a key={c.id} id={"hc-" + c.id} className="hm-item" href={`#/c/${c.id}`}>
                                   <b>{String(c.sort_order).padStart(2, "0")}. {c.title}</b>
                                   <span>{c.subtitle}</span>
                                 </a>
