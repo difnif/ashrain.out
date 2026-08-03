@@ -221,7 +221,7 @@ function AppRoutes() {
 
 
 // ── 전역: 좌상단 로고(홈 이동) — 홈이 아닐 때 모든 페이지에 표시 ──
-function GlobalLogo() {
+function GlobalLogo({ light }) {
   return (
     <button
       onClick={() => (location.hash = "")}
@@ -232,17 +232,18 @@ function GlobalLogo() {
         boxShadow: "0 1px 6px rgba(0,0,0,.18)", cursor: "pointer",
         display: "flex", alignItems: "center", justifyContent: "center", padding: 4,
       }}>
-      <img src="/brand/ashrain_logo.png" alt="ashrain" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      <img src="/brand/ashrain_logo.png" alt="ashrain" style={{ width: "100%", height: "100%", objectFit: "contain", filter: light ? "grayscale(1) brightness(0)" : "none" }} />
     </button>
   );
 }
 
 export default function App() {
   const hash = useHash();
+  const { theme } = useTheme();
   const onHome = !hash || hash === "#/" || hash === "#";
   return (
     <>
-      {!onHome && <GlobalLogo />}
+      {!onHome && <GlobalLogo light={theme !== "dark"} />}
       <AppRoutes />
     </>
   );

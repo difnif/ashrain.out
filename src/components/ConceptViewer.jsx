@@ -55,11 +55,12 @@ const CSS = `
 .cv-icon { width: 28px; height: 28px; border-radius: 9999px; display: flex; align-items: center; justify-content: center;
   font-size: 15px; flex-shrink: 0; border: 1px solid; }
 .cv-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cv-card { border-radius: 12px; border: 1px solid; }
+.cv-card { overflow: hidden; border-radius: 12px; border: 1px solid; }
 .cv-p { line-height: 1.65; margin: 0 0 8px; } .cv-p:last-child { margin-bottom: 0; }
 .cv-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.cv-chip { width: 32px; height: 30px; border-radius: 6px; color: #fff; font-size: 13px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center; }
+.cv-chip { min-width: 32px; height: 30px; padding: 0 10px; border-radius: 6px; color: #fff;
+  font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+  white-space: nowrap; max-width: 100%; }
 .cv-chiplab { margin: 12px 0 0; font-size: 11px; color: var(--mut); }
 .cv-warn { display: flex; gap: 10px; margin-bottom: 10px; } .cv-warn:last-child { margin-bottom: 0; }
 .cv-bang { margin-top: 3px; flex-shrink: 0; width: 20px; height: 20px; border-radius: 9999px; color: #fff;
@@ -233,7 +234,7 @@ function TextBlock({ b, sz, t, theme, conceptId, isAdmin }) {
 }
 function DefinitionBlock({ b, sz, t, theme, conceptId, isAdmin }) {
   return (
-    <div className="cv-card" style={{ background: t.bg, borderColor: t.border, padding: sz.pad, height: "100%" }}>
+    <div className="cv-card" style={{ background: t.bg, borderColor: t.border, padding: sz.pad }}>
       <p style={{ fontSize: sz.head, lineHeight: 1.45, color: "var(--ink)", margin: 0 }}>
         <b style={{ color: t.text }}>{b.term}</b>
         <span style={{ color: "var(--mut)", fontSize: 12, marginLeft: 4 }}>{b.hanja}</span>

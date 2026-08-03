@@ -13,6 +13,10 @@ const CSS = `
 .hd-wrap { max-width: 680px; margin: 0 auto; }
 .hd-btns { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
 .hd-logo { height: 30px; margin-right: 2px; }
+.hd-light .hd-logo { filter: grayscale(1) brightness(0); }
+.hd-wx { position: absolute; top: 14px; right: 16px; width: 54px; height: 54px; border-radius: 16px;
+  background: rgba(255,255,255,.2); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.35);
+  display: flex; align-items: center; justify-content: center; }
 .hd-btn { background: var(--card); border: 1px solid var(--bd); border-radius: 999px; color: var(--ink);
   font-size: 12px; font-weight: 700; padding: 8px 12px; cursor: pointer; }
 .hd-hero { position: relative; border-radius: 20px; padding: 26px 22px 22px; color: #fff;
@@ -63,6 +67,39 @@ const GREETS = [
   "계산 실수, 오늘은 꼭 잡아봅시다", "시작이 반 — 접속했으니 벌써 4분의 1!",
 ];
 
+// 날씨 아이콘 — 수치 없이 그림·색으로만 (해 색=기온, 구름 농도=흐림, 빗줄 수=강수, ⚡=뇌우)
+function WxIcon({ t, code, p }) {
+  const hot = t >= 30 ? "#EF4444" : t >= 24 ? "#FB923C" : t >= 15 ? "#FDE047" : t >= 5 ? "#BBF7D0" : "#93C5FD";
+  const rainy = [51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(code) || p > 0;
+  const snowy = [71,73,75,77,85,86].includes(code);
+  const cl = rainy || snowy || [3,45,48].includes(code) ? 1 : code === 2 ? 0.7 : code === 1 ? 0.4 : 0;
+  const drops = !rainy ? 0 : (p >= 4 || [55,65,82].includes(code)) ? 3 : (p >= 1 || [53,63,81].includes(code)) ? 2 : 1;
+  const thunder = [95,96,99].includes(code);
+  const RAY = [0,45,90,135,180,225,270,315];
+  return (
+    <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
+      <g opacity={Math.max(1 - cl * 0.75, 0.15)}>
+        <circle cx="19" cy="16" r="7.5" fill={hot} />
+        {RAY.map((a) => (
+          <line key={a}
+            x1={19 + 10.5 * Math.cos(a * Math.PI / 180)} y1={16 + 10.5 * Math.sin(a * Math.PI / 180)}
+            x2={19 + 13.5 * Math.cos(a * Math.PI / 180)} y2={16 + 13.5 * Math.sin(a * Math.PI / 180)}
+            stroke={hot} strokeWidth="2.3" strokeLinecap="round" />
+        ))}
+      </g>
+      {cl > 0 && (
+        <path d="M 11 31 a7 7 0 0 1 7 -7 a8 8 0 0 1 15 2 a6 6 0 0 1 -1 12 h -15 a6.5 6.5 0 0 1 -6 -7 z"
+          fill={cl >= 1 ? "#94A3B8" : "#CBD5E1"} opacity={0.4 + cl * 0.6} />
+      )}
+      {Array.from({ length: drops }).map((_, i) => (
+        <path key={i} d={`M ${17 + i * 7} 40 q 2.2 3 0 5.5 q -2.2 -2.5 0 -5.5`} fill="#38BDF8" />
+      ))}
+      {snowy && [0, 1, 2].map((i) => <circle key={i} cx={17 + i * 7} cy="42.5" r="1.9" fill="#E0F2FE" />)}
+      {thunder && <path d="M 27 31 l -5.5 8.5 h 4 l -3 7.5 l 8.5 -10.5 h -4 l 3.2 -5.5 z" fill="#FDE047" />}
+    </svg>
+  );
+}
+
 const skyOf = (h) =>
   h < 6  ? ["linear-gradient(135deg,#1b2440 0%,#3b2f63 100%)", "고요한 새벽이에요"] :
   h < 11 ? ["linear-gradient(135deg,#2193b0 0%,#6dd5ed 100%)", "좋은 아침이에요"] :
@@ -74,6 +111,14 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
   const [nick, setNick] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [greet] = useState(() => GREETS[Math.floor(Math.random() * GREETS.length)]);
+  const [wx, setWx] = useState(null);
+  useEffect(() => {
+    // 학원 기준 좌표 — 필요하면 숫자만 교체
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=37.66&longitude=126.83&current=temperature_2m,precipitation,weather_code")
+      .then((r) => r.json())
+      .then((j) => { const c = j?.current; if (c) setWx({ t: c.temperature_2m, code: c.weather_code, p: c.precipitation }); })
+      .catch(() => {});
+  }, []);
   const now = new Date();
   const [sky, hi] = skyOf(now.getHours());
 
@@ -114,6 +159,7 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
           <p className="hd-hero-hi">{hi}</p>
           <p className="hd-hero-nick">{nick || "친구"}님</p>
           <p className="hd-hero-greet">“{greet}”</p>
+          {wx && <div className="hd-wx" title="지금 날씨"><WxIcon t={wx.t} code={wx.code} p={wx.p} /></div>}
           <span className="hd-hero-time">{now.getMonth() + 1}월 {now.getDate()}일 · {days[(now.getDay() + 6) % 7]}요일</span>
         </div>
 
@@ -179,7 +225,7 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
           <button className="hd-philo" onClick={() => (location.hash = "#/philosophy")}>
             <p className="hd-philo-eyebrow">ASHRAIN PHILOSOPHY</p>
             <p className="hd-philo-t">우리가 이렇게 가르치는 이유</p>
-            <p className="hd-philo-d">유클리드에서 프로이덴탈까지 —<br />아쉬레인 설명 방식의 뿌리를 소개합니다</p>
+            <p className="hd-philo-d">유클리드에서 프로이덴탈까지 —<br />애쉬레인 설명 방식의 뿌리를 소개합니다</p>
             <img className="hd-philo-img" alt=""
               src="https://upload.wikimedia.org/wikipedia/commons/7/73/Frans_Hals_-_Portret_van_Ren%C3%A9_Descartes.jpg"
               onError={(e) => { e.currentTarget.style.display = "none"; }} />
