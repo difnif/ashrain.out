@@ -316,6 +316,7 @@ function Editor({ scenes, dir, files, onClose, onSaved }) {
     <>
       <div className="af-dim2" onClick={busy ? undefined : onClose} />
       <div className="af-modal">
+        <style>{CSS}</style>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
           onChange={(e) => { const f = e.target.files?.[0]; if (f && pickKey.current) {
             setPending((s) => ({ ...s, [pickKey.current]: f }));
