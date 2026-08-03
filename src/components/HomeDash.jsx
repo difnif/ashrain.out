@@ -13,8 +13,14 @@ const CSS = `
 .hd-dark  { --bg:#0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#5EEAD4; --in:#101116; }
 .hd-wrap { max-width: 680px; margin: 0 auto; }
 .hd-top { position: sticky; top: 0; z-index: 40; background: var(--bg);
-  margin: 0 -14px 12px; padding: 10px 14px 9px; display: flex; gap: 7px; flex-wrap: wrap; align-items: center;
-  border-bottom: 1px solid transparent; }
+  margin: 0 -14px 12px; padding: 10px 14px 10px; }
+.hd-row1 { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.hd-sp { flex: 1; }
+.hd-fn { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.hd-fnbtn { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 9px 0 8px;
+  color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.hd-fnbtn span:first-child { font-size: 16px; }
+.hd-fnbtn span:last-child { font-size: 11.5px; font-weight: 800; }
 .hd-logo { height: 30px; }
 .hd-light .hd-logo { filter: grayscale(1) brightness(0); }
 .hd-dday { min-width: 34px; height: 34px; border-radius: 999px; background: #EF4444; color: #fff;
@@ -236,29 +242,41 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
       <style>{CSS}</style>
       <div className="hd-wrap">
         <div className="hd-top">
-          {dday ? (
-            <div className="hd-dday" title={dday.title}>{dday.days === 0 ? "D-DAY" : `D-${dday.days}`}</div>
-          ) : (
-            <img className="hd-logo" src="/brand/ashrain_logo.png" alt="ashrain" />
-          )}
-          <button className="hd-btn" onClick={() => (location.hash = "#/learn")}>📚 개념학습</button>
-          <button className="hd-btn" onClick={() => (location.hash = "#/board")}>📋 게시판</button>
-          <button className="hd-btn" onClick={() => (location.hash = "#/me")}>👤 마이페이지</button>
-          {onToggleTheme && <button className="hd-btn" onClick={onToggleTheme}>{theme === "dark" ? "☀️" : "🌙"}</button>}
-          <a className="hd-btn" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 5 }}
-            href="https://www.instagram.com/ashrain.out" target="_blank" rel="noreferrer" title="앱 문의">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 3a6 6 0 0 0-3.7 10.7c.6.5 1 1.3 1 2.1v.2h5.4v-.2c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
-              <path d="M9.5 19h5" /><path d="M10.5 21.5h3" />
-            </svg> 문의
-          </a>
-          {isAdmin && <>
-            <button className="hd-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 개념 등록</button>
-            <button className="hd-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 질문 검토</button>
-            <button className="hd-btn" onClick={() => (location.hash = "#/admin/chats")}>🗂 질문대화</button>
-            <button className="hd-btn" onClick={() => (location.hash = "#/admin/images")}>🖼 이미지 현황</button>
-            <button className="hd-btn" onClick={() => (location.hash = "#/admin/calendar")}>🗓 시험일정</button>
-          </>}
+          <div className="hd-row1">
+            {dday ? (
+              <div className="hd-dday" title={dday.title}>{dday.days === 0 ? "D-DAY" : `D-${dday.days}`}</div>
+            ) : (
+              <img className="hd-logo" src="/brand/ashrain_logo.png" alt="ashrain" />
+            )}
+            <span className="hd-sp" />
+            <button className="hd-btn" onClick={() => (location.hash = "#/me")}>👤 마이페이지</button>
+            <a className="hd-btn" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 5 }}
+              href="https://www.instagram.com/ashrain.out" target="_blank" rel="noreferrer" title="앱 문의">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a6 6 0 0 0-3.7 10.7c.6.5 1 1.3 1 2.1v.2h5.4v-.2c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+                <path d="M9.5 19h5" /><path d="M10.5 21.5h3" />
+              </svg> 문의
+            </a>
+            {onToggleTheme && <button className="hd-btn" onClick={onToggleTheme}>{theme === "dark" ? "☀️" : "🌙"}</button>}
+            {isAdmin && <>
+              <button className="hd-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 개념 등록</button>
+              <button className="hd-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 질문 검토</button>
+              <button className="hd-btn" onClick={() => (location.hash = "#/admin/chats")}>🗂 질문대화</button>
+              <button className="hd-btn" onClick={() => (location.hash = "#/admin/images")}>🖼 이미지 현황</button>
+              <button className="hd-btn" onClick={() => (location.hash = "#/admin/calendar")}>🗓 시험일정</button>
+            </>}
+          </div>
+          <div className="hd-fn">
+            {[["📚", "개념", "learn"], ["🧮", "연산", "calc"], ["📕", "오답", "wrong"], ["🗝️", "힌트", "hint"]].map(([ic, lb, c]) => (
+              <button key={c} className="hd-fnbtn"
+                onClick={() => { sessionStorage.setItem("home_cat", c); location.hash = "#/learn"; }}>
+                <span>{ic}</span><span>{lb}</span>
+              </button>
+            ))}
+            <button className="hd-fnbtn" onClick={() => (location.hash = "#/board")}>
+              <span>💬</span><span>질문</span>
+            </button>
+          </div>
         </div>
 
         <div className="hd-hero" style={{ background: heroGrad(wx, now.getHours()), ...coldFx(wx?.t) }}>

@@ -238,6 +238,10 @@ export default function Home({ theme, onToggleTheme }) {
   const [uid, setUid] = useState(null);
 
   const [cat, setCat] = useState("concept");         // 현재 카테고리 탭
+  useEffect(() => {
+    const c = sessionStorage.getItem("home_cat");
+    if (c) { sessionStorage.removeItem("home_cat"); setCat(c); }
+  }, []);
   const [open, setOpen] = useState(() => new Set()); // 기본: 전부 접힘
   const [nick, setNick] = useState("");
   const [greet] = useState(() => {
