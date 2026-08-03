@@ -436,7 +436,7 @@ export default function Home({ theme, onToggleTheme }) {
       <style>{CSS}</style>
       <div className="hm-wrap">
         <div className="hm-head">
-          <img className="hm-logo" src="/brand/ashrain_logo.png" alt="ASH RAIN. Out" />
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)", margin: 0, marginLeft: 38 }}>📚 개념 학습</h1>
           <div className="hm-btns">
             {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 개념 등록</button>}
             {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 질문 검토</button>}
@@ -450,16 +450,6 @@ export default function Home({ theme, onToggleTheme }) {
             <button className="hm-btn" onClick={onToggleTheme}>{theme === "light" ? "🌙" : "🌧"}</button>
           </div>
         </div>
-        <div className="hm-greet">
-          <p className="hm-greet-t"><b>{nick || "친구"}</b>님, {greet}</p>
-          <a className="hm-insta" href="https://www.instagram.com/ashrain.out" target="_blank" rel="noreferrer" title="앱 문의 (인스타그램 DM)">
-            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.9">
-              <rect x="3" y="3" width="18" height="18" rx="5.2" /><circle cx="12" cy="12" r="4.2" />
-              <circle cx="17.3" cy="6.7" r="1.15" fill="currentColor" stroke="none" />
-            </svg>
-          </a>
-        </div>
-
         {/* ── 카테고리 4탭 ── */}
         <div className="hm-cats">
           {CATS.map(([id, icon, label]) => (
@@ -697,10 +687,6 @@ export default function Home({ theme, onToggleTheme }) {
             </div>
           </div>
         )}
-
-        <div className="hm-philo">
-          <button onClick={() => (location.hash = "#/philosophy")}>〈 교 육 철 학 〉</button>
-        </div>
 
         {toast && <div className="hm-toast">{toast}</div>}
       </div>

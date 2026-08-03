@@ -23,6 +23,7 @@ import AdminPractice from "./pages/AdminPractice";
 import AdminChats from "./components/AdminChats";
 import AdminImages from "./components/AdminImages";
 import Philosophy from "./components/Philosophy";
+import HomeDash from "./components/HomeDash";
 import QnaBoard from "./components/QnaBoard";
 
 function useHash() {
@@ -214,7 +215,8 @@ function AppRoutes() {
   if (hash.startsWith("#/admin/qna")) return <AdminQna theme={theme} />;
   if (hash.startsWith("#/admin/concepts")) return <AdminConcepts theme={theme} />;
   if (hash.startsWith("#/me")) return <MyPage theme={theme} onToggleTheme={toggle} />;
-  return <Home theme={theme} onToggleTheme={toggle} />;
+  if (hash.startsWith("#/learn")) return <Home theme={theme} onToggleTheme={toggle} />;
+  return <HomeDash theme={theme} onToggleTheme={toggle} />;
 }
 
 

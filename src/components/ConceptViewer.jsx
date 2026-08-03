@@ -397,7 +397,7 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
       setSibs(all.filter((x) => x.unit_id === concept.unit_id).sort((a, b) => a.sort_order - b.sort_order));
     }).catch(() => {});
   }, [concept?.unit_id]);
-  const goHome = (focus) => { sessionStorage.setItem("home_focus", focus); location.hash = ""; };
+  const goHome = (focus) => { sessionStorage.setItem("home_focus", focus); location.hash = "#/learn"; };
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data?.user) return;
