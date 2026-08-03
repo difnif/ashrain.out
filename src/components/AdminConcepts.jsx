@@ -171,9 +171,19 @@ export default function AdminConcepts() {
       sort_order: c.order ?? c.sort_order ?? 0,
       blocks: c.blocks ?? [],
       cover: c.cover ?? null,
+      ext_panels: c.ext_panels ?? null,
+      ext_figure: c.ext_figure ?? null,
       updated_at: new Date().toISOString(),
     }));
-    const { data: saved, error } = await supabase.from("concepts").upsert(rows).select("id");
+    let { data: saved, error } = await supabase.from("concepts").upsert(rows).select("id");
+    let extWarn = "";
+    if (error && /ext_(panels|figure)/i.test(error.message || "")) {
+      const slim = rows.map(({ ext_panels, ext_figure, ...r }) => r);
+      ({ data: saved, error } = await supabase.from("concepts").upsert(slim).select("id"));
+      if (!error)
+        extWarn =
+          " · ⚠️ concepts 테이블에 ext_panels/ext_figure 컬럼이 없어 최하단 복습 패널을 뺀 채 저장했습니다 — add_ext_panels.sql 실행 후 다시 등록하면 반영됩니다";
+    }
     if (error) {
       setBusy(false);
       setErr("개념 저장 실패: " + error.message);
@@ -231,9 +241,9 @@ export default function AdminConcepts() {
     setBusy(false);
     const head = "개념 " + rows.length + "건 저장 완료";
     if (qnaFailed) {
-      setErr(head + qnaMsg);
+      setErr(head + qnaMsg + extWarn);
     } else {
-      setMsg(head + qnaMsg);
+      setMsg(head + qnaMsg + extWarn);
       setText("");
     }
     load();
