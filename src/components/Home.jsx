@@ -230,7 +230,7 @@ const CSS = `
   color: var(--card); padding: 9px 16px; border-radius: 999px; font-size: 13px; z-index: 60; white-space: nowrap; }
 `;
 
-export default function Home({ theme, onToggleTheme }) {
+export default function Home({ theme, onToggleTheme, initialCat }) {
   const [concepts, setConcepts] = useState([]);
   const [err, setErr] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -238,11 +238,17 @@ export default function Home({ theme, onToggleTheme }) {
   const [uid, setUid] = useState(null);
 
   const [cat, setCat] = useState("concept");         // 현재 카테고리 탭
+  useEffect(() => { if (initialCat) setCat(initialCat); }, [initialCat]);
+  const [open, setOpen] = useState(() => {
+    try { return new Set(JSON.parse(sessionStorage.getItem("learn_open") || "[]")); }
+    catch { return new Set(); }
+  }); // 뒤로가기 시 펼침 상태 유지
+  useEffect(() => { sessionStorage.setItem("learn_open", JSON.stringify([...open])); }, [open]);
   useEffect(() => {
-    const c = sessionStorage.getItem("home_cat");
-    if (c) { sessionStorage.removeItem("home_cat"); setCat(c); }
+    const y = +sessionStorage.getItem("learn_scroll") || 0;
+    if (y) setTimeout(() => window.scrollTo(0, y), 60);
+    return () => { sessionStorage.setItem("learn_scroll", String(window.scrollY)); };
   }, []);
-  const [open, setOpen] = useState(() => new Set()); // 기본: 전부 접힘
   const [nick, setNick] = useState("");
   const [greet] = useState(() => {
     const G = ["오늘도 반가워요!", "수학할 준비 됐나요?", "어서 오세요 😊", "차근차근 가 봅시다",
@@ -440,27 +446,10 @@ export default function Home({ theme, onToggleTheme }) {
       <style>{CSS}</style>
       <div className="hm-wrap">
         <div className="hm-head">
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)", margin: 0, marginLeft: 38 }}>📚 개념 학습</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)", margin: 0, marginLeft: 0 }}>📚 개념 학습</h1>
           <div className="hm-btns">
-            {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 개념 등록</button>}
-            {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 질문 검토</button>}
-            {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/chats")}>🗂 질문대화</button>}
-            {isAdmin && <button className="hm-btn" onClick={() => (location.hash = "#/admin/images")}>🖼 이미지 현황</button>}
-            <button className="hm-btn" onClick={() => (location.hash = "#/board")}>📋 질문게시판</button>
             <button className="hm-btn" onClick={openCfg}>⚙ 설정</button>
-            <button className="hm-btn hm-me" onClick={() => (location.hash = "#/me")}>
-              {me?.avatar_url ? <img src={me.avatar_url} alt="" /> : "👤"} {me?.name || "마이페이지"}
-            </button>
-            <button className="hm-btn" onClick={onToggleTheme}>{theme === "light" ? "🌙" : "🌧"}</button>
           </div>
-        </div>
-        {/* ── 카테고리 4탭 ── */}
-        <div className="hm-cats">
-          {CATS.map(([id, icon, label]) => (
-            <button key={id} className={"hm-cat" + (cat === id ? " on" : "")} onClick={() => setCat(id)}>
-              {icon} {label}
-            </button>
-          ))}
         </div>
 
         {/* ════════ 📖 개념 ════════ */}
