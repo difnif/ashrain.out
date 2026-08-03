@@ -217,35 +217,108 @@ function AppRoutes() {
   if (hash.startsWith("#/admin/qna")) return <AdminQna theme={theme} />;
   if (hash.startsWith("#/admin/concepts")) return <AdminConcepts theme={theme} />;
   if (hash.startsWith("#/me")) return <MyPage theme={theme} onToggleTheme={toggle} />;
-  if (hash.startsWith("#/learn")) return <Home theme={theme} onToggleTheme={toggle} />;
+  if (hash.startsWith("#/learn")) {
+    const sub = hash.split("/")[2];
+    return <Home theme={theme} onToggleTheme={toggle} initialCat={sub || "concept"} />;
+  }
   return <HomeDash theme={theme} onToggleTheme={toggle} />;
 }
 
 
-// ── 전역: 좌상단 로고(홈 이동) — 홈이 아닐 때 모든 페이지에 표시 ──
-function GlobalLogo({ light }) {
+// ── 전역 상단 바: 모든 페이지 상단(1행 인프라 + 2행 기능 5등분) ──
+function TopBar({ theme, onToggleTheme, hash }) {
+  const [me, setMe] = useState(null);
+  const [dday, setDday] = useState(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      const u = data?.user; if (!u) { setMe(false); return; }
+      const { data: p } = await supabase.from("profiles").select("role").eq("id", u.id).maybeSingle();
+      setMe({ isAdmin: p?.role === "admin" });
+    });
+    const today = new Date().toISOString().slice(0, 10);
+    supabase.from("events").select("date, title").eq("dday", true).gte("date", today)
+      .order("date").limit(1).then(({ data }) => {
+        if (data?.[0]) {
+          const d = Math.round((new Date(data[0].date + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
+          setDday({ days: d, title: data[0].title });
+        }
+      });
+  }, []);
+  if (!me) return null;
+  const light = theme !== "dark";
+  const FN = [["📚", "개념", "#/learn/concept"], ["🧮", "연산", "#/learn/calc"],
+              ["📕", "오답", "#/learn/wrong"], ["🗝️", "힌트", "#/learn/hint"], ["💬", "질문", "#/board"]];
+  const isOn = (to) => to === "#/board" ? hash.startsWith("#/board")
+    : hash.startsWith(to) || (to === "#/learn/concept" && (hash === "#/learn" || hash === "#/learn/"));
   return (
-    <button
-      onClick={() => (location.hash = "")}
-      aria-label="홈으로"
-      style={{
-        position: "fixed", top: 8, left: 8, zIndex: 70, width: 34, height: 34,
-        borderRadius: 999, background: "#fff", border: "1px solid rgba(0,0,0,.08)",
-        boxShadow: "0 1px 6px rgba(0,0,0,.18)", cursor: "pointer",
-        display: "flex", alignItems: "center", justifyContent: "center", padding: 4,
-      }}>
-      <img src="/brand/ashrain_logo.png" alt="ashrain" style={{ width: "100%", height: "100%", objectFit: "contain", filter: light ? "grayscale(1) brightness(0)" : "none" }} />
-    </button>
+    <div className={"tb tb-" + theme}>
+      <style>{`
+        .tb { padding: 10px 14px 10px; font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
+        .tb * { box-sizing: border-box; }
+        .tb-light { background: #EDEFF2; --card:#fff; --bd:#DFE3E8; --ink:#1F2937; --mut:#8A929C; --ac:#0D9488; }
+        .tb-dark  { background: #0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#5EEAD4; }
+        .tb-in { max-width: 680px; margin: 0 auto; }
+        .tb-r1 { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+        .tb-sp { flex: 1; }
+        .tb-logo { height: 28px; }
+        .tb-light .tb-logo { filter: grayscale(1) brightness(0); }
+        .tb-dday { min-width: 34px; height: 32px; border-radius: 999px; background: #EF4444; color: #fff;
+          display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; padding: 0 8px; }
+        .tb-btn { background: var(--card); border: 1px solid var(--bd); border-radius: 999px; color: var(--ink);
+          font-size: 11.5px; font-weight: 700; padding: 7px 11px; cursor: pointer; }
+        .tb-fn { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+        .tb-fnbtn { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 8px 0 7px;
+          color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .tb-fnbtn.on { border-color: var(--ac); color: var(--ac); border-width: 1.5px; }
+        .tb-fnbtn span:first-child { font-size: 15px; }
+        .tb-fnbtn span:last-child { font-size: 11px; font-weight: 800; }
+      `}</style>
+      <div className="tb-in">
+        <div className="tb-r1">
+          {dday ? (
+            <div className="tb-dday" title={dday.title} onClick={() => (location.hash = "")} style={{ cursor: "pointer" }}>
+              {dday.days === 0 ? "D-DAY" : `D-${dday.days}`}
+            </div>
+          ) : (
+            <img className="tb-logo" src="/brand/ashrain_logo.png" alt="ashrain"
+              style={{ cursor: "pointer" }} onClick={() => (location.hash = "")} />
+          )}
+          <span className="tb-sp" />
+          <button className="tb-btn" onClick={() => (location.hash = "#/me")}>👤 마이페이지</button>
+          <a className="tb-btn" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
+            href="https://www.instagram.com/ashrain.out" target="_blank" rel="noreferrer" title="앱 문의">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3a6 6 0 0 0-3.7 10.7c.6.5 1 1.3 1 2.1v.2h5.4v-.2c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+              <path d="M9.5 19h5" /><path d="M10.5 21.5h3" />
+            </svg> 문의
+          </a>
+          {onToggleTheme && <button className="tb-btn" onClick={onToggleTheme}>{theme === "dark" ? "☀️" : "🌙"}</button>}
+          {me.isAdmin && <>
+            <button className="tb-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 등록</button>
+            <button className="tb-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 검토</button>
+            <button className="tb-btn" onClick={() => (location.hash = "#/admin/chats")}>🗂 대화</button>
+            <button className="tb-btn" onClick={() => (location.hash = "#/admin/images")}>🖼 이미지</button>
+            <button className="tb-btn" onClick={() => (location.hash = "#/admin/calendar")}>🗓 일정</button>
+          </>}
+        </div>
+        <div className="tb-fn">
+          {FN.map(([ic, lb, to]) => (
+            <button key={to} className={"tb-fnbtn" + (isOn(to) ? " on" : "")} onClick={() => (location.hash = to)}>
+              <span>{ic}</span><span>{lb}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default function App() {
   const hash = useHash();
-  const { theme } = useTheme();
-  const onHome = !hash || hash === "#/" || hash === "#";
+  const { theme, toggle } = useTheme();
   return (
     <>
-      {!onHome && <GlobalLogo light={theme !== "dark"} />}
+      <TopBar theme={theme} onToggleTheme={toggle} hash={hash} />
       <AppRoutes />
     </>
   );
