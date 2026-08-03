@@ -289,7 +289,7 @@ function Editor({ scenes, dir, files, onClose, onSaved }) {
   // eslint-disable-next-line
   function PromptCard({ scene }) {
     const [ok, setOk] = useState(false);
-    const full = (scene.prompt ? scene.prompt + ", " : "") + MJ_STYLE;
+    const full = (scene.prompt ? scene.prompt + ", " : "") + (scene.style || MJ_STYLE);
     const copy = async () => {
       try { await navigator.clipboard.writeText(full); }
       catch { const ta = document.createElement("textarea"); ta.value = full; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); }
@@ -301,10 +301,12 @@ function Editor({ scenes, dir, files, onClose, onSaved }) {
           <b style={{ fontSize: 12.5, color: "var(--ink,#1F2937)", flex: 1 }}>{scene.label} ({scene.count}컷: {Array.from({length: scene.count}, (_,i)=>scene.id+(i+1)).join(", ")})</b>
           <button className="af-tab" onClick={copy}>{ok ? "✓ 복사됨" : "📋 복사"}</button>
         </div>
-        <p style={{ fontSize: 11.5, color: "var(--mut,#8A929C)", margin: 0, lineHeight: 1.6, wordBreak: "break-all" }}>
-          {scene.prompt ? full : "(프롬프트 미작성 — 개념 JSON의 scenes[].prompt)"}
-        </p>
-        {scene.cuts && <p style={{ fontSize: 11.5, color: "var(--mut,#8A929C)", margin: "6px 0 0" }}>컷 구성: {scene.cuts.join(" → ")}</p>}
+        {scene.prompt && (
+          <p style={{ fontSize: 11.5, color: "var(--mut,#8A929C)", margin: 0, lineHeight: 1.6, wordBreak: "break-all" }}>{full}</p>
+        )}
+        {scene.cutPrompts?.map((cp, i) => <CutPrompt key={i} label={(scene.cuts?.[i] || `${i + 1}컷`) + ` (${scene.id}${i + 1})`} text={cp + ", " + (scene.style || MJ_STYLE)} />)}
+        {!scene.prompt && !scene.cutPrompts && <p style={{ fontSize: 11.5, color: "var(--mut,#8A929C)", margin: 0 }}>(프롬프트 미작성)</p>}
+        {scene.cuts && !scene.cutPrompts && <p style={{ fontSize: 11.5, color: "var(--mut,#8A929C)", margin: "6px 0 0" }}>컷 구성: {scene.cuts.join(" → ")}</p>}
       </div>
     );
   }
@@ -369,4 +371,23 @@ function Editor({ scenes, dir, files, onClose, onSaved }) {
   );
 }
 
+function CutPrompt({ label, text }) {
+  const [ok, setOk] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(text); }
+    catch { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); }
+    setOk(true); setTimeout(() => setOk(false), 1300);
+  };
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-start", borderTop: "1px dashed var(--bd,#DFE3E8)", padding: "7px 0 2px", marginTop: 7 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <b style={{ fontSize: 11.5, color: "var(--ink,#1F2937)" }}>{label}</b>
+        <p style={{ fontSize: 11, color: "var(--mut,#8A929C)", margin: "3px 0 0", lineHeight: 1.55, wordBreak: "break-all" }}>{text}</p>
+      </div>
+      <button className="af-tab" onClick={copy}>{ok ? "✓" : "📋"}</button>
+    </div>
+  );
+}
+
+export { Editor as SceneEditor };
 export default AnimScene;

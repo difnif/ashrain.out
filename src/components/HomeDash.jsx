@@ -1,34 +1,43 @@
-// ashrain.out — 홈 대시보드 (v1.0)
-// 시간대별 히어로 인사 + 활동 대시보드(현재 데모 데이터) + 교육철학 카드
-// 개념 트리는 #/learn (개념 학습)으로 분리
-import { useEffect, useState } from "react";
+// ashrain.out — 홈 대시보드 (v2.0)
+// sticky 유저 바 · 디데이 로고 · 날씨 이미지 시스템(베이스 18 + 오버레이 18 = 36셀)
+// 날씨: Open-Meteo → 단계 자동 선택, 히어로 우측 사다리꼴 + 디졸브, 추위는 채도·결빙 필터
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
+import { SceneEditor } from "./AnimFigure";
 
 const CSS = `
-.hd-root { min-height: 100vh; padding: 16px 14px 60px; box-sizing: border-box;
-  font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
+.hd-root { min-height: 100vh; padding: 0 14px 60px; box-sizing: border-box;
+  font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; background: var(--bg); }
 .hd-root * { box-sizing: border-box; }
-.hd-light { background:#EDEFF2; --card:#fff; --bd:#DFE3E8; --ink:#1F2937; --mut:#8A929C; --ac:#0D9488; --in:#F4F6F8; }
-.hd-dark  { background:#0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#5EEAD4; --in:#101116; }
+.hd-light { --bg:#EDEFF2; --card:#fff; --bd:#DFE3E8; --ink:#1F2937; --mut:#8A929C; --ac:#0D9488; --in:#F4F6F8; }
+.hd-dark  { --bg:#0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#5EEAD4; --in:#101116; }
 .hd-wrap { max-width: 680px; margin: 0 auto; }
-.hd-btns { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
-.hd-logo { height: 30px; margin-right: 2px; }
+.hd-top { position: sticky; top: 0; z-index: 40; background: var(--bg);
+  margin: 0 -14px 12px; padding: 10px 14px 9px; display: flex; gap: 7px; flex-wrap: wrap; align-items: center;
+  border-bottom: 1px solid transparent; }
+.hd-logo { height: 30px; }
 .hd-light .hd-logo { filter: grayscale(1) brightness(0); }
-.hd-wx { position: absolute; top: 14px; right: 16px; width: 54px; height: 54px; border-radius: 16px;
-  background: rgba(255,255,255,.2); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.35);
-  display: flex; align-items: center; justify-content: center; }
+.hd-dday { min-width: 34px; height: 34px; border-radius: 999px; background: #EF4444; color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800; padding: 0 7px; }
 .hd-btn { background: var(--card); border: 1px solid var(--bd); border-radius: 999px; color: var(--ink);
   font-size: 12px; font-weight: 700; padding: 8px 12px; cursor: pointer; }
 .hd-hero { position: relative; border-radius: 20px; padding: 26px 22px 22px; color: #fff;
-  overflow: hidden; margin-bottom: 14px; box-shadow: 0 6px 22px rgba(0,0,0,.14); }
-.hd-hero-hi { font-size: 14px; opacity: .92; margin: 0; font-weight: 600; }
-.hd-hero-nick { font-size: 26px; font-weight: 800; margin: 4px 0 10px; }
-.hd-hero-greet { font-size: 16.5px; font-weight: 700; margin: 0; line-height: 1.55; }
-.hd-hero-time { position: absolute; right: 18px; bottom: 14px; font-size: 11.5px; opacity: .8; }
+  overflow: hidden; margin-bottom: 14px; box-shadow: 0 6px 22px rgba(0,0,0,.14); min-height: 150px;
+  transition: filter .6s ease, box-shadow .6s ease; }
+.hd-sky { position: absolute; right: 0; top: 0; bottom: 0; width: 50%;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 34% 100%);
+  -webkit-mask-image: linear-gradient(100deg, transparent 2%, #000 30%);
+  mask-image: linear-gradient(100deg, transparent 2%, #000 30%); }
+.hd-sky img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hd-hero-hi { font-size: 14px; opacity: .92; margin: 0; font-weight: 600; position: relative; }
+.hd-hero-nick { font-size: 26px; font-weight: 800; margin: 4px 0 10px; position: relative; }
+.hd-hero-greet { font-size: 16.5px; font-weight: 700; margin: 0; line-height: 1.55; position: relative; max-width: 58%; }
+.hd-hero-time { position: absolute; left: 22px; bottom: 12px; font-size: 11.5px; opacity: .8; }
+.hd-wxpen { position: absolute; right: 10px; bottom: 8px; z-index: 5; background: rgba(255,255,255,.85);
+  border: none; border-radius: 8px; font-size: 12px; padding: 4px 7px; cursor: pointer; }
 .hd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 480px) { .hd-grid { grid-template-columns: 1fr; } }
-.hd-card { background: var(--card); border: 1px solid var(--bd); border-radius: 14px; padding: 14px 15px;
-  position: relative; }
+.hd-card { background: var(--card); border: 1px solid var(--bd); border-radius: 14px; padding: 14px 15px; position: relative; }
 .hd-card.wide { grid-column: 1 / -1; }
 .hd-t { font-size: 12px; font-weight: 800; color: var(--mut); letter-spacing: .5px; margin: 0 0 8px; }
 .hd-big { font-size: 20px; font-weight: 800; color: var(--ink); margin: 0; }
@@ -67,38 +76,71 @@ const GREETS = [
   "계산 실수, 오늘은 꼭 잡아봅시다", "시작이 반 — 접속했으니 벌써 4분의 1!",
 ];
 
-// 날씨 아이콘 — 수치 없이 그림·색으로만 (해 색=기온, 구름 농도=흐림, 빗줄 수=강수, ⚡=뇌우)
-function WxIcon({ t, code, p }) {
-  const hot = t >= 30 ? "#EF4444" : t >= 24 ? "#FB923C" : t >= 15 ? "#FDE047" : t >= 5 ? "#BBF7D0" : "#93C5FD";
-  const rainy = [51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(code) || p > 0;
-  const snowy = [71,73,75,77,85,86].includes(code);
-  const cl = rainy || snowy || [3,45,48].includes(code) ? 1 : code === 2 ? 0.7 : code === 1 ? 0.4 : 0;
-  const drops = !rainy ? 0 : (p >= 4 || [55,65,82].includes(code)) ? 3 : (p >= 1 || [53,63,81].includes(code)) ? 2 : 1;
-  const thunder = [95,96,99].includes(code);
-  const RAY = [0,45,90,135,180,225,270,315];
-  return (
-    <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
-      <g opacity={Math.max(1 - cl * 0.75, 0.15)}>
-        <circle cx="19" cy="16" r="7.5" fill={hot} />
-        {RAY.map((a) => (
-          <line key={a}
-            x1={19 + 10.5 * Math.cos(a * Math.PI / 180)} y1={16 + 10.5 * Math.sin(a * Math.PI / 180)}
-            x2={19 + 13.5 * Math.cos(a * Math.PI / 180)} y2={16 + 13.5 * Math.sin(a * Math.PI / 180)}
-            stroke={hot} strokeWidth="2.3" strokeLinecap="round" />
-        ))}
-      </g>
-      {cl > 0 && (
-        <path d="M 11 31 a7 7 0 0 1 7 -7 a8 8 0 0 1 15 2 a6 6 0 0 1 -1 12 h -15 a6.5 6.5 0 0 1 -6 -7 z"
-          fill={cl >= 1 ? "#94A3B8" : "#CBD5E1"} opacity={0.4 + cl * 0.6} />
-      )}
-      {Array.from({ length: drops }).map((_, i) => (
-        <path key={i} d={`M ${17 + i * 7} 40 q 2.2 3 0 5.5 q -2.2 -2.5 0 -5.5`} fill="#38BDF8" />
-      ))}
-      {snowy && [0, 1, 2].map((i) => <circle key={i} cx={17 + i * 7} cy="42.5" r="1.9" fill="#E0F2FE" />)}
-      {thunder && <path d="M 27 31 l -5.5 8.5 h 4 l -3 7.5 l 8.5 -10.5 h -4 l 3.2 -5.5 z" fill="#FDE047" />}
-    </svg>
-  );
-}
+// ── 날씨 이미지 세트: 베이스(불투명) + 오버레이(검정 배경 → screen 합성) ──
+const STYLE_BASE = "square sky illustration, flat minimal vector style, soft colors, no text, no letters, no numbers --style raw --no text, watermark";
+const STYLE_OVER = "on pure black background, isolated glowing elements, flat minimal vector style, no text, no letters, no numbers --style raw --no text, watermark";
+export const WEATHER_SCENES = [
+  { id: "c", label: "☁️ 흐림 — 베이스", count: 6, style: STYLE_BASE,
+    cuts: ["쾌청", "구름 조금", "구름 많음", "흐릿", "잔뜩 흐림", "먹구름"],
+    cutPrompts: [
+      "clear bright blue sky with a shining sun and one tiny cloud",
+      "blue sky with a few small fluffy clouds, sun fully visible",
+      "sky half covered with soft clouds, sun peeking through",
+      "mostly cloudy sky, pale sun barely visible behind clouds",
+      "overcast gray sky, thick continuous cloud layer, no sun",
+      "dark heavy storm clouds covering the entire sky",
+    ] },
+  { id: "r", label: "🌧 비 — 베이스", count: 6, style: STYLE_BASE,
+    cuts: ["이슬비", "부슬비", "보통 비", "장대비", "호우주의보", "호우경보"],
+    cutPrompts: [
+      "light drizzle falling from soft gray clouds, thin sparse raindrops",
+      "gentle steady rain from gray clouds, small raindrops",
+      "moderate rain with many raindrops, gray sky",
+      "heavy rain pouring from dark clouds, thick rain streaks",
+      "intense downpour, dense diagonal rain streaks, dark stormy sky",
+      "extreme torrential rain, sheets of rain, very dark violent sky",
+    ] },
+  { id: "s", label: "❄️ 눈 — 베이스", count: 6, style: STYLE_BASE,
+    cuts: ["눈발", "가벼운 눈", "펑펑", "수북수북", "폭설주의보", "폭설경보"],
+    cutPrompts: [
+      "a few snowflakes drifting in a pale winter sky",
+      "light snowfall with small snowflakes, soft gray sky",
+      "steady snowfall, many snowflakes falling",
+      "heavy snowfall, thick large snowflakes filling the sky",
+      "snowstorm with dense snow and low visibility",
+      "extreme blizzard, whiteout of violent swirling snow",
+    ] },
+  { id: "f", label: "🥶 추위 — 오버레이(프레임)", count: 6, style: STYLE_OVER,
+    cuts: ["쌀쌀", "추움", "성에 시작", "결빙", "한파주의보", "한파경보"],
+    cutPrompts: [
+      "thin frost sparkles at the four corners of the frame",
+      "frost creeping along the edges, small ice crystals",
+      "frost border framing all four edges, delicate ice patterns",
+      "thick icy frame with small icicles hanging from the top edge",
+      "heavy ice frame, long icicles, frozen crystals spreading inward",
+      "fully frozen frame, huge icicles and cracked ice reaching toward the center",
+    ] },
+  { id: "h", label: "🥵 더위 — 오버레이", count: 6, style: STYLE_OVER,
+    cuts: ["따뜻", "더움", "뙤약볕", "무더위", "폭염주의보", "폭염경보"],
+    cutPrompts: [
+      "a small soft warm sun glowing gently in the upper area",
+      "a bright yellow sun with short bold rays",
+      "a strong orange sun with long bold rays",
+      "an intense blazing sun with visible heat shimmer waves",
+      "a scorching red-orange sun with heat haze, and a small cloud wiping sweat",
+      "an extreme blazing sun filling the top, exhausted sweating cloud characters below",
+    ] },
+  { id: "w", label: "💨 바람 — 오버레이", count: 6, style: STYLE_OVER,
+    cuts: ["산들바람", "솔솔", "휘파람", "세찬 바람", "강풍주의보", "강풍경보"],
+    cutPrompts: [
+      "a small cloud with a calm cute face gently blowing a tiny puff of wind",
+      "a cloud face blowing a soft breeze with a few curved wind lines",
+      "a cloud face whistling while blowing wind, curved wind streams",
+      "a cloud face frowning slightly, blowing strong wind with big swirling gust lines",
+      "an upset cloud face blowing very strong wind, large gust swirls and flying leaves",
+      "a furious scrunched-up cloud face blowing violent storm wind, huge gust swirls",
+    ] },
+];
 
 const skyOf = (h) =>
   h < 6  ? ["linear-gradient(135deg,#1b2440 0%,#3b2f63 100%)", "고요한 새벽이에요"] :
@@ -107,20 +149,54 @@ const skyOf = (h) =>
   h < 20 ? ["linear-gradient(135deg,#ee9ca7 0%,#b06ab3 100%)", "노을 지는 저녁이에요"] :
            ["linear-gradient(135deg,#141e30 0%,#243b55 100%)", "차분한 밤이에요"];
 
+function pickWeather(c) {
+  const t = c.temperature_2m, p = c.precipitation || 0, code = c.weather_code,
+        cc = c.cloud_cover ?? 0, ws = c.wind_speed_10m || 0;
+  const snowy = [71, 73, 75, 77, 85, 86].includes(code);
+  const rainy = !snowy && ([51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(code) || p > 0);
+  let base;
+  if (snowy)      base = "s" + (p >= 7 ? 6 : p >= 5 ? 5 : p >= 3 ? 4 : p >= 1.5 ? 3 : p >= 0.5 ? 2 : 1);
+  else if (rainy) base = "r" + (p >= 20 ? 6 : p >= 10 ? 5 : p >= 5 ? 4 : p >= 2 ? 3 : p >= 0.5 ? 2 : 1);
+  else            base = "c" + Math.min(6, Math.max(1, Math.round(cc / 20) + 1));
+  const over = [];
+  if (t <= 5)       over.push("f" + (t <= -15 ? 6 : t <= -12 ? 5 : t <= -8 ? 4 : t <= -3 ? 3 : t <= 0 ? 2 : 1));
+  else if (t >= 26) over.push("h" + (t >= 35 ? 6 : t >= 33 ? 5 : t >= 31 ? 4 : t >= 29 ? 3 : t >= 27.5 ? 2 : 1));
+  if (ws >= 4)      over.push("w" + (ws >= 21 ? 6 : ws >= 14 ? 5 : ws >= 11 ? 4 : ws >= 8 ? 3 : ws >= 6 ? 2 : 1));
+  return { base, over, t, snowy, rainy, cloudLv: +(base[0] === "c" ? base[1] : 6) };
+}
+
+const heroGrad = (wx, h) => {
+  if (!wx) return skyOf(h)[0];
+  if (wx.snowy) return "linear-gradient(135deg,#64748b,#9db1c7)";
+  if (wx.rainy) return +wx.base[1] >= 5 ? "linear-gradient(135deg,#1f2937,#155e75)" : "linear-gradient(135deg,#475569,#0e7490)";
+  if (wx.cloudLv >= 5) return "linear-gradient(135deg,#4b5563,#6b7280)";
+  if (wx.cloudLv >= 3) return "linear-gradient(135deg,#5c7186,#38bdf8)";
+  if (wx.t >= 31) return "linear-gradient(135deg,#f97316,#ef4444)";
+  return skyOf(h)[0];
+};
+
+const coldFx = (t) => {
+  if (t == null || t > 5) return {};
+  const sat = t > 2 ? 0.8 : t > 0 ? 0.55 : t > -3 ? 0.3 : t > -8 ? 0.18 : 0.1;
+  const fx = { filter: `saturate(${sat})` };
+  if (t <= 0) {
+    const g = t <= -12 ? 0.85 : t <= -8 ? 0.7 : t <= -3 ? 0.55 : 0.4;
+    fx.boxShadow = `inset 0 0 0 3px rgba(205,235,255,${g}), inset 0 0 36px rgba(180,225,255,${g * 0.7}), 0 6px 22px rgba(0,0,0,.14)`;
+  }
+  return fx;
+};
+
 export default function HomeDash({ theme = "light", onToggleTheme }) {
   const [nick, setNick] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [greet] = useState(() => GREETS[Math.floor(Math.random() * GREETS.length)]);
   const [wx, setWx] = useState(null);
-  useEffect(() => {
-    // 학원 기준 좌표 — 필요하면 숫자만 교체
-    fetch("https://api.open-meteo.com/v1/forecast?latitude=37.66&longitude=126.83&current=temperature_2m,precipitation,weather_code")
-      .then((r) => r.json())
-      .then((j) => { const c = j?.current; if (c) setWx({ t: c.temperature_2m, code: c.weather_code, p: c.precipitation }); })
-      .catch(() => {});
-  }, []);
+  const [wxFiles, setWxFiles] = useState({});
+  const [wxEdit, setWxEdit] = useState(false);
+  const [dday, setDday] = useState(null);
   const now = new Date();
-  const [sky, hi] = skyOf(now.getHours());
+  const hi = skyOf(now.getHours())[1];
+  const days = ["월", "화", "수", "목", "금", "토", "일"];
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -128,39 +204,76 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
       const { data: p } = await supabase.from("profiles").select("username, role").eq("id", u.id).maybeSingle();
       setNick(p?.username || ""); setIsAdmin(p?.role === "admin");
     });
+    const today = new Date().toISOString().slice(0, 10);
+    supabase.from("events").select("date, title").eq("dday", true).gte("date", today)
+      .order("date").limit(1).then(({ data }) => {
+        if (data?.[0]) {
+          const d = Math.round((new Date(data[0].date + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
+          setDday({ days: d, title: data[0].title });
+        }
+      });
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=37.66&longitude=126.83&current=temperature_2m,precipitation,weather_code,cloud_cover,wind_speed_10m")
+      .then((r) => r.json()).then((j) => { if (j?.current) setWx(pickWeather(j.current)); }).catch(() => {});
   }, []);
 
-  const week = [35, 55, 20, 70, 45, 85, 30]; // 데모: 요일별 학습(분)
-  const days = ["월", "화", "수", "목", "금", "토", "일"];
+  const loadWxFiles = useCallback(async () => {
+    const { data } = await supabase.storage.from("figures").list("weather/main", { limit: 100 });
+    const map = {};
+    for (const f of data || []) {
+      const key = f.name.replace(/\.[^.]+$/, "");
+      const { data: pu } = supabase.storage.from("figures").getPublicUrl(`weather/main/${f.name}`);
+      map[key] = { name: f.name, url: pu.publicUrl + "?v=" + encodeURIComponent(f.updated_at || "") };
+    }
+    setWxFiles(map);
+  }, []);
+  useEffect(() => { loadWxFiles(); }, [loadWxFiles]);
+
+  const skyImgs = wx ? [wx.base, ...wx.over].filter((k) => wxFiles[k]).map((k) => ({ k, url: wxFiles[k].url })) : [];
+  const week = [35, 55, 20, 70, 45, 85, 30];
 
   return (
     <div className={`hd-root hd-${theme}`}>
       <style>{CSS}</style>
       <div className="hd-wrap">
-        <div className="hd-btns">
-          <img className="hd-logo" src="/brand/ashrain_logo.png" alt="ashrain" />
-          {isAdmin && <button className="hd-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 개념 등록</button>}
-          {isAdmin && <button className="hd-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 질문 검토</button>}
-          {isAdmin && <button className="hd-btn" onClick={() => (location.hash = "#/admin/chats")}>🗂 질문대화</button>}
-          {isAdmin && <button className="hd-btn" onClick={() => (location.hash = "#/admin/images")}>🖼 이미지 현황</button>}
-          <button className="hd-btn" onClick={() => (location.hash = "#/board")}>📋 질문게시판</button>
+        <div className="hd-top">
+          {dday ? (
+            <div className="hd-dday" title={dday.title}>{dday.days === 0 ? "D-DAY" : `D-${dday.days}`}</div>
+          ) : (
+            <img className="hd-logo" src="/brand/ashrain_logo.png" alt="ashrain" />
+          )}
+          <button className="hd-btn" onClick={() => (location.hash = "#/learn")}>📚 개념학습</button>
+          <button className="hd-btn" onClick={() => (location.hash = "#/board")}>📋 게시판</button>
           <button className="hd-btn" onClick={() => (location.hash = "#/me")}>👤 마이페이지</button>
           {onToggleTheme && <button className="hd-btn" onClick={onToggleTheme}>{theme === "dark" ? "☀️" : "🌙"}</button>}
           <a className="hd-btn" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 5 }}
-            href="https://www.instagram.com/ashrain.out" target="_blank" rel="noreferrer" title="앱 문의 (인스타그램 DM)">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="5.2" /><circle cx="12" cy="12" r="4.2" />
-              <circle cx="17.3" cy="6.7" r="1.15" fill="currentColor" stroke="none" />
+            href="https://www.instagram.com/ashrain.out" target="_blank" rel="noreferrer" title="앱 문의">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3a6 6 0 0 0-3.7 10.7c.6.5 1 1.3 1 2.1v.2h5.4v-.2c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+              <path d="M9.5 19h5" /><path d="M10.5 21.5h3" />
             </svg> 문의
           </a>
+          {isAdmin && <>
+            <button className="hd-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 개념 등록</button>
+            <button className="hd-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 질문 검토</button>
+            <button className="hd-btn" onClick={() => (location.hash = "#/admin/chats")}>🗂 질문대화</button>
+            <button className="hd-btn" onClick={() => (location.hash = "#/admin/images")}>🖼 이미지 현황</button>
+            <button className="hd-btn" onClick={() => (location.hash = "#/admin/calendar")}>🗓 시험일정</button>
+          </>}
         </div>
 
-        <div className="hd-hero" style={{ background: sky }}>
+        <div className="hd-hero" style={{ background: heroGrad(wx, now.getHours()), ...coldFx(wx?.t) }}>
+          {skyImgs.length > 0 && (
+            <div className="hd-sky">
+              {skyImgs.map(({ k, url }) => (
+                <img key={k} src={url} alt="" style={{ mixBlendMode: k[0] === "f" || k[0] === "h" || k[0] === "w" ? "screen" : "normal" }} />
+              ))}
+            </div>
+          )}
           <p className="hd-hero-hi">{hi}</p>
           <p className="hd-hero-nick">{nick || "친구"}님</p>
           <p className="hd-hero-greet">“{greet}”</p>
-          {wx && <div className="hd-wx" title="지금 날씨"><WxIcon t={wx.t} code={wx.code} p={wx.p} /></div>}
           <span className="hd-hero-time">{now.getMonth() + 1}월 {now.getDate()}일 · {days[(now.getDay() + 6) % 7]}요일</span>
+          {isAdmin && <button className="hd-wxpen" title="날씨 이미지 업로드" onClick={() => setWxEdit(true)}>🌦✏️</button>}
         </div>
 
         <div className="hd-grid">
@@ -172,21 +285,18 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
             <p className="hd-sub">단락 3/5 읽음 · 어제 저녁에 보다 멈췄어요</p>
             <button className="hd-go" onClick={() => (location.hash = "#/c/m1-1-01")}>이어보기 →</button>
           </div>
-
           <div className="hd-card">
             <span className="hd-demo">DEMO</span>
             <p className="hd-t">🔥 연속 출석</p>
             <p className="hd-big">12일째</p>
             <p className="hd-sub">이번 주 5일 접속 — 최고 기록까지 3일!</p>
           </div>
-
           <div className="hd-card">
             <span className="hd-demo">DEMO</span>
             <p className="hd-t">📕 오답노트</p>
             <p className="hd-big">미복습 4문제</p>
             <p className="hd-sub">정수와 유리수 2 · 소인수분해 2</p>
           </div>
-
           <div className="hd-card wide">
             <span className="hd-demo">DEMO</span>
             <p className="hd-t">📈 이번 주 학습 시간 <span style={{ fontWeight: 600 }}>· 합계 5시간 40분</span></p>
@@ -199,14 +309,12 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
               ))}
             </div>
           </div>
-
           <div className="hd-card">
             <span className="hd-demo">DEMO</span>
             <p className="hd-t">⚡ 연산 스피드</p>
             <p className="hd-big">92점 · 4분 12초</p>
             <p className="hd-sub">지난 기록보다 38초 빨라졌어요</p>
           </div>
-
           <div className="hd-card">
             <span className="hd-demo">DEMO</span>
             <p className="hd-t">💬 내 질문</p>
@@ -214,14 +322,6 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
             <p className="hd-sub">A01-1 약수 질문에 답이 달렸어요</p>
             <button className="hd-go" onClick={() => (location.hash = "#/board")}>보러 가기 →</button>
           </div>
-
-          <div className="hd-card wide" style={{ padding: 0, border: "none", background: "transparent" }}>
-            <button className="hd-btn" style={{ width: "100%", padding: "16px 0", fontSize: 15, fontWeight: 800, borderRadius: 14 }}
-              onClick={() => (location.hash = "#/learn")}>
-              📚 개념 학습 목록 열기
-            </button>
-          </div>
-
           <button className="hd-philo" onClick={() => (location.hash = "#/philosophy")}>
             <p className="hd-philo-eyebrow">ASHRAIN PHILOSOPHY</p>
             <p className="hd-philo-t">우리가 이렇게 가르치는 이유</p>
@@ -235,6 +335,8 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
 
         <p className="hd-note">대시보드 수치는 데모예요 — 활동 기록 기능이 연결되면 실제 데이터로 채워집니다.</p>
       </div>
+      {wxEdit && <SceneEditor scenes={WEATHER_SCENES} dir="weather/main" files={wxFiles}
+        onClose={() => setWxEdit(false)} onSaved={() => { setWxEdit(false); loadWxFiles(); }} />}
     </div>
   );
 }
