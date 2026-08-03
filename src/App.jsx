@@ -22,6 +22,7 @@ import PracticeViewer from "./pages/PracticeViewer";
 import AdminPractice from "./pages/AdminPractice";
 import AdminChats from "./components/AdminChats";
 import AdminImages from "./components/AdminImages";
+import Philosophy from "./components/Philosophy";
 import QnaBoard from "./components/QnaBoard";
 
 function useHash() {
@@ -120,7 +121,7 @@ function TrialExpired({ theme }) {
   );
 }
 
-export default function App() {
+function AppRoutes() {
   const { theme, toggle } = useTheme();
   const hash = useHash();
   const [session, setSession] = useState(undefined); // undefined = 로딩 중
@@ -209,8 +210,38 @@ export default function App() {
       }} />
     );
   }
+  if (hash.startsWith("#/philosophy")) return <Philosophy theme={theme} />;
   if (hash.startsWith("#/admin/qna")) return <AdminQna theme={theme} />;
   if (hash.startsWith("#/admin/concepts")) return <AdminConcepts theme={theme} />;
   if (hash.startsWith("#/me")) return <MyPage theme={theme} onToggleTheme={toggle} />;
   return <Home theme={theme} onToggleTheme={toggle} />;
+}
+
+
+// ── 전역: 좌상단 로고(홈 이동) — 홈이 아닐 때 모든 페이지에 표시 ──
+function GlobalLogo() {
+  return (
+    <button
+      onClick={() => (location.hash = "")}
+      aria-label="홈으로"
+      style={{
+        position: "fixed", top: 8, left: 8, zIndex: 70, width: 34, height: 34,
+        borderRadius: 999, background: "#fff", border: "1px solid rgba(0,0,0,.08)",
+        boxShadow: "0 1px 6px rgba(0,0,0,.18)", cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 4,
+      }}>
+      <img src="/brand/ashrain_logo.png" alt="ashrain" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+    </button>
+  );
+}
+
+export default function App() {
+  const hash = useHash();
+  const onHome = !hash || hash === "#/" || hash === "#";
+  return (
+    <>
+      {!onHome && <GlobalLogo />}
+      <AppRoutes />
+    </>
+  );
 }

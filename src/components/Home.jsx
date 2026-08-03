@@ -111,6 +111,14 @@ const CSS = `
 .hm-wrap { max-width: 768px; margin: 0 auto; }
 .hm-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
 .hm-logo { height: 34px; }
+.hm-greet { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; }
+.hm-greet-t { flex: 1; font-size: 15px; color: var(--ink); margin: 0; }
+.hm-insta { color: var(--mut); display: flex; padding: 7px; border: 1px solid var(--bd);
+  border-radius: 10px; background: var(--card); }
+.hm-insta:hover { color: var(--ac); border-color: var(--ac); }
+.hm-philo { text-align: center; margin: 36px 0 8px; }
+.hm-philo button { background: none; border: none; color: var(--mut); font-size: 13px;
+  letter-spacing: 3px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
 .hm-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .hm-btn { background: var(--card); border: 1px solid var(--bd); color: var(--mut); font-size: 12px;
   border-radius: 8px; padding: 6px 12px; cursor: pointer; }
@@ -231,6 +239,19 @@ export default function Home({ theme, onToggleTheme }) {
 
   const [cat, setCat] = useState("concept");         // 현재 카테고리 탭
   const [open, setOpen] = useState(() => new Set()); // 기본: 전부 접힘
+  const [nick, setNick] = useState("");
+  const [greet] = useState(() => {
+    const G = ["오늘도 반가워요!", "수학할 준비 됐나요?", "어서 오세요 😊", "차근차근 가 봅시다",
+               "꾸준함이 실력이에요", "한 걸음씩, 오늘도", "돌아온 걸 환영해요", "오늘의 한 문제부터!"];
+    return G[Math.floor(Math.random() * G.length)];
+  });
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      const u = data?.user; if (!u) return;
+      const { data: p } = await supabase.from("profiles").select("username").eq("id", u.id).maybeSingle();
+      setNick(p?.username || "");
+    });
+  }, []);
   const [favs, setFavs] = useState([]);              // [{cat_id, position, color}]
   const [selCat, setSelCat] = useState(null);        // 즐겨찾기 탭에서 열어 둔 카테고리
   const [editMode, setEditMode] = useState(false);
@@ -428,6 +449,15 @@ export default function Home({ theme, onToggleTheme }) {
             </button>
             <button className="hm-btn" onClick={onToggleTheme}>{theme === "light" ? "🌙" : "🌧"}</button>
           </div>
+        </div>
+        <div className="hm-greet">
+          <p className="hm-greet-t"><b>{nick || "친구"}</b>님, {greet}</p>
+          <a className="hm-insta" href="https://www.instagram.com/ashrain.out" target="_blank" rel="noreferrer" title="앱 문의 (인스타그램 DM)">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.9">
+              <rect x="3" y="3" width="18" height="18" rx="5.2" /><circle cx="12" cy="12" r="4.2" />
+              <circle cx="17.3" cy="6.7" r="1.15" fill="currentColor" stroke="none" />
+            </svg>
+          </a>
         </div>
 
         {/* ── 카테고리 4탭 ── */}
@@ -667,6 +697,10 @@ export default function Home({ theme, onToggleTheme }) {
             </div>
           </div>
         )}
+
+        <div className="hm-philo">
+          <button onClick={() => (location.hash = "#/philosophy")}>〈 교 육 철 학 〉</button>
+        </div>
 
         {toast && <div className="hm-toast">{toast}</div>}
       </div>

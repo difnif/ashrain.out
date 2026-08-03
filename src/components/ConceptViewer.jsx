@@ -49,7 +49,7 @@ const CSS = `
 .cv-subtitle { font-size: 13px; color: rgba(240,253,250,.85); margin: 4px 0 0; }
 .cv-main { background: var(--surface); border: 1px solid var(--surface-bd); border-top: none;
   border-radius: 0 0 16px 16px; padding: 20px 16px; display: grid; grid-template-columns: 1fr; gap: 16px; }
-@media (min-width: 640px) { .cv-main { grid-template-columns: 1fr 1fr; } .cv-span2 { grid-column: span 2; } }
+/* 1행 1박스 원칙 — 반쪽 배치 제거 */
 .cv-bh { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .cv-bh-l { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .cv-icon { width: 28px; height: 28px; border-radius: 9999px; display: flex; align-items: center; justify-content: center;
