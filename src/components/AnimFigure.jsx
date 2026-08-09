@@ -1,4 +1,4 @@
-// ashrain.out — 인라인 씬 시스템 (v2.0)
+// ashrain.out — 인라인 씬 시스템 (v2.1: ✂️ 세트 이미지 잘라 넣기)
 // 본문 lines 사이 [[fig:씬id]] 마커 자리에 씬이 삽입되는 "글·그림 교차" 구조.
 // - sequence 씬: 업로드 컷 크로스페이드 (화면에 보일 때 재생) / 미업로드 시 설명 플레이스홀더
 // - diagram 씬: 코드 다이어그램 (equal-bars, hanja-modify) — 이미지 불필요
@@ -329,7 +329,15 @@ function Editor({ scenes, dir, files, onClose, onSaved }) {
               <button className={"af-tab" + (mode === "cells" ? " on" : "")} onClick={() => setMode("cells")}>순서대로 넣기</button>
               <button className={"af-tab" + (mode === "drop" ? " on" : "")} onClick={() => setMode("drop")}>드래그앤드롭</button>
               <button className={"af-tab" + (mode === "prompt" ? " on" : "")} onClick={() => setMode("prompt")}>🎨 프롬프트</button>
+              <button className={"af-tab" + (mode === "crop" ? " on" : "")} onClick={() => setMode("crop")}>✂️ 잘라 넣기</button>
             </div>
+            {mode === "crop" && (
+              <CropAssign targets={keys}
+                labels={Object.fromEntries(scenes.flatMap((s) => Array.from({ length: s.count }, (_, i) => [`${s.id}${i + 1}`, s.cuts?.[i] || ""])))}
+                onAssign={(m) => { setPending((p) => ({ ...p, ...m }));
+                  setRemoved((r) => { const n = { ...r }; for (const k of Object.keys(m)) delete n[k]; return n; });
+                  setMode("cells"); }} />
+            )}
             {mode === "prompt" && scenes.map((s) => (
               <PromptCard key={s.id} scene={s} />
             ))}
@@ -369,6 +377,127 @@ function Editor({ scenes, dir, files, onClose, onSaved }) {
         )}
       </div>
     </>
+  );
+}
+
+
+/* ══════════ ✂️ 세트 이미지에서 잘라 넣기 (마우스·터치 공용) ══════════ */
+export function CropAssign({ targets, labels = {}, single = false, onAssign, onCancel }) {
+  const [src, setSrc] = useState(null);          // { url, iw, ih }
+  const [sel, setSel] = useState(null);          // 표시 좌표계 선택 박스
+  const [assigned, setAssigned] = useState({});  // key -> { file, url }
+  const [ti, setTi] = useState(0);
+  const imgRef = useRef(null), wrapRef = useRef(null), fileRef = useRef(null);
+  const drag = useRef(null);
+
+  const load = (f) => { if (!f) return; const url = URL.createObjectURL(f);
+    const im = new Image(); im.onload = () => setSrc({ url, iw: im.naturalWidth, ih: im.naturalHeight }); im.src = url; };
+
+  const pos = (e) => { const r = wrapRef.current.getBoundingClientRect();
+    return { x: Math.min(Math.max(e.clientX - r.left, 0), r.width),
+             y: Math.min(Math.max(e.clientY - r.top, 0), r.height), W: r.width, H: r.height }; };
+  const down = (e) => { if (!src) return; e.preventDefault();
+    wrapRef.current.setPointerCapture?.(e.pointerId);
+    const p = pos(e), s = sel;
+    if (s && Math.abs(p.x - (s.x + s.w)) < 24 && Math.abs(p.y - (s.y + s.h)) < 24) drag.current = { m: "rs" };
+    else if (s && p.x > s.x && p.x < s.x + s.w && p.y > s.y && p.y < s.y + s.h) drag.current = { m: "mv", p, s: { ...s } };
+    else { drag.current = { m: "nw", p }; setSel({ x: p.x, y: p.y, w: 0, h: 0 }); } };
+  const move = (e) => { const d = drag.current; if (!d) return; const p = pos(e);
+    if (d.m === "nw") setSel({ x: Math.min(d.p.x, p.x), y: Math.min(d.p.y, p.y), w: Math.abs(p.x - d.p.x), h: Math.abs(p.y - d.p.y) });
+    if (d.m === "mv") setSel((s) => ({ ...s, x: Math.min(Math.max(d.s.x + p.x - d.p.x, 0), p.W - s.w), y: Math.min(Math.max(d.s.y + p.y - d.p.y, 0), p.H - s.h) }));
+    if (d.m === "rs") setSel((s) => ({ ...s, w: Math.max(16, p.x - s.x), h: Math.max(16, p.y - s.y) })); };
+  const up = () => { drag.current = null; setSel((s) => (s && (s.w < 10 || s.h < 10) ? null : s)); };
+
+  const cropRect = async (r) => { const el = imgRef.current;
+    const sx = src.iw / el.clientWidth, sy = src.ih / el.clientHeight;
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(r.w * sx)); c.height = Math.max(1, Math.round(r.h * sy));
+    c.getContext("2d").drawImage(el, r.x * sx, r.y * sy, r.w * sx, r.h * sy, 0, 0, c.width, c.height);
+    const blob = await new Promise((res) => c.toBlob(res, "image/png"));
+    return blob; };
+
+  const put = (key, blob) => setAssigned((a) => ({ ...a, [key]: { file: new File([blob], key + ".png", { type: "image/png" }), url: URL.createObjectURL(blob) } }));
+  const nextIdx = (a) => { let i = 0; while (i < targets.length && a[targets[i]]) i++; return i; };
+  const assignSel = async () => { const key = targets[Math.min(ti, targets.length - 1)];
+    if (!sel || !key) return; const blob = await cropRect(sel); 
+    const na = { ...assigned }; na[key] = 1; put(key, blob); setSel(null); setTi(nextIdx(na)); };
+  const preset = async (nx, ny) => { if (!src) return;
+    const el = imgRef.current, dw = el.clientWidth, dh = el.clientHeight;
+    const rects = []; for (let r = 0; r < ny; r++) for (let cx = 0; cx < nx; cx++)
+      rects.push({ x: (dw / nx) * cx, y: (dh / ny) * r, w: dw / nx, h: dh / ny });
+    let idx = ti; const na = { ...assigned };
+    for (const rc of rects) { if (idx >= targets.length) break; const key = targets[idx];
+      const blob = await cropRect(rc); na[key] = 1; put(key, blob); idx++; if (single) break; }
+    setSel(null); setTi(nextIdx(na)); };
+  const unassign = (k) => setAssigned((a) => { const n = { ...a }; delete n[k]; setTi(Math.min(ti, targets.indexOf(k))); return n; });
+
+  const target = targets[Math.min(ti, targets.length - 1)];
+  const doneN = Object.keys(assigned).length;
+  const btn = { border: "1px solid var(--inbd,#D3D9DF)", background: "transparent", borderRadius: 999,
+    color: "var(--mut,#8A929C)", fontSize: 12, fontWeight: 700, padding: "6px 11px", cursor: "pointer" };
+
+  return (
+    <div>
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
+        onChange={(e) => { load(e.target.files?.[0]); e.target.value = ""; }} />
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+        <button style={{ ...btn, borderColor: "var(--ac,#0DA95F)", color: "var(--ac,#0DA95F)" }}
+          onClick={() => fileRef.current.click()}>🖼 세트 이미지 {src ? "교체" : "선택"}</button>
+        {src && <>
+          <button style={btn} onClick={() => preset(2, 1)}>가로 2등분</button>
+          <button style={btn} onClick={() => preset(3, 1)}>가로 3등분</button>
+          <button style={btn} onClick={() => preset(2, 2)}>2×2</button>
+        </>}
+      </div>
+      {!src ? (
+        <p style={{ fontSize: 12.5, color: "var(--mut,#8A929C)", lineHeight: 1.7, margin: "4px 0 10px" }}>
+          미드저니 결과처럼 <b>여러 컷이 한 장에 담긴 이미지</b>를 올린 뒤, 손가락(마우스)으로 영역을 그려
+          컷마다 잘라 넣으세요. 컷들이 가지런히 배치됐다면 등분 버튼으로 한 번에 나눌 수도 있어요.
+        </p>
+      ) : (
+        <>
+          <div ref={wrapRef} onPointerDown={down} onPointerMove={move} onPointerUp={up}
+            style={{ position: "relative", touchAction: "none", userSelect: "none", borderRadius: 10,
+              overflow: "hidden", border: "1px solid var(--bd,#DFE3E8)", marginBottom: 8 }}>
+            <img ref={imgRef} src={src.url} alt="" draggable={false}
+              style={{ width: "100%", display: "block", pointerEvents: "none" }} />
+            {sel && (
+              <div style={{ position: "absolute", left: sel.x, top: sel.y, width: sel.w, height: sel.h,
+                border: "2px solid #0DA95F", background: "rgba(13,169,95,.14)", boxSizing: "border-box" }}>
+                <div style={{ position: "absolute", right: -2, bottom: -2, width: 18, height: 18,
+                  background: "#0DA95F", borderRadius: 4 }} />
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            <span style={{ fontSize: 12.5, color: "var(--ink,#1F2937)", fontWeight: 800 }}>
+              다음 컷: {target} {labels[target] ? `· ${labels[target]}` : ""}</span>
+            <button style={{ ...btn, borderColor: "var(--ac,#0DA95F)", color: "#fff", background: "var(--ac,#0DA95F)" }}
+              disabled={!sel} onClick={assignSel}>✂️ 이 영역을 {target}에</button>
+          </div>
+        </>
+      )}
+      {doneN > 0 && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+          {targets.filter((k) => assigned[k]).map((k) => (
+            <div key={k} style={{ position: "relative", width: 72 }}>
+              <img src={assigned[k].url} alt="" style={{ width: 72, height: 72, objectFit: "contain",
+                border: "1.5px solid var(--ac,#0DA95F)", borderRadius: 8, background: "#fff" }} />
+              <button onClick={() => unassign(k)} style={{ position: "absolute", top: -6, right: -6,
+                background: "#DC2626", color: "#fff", border: "none", borderRadius: 999, width: 18, height: 18,
+                fontSize: 10, cursor: "pointer", lineHeight: 1 }}>✕</button>
+              <p style={{ fontSize: 10.5, textAlign: "center", margin: "2px 0 0", color: "var(--mut,#8A929C)", fontWeight: 700 }}>{k}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        {onCancel && <button className="af-btn af-cancel" onClick={onCancel}>닫기</button>}
+        <button className="af-btn af-ok" disabled={!doneN}
+          onClick={() => onAssign(Object.fromEntries(Object.entries(assigned).map(([k, v]) => [k, v.file])))}>
+          적용 ({doneN}건)</button>
+      </div>
+    </div>
   );
 }
 
