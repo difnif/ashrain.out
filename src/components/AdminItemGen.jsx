@@ -1,4 +1,5 @@
-// ashrain.out — 테스트 문항 생성기 (v1.2, 관리자 전용, #/admin/itemgen)
+// ashrain.out — 테스트 문항 생성기 (v1.3, 관리자 전용, #/admin/itemgen)
+// v1.3: 헤더에 ⬇ 전체 백업 — test_items 전체를 JSON 파일로 내려받기(1000건 단위 페이지네이션)
 // v1.2: ①·③ 저장이 "중복 자동 덮어쓰기"로 동작 — 같은 test_type에서 공백만 정규화한 문제 본문이
 //       같으면 기존 문항을 덮어씀(풀이 갱신 루트로도 사용 가능). 저장 후 신규/덮어씀 건수 표시.
 //       supabase/2026-08_test_items_dedup.sql 실행이 선행 조건 — 미실행이면 구방식(단순 추가)으로 폴백.
@@ -215,6 +216,30 @@ export default function AdminItemGen({ theme = "light" }) {
       ? `✅ ${r.total}문항 저장(draft) 완료`
       : `✅ ${r.total}문항 저장(draft) — 신규 ${r.fresh} · 덮어씀 ${r.over}`;
 
+  /* ── 전체 문항 백업 다운로드 (v1.3) ── */
+  const backupItems = async () => {
+    if (busy) return; setBusy(true); setMsg("백업 파일을 만드는 중…");
+    try {
+      const all = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from("test_items").select("*")
+          .order("created_at", { ascending: true }).range(from, from + 999);
+        if (error) throw error;
+        all.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      const blob = new Blob(
+        [JSON.stringify({ exportedAt: new Date().toISOString(), count: all.length, items: all }, null, 2)],
+        { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "ashrain-test-items-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+      a.click(); URL.revokeObjectURL(a.href);
+      setMsg(`✅ 문항 ${all.length}건 백업 완료`);
+    } catch (e) { setMsg("⚠ 백업 실패: " + e.message); }
+    setBusy(false);
+  };
+
   /* ══ 탭 ①: 문항 생성 ══ */
   const gen = async () => {
     if (busy) return; setBusy(true); setMsg(""); setOut(null);
@@ -357,6 +382,7 @@ export default function AdminItemGen({ theme = "light" }) {
       <div className="ig-wrap">
         <div className="ig-top">
           <h1 className="ig-h">🧪 테스트 문항 생성기</h1>
+          <span className="ig-back" onClick={backupItems}>⬇ 전체 백업</span>
           <span className="ig-back" onClick={() => (location.hash = "")}>← 홈</span>
         </div>
         <div className="ig-tabs">
