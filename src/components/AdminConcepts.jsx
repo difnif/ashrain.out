@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 
-// ashrain.out — 관리자 개념 등록/삭제 화면 (patch v0.1.7)
+// ashrain.out — 관리자 개념 등록/삭제 화면 (patch v0.2.0)
 // 이 파일 하나만 src/components/AdminConcepts.jsx 에 덮어쓰면 됩니다.
+// - v0.2.0: 개념마다 난이도 1~5 문항 현황 배지 표시(테스트 문항 등록 수).
+//           숫자를 누르면 해당 개념×난이도의 전체 문항을 열람 — 보기 옵션(문제만/답 함께/해설 함께)과 삭제 지원.
+//           배지는 supabase/2026-08_test_items_dedup.sql 실행(뷰 test_item_counts 생성) 후 표시됩니다.
 // - 등록: JSON 파일 선택(권장, 여러 개 동시 가능) 또는 붙여넣기 → 검증 후 저장(같은 id는 덮어쓰기), 채택 QnA는 중복 자동 건너뜀
 // - 삭제: 등록된 개념 목록에서 버튼으로 삭제(연결된 QnA도 함께 삭제됨)
 // - 백업: concepts + concept_qna 전체를 JSON 파일로 내려받기
@@ -12,6 +15,20 @@ const UNIT_LABEL = {
   "m1-2": "중1 2학기",
   "m2-1": "중2 1학기",
   "m2-2": "중2 2학기",
+  "m3-1": "중3 1학기",
+  "m3-2": "중3 2학기",
+  "h1-1": "공통수학1",
+  "h1-2": "공통수학2",
+  "h2-1": "대수",
+  "h2-2": "미적분1",
+  "h3-1": "미적분2",
+  "h3-2": "확률과 통계",
+  "h3-3": "기하",
+};
+
+const TEST_LABEL = {
+  concept_set: "개념 묶음", unit: "단원", calc: "연산", sangwa: "산과",
+  mock: "모의고사", ash: "Ash", rain: "Rain", out: "Out",
 };
 
 const BLOCK_TYPES = ["text", "definition", "warning", "check", "image"];
@@ -61,6 +78,118 @@ function validateConcepts(input) {
   return { list: arr, errors };
 }
 
+/* ── KaTeX 미니 렌더러: $...$ 구간만 렌더, 실패 시 원문 그대로 (AdminItemGen과 동일 로더) ── */
+let katexP = null;
+function loadKatex() {
+  if (!katexP) katexP = (async () => {
+    if (!document.getElementById("katex-css")) {
+      const l = document.createElement("link"); l.id = "katex-css"; l.rel = "stylesheet";
+      l.href = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"; document.head.appendChild(l);
+    }
+    const m = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/katex@0.16.11/+esm");
+    return m.default || m;
+  })().catch(() => null);
+  return katexP;
+}
+function MathText({ text }) {
+  const [k, setK] = useState(null);
+  useEffect(() => { if (/\$/.test(text || "")) loadKatex().then(setK); }, [text]);
+  const parts = useMemo(() => String(text || "").split(/(\$[^$]+\$)/g), [text]);
+  return (
+    <span>{parts.map((p, i) => {
+      if (p.startsWith("$") && p.endsWith("$") && k) {
+        try { return <span key={i} dangerouslySetInnerHTML={{ __html: k.renderToString(p.slice(1, -1), { throwOnError: false }) }} />; }
+        catch { return <span key={i}>{p}</span>; }
+      }
+      return <span key={i}>{p}</span>;
+    })}</span>
+  );
+}
+
+/* ── 문항 브라우저: 개념 × 난이도의 등록 문항 전체 열람 · 삭제 ── */
+function ItemBrowser({ concept, diff, onClose, onChanged }) {
+  const [items, setItems] = useState(null);
+  const [mode, setMode] = useState("a"); // q=문제만, a=답 함께, s=해설 함께
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("test_items")
+        .select("*")
+        .contains("concept_ids", [concept.id])
+        .eq("difficulty", diff)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) setErr(error.message);
+      else setItems(data || []);
+    })();
+  }, [concept.id, diff]);
+
+  async function removeItem(it) {
+    const head = String(it.question || "").slice(0, 40);
+    if (!window.confirm(`이 문항을 삭제할까요?\n「${head}…」\n되돌릴 수 없습니다.`)) return;
+    setBusy(true);
+    const { error } = await supabase.from("test_items").delete().eq("id", it.id);
+    setBusy(false);
+    if (error) { setErr("삭제 실패: " + error.message); return; }
+    setItems((s) => s.filter((x) => x.id !== it.id));
+    onChanged && onChanged();
+  }
+
+  return (
+    <div className="acxm-ovl" onClick={onClose}>
+      <div className="acxm-box" onClick={(e) => e.stopPropagation()}>
+        <div className="acxm-hd">
+          <b>{concept.title}</b>
+          <span className="acxm-sub">난이도 {diff} · {items ? items.length + "문항" : "불러오는 중…"}</span>
+          <span className="acxm-x" onClick={onClose}>✕ 닫기</span>
+        </div>
+        <div className="acxm-modes">
+          {[["q", "문제만 보기"], ["a", "답 함께 보기"], ["s", "해설 함께 보기"]].map(([v, l]) => (
+            <button key={v} className={"acxm-chip" + (mode === v ? " on" : "")} onClick={() => setMode(v)}>{l}</button>
+          ))}
+        </div>
+        {err && <p className="acx-msg acx-err">{err}</p>}
+        <div className="acxm-list">
+          {items && items.length === 0 && <p className="acx-empty">등록된 문항이 없습니다.</p>}
+          {(items || []).map((it, idx) => (
+            <div key={it.id} className="acxm-item">
+              <div className="acxm-bs">
+                <span className="acxm-b">{idx + 1}</span>
+                <span className="acxm-b hot">{TEST_LABEL[it.test_type] || it.test_type}</span>
+                <span className="acxm-b">{it.qtype}</span>
+                <span className="acxm-b">{it.points}점</span>
+                {it.time_limit ? <span className="acxm-b">{it.time_limit}초</span> : null}
+                <span className="acxm-b">{it.status}</span>
+                {it.source ? <span className="acxm-b">{it.source}</span> : null}
+                <button className="acx-btn acx-del acxm-del" disabled={busy} onClick={() => removeItem(it)}>삭제</button>
+              </div>
+              <p className="acxm-q"><MathText text={it.question} /></p>
+              {it.choices && (
+                <p className="acxm-ch">{it.choices.map((c, i) => (
+                  <span key={i}>{"①②③④⑤"[i]} <MathText text={String(c)} />&nbsp;&nbsp;</span>))}</p>
+              )}
+              {mode !== "q" && (
+                <p className="acxm-a">답: <MathText text={String(it.answer)} />
+                  {it.answer_alt?.length ? `  (동치: ${it.answer_alt.join(", ")})` : ""}</p>
+              )}
+              {mode === "s" && (it.solution ? (
+                <div className="acxm-sol">
+                  <b>💡 {it.solution.outline}</b>
+                  {(it.solution.steps || []).map((s, i) => <div key={i}>· <MathText text={s} /></div>)}
+                  {it.solution.check && <div style={{ marginTop: 3 }}>✔ <MathText text={it.solution.check} /></div>}
+                </div>
+              ) : <p className="acxm-nosol">해설 없음 — ② 풀이 붙이기 또는 풀이방 JSON 재등록으로 채울 수 있어요.</p>)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminConcepts() {
   const [text, setText] = useState("");
   const [list, setList] = useState([]);
@@ -68,6 +197,8 @@ export default function AdminConcepts() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [counts, setCounts] = useState(null); // { concept_id: {d1..d5} } — 뷰 없으면 null
+  const [br, setBr] = useState(null);         // { concept, diff }
   const fileRef = useRef(null);
 
   const load = () =>
@@ -80,8 +211,20 @@ export default function AdminConcepts() {
         if (!error) setList(data || []);
       });
 
+  const loadCounts = () =>
+    supabase
+      .from("test_item_counts")
+      .select("*")
+      .then(({ data, error }) => {
+        if (error) { setCounts(null); return; } // 뷰 미생성(SQL 미실행) — 배지 숨김
+        const m = {};
+        (data || []).forEach((r) => { m[r.concept_id] = r; });
+        setCounts(m);
+      });
+
   useEffect(() => {
     load();
+    loadCounts();
     supabase.auth.getUser().then(({ data }) => {
       if (!data?.user) return setIsAdmin(false);
       supabase
@@ -353,6 +496,9 @@ export default function AdminConcepts() {
       <div className="acx-card">
         <p className="acx-desc">
           등록된 개념 <b>{list.length}개</b>. 삭제하면 연결된 학생 질문(QnA)도 함께 지워집니다.
+          {counts
+            ? " 개념 아래 1~5 배지는 난이도별 등록 문항 수 — 숫자를 누르면 열람·삭제할 수 있습니다."
+            : " (난이도별 문항 현황 배지는 2026-08_test_items_dedup.sql 실행 후 표시됩니다.)"}
         </p>
         {unitKeys.length === 0 && <p className="acx-empty">아직 등록된 개념이 없습니다.</p>}
         {unitKeys.map((u) => (
@@ -360,19 +506,51 @@ export default function AdminConcepts() {
             <h2 className="acx-h2">
               {UNIT_LABEL[u] || u} <span className="acx-count">{groups[u].length}개</span>
             </h2>
-            {groups[u].map((c) => (
-              <div key={c.id} className="acx-item">
-                <span className="acx-order">{String(c.sort_order).padStart(2, "0")}</span>
-                <span className="acx-title">{c.title}</span>
-                <span className="acx-id">{c.id}</span>
-                <button className="acx-btn acx-del" onClick={() => removeConcept(c)} disabled={busy}>
-                  삭제
-                </button>
-              </div>
-            ))}
+            {groups[u].map((c) => {
+              const cc = counts ? counts[c.id] : null;
+              return (
+                <div key={c.id} className="acx-item">
+                  <div className="acx-line">
+                    <span className="acx-order">{String(c.sort_order).padStart(2, "0")}</span>
+                    <span className="acx-title">{c.title}</span>
+                    <span className="acx-id">{c.id}</span>
+                    <button className="acx-btn acx-del" onClick={() => removeConcept(c)} disabled={busy}>
+                      삭제
+                    </button>
+                  </div>
+                  {counts && (
+                    <div className="acx-difrow">
+                      {[1, 2, 3, 4, 5].map((d) => {
+                        const n = cc ? cc["d" + d] || 0 : 0;
+                        return (
+                          <button
+                            key={d}
+                            className={"acx-dif" + (n ? " has" : "")}
+                            disabled={!n}
+                            title={`난이도 ${d} — ${n}문항`}
+                            onClick={() => setBr({ concept: c, diff: d })}
+                          >
+                            {d}<b>{n}</b>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
+
+      {br && (
+        <ItemBrowser
+          concept={br.concept}
+          diff={br.diff}
+          onClose={() => setBr(null)}
+          onChanged={loadCounts}
+        />
+      )}
     </div>
   );
 }
@@ -409,11 +587,50 @@ const CSS = `
 .acx-group { margin-top: 14px; }
 .acx-h2 { font-size: .95rem; margin: 0 0 6px; opacity: .85; }
 .acx-count { font-size: .78rem; opacity: .55; font-weight: normal; margin-left: 6px; }
-.acx-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px;
-  border-radius: 10px; }
+.acx-item { padding: 7px 10px; border-radius: 10px; }
 .acx-item:hover { background: rgba(127,127,127,.08); }
+.acx-line { display: flex; align-items: center; gap: 10px; }
 .acx-order { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .78rem;
   opacity: .55; width: 22px; text-align: right; }
 .acx-title { flex: 1; font-size: .92rem; }
 .acx-id { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .75rem; opacity: .45; }
+/* 난이도 배지 */
+.acx-difrow { display: flex; gap: 5px; margin: 4px 0 0 32px; flex-wrap: wrap; }
+.acx-dif { display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  border: 1px solid rgba(127,127,127,.28); background: rgba(127,127,127,.06); color: inherit;
+  border-radius: 999px; padding: 1px 8px; font-size: .72rem; opacity: .5; }
+.acx-dif b { font-size: .78rem; }
+.acx-dif.has { opacity: 1; border-color: rgba(20,164,148,.5); background: rgba(20,164,148,.1); }
+.acx-dif.has:hover { background: rgba(20,164,148,.2); }
+.acx-dif:disabled { cursor: default; }
+/* 문항 브라우저 */
+.acxm-ovl { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 60;
+  display: flex; align-items: center; justify-content: center; padding: 14px; }
+.acxm-box { background: var(--bg, #fff); color: inherit; width: 100%; max-width: 720px;
+  max-height: 88vh; border-radius: 16px; padding: 14px 16px; box-sizing: border-box;
+  display: flex; flex-direction: column; border: 1px solid rgba(127,127,127,.25); }
+[data-theme="dark"] .acxm-box { background: #15171c; }
+.acxm-hd { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.acxm-sub { font-size: .8rem; opacity: .6; flex: 1; }
+.acxm-x { cursor: pointer; font-size: .82rem; opacity: .65; }
+.acxm-x:hover { opacity: 1; }
+.acxm-modes { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.acxm-chip { border: 1px solid rgba(127,127,127,.3); background: transparent; color: inherit;
+  border-radius: 999px; padding: 5px 11px; font-size: .78rem; cursor: pointer; opacity: .75; }
+.acxm-chip.on { border-color: rgba(20,164,148,.7); color: #16a08f; opacity: 1; font-weight: 700; }
+.acxm-list { overflow-y: auto; flex: 1; padding-right: 2px; }
+.acxm-item { border: 1px solid rgba(127,127,127,.2); border-radius: 12px; padding: 10px 12px;
+  margin-bottom: 10px; }
+.acxm-bs { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+.acxm-b { font-size: .66rem; font-weight: 700; border-radius: 6px; padding: 1px 6px;
+  border: 1px solid rgba(127,127,127,.25); background: rgba(127,127,127,.07); opacity: .8; }
+.acxm-b.hot { color: #16a08f; border-color: rgba(20,164,148,.5); }
+.acxm-del { margin-left: auto; }
+.acxm-q { font-size: .88rem; line-height: 1.65; margin: 0 0 5px; word-break: keep-all; }
+.acxm-ch { font-size: .84rem; line-height: 1.8; margin: 0 0 5px 2px; }
+.acxm-a { font-size: .8rem; color: #16a08f; font-weight: 700; margin: 0 0 3px; }
+.acxm-sol { font-size: .8rem; opacity: .85; line-height: 1.65; background: rgba(127,127,127,.07);
+  border-radius: 10px; padding: 7px 10px; margin-top: 5px; }
+.acxm-nosol { font-size: .76rem; opacity: .5; margin: 2px 0 0; }
+.katex { font-size: 1.02em; }
 `;
