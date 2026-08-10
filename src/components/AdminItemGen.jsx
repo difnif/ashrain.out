@@ -1,4 +1,7 @@
-// ashrain.out — 테스트 문항 생성기 (v1.1, 관리자 전용, #/admin/itemgen)
+// ashrain.out — 테스트 문항 생성기 (v1.2, 관리자 전용, #/admin/itemgen)
+// v1.2: ①·③ 저장이 "중복 자동 덮어쓰기"로 동작 — 같은 test_type에서 공백만 정규화한 문제 본문이
+//       같으면 기존 문항을 덮어씀(풀이 갱신 루트로도 사용 가능). 저장 후 신규/덮어씀 건수 표시.
+//       supabase/2026-08_test_items_dedup.sql 실행이 선행 조건 — 미실행이면 구방식(단순 추가)으로 폴백.
 // v1.1: ③ JSON 등록 탭 — MD 방(하이쿠·소넷·오푸스)이나 Fable이 만든 문항 JSON을 붙여넣어 일괄 등록
 // 탭 ①문항 생성: 모델·범위·형식 지정 → /api/genItems → 미리보기(KaTeX)·편집·선별 → test_items 저장(draft)
 // 탭 ②풀이 붙이기: solution 없는 문항 로드 → 오푸스/페이블로 풀이 생성 → 병합 저장
@@ -179,6 +182,39 @@ export default function AdminItemGen({ theme = "light" }) {
     return j;
   };
 
+  /* ── 공통: 중복 자동 덮어쓰기 저장 (v1.2)
+     같은 test_type에서 공백만 정규화한 question이 같으면 기존 행을 덮어씀.
+     근거: test_items.content_key(자동 생성) + (test_type, content_key) 유니크 인덱스.
+     SQL(2026-08_test_items_dedup.sql) 미실행 상태면 구방식(단순 insert)으로 폴백. ── */
+  const upsertItems = async (rows) => {
+    const cnt = async () => {
+      const { count } = await supabase.from("test_items")
+        .select("id", { count: "exact", head: true });
+      return typeof count === "number" ? count : null;
+    };
+    const c0 = await cnt();
+    const stamped = rows.map((r) => ({ ...r, updated_at: new Date().toISOString() }));
+    const { data, error } = await supabase.from("test_items")
+      .upsert(stamped, { onConflict: "test_type,content_key" }).select("id");
+    if (error) {
+      if (/content_key|updated_at|conflict|constraint/i.test(error.message || "")) {
+        const { data: d2, error: e2 } = await supabase.from("test_items").insert(rows).select("id");
+        if (e2) throw e2;
+        return { total: (d2 || []).length, fresh: (d2 || []).length, over: 0, fallback: true };
+      }
+      throw error;
+    }
+    const c1 = await cnt();
+    const total = (data || []).length;
+    const fresh = c0 != null && c1 != null ? Math.max(Math.min(c1 - c0, total), 0) : null;
+    return { total, fresh, over: fresh == null ? null : total - fresh, fallback: false };
+  };
+  const saveMsg = (r) => r.fallback
+    ? `✅ ${r.total}문항 저장(draft) — ⚠ 덮어쓰기 SQL(2026-08_test_items_dedup.sql) 미실행이라 단순 추가로 저장됨`
+    : r.fresh == null
+      ? `✅ ${r.total}문항 저장(draft) 완료`
+      : `✅ ${r.total}문항 저장(draft) — 신규 ${r.fresh} · 덮어씀 ${r.over}`;
+
   /* ══ 탭 ①: 문항 생성 ══ */
   const gen = async () => {
     if (busy) return; setBusy(true); setMsg(""); setOut(null);
@@ -210,9 +246,8 @@ export default function AdminItemGen({ theme = "light" }) {
         source: "gen:" + f.model, status: "draft",
         gen_meta: { latex: f.latex, difficulty_req: f.difficulty },
       }));
-      const { error } = await supabase.from("test_items").insert(rows);
-      if (error) throw error;
-      setMsg(`✅ ${rows.length}문항 저장(draft) 완료`); setOut(null);
+      const r = await upsertItems(rows);
+      setMsg(saveMsg(r)); setOut(null);
     } catch (e) { setMsg("⚠ 저장 실패: " + e.message); }
     setBusy(false);
   };
@@ -254,7 +289,7 @@ export default function AdminItemGen({ theme = "light" }) {
       for (const it of sOut) {
         if (!it.id || !it.solution) continue;
         const { error } = await supabase.from("test_items")
-          .update({ solution: it.solution, source: undefined }).eq("id", it.id);
+          .update({ solution: it.solution }).eq("id", it.id);
         if (!error) n++;
       }
       setMsg(`✅ 풀이 ${n}건 저장 완료`); setSOut(null); loadPool();
@@ -288,7 +323,7 @@ export default function AdminItemGen({ theme = "light" }) {
       });
       if (!items.length) { setMsg("⚠ 읽을 수 있는 문항이 없어요"); return; }
       setRegOut({ items, excl });
-      setMsg(`불러오기 ${items.length}건 · 경고 자동 제외 ${excl.size}건 — 종류·단원·개념을 확인하고 저장하세요`);
+      setMsg(`불러오기 ${items.length}건 · 경고 자동 제외 ${excl.size}건 — 종류·단원·개념을 확인하고 저장하세요 (같은 문항은 자동 덮어쓰기)`);
     } catch { setMsg("⚠ JSON 형식이 아니에요 (배열인지, 따옴표·쉼표 확인)"); }
   };
   const saveReg = async () => {
@@ -305,9 +340,8 @@ export default function AdminItemGen({ theme = "light" }) {
         tags: it.tags || [], solution: it.solution || null,
         source: regSrc, status: "draft", gen_meta: { via: "json-paste" },
       }));
-      const { error } = await supabase.from("test_items").insert(rows);
-      if (error) throw error;
-      setMsg(`✅ ${rows.length}문항 저장(draft) 완료`); setRegOut(null); setRegTxt("");
+      const r = await upsertItems(rows);
+      setMsg(saveMsg(r)); setRegOut(null); setRegTxt("");
     } catch (e) { setMsg("⚠ 저장 실패: " + e.message); }
     setBusy(false);
   };
