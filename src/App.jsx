@@ -22,6 +22,7 @@ import PracticeViewer from "./pages/PracticeViewer";
 import AdminPractice from "./pages/AdminPractice";
 import AdminChats from "./components/AdminChats";
 import AdminImages from "./components/AdminImages";
+import AdminItemGen from "./components/AdminItemGen";
 import Philosophy from "./components/Philosophy";
 import HomeDash from "./components/HomeDash";
 import AdminCalendar from "./components/AdminCalendar";
@@ -195,6 +196,7 @@ function AppRoutes() {
   if (bd) return <Rx theme={theme}><QnaBoard theme={theme} initialId={bd[1] ? decodeURIComponent(bd[1]) : null} /></Rx>;
   if (hash === "#/admin/chats") return <Rx theme={theme}><AdminChats theme={theme} /></Rx>;
   if (hash === "#/admin/images") return <Rx theme={theme}><AdminImages theme={theme} /></Rx>;
+  if (hash === "#/admin/itemgen") return <Rx theme={theme}><AdminItemGen theme={theme} /></Rx>;
   if (hash === "#/admin/calendar") return <Rx theme={theme}><AdminCalendar theme={theme} /></Rx>;
   const c = hash.match(/^#\/c\/(.+)$/);
   if (c) return <ConceptViewer conceptId={decodeURIComponent(c[1])} theme={theme} />;
