@@ -23,6 +23,8 @@ import AdminPractice from "./pages/AdminPractice";
 import AdminChats from "./components/AdminChats";
 import AdminImages from "./components/AdminImages";
 import AdminItemGen from "./components/AdminItemGen";
+import GuardianConsent from "./components/GuardianConsent";
+import AdminGuardians from "./components/AdminGuardians";
 import Philosophy from "./components/Philosophy";
 import HomeDash from "./components/HomeDash";
 import AdminCalendar from "./components/AdminCalendar";
@@ -197,6 +199,8 @@ function AppRoutes() {
   if (hash === "#/admin/chats") return <Rx theme={theme}><AdminChats theme={theme} /></Rx>;
   if (hash === "#/admin/images") return <Rx theme={theme}><AdminImages theme={theme} /></Rx>;
   if (hash === "#/admin/itemgen") return <Rx theme={theme}><AdminItemGen theme={theme} /></Rx>;
+  if (hash === "#/admin/guardians") return <Rx theme={theme}><AdminGuardians /></Rx>;
+  if (hash.startsWith("#/guardian")) return <Rx theme={theme}><GuardianConsent /></Rx>;
   if (hash === "#/admin/calendar") return <Rx theme={theme}><AdminCalendar theme={theme} /></Rx>;
   const c = hash.match(/^#\/c\/(.+)$/);
   if (c) return <ConceptViewer conceptId={decodeURIComponent(c[1])} theme={theme} />;
@@ -301,6 +305,7 @@ function TopBar({ theme, onToggleTheme, hash }) {
             <button className="tb-btn" onClick={() => (location.hash = "#/admin/chats")}>🗂 대화</button>
             <button className="tb-btn" onClick={() => (location.hash = "#/admin/images")}>🖼 이미지</button>
             <button className="tb-btn" onClick={() => (location.hash = "#/admin/calendar")}>🗓 일정</button>
+            <button className="tb-btn" onClick={() => (location.hash = "#/admin/guardians")}>🛡 보호자</button>
           </>}
         </div>
         <div className="tb-fn">
