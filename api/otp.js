@@ -2,14 +2,14 @@
 // POST { action: 'send'|'verify', ... }
 //   send   : { phone, purpose }            → { sent: true }
 //   verify : { phone, purpose, code }      → { phone_token }   (15분 유효)
-// purpose: signup(가입) / find(아이디찾기) / reset(비번재설정) / merge(통합) / social(소셜 온보딩)
+// purpose: signup(가입) / find(아이디찾기) / reset(비번재설정) / merge(통합) / social(소셜 온보딩) / guardian(보호자 동의)
 
 import {
   admin, bad, json, clientIp, normPhone,
   sha, randCode6, sendSMS, signToken,
 } from './_lib/core.js';
 
-const PURPOSES = new Set(['signup', 'find', 'reset', 'merge', 'social']);
+const PURPOSES = new Set(['signup', 'find', 'reset', 'merge', 'social', 'guardian']);
 
 export default async function handler(req, res) {
   try {
