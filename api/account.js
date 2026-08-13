@@ -1,9 +1,13 @@
 // api/account.js — raindrop 계정 흐름
 // POST { action, ... }
 //  check-username  : { username } → { available }
-//  reserve         : { phone_token(signup), member_code, username, email }
-//                    → { reserve_token, role_type }  (이후 클라이언트가 supabase.auth.signUp 호출)
+//  reserve  (v2)   : { username, email, minor, phone_token?(signup·성인 필수), member_code?(선택) }
+//                    → { reserve_token, role_type?, academy_name? }  (이후 클라이언트가 supabase.auth.signUp 호출)
 //                    → 409 { merge_required, existing } = 전화번호 겹침 → 통합 플로우로
+//                    · 만 14세 미만(minor)은 전화 인증 없이 가입 → 보호자 동의(#/guardian)로 해금
+//                    · 고유번호는 선택 — 없으면 student로 가입, AI 기능만 잠김
+//  finalize (v2)   : (JWT) { signup_token } → { done }  이메일 인증 후 첫 로그인 시 1회 호출:
+//                    예약된 전화·고유번호를 프로필에 반영하고 member_codes를 used 처리
 //  login           : { username(또는 이메일), password } → { session }
 //  find-id         : { phone_token(find) } → { accounts: [...] }
 //  reset-pw        : { phone_token(reset), username, new_password } → { done }
@@ -81,10 +85,11 @@ export default async function handler(req, res) {
       return json(res, 200, { available: !data?.length });
     }
 
-    // ---------------- 가입 예약 ----------------
+    // ---------------- 가입 예약 (v2: 전화·고유번호 선택화) ----------------
     if (action === 'reserve') {
+      const minor = req.body.minor === true;
       const vt = phoneTok(req.body, 'signup');
-      if (!vt) return bad(res, '전화번호 인증이 만료되었습니다. 다시 인증해주세요', 401);
+      if (!minor && !vt) return bad(res, '전화번호 인증이 만료되었습니다. 다시 인증해주세요', 401);
 
       const username = String(req.body.username || '').toLowerCase();
       const email = String(req.body.email || '').trim().toLowerCase();
@@ -94,41 +99,108 @@ export default async function handler(req, res) {
       const { data: dupU } = await db.from('profiles').select('id').eq('username', username).limit(1);
       if (dupU?.length) return bad(res, '이미 사용 중인 아이디입니다');
 
-      // 전화번호 겹침 → 통합 필수 (관리자 계정은 면제)
-      const { data: dupP } = await db.from('profiles')
-        .select('id, username, role, merged_into')
-        .eq('phone', vt.phone).is('merged_into', null);
-      const clash = (dupP || []).find((p) => p.role !== 'admin');
-      if (clash) {
-        return json(res, 409, {
-          merge_required: true,
-          reason: 'phone',
-          existing: { username: maskName(clash.username) },
-          message: '이 전화번호로 가입된 계정이 있습니다. 계정 통합 후 이용해주세요.',
-        });
+      // 전화번호 겹침 → 통합 필수 (관리자 계정은 면제) — 전화 인증을 한 경우에만
+      if (vt) {
+        const { data: dupP } = await db.from('profiles')
+          .select('id, username, role, merged_into')
+          .eq('phone', vt.phone).is('merged_into', null);
+        const clash = (dupP || []).find((p) => p.role !== 'admin');
+        if (clash) {
+          return json(res, 409, {
+            merge_required: true,
+            reason: 'phone',
+            existing: { username: maskName(clash.username) },
+            message: '이 전화번호로 가입된 계정이 있습니다. 계정 통합 후 이용해주세요.',
+          });
+        }
       }
 
-      const chk = await loadValidCode(db, req.body.member_code);
-      if (chk.err) return bad(res, chk.err);
-
+      // 고유번호 — 선택. 있으면 검증·선점, 없으면 건너뜀(AI 기능만 잠김)
       const reserve_token = randToken();
-      const { data: upd, error } = await db.from('member_codes')
-        .update({
-          status: 'reserved',
-          reserve_token,
-          reserved_phone: vt.phone,
-          reserved_at: new Date().toISOString(),
-        })
-        .eq('code', chk.row.code)
-        .in('status', ['issued', 'reserved'])
-        .select('code');
-      if (error || !upd?.length) return bad(res, '예약에 실패했습니다. 다시 시도해주세요', 409);
+      let chk = null;
+      if (String(req.body.member_code || '').trim()) {
+        chk = await loadValidCode(db, req.body.member_code);
+        if (chk.err) return bad(res, chk.err);
+        const { data: upd, error } = await db.from('member_codes')
+          .update({
+            status: 'reserved',
+            reserve_token,
+            reserved_phone: vt?.phone || null,
+            reserved_at: new Date().toISOString(),
+          })
+          .eq('code', chk.row.code)
+          .in('status', ['issued', 'reserved'])
+          .select('code');
+        if (error || !upd?.length) return bad(res, '예약에 실패했습니다. 다시 시도해주세요', 409);
+      }
+
+      // 예약 기록 — 이메일 인증 후 첫 로그인(finalize)에서 프로필에 반영
+      const { error: rsvErr } = await db.from('signup_reservations').insert({
+        token: reserve_token,
+        phone: vt?.phone || null,
+        phone_verified: !!vt,
+        minor,
+        member_code: chk?.row.code || null,
+      });
+      if (rsvErr) return bad(res, 'DB 오류: ' + rsvErr.message + ' — 2026-08_signup_v2.sql 실행 여부를 확인해주세요', 500);
 
       return json(res, 200, {
         reserve_token,
-        role_type: chk.row.role_type,
-        academy_name: chk.academy.name,
+        role_type: chk ? chk.row.role_type : null,
+        academy_name: chk ? chk.academy.name : null,
       });
+    }
+
+    // ---------------- 가입 확정 (v2: 이메일 인증 후 첫 로그인 시 1회) ----------------
+    if (action === 'finalize') {
+      const user = await getUser(req);
+      if (!user) return bad(res, '로그인이 필요합니다', 401);
+      const tok = String(req.body.signup_token || '').trim();
+      if (!tok) return bad(res, 'signup_token이 필요합니다');
+
+      const { data: rsv } = await db.from('signup_reservations')
+        .select('*').eq('token', tok).maybeSingle();
+      if (!rsv || rsv.consumed_at) return json(res, 200, { done: true });
+
+      const upd = { is_minor: rsv.minor, real_email: user.email || null };
+
+      // 전화 반영 — 가입~인증 사이에 같은 번호가 다른 계정에 등록됐으면 건너뜀
+      if (rsv.phone && rsv.phone_verified) {
+        const { data: dup } = await db.from('profiles')
+          .select('id, role').eq('phone', rsv.phone).is('merged_into', null);
+        if (!(dup || []).some((x) => x.id !== user.id && x.role !== 'admin')) {
+          upd.phone = rsv.phone;
+          upd.phone_verified = true;
+        }
+      }
+
+      // 고유번호 확정 — 예약 토큰 일치 시에만 사용 처리
+      if (rsv.member_code) {
+        const { data: mc } = await db.from('member_codes')
+          .select('*').eq('code', rsv.member_code).maybeSingle();
+        if (mc && mc.reserve_token === tok && mc.status === 'reserved') {
+          upd.member_code = mc.code;
+          upd.academy_code = mc.academy_code;
+          upd.role = ROLE_MAP[mc.role_type] || 'student';
+          await db.from('member_codes').update({
+            status: 'used', assigned_user: user.id, used_at: new Date().toISOString(),
+          }).eq('code', mc.code);
+        }
+      }
+
+      const { error: pErr } = await db.from('profiles').update(upd).eq('id', user.id);
+      if (pErr) return bad(res, '프로필 반영 실패: ' + pErr.message, 500);
+
+      await db.from('signup_reservations')
+        .update({ consumed_at: new Date().toISOString() }).eq('token', tok);
+
+      // 3일 지난 미소비 예약 청소 — 발사 후 무시
+      db.from('signup_reservations').delete()
+        .is('consumed_at', null)
+        .lt('created_at', new Date(Date.now() - 3 * 864e5).toISOString())
+        .then(() => {}, () => {});
+
+      return json(res, 200, { done: true });
     }
 
     // ---------------- 로그인 (아이디 or 이메일) ----------------
@@ -351,7 +423,7 @@ export default async function handler(req, res) {
           .select('id, role').eq('phone', target).is('merged_into', null);
         if ((dup || []).some((x) => x.id !== user.id && x.role !== 'admin'))
           return bad(res, '이미 다른 계정에서 사용 중인 번호입니다', 409);
-        const { error } = await db.from('profiles').update({ phone: target }).eq('id', user.id);
+        const { error } = await db.from('profiles').update({ phone: target, phone_verified: true }).eq('id', user.id);
         if (error) return bad(res, '변경 실패: ' + error.message, 500);
       } else {
         const { error } = await db.from('profiles').update({ real_email: target }).eq('id', user.id);
