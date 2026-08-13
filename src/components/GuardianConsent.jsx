@@ -1,4 +1,5 @@
-// ashrain.out — 보호자(법정대리인) 동의 화면 (v1.0, #/guardian)
+// ashrain.out — 보호자(법정대리인) 동의 화면 (v1.1, #/guardian)
+// v1.1: 인증번호 입력 제한시간(5:00) 타이머 — 초과 시 확인 비활성(서버도 만료 무효 처리)
 // 흐름: 보호자 정보 입력 → 보호자 휴대폰으로 인증번호 발송(/api/otp, purpose 'guardian')
 //       → 인증 확인 → 고지문·동의 체크 → 제출(/api/guardian) → 강사 확인 후 활성화.
 // 조회·철회는 guardian_consents RLS로 직접. 새 환경변수 불필요(기존 SMS 인프라 재사용).
@@ -15,11 +16,23 @@ export default function GuardianConsent() {
   const [code, setCode] = useState("");
   const [otp, setOtp] = useState("idle"); // idle | sent | ok
   const [token, setToken] = useState(null);
+  const [otpEnd, setOtpEnd] = useState(null);
+  const [otpLeft, setOtpLeft] = useState(0);
   const [ag1, setAg1] = useState(false);
   const [ag2, setAg2] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+
+  useEffect(() => {
+    if (!otpEnd) return;
+    const tick = () => setOtpLeft(Math.max(0, Math.ceil((otpEnd - Date.now()) / 1000)));
+    tick();
+    const t = setInterval(tick, 500);
+    return () => clearInterval(t);
+  }, [otpEnd]);
+  const otpExpired = !!otpEnd && otpLeft === 0;
+  const fmtLeft = (s) => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 
   const load = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -54,6 +67,7 @@ export default function GuardianConsent() {
     try {
       await api("/api/otp", { action: "send", phone: f.phone, purpose: "guardian" });
       setOtp("sent"); setCode("");
+      setOtpEnd(Date.now() + 5 * 60e3);
       setMsg("보호자님 휴대폰으로 인증번호를 보냈어요 (5분 내 입력).");
     } catch (e) { setErr(e.message); }
     setBusy(false);
@@ -63,8 +77,9 @@ export default function GuardianConsent() {
     if (busy) return;
     setErr(""); setMsg(""); setBusy(true);
     try {
+      if (otpExpired) throw new Error("입력 시간이 지났어요 — 인증번호를 다시 발송해주세요");
       const j = await api("/api/otp", { action: "verify", phone: f.phone, purpose: "guardian", code });
-      setToken(j.phone_token); setOtp("ok");
+      setToken(j.phone_token); setOtp("ok"); setOtpEnd(null);
       setMsg("보호자 휴대폰 인증 완료 ✓ — 아래 동의 항목을 확인해주세요.");
     } catch (e) { setErr(e.message); }
     setBusy(false);
@@ -135,7 +150,7 @@ export default function GuardianConsent() {
         <div className="gc-row">
           <input className="gc-inp" style={{ flex: 1, minWidth: 160 }} placeholder="보호자 휴대폰 번호"
             inputMode="numeric" value={f.phone} disabled={otp === "ok"}
-            onChange={(e) => { setF((s) => ({ ...s, phone: e.target.value })); setOtp("idle"); setToken(null); }} />
+            onChange={(e) => { setF((s) => ({ ...s, phone: e.target.value })); setOtp("idle"); setToken(null); setOtpEnd(null); }} />
           <button className="gc-btn gc-pri" disabled={busy || otp === "ok" || !f.phone.trim()} onClick={sendOtp}>
             {otp === "sent" ? "재발송" : "인증번호 발송"}
           </button>
@@ -146,8 +161,13 @@ export default function GuardianConsent() {
             <input className="gc-inp" style={{ width: 130 }} placeholder="인증번호 6자리"
               inputMode="numeric" maxLength={6} value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} />
-            <button className="gc-btn gc-pri" disabled={busy || code.length !== 6} onClick={verifyOtp}>인증 확인</button>
+            <button className="gc-btn gc-pri" disabled={busy || code.length !== 6 || otpExpired} onClick={verifyOtp}>인증 확인</button>
           </div>
+        )}
+        {otp === "sent" && (
+          <p className="gc-timer">
+            {otpExpired ? "입력 시간이 지났어요 — 인증번호를 다시 발송해주세요" : `남은 입력 시간 ${fmtLeft(otpLeft)}`}
+          </p>
         )}
         {otp === "ok" && <p className="gc-ok">보호자 휴대폰 인증 완료 ✓</p>}
 
@@ -216,6 +236,7 @@ const CSS = `
 .gc-del { padding: 4px 10px; font-size: .78rem;
   background: rgba(244,99,99,.1); border-color: rgba(244,99,99,.4); }
 .gc-ok { font-size: .82rem; color: #16a08f; font-weight: 700; margin: 8px 0 0; }
+.gc-timer { font-size: .78rem; color: #e05252; font-weight: 700; margin: 4px 0 0; font-variant-numeric: tabular-nums; }
 .gc-law { font-size: .78rem; line-height: 1.7; opacity: .85; margin-top: 12px;
   border: 1px dashed rgba(127,127,127,.4); border-radius: 10px; padding: 10px 12px; }
 .gc-chk { display: flex; gap: 8px; align-items: flex-start; font-size: .8rem;
