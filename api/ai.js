@@ -1,4 +1,5 @@
-// ashrain.out — AI 통합 서버리스 함수 (v0.3.3)
+// ashrain.out — AI 통합 서버리스 함수 (v0.3.4)
+// [v0.3.4] 학생 태스크 자격 게이트 — 체험 계정 차단, 고유번호 미등록 시 AI 잠금(등록하면 활성화)
 // [v0.3.3] find(개념 검색) 태스크 + 학생별 일일 한도(hint 10 · find 30 · omr 20, KST 자정 리셋 — ai_calls 테이블 필요)
 // 위치: 레포 "최상단"의 api/ai.js  (genCalc.js와 같은 api 폴더, src 안 아님!)
 // 필요 환경변수는 genCalc.js와 동일 — 추가 설정 없음:
@@ -109,6 +110,18 @@ export default async function handler(req, res) {
     if (task === "slice" || task === "answers" || task === "qchat" || task === "title") {
       const { data: prof } = await sb.from("profiles").select("role").eq("id", userData.user.id).single();
       if (prof?.role !== "admin") return res.status(403).json({ error: "관리자만 사용할 수 있어요" });
+    }
+
+    // ── 2.5) 학생 태스크: 이용 자격 게이트 ──
+    if (task === "hint" || task === "find" || task === "omr" || task === "ask") {
+      const { data: prof } = await sb.from("profiles")
+        .select("role, member_code").eq("id", userData.user.id).single();
+      if (prof?.role !== "admin") {
+        if (prof?.role === "trial")
+          return res.status(403).json({ error: "체험 계정은 개념 열람만 가능해요 — 정식 가입 후 이용할 수 있어요" });
+        if (!prof?.member_code)
+          return res.status(403).json({ error: "AI 기능은 학원 고유번호 등록 후 열려요 — 학원에서 고유번호를 받아 등록해주세요" });
+      }
     }
 
     // ══════════ title — 대화 제목 자동 제안 (관리자, Haiku) ══════════
