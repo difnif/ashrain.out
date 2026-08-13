@@ -190,7 +190,7 @@ function AppRoutes() {
       }
       const [{ data: p }, { data: aal }] = await Promise.all([
         supabase.from("profiles")
-          .select("role, member_code, trial_expires_at, merged_into, phone_verified, is_minor")
+          .select("role, member_code, trial_expires_at, merged_into, phone_verified, is_minor, birth_date")
           .eq("id", session.user.id).maybeSingle(),
         supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
       ]);
@@ -237,6 +237,12 @@ function AppRoutes() {
   //  · 체험(trial): 개념 열람만
   if (prof?.is_minor && prof?.role !== "admin" && gOk === undefined) return null;
   const provider = session.user.app_metadata?.provider || "email";
+
+  // 소셜 첫 로그인 — 생년월일(나이 확인)이 없으면 온보딩부터
+  if (prof && prof.role !== "admin" && provider !== "email" && !prof.birth_date
+      && !hash.startsWith("#/onboarding") && !hash.startsWith("#/qr-approve")) {
+    location.hash = "#/onboarding";
+  }
   const verified =
     prof?.role === "admin" ? true
     : prof?.role === "trial" ? false
