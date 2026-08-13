@@ -1,15 +1,22 @@
-// src/pages/Signup.jsx — raindrop 가입 v2 (해시 라우트: #/signup)
+// src/pages/Signup.jsx — raindrop 가입 v2.1 (해시 라우트: #/signup)
+// v2.1: 인증번호 발송 후 입력 제한시간(5:00) 타이머 표시 — 초과 시 확인 버튼 비활성(서버도 만료 무효 처리)
 // v2 변경:
 // · 첫 화면에서 만 14세 이상/미만 선택 → 미만은 전화 인증 없이 가입하고, 로그인 후 보호자 동의(#/guardian)로 해금
 // · 필수: 이름, 생년월일, 아이디, 비밀번호, 이메일 (+만 14세 이상은 휴대폰 인증)
 //   선택: 닉네임, 주소, 고유번호(있으면 AI 기능 활성화 — 없어도 가입 가능, 나중에 등록 가능)
 // · 생년월일과 선택한 나이대가 어긋나면 진행 불가(만 나이 기준)
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   supabase, api, otpSend, otpVerify,
   normPhone, quickCheckCode, normCode, fmtCode, codeRoleType,
   recordLoginMethod, PW_MIN,
 } from '../lib/authx';
+
+
+// 남은 시간 mm:ss
+function fmtLeft(s) {
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
 
 // 만 나이 계산 (생년월일 기준)
 function fullAge(birth) {
@@ -31,6 +38,8 @@ export default function Signup() {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [phoneToken, setPhoneToken] = useState('');
+  const [otpEnd, setOtpEnd] = useState(null);   // 입력 마감 시각(ms)
+  const [otpLeft, setOtpLeft] = useState(0);    // 남은 초
 
   const [name, setName] = useState('');
   const [birth, setBirth] = useState('');      // YYYY-MM-DD
@@ -45,6 +54,15 @@ export default function Signup() {
   const [mergeInfo, setMergeInfo] = useState(null);
   const [academyName, setAcademyName] = useState('');
 
+  useEffect(() => {
+    if (!otpEnd) return;
+    const tick = () => setOtpLeft(Math.max(0, Math.ceil((otpEnd - Date.now()) / 1000)));
+    tick();
+    const t = setInterval(tick, 500);
+    return () => clearInterval(t);
+  }, [otpEnd]);
+  const otpExpired = !!otpEnd && otpLeft === 0;
+
   const run = async (fn) => {
     setErr(''); setBusy(true);
     try { await fn(); } catch (e) { setErr(e.message || String(e)); }
@@ -58,12 +76,16 @@ export default function Signup() {
     if (!p) throw new Error('휴대폰 번호를 확인해주세요 (예: 01012345678)');
     await otpSend(p, 'signup');
     setOtpSent(true);
+    setOtp('');
+    setOtpEnd(Date.now() + 5 * 60e3);
   });
 
   const verifyOtp = () => run(async () => {
+    if (otpExpired) throw new Error('입력 시간이 지났어요 — 인증번호를 다시 발송해주세요');
     const p = normPhone(phone);
     const r = await otpVerify(p, 'signup', otp);
     setPhoneToken(r.phone_token);
+    setOtpEnd(null);
     setStep(2);
   });
 
@@ -184,8 +206,11 @@ export default function Signup() {
               <div className="su-row">
                 <input className="su-input" inputMode="numeric" maxLength={6} value={otp}
                   onChange={(e) => setOtp(e.target.value)} placeholder="123456" />
-                <button className="su-btn su-btn-main" disabled={busy} onClick={verifyOtp}>확인</button>
+                <button className="su-btn su-btn-main" disabled={busy || otpExpired} onClick={verifyOtp}>확인</button>
               </div>
+              <p className="su-timer">
+                {otpExpired ? '입력 시간이 지났어요 — 인증번호를 다시 발송해주세요' : `남은 입력 시간 ${fmtLeft(otpLeft)}`}
+              </p>
             </>
           )}
           <button className="su-btn su-ghost" disabled={busy} onClick={() => { setStep(0); setMinor(null); }}>← 나이 다시 선택</button>
@@ -286,6 +311,7 @@ function Style() {
       .su-ghost{border-style:dashed;color:var(--muted,#8a8f98)}
       .su-btn:disabled{opacity:.5}
       .su-hint{font-size:12px;color:var(--muted,#8a8f98);margin:4px 0 0}
+      .su-timer{font-size:12px;color:var(--bad,#dc2626);margin:2px 0 0;font-variant-numeric:tabular-nums;font-weight:700}
       .su-note{font-size:12.5px;line-height:1.6;padding:9px 12px;border-radius:10px;background:var(--surface2,#f1f2f4);margin:0}
       .su-desc{font-size:14px;line-height:1.6}
       .su-sub{margin:0}
