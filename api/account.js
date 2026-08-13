@@ -6,6 +6,8 @@
 //                    → 409 { merge_required, existing } = 전화번호 겹침 → 통합 플로우로
 //                    · 만 14세 미만(minor)은 전화 인증 없이 가입 → 보호자 동의(#/guardian)로 해금
 //                    · 고유번호는 선택 — 없으면 student로 가입, AI 기능만 잠김
+//  social-onboard (v2.2): (JWT) { name, birth_date, nickname?, member_code?, phone_token?(성인) } → { done, is_minor }
+//                    소셜 첫 로그인 온보딩 — 만나이 판정, 미성년은 전화 없이(보호자 동의로 해금)
 //  finalize (v2)   : (JWT) { signup_token } → { done }  이메일 인증 후 첫 로그인 시 1회 호출:
 //                    예약된 전화·고유번호를 프로필에 반영하고 member_codes를 used 처리
 //  login           : { username(또는 이메일), password } → { session }
@@ -149,6 +151,73 @@ export default async function handler(req, res) {
         role_type: chk ? chk.row.role_type : null,
         academy_name: chk ? chk.academy.name : null,
       });
+    }
+
+    // ---------------- 소셜 첫 로그인 온보딩 (v2.2) ----------------
+    // (JWT) { name, birth_date, nickname?, member_code?, phone_token?(성인 필수, purpose 'social') }
+    //  → 만나이 계산해 is_minor 판정. 미성년은 전화 없이 저장(보호자 동의로 해금),
+    //    성인은 전화 인증 필수(phone_verified 반영). 고유번호는 있으면 즉시 확정.
+    if (action === 'social-onboard') {
+      const user = await getUser(req);
+      if (!user) return bad(res, '로그인이 필요합니다', 401);
+
+      const name = String(req.body.name || '').trim();
+      const birth = String(req.body.birth_date || '').trim();
+      const nickname = String(req.body.nickname || '').trim();
+      if (name.length < 2 || name.length > 20) return bad(res, '이름을 정확히 입력해주세요');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(birth)) return bad(res, '생년월일 형식이 올바르지 않습니다');
+      const bd = new Date(birth + 'T00:00:00Z');
+      if (isNaN(bd)) return bad(res, '생년월일을 확인해주세요');
+      const now = new Date();
+      let age = now.getUTCFullYear() - bd.getUTCFullYear();
+      const md = now.getUTCMonth() - bd.getUTCMonth();
+      if (md < 0 || (md === 0 && now.getUTCDate() < bd.getUTCDate())) age--;
+      if (age < 5 || age > 90) return bad(res, '생년월일을 확인해주세요');
+      const is_minor = age < 14;
+
+      const upd = {
+        name,
+        birth_date: birth,
+        birth_year: bd.getUTCFullYear(),
+        is_minor,
+        real_email: user.email || null,
+      };
+      if (nickname) upd.nickname = nickname;
+
+      // 성인: 전화 인증 필수 + 겹침 검사(통합 안내)
+      if (!is_minor) {
+        const vt = phoneTok(req.body, 'social');
+        if (!vt) return bad(res, '전화번호 인증이 만료되었습니다. 다시 인증해주세요', 401);
+        const { data: dupP } = await db.from('profiles')
+          .select('id, username, role').eq('phone', vt.phone).is('merged_into', null);
+        const clash = (dupP || []).find((p) => p.id !== user.id && p.role !== 'admin');
+        if (clash) {
+          return json(res, 409, {
+            merge_required: true,
+            reason: 'phone',
+            existing: { username: maskName(clash.username) },
+            message: '이 전화번호로 가입된 계정이 있습니다. 기존 계정으로 로그인해주세요.',
+          });
+        }
+        upd.phone = vt.phone;
+        upd.phone_verified = true;
+      }
+
+      // 고유번호(선택) — 검증 후 즉시 확정
+      if (String(req.body.member_code || '').trim()) {
+        const chk = await loadValidCode(db, req.body.member_code);
+        if (chk.err) return bad(res, chk.err);
+        upd.member_code = chk.row.code;
+        upd.academy_code = chk.row.academy_code;
+        upd.role = ROLE_MAP[chk.row.role_type] || 'student';
+        await db.from('member_codes').update({
+          status: 'used', assigned_user: user.id, used_at: new Date().toISOString(),
+        }).eq('code', chk.row.code).in('status', ['issued', 'reserved']);
+      }
+
+      const { error } = await db.from('profiles').update(upd).eq('id', user.id);
+      if (error) return bad(res, '프로필 저장 실패: ' + error.message, 500);
+      return json(res, 200, { done: true, is_minor });
     }
 
     // ---------------- 가입 확정 (v2: 이메일 인증 후 첫 로그인 시 1회) ----------------
