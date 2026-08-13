@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 
-// ashrain.out — 관리자 개념 등록/삭제 화면 (patch v0.2.0)
+// ashrain.out — 관리자 개념 등록/삭제 화면 (patch v0.3.0)
+// - v0.3.0: 단원 선택 다운로드 — 원하는 단원만 골라 개념 JSON으로 내려받기(문제 생성방 참고자료·재등록 겸용).
+//           단원 그룹 제목의 ⬇ 버튼은 그 단원만 바로 다운로드.
 // 이 파일 하나만 src/components/AdminConcepts.jsx 에 덮어쓰면 됩니다.
 // - v0.2.0: 개념마다 난이도 1~5 문항 현황 배지 표시(테스트 문항 등록 수).
 //           숫자를 누르면 해당 개념×난이도의 전체 문항을 열람 — 보기 옵션(문제만/답 함께/해설 함께)과 삭제 지원.
@@ -199,6 +201,8 @@ export default function AdminConcepts() {
   const [busy, setBusy] = useState(false);
   const [counts, setCounts] = useState(null); // { concept_id: {d1..d5} } — 뷰 없으면 null
   const [br, setBr] = useState(null);         // { concept, diff }
+  const [dlSel, setDlSel] = useState([]);     // 다운로드 선택 단원
+  const [dlBusy, setDlBusy] = useState(false);
   const fileRef = useRef(null);
 
   const load = () =>
@@ -438,6 +442,37 @@ export default function AdminConcepts() {
     setMsg("백업 파일을 내려받았습니다.");
   }
 
+  // 선택한 단원의 개념 전체를 JSON으로 다운로드 — 등록 파일과 같은 형식(재등록 가능), QnA 미포함
+  async function downloadUnits(units) {
+    if (!units.length || dlBusy) return;
+    setDlBusy(true);
+    setMsg("");
+    setErr("");
+    const { data, error } = await supabase
+      .from("concepts")
+      .select("*")
+      .in("unit_id", units)
+      .order("unit_id")
+      .order("sort_order");
+    setDlBusy(false);
+    if (error) {
+      setErr("다운로드 실패: " + error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      setErr("선택한 단원에 등록된 개념이 없습니다.");
+      return;
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    const tag = units.length <= 3 ? units.join("_") : units.length + "units";
+    a.download = "ashrain-concepts-" + tag + "-" + new Date().toISOString().slice(0, 10) + ".json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setMsg(units.length + "개 단원 · 개념 " + data.length + "건 다운로드 완료 — 문제 생성방에 참고자료로 그대로 올릴 수 있어요.");
+  }
+
   const groups = {};
   list.forEach((c) => {
     (groups[c.unit_id] = groups[c.unit_id] || []).push(c);
@@ -500,11 +535,35 @@ export default function AdminConcepts() {
             ? " 개념 아래 1~5 배지는 난이도별 등록 문항 수 — 숫자를 누르면 열람·삭제할 수 있습니다."
             : " (난이도별 문항 현황 배지는 2026-08_test_items_dedup.sql 실행 후 표시됩니다.)"}
         </p>
+        {unitKeys.length > 0 && (
+          <div className="acx-dlbox">
+            <div className="acx-dlrow">
+              {unitKeys.map((u) => (
+                <button
+                  key={u}
+                  className={"acx-dlchip" + (dlSel.includes(u) ? " on" : "")}
+                  onClick={() => setDlSel((s) => (s.includes(u) ? s.filter((x) => x !== u) : [...s, u]))}
+                >
+                  {UNIT_LABEL[u] || u} <b>{groups[u].length}</b>
+                </button>
+              ))}
+            </div>
+            <div className="acx-row" style={{ marginTop: 8 }}>
+              <button className="acx-btn acx-sec" disabled={dlBusy || !dlSel.length} onClick={() => downloadUnits(dlSel)}>
+                ⬇ 선택 단원 다운로드{dlSel.length ? ` (${dlSel.length}단원 · ${dlSel.reduce((n, u) => n + (groups[u]?.length || 0), 0)}개념)` : ""}
+              </button>
+              {dlSel.length > 0 && (
+                <button className="acx-btn" disabled={dlBusy} onClick={() => setDlSel([])}>선택 해제</button>
+              )}
+            </div>
+          </div>
+        )}
         {unitKeys.length === 0 && <p className="acx-empty">아직 등록된 개념이 없습니다.</p>}
         {unitKeys.map((u) => (
           <div key={u} className="acx-group">
             <h2 className="acx-h2">
               {UNIT_LABEL[u] || u} <span className="acx-count">{groups[u].length}개</span>
+              <button className="acx-udl" disabled={dlBusy} title="이 단원만 다운로드" onClick={() => downloadUnits([u])}>⬇</button>
             </h2>
             {groups[u].map((c) => {
               const cc = counts ? counts[c.id] : null;
@@ -585,6 +644,16 @@ const CSS = `
 .acx-err { color: #e05252; }
 .acx-empty { font-size: .85rem; opacity: .6; }
 .acx-group { margin-top: 14px; }
+.acx-dlbox { border: 1px dashed rgba(127,127,127,.35); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
+.acx-dlrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.acx-dlchip { border: 1px solid rgba(127,127,127,.3); background: transparent; color: inherit;
+  border-radius: 999px; padding: 4px 10px; font-size: .76rem; cursor: pointer; opacity: .75; }
+.acx-dlchip b { font-size: .72rem; opacity: .7; font-weight: 700; }
+.acx-dlchip.on { border-color: rgba(20,164,148,.7); color: #16a08f; opacity: 1; font-weight: 700; }
+.acx-udl { margin-left: 8px; border: 1px solid rgba(127,127,127,.3); background: rgba(127,127,127,.06);
+  color: inherit; border-radius: 8px; padding: 1px 8px; font-size: .74rem; cursor: pointer; opacity: .7; }
+.acx-udl:not(:disabled):hover { opacity: 1; background: rgba(20,164,148,.15); }
+.acx-udl:disabled { opacity: .35; cursor: default; }
 .acx-h2 { font-size: .95rem; margin: 0 0 6px; opacity: .85; }
 .acx-count { font-size: .78rem; opacity: .55; font-weight: normal; margin-left: 6px; }
 .acx-item { padding: 7px 10px; border-radius: 10px; }
