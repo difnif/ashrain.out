@@ -1,4 +1,9 @@
-// src/pages/Signup.jsx — raindrop 가입 (해시 라우트: #/signup)
+// src/pages/Signup.jsx — raindrop 가입 v2 (해시 라우트: #/signup)
+// v2 변경:
+// · 첫 화면에서 만 14세 이상/미만 선택 → 미만은 전화 인증 없이 가입하고, 로그인 후 보호자 동의(#/guardian)로 해금
+// · 필수: 이름, 생년월일, 아이디, 비밀번호, 이메일 (+만 14세 이상은 휴대폰 인증)
+//   선택: 닉네임, 주소, 고유번호(있으면 AI 기능 활성화 — 없어도 가입 가능, 나중에 등록 가능)
+// · 생년월일과 선택한 나이대가 어긋나면 진행 불가(만 나이 기준)
 import { useState } from 'react';
 import {
   supabase, api, otpSend, otpVerify,
@@ -6,23 +11,37 @@ import {
   recordLoginMethod, PW_MIN,
 } from '../lib/authx';
 
+// 만 나이 계산 (생년월일 기준)
+function fullAge(birth) {
+  const b = new Date(birth + 'T00:00:00');
+  if (isNaN(b)) return null;
+  const t = new Date();
+  let a = t.getFullYear() - b.getFullYear();
+  if (t.getMonth() < b.getMonth() || (t.getMonth() === b.getMonth() && t.getDate() < b.getDate())) a--;
+  return a;
+}
+
 export default function Signup() {
-  const [step, setStep] = useState(0);         // 0 코드 → 1 전화 → 2 정보 → 3 완료
+  const [step, setStep] = useState(0);         // 0 나이대 → 1 전화(성인) → 2 정보 → 3 완료
+  const [minor, setMinor] = useState(null);    // true = 만 14세 미만
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  const [code, setCode] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [phoneToken, setPhoneToken] = useState('');
 
+  const [name, setName] = useState('');
+  const [birth, setBirth] = useState('');      // YYYY-MM-DD
   const [username, setUsername] = useState('');
   const [uState, setUState] = useState(null);  // null | 'ok' | 'dup' | 'fmt'
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+  const [code, setCode] = useState('');        // 고유번호 (선택)
   const [mergeInfo, setMergeInfo] = useState(null);
   const [academyName, setAcademyName] = useState('');
 
@@ -32,12 +51,7 @@ export default function Signup() {
     setBusy(false);
   };
 
-  // step 0 → 1
-  const checkCode = () => run(async () => {
-    if (!quickCheckCode(code)) throw new Error('고유번호를 다시 확인해주세요. 학원에서 받은 코드를 하이픈 포함/제외 상관없이 입력하면 됩니다.');
-    if (codeRoleType(code) === 9) throw new Error('체험 코드입니다. 로그인 화면의 [체험으로 시작하기]를 이용해주세요.');
-    setStep(1);
-  });
+  const pickAge = (isMinor) => { setMinor(isMinor); setErr(''); setStep(isMinor ? 2 : 1); };
 
   const sendOtp = () => run(async () => {
     const p = normPhone(phone);
@@ -59,17 +73,28 @@ export default function Signup() {
   });
 
   const submit = () => run(async () => {
+    if (name.trim().length < 2) throw new Error('이름을 입력해주세요');
+    const age = fullAge(birth);
+    if (age == null || age < 5 || age > 90) throw new Error('생년월일을 확인해주세요 (예: 2013-05-14)');
+    if (minor && age >= 14) throw new Error('생년월일 기준 만 14세 이상이에요. 첫 화면에서 [만 14세 이상]으로 다시 진행해주세요.');
+    if (!minor && age < 14) throw new Error('생년월일 기준 만 14세 미만이에요. 첫 화면에서 [만 14세 미만]으로 다시 진행해주세요.');
     if (uState !== 'ok') throw new Error('아이디 중복 확인을 해주세요');
     if (password.length < PW_MIN) throw new Error(`비밀번호는 ${PW_MIN}자 이상이어야 합니다`);
     if (password !== password2) throw new Error('비밀번호 확인이 일치하지 않습니다');
     if (!email.includes('@')) throw new Error('이메일을 확인해주세요');
+    const rawCode = normCode(code);
+    if (rawCode) {
+      if (!quickCheckCode(code)) throw new Error('고유번호를 다시 확인해주세요. 없으면 비워두고 가입할 수 있어요.');
+      if (codeRoleType(code) === 9) throw new Error('체험 코드입니다. 로그인 화면의 [체험으로 시작하기]를 이용해주세요.');
+    }
 
     let reserve;
     try {
       reserve = await api('account', {
         action: 'reserve',
-        phone_token: phoneToken,
-        member_code: normCode(code),
+        minor: !!minor,
+        ...(minor ? {} : { phone_token: phoneToken }),
+        ...(rawCode ? { member_code: rawCode } : {}),
         username: username.toLowerCase(),
         email,
       });
@@ -85,8 +110,13 @@ export default function Signup() {
         data: {
           username: username.toLowerCase(),
           nickname: nickname || username,
-          member_code: normCode(code),
-          reserve_token: reserve.reserve_token,
+          name: name.trim(),
+          birth_year: birth.slice(0, 4),
+          birth_date: birth,
+          ...(address.trim() ? { address: address.trim() } : {}),
+          is_minor: !!minor,
+          ...(rawCode ? { member_code: rawCode } : {}),
+          signup_token: reserve.reserve_token,
         },
         emailRedirectTo: window.location.origin + window.location.pathname,
       },
@@ -115,33 +145,32 @@ export default function Signup() {
     );
   }
 
+  const STEPS = minor ? ['나이 확인', '계정 정보', '완료'] : ['나이 확인', '전화 인증', '계정 정보', '완료'];
+  const stepIdx = minor ? (step === 0 ? 0 : step === 2 ? 1 : 2) : step;
+
   return (
     <div className="su-wrap">
       <Style />
       <h2 className="su-title">회원가입</h2>
       <div className="su-steps">
-        {['고유번호', '전화 인증', '계정 정보', '완료'].map((s, i) => (
-          <span key={s} className={'su-step' + (i === step ? ' on' : i < step ? ' done' : '')}>{s}</span>
+        {STEPS.map((s, i) => (
+          <span key={s} className={'su-step' + (i === stepIdx ? ' on' : i < stepIdx ? ' done' : '')}>{s}</span>
         ))}
       </div>
 
       {step === 0 && (
         <div className="su-card">
-          <label className="su-label">학원에서 받은 고유번호</label>
-          <input className="su-input su-code" value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="ASH37-1A2B3CD-4E5" autoCapitalize="characters" />
-          {normCode(code).length === 15 && (
-            <p className="su-hint">{fmtCode(code)}</p>
-          )}
-          <button className="su-btn su-btn-main" disabled={busy} onClick={checkCode}>다음</button>
-          <p className="su-hint">고유번호가 없다면 학원 선생님께 발급을 요청해주세요.</p>
+          <p className="su-desc"><b>나이를 알려주세요.</b> 만 14세 미만 학생은 법에 따라
+            가입 후 <b>보호자(법정대리인) 동의</b>가 필요해요.</p>
+          <button className="su-btn su-btn-main" disabled={busy} onClick={() => pickAge(false)}>만 14세 이상이에요</button>
+          <button className="su-btn" disabled={busy} onClick={() => pickAge(true)}>만 14세 미만이에요 (보호자 동의 필요)</button>
+          <p className="su-hint">만 나이 기준이에요. 생년월일 입력 시 자동으로 다시 확인돼요.</p>
         </div>
       )}
 
-      {step === 1 && (
+      {step === 1 && !minor && (
         <div className="su-card">
-          <label className="su-label">휴대폰 번호</label>
+          <label className="su-label">휴대폰 번호 (본인 인증)</label>
           <div className="su-row">
             <input className="su-input" inputMode="numeric" value={phone}
               onChange={(e) => setPhone(e.target.value)} placeholder="01012345678" disabled={otpSent} />
@@ -159,12 +188,24 @@ export default function Signup() {
               </div>
             </>
           )}
+          <button className="su-btn su-ghost" disabled={busy} onClick={() => { setStep(0); setMinor(null); }}>← 나이 다시 선택</button>
         </div>
       )}
 
       {step === 2 && (
         <div className="su-card">
-          <label className="su-label">아이디</label>
+          {minor && (
+            <p className="su-note">만 14세 미만은 휴대폰 인증 없이 가입돼요.
+              가입 후 로그인하면 <b>보호자 동의</b>를 진행하게 되고, 동의가 확인되어야 전체 기능이 열려요.</p>
+          )}
+
+          <label className="su-label">이름 <i className="su-req">필수</i></label>
+          <input className="su-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="실명" />
+
+          <label className="su-label">생년월일 <i className="su-req">필수</i></label>
+          <input className="su-input" type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
+
+          <label className="su-label">아이디 <i className="su-req">필수</i></label>
           <div className="su-row">
             <input className="su-input" value={username}
               onChange={(e) => { setUsername(e.target.value); setUState(null); }}
@@ -175,18 +216,30 @@ export default function Signup() {
           {uState === 'dup' && <p className="su-err">이미 사용 중인 아이디예요</p>}
           {uState === 'fmt' && <p className="su-err">영문 소문자·숫자·_ 만 4~20자로 입력해주세요</p>}
 
-          <label className="su-label">비밀번호 (8자 이상)</label>
+          <label className="su-label">비밀번호 (8자 이상) <i className="su-req">필수</i></label>
           <input className="su-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <label className="su-label">비밀번호 확인</label>
+          <label className="su-label">비밀번호 확인 <i className="su-req">필수</i></label>
           <input className="su-input" type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} />
 
-          <label className="su-label">닉네임 (앱에서 표시될 이름)</label>
-          <input className="su-input" value={nickname} onChange={(e) => setNickname(e.target.value)} />
-
-          <label className="su-label">이메일 (인증 메일이 발송돼요)</label>
+          <label className="su-label">이메일 (인증 메일이 발송돼요) <i className="su-req">필수</i></label>
           <input className="su-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoCapitalize="none" />
 
+          <label className="su-label">닉네임 (앱에서 표시될 이름) <i className="su-opt">선택</i></label>
+          <input className="su-input" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="비우면 아이디로 표시" />
+
+          <label className="su-label">주소 <i className="su-opt">선택</i></label>
+          <input className="su-input" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="예: 서울시 ○○구 (동까지만 적어도 돼요)" />
+
+          <label className="su-label">학원 고유번호 <i className="su-opt">선택 — AI 기능 활성화</i></label>
+          <input className="su-input su-code" value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="ASH37-1A2B3CD-4E5 (없으면 비워두세요)" autoCapitalize="characters" />
+          {normCode(code).length === 15 && <p className="su-hint">{fmtCode(code)}</p>}
+          <p className="su-hint">고유번호가 없어도 가입돼요. 나중에 학원에서 받아 등록하면 AI 기능이 열려요.</p>
+
           <button className="su-btn su-btn-main" disabled={busy} onClick={submit}>가입하기</button>
+          <button className="su-btn su-ghost" disabled={busy}
+            onClick={() => { setStep(minor ? 0 : 1); if (minor) setMinor(null); }}>← 이전</button>
         </div>
       )}
 
@@ -197,6 +250,10 @@ export default function Signup() {
             {academyName ? <b>{academyName} </b> : ''}가입 정보가 등록됐어요.
             <b> {email}</b> 메일함에서 인증 링크를 누르면 가입이 완료돼요.
           </p>
+          {minor && (
+            <p className="su-note">로그인하면 <b>보호자 동의</b> 화면으로 안내돼요.
+              보호자님과 함께 진행해주세요 — 동의가 확인되어야 전체 기능이 열려요.</p>
+          )}
           <a className="su-btn su-btn-main" href="#/login">로그인 화면으로</a>
           <p className="su-hint">메일이 안 보이면 스팸함을 확인해주세요.</p>
         </div>
@@ -218,14 +275,18 @@ function Style() {
       .su-step.done{background:var(--surface3,#e4e7eb);color:var(--text,#333)}
       .su-card{background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
       .su-label{font-size:13px;color:var(--muted,#6b7280);margin-top:6px}
+      .su-req{font-style:normal;font-size:11px;color:var(--bad,#dc2626);margin-left:4px}
+      .su-opt{font-style:normal;font-size:11px;color:var(--muted,#8a8f98);margin-left:4px}
       .su-input{width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--border,#d6d9de);border-radius:10px;font-size:16px;background:var(--surface,#fff);color:inherit}
       .su-code{letter-spacing:1px;font-variant-numeric:tabular-nums}
       .su-row{display:flex;gap:8px}
       .su-row .su-input{flex:1}
-      .su-btn{padding:12px 14px;border-radius:10px;border:1px solid var(--border,#d6d9de);background:var(--surface,#fff);font-size:15px;text-align:center;text-decoration:none;color:inherit;white-space:nowrap}
+      .su-btn{padding:12px 14px;border-radius:10px;border:1px solid var(--border,#d6d9de);background:var(--surface,#fff);font-size:15px;text-align:center;text-decoration:none;color:inherit;white-space:nowrap;cursor:pointer}
       .su-btn-main{background:var(--accent,#3b82f6);border-color:var(--accent,#3b82f6);color:#fff;margin-top:8px}
+      .su-ghost{border-style:dashed;color:var(--muted,#8a8f98)}
       .su-btn:disabled{opacity:.5}
       .su-hint{font-size:12px;color:var(--muted,#8a8f98);margin:4px 0 0}
+      .su-note{font-size:12.5px;line-height:1.6;padding:9px 12px;border-radius:10px;background:var(--surface2,#f1f2f4);margin:0}
       .su-desc{font-size:14px;line-height:1.6}
       .su-sub{margin:0}
       .su-ok{font-size:12px;color:var(--good,#16a34a);margin:0}
