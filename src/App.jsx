@@ -109,6 +109,36 @@ function MfaGate({ theme, onPass }) {
   );
 }
 
+function VerifyGate({ theme, prof }) {
+  const minor = prof?.is_minor;
+  const trial = prof?.role === "trial";
+  return (
+    <Rx theme={theme}>
+      <div style={{ maxWidth: 400, margin: "0 auto", padding: "72px 16px", textAlign: "center", color: "var(--text)" }}>
+        <h2 style={{ fontSize: 20 }}>🔒 지금은 개념 열람만 가능해요</h2>
+        <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.7 }}>
+          {trial ? "체험 계정은 개념 열람만 가능해요. 정식 가입 후 모든 기능을 쓸 수 있어요."
+            : minor ? "만 14세 미만 학생은 보호자(법정대리인) 동의가 확인되면 모든 기능이 열려요."
+            : "본인 인증(휴대폰)이 확인되면 모든 기능이 열려요. 마이페이지에서 인증할 수 있어요."}
+        </p>
+        {trial ? (
+          <button onClick={async () => { await supabase.auth.signOut(); location.hash = "#/signup"; }}
+            style={{ marginTop: 8, padding: "12px 20px", borderRadius: 12, border: "none",
+              background: "var(--accent)", color: "#fff", fontSize: 15, fontWeight: 700 }}>회원가입 하러 가기</button>
+        ) : (
+          <button onClick={() => (location.hash = minor ? "#/guardian" : "#/me")}
+            style={{ marginTop: 8, padding: "12px 20px", borderRadius: 12, border: "none",
+              background: "var(--accent)", color: "#fff", fontSize: 15, fontWeight: 700 }}>
+            {minor ? "보호자 동의 진행하기" : "마이페이지로 이동"}</button>
+        )}
+        <p style={{ marginTop: 14 }}>
+          <a href="#/" style={{ color: "var(--muted)", fontSize: 13 }}>개념 학습 계속하기</a>
+        </p>
+      </div>
+    </Rx>
+  );
+}
+
 function TrialExpired({ theme }) {
   return (
     <Rx theme={theme}>
@@ -132,6 +162,8 @@ function AppRoutes() {
   const [session, setSession] = useState(undefined); // undefined = 로딩 중
   const [prof, setProf] = useState(undefined);       // undefined = 미조회
   const [aalOk, setAalOk] = useState(undefined);     // undefined = 확인 중
+  const [gOk, setGOk] = useState(undefined);         // 미성년 보호자 동의: true 활성 | false 미완 | null 해당없음
+  const [gStarted, setGStarted] = useState(false);   // 보호자 동의 신청 이력
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null));
@@ -139,20 +171,41 @@ function AppRoutes() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // 로그인 시 프로필 + 간편인증 수준 조회
+  // 로그인 시 프로필 + 간편인증 수준 조회 (+ 가입 확정, 미성년 보호자 동의 상태)
   useEffect(() => {
-    if (!session) { setProf(undefined); setAalOk(undefined); return; }
+    if (!session) { setProf(undefined); setAalOk(undefined); setGOk(undefined); return; }
     let alive = true;
     (async () => {
+      // 가입 예약 확정 — 이메일 인증 후 첫 로그인 1회 (예약된 전화·고유번호를 프로필에 반영)
+      const st = session.user.user_metadata?.signup_token;
+      if (st) {
+        try {
+          await fetch("/api/account", {
+            method: "POST",
+            headers: { "content-type": "application/json", authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ action: "finalize", signup_token: st }),
+          });
+          await supabase.auth.updateUser({ data: { signup_token: null } });
+        } catch { /* 실패 시 다음 로그인에서 재시도 */ }
+      }
       const [{ data: p }, { data: aal }] = await Promise.all([
         supabase.from("profiles")
-          .select("role, member_code, trial_expires_at, merged_into")
+          .select("role, member_code, trial_expires_at, merged_into, phone_verified, is_minor")
           .eq("id", session.user.id).maybeSingle(),
         supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
       ]);
       if (!alive) return;
       setProf(p ?? null);
       setAalOk(!(aal && aal.nextLevel === "aal2" && aal.currentLevel !== "aal2"));
+      if (p?.is_minor && p?.role !== "admin") {
+        const { data: gs } = await supabase.from("guardian_consents")
+          .select("status").eq("student_id", session.user.id);
+        if (!alive) return;
+        setGStarted((gs || []).length > 0);
+        setGOk((gs || []).some((g) => g.status === "active"));
+      } else {
+        setGOk(null); setGStarted(false);
+      }
     })();
     return () => { alive = false; };
   }, [session?.user?.id]);
@@ -178,10 +231,27 @@ function AppRoutes() {
     return <TrialExpired theme={theme} />;
   }
 
-  const needsOnboarding = prof && !prof.member_code
-    && prof.role !== "admin" && prof.role !== "trial" && !prof.merged_into;
-  if (needsOnboarding && !hash.startsWith("#/onboarding") && !hash.startsWith("#/qr-approve")) {
-    location.hash = "#/onboarding";
+  // v2: 고유번호는 선택 — 온보딩 강제 없음. 대신 인증 상태에 따라 기능을 잠근다.
+  //  · 만 14세 미만: 보호자 동의(활성) 전까지 개념 열람만
+  //  · 만 14세 이상: 전화 인증 또는 이메일 가입 확인 전까지 개념 열람만
+  //  · 체험(trial): 개념 열람만
+  if (prof?.is_minor && prof?.role !== "admin" && gOk === undefined) return null;
+  const provider = session.user.app_metadata?.provider || "email";
+  const verified =
+    prof?.role === "admin" ? true
+    : prof?.role === "trial" ? false
+    : prof?.is_minor ? gOk === true
+    : (prof?.phone_verified || provider === "email");
+
+  // 미성년이 보호자 동의를 아직 시작하지 않았으면 동의 화면으로 안내
+  if (prof?.is_minor && prof?.role !== "admin" && !verified && !gStarted
+      && !hash.startsWith("#/guardian") && !hash.startsWith("#/me")) {
+    location.hash = "#/guardian";
+  }
+
+  const LOCKED = ["#/learn/calc", "#/learn/wrong", "#/learn/hint", "#/board", "#/p/"];
+  if (!verified && LOCKED.some((x) => hash.startsWith(x))) {
+    return <VerifyGate theme={theme} prof={prof} />;
   }
 
   // ── 로그인 라우트 ──
