@@ -25,6 +25,7 @@ import AdminChats from "./components/AdminChats";
 import AdminImages from "./components/AdminImages";
 import AdminItemGen from "./components/AdminItemGen";
 import AdminItemReview from "./components/AdminItemReview";
+import AdminCorpus from "./components/AdminCorpus";
 import GuardianConsent from "./components/GuardianConsent";
 import AdminGuardians from "./components/AdminGuardians";
 import Philosophy from "./components/Philosophy";
@@ -278,6 +279,7 @@ function AppRoutes() {
   if (hash === "#/admin/images") return <Rx theme={theme}><AdminImages theme={theme} /></Rx>;
   if (hash === "#/admin/itemgen") return <Rx theme={theme}><AdminItemGen theme={theme} /></Rx>;
   if (hash === "#/admin/items") return <Rx theme={theme}><AdminItemReview /></Rx>;
+  if (hash === "#/admin/corpus") return <Rx theme={theme}><AdminCorpus /></Rx>;
   if (hash === "#/admin/guardians") return <Rx theme={theme}><AdminGuardians /></Rx>;
   if (hash.startsWith("#/guardian")) return <Rx theme={theme}><GuardianConsent /></Rx>;
   if (hash === "#/admin/calendar") return <Rx theme={theme}><AdminCalendar theme={theme} /></Rx>;
@@ -381,6 +383,7 @@ function TopBar({ theme, onToggleTheme, hash }) {
           {me.isAdmin && <>
             <button className="tb-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 등록</button>
             <button className="tb-btn" onClick={() => (location.hash = "#/admin/items")}>🔍 문항</button>
+            <button className="tb-btn" onClick={() => (location.hash = "#/admin/corpus")}>📄 자료</button>
             <button className="tb-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 검토</button>
             <button className="tb-btn" onClick={() => (location.hash = "#/admin/chats")}>🗂 대화</button>
             <button className="tb-btn" onClick={() => (location.hash = "#/admin/images")}>🖼 이미지</button>
