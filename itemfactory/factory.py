@@ -18,7 +18,7 @@
 import argparse, hashlib, importlib.util, json, os, re, socket, sys, time
 from pathlib import Path
 
-BUILDER_VERSION = "factory-1.0"
+BUILDER_VERSION = "factory-1.1"
 HERE = Path(__file__).resolve().parent
 
 
@@ -297,7 +297,7 @@ if __name__ == "__main__":
     ap.add_argument("--pool", type=int, default=400)
     ap.add_argument("--push", action="store_true")
     ap.add_argument("--test-type", default="concept_set")
-    ap.add_argument("--status", default="draft", choices=["draft", "live"])
+    ap.add_argument("--status", default="live", choices=["draft", "live"])
     ap.add_argument("--site", default=socket.gethostname())
     a = ap.parse_args()
     build(a.cid, a.pool, a.test_type, a.status, a.site, a.push)
