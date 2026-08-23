@@ -85,6 +85,8 @@ export default function AdminCorpus() {
   const [me, setMe] = useState(null);
   const [tab, setTab] = useState("run");
   const [units, setUnits] = useState([]);
+  const [cmap, setCmap] = useState({});
+  const [uncOnly, setUncOnly] = useState(false);
 
   // 전사 탭
   const [title, setTitle] = useState("");
@@ -108,8 +110,9 @@ export default function AdminCorpus() {
     if (!user) { setMe("no"); return; }
     const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     setMe(p?.role === "admin" ? "admin" : "no");
-    const { data: cs } = await supabase.from("concepts").select("unit_id");
+    const { data: cs } = await supabase.from("concepts").select("id,unit_id,title");
     setUnits([...new Set((cs || []).map((c) => c.unit_id))].sort());
+    setCmap(Object.fromEntries((cs || []).map((c) => [c.id, c.title])));
   })(); }, []);
 
   const [drag, setDrag] = useState(false);
@@ -146,7 +149,6 @@ export default function AdminCorpus() {
   }
 
   async function run() {
-    if (!unit) { setLog((l) => [...l, "단원을 먼저 선택해"]); return; }
     const picked = pages.filter((p) => sel.has(p.page));
     if (!picked.length) return;
     setBusy(true); setResult([]);
@@ -159,7 +161,7 @@ export default function AdminCorpus() {
         await supabase.storage.from("corpus").upload(storage_path, origFile.current).catch(() => (storage_path = null));
       }
       const { data: doc, error: de } = await supabase.from("corpus_docs")
-        .insert({ title: title || "무제", unit_hint: unit, storage_path, pages: pages.length }).select().single();
+        .insert({ title: title || "무제", unit_hint: unit || null, storage_path, pages: pages.length }).select().single();
       if (de) throw de;
 
       let saved = 0, arb = 0;
@@ -168,11 +170,12 @@ export default function AdminCorpus() {
         const r = await fetch("/api/transcribeCorpus", {
           method: "POST",
           headers: { "content-type": "application/json", Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ doc_id: doc.id, page: p.page, image: p.image, unit_id: unit }),
+          body: JSON.stringify({ doc_id: doc.id, page: p.page, image: p.image, unit_hint: unit || null }),
         });
         const j = await r.json();
         if (!r.ok) { setLog((l) => [...l, `p.${p.page} 실패: ${j.error}`]); continue; }
         saved += j.saved; arb += j.arbitrated;
+        if (j.unclassified) setLog((l) => [...l, `p.${p.page} 분류불확실 ${j.unclassified}건`]);
         setResult((rs) => [...rs, ...(j.items || [])]);
         setLog((l) => [...l, `p.${p.page} — ${j.saved}문항 (중재 ${j.arbitrated})`]);
       }
@@ -184,6 +187,7 @@ export default function AdminCorpus() {
   async function loadCorpus() {
     let q = supabase.from("corpus_items").select("*").order("created_at", { ascending: false }).limit(100);
     if (cUnit !== "all") q = q.eq("unit_id", cUnit);
+    if (uncOnly) q = q.or("confidence.lt.0.7,concept_main.is.null");
     const { data } = await q;
     setCorpus(data || []);
   }
@@ -193,7 +197,7 @@ export default function AdminCorpus() {
   }
   useEffect(() => { if (me === "admin" && tab === "browse") loadCorpus(); },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [me, tab, cUnit]);
+    [me, tab, cUnit, uncOnly]);
   useEffect(() => { if (me === "admin" && tab === "route") loadRouting(); },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [me, tab]);
@@ -220,7 +224,7 @@ export default function AdminCorpus() {
             <div className="cp-row">
               <input className="cp-in" placeholder="자료 제목" value={title} onChange={(e) => setTitle(e.target.value)} />
               <select className="cp-in" value={unit} onChange={(e) => setUnit(e.target.value)}>
-                <option value="">단원 선택</option>
+                <option value="">단원 힌트 (선택)</option>
                 {units.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
               <button className="cp-btn" onClick={() => fileRef.current?.click()} disabled={busy}>PDF/이미지 열기</button>
@@ -257,6 +261,12 @@ export default function AdminCorpus() {
             <div key={i} className="cp-item">
               <p className="cp-q"><b>{it.seq}.</b> {it.question}</p>
               {(it.choices || []).map((c, j) => <p key={j} className="cp-c">{"①②③④⑤"[j] || "·"} {c}</p>)}
+              <p className="cp-meta">
+                <b>{it.unit_id || "?"}</b> · {it.concept_main ? `${it.concept_main} ${cmap[it.concept_main] || ""}` : "미분류"}
+                {(it.concept_subs || []).length ? ` (+${it.concept_subs.join(",")})` : ""}
+                {(it.pattern_tags || []).length ? " · " + it.pattern_tags.join("/") : ""}
+                {(it.confidence != null && it.confidence < 0.7) && <span className="cp-warn">분류불확실</span>}
+              </p>
               <p className="cp-meta">{it.qtype} · d{it.difficulty_est ?? "?"} · {it.has_math ? "수식 " : ""}{it.has_figure ? "도형 " : ""}
                 · {it.agree ? "일치" : "중재:" + it.model_final}{it.answer != null ? " · 답 " + it.answer : ""}</p>
             </div>
@@ -271,6 +281,7 @@ export default function AdminCorpus() {
               <option value="all">단원 전체</option>
               {units.map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
+            <button className={"cp-tab" + (uncOnly ? " on" : "")} onClick={() => setUncOnly(!uncOnly)}>분류불확실만</button>
             <span className="cp-note">{corpus.length}건 (최근 100)</span>
           </div>
           {corpus.map((it) => (
@@ -282,7 +293,12 @@ export default function AdminCorpus() {
                   {it.figure && <p className="cp-meta">도형: {it.figure.kind} — {(it.figure.relations || []).join(" / ")}</p>}
                 </>
               )}
-              <p className="cp-meta">{it.unit_id} · {it.qtype} · d{it.difficulty_est ?? "?"} · {it.cluster_key} · {it.agree ? "일치" : it.model_final}</p>
+              <p className="cp-meta">
+                <b>{it.unit_id || "?"}</b> · {it.concept_main ? `${it.concept_main} ${cmap[it.concept_main] || ""}` : "미분류"}
+                {(it.pattern_tags || []).length ? " · " + it.pattern_tags.join("/") : ""} · {it.qtype} · d{it.difficulty_est ?? "?"}
+                · {it.agree ? "일치" : it.model_final}
+                {(it.confidence != null && it.confidence < 0.7) && <span className="cp-warn">분류불확실</span>}
+              </p>
             </div>
           ))}
         </>
@@ -334,6 +350,7 @@ const CSS = `
 .cp-q{margin:2px 0;font-size:13.5px;white-space:pre-line}
 .cp-c{margin:1px 0 1px 8px;font-size:13px}
 .cp-meta{margin:4px 0 0;font-size:11.5px;color:#94a3b8}
+.cp-warn{display:inline-block;margin-left:6px;padding:0 5px;border-radius:5px;background:#fffbeb;border:1px solid #fcd34d;color:#b45309;font-size:10.5px}
 .cp-tb{width:100%;border-collapse:collapse;font-size:12.5px}
 .cp-tb th{background:#0f172a;color:#fff;padding:6px 8px;text-align:left}
 .cp-tb td{border:1px solid #e2e8f0;padding:5px 8px}
