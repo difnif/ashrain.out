@@ -112,8 +112,14 @@ export default function AdminCorpus() {
     setUnits([...new Set((cs || []).map((c) => c.unit_id))].sort());
   })(); }, []);
 
+  const [drag, setDrag] = useState(false);
+
   async function onFile(e) {
-    const f = e.target.files;
+    await handleFiles(e.target.files);
+    e.target.value = "";
+  }
+
+  async function handleFiles(f) {
     if (!f?.length) return;
     setBusy(true); setLog((l) => [...l, "페이지 렌더 중…"]);
     try {
@@ -207,7 +213,10 @@ export default function AdminCorpus() {
 
       {tab === "run" && (
         <>
-          <div className="cp-card">
+          <div className={"cp-card cp-drop" + (drag ? " on" : "")}
+            onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+            onDragLeave={() => setDrag(false)}
+            onDrop={(e) => { e.preventDefault(); setDrag(false); handleFiles(e.dataTransfer.files); }}>
             <div className="cp-row">
               <input className="cp-in" placeholder="자료 제목" value={title} onChange={(e) => setTitle(e.target.value)} />
               <select className="cp-in" value={unit} onChange={(e) => setUnit(e.target.value)}>
@@ -217,7 +226,7 @@ export default function AdminCorpus() {
               <button className="cp-btn" onClick={() => fileRef.current?.click()} disabled={busy}>PDF/이미지 열기</button>
               <input ref={fileRef} type="file" accept="application/pdf,image/*,.zip" multiple hidden onChange={onFile} />
             </div>
-            <p className="cp-note">해당 단원 페이지만 골라 전사 — 원문은 유형 참고 전용(서비스 노출·복제 금지), 원본 파일은 corpus 버킷에 보관.</p>
+            <p className="cp-note">파일을 이 상자에 끌어다 놔도 됨 (PDF·이미지·zip). 해당 단원 페이지만 골라 전사 — 원문은 유형 참고 전용(서비스 노출·복제 금지), 원본 파일은 corpus 버킷에 보관.</p>
           </div>
 
           {pages.length > 0 && (
@@ -305,6 +314,8 @@ const CSS = `
 .cp-tab{padding:6px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:13px;cursor:pointer}
 .cp-tab.on{background:#0f172a;color:#fff;border-color:#0f172a}
 .cp-card{border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;background:#fff;margin-bottom:10px}
+.cp-drop{border-style:dashed;border-width:2px;transition:border-color .15s, background .15s}
+.cp-drop.on{border-color:#16a34a;background:#f0fdf4}
 .cp-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .cp-in{padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;background:#fff}
 .cp-btn{padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:13px;cursor:pointer}
