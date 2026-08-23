@@ -19,6 +19,38 @@ function loadPdfjs() {
   });
 }
 
+const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+
+function loadJszip() {
+  return new Promise((ok, no) => {
+    if (window.JSZip) return ok(window.JSZip);
+    const s = document.createElement("script");
+    s.src = JSZIP;
+    s.onload = () => ok(window.JSZip);
+    s.onerror = () => no(new Error("JSZip 로드 실패"));
+    document.head.appendChild(s);
+  });
+}
+
+async function unpackZip(file) {
+  const JSZip = await loadJszip();
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const out = [];
+  for (const name of Object.keys(zip.files)) {
+    const f = zip.files[name];
+    if (f.dir || name.startsWith("__MACOSX")) continue;
+    const ext = name.split(".").pop().toLowerCase();
+    const type = ext === "pdf" ? "application/pdf"
+      : ["jpg", "jpeg"].includes(ext) ? "image/jpeg"
+      : ["png"].includes(ext) ? "image/png"
+      : ["webp"].includes(ext) ? "image/webp" : null;
+    if (!type) continue;
+    const blob = await f.async("blob");
+    out.push(new File([blob], name.split("/").pop(), { type }));
+  }
+  return out;
+}
+
 async function fileToPages(file, max = 40) {
   if (file.type === "application/pdf") {
     const lib = await loadPdfjs();
@@ -85,14 +117,22 @@ export default function AdminCorpus() {
     if (!f?.length) return;
     setBusy(true); setLog((l) => [...l, "페이지 렌더 중…"]);
     try {
-      let all = [];
+      let files = [];
       for (const file of f) {
+        if (/\.zip$/i.test(file.name)) {
+          const inner = await unpackZip(file);
+          setLog((l) => [...l, `zip 해제 — ${inner.length}개 파일`]);
+          files = [...files, ...inner];
+        } else files.push(file);
+      }
+      let all = [];
+      for (const file of files) {
         const ps = await fileToPages(file);
         const base = all.length;
         all = [...all, ...ps.map((p, i) => ({ ...p, page: base + i + 1 }))];
       }
-      origFile.current = f[0];
-      if (!title) setTitle(f[0].name.replace(/\.\w+$/, ""));
+      origFile.current = files[0];
+      if (!title) setTitle(files[0].name.replace(/\.\w+$/, ""));
       setPages(all); setSel(new Set(all.map((p) => p.page)));
       setLog((l) => [...l, `${all.length}페이지 준비됨 — 전사할 페이지를 선택해`]);
     } catch (err) { setLog((l) => [...l, "실패: " + err.message]); }
@@ -175,7 +215,7 @@ export default function AdminCorpus() {
                 {units.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
               <button className="cp-btn" onClick={() => fileRef.current?.click()} disabled={busy}>PDF/이미지 열기</button>
-              <input ref={fileRef} type="file" accept="application/pdf,image/*" multiple hidden onChange={onFile} />
+              <input ref={fileRef} type="file" accept="application/pdf,image/*,.zip" multiple hidden onChange={onFile} />
             </div>
             <p className="cp-note">해당 단원 페이지만 골라 전사 — 원문은 유형 참고 전용(서비스 노출·복제 금지), 원본 파일은 corpus 버킷에 보관.</p>
           </div>
