@@ -1,5 +1,7 @@
-// ashrain.out — 자료 전사 코퍼스 (AdminCorpus v1.0, 관리자 전용, #/admin/corpus)
-// PDF·이미지 업로드 → 페이지 선택 → 이중 전사(하이쿠+소넷, 불일치는 상위 중재) → 자동 채택 적재.
+// ashrain.out — 자료 전사 코퍼스 (AdminCorpus v3.0, 관리자 전용, #/admin/corpus)
+// v3: 전사가 "서버 작업(job)"으로 — 시작만 하면 탭을 닫아도 계속 돌고, 재접속 시 자동 재개.
+//     상단 고정 진행바 + 취소 3옵션(전체 취소 / 최근 10페이지 되돌리기 / 지금까지 저장).
+//     썸네일은 저해상 고속 렌더, 고해상 렌더는 시작 시 선택 페이지만.
 // 탭: ① 전사 실행 ② 코퍼스 열람 ③ 라우팅 현황
 
 import { useEffect, useRef, useState } from "react";
@@ -7,30 +9,24 @@ import { supabase } from "../supabaseClient";
 
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
 const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-
-function loadPdfjs() {
-  return new Promise((ok, no) => {
-    if (window.pdfjsLib) return ok(window.pdfjsLib);
-    const s = document.createElement("script");
-    s.src = PDFJS;
-    s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER; ok(window.pdfjsLib); };
-    s.onerror = () => no(new Error("pdf.js 로드 실패"));
-    document.head.appendChild(s);
-  });
-}
-
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 
-function loadJszip() {
+function loadScript(src, ready) {
   return new Promise((ok, no) => {
-    if (window.JSZip) return ok(window.JSZip);
+    if (ready()) return ok(ready());
     const s = document.createElement("script");
-    s.src = JSZIP;
-    s.onload = () => ok(window.JSZip);
-    s.onerror = () => no(new Error("JSZip 로드 실패"));
+    s.src = src;
+    s.onload = () => ok(ready());
+    s.onerror = () => no(new Error("스크립트 로드 실패: " + src));
     document.head.appendChild(s);
   });
 }
+const loadPdfjs = async () => {
+  const lib = await loadScript(PDFJS, () => window.pdfjsLib);
+  lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+  return lib;
+};
+const loadJszip = () => loadScript(JSZIP, () => window.JSZip);
 
 async function unpackZip(file) {
   const JSZip = await loadJszip();
@@ -42,8 +38,8 @@ async function unpackZip(file) {
     const ext = name.split(".").pop().toLowerCase();
     const type = ext === "pdf" ? "application/pdf"
       : ["jpg", "jpeg"].includes(ext) ? "image/jpeg"
-      : ["png"].includes(ext) ? "image/png"
-      : ["webp"].includes(ext) ? "image/webp" : null;
+      : ext === "png" ? "image/png"
+      : ext === "webp" ? "image/webp" : null;
     if (!type) continue;
     const blob = await f.async("blob");
     out.push(new File([blob], name.split("/").pop(), { type }));
@@ -51,35 +47,26 @@ async function unpackZip(file) {
   return out;
 }
 
-async function fileToPages(file, max = 40) {
-  if (file.type === "application/pdf") {
-    const lib = await loadPdfjs();
-    const buf = await file.arrayBuffer();
-    const pdf = await lib.getDocument({ data: buf }).promise;
-    const out = [];
-    for (let i = 1; i <= Math.min(pdf.numPages, max); i++) {
-      const pg = await pdf.getPage(i);
-      const vp0 = pg.getViewport({ scale: 1 });
-      const scale = Math.min(2.2, 1300 / vp0.width);
-      const vp = pg.getViewport({ scale });
-      const cv = document.createElement("canvas");
-      cv.width = vp.width; cv.height = vp.height;
-      await pg.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
-      out.push({ page: i, image: cv.toDataURL("image/jpeg", 0.82) });
-    }
-    return out;
-  }
-  // 이미지 파일 1장 = 1페이지
+async function renderPdfPage(pg, width, q) {
+  const vp0 = pg.getViewport({ scale: 1 });
+  const vp = pg.getViewport({ scale: Math.min(2.2, width / vp0.width) });
+  const cv = document.createElement("canvas");
+  cv.width = vp.width; cv.height = vp.height;
+  await pg.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+  return cv.toDataURL("image/jpeg", q);
+}
+async function renderImgFile(file, width, q) {
   const img = new Image();
   const url = URL.createObjectURL(file);
   await new Promise((ok) => { img.onload = ok; img.src = url; });
-  const scale = Math.min(1, 1400 / img.width);
+  const scale = Math.min(1, width / img.width);
   const cv = document.createElement("canvas");
   cv.width = img.width * scale; cv.height = img.height * scale;
   cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
   URL.revokeObjectURL(url);
-  return [{ page: 0, image: cv.toDataURL("image/jpeg", 0.82) }];
+  return cv.toDataURL("image/jpeg", q);
 }
+const dataUrlToBlob = async (d) => (await fetch(d)).blob();
 
 export default function AdminCorpus() {
   const [me, setMe] = useState(null);
@@ -88,22 +75,31 @@ export default function AdminCorpus() {
   const [cmap, setCmap] = useState({});
   const [uncOnly, setUncOnly] = useState(false);
 
-  // 전사 탭
+  // 준비 단계
   const [title, setTitle] = useState("");
   const [unit, setUnit] = useState("");
-  const [pages, setPages] = useState([]);       // {page, image}
+  const [pages, setPages] = useState([]);          // {page, thumb}
   const [sel, setSel] = useState(new Set());
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState([]);
-  const [result, setResult] = useState([]);
+  const [drag, setDrag] = useState(false);
   const fileRef = useRef(null);
-  const origFile = useRef(null);
+  const srcRef = useRef([]);                        // page → {kind:'pdf',doc,idx} | {kind:'img',file}
+  const origRef = useRef(null);
 
-  // 코퍼스·라우팅 탭
+  // 진행 중 작업
+  const [job, setJob] = useState(null);             // transcribe_jobs 행
+  const [prog, setProg] = useState(null);           // {done,err,pending,total,saved,arb}
+  const [cancelUi, setCancelUi] = useState(false);
+  const pollRef = useRef(null);
+
+  // 코퍼스·라우팅
   const [cUnit, setCUnit] = useState("all");
   const [corpus, setCorpus] = useState([]);
   const [routing, setRouting] = useState([]);
   const [openItem, setOpenItem] = useState(null);
+
+  const say = (m) => setLog((l) => [...l.slice(-30), m]);
 
   useEffect(() => { (async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -113,75 +109,157 @@ export default function AdminCorpus() {
     const { data: cs } = await supabase.from("concepts").select("id,unit_id,title");
     setUnits([...new Set((cs || []).map((c) => c.unit_id))].sort());
     setCmap(Object.fromEntries((cs || []).map((c) => [c.id, c.title])));
+    // 돌고 있던 작업 자동 재개
+    const { data: j } = await supabase.from("transcribe_jobs").select("*")
+      .eq("status", "running").order("created_at", { ascending: false }).limit(1);
+    if (j?.length) setJob(j[0]);
   })(); }, []);
 
-  const [drag, setDrag] = useState(false);
+  // ---- 진행 폴링 + 워치독 (체인 끊기면 재점화)
+  useEffect(() => {
+    if (!job) { clearInterval(pollRef.current); setProg(null); return; }
+    const tick = async () => {
+      const { data: jrow } = await supabase.from("transcribe_jobs").select("*").eq("id", job.id).single();
+      const { data: pgs } = await supabase.from("transcribe_job_pages")
+        .select("status,saved,arbitrated,updated_at").eq("job_id", job.id);
+      const agg = { done: 0, err: 0, pending: 0, doing: 0, total: pgs?.length || 0, saved: 0, arb: 0 };
+      for (const p of pgs || []) {
+        if (p.status === "done") agg.done++;
+        else if (p.status === "error") agg.err++;
+        else if (p.status === "pending") agg.pending++;
+        else if (p.status === "doing") agg.doing++;
+        agg.saved += p.saved || 0; agg.arb += p.arbitrated || 0;
+      }
+      setProg(agg);
+      if (jrow) setJob(jrow);
+      if (jrow?.status === "running" && (agg.pending > 0 || agg.doing > 0)) {
+        const stale = Date.now() - new Date(jrow.updated_at).getTime() > 25000;
+        if (stale) kick(job.id);                    // 워치독
+      }
+    };
+    tick();
+    pollRef.current = setInterval(tick, 2500);
+    return () => clearInterval(pollRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.id, job?.status]);
 
-  async function onFile(e) {
-    await handleFiles(e.target.files);
-    e.target.value = "";
+  async function kick(jobId) {
+    const { data: { session } } = await supabase.auth.getSession();
+    fetch("/api/transcribeJob", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ job_id: jobId }),
+    }).catch(() => {});
   }
 
+  // ---- 파일 열기 (버튼·드롭 공용) — 저해상 썸네일 고속 렌더
+  async function onFile(e) { await handleFiles(e.target.files); e.target.value = ""; }
   async function handleFiles(f) {
     if (!f?.length) return;
-    setBusy(true); setLog((l) => [...l, "페이지 렌더 중…"]);
+    setBusy(true); say("파일 여는 중…");
     try {
       let files = [];
       for (const file of f) {
         if (/\.zip$/i.test(file.name)) {
           const inner = await unpackZip(file);
-          setLog((l) => [...l, `zip 해제 — ${inner.length}개 파일`]);
+          say(`zip 해제 — ${inner.length}개 파일`);
           files = [...files, ...inner];
         } else files.push(file);
       }
-      let all = [];
+      const src = [], thumbs = [];
       for (const file of files) {
-        const ps = await fileToPages(file);
-        const base = all.length;
-        all = [...all, ...ps.map((p, i) => ({ ...p, page: base + i + 1 }))];
+        if (file.type === "application/pdf") {
+          const lib = await loadPdfjs();
+          const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+          for (let i = 1; i <= Math.min(doc.numPages, 60); i++) {
+            const pg = await doc.getPage(i);
+            thumbs.push(await renderPdfPage(pg, 340, 0.6));
+            src.push({ kind: "pdf", doc, idx: i });
+          }
+        } else {
+          thumbs.push(await renderImgFile(file, 340, 0.6));
+          src.push({ kind: "img", file });
+        }
       }
-      origFile.current = files[0];
-      if (!title) setTitle(files[0].name.replace(/\.\w+$/, ""));
-      setPages(all); setSel(new Set(all.map((p) => p.page)));
-      setLog((l) => [...l, `${all.length}페이지 준비됨 — 전사할 페이지를 선택해`]);
-    } catch (err) { setLog((l) => [...l, "실패: " + err.message]); }
+      srcRef.current = src;
+      origRef.current = files[0] || null;
+      if (!title && files[0]) setTitle(files[0].name.replace(/\.\w+$/, ""));
+      setPages(thumbs.map((t, i) => ({ page: i + 1, thumb: t })));
+      setSel(new Set(thumbs.map((_, i) => i + 1)));
+      say(`${thumbs.length}페이지 준비됨 — 전사할 페이지를 선택해`);
+    } catch (err) { say("실패: " + err.message); }
     setBusy(false);
   }
 
-  async function run() {
+  // ---- 작업 시작: 선택 페이지만 고해상 렌더 → Storage 업로드 → job 생성 → 러너 점화 2개
+  async function start() {
     const picked = pages.filter((p) => sel.has(p.page));
     if (!picked.length) return;
-    setBusy(true); setResult([]);
+    setBusy(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      // 문서 등록 + 원본 보관
       let storage_path = null;
-      if (origFile.current) {
-        storage_path = `docs/${Date.now()}_${origFile.current.name.replace(/[^\w.\-]/g, "_")}`;
-        await supabase.storage.from("corpus").upload(storage_path, origFile.current).catch(() => (storage_path = null));
+      if (origRef.current) {
+        storage_path = `docs/${Date.now()}_${origRef.current.name.replace(/[^\w.\-]/g, "_")}`;
+        await supabase.storage.from("corpus").upload(storage_path, origRef.current).catch(() => (storage_path = null));
       }
       const { data: doc, error: de } = await supabase.from("corpus_docs")
         .insert({ title: title || "무제", unit_hint: unit || null, storage_path, pages: pages.length }).select().single();
       if (de) throw de;
+      const { data: jb, error: je } = await supabase.from("transcribe_jobs")
+        .insert({ doc_id: doc.id, title: title || "무제", unit_hint: unit || null, total_pages: picked.length }).select().single();
+      if (je) throw je;
 
-      let saved = 0, arb = 0;
-      for (const p of picked) {
-        setLog((l) => [...l, `p.${p.page} 전사 중…`]);
-        const r = await fetch("/api/transcribeCorpus", {
-          method: "POST",
-          headers: { "content-type": "application/json", Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ doc_id: doc.id, page: p.page, image: p.image, unit_hint: unit || null }),
-        });
-        const j = await r.json();
-        if (!r.ok) { setLog((l) => [...l, `p.${p.page} 실패: ${j.error}`]); continue; }
-        saved += j.saved; arb += j.arbitrated;
-        if (j.unclassified) setLog((l) => [...l, `p.${p.page} 분류불확실 ${j.unclassified}건`]);
-        setResult((rs) => [...rs, ...(j.items || [])]);
-        setLog((l) => [...l, `p.${p.page} — ${j.saved}문항 (중재 ${j.arbitrated})`]);
+      const rows = [];
+      for (let i = 0; i < picked.length; i++) {
+        const p = picked[i];
+        say(`p.${p.page} 준비 ${i + 1}/${picked.length}…`);
+        const s = srcRef.current[p.page - 1];
+        const full = s.kind === "pdf"
+          ? await renderPdfPage(await s.doc.getPage(s.idx), 1300, 0.82)
+          : await renderImgFile(s.file, 1400, 0.82);
+        const path = `jobs/${jb.id}/p${p.page}.jpg`;
+        const { error: ue } = await supabase.storage.from("corpus").upload(path, await dataUrlToBlob(full), { contentType: "image/jpeg" });
+        if (ue) throw ue;
+        rows.push({ job_id: jb.id, page: p.page, storage_path: path });
       }
-      setLog((l) => [...l, `완료 — 총 ${saved}문항 적재, 중재 ${arb}건`]);
-    } catch (err) { setLog((l) => [...l, "실패: " + String(err.message || err)]); }
+      await supabase.from("transcribe_job_pages").insert(rows);
+      kick(jb.id); kick(jb.id);                     // 병렬 러너 2개
+      setJob(jb);
+      setPages([]); setSel(new Set()); srcRef.current = []; origRef.current = null; setTitle("");
+      say("작업 시작 — 탭을 닫아도 계속 진행됩니다.");
+    } catch (err) { say("시작 실패: " + String(err.message || err)); }
     setBusy(false);
+  }
+
+  // ---- 취소 3옵션
+  async function cancelAll() {
+    if (!job) return;
+    await supabase.from("transcribe_jobs").update({ status: "cancelled" }).eq("id", job.id);
+    if (job.doc_id) {
+      const { data: d } = await supabase.from("corpus_docs").select("storage_path").eq("id", job.doc_id).single();
+      await supabase.from("transcribe_runs").delete().eq("doc_id", job.doc_id);
+      await supabase.from("corpus_docs").delete().eq("id", job.doc_id);  // corpus_items는 cascade 삭제
+      if (d?.storage_path) await supabase.storage.from("corpus").remove([d.storage_path]);
+    }
+    setCancelUi(false); setJob(null); say("전체 취소 — 이 작업의 저장분을 모두 삭제했습니다.");
+  }
+  async function cancelKeepBefore(n = 10) {
+    if (!job) return;
+    const { data: done } = await supabase.from("transcribe_job_pages")
+      .select("page").eq("job_id", job.id).eq("status", "done").order("page", { ascending: false }).limit(n);
+    const back = (done || []).map((x) => x.page);
+    if (back.length && job.doc_id)
+      await supabase.from("corpus_items").delete().eq("doc_id", job.doc_id).in("page", back);
+    await supabase.from("transcribe_job_pages").update({ status: "skipped" }).eq("job_id", job.id).in("status", ["pending"]);
+    await supabase.from("transcribe_jobs").update({ status: "stopped" }).eq("id", job.id);
+    setCancelUi(false); setJob(null);
+    say(`중단 — 최근 ${back.length}페이지 저장분을 되돌리고, 그 이전까지만 남겼습니다.`);
+  }
+  async function cancelKeepAll() {
+    if (!job) return;
+    await supabase.from("transcribe_job_pages").update({ status: "skipped" }).eq("job_id", job.id).in("status", ["pending"]);
+    await supabase.from("transcribe_jobs").update({ status: "stopped" }).eq("id", job.id);
+    setCancelUi(false); setJob(null); say("중단 — 지금까지 작업분은 저장했습니다.");
   }
 
   async function loadCorpus() {
@@ -205,9 +283,40 @@ export default function AdminCorpus() {
   if (me === null) return <div className="cp-wrap">확인 중…</div>;
   if (me === "no") return <div className="cp-wrap">관리자 전용 페이지입니다.</div>;
 
+  const pct = prog?.total ? Math.round(((prog.done + prog.err) / prog.total) * 100) : 0;
+  const jobDone = job && job.status !== "running";
+
   return (
     <div className="cp-wrap">
       <style>{CSS}</style>
+
+      {job && (
+        <div className={"cp-jobbar" + (jobDone ? " fin" : "")}>
+          <div className="cp-jobline">
+            <b>{jobDone ? (job.status === "done" ? "전사 완료" : "중단됨") : "전사 중"}</b>
+            <span> — {job.title} · {prog ? `${prog.done + prog.err}/${prog.total}p` : "…"}
+              {prog ? ` · 문항 ${prog.saved} · 중재 ${prog.arb}` : ""}{prog?.err ? ` · 오류 ${prog.err}p` : ""}</span>
+            <span className="cp-jobsp" />
+            {!jobDone && <button className="cp-btn danger sm" onClick={() => setCancelUi(true)}>취소</button>}
+            {jobDone && <button className="cp-btn sm" onClick={() => setJob(null)}>닫기</button>}
+          </div>
+          <div className="cp-bar"><div className="cp-barfill" style={{ width: pct + "%" }} /></div>
+          {!jobDone && <p className="cp-note">탭을 닫거나 새로고침해도 서버에서 계속 진행됩니다 — 다시 열면 이 자리에서 이어집니다.</p>}
+        </div>
+      )}
+
+      {cancelUi && (
+        <div className="cp-modal" onClick={() => setCancelUi(false)}>
+          <div className="cp-mbox" onClick={(e) => e.stopPropagation()}>
+            <p className="cp-mtitle">전사를 어떻게 취소할까요?</p>
+            <button className="cp-btn danger w" onClick={cancelAll}>전체 취소 — 이 작업의 저장분 모두 삭제</button>
+            <button className="cp-btn w" onClick={() => cancelKeepBefore(10)}>최근 10페이지 되돌리고 중단 — 그 이전까지만 저장</button>
+            <button className="cp-btn go w" onClick={cancelKeepAll}>지금까지 작업분 저장하고 중단</button>
+            <button className="cp-btn w" onClick={() => setCancelUi(false)}>계속 진행 (닫기)</button>
+          </div>
+        </div>
+      )}
+
       <h2>자료 전사 코퍼스</h2>
       <div className="cp-tabs">
         {[["run", "① 전사 실행"], ["browse", "② 코퍼스"], ["route", "③ 라우팅"]].map(([k, l]) => (
@@ -227,10 +336,10 @@ export default function AdminCorpus() {
                 <option value="">단원 힌트 (선택)</option>
                 {units.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
-              <button className="cp-btn" onClick={() => fileRef.current?.click()} disabled={busy}>PDF/이미지 열기</button>
+              <button className="cp-btn" onClick={() => fileRef.current?.click()} disabled={busy}>PDF/이미지/zip 열기</button>
               <input ref={fileRef} type="file" accept="application/pdf,image/*,.zip" multiple hidden onChange={onFile} />
             </div>
-            <p className="cp-note">파일을 이 상자에 끌어다 놔도 됨 (PDF·이미지·zip). 해당 단원 페이지만 골라 전사 — 원문은 유형 참고 전용(서비스 노출·복제 금지), 원본 파일은 corpus 버킷에 보관.</p>
+            <p className="cp-note">파일을 이 상자에 끌어다 놔도 됨. 단원·개념은 자동 분류 — 힌트를 주면 정확도·속도가 조금 오름. 원문은 유형 참고 전용(서비스 노출·복제 금지).</p>
           </div>
 
           {pages.length > 0 && (
@@ -240,14 +349,14 @@ export default function AdminCorpus() {
                 <span>
                   <button className="cp-btn sm" onClick={() => setSel(new Set(pages.map((p) => p.page)))}>전체</button>
                   <button className="cp-btn sm" onClick={() => setSel(new Set())}>해제</button>
-                  <button className="cp-btn go" disabled={busy || !sel.size} onClick={run}>선택 페이지 전사</button>
+                  <button className="cp-btn go" disabled={busy || !sel.size || !!(job && !jobDone)} onClick={start}>전사 시작</button>
                 </span>
               </div>
               <div className="cp-grid">
                 {pages.map((p) => (
                   <div key={p.page} className={"cp-thumb" + (sel.has(p.page) ? " on" : "")}
                     onClick={() => setSel((s) => { const n = new Set(s); n.has(p.page) ? n.delete(p.page) : n.add(p.page); return n; })}>
-                    <img src={p.image} alt={"p" + p.page} />
+                    <img src={p.thumb} alt={"p" + p.page} />
                     <span>p.{p.page}</span>
                   </div>
                 ))}
@@ -256,21 +365,7 @@ export default function AdminCorpus() {
           )}
 
           {log.length > 0 && <div className="cp-log">{log.slice(-8).map((l, i) => <p key={i}>{l}</p>)}</div>}
-
-          {result.map((it, i) => (
-            <div key={i} className="cp-item">
-              <p className="cp-q"><b>{it.seq}.</b> {it.question}</p>
-              {(it.choices || []).map((c, j) => <p key={j} className="cp-c">{"①②③④⑤"[j] || "·"} {c}</p>)}
-              <p className="cp-meta">
-                <b>{it.unit_id || "?"}</b> · {it.concept_main ? `${it.concept_main} ${cmap[it.concept_main] || ""}` : "미분류"}
-                {(it.concept_subs || []).length ? ` (+${it.concept_subs.join(",")})` : ""}
-                {(it.pattern_tags || []).length ? " · " + it.pattern_tags.join("/") : ""}
-                {(it.confidence != null && it.confidence < 0.7) && <span className="cp-warn">분류불확실</span>}
-              </p>
-              <p className="cp-meta">{it.qtype} · d{it.difficulty_est ?? "?"} · {it.has_math ? "수식 " : ""}{it.has_figure ? "도형 " : ""}
-                · {it.agree ? "일치" : "중재:" + it.model_final}{it.answer != null ? " · 답 " + it.answer : ""}</p>
-            </div>
-          ))}
+          {job && <p className="cp-note">전사된 문항은 <b>② 코퍼스</b> 탭에서 실시간으로 확인할 수 있어.</p>}
         </>
       )}
 
@@ -326,6 +421,17 @@ export default function AdminCorpus() {
 const CSS = `
 .cp-wrap{max-width:860px;margin:0 auto;padding:16px 14px 60px;color:#1e293b}
 .cp-wrap h2{margin:6px 0 10px;font-size:20px}
+.cp-jobbar{position:sticky;top:0;z-index:30;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:9px 12px;margin-bottom:12px}
+.cp-jobbar.fin{background:#14532d}
+.cp-jobline{display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap}
+.cp-jobsp{flex:1}
+.cp-bar{height:6px;background:#334155;border-radius:99px;margin-top:7px;overflow:hidden}
+.cp-barfill{height:100%;background:#22c55e;border-radius:99px;transition:width .5s}
+.cp-jobbar .cp-note{color:#94a3b8;margin:6px 0 0}
+.cp-modal{position:fixed;inset:0;background:#0008;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.cp-mbox{background:#fff;border-radius:12px;padding:16px;max-width:380px;width:100%}
+.cp-mtitle{font-weight:800;font-size:14.5px;margin:0 0 10px}
+.cp-btn.w{display:block;width:100%;margin:6px 0;text-align:left}
 .cp-tabs{display:flex;gap:6px;margin-bottom:10px}
 .cp-tab{padding:6px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:13px;cursor:pointer}
 .cp-tab.on{background:#0f172a;color:#fff;border-color:#0f172a}
@@ -337,6 +443,7 @@ const CSS = `
 .cp-btn{padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:13px;cursor:pointer}
 .cp-btn.sm{padding:4px 8px;font-size:12px;margin-right:4px}
 .cp-btn.go{background:#16a34a;border-color:#16a34a;color:#fff}
+.cp-btn.danger{border-color:#dc2626;color:#dc2626;background:#fff}
 .cp-btn:disabled{opacity:.45}
 .cp-note{font-size:12px;color:#64748b;margin:6px 0 0}
 .cp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:10px}
