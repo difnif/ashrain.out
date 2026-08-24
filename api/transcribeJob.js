@@ -1,11 +1,13 @@
-// ashrain.out — 전사 작업 러너 (api/transcribeJob.js, v1.0)
-// 호출 1회 = 작업 큐에서 페이지를 원자적으로 하나씩 집어 이중 전사(+자동 분류) 후 적재.
-// 시간 예산(~38초) 안에서 여러 페이지 연속 처리 → 남은 게 있으면 자기 자신을 다시 호출(이어달리기).
-// 탭이 닫혀도 체인이 계속 돌고, 화면 쪽 워치독이 혹시 끊긴 체인을 재점화한다.
-// 기존 api/transcribeCorpus.js 는 삭제해도 됨 — 모든 전사가 이 러너를 통함.
-// 환경변수: 기존 재사용 — ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY(또는 SUPABASE_SERVICE_KEY)
+// ashrain.out — 전사 작업 러너 v2.0 (api/transcribeJob.js / MathIR·도형DSL 스펙 v1.1 구현)
+// 개편 핵심: 심판이 모델(이중 전사·중재)에서 기계(mathir 파서·대입 검산)로.
+//   페이지당 하이쿠 1회 → V-01~05·09 검증 → 실패 문항만 오류 피드백 재시도 1회
+//   → 답 있는 문항은 대입 검산(V-03) → 답 없는 문항 15% 표본 이중(소넷, IR 정규화 diff)
+//   → 페이지 소진 후 같은 체인에서 텍스트 배치 분류(개념 지도, 이미지 없음)
+//   → 최종 실패·표본 불일치는 arb_mode 따라 오푸스 1회(api) 또는 상위 대기(queue).
+// 화면·수동 큐·내보내기·반영은 v3.2 그대로 호환 (escalated + drafts).
 
 import { createClient } from "@supabase/supabase-js";
+import { parseText, parseAnswer, checkEquationAnswer, checkFigure } from "../src/lib/mathir.js";
 
 export const config = { maxDuration: 60 };
 
@@ -16,163 +18,204 @@ const MODELS = {
   fable: "claude-fable-5",
 };
 const PRIMARY = process.env.TRANSCRIBE_PRIMARY || "haiku";
-const SECONDARY = process.env.TRANSCRIBE_SECONDARY || "sonnet";
+const SAMPLER = process.env.TRANSCRIBE_SAMPLER || "sonnet";
 const ARBITER = process.env.TRANSCRIBE_ARBITER || "opus";
+const SAMPLE_RATE = Number(process.env.TRANSCRIBE_SAMPLE || 15);   // 답 없는 문항 표본 %
 const BUDGET_MS = 38000;
+const CLS_BATCH = 20;
 
-function buildSys(conceptMap) {
-  return `너는 수학 문제지 전사·분류기다. 이미지 속 문항을 아래 JSON 배열로만 출력한다. 배열 밖 텍스트 금지.
-각 문항: {"seq":문항번호(정수), "qtype":"choice|short|proof|essay", "question":"문제 전문",
-"choices":["보기1",...] 또는 null, "answer":"답(지면에 없으면 null)", "difficulty_est":1~5 추정,
-"has_math":복잡한 수식 존재, "has_figure":도형·그래프 존재,
-"figure": has_figure면 {"kind":"도형 종류","labels":["점·변 라벨"],"relations":["평행·수직·길이·각 관계 짧은 문장"]} 아니면 null,
-"unit_id":"단원(예 m1-1)", "concept_main":"주개념 cid 1개", "concept_subs":["부개념 cid 0~2개"],
-"pattern_tags":["풀이 유형 태그 1~3개 — 예: 문장제, 역산, 반례판별, 개수세기, 최댓값"],
-"confidence": 분류 확신도 0~1}
+// ---------------------------------------------------------------- 프롬프트
+const SYS_T = `너는 수학 문제지 전사기다. 이미지 속 문항을 JSON 배열로만 출력한다. 배열 밖 텍스트 금지.
+각 문항: {"seq":문항번호, "qtype":"choice|short|proof|essay", "question":"...", "choices":[...]|null,
+"answer":"...(지면에 없으면 null)", "difficulty_est":1~5, "has_figure":true|false, "figure":[도형함수]|null}
 
-분류 규칙:
-- 주개념 = 이 문항이 궁극적으로 평가하는 개념 하나. 부개념 = 풀이에 실제로 동원되는 다른 개념 — 그 개념을 몰라도 풀 수 있으면 부개념이 아니다.
-- cid는 반드시 아래 개념 목록에 있는 것만 사용. 애매하면 confidence를 낮춰라.
-전사 규칙: 수식은 유니코드(×,−,x²,√,¹⁄₂) 우선, 복잡한 것만 $...$ LaTeX(\\dfrac,\\sqrt 등). JSON 문자열 안 백슬래시는 \\\\ 이스케이프. 원문 그대로(오탈자 포함). 머리말·페이지번호 무시.
+■ 수식 표기 — MathIR 닫힌 문법 (이 목록 밖 토큰 금지)
+- 문장 속 수식은 [[ ... ]]로 감싸고 그 안은 MathIR만. 단순 숫자·단위(3 cm, 40개)는 평문.
+- 기본: 숫자, 변수(x,a,...), + - * / = != < > <= >=, 괄호, 병치곱(2x, 3(x+1)). 유니코드 수식문자·LaTeX 금지.
+- 함수: frac(a,b) mixed(w,a,b) pow(b,e) sqrt(x) root(n,x) abs(x) recdec(pre,rep) floor(x) fact(n)
+  max min ratio(a,b[,c]) pct(x) deg(x) dms(d,m[,s]) pm | seg line ray arc angle tri quad par perp cong sim
+  point(x,y) point3 vec vcomp dot | set setb in notin subset nsubset union inter comp card imp iff neg itv(a,b,cc|co|oc|oo) conj
+  | log([b,]x) ln sin cos tan csc sec cot | sub(a,n) sum(k,a,b,f) lim(x,a,f[,+|-]) prime(f[,2]) dydx integ dinteg(a,b,f,x) inv
+  | perm comb pperm hcomb prob cprob ev var sd binomd normald | 상수 pi e i inf empty
+- answer는 마커 없이 IR 하나("x = 8", "frac(3,4)") 또는 한국어 낱말("소수").
+예: "일차방정식 [[frac(x,2) - 3 = frac(x,4) - 1]] 을 푸시오."  /  answer: "x = 8"
 
+■ figure — 도형은 자유 서술 금지, 함수 호출 배열만:
+numline{min,max,points} coordplane{x,y,points,lines} table{head,rows} hist{bins,counts} stemleaf{stems}
+crossing{angles} parallel{angles} tri{v,sides,angles,marks} rect{w,h} polygon{n} circle{r} sector{r,angle}
+solid{kind} net{kind} boxplot{values} scatter{points} venn{sets} tree{levels} funcgraph{expr} unitcircle
+conic{kind} vecfig{vectors} space normcurve{m,v} — 표현 불가하면 {"fn":"unsupported","args":{"raw":"짧은 서술"}}
+인자 속 수치·식도 MathIR 문자열.
+원문 그대로 옮기되(오탈자 포함) 머리말·페이지번호는 무시. JSON 문자열 안 백슬래시는 \\\\ 이스케이프.`;
+
+const sysClassify = (cmap) => `너는 수학 문항 분류기다. 입력된 문항들을 아래 개념 목록으로 분류해 JSON 배열로만 출력한다.
+각 항목: {"id":"입력의 id 그대로", "unit_id":"단원(예 m1-1)", "concept_main":"주개념 cid 1개",
+"concept_subs":["부개념 cid 0~2개"], "pattern_tags":["풀이 유형 태그 1~3개"], "confidence":0~1}
+규칙: 주개념 = 문항이 궁극적으로 평가하는 개념 하나. 부개념 = 풀이에 실제 동원되는 개념(그 개념을 몰라도 풀리면 제외).
+cid는 반드시 목록에 있는 것만. 애매하면 confidence를 낮춰라.
 [개념 목록]
-${conceptMap}`;
-}
+${cmap}`;
 
+// ---------------------------------------------------------------- 공용
 async function callModel(modelKey, sys, content, maxTokens = 4000) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
+    headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({ model: MODELS[modelKey] || modelKey, max_tokens: maxTokens, system: sys, messages: [{ role: "user", content }] }),
   });
   const j = await r.json();
   if (!r.ok) { const e = new Error(j?.error?.message || "anthropic " + r.status); e.status = r.status; throw e; }
   return (j.content || []).map((b) => b.text || "").join("");
 }
-
-const RETRYABLE = (e) => [429, 500, 529].includes(e?.status)
-  || /credit balance|overloaded|rate.?limit/i.test(String(e?.message || ""));
-
-function parseItems(t) { const m = t.match(/\[[\s\S]*\]/); if (!m) return null;
-  try { const a = JSON.parse(m[0]); return Array.isArray(a) ? a : null; } catch { return null; } }
+const RETRYABLE = (e) => [429, 500, 529].includes(e?.status) || /credit balance|overloaded|rate.?limit/i.test(String(e?.message || ""));
+const parseArr = (t) => { const m = t.match(/\[[\s\S]*\]/); if (!m) return null; try { const a = JSON.parse(m[0]); return Array.isArray(a) ? a : null; } catch { return null; } };
+const parseObj = (t) => { const m = t.match(/\{[\s\S]*\}/); if (!m) return null; try { return JSON.parse(m[0]); } catch { return null; } };
 const norm = (s) => (s || "").toString().replace(/\s+/g, " ").trim();
 const normUnit = (u) => { const m = String(u || "").match(/^[mh]\d-\d/); return m ? m[0] : ""; };
-function sim(a, b) {
-  a = norm(a); b = norm(b);
-  if (a === b) return 1;
-  if (a.length < 2 || b.length < 2) return 0;
-  const grams = (s) => { const g = new Map();
-    for (let i = 0; i < s.length - 1; i++) { const k = s.slice(i, i + 2); g.set(k, (g.get(k) || 0) + 1); } return g; };
-  const ga = grams(a), gb = grams(b);
-  let hit = 0, tot = 0;
-  for (const [k, v] of ga) { tot += v; hit += Math.min(v, gb.get(k) || 0); }
-  for (const v of gb.values()) tot += v;
-  return (2 * hit) / tot;
-}
-function diffItem(p, s) {
-  const bad = [];
-  if (sim(p.question, s.question) < 0.92) bad.push("question");
-  if (norm(p.answer) !== norm(s.answer)) bad.push("answer");
-  if ((p.choices || []).map(norm).join("|") !== (s.choices || []).map(norm).join("|")) bad.push("choices");
-  if ((p.qtype || "") !== (s.qtype || "")) bad.push("qtype");
-  if (!!p.has_figure !== !!s.has_figure) bad.push("has_figure");
-  if (normUnit(p.unit_id) !== normUnit(s.unit_id)) bad.push("unit");
-  if ((p.concept_main || "") !== (s.concept_main || "")) bad.push("classify");
-  return bad;
+
+function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return Math.abs(h); }
+
+// ---------------------------------------------------------------- 기계 심판 (V-01~05·09)
+export function verifyItem(it, gradeHint) {
+  const errs = [];
+  const q = parseText(String(it.question || ""), gradeHint || null);
+  errs.push(...q.errs.map((e) => ({ ...e, at: "question" })));
+  for (const [i, c] of (it.choices || []).entries()) {
+    const r = parseText(String(c));
+    errs.push(...r.errs.map((e) => ({ ...e, at: `choice${i + 1}` })));
+  }
+  if (it.answer != null && String(it.answer).trim()) {
+    try { parseAnswer(String(it.answer)); }
+    catch (e) { errs.push({ code: e.code || "V-01", at: "answer", src: String(it.answer), msg: String(e.message || e) }); }
+  }
+  errs.push(...checkFigure(it.figure || []).map((e) => ({ ...e, at: "figure" })));
+  let solved = null;                                    // V-03 대입 검산
+  if (!errs.length && it.answer != null && String(it.answer).trim()) {
+    solved = checkEquationAnswer(String(it.question || ""), String(it.answer));
+    if (solved === false) errs.push({ code: "V-03", at: "answer", msg: "답 대입 불일치" });
+  }
+  return { errs, solved };
 }
 
-async function transcribeOne(sb, job, pg, sys, known) {
+function irKey(it) {                                    // 표기 변이를 제거한 비교 키
+  const seg = (s) => parseText(String(s || "")).segs.map((x) => (x.kind === "ir" ? "⟨" + x.ir + "⟩" : norm(x.raw))).join("");
+  return [seg(it.question), (it.choices || []).map(seg).join("|"), norm(it.answer), it.qtype || ""].join("‖");
+}
+
+// ---------------------------------------------------------------- 페이지 전사
+async function transcribeOne(sb, job, pg) {
   const { data: blob, error: dl } = await sb.storage.from("corpus").download(pg.storage_path);
   if (dl) throw new Error("이미지 다운로드 실패: " + dl.message);
   const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
-  const imgBlock = { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } };
-  const ask = [imgBlock, { type: "text", text: "이 페이지의 문항을 전사·분류해라." }];
+  const img = { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } };
+  const ask = [img, { type: "text", text: "이 페이지의 문항을 전사해라." }];
 
-  const [t1, t2] = await Promise.all([callModel(PRIMARY, sys, ask), callModel(SECONDARY, sys, ask)]);
-  const p1 = parseItems(t1), p2 = parseItems(t2);
+  const p1 = parseArr(await callModel(PRIMARY, SYS_T, ask));
   if (!p1) throw new Error("1차 전사 JSON 파싱 실패");
 
   const items = [], runs = [];
   let arb = 0;
-  for (const it of p1) {
-    const mate = (p2 || []).find((x) => x.seq === it.seq) || null;
-    const bad = mate ? diffItem(it, mate) : ["no_secondary"];
-    const contentBad = bad.filter((b) => b !== "unit" && b !== "classify");
-    const agree = contentBad.length === 0;          // 내용 합의 기준 (분류 단독 불일치는 합의로 침)
-    let finalIt = it, finalModel = PRIMARY, escalate = false;
-    if (agree && bad.length > 0 && mate) {
-      // 분류만 갈린 경우 — 중재 없이 확신도 높은 쪽 분류 채택
-      if ((mate.confidence ?? 0) > (it.confidence ?? 0))
-        finalIt = { ...it, unit_id: mate.unit_id, concept_main: mate.concept_main,
-                    concept_subs: mate.concept_subs, confidence: mate.confidence };
-    }
-    if (!agree) {
-      arb++;
-      if ((job.arb_mode || "api") === "queue") { escalate = true; }
-      else {
-      const arbAsk = [imgBlock, { type: "text",
-        text: `문항 ${it.seq}번만 본다. 두 전사가 불일치(${bad.join(",")}). 이미지를 근거로 올바른 전사·분류 하나를 같은 JSON 규격의 "단일 객체"로 출력해라.\nA안: ${JSON.stringify(it)}\nB안: ${JSON.stringify(mate)}` }];
+  for (const raw of p1) {
+    let it = raw, model = PRIMARY, escal = false, escErrs = null;
+    let v = verifyItem(it, job.unit_hint);
+
+    if (v.errs.length) {                                // ── 오류 피드백 재시도 1회 (같은 모델)
+      const fb = v.errs.slice(0, 6).map((e) => `${e.code}@${e.at}${e.src ? ` [[${e.src}]]` : ""}: ${e.msg || ""}`).join("\n");
       try {
-        const ta = await callModel(ARBITER, sys, arbAsk, 1600);
-        const m = ta.match(/\{[\s\S]*\}/);
-        if (m) { finalIt = JSON.parse(m[0]); finalModel = ARBITER; }
-      } catch { /* 중재 실패 시 1차안 유지 */ }
+        const t = await callModel(PRIMARY, SYS_T, [img, { type: "text",
+          text: `문항 ${it.seq}번만 다시 전사해 "단일 객체"로 출력해라. 이전 시도의 문법 오류:\n${fb}\n이전 시도: ${JSON.stringify(it)}` }], 1800);
+        const fixed = parseObj(t);
+        if (fixed) { it = fixed; model = PRIMARY + "+retry"; v = verifyItem(it, job.unit_hint); }
+      } catch (e) { if (RETRYABLE(e)) throw e; }
+      runs.push({ doc_id: job.doc_id, page: pg.page, seq: raw.seq, role: "retry", model: PRIMARY, agree: !v.errs.length, diff_fields: v.errs.map((x) => x.code), adopted: !v.errs.length });
+    }
+
+    let needArb = v.errs.length > 0;
+    if (!needArb && (it.answer == null || !String(it.answer).trim())          // ── 표본 감시 (답 없는 문항)
+        && hashStr(`${job.doc_id}|${pg.page}|${it.seq}`) % 100 < SAMPLE_RATE) {
+      try {
+        const p2 = parseArr(await callModel(SAMPLER, SYS_T, ask));
+        const mate = (p2 || []).find((x) => x.seq === it.seq);
+        const same = mate && irKey(mate) === irKey(it);
+        runs.push({ doc_id: job.doc_id, page: pg.page, seq: it.seq, role: "sample", model: SAMPLER, agree: !!same, diff_fields: same ? [] : ["ir"], adopted: false });
+        if (mate && !same) needArb = true;
+      } catch (e) { if (RETRYABLE(e)) throw e; }
+    }
+
+    if (needArb) {                                      // ── 최종 실패·표본 불일치
+      arb++;
+      if ((job.arb_mode || "api") === "queue") { escal = true; escErrs = v.errs.map((x) => x.code); }
+      else {
+        try {
+          const t = await callModel(ARBITER, SYS_T, [img, { type: "text",
+            text: `문항 ${it.seq}번만 본다. 아래 시도가 검증에 실패했다(${v.errs.map((x) => x.code).join(",") || "표본 불일치"}). 이미지를 근거로 올바른 전사를 같은 규격의 "단일 객체"로 출력해라.\n시도: ${JSON.stringify(it)}` }], 1800);
+          const fixed = parseObj(t);
+          if (fixed) {
+            const v2 = verifyItem(fixed, job.unit_hint);
+            if (!v2.errs.length) { it = fixed; model = ARBITER; v = v2; }
+            else { escal = true; escErrs = v2.errs.map((x) => x.code); }
+          } else { escal = true; escErrs = ["parse"]; }
+        } catch (e) { if (RETRYABLE(e)) throw e; escal = true; escErrs = ["api"]; }
+        runs.push({ doc_id: job.doc_id, page: pg.page, seq: it.seq, role: "arbiter", model: ARBITER, agree: !escal, diff_fields: escErrs || [], adopted: !escal });
       }
     }
-    const cMain = known.has(finalIt.concept_main) ? finalIt.concept_main : null;
-    const cSubs = (finalIt.concept_subs || []).filter((x) => known.has(x) && x !== cMain).slice(0, 2);
-    const unitJ = normUnit(finalIt.unit_id) || (cMain ? normUnit(cMain) : normUnit(job.unit_hint)) || null;
-    const ck = `${unitJ || "?"}|${finalIt.qtype || "?"}|m${finalIt.has_math ? 1 : 0}|f${finalIt.has_figure ? 1 : 0}`;
+    runs.push({ doc_id: job.doc_id, page: pg.page, seq: raw.seq, role: "primary", model: PRIMARY, agree: !v.errs.length && !escal, diff_fields: v.errs.map((x) => x.code), adopted: !escal });
 
-    if (!agree) runs.push({ doc_id: job.doc_id, page: pg.page, seq: it.seq, cluster_key: ck, role: "arbiter", model: ARBITER, agree: false, diff_fields: bad, adopted: true });
-    runs.push({ doc_id: job.doc_id, page: pg.page, seq: it.seq, cluster_key: ck, role: "primary", model: PRIMARY, agree, diff_fields: bad, adopted: agree });
-    if (mate) runs.push({ doc_id: job.doc_id, page: pg.page, seq: it.seq, cluster_key: ck, role: "secondary", model: SECONDARY, agree, diff_fields: bad, adopted: false });
-
+    const hasMath = /\[\[/.test(String(it.question || "")) || (it.choices || []).some((c) => /\[\[/.test(String(c)));
     items.push({
-      doc_id: job.doc_id, page: pg.page, seq: finalIt.seq ?? it.seq,
-      unit_id: unitJ, concept_main: cMain, concept_subs: cSubs,
-      concept_ids: [cMain, ...cSubs].filter(Boolean),
-      pattern_tags: (finalIt.pattern_tags || []).slice(0, 3),
-      confidence: cMain ? (finalIt.confidence ?? null) : 0,
-      qtype: finalIt.qtype || "short", question: finalIt.question || "",
-      choices: finalIt.choices || null, answer: finalIt.answer ?? null,
-      difficulty_est: finalIt.difficulty_est ?? null,
-      has_math: !!finalIt.has_math, has_figure: !!finalIt.has_figure,
-      figure: finalIt.figure || null, cluster_key: ck,
-      model_final: escalate ? "queue" : finalModel, agree,
-      status: escalate ? "escalated" : "active",
-      drafts: escalate ? { a: it, b: mate, diff: bad } : null,
+      doc_id: job.doc_id, page: pg.page, seq: it.seq ?? raw.seq,
+      unit_id: normUnit(job.unit_hint) || null,
+      qtype: it.qtype || "short", question: String(it.question || ""),
+      choices: it.choices || null, answer: it.answer ?? null,
+      difficulty_est: it.difficulty_est ?? null,
+      has_math: hasMath, has_figure: !!(it.figure && it.figure.length),
+      figure: it.figure || null, cluster_key: null,
+      model_final: escal ? "queue" : model, agree: !escal && !v.errs.length,
+      status: escal ? "escalated" : "active",
+      drafts: escal ? { a: it, b: null, diff: escErrs || [] } : null,
+      concept_main: null, concept_subs: [], concept_ids: [], pattern_tags: [],
+      confidence: escal ? 0 : null,
     });
   }
 
   const saved = items.filter((x) => norm(x.question).length >= 5);
   if (saved.some((x) => x.status === "escalated"))
     await sb.storage.from("corpus").copy(pg.storage_path, `esc/${job.doc_id}/p${pg.page}.jpg`).catch(() => {});
-  if (saved.length)
-    await sb.from("corpus_items").upsert(saved, { onConflict: "content_key", ignoreDuplicates: true });
+  if (saved.length) await sb.from("corpus_items").upsert(saved, { onConflict: "content_key", ignoreDuplicates: true });
   if (runs.length) await sb.from("transcribe_runs").insert(runs);
-  const byCk = {};
-  for (const x of saved) { byCk[x.cluster_key] = byCk[x.cluster_key] || { n: 0, a: 0 }; byCk[x.cluster_key].n++; if (x.agree) byCk[x.cluster_key].a++; }
-  for (const [ck, v] of Object.entries(byCk)) {
-    const { data: cur } = await sb.from("transcribe_routing").select("*").eq("cluster_key", ck).maybeSingle();
-    await sb.from("transcribe_routing").upsert({
-      cluster_key: ck, primary_model: cur?.primary_model || PRIMARY, state: cur?.state || "dual",
-      sample_n: (cur?.sample_n || 0) + v.n, agree_n: (cur?.agree_n || 0) + v.a,
-      last_check: new Date().toISOString(), updated_at: new Date().toISOString(),
-    });
-  }
   return { saved: saved.length, arbitrated: arb };
 }
 
-async function cleanupJobFiles(sb, jobId) {
-  const { data: list } = await sb.storage.from("corpus").list(`jobs/${jobId}`, { limit: 200 });
-  if (list?.length) await sb.storage.from("corpus").remove(list.map((f) => `jobs/${jobId}/${f.name}`));
+// ---------------------------------------------------------------- 배치 분류 (텍스트만)
+async function classifyBatch(sb, job, known, cmapSys) {
+  const { data: rows } = await sb.from("corpus_items")
+    .select("id,question,choices,answer")
+    .eq("doc_id", job.doc_id).eq("status", "active").is("concept_main", null)
+    .order("page").limit(CLS_BATCH);
+  if (!rows?.length) return 0;
+  const payload = rows.map((r) => ({
+    id: r.id,
+    text: (r.question || "") + ((r.choices || []).length ? "\n보기: " + r.choices.join(" / ") : "") + (r.answer ? "\n답: " + r.answer : ""),
+  }));
+  const out = parseArr(await callModel(PRIMARY, cmapSys,
+    [{ type: "text", text: "다음 문항들을 분류해라.\n" + JSON.stringify(payload) }], 2500));
+  const byId = new Map((out || []).map((x) => [x.id, x]));
+  for (const r of rows) {
+    const c = byId.get(r.id) || {};
+    const cm = known.has(c.concept_main) ? c.concept_main : null;
+    const subs = (c.concept_subs || []).filter((x) => known.has(x) && x !== cm).slice(0, 2);
+    await sb.from("corpus_items").update({
+      unit_id: normUnit(c.unit_id) || (cm ? normUnit(cm) : normUnit(job.unit_hint)) || null,
+      concept_main: cm, concept_subs: subs, concept_ids: [cm, ...subs].filter(Boolean),
+      pattern_tags: (c.pattern_tags || []).slice(0, 3),
+      confidence: cm ? (c.confidence ?? null) : 0,
+      cluster_key: `${normUnit(c.unit_id) || normUnit(cm) || "?"}|cls`,
+    }).eq("id", r.id);
+  }
+  return rows.length;
 }
 
+// ---------------------------------------------------------------- 핸들러 (클레임 루프 + 이어달리기)
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
   const start = Date.now();
@@ -183,7 +226,6 @@ export default async function handler(req, res) {
     const { job_id, secret } = req.body || {};
     if (!job_id) return res.status(400).json({ error: "job_id 필요" });
 
-    // ---- 인증: 관리자 세션(화면 킥·워치독) 또는 내부 시크릿(이어달리기)
     const internal = secret && secret === svc.slice(-24);
     if (!internal) {
       const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
@@ -195,23 +237,20 @@ export default async function handler(req, res) {
 
     const { data: job } = await sb.from("transcribe_jobs").select("*").eq("id", job_id).single();
     if (!job) return res.status(404).json({ error: "작업 없음" });
-    if (job.status !== "running") { await cleanupJobFiles(sb, job_id); return res.status(200).json({ ok: true, done: true, status: job.status }); }
+    if (job.status !== "running") {
+      const { data: list } = await sb.storage.from("corpus").list(`jobs/${job_id}`, { limit: 200 });
+      if (list?.length) await sb.storage.from("corpus").remove(list.map((f) => `jobs/${job_id}/${f.name}`));
+      return res.status(200).json({ ok: true, done: true, status: job.status });
+    }
 
-    // ---- 개념 지도 1회 로드
-    let cq = sb.from("concepts").select("id,unit_id,title").order("unit_id").order("sort_order");
-    if (job.unit_hint) cq = cq.like("id", job.unit_hint.slice(0, 2) + "%");
-    const { data: cons } = await cq;
-    const known = new Set((cons || []).map((c) => c.id));
-    const sys = buildSys((cons || []).map((c) => `${c.id} ${c.title}`).join("\n"));
-
-    // ---- 시간 예산 안에서 페이지 연속 처리
+    // ── 1단계: 페이지 전사
     let did = 0;
     while (Date.now() - start < BUDGET_MS) {
       const { data: claimed } = await sb.rpc("claim_job_page", { p_job: job_id });
       const pg = claimed?.[0];
       if (!pg) break;
       try {
-        const r = await transcribeOne(sb, job, pg, sys, known);
+        const r = await transcribeOne(sb, job, pg);
         await sb.from("transcribe_job_pages").update({ status: "done", saved: r.saved, arbitrated: r.arbitrated, updated_at: new Date().toISOString() }).eq("id", pg.id);
       } catch (e) {
         if (RETRYABLE(e)) {
@@ -223,27 +262,46 @@ export default async function handler(req, res) {
       did++;
       await sb.from("transcribe_jobs").update({ updated_at: new Date().toISOString() }).eq("id", job_id);
       const { data: j2 } = await sb.from("transcribe_jobs").select("status").eq("id", job_id).single();
-      if (j2?.status !== "running") { await cleanupJobFiles(sb, job_id); return res.status(200).json({ ok: true, done: true, status: j2?.status }); }
+      if (j2?.status !== "running") return res.status(200).json({ ok: true, done: true, status: j2?.status });
     }
 
-    // ---- 남은 페이지 확인 → 이어달리기 or 마감
     const { count: left } = await sb.from("transcribe_job_pages")
       .select("id", { count: "exact", head: true }).eq("job_id", job_id).eq("status", "pending");
-    if (!left) {
-      const { count: doing } = await sb.from("transcribe_job_pages")
-        .select("id", { count: "exact", head: true }).eq("job_id", job_id).eq("status", "doing");
-      if (!doing) {
-        await sb.from("transcribe_jobs").update({ status: "done", updated_at: new Date().toISOString() }).eq("id", job_id).eq("status", "running");
-        await cleanupJobFiles(sb, job_id);
+    const { count: doing } = await sb.from("transcribe_job_pages")
+      .select("id", { count: "exact", head: true }).eq("job_id", job_id).eq("status", "doing");
+
+    // ── 2단계: 페이지 소진 후 배치 분류
+    let classified = 0;
+    if (!left && !doing) {
+      let cq = sb.from("concepts").select("id,unit_id,title").order("unit_id").order("sort_order");
+      if (job.unit_hint) cq = cq.like("id", job.unit_hint.slice(0, 2) + "%");
+      const { data: cons } = await cq;
+      const known = new Set((cons || []).map((c) => c.id));
+      const cmapSys = sysClassify((cons || []).map((c) => `${c.id} ${c.title}`).join("\n"));
+      while (Date.now() - start < BUDGET_MS) {
+        let n = 0;
+        try { n = await classifyBatch(sb, job, known, cmapSys); }
+        catch (e) {
+          if (RETRYABLE(e)) return res.status(200).json({ ok: true, paused: true, reason: String(e.message || e).slice(0, 120) });
+          break;
+        }
+        classified += n;
+        await sb.from("transcribe_jobs").update({ updated_at: new Date().toISOString() }).eq("id", job_id);
+        if (n < CLS_BATCH) {
+          await sb.from("transcribe_jobs").update({ status: "done", updated_at: new Date().toISOString() }).eq("id", job_id).eq("status", "running");
+          const { data: list } = await sb.storage.from("corpus").list(`jobs/${job_id}`, { limit: 200 });
+          if (list?.length) await sb.storage.from("corpus").remove(list.map((f) => `jobs/${job_id}/${f.name}`));
+          return res.status(200).json({ ok: true, done: true, processed: did, classified });
+        }
       }
-      return res.status(200).json({ ok: true, done: !doing, processed: did });
     }
-    // 자기 자신 재점화 (응답 전 발사)
+
+    // ── 이어달리기
     const self = `https://${req.headers.host}/api/transcribeJob`;
     fetch(self, { method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ job_id, secret: svc.slice(-24) }) }).catch(() => {});
     await new Promise((r) => setTimeout(r, 400));
-    return res.status(200).json({ ok: true, done: false, processed: did, left });
+    return res.status(200).json({ ok: true, done: false, processed: did, classified, left });
   } catch (e) {
     return res.status(500).json({ error: String(e.message || e) });
   }
