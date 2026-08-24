@@ -46,7 +46,12 @@ crossing{angles} parallel{angles} tri{v,sides,angles,marks} rect{w,h} polygon{n}
 solid{kind} net{kind} boxplot{values} scatter{points} venn{sets} tree{levels} funcgraph{expr} unitcircle
 conic{kind} vecfig{vectors} space normcurve{m,v} — 표현 불가하면 {"fn":"unsupported","args":{"raw":"짧은 서술"}}
 인자 속 수치·식도 MathIR 문자열.
-원문 그대로 옮기되(오탈자 포함) 머리말·페이지번호는 무시. JSON 문자열 안 백슬래시는 \\\\ 이스케이프.`;
+원문 그대로 옮기되(오탈자 포함) 머리말·페이지번호는 무시. JSON 문자열 안 백슬래시는 \\\\ 이스케이프.
+
+■ 페이지 종류
+- 문항이 실린 문제지 페이지 → 위 규격의 문항 배열.
+- 답만 표·나열로 모인 "답지" 페이지 → 배열 대신 {"answer_sheet":{"1":"x = 3","2":"frac(1,2)"}} 단일 객체 (번호→답, 답은 MathIR).
+- 풀이 과정 서술 중심의 "해설" 페이지 → 빈 배열 [].`;
 
 const sysClassify = (cmap) => `너는 수학 문항 분류기다. 입력된 문항들을 아래 개념 목록으로 분류해 JSON 배열로만 출력한다.
 각 항목: {"id":"입력의 id 그대로", "unit_id":"단원(예 m1-1)", "concept_main":"주개념 cid 1개",
@@ -110,7 +115,21 @@ async function transcribeOne(sb, job, pg) {
   const img = { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } };
   const ask = [img, { type: "text", text: "이 페이지의 문항을 전사해라." }];
 
-  const p1 = parseArr(await callModel(PRIMARY, SYS_T, ask));
+  const t1 = await callModel(PRIMARY, SYS_T, ask);
+  const sheet = parseObj(t1);
+  if (sheet && sheet.answer_sheet && !Array.isArray(sheet)) {           // ── 답지 페이지
+    const clean = {};
+    for (const [k, v] of Object.entries(sheet.answer_sheet)) {
+      try { parseAnswer(String(v)); clean[String(k)] = String(v); } catch { /* 문법 위반 답은 버림 */ }
+    }
+    if (Object.keys(clean).length) {
+      const { data: d0 } = await sb.from("corpus_docs").select("answers").eq("id", job.doc_id).single();
+      await sb.from("corpus_docs").update({ answers: { ...(d0?.answers || {}), ...clean } }).eq("id", job.doc_id);
+    }
+    await sb.from("transcribe_runs").insert([{ doc_id: job.doc_id, page: pg.page, seq: 0, role: "answer_sheet", model: PRIMARY, agree: true, diff_fields: [], adopted: true }]);
+    return { saved: 0, arbitrated: 0 };
+  }
+  const p1 = parseArr(t1);
   if (!p1) throw new Error("1차 전사 JSON 파싱 실패");
 
   const items = [], runs = [];
@@ -273,6 +292,18 @@ export default async function handler(req, res) {
     // ── 2단계: 페이지 소진 후 배치 분류
     let classified = 0;
     if (!left && !doing) {
+      const { data: dr } = await sb.from("corpus_docs").select("answers").eq("id", job.doc_id).single();
+      const amap = dr?.answers || {};
+      if (Object.keys(amap).length) {
+        const { data: nulls } = await sb.from("corpus_items").select("id,seq,question")
+          .eq("doc_id", job.doc_id).eq("status", "active").is("answer", null).limit(500);
+        for (const r of nulls || []) {
+          const a = amap[String(r.seq)];
+          if (!a) continue;
+          if (checkEquationAnswer(String(r.question || ""), a) === false) continue;   // 검산 불일치면 미기입
+          await sb.from("corpus_items").update({ answer: a }).eq("id", r.id);
+        }
+      }
       let cq = sb.from("concepts").select("id,unit_id,title").order("unit_id").order("sort_order");
       if (job.unit_hint) cq = cq.like("id", job.unit_hint.slice(0, 2) + "%");
       const { data: cons } = await cq;
