@@ -78,6 +78,10 @@ export default function AdminCorpus() {
   const [units, setUnits] = useState([]);
   const [cmap, setCmap] = useState({});
   const [uncOnly, setUncOnly] = useState(false);
+  const [arbMode, setArbMode] = useState("api");
+  const [mFilter, setMFilter] = useState("all");
+  const [mStats, setMStats] = useState(null);
+  const impRef = useRef(null);
 
   // 준비 단계
   const [title, setTitle] = useState("");
@@ -221,7 +225,7 @@ export default function AdminCorpus() {
         .insert({ title: title || "무제", unit_hint: unit || null, storage_path, pages: pages.length }).select().single();
       if (de) throw de;
       const { data: jb, error: je } = await supabase.from("transcribe_jobs")
-        .insert({ doc_id: doc.id, title: title || "무제", unit_hint: unit || null, total_pages: picked.length }).select().single();
+        .insert({ doc_id: doc.id, title: title || "무제", unit_hint: unit || null, total_pages: picked.length, arb_mode: arbMode }).select().single();
       if (je) throw je;
 
       const rows = [];
@@ -284,16 +288,92 @@ export default function AdminCorpus() {
     let q = supabase.from("corpus_items").select("*").order("created_at", { ascending: false }).limit(100);
     if (cUnit !== "all") q = q.eq("unit_id", cUnit);
     if (uncOnly) q = q.or("confidence.lt.0.7,concept_main.is.null");
+    if (mFilter === "esc") q = q.eq("status", "escalated");
+    else if (mFilter !== "all") q = q.eq("model_final", mFilter);
     const { data } = await q;
     setCorpus(data || []);
+    const cnt = async (f) => (await f(supabase.from("corpus_items").select("id", { count: "exact", head: true }))).count || 0;
+    setMStats({
+      haiku: await cnt((x) => x.eq("model_final", "haiku")),
+      sonnet: await cnt((x) => x.eq("model_final", "sonnet")),
+      opus: await cnt((x) => x.eq("model_final", "opus")),
+      fable: await cnt((x) => x.eq("model_final", "fable-chat")),
+      esc: await cnt((x) => x.eq("status", "escalated")),
+    });
   }
+  async function exportEsc() {
+    setBusy(true); say("대기 문항 내보내기 준비…");
+    try {
+      const { data: rows } = await supabase.from("corpus_items").select("id,doc_id,page,seq,question,choices,drafts,unit_id")
+        .eq("status", "escalated").order("doc_id").order("page").limit(400);
+      if (!rows?.length) { say("대기 문항 없음"); setBusy(false); return; }
+      const JSZip = await loadJszip();
+      const zip = new JSZip();
+      const pages = [...new Set(rows.map((r) => `${r.doc_id}|${r.page}`))].slice(0, 40);
+      const pageSet = new Set(pages);
+      const use = rows.filter((r) => pageSet.has(`${r.doc_id}|${r.page}`));
+      for (const pk of pages) {
+        const [d, p] = pk.split("|");
+        const { data: blob } = await supabase.storage.from("corpus").download(`esc/${d}/p${p}.jpg`);
+        if (blob) zip.file(`images/${d.slice(0, 8)}_p${p}.jpg`, blob);
+      }
+      zip.file("tasks.json", JSON.stringify({
+        instructions: "각 항목의 image를 보고 seq 문항을 최종 전사·분류하라. draft_a/draft_b와 diff를 참고하되 이미지가 근거다. 출력은 [{id, final:{seq,qtype,question,choices,answer,difficulty_est,has_math,has_figure,figure,unit_id,concept_main,concept_subs,pattern_tags,confidence}}] JSON 배열만.",
+        items: use.map((r) => ({ id: r.id, image: `images/${String(r.doc_id).slice(0, 8)}_p${r.page}.jpg`, seq: r.seq, unit_id: r.unit_id, diff: r.drafts?.diff || [], draft_a: r.drafts?.a || null, draft_b: r.drafts?.b || null })),
+      }, null, 1));
+      const blob = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `escalation_${Date.now()}.zip`;
+      a.click(); URL.revokeObjectURL(a.href);
+      say(`내보내기 완료 — 문항 ${use.length} · 페이지 ${pages.length}${rows.length > use.length ? " (남은 분량은 반영 후 다시 내보내기)" : ""}`);
+    } catch (e) { say("내보내기 실패: " + String(e.message || e)); }
+    setBusy(false);
+  }
+
+  async function importFinal(e) {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    setBusy(true);
+    let ok = 0, dup = 0, skip = 0;
+    try {
+      const arr = JSON.parse(await f.text());
+      const list = Array.isArray(arr) ? arr : arr.items || [];
+      for (const row of list) {
+        if (!row?.id || !row?.final) { skip++; continue; }
+        const fi = row.final;
+        const cm = fi.concept_main && cmap[fi.concept_main] !== undefined ? fi.concept_main : fi.concept_main || null;
+        const upd = {
+          qtype: fi.qtype || "short", question: fi.question || "",
+          choices: fi.choices || null, answer: fi.answer ?? null,
+          difficulty_est: fi.difficulty_est ?? null,
+          has_math: !!fi.has_math, has_figure: !!fi.has_figure, figure: fi.figure || null,
+          unit_id: (String(fi.unit_id || "").match(/^[mh]\d-\d/) || [null])[0],
+          concept_main: cm, concept_subs: (fi.concept_subs || []).slice(0, 2),
+          concept_ids: [cm, ...(fi.concept_subs || [])].filter(Boolean),
+          pattern_tags: (fi.pattern_tags || []).slice(0, 3),
+          confidence: fi.confidence ?? null,
+          status: "active", model_final: "fable-chat", drafts: null, agree: true,
+        };
+        const { error } = await supabase.from("corpus_items").update(upd).eq("id", row.id);
+        if (error) {
+          if (/duplicate|unique/i.test(error.message)) { await supabase.from("corpus_items").delete().eq("id", row.id); dup++; }
+          else skip++;
+        } else ok++;
+      }
+      say(`전사 반영 — 적용 ${ok} · 중복 병합 ${dup} · 무시 ${skip}`);
+      loadCorpus();
+    } catch (err) { say("반영 실패: " + String(err.message || err)); }
+    setBusy(false);
+  }
+
   async function loadRouting() {
     const { data } = await supabase.from("transcribe_routing").select("*").order("cluster_key");
     setRouting(data || []);
   }
   useEffect(() => { if (me === "admin" && tab === "browse") loadCorpus(); },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [me, tab, cUnit, uncOnly]);
+    [me, tab, cUnit, uncOnly, mFilter]);
   useEffect(() => { if (me === "admin" && tab === "route") loadRouting(); },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [me, tab]);
@@ -354,6 +434,10 @@ export default function AdminCorpus() {
                 <option value="">단원 힌트 (선택)</option>
                 {units.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
+              <select className="cp-in" value={arbMode} onChange={(e) => setArbMode(e.target.value)}>
+                <option value="api">중재: API 자동(오푸스)</option>
+                <option value="queue">중재: 수동 큐(구독 크레딧)</option>
+              </select>
               <button className="cp-btn" onClick={() => fileRef.current?.click()} disabled={busy}>PDF/이미지/zip 열기</button>
               <input ref={fileRef} type="file" accept="application/pdf,image/*,.zip" multiple hidden onChange={onFile} />
             </div>
@@ -398,6 +482,16 @@ export default function AdminCorpus() {
             <button className={"cp-tab" + (uncOnly ? " on" : "")} onClick={() => setUncOnly(!uncOnly)}>분류불확실만</button>
             <span className="cp-note">{corpus.length}건 (최근 100)</span>
           </div>
+          <div className="cp-row">
+            {[["all", "전체"], ["haiku", "하이쿠"], ["sonnet", "소넷"], ["opus", "오푸스"], ["fable-chat", "페이블"], ["esc", "상위 대기"]].map(([k, l]) => (
+              <button key={k} className={"cp-tab" + (mFilter === k ? " on" : "")} onClick={() => setMFilter(k)}>
+                {l}{mStats ? ` ${k === "all" ? "" : k === "esc" ? mStats.esc : k === "fable-chat" ? mStats.fable : mStats[k] ?? ""}` : ""}
+              </button>
+            ))}
+            {mStats?.esc > 0 && <button className="cp-btn" onClick={exportEsc} disabled={busy}>대기 내보내기(zip)</button>}
+            <button className="cp-btn" onClick={() => impRef.current?.click()} disabled={busy}>전사 반영(JSON)</button>
+            <input ref={impRef} type="file" accept="application/json,.json" hidden onChange={importFinal} />
+          </div>
           {corpus.map((it) => (
             <div key={it.id} className="cp-item" onClick={() => setOpenItem(openItem === it.id ? null : it.id)}>
               <p className="cp-q">{it.question.split("\n")[0]}</p>
@@ -411,6 +505,7 @@ export default function AdminCorpus() {
                 <b>{it.unit_id || "?"}</b> · {it.concept_main ? `${it.concept_main} ${cmap[it.concept_main] || ""}` : "미분류"}
                 {(it.pattern_tags || []).length ? " · " + it.pattern_tags.join("/") : ""} · {it.qtype} · d{it.difficulty_est ?? "?"}
                 · {it.agree ? "일치" : it.model_final}
+                {it.status === "escalated" && <span className="cp-warn">상위 대기</span>}
                 {(it.confidence != null && it.confidence < 0.7) && <span className="cp-warn">분류불확실</span>}
               </p>
             </div>
