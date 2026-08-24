@@ -50,13 +50,17 @@ async function callModel(modelKey, sys, content, maxTokens = 4000) {
     body: JSON.stringify({ model: MODELS[modelKey] || modelKey, max_tokens: maxTokens, system: sys, messages: [{ role: "user", content }] }),
   });
   const j = await r.json();
-  if (!r.ok) throw new Error(j?.error?.message || "anthropic " + r.status);
+  if (!r.ok) { const e = new Error(j?.error?.message || "anthropic " + r.status); e.status = r.status; throw e; }
   return (j.content || []).map((b) => b.text || "").join("");
 }
+
+const RETRYABLE = (e) => [429, 500, 529].includes(e?.status)
+  || /credit balance|overloaded|rate.?limit/i.test(String(e?.message || ""));
 
 function parseItems(t) { const m = t.match(/\[[\s\S]*\]/); if (!m) return null;
   try { const a = JSON.parse(m[0]); return Array.isArray(a) ? a : null; } catch { return null; } }
 const norm = (s) => (s || "").toString().replace(/\s+/g, " ").trim();
+const normUnit = (u) => { const m = String(u || "").match(/^[mh]\d-\d/); return m ? m[0] : ""; };
 function sim(a, b) {
   a = norm(a); b = norm(b);
   if (a === b) return 1;
@@ -76,7 +80,7 @@ function diffItem(p, s) {
   if ((p.choices || []).map(norm).join("|") !== (s.choices || []).map(norm).join("|")) bad.push("choices");
   if ((p.qtype || "") !== (s.qtype || "")) bad.push("qtype");
   if (!!p.has_figure !== !!s.has_figure) bad.push("has_figure");
-  if ((p.unit_id || "") !== (s.unit_id || "")) bad.push("unit");
+  if (normUnit(p.unit_id) !== normUnit(s.unit_id)) bad.push("unit");
   if ((p.concept_main || "") !== (s.concept_main || "")) bad.push("classify");
   return bad;
 }
@@ -97,10 +101,19 @@ async function transcribeOne(sb, job, pg, sys, known) {
   for (const it of p1) {
     const mate = (p2 || []).find((x) => x.seq === it.seq) || null;
     const bad = mate ? diffItem(it, mate) : ["no_secondary"];
-    const agree = bad.length === 0;
-    let finalIt = it, finalModel = PRIMARY;
+    const contentBad = bad.filter((b) => b !== "unit" && b !== "classify");
+    const agree = contentBad.length === 0;          // 내용 합의 기준 (분류 단독 불일치는 합의로 침)
+    let finalIt = it, finalModel = PRIMARY, escalate = false;
+    if (agree && bad.length > 0 && mate) {
+      // 분류만 갈린 경우 — 중재 없이 확신도 높은 쪽 분류 채택
+      if ((mate.confidence ?? 0) > (it.confidence ?? 0))
+        finalIt = { ...it, unit_id: mate.unit_id, concept_main: mate.concept_main,
+                    concept_subs: mate.concept_subs, confidence: mate.confidence };
+    }
     if (!agree) {
       arb++;
+      if ((job.arb_mode || "api") === "queue") { escalate = true; }
+      else {
       const arbAsk = [imgBlock, { type: "text",
         text: `문항 ${it.seq}번만 본다. 두 전사가 불일치(${bad.join(",")}). 이미지를 근거로 올바른 전사·분류 하나를 같은 JSON 규격의 "단일 객체"로 출력해라.\nA안: ${JSON.stringify(it)}\nB안: ${JSON.stringify(mate)}` }];
       try {
@@ -108,10 +121,11 @@ async function transcribeOne(sb, job, pg, sys, known) {
         const m = ta.match(/\{[\s\S]*\}/);
         if (m) { finalIt = JSON.parse(m[0]); finalModel = ARBITER; }
       } catch { /* 중재 실패 시 1차안 유지 */ }
+      }
     }
     const cMain = known.has(finalIt.concept_main) ? finalIt.concept_main : null;
     const cSubs = (finalIt.concept_subs || []).filter((x) => known.has(x) && x !== cMain).slice(0, 2);
-    const unitJ = finalIt.unit_id || (cMain ? cMain.split("-").slice(0, 2).join("-") : job.unit_hint) || null;
+    const unitJ = normUnit(finalIt.unit_id) || (cMain ? normUnit(cMain) : normUnit(job.unit_hint)) || null;
     const ck = `${unitJ || "?"}|${finalIt.qtype || "?"}|m${finalIt.has_math ? 1 : 0}|f${finalIt.has_figure ? 1 : 0}`;
 
     if (!agree) runs.push({ doc_id: job.doc_id, page: pg.page, seq: it.seq, cluster_key: ck, role: "arbiter", model: ARBITER, agree: false, diff_fields: bad, adopted: true });
@@ -128,12 +142,18 @@ async function transcribeOne(sb, job, pg, sys, known) {
       choices: finalIt.choices || null, answer: finalIt.answer ?? null,
       difficulty_est: finalIt.difficulty_est ?? null,
       has_math: !!finalIt.has_math, has_figure: !!finalIt.has_figure,
-      figure: finalIt.figure || null, cluster_key: ck, model_final: finalModel, agree,
+      figure: finalIt.figure || null, cluster_key: ck,
+      model_final: escalate ? "queue" : finalModel, agree,
+      status: escalate ? "escalated" : "active",
+      drafts: escalate ? { a: it, b: mate, diff: bad } : null,
     });
   }
 
   const saved = items.filter((x) => norm(x.question).length >= 5);
-  if (saved.length) await sb.from("corpus_items").insert(saved);
+  if (saved.some((x) => x.status === "escalated"))
+    await sb.storage.from("corpus").copy(pg.storage_path, `esc/${job.doc_id}/p${pg.page}.jpg`).catch(() => {});
+  if (saved.length)
+    await sb.from("corpus_items").upsert(saved, { onConflict: "content_key", ignoreDuplicates: true });
   if (runs.length) await sb.from("transcribe_runs").insert(runs);
   const byCk = {};
   for (const x of saved) { byCk[x.cluster_key] = byCk[x.cluster_key] || { n: 0, a: 0 }; byCk[x.cluster_key].n++; if (x.agree) byCk[x.cluster_key].a++; }
@@ -194,6 +214,10 @@ export default async function handler(req, res) {
         const r = await transcribeOne(sb, job, pg, sys, known);
         await sb.from("transcribe_job_pages").update({ status: "done", saved: r.saved, arbitrated: r.arbitrated, updated_at: new Date().toISOString() }).eq("id", pg.id);
       } catch (e) {
+        if (RETRYABLE(e)) {
+          await sb.from("transcribe_job_pages").update({ status: "pending", updated_at: new Date().toISOString() }).eq("id", pg.id);
+          return res.status(200).json({ ok: true, paused: true, reason: String(e.message || e).slice(0, 120) });
+        }
         await sb.from("transcribe_job_pages").update({ status: "error", error: String(e.message || e).slice(0, 300), updated_at: new Date().toISOString() }).eq("id", pg.id);
       }
       did++;
