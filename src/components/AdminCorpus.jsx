@@ -6,6 +6,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { renderText } from "../lib/mathir";
+
+const rt = (s) => { try { return renderText(String(s ?? "")); } catch { return String(s ?? ""); } };
 
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
 const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -494,11 +497,13 @@ export default function AdminCorpus() {
           </div>
           {corpus.map((it) => (
             <div key={it.id} className="cp-item" onClick={() => setOpenItem(openItem === it.id ? null : it.id)}>
-              <p className="cp-q">{it.question.split("\n")[0]}</p>
+              <p className="cp-q">{rt(it.question).split("\n")[0]}</p>
               {openItem === it.id && (
                 <>
-                  {(it.choices || []).map((c, j) => <p key={j} className="cp-c">{"①②③④⑤"[j] || "·"} {c}</p>)}
-                  {it.figure && <p className="cp-meta">도형: {it.figure.kind} — {(it.figure.relations || []).join(" / ")}</p>}
+                  {(it.choices || []).map((c, j) => <p key={j} className="cp-c">{"①②③④⑤"[j] || "·"} {rt(c)}</p>)}
+                  {it.answer != null && <p className="cp-c"><b>답</b> {rt(it.answer)}</p>}
+                  {it.figure && !Array.isArray(it.figure) && <p className="cp-meta">도형: {it.figure.kind} — {(it.figure.relations || []).join(" / ")}</p>}
+                  {Array.isArray(it.figure) && it.figure.map((f, j) => <p key={j} className="cp-meta">도형: {f.fn}({Object.keys(f.args || {}).join(", ")})</p>)}
                 </>
               )}
               <p className="cp-meta">
