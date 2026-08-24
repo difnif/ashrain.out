@@ -67,6 +67,10 @@ async function renderImgFile(file, width, q) {
   return cv.toDataURL("image/jpeg", q);
 }
 const dataUrlToBlob = async (d) => (await fetch(d)).blob();
+async function sha256(buf) {
+  const h = await crypto.subtle.digest("SHA-256", buf);
+  return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 export default function AdminCorpus() {
   const [me, setMe] = useState(null);
@@ -168,25 +172,36 @@ export default function AdminCorpus() {
       }
       const src = [], thumbs = [];
       for (const file of files) {
+        const buf = await file.arrayBuffer();
+        const fh = await sha256(buf);
         if (file.type === "application/pdf") {
           const lib = await loadPdfjs();
-          const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+          const doc = await lib.getDocument({ data: buf.slice(0) }).promise;
           for (let i = 1; i <= Math.min(doc.numPages, 60); i++) {
             const pg = await doc.getPage(i);
             thumbs.push(await renderPdfPage(pg, 340, 0.6));
-            src.push({ kind: "pdf", doc, idx: i });
+            src.push({ kind: "pdf", doc, idx: i, key: fh + ":" + i });
           }
         } else {
           thumbs.push(await renderImgFile(file, 340, 0.6));
-          src.push({ kind: "img", file });
+          src.push({ kind: "img", file, key: fh + ":1" });
         }
+      }
+      // 이미 전사 완료된 페이지 조회 (지문 대조)
+      const keys = src.map((x) => x.key);
+      const doneSet = new Set();
+      for (let i = 0; i < keys.length; i += 100) {
+        const { data: dp } = await supabase.from("transcribe_job_pages")
+          .select("page_key").in("page_key", keys.slice(i, i + 100)).eq("status", "done");
+        (dp || []).forEach((r) => doneSet.add(r.page_key));
       }
       srcRef.current = src;
       origRef.current = files[0] || null;
       if (!title && files[0]) setTitle(files[0].name.replace(/\.\w+$/, ""));
-      setPages(thumbs.map((t, i) => ({ page: i + 1, thumb: t })));
-      setSel(new Set(thumbs.map((_, i) => i + 1)));
-      say(`${thumbs.length}페이지 준비됨 — 전사할 페이지를 선택해`);
+      setPages(thumbs.map((t, i) => ({ page: i + 1, thumb: t, done: doneSet.has(src[i].key) })));
+      setSel(new Set(thumbs.map((_, i) => i + 1).filter((p) => !doneSet.has(src[p - 1].key))));
+      const dn = [...doneSet].length;
+      say(`${thumbs.length}페이지 준비됨${dn ? ` — 이미 전사된 ${dn}페이지는 자동 제외 (배지 표시, 클릭하면 재전사 가능)` : " — 전사할 페이지를 선택해"}`);
     } catch (err) { say("실패: " + err.message); }
     setBusy(false);
   }
@@ -220,7 +235,7 @@ export default function AdminCorpus() {
         const path = `jobs/${jb.id}/p${p.page}.jpg`;
         const { error: ue } = await supabase.storage.from("corpus").upload(path, await dataUrlToBlob(full), { contentType: "image/jpeg" });
         if (ue) throw ue;
-        rows.push({ job_id: jb.id, page: p.page, storage_path: path });
+        rows.push({ job_id: jb.id, page: p.page, storage_path: path, page_key: srcRef.current[p.page - 1]?.key || null });
       }
       await supabase.from("transcribe_job_pages").insert(rows);
       kick(jb.id); kick(jb.id);                     // 병렬 러너 2개
@@ -241,6 +256,7 @@ export default function AdminCorpus() {
       await supabase.from("corpus_docs").delete().eq("id", job.doc_id);  // corpus_items는 cascade 삭제
       if (d?.storage_path) await supabase.storage.from("corpus").remove([d.storage_path]);
     }
+    await supabase.from("transcribe_job_pages").update({ status: "skipped" }).eq("job_id", job.id).neq("status", "skipped");
     setCancelUi(false); setJob(null); say("전체 취소 — 이 작업의 저장분을 모두 삭제했습니다.");
   }
   async function cancelKeepBefore(n = 10) {
@@ -248,8 +264,10 @@ export default function AdminCorpus() {
     const { data: done } = await supabase.from("transcribe_job_pages")
       .select("page").eq("job_id", job.id).eq("status", "done").order("page", { ascending: false }).limit(n);
     const back = (done || []).map((x) => x.page);
-    if (back.length && job.doc_id)
+    if (back.length && job.doc_id) {
       await supabase.from("corpus_items").delete().eq("doc_id", job.doc_id).in("page", back);
+      await supabase.from("transcribe_job_pages").update({ status: "skipped" }).eq("job_id", job.id).in("page", back);
+    }
     await supabase.from("transcribe_job_pages").update({ status: "skipped" }).eq("job_id", job.id).in("status", ["pending"]);
     await supabase.from("transcribe_jobs").update({ status: "stopped" }).eq("id", job.id);
     setCancelUi(false); setJob(null);
@@ -358,6 +376,7 @@ export default function AdminCorpus() {
                     onClick={() => setSel((s) => { const n = new Set(s); n.has(p.page) ? n.delete(p.page) : n.add(p.page); return n; })}>
                     <img src={p.thumb} alt={"p" + p.page} />
                     <span>p.{p.page}</span>
+                    {p.done && <em className="cp-done">전사됨</em>}
                   </div>
                 ))}
               </div>
@@ -451,6 +470,7 @@ const CSS = `
 .cp-thumb.on{border-color:#16a34a}
 .cp-thumb img{width:100%;display:block}
 .cp-thumb span{position:absolute;left:4px;bottom:4px;background:#0f172acc;color:#fff;font-size:11px;padding:1px 5px;border-radius:5px}
+.cp-done{position:absolute;right:4px;top:4px;background:#16a34a;color:#fff;font-style:normal;font-size:10.5px;padding:1px 5px;border-radius:5px}
 .cp-log{background:#0f172a;color:#e2e8f0;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:10px}
 .cp-log p{margin:2px 0}
 .cp-item{border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;background:#fff;margin-bottom:6px;cursor:pointer}
