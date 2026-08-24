@@ -292,7 +292,8 @@ export default function AdminCorpus() {
     if (cUnit !== "all") q = q.eq("unit_id", cUnit);
     if (uncOnly) q = q.or("confidence.lt.0.7,concept_main.is.null");
     if (mFilter === "esc") q = q.eq("status", "escalated");
-    else if (mFilter !== "all") q = q.eq("model_final", mFilter);
+    else if (mFilter === "legacy") q = q.eq("status", "legacy");
+    else { q = q.neq("status", "legacy"); if (mFilter !== "all") q = q.eq("model_final", mFilter); }
     const { data } = await q;
     setCorpus(data || []);
     const cnt = async (f) => (await f(supabase.from("corpus_items").select("id", { count: "exact", head: true }))).count || 0;
@@ -302,6 +303,7 @@ export default function AdminCorpus() {
       opus: await cnt((x) => x.eq("model_final", "opus")),
       fable: await cnt((x) => x.eq("model_final", "fable-chat")),
       esc: await cnt((x) => x.eq("status", "escalated")),
+      legacy: await cnt((x) => x.eq("status", "legacy")),
     });
   }
   async function exportEsc() {
@@ -486,9 +488,9 @@ export default function AdminCorpus() {
             <span className="cp-note">{corpus.length}건 (최근 100)</span>
           </div>
           <div className="cp-row">
-            {[["all", "전체"], ["haiku", "하이쿠"], ["sonnet", "소넷"], ["opus", "오푸스"], ["fable-chat", "페이블"], ["esc", "상위 대기"]].map(([k, l]) => (
+            {[["all", "전체"], ["haiku", "하이쿠"], ["sonnet", "소넷"], ["opus", "오푸스"], ["fable-chat", "페이블"], ["esc", "상위 대기"], ["legacy", "구세대"]].map(([k, l]) => (
               <button key={k} className={"cp-tab" + (mFilter === k ? " on" : "")} onClick={() => setMFilter(k)}>
-                {l}{mStats ? ` ${k === "all" ? "" : k === "esc" ? mStats.esc : k === "fable-chat" ? mStats.fable : mStats[k] ?? ""}` : ""}
+                {l}{mStats ? ` ${k === "all" ? "" : k === "esc" ? mStats.esc : k === "legacy" ? mStats.legacy : k === "fable-chat" ? mStats.fable : mStats[k] ?? ""}` : ""}
               </button>
             ))}
             {mStats?.esc > 0 && <button className="cp-btn" onClick={exportEsc} disabled={busy}>대기 내보내기(zip)</button>}
