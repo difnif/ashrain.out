@@ -262,6 +262,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, done: true, status: job.status });
     }
 
+    // ── 로컬 작업 가드: 페이지가 남아 있으면 로컬 워커 몫 — 클라우드는 손대지 않음
+    if (job.runner === "local") {
+      const { count: lp } = await sb.from("transcribe_job_pages")
+        .select("id", { count: "exact", head: true }).eq("job_id", job_id).eq("status", "pending");
+      const { count: ld } = await sb.from("transcribe_job_pages")
+        .select("id", { count: "exact", head: true }).eq("job_id", job_id).eq("status", "doing");
+      if (lp || ld) return res.status(200).json({ ok: true, local: true, left: lp });
+      // 페이지 소진 → 아래 분류·마감 단계로 진행
+    }
+
     // ── 1단계: 페이지 전사
     let did = 0;
     while (Date.now() - start < BUDGET_MS) {
