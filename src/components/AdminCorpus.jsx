@@ -376,6 +376,39 @@ export default function AdminCorpus() {
     setBusy(false);
   }
 
+  async function backupAll() {
+    setBusy(true); say("백업 수집 중…");
+    try {
+      const grab = async (table, order = "created_at") => {
+        const rows = [];
+        for (let i = 0; ; i += 1000) {
+          const { data, error } = await supabase.from(table).select("*").order(order, { ascending: true }).range(i, i + 999);
+          if (error) throw new Error(table + ": " + error.message);
+          rows.push(...(data || []));
+          if (!data || data.length < 1000) break;
+        }
+        return rows;
+      };
+      const payload = {
+        exported_at: new Date().toISOString(),
+        docs: await grab("corpus_docs"),
+        items: await grab("corpus_items"),
+        solutions: await grab("corpus_solutions"),
+        runs: await grab("transcribe_runs"),
+        routing: await grab("transcribe_routing", "cluster_key"),
+      };
+      payload.counts = { docs: payload.docs.length, items: payload.items.length,
+        solutions: payload.solutions.length, runs: payload.runs.length, routing: payload.routing.length };
+      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `corpus_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click(); URL.revokeObjectURL(a.href);
+      say(`백업 완료 — 문서 ${payload.counts.docs} · 문항 ${payload.counts.items} · 해설 ${payload.counts.solutions} · 로그 ${payload.counts.runs}`);
+    } catch (e) { say("백업 실패: " + String(e.message || e)); }
+    setBusy(false);
+  }
+
   async function loadRouting() {
     const { data } = await supabase.from("transcribe_routing").select("*").order("cluster_key");
     setRouting(data || []);
@@ -515,6 +548,7 @@ export default function AdminCorpus() {
             ))}
             {mStats?.esc > 0 && <button className="cp-btn" onClick={exportEsc} disabled={busy}>대기 내보내기(zip)</button>}
             <button className="cp-btn" onClick={() => impRef.current?.click()} disabled={busy}>전사 반영(JSON)</button>
+            <button className="cp-btn" onClick={backupAll} disabled={busy}>전체 백업(JSON)</button>
             <input ref={impRef} type="file" accept="application/json,.json" hidden onChange={importFinal} />
           </div>
           {corpus.map((it) => (
