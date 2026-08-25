@@ -83,6 +83,7 @@ export default function AdminCorpus() {
   const [uncOnly, setUncOnly] = useState(false);
   const [arbMode, setArbMode] = useState("api");
   const [runnerSel, setRunnerSel] = useState("cloud");
+  const [workerState, setWorkerState] = useState(null);
   const [mFilter, setMFilter] = useState("all");
   const [mStats, setMStats] = useState(null);
   const impRef = useRef(null);
@@ -121,6 +122,8 @@ export default function AdminCorpus() {
     const { data: cs } = await supabase.from("concepts").select("id,unit_id,title");
     setUnits([...new Set((cs || []).map((c) => c.unit_id))].sort());
     setCmap(Object.fromEntries((cs || []).map((c) => [c.id, c.title])));
+    const { data: wc } = await supabase.from("worker_control").select("state").eq("id", 1).maybeSingle();
+    if (wc) setWorkerState(wc.state);
     // 돌고 있던 작업 자동 재개
     const { data: j } = await supabase.from("transcribe_jobs").select("*")
       .eq("status", "running").order("created_at", { ascending: false }).limit(1);
@@ -432,6 +435,16 @@ export default function AdminCorpus() {
 
       {tab === "run" && (
         <>
+          {workerState && (
+            <div className="cp-row" style={{ marginBottom: 8 }}>
+              <span className="cp-note">집 PC 로컬 워커:</span>
+              <button className={"cp-tab" + (workerState === "run" ? " on" : "")}
+                onClick={async () => { await supabase.from("worker_control").update({ state: "run", updated_at: new Date().toISOString() }).eq("id", 1); setWorkerState("run"); }}>가동</button>
+              <button className={"cp-tab" + (workerState === "paused" ? " on" : "")}
+                onClick={async () => { await supabase.from("worker_control").update({ state: "paused", updated_at: new Date().toISOString() }).eq("id", 1); setWorkerState("paused"); }}>일시정지</button>
+              <span className="cp-note">— PC에서 워커가 켜져 있어야 하고, 원격에선 멈춤·재개만 가능</span>
+            </div>
+          )}
           <div className={"cp-card cp-drop" + (drag ? " on" : "")}
             onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
             onDragLeave={() => setDrag(false)}
