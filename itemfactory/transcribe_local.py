@@ -83,6 +83,15 @@ def get_client():
 
 
 # ---------------------------------------------------------------- 워치독
+def keep_awake(on=True):
+    """워커 가동 중 윈도우 절전 진입 방지 (디스플레이는 꺼져도 됨). 프로세스 종료 시 자동 해제."""
+    if sys.platform != "win32":
+        return
+    ES_CONTINUOUS, ES_SYSTEM_REQUIRED = 0x80000000, 0x00000001
+    flags = ES_CONTINUOUS | (ES_SYSTEM_REQUIRED if on else 0)
+    ctypes.windll.kernel32.SetThreadExecutionState(flags)
+
+
 def alert(msg, title="ashrain 로컬 워커"):
     print(f"⚠ {msg}")
     if sys.platform == "win32":
@@ -307,8 +316,10 @@ def main():
     load_env()
     sb = get_client()
     wd = Watchdog(a.vram_limit)
+    keep_awake(True)
     print(f"로컬 워커 가동 — 모델 {a.model}"
-          + (f" · 시간대 {a.hours}" if a.hours else "") + f" · VRAM 임계 {a.vram_limit}%")
+          + (f" · 시간대 {a.hours}" if a.hours else "") + f" · VRAM 임계 {a.vram_limit}%"
+          + " · 절전 방지 ON(모니터 꺼짐 무관)")
 
     # 지난 세션의 미완(doing) 회수
     try:
@@ -320,6 +331,14 @@ def main():
 
     idle_note = False
     while True:
+        try:
+            ctl = sb.table("worker_control").select("state").eq("id", 1).single().execute().data
+            if ctl and ctl.get("state") == "paused":
+                if not idle_note:
+                    print("· 원격 일시정지 상태 — 30초 후 재확인"); idle_note = True
+                time.sleep(30); continue
+        except Exception:
+            pass                                        # 제어 테이블 없으면 무시 (v9 미실행 호환)
         if not in_hours(a.hours):
             if not idle_note:
                 print("· 가동 시간대 밖 — 대기"); idle_note = True
