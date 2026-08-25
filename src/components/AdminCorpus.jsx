@@ -82,6 +82,7 @@ export default function AdminCorpus() {
   const [cmap, setCmap] = useState({});
   const [uncOnly, setUncOnly] = useState(false);
   const [arbMode, setArbMode] = useState("api");
+  const [runnerSel, setRunnerSel] = useState("cloud");
   const [mFilter, setMFilter] = useState("all");
   const [mStats, setMStats] = useState(null);
   const impRef = useRef(null);
@@ -143,9 +144,9 @@ export default function AdminCorpus() {
       }
       setProg(agg);
       if (jrow) setJob(jrow);
-      if (jrow?.status === "running" && (agg.pending > 0 || agg.doing > 0)) {
+      if (jrow?.status === "running") {
         const stale = Date.now() - new Date(jrow.updated_at).getTime() > 25000;
-        if (stale) kick(job.id);                    // 워치독
+        if (stale) kick(job.id);                    // 워치독 (로컬 작업의 분류·마감 점화 겸용)
       }
     };
     tick();
@@ -228,7 +229,7 @@ export default function AdminCorpus() {
         .insert({ title: title || "무제", unit_hint: unit || null, storage_path, pages: pages.length }).select().single();
       if (de) throw de;
       const { data: jb, error: je } = await supabase.from("transcribe_jobs")
-        .insert({ doc_id: doc.id, title: title || "무제", unit_hint: unit || null, total_pages: picked.length, arb_mode: arbMode }).select().single();
+        .insert({ doc_id: doc.id, title: title || "무제", unit_hint: unit || null, total_pages: picked.length, arb_mode: arbMode, runner: runnerSel }).select().single();
       if (je) throw je;
 
       const rows = [];
@@ -245,7 +246,7 @@ export default function AdminCorpus() {
         rows.push({ job_id: jb.id, page: p.page, storage_path: path, page_key: srcRef.current[p.page - 1]?.key || null });
       }
       await supabase.from("transcribe_job_pages").insert(rows);
-      kick(jb.id); kick(jb.id);                     // 병렬 러너 2개
+      if (runnerSel === "cloud") { kick(jb.id); kick(jb.id); }   // 병렬 러너 2개 (로컬은 집 PC 워커가 집어감)
       setJob(jb);
       setPages([]); setSel(new Set()); srcRef.current = []; origRef.current = null; setTitle("");
       say("작업 시작 — 탭을 닫아도 계속 진행됩니다.");
@@ -404,7 +405,9 @@ export default function AdminCorpus() {
             {jobDone && <button className="cp-btn sm" onClick={() => setJob(null)}>닫기</button>}
           </div>
           <div className="cp-bar"><div className="cp-barfill" style={{ width: pct + "%" }} /></div>
-          {!jobDone && <p className="cp-note">탭을 닫거나 새로고침해도 서버에서 계속 진행됩니다 — 다시 열면 이 자리에서 이어집니다.</p>}
+          {!jobDone && <p className="cp-note">{job.runner === "local"
+            ? "로컬 GPU 작업 — 집 PC에서 transcribe_local.py가 돌고 있어야 진행됩니다. 페이지가 끝나면 분류·마감은 이 화면이 자동 처리."
+            : "탭을 닫거나 새로고침해도 서버에서 계속 진행됩니다 — 다시 열면 이 자리에서 이어집니다."}</p>}
         </div>
       )}
 
@@ -438,6 +441,10 @@ export default function AdminCorpus() {
               <select className="cp-in" value={unit} onChange={(e) => setUnit(e.target.value)}>
                 <option value="">단원 힌트 (선택)</option>
                 {units.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
+              <select className="cp-in" value={runnerSel} onChange={(e) => setRunnerSel(e.target.value)}>
+                <option value="cloud">전사: 클라우드 API</option>
+                <option value="local">전사: 로컬 GPU (집 PC)</option>
               </select>
               <select className="cp-in" value={arbMode} onChange={(e) => setArbMode(e.target.value)}>
                 <option value="api">중재: API 자동(오푸스)</option>
