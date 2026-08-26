@@ -14,7 +14,7 @@
 #   python mathflat_parse.py 문제지.pdf --dry                      # DB 없이 ./mf_out/ 에 결과만
 # 여러 파일: python mathflat_parse.py a.pdf b.pdf c.pdf --unit m2-2
 
-import argparse, io, re, sys, time
+import argparse, glob, io, re, sys, time
 from pathlib import Path
 
 try:
@@ -135,7 +135,7 @@ def to_jpg(im, q=88):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("pdfs", nargs="+")
+    ap.add_argument("pdfs", nargs="+", help="PDF 파일·폴더·와일드카드 혼용 가능")
     ap.add_argument("--unit", default=None, help="단원 힌트 (예: m2-2)")
     ap.add_argument("--runner", default="cloud", choices=["cloud", "local"])
     ap.add_argument("--arb", default="api", choices=["api", "queue"])
@@ -148,7 +148,20 @@ def main():
         from transcribe_local import load_env, get_client
         load_env(); sb = get_client()
 
-    for pdf in a.pdfs:
+    paths = []
+    for arg in a.pdfs:
+        p = Path(arg)
+        if p.is_dir():
+            paths += sorted(str(x) for x in p.glob("*.pdf"))
+        elif "*" in arg or "?" in arg:
+            paths += sorted(glob.glob(arg))
+        else:
+            paths.append(arg)
+    if not paths:
+        sys.exit("PDF를 못 찾음: " + ", ".join(a.pdfs))
+    print(f"대상 {len(paths)}개 파일")
+
+    for pdf in paths:
         print(f"\n== {pdf} ==")
         items, ans_img, meta = parse_pdf(pdf)
         got_pc = sum(1 for i in items if i["p_correct"] is not None)
