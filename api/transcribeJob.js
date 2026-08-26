@@ -46,7 +46,7 @@ crossing{angles} parallel{angles} tri{v,sides,angles,marks} rect{w,h} polygon{n}
 solid{kind} net{kind} boxplot{values} scatter{points} venn{sets} tree{levels} funcgraph{expr} unitcircle
 conic{kind} vecfig{vectors} space normcurve{m,v} — 표현 불가하면 {"fn":"unsupported","args":{"raw":"짧은 서술"}}
 인자 속 수치·식도 MathIR 문자열.
-원문 그대로 옮기되(오탈자 포함) 머리말·페이지번호는 무시. JSON 문자열 안 백슬래시는 \\\\ 이스케이프.
+원문 그대로 옮기되(오탈자 포함) 머리말·페이지번호·배점 표기([3점], 4점 등)는 무시. JSON 문자열 안 백슬래시는 \\\\ 이스케이프.
 
 ■ 페이지 종류
 - 문항이 실린 문제지 페이지 → 위 규격의 문항 배열.
@@ -113,7 +113,9 @@ async function transcribeOne(sb, job, pg) {
   if (dl) throw new Error("이미지 다운로드 실패: " + dl.message);
   const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
   const img = { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } };
-  const ask = [img, { type: "text", text: "이 페이지의 문항을 전사해라." }];
+  const ask = [img, { type: "text", text: pg.meta?.kind === "answers"
+    ? "이 페이지는 답지다. answer_sheet 형식으로만 출력해라."
+    : "이 페이지의 문항을 전사해라." }];
 
   const t1 = await callModel(PRIMARY, SYS_T, ask);
   const sheet = parseObj(t1);
@@ -182,7 +184,10 @@ async function transcribeOne(sb, job, pg) {
 
     const hasMath = /\[\[/.test(String(it.question || "")) || (it.choices || []).some((c) => /\[\[/.test(String(c)));
     items.push({
-      doc_id: job.doc_id, page: pg.page, seq: it.seq ?? raw.seq,
+      doc_id: job.doc_id, page: pg.page,
+      seq: pg.meta ? pg.page : (it.seq ?? raw.seq),
+      p_correct: pg.meta?.p_correct ?? null,
+      src_tags: pg.meta?.src_tag ? [pg.meta.src_tag] : [],
       unit_id: normUnit(job.unit_hint) || null,
       qtype: it.qtype || "short", question: String(it.question || ""),
       choices: it.choices || null, answer: it.answer ?? null,
@@ -271,6 +276,12 @@ export default async function handler(req, res) {
       if (lp || ld) return res.status(200).json({ ok: true, local: true, left: lp });
       // 페이지 소진 → 아래 분류·마감 단계로 진행
     }
+
+    // ── 고아 회수: 3분 넘게 doing인 페이지는 죽은 체인의 잔재 — pending으로 되살림 (재배포·타임아웃 내성)
+    await sb.from("transcribe_job_pages")
+      .update({ status: "pending", updated_at: new Date().toISOString() })
+      .eq("job_id", job_id).eq("status", "doing")
+      .lt("updated_at", new Date(Date.now() - 180000).toISOString());
 
     // ── 1단계: 페이지 전사
     let did = 0;
