@@ -13,6 +13,7 @@ const rt = (s) => { try { return renderText(String(s ?? "")); } catch { return S
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
 const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+const CHAINS = 4;   // 작업당 병렬 러너 수
 
 function loadScript(src, ready) {
   return new Promise((ok, no) => {
@@ -103,6 +104,7 @@ export default function AdminCorpus() {
   // 진행 중 작업
   const [job, setJob] = useState(null);             // transcribe_jobs 행
   const [prog, setProg] = useState(null);           // {done,err,pending,total,saved,arb}
+  const [queueN, setQueueN] = useState(0);          // 대기 중인 다른 작업 수
   const [cancelUi, setCancelUi] = useState(false);
   const pollRef = useRef(null);
 
@@ -126,8 +128,8 @@ export default function AdminCorpus() {
     if (wc) setWorkerState(wc.state);
     // 돌고 있던 작업 자동 재개
     const { data: j } = await supabase.from("transcribe_jobs").select("*")
-      .eq("status", "running").order("created_at", { ascending: false }).limit(1);
-    if (j?.length) setJob(j[0]);
+      .eq("status", "running").order("created_at", { ascending: true }).limit(1);
+    if (j?.length) { setJob(j[0]); kick(j[0].id); }
   })(); }, []);
 
   // ---- 진행 폴링 + 워치독 (체인 끊기면 재점화)
@@ -146,6 +148,17 @@ export default function AdminCorpus() {
         agg.saved += p.saved || 0; agg.arb += p.arbitrated || 0;
       }
       setProg(agg);
+      const { count: qn } = await supabase.from("transcribe_jobs")
+        .select("id", { count: "exact", head: true }).eq("status", "running").neq("id", job.id);
+      setQueueN(qn || 0);
+      if (jrow && jrow.status !== "running") {
+        // 현재 작업 종료 → 가장 오래된 다음 running 작업으로 자동 승계
+        const { data: nx } = await supabase.from("transcribe_jobs").select("*")
+          .eq("status", "running").order("created_at", { ascending: true }).limit(1);
+        if (nx?.length) { say(`다음 작업 자동 시작 — ${nx[0].title}`); setJob(nx[0]); kick(nx[0].id); return; }
+        setJob(jrow);
+        return;
+      }
       if (jrow) setJob(jrow);
       if (jrow?.status === "running") {
         const stale = Date.now() - new Date(jrow.updated_at).getTime() > 25000;
@@ -160,11 +173,12 @@ export default function AdminCorpus() {
 
   async function kick(jobId) {
     const { data: { session } } = await supabase.auth.getSession();
-    fetch("/api/transcribeJob", {
-      method: "POST",
-      headers: { "content-type": "application/json", Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ job_id: jobId }),
-    }).catch(() => {});
+    for (let k = 0; k < CHAINS; k++)
+      fetch("/api/transcribeJob", {
+        method: "POST",
+        headers: { "content-type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ job_id: jobId }),
+      }).catch(() => {});
   }
 
   // ---- 파일 열기 (버튼·드롭 공용) — 저해상 썸네일 고속 렌더
@@ -249,7 +263,7 @@ export default function AdminCorpus() {
         rows.push({ job_id: jb.id, page: p.page, storage_path: path, page_key: srcRef.current[p.page - 1]?.key || null });
       }
       await supabase.from("transcribe_job_pages").insert(rows);
-      if (runnerSel === "cloud") { kick(jb.id); kick(jb.id); }   // 병렬 러너 2개 (로컬은 집 PC 워커가 집어감)
+      if (runnerSel === "cloud") kick(jb.id);   // 병렬 CHAINS개 (로컬은 집 PC 워커가 집어감)
       setJob(jb);
       setPages([]); setSel(new Set()); srcRef.current = []; origRef.current = null; setTitle("");
       say("작업 시작 — 탭을 닫아도 계속 진행됩니다.");
@@ -435,7 +449,7 @@ export default function AdminCorpus() {
           <div className="cp-jobline">
             <b>{jobDone ? (job.status === "done" ? "전사 완료" : "중단됨") : "전사 중"}</b>
             <span> — {job.title} · {prog ? `${prog.done + prog.err}/${prog.total}p` : "…"}
-              {prog ? ` · 문항 ${prog.saved} · 중재 ${prog.arb}` : ""}{prog?.err ? ` · 오류 ${prog.err}p` : ""}</span>
+              {prog ? ` · 문항 ${prog.saved} · 중재 ${prog.arb}` : ""}{prog?.err ? ` · 오류 ${prog.err}p` : ""}{queueN > 0 ? ` · 대기 작업 ${queueN}` : ""}</span>
             <span className="cp-jobsp" />
             {!jobDone && <button className="cp-btn danger sm" onClick={() => setCancelUi(true)}>취소</button>}
             {jobDone && <button className="cp-btn sm" onClick={() => setJob(null)}>닫기</button>}
