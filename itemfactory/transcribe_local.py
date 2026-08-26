@@ -56,7 +56,7 @@ SYS_T = """너는 수학 문제지 전사기다. 이미지 속 내용을 JSON으
 ■ figure — 함수 호출 배열만: numline coordplane table hist stemleaf crossing parallel tri rect polygon
 circle sector solid net boxplot scatter venn tree funcgraph unitcircle conic vecfig space normcurve
 표현 불가 시 {"fn":"unsupported","args":{"raw":"짧은 서술"}}
-원문 그대로(오탈자 포함), 머리말·페이지번호 무시. JSON 문자열 안 백슬래시는 \\\\ 이스케이프."""
+원문 그대로(오탈자 포함), 머리말·페이지번호·배점 표기([3점] 등) 무시. JSON 문자열 안 백슬래시는 \\\\ 이스케이프."""
 
 
 # ---------------------------------------------------------------- env·db (factory.py와 동일 관례)
@@ -207,7 +207,10 @@ def verify_item(it, grade_hint):
 def process_page(sb, job, pg, model):
     img = sb.storage.from_("corpus").download(pg["storage_path"])
     b64 = base64.b64encode(img).decode()
-    out = _json_any(ollama_chat(model, "이 페이지를 전사해라.", b64))
+    meta = pg.get("meta") or {}
+    prompt = "이 페이지는 답지다. answer_sheet 형식으로만 출력해라." if meta.get("kind") == "answers" \
+             else "이 페이지를 전사해라."
+    out = _json_any(ollama_chat(model, prompt, b64))
     if out is None:
         raise RuntimeError("JSON 파싱 실패")
 
@@ -267,7 +270,10 @@ def process_page(sb, job, pg, model):
             esc += 1
         has_math = "[[" in str(it.get("question") or "") or any("[[" in str(c) for c in (it.get("choices") or []))
         items.append({
-            "doc_id": job["doc_id"], "page": pg["page"], "seq": it.get("seq"),
+            "doc_id": job["doc_id"], "page": pg["page"],
+            "seq": pg["page"] if meta else it.get("seq"),
+            "p_correct": meta.get("p_correct"),
+            "src_tags": [meta["src_tag"]] if meta.get("src_tag") else [],
             "unit_id": unit,
             "qtype": it.get("qtype") or "short", "question": str(it.get("question") or ""),
             "choices": it.get("choices") or None, "answer": it.get("answer"),
