@@ -35,7 +35,8 @@ def spans(page):
             for s in l["spans"]:
                 t = s["text"].strip()
                 if t:
-                    out.append({"x": s["bbox"][0], "y": s["bbox"][1], "t": t})
+                    out.append({"x": s["bbox"][0], "y": s["bbox"][1], "t": t,
+                                "f": s.get("font", "")})
     return out
 
 
@@ -98,16 +99,27 @@ def parse_pdf(path):
     # ── 빠른정답 합성
     ap = doc[ans_page]
     asp = spans(ap)
-    anums = [s for s in asp if re.fullmatch(r"\d{2}", s["t"])]
+    two = [s for s in asp if re.fullmatch(r"\d{2}", s["t"])]
+    bold = [s for s in two if "Bold" in s["f"]]
+    anums = bold if bold else two                      # Bold 지문 우선, 없으면 종전 방식
+    anums.sort(key=lambda s: (round(s["y"]), s["x"]))
     aimgs = [i2 for i2 in ap.get_image_info(xrefs=True)
              if i2["bbox"][2] - i2["bbox"][0] < 140 and i2["bbox"][1] > 150]
-    pairs = []
+    label_ids = {id(s) for s in anums}
+    pairs, seen = [], set()
     for n in anums:
-        cand = [i2 for i2 in aimgs if abs(i2["bbox"][1] - n["y"]) < 26 and i2["bbox"][0] > n["x"]]
-        if not cand: continue
-        best = min(cand, key=lambda i2: i2["bbox"][0] - n["x"])
-        pairs.append((int(n["t"]), best))
-    pairs.sort()
+        seq = int(n["t"])
+        if seq in seen: continue
+        cand = [i2 for i2 in aimgs if abs(i2["bbox"][1] - n["y"]) < 26 and 0 < i2["bbox"][0] - n["x"] < 150]
+        if cand:
+            best = min(cand, key=lambda i2: i2["bbox"][0] - n["x"])
+            pairs.append((seq, ("img", best))); seen.add(seq); continue
+        txt = [s for s in asp if id(s) not in label_ids and abs(s["y"] - n["y"]) < 14
+               and 0 < s["x"] - n["x"] < 150 and not s["t"].startswith("|")]
+        if txt:
+            best = min(txt, key=lambda s: s["x"] - n["x"])
+            pairs.append((seq, ("txt", best["t"]))); seen.add(seq)
+    pairs.sort(key=lambda p: p[0])
     cell_h = 64
     canvas = Image.new("RGB", (520, cell_h * ((len(pairs) + 2) // 3) + 20), "white")
     dr = ImageDraw.Draw(canvas)
@@ -115,13 +127,16 @@ def parse_pdf(path):
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
     except Exception:
         font = ImageFont.load_default()
-    for idx, (seq, info) in enumerate(pairs):
+    for idx, (seq, (kind, val)) in enumerate(pairs):
         cx, cy = (idx % 3) * 172 + 8, (idx // 3) * cell_h + 10
         dr.text((cx, cy + 12), f"{seq:02d}", fill="black", font=font)
-        aim = crop(ap, info["bbox"], zoom=3.2)
-        r = min(1.0, 44 / aim.height, 110 / aim.width)
-        aim = aim.resize((max(1, int(aim.width * r)), max(1, int(aim.height * r))))
-        canvas.paste(aim, (cx + 44, cy + 4))
+        if kind == "img":
+            aim = crop(ap, val["bbox"], zoom=3.2)
+            r = min(1.0, 44 / aim.height, 110 / aim.width)
+            aim = aim.resize((max(1, int(aim.width * r)), max(1, int(aim.height * r))))
+            canvas.paste(aim, (cx + 44, cy + 4))
+        else:
+            dr.text((cx + 44, cy + 12), val, fill="black", font=font)
     skipped = len(doc) - ans_page - 1
     return items, canvas, {"title": Path(path).stem, "pages": ans_page,
                            "answers": len(pairs), "skipped_solution_pages": skipped}
@@ -155,6 +170,8 @@ def main():
             paths += sorted(str(x) for x in p.glob("*.pdf"))
         elif "*" in arg or "?" in arg:
             paths += sorted(glob.glob(arg))
+        elif not p.exists():
+            sys.exit(f"경로 없음: {arg} — 폴더/파일 위치를 확인해줘")
         else:
             paths.append(arg)
     if not paths:
