@@ -56,7 +56,7 @@ SYS_T = """너는 수학 문제지 전사기다. 이미지 속 내용을 JSON으
 ■ figure — 함수 호출 배열만: numline coordplane table hist stemleaf crossing parallel tri rect polygon
 circle sector solid net boxplot scatter venn tree funcgraph unitcircle conic vecfig space normcurve
 표현 불가 시 {"fn":"unsupported","args":{"raw":"짧은 서술"}}
-원문 그대로(오탈자 포함), 머리말·페이지번호·배점 표기([3점] 등) 무시. JSON 문자열 안 백슬래시는 \\\\ 이스케이프."""
+원문 그대로(오탈자 포함), 머리말·페이지번호·배점 표기([3점] 등) 무시. 행렬은 mat(행,열,성분 행우선), 성분 기호는 sub(a,i,j), ±는 pm(). JSON 문자열 안 백슬래시는 \\\\ 이스케이프."""
 
 
 # ---------------------------------------------------------------- env·db (factory.py와 동일 관례)
