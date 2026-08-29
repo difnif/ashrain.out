@@ -66,7 +66,9 @@ async function callModel(modelKey, sys, content, maxTokens = 4000) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: MODELS[modelKey] || modelKey, max_tokens: maxTokens, system: sys, messages: [{ role: "user", content }] }),
+    body: JSON.stringify({ model: MODELS[modelKey] || modelKey, max_tokens: maxTokens,
+      system: [{ type: "text", text: sys, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content }] }),
   });
   const j = await r.json();
   if (!r.ok) { const e = new Error(j?.error?.message || "anthropic " + r.status); e.status = r.status; throw e; }
@@ -152,7 +154,8 @@ async function transcribeOne(sb, job, pg) {
     }
 
     let needArb = v.errs.length > 0;
-    if (!needArb && (it.answer == null || !String(it.answer).trim())          // ── 표본 감시 (답 없는 문항)
+    if (!needArb && !pg.meta                                                  // ── 표본 감시 (답 없는 문항; 파서 입고분은 답 백필+검산이 전수 검증하므로 생략)
+        && (it.answer == null || !String(it.answer).trim())
         && hashStr(`${job.doc_id}|${pg.page}|${it.seq}`) % 100 < SAMPLE_RATE) {
       try {
         const p2 = parseArr(await callModel(SAMPLER, SYS_T, ask));
