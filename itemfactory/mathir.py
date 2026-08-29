@@ -26,6 +26,7 @@ FUNCS = {
     "vec": (1, 1, "h3", "sym"), "vcomp": (2, 3, "h3", "sym"), "dot": (2, 2, "h3", "sym"),
     # 1.3 집합·명제·복소
     "set": (0, 99, "h1", "sym"), "setb": (2, 2, "h1", "sym"),
+    "mat": (3, 99, "h1", "sym"),
     "in": (2, 2, "h1", "sym"), "notin": (2, 2, "h1", "sym"),
     "subset": (2, 2, "h1", "sym"), "nsubset": (2, 2, "h1", "sym"),
     "union": (2, 2, "h1", "sym"), "inter": (2, 2, "h1", "sym"),
@@ -37,7 +38,7 @@ FUNCS = {
     "sin": (1, 1, "h2", "num"), "cos": (1, 1, "h2", "num"), "tan": (1, 1, "h2", "num"),
     "csc": (1, 1, "h2", "num"), "sec": (1, 1, "h2", "num"), "cot": (1, 1, "h2", "num"),
     # 1.5 수열·극한·미적
-    "sub": (2, 2, "h2", "sym"), "sum": (4, 4, "h2", "num"),
+    "sub": (2, 3, "h1", "sym"), "sum": (4, 4, "h2", "num"),   # 2인자=수열 첨자, 3인자=행렬 성분
     "lim": (3, 4, "h2", "num"), "prime": (1, 2, "h2", "sym"), "dydx": (2, 2, "h2", "sym"),
     "integ": (2, 2, "h3", "sym"), "dinteg": (4, 4, "h3", "num"), "inv": (1, 1, "h1", "sym"),
     # 1.6 경우의 수·확통
@@ -264,6 +265,14 @@ def disp(n):
         return n["f"] + "(" + ", ".join(disp(a) for a in n["args"]) + ")"
     f, a = n["f"], n["args"]
     D = disp
+    if f == "mat":
+        try:
+            r, c = int(a[0]["v"]), int(a[1]["v"])
+            cells = [D(x) for x in a[2:]]
+            rows = [" ".join(cells[i * c:(i + 1) * c]) for i in range(r)]
+            return "(" + " ; ".join(rows) + ")"
+        except Exception:
+            return "mat(" + ", ".join(D(x) for x in a) + ")"
     if f == "frac": return _wrap(a[0]) + "/" + _wrap(a[1])
     if f == "mixed": return D(a[0]) + " " + D(a[1]) + "/" + D(a[2])
     if f == "pow":
@@ -318,6 +327,7 @@ def disp(n):
     if f == "ln": return "ln " + _wrap(a[0])
     if f in ("sin", "cos", "tan", "csc", "sec", "cot"): return f + " " + _wrap(a[0])
     if f == "sub":
+        if len(a) == 3: return D(a[0]) + "[" + D(a[1]) + "," + D(a[2]) + "]"
         ix = to_ir(a[1]).replace(" ", "")
         return D(a[0]) + (ix.translate(_SUB) if re.fullmatch(r"\d+", ix) else "_" + _wrap(a[1]))
     if f == "sum": return "Σ[" + D(a[0]) + "=" + D(a[1]) + ".." + D(a[2]) + "] " + _wrap(a[3])
@@ -451,8 +461,11 @@ def render_text(text):
     segs, _, _ = parse_text(text)
     return "".join(s["disp"] if s["kind"] == "ir" else s["raw"] for s in segs)
 
-def parse_answer(s):
+def _parse_answer_one(s):
     s = s.strip()
+    m = re.fullmatch(r"\[\[(.+)\]\]", s, re.S)      # [[마커]] 관용 탈피
+    if m:
+        s = m.group(1).strip()
     try:
         node, _ = parse(s)
         return {"kind": "ir", "node": node}
@@ -461,22 +474,19 @@ def parse_answer(s):
             return {"kind": "word", "v": s}
         raise
 
+def parse_answer(s):
+    parts = re.split(r"\s*(?:또는|\|)\s*", s.strip())
+    if len(parts) >= 2:
+        items = [_parse_answer_one(p) for p in parts if p.strip()]
+        return {"kind": "set", "items": items}
+    return _parse_answer_one(s)
+
 def check_equation_answer(question_text, answer_str):
     """답이 'x = 값' 꼴이면 문제문 속 관계식들에 대입해 성립 확인. (True/False/None=검산 불가)"""
-    try:
-        ans = parse_answer(answer_str)
-        if ans["kind"] != "ir": return None
-        node = ans["node"]
+    def one(node, rels):
         if node["t"] != "rel" or node["ops"] != ["="] or node["args"][0]["t"] != "var":
-            val_node = node
-            var = None
-        else:
-            var, val_node = node["args"][0]["v"], node["args"][1]
-        val = ev(val_node)
-        segs, _, errs = parse_text(question_text)
-        if errs: return None
-        rels = [s["node"] for s in segs if s["kind"] == "ir" and s["node"]["t"] == "rel" and "=" in s["node"]["ops"]]
-        if not rels or var is None: return None
+            return None
+        var, val = node["args"][0]["v"], ev(node["args"][1])
         oks = []
         for r in rels:
             try:
@@ -485,6 +495,19 @@ def check_equation_answer(question_text, answer_str):
             except MathIRError:
                 continue
         return all(oks) if oks else None
+    try:
+        ans = parse_answer(answer_str)
+        segs, _, errs = parse_text(question_text)
+        if errs: return None
+        rels = [s["node"] for s in segs if s["kind"] == "ir" and s["node"]["t"] == "rel" and "=" in s["node"]["ops"]]
+        if not rels: return None
+        nodes = [it["node"] for it in ans["items"] if it["kind"] == "ir"] if ans["kind"] == "set" \
+                else ([ans["node"]] if ans["kind"] == "ir" else [])
+        if not nodes: return None
+        rs = [one(n, rels) for n in nodes]           # 복수 해: 모든 근이 성립해야 참
+        if any(r is False for r in rs): return False
+        if any(r is None for r in rs): return None
+        return True
     except MathIRError:
         return None
 
