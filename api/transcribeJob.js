@@ -21,6 +21,7 @@ const PRIMARY = process.env.TRANSCRIBE_PRIMARY || "haiku";
 const SAMPLER = process.env.TRANSCRIBE_SAMPLER || "sonnet";
 const ARBITER = process.env.TRANSCRIBE_ARBITER || "opus";
 const SAMPLE_RATE = Number(process.env.TRANSCRIBE_SAMPLE || 15);   // 답 없는 문항 표본 %
+const OPUS_GATE = Number(process.env.TRANSCRIBE_OPUS_GATE || 45);  // 정답률 이 값 이하(어려움)만 오푸스 중재
 const BUDGET_MS = 38000;
 const CLS_BATCH = 20;
 
@@ -46,7 +47,8 @@ crossing{angles} parallel{angles} tri{v,sides,angles,marks} rect{w,h} polygon{n}
 solid{kind} net{kind} boxplot{values} scatter{points} venn{sets} tree{levels} funcgraph{expr} unitcircle
 conic{kind} vecfig{vectors} space normcurve{m,v} — 표현 불가하면 {"fn":"unsupported","args":{"raw":"짧은 서술"}}
 인자 속 수치·식도 MathIR 문자열.
-원문 그대로 옮기되(오탈자 포함) 머리말·페이지번호·배점 표기([3점], 4점 등)는 무시. JSON 문자열 안 백슬래시는 \\\\ 이스케이프.
+원문 그대로 옮기되(오탈자 포함) 머리말·페이지번호·배점 표기([3점], 4점 등)는 무시.
+자주 틀리는 치환 — 반드시 이렇게: √x→sqrt(x), ³√x→root(3,x), Σ→sum(...), π→pi, ×→*, ÷→/, ≤→<=, ≥→>=, ≠!=, x²→pow(x,2), 순환마디 표기→recdec. 유니코드 수학기호가 하나라도 남으면 실패다. JSON 문자열 안 백슬래시는 \\\\ 이스케이프.
 
 ■ 페이지 종류
 - 문항이 실린 문제지 페이지 → 위 규격의 문항 배열.
@@ -196,18 +198,38 @@ async function transcribeOne(sb, job, pg, tr = mkTracer()) {
       arb++;
       if ((job.arb_mode || "api") === "queue") { escal = true; escErrs = v.errs.map((x) => x.code); }
       else {
+        // ── 중재 사다리: 소넷(저비용 구조대) → 오푸스(어려운 문항만, 정답률 게이트)
+        const arbAsk = (why) => [img, { type: "text",
+          text: `문항 ${it.seq}번만 본다. 아래 시도가 검증에 실패했다(${why}). 이미지를 근거로 올바른 전사를 같은 규격의 "단일 객체"로 출력해라.\n시도: ${JSON.stringify(it)}` }];
+        const why0 = v.errs.map((x) => x.code).join(",") || "표본 불일치";
+        let rescued = false;
         try {
-          const ra = await callModel(ARBITER, SYS_T, [img, { type: "text",
-            text: `문항 ${it.seq}번만 본다. 아래 시도가 검증에 실패했다(${v.errs.map((x) => x.code).join(",") || "표본 불일치"}). 이미지를 근거로 올바른 전사를 같은 규격의 "단일 객체"로 출력해라.\n시도: ${JSON.stringify(it)}` }], 1800);
-          tr.ai("arbiter", ra);
-          const fixed = parseObj(ra.text);
-          if (fixed) {
-            const v2 = verifyItem(fixed, job.unit_hint);
-            if (!v2.errs.length) { it = fixed; model = ARBITER; v = v2; }
-            else { escal = true; escErrs = v2.errs.map((x) => x.code); }
-          } else { escal = true; escErrs = ["parse"]; }
-        } catch (e) { if (RETRYABLE(e)) throw e; escal = true; escErrs = ["api"]; }
-        runs.push({ doc_id: job.doc_id, page: pg.page, seq: it.seq, role: "arbiter", model: ARBITER, agree: !escal, diff_fields: escErrs || [], adopted: !escal });
+          const rs2 = await callModel(SAMPLER, SYS_T, arbAsk(why0), 1800);
+          tr.ai("arbiter", rs2);
+          const fx = parseObj(rs2.text);
+          if (fx) {
+            const v2 = verifyItem(fx, job.unit_hint);
+            if (!v2.errs.length) { it = fx; model = SAMPLER; v = v2; rescued = true; escErrs = null; }
+            else escErrs = v2.errs.map((x) => x.code);
+          } else escErrs = ["parse"];
+        } catch (e) { if (RETRYABLE(e)) throw e; escErrs = ["api"]; }
+        runs.push({ doc_id: job.doc_id, page: pg.page, seq: it.seq, role: "arbiter", model: SAMPLER, agree: rescued, diff_fields: rescued ? [] : (escErrs || []), adopted: rescued });
+        const pc = pg.meta?.p_correct;
+        const hard = pc == null ? true : Number(pc) <= OPUS_GATE;
+        if (!rescued && hard) {
+          try {
+            const ra = await callModel(ARBITER, SYS_T, arbAsk((escErrs || []).join(",") || why0), 1800);
+            tr.ai("arbiter2", ra);
+            const fixed = parseObj(ra.text);
+            if (fixed) {
+              const v3 = verifyItem(fixed, job.unit_hint);
+              if (!v3.errs.length) { it = fixed; model = ARBITER; v = v3; rescued = true; escErrs = null; }
+              else escErrs = v3.errs.map((x) => x.code);
+            } else escErrs = ["parse"];
+          } catch (e) { if (RETRYABLE(e)) throw e; escErrs = ["api"]; }
+          runs.push({ doc_id: job.doc_id, page: pg.page, seq: it.seq, role: "arbiter", model: ARBITER, agree: rescued, diff_fields: rescued ? [] : (escErrs || []), adopted: rescued });
+        }
+        if (!rescued) escal = true;
       }
     }
     runs.push({ doc_id: job.doc_id, page: pg.page, seq: raw.seq, role: "primary", model: PRIMARY, agree: !v.errs.length && !escal, diff_fields: v.errs.map((x) => x.code), adopted: !escal });
