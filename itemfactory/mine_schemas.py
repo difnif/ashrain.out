@@ -12,6 +12,7 @@
 #   python mine_schemas.py mine m1-1               # 단원 전체
 #   python mine_schemas.py mine all                # 전 단원 (이미 채굴된 그룹은 건너뜀)
 # 준비: itemfactory/.env 에 ANTHROPIC_API_KEY=sk-ant-... 한 줄 추가
+#      (신형 identity 키면 ANTHROPIC_WORKSPACE_ID=wrkspc_... 한 줄 더 — 콘솔 워크스페이스 설정에서 복사)
 
 import argparse, json, re, sys, time
 from pathlib import Path
@@ -61,9 +62,12 @@ def anthropic(messages, system, max_tokens=2500):
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
         sys.exit("itemfactory/.env 에 ANTHROPIC_API_KEY=... 추가 필요")
-    r = requests.post("https://api.anthropic.com/v1/messages", timeout=180, headers={
-        "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01",
-    }, json={"model": MODEL, "max_tokens": max_tokens,
+    headers = {"content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01"}
+    ws = os.environ.get("ANTHROPIC_WORKSPACE_ID")
+    if ws:
+        headers["anthropic-workspace-id"] = ws
+    r = requests.post("https://api.anthropic.com/v1/messages", timeout=180, headers=headers,
+                      json={"model": MODEL, "max_tokens": max_tokens,
              "system": [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
              "messages": messages})
     j = r.json()
