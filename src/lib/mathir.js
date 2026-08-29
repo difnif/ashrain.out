@@ -13,12 +13,13 @@ export const FUNCS = {
   cong:[2,2,"m2"], sim:[2,2,"m2"], point:[2,2,"m1"], point3:[3,3,"h3"],
   vec:[1,1,"h3"], vcomp:[2,3,"h3"], dot:[2,2,"h3"],
   set:[0,99,"h1"], setb:[2,2,"h1"], in:[2,2,"h1"], notin:[2,2,"h1"],
+  mat:[3,99,"h1"],
   subset:[2,2,"h1"], nsubset:[2,2,"h1"], union:[2,2,"h1"], inter:[2,2,"h1"],
   comp:[1,2,"h1"], card:[1,1,"h1"], imp:[2,2,"h1"], iff:[2,2,"h1"], neg:[1,1,"h1"],
   itv:[3,3,"h1"], conj:[1,1,"h1"],
   log:[1,2,"h2"], ln:[1,1,"h3"],
   sin:[1,1,"h2"], cos:[1,1,"h2"], tan:[1,1,"h2"], csc:[1,1,"h2"], sec:[1,1,"h2"], cot:[1,1,"h2"],
-  sub:[2,2,"h2"], sum:[4,4,"h2"], lim:[3,4,"h2"], prime:[1,2,"h2"], dydx:[2,2,"h2"],
+  sub:[2,3,"h1"], sum:[4,4,"h2"], lim:[3,4,"h2"], prime:[1,2,"h2"], dydx:[2,2,"h2"],
   integ:[2,2,"h3"], dinteg:[4,4,"h3"], inv:[1,1,"h1"],
   perm:[2,2,"h1"], comb:[2,2,"h1"], pperm:[2,2,"h1"], hcomb:[2,2,"h1"],
   prob:[1,1,"h3"], cprob:[2,2,"h3"], ev:[1,1,"h3"], var:[1,1,"h3"], sd:[1,1,"h3"],
@@ -240,6 +241,15 @@ export function disp(n) {
     case "point": case "point3": case "vcomp": return "(" + a.map(D).join(", ") + ")";
     case "dot": return D(a[0]) + " · " + D(a[1]);
     case "set": return "{" + a.map(D).join(", ") + "}";
+    case "mat": {
+      const r = Number(a[0]?.v), c = Number(a[1]?.v), cells = a.slice(2).map(D);
+      if (Number.isInteger(r) && Number.isInteger(c) && cells.length === r * c) {
+        const rows = [];
+        for (let i = 0; i < r; i++) rows.push(cells.slice(i * c, (i + 1) * c).join(" "));
+        return "(" + rows.join(" ; ") + ")";
+      }
+      return "mat(" + a.map(D).join(", ") + ")";
+    }
     case "setb": return "{" + D(a[0]) + " | " + D(a[1]) + "}";
     case "in": return D(a[0]) + " ∈ " + D(a[1]);
     case "notin": return D(a[0]) + " ∉ " + D(a[1]);
@@ -261,7 +271,8 @@ export function disp(n) {
     }
     case "ln": return "ln " + wrap(a[0]);
     case "sin": case "cos": case "tan": case "csc": case "sec": case "cot": return f + " " + wrap(a[0]);
-    case "sub": { const ix = toIR(a[1]).replace(/ /g, ""); return D(a[0]) + (/^\d+$/.test(ix) ? subs(ix) : "_" + wrap(a[1])); }
+    case "sub": { if (a.length === 3) return D(a[0]) + "[" + D(a[1]) + "," + D(a[2]) + "]";
+      const ix = toIR(a[1]).replace(/ /g, ""); return D(a[0]) + (/^\d+$/.test(ix) ? subs(ix) : "_" + wrap(a[1])); }
     case "sum": return "Σ[" + D(a[0]) + "=" + D(a[1]) + ".." + D(a[2]) + "] " + wrap(a[3]);
     case "lim": { const side = a[3] ? (a[3].v === "+" ? "⁺" : "⁻") : ""; return "lim[" + D(a[0]) + "→" + D(a[1]) + side + "] " + wrap(a[2]); }
     case "prime": return wrap(a[0]) + (a.length === 1 || toIR(a[1]) === "1" ? "′" : "″");
@@ -374,38 +385,49 @@ export function parseText(text, gradeHint = null) {
 export function renderText(text) {
   return parseText(text).segs.map((s) => (s.kind === "ir" ? s.disp : s.raw)).join("");
 }
-export function parseAnswer(s) {
+function parseAnswerOne(s) {
   s = s.trim();
+  const m = s.match(/^\[\[([\s\S]+)\]\]$/);          // [[마커]] 관용 탈피
+  if (m) s = m[1].trim();
   try { const [node] = parse(s); return { kind: "ir", node }; }
   catch (e) {
     if (/^[가-힣A-Za-z0-9 ,·~]+$/.test(s)) return { kind: "word", v: s };
     throw e;
   }
 }
+export function parseAnswer(s) {
+  const parts = s.trim().split(/\s*(?:또는|\|)\s*/).filter((p) => p.trim());
+  if (parts.length >= 2) return { kind: "set", items: parts.map(parseAnswerOne) };
+  return parseAnswerOne(s);
+}
 export function checkEquationAnswer(questionText, answerStr) {
   try {
     const ans = parseAnswer(answerStr);
-    if (ans.kind !== "ir") return null;
-    let varName = null, valNode = ans.node;
-    if (ans.node.t === "rel" && ans.node.ops.length === 1 && ans.node.ops[0] === "=" && ans.node.args[0].t === "var") {
-      varName = ans.node.args[0].v; valNode = ans.node.args[1];
-    }
-    if (!varName) return null;
-    const val = ev(valNode);
     const { segs, errs } = parseText(questionText);
     if (errs.length) return null;
     const rels = segs.filter((s) => s.kind === "ir" && s.node.t === "rel" && s.node.ops.includes("=")).map((s) => s.node);
     if (!rels.length) return null;
-    const oks = [];
-    for (const r of rels) {
-      try {
-        const vals = r.args.map((p) => ev(p, { [varName]: val }));
-        let ok = true;
-        for (let k = 0; k + 1 < vals.length; k++) if (!close(vals[k], vals[k + 1])) ok = false;
-        oks.push(ok);
-      } catch { /* 평가 불가 세그먼트는 건너뜀 */ }
-    }
-    return oks.length ? oks.every(Boolean) : null;
+    const one = (node) => {
+      if (!(node.t === "rel" && node.ops.length === 1 && node.ops[0] === "=" && node.args[0].t === "var")) return null;
+      const varName = node.args[0].v, val = ev(node.args[1]);
+      const oks = [];
+      for (const r of rels) {
+        try {
+          const vals = r.args.map((p) => ev(p, { [varName]: val }));
+          let ok = true;
+          for (let k = 0; k + 1 < vals.length; k++) if (!close(vals[k], vals[k + 1])) ok = false;
+          oks.push(ok);
+        } catch { /* 평가 불가 세그먼트는 건너뜀 */ }
+      }
+      return oks.length ? oks.every(Boolean) : null;
+    };
+    const nodes = ans.kind === "set" ? ans.items.filter((i) => i.kind === "ir").map((i) => i.node)
+                : ans.kind === "ir" ? [ans.node] : [];
+    if (!nodes.length) return null;
+    const rs = nodes.map(one);                       // 복수 해: 모든 근이 성립해야 참
+    if (rs.some((r) => r === false)) return false;
+    if (rs.some((r) => r === null)) return null;
+    return true;
   } catch { return null; }
 }
 export function checkFigure(figList) {
