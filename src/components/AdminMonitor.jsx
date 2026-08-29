@@ -32,10 +32,10 @@ export default function AdminMonitor() {
 
   useEffect(() => { supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session)); }, []);
 
-  async function kick(jobId) {
+  async function kick(jobId, n = CHAINS) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    for (let k = 0; k < CHAINS; k++)
+    for (let k = 0; k < n; k++)
       fetch("/api/transcribeJob", {
         method: "POST",
         headers: { "content-type": "application/json", Authorization: `Bearer ${session.access_token}` },
@@ -67,7 +67,9 @@ export default function AdminMonitor() {
       // ── 내장 워치독: 가장 오래된 running 작업이 정체면 재점화 (작업 자동 승계 겸용)
       const { data: j } = await supabase.from("transcribe_jobs").select("id,updated_at")
         .eq("status", "running").order("created_at", { ascending: true }).limit(1);
-      if (j?.length && Date.now() - new Date(j[0].updated_at).getTime() > 25000) kick(j[0].id);
+      const lack = CHAINS - (data.chains || 0);                       // 체인 감쇠 보충
+      const stale = j?.length && Date.now() - new Date(j[0].updated_at).getTime() > 25000;
+      if (j?.length && (stale || lack > 0)) kick(j[0].id, stale ? CHAINS : Math.max(1, lack));
     };
     tick();
     const iv = setInterval(tick, 15000);
@@ -107,7 +109,7 @@ export default function AdminMonitor() {
             <div className="am-card"><p>시간당</p><b>{m.rate.toLocaleString()}p</b>
               <span>문항 {(m.H.items || 0).toLocaleString()} · 호출/p {m.callsPerPage.toFixed(2)}</span></div>
             <div className="am-card"><p>체인 · 품질</p><b style={{ color: (mon.chains || 0) ? "#4ade80" : "#f87171" }}>{mon.chains || 0}</b>
-              <span>재시도 {m.H.primary ? Math.round(100 * (m.H.retry || 0) / m.H.primary) : 0}% · 중재 {(m.H.arbiter || 0)} · 대기行 {m.H.esc || 0}</span></div>
+              <span>재시도 {m.H.primary ? Math.round(100 * (m.H.retry || 0) / m.H.primary) : 0}% · 소넷중재 {m.H.arbiter || 0} · 오푸스 {m.H.arbiter2 || 0} · 대기行 {m.H.esc || 0}</span></div>
             <div className="am-card"><p>누적 지출</p><b>{m.krw.toLocaleString()}원</b>
               <span>실측 ${m.tracedUsd.toFixed(2)} + 소급 ~${m.retroUsd.toFixed(0)} / 예산 {budget.toLocaleString()}</span></div>
           </div>
