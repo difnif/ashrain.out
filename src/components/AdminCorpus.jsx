@@ -414,7 +414,7 @@ export default function AdminCorpus() {
     };
     const clear = (key) => { delete alertsRef.current[key]; };
     if (m.krw > budget) fire("budget", `누적 지출 추정 ${m.krw.toLocaleString()}원이 예산 상한(${budget.toLocaleString()}원)을 넘었어요 — 일시정지 권장`); else clear("budget");
-    if ((d.hour?.arbiter || 0) > 0) fire("opus", `최근 1시간 오푸스 중재 ${d.hour.arbiter}회 — arb_mode 큐 전환이 안 먹은 작업이 있어요`); else clear("opus");
+    if ((d.hour?.arbiter2 || 0) > 150) fire("opus", `최근 1시간 오푸스 중재 ${d.hour.arbiter2}회 — 과열 (사다리 게이트 점검)`); else clear("opus");
     if (m.rate > 5 && m.callsPerPage > 2.6) fire("burst", `페이지당 호출 ${m.callsPerPage.toFixed(1)}회 — 재시도 폭주 의심 (정상 1.3~2.2)`); else clear("burst");
     if ((d.chains || 0) === 0 && (m.P.pending || 0) > 0 && (d.jobs_running || 0) > 0) fire("dead", "활성 체인 0 — 진행이 멈춰 있었어요. 이 화면이 곧 재점화합니다 (탭을 닫아두면 다시 멈춰요)"); else clear("dead");
   }
@@ -675,7 +675,7 @@ export default function AdminCorpus() {
                 <span>시간당 <b>{m.rate.toLocaleString()}</b>p · 문항 {(m.H.items || 0).toLocaleString()}</span>
                 <span>체인 <b style={{ color: (mon.chains || 0) ? "#4ade80" : "#f87171" }}>{mon.chains || 0}</b></span>
                 <span>재시도율 <b>{m.H.primary ? Math.round(100 * (m.H.retry || 0) / m.H.primary) : 0}%</b> · 대기行 {(m.H.esc || 0)}</span>
-                <span>오푸스(1h) <b style={{ color: (m.H.arbiter || 0) ? "#f87171" : "#4ade80" }}>{m.H.arbiter || 0}</b></span>
+                <span>중재(1h) 소넷 <b>{m.H.arbiter || 0}</b> · 오푸스 <b style={{ color: (m.H.arbiter2 || 0) > 150 ? "#f87171" : "#4ade80" }}>{m.H.arbiter2 || 0}</b></span>
               </div>
               <div className="cp-row" style={{ flexWrap: "wrap", gap: 14 }}>
                 <span>실측 지출(계측 이후) <b>${m.tracedUsd.toFixed(2)}</b></span>
