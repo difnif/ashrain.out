@@ -63,6 +63,7 @@ ${cmap}`;
 
 // ---------------------------------------------------------------- 공용
 async function callModel(modelKey, sys, content, maxTokens = 4000) {
+  const _t0 = Date.now();
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
@@ -72,7 +73,25 @@ async function callModel(modelKey, sys, content, maxTokens = 4000) {
   });
   const j = await r.json();
   if (!r.ok) { const e = new Error(j?.error?.message || "anthropic " + r.status); e.status = r.status; throw e; }
-  return (j.content || []).map((b) => b.text || "").join("");
+  return { text: (j.content || []).map((b) => b.text || "").join(""), usage: j.usage || {}, ms: Date.now() - _t0, model: modelKey };
+}
+const CHAIN = Math.random().toString(36).slice(2, 8);      // 이 인보케이션(체인) 식별자
+function mkTracer() {
+  const rows = [];
+  return {
+    add(step, x = {}) { rows.push({ step, ...x }); },
+    ai(step, r, ok = true, note = null) { rows.push({ step, model: r.model, ms: r.ms, ok, note,
+      in_tok: r.usage?.input_tokens ?? null, out_tok: r.usage?.output_tokens ?? null,
+      cache_r: r.usage?.cache_read_input_tokens ?? null, cache_w: r.usage?.cache_creation_input_tokens ?? null }); },
+    async flush(sb, jobId, page) {
+      if (!rows.length) return;
+      const payload = rows.map((r, i) => ({ job_id: jobId, page, chain: CHAIN, seq_no: i, step: r.step,
+        model: r.model || null, ms: r.ms ?? null, in_tok: r.in_tok ?? null, out_tok: r.out_tok ?? null,
+        cache_r: r.cache_r ?? null, cache_w: r.cache_w ?? null, ok: r.ok ?? null, note: r.note || null }));
+      rows.length = 0;
+      try { await sb.from("transcribe_traces").insert(payload); } catch { /* 계측 실패는 작업을 막지 않음 */ }
+    },
+  };
 }
 const RETRYABLE = (e) => [429, 500, 529].includes(e?.status) || /credit balance|overloaded|rate.?limit/i.test(String(e?.message || ""));
 const parseArr = (t) => { const m = t.match(/\[[\s\S]*\]/); if (!m) return null; try { const a = JSON.parse(m[0]); return Array.isArray(a) ? a : null; } catch { return null; } };
@@ -110,16 +129,20 @@ function irKey(it) {                                    // 표기 변이를 제�
 }
 
 // ---------------------------------------------------------------- 페이지 전사
-async function transcribeOne(sb, job, pg) {
+async function transcribeOne(sb, job, pg, tr = mkTracer()) {
+  const _td = Date.now();
   const { data: blob, error: dl } = await sb.storage.from("corpus").download(pg.storage_path);
   if (dl) throw new Error("이미지 다운로드 실패: " + dl.message);
+  tr.add("download", { ms: Date.now() - _td });
   const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
   const img = { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } };
   const ask = [img, { type: "text", text: pg.meta?.kind === "answers"
     ? "이 페이지는 답지다. answer_sheet 형식으로만 출력해라."
     : "이 페이지의 문항을 전사해라." }];
 
-  const t1 = await callModel(PRIMARY, SYS_T, ask);
+  const r1 = await callModel(PRIMARY, SYS_T, ask);
+  tr.ai(pg.meta?.kind === "answers" ? "answer_sheet" : "primary", r1);
+  const t1 = r1.text;
   const sheet = parseObj(t1);
   if (sheet && sheet.answer_sheet && !Array.isArray(sheet)) {           // ── 답지 페이지
     const clean = {};
@@ -145,9 +168,10 @@ async function transcribeOne(sb, job, pg) {
     if (v.errs.length) {                                // ── 오류 피드백 재시도 1회 (같은 모델)
       const fb = v.errs.slice(0, 6).map((e) => `${e.code}@${e.at}${e.src ? ` [[${e.src}]]` : ""}: ${e.msg || ""}`).join("\n");
       try {
-        const t = await callModel(PRIMARY, SYS_T, [img, { type: "text",
+        const rr = await callModel(PRIMARY, SYS_T, [img, { type: "text",
           text: `문항 ${it.seq}번만 다시 전사해 "단일 객체"로 출력해라. 이전 시도의 문법 오류:\n${fb}\n이전 시도: ${JSON.stringify(it)}` }], 1800);
-        const fixed = parseObj(t);
+        tr.ai("retry", rr, true, `errs:${v.errs.length}`);
+        const fixed = parseObj(rr.text);
         if (fixed) { it = fixed; model = PRIMARY + "+retry"; v = verifyItem(it, job.unit_hint); }
       } catch (e) { if (RETRYABLE(e)) throw e; }
       runs.push({ doc_id: job.doc_id, page: pg.page, seq: raw.seq, role: "retry", model: PRIMARY, agree: !v.errs.length, diff_fields: v.errs.map((x) => x.code), adopted: !v.errs.length });
@@ -158,7 +182,9 @@ async function transcribeOne(sb, job, pg) {
         && (it.answer == null || !String(it.answer).trim())
         && hashStr(`${job.doc_id}|${pg.page}|${it.seq}`) % 100 < SAMPLE_RATE) {
       try {
-        const p2 = parseArr(await callModel(SAMPLER, SYS_T, ask));
+        const rs = await callModel(SAMPLER, SYS_T, ask);
+        tr.ai("sample", rs);
+        const p2 = parseArr(rs.text);
         const mate = (p2 || []).find((x) => x.seq === it.seq);
         const same = mate && irKey(mate) === irKey(it);
         runs.push({ doc_id: job.doc_id, page: pg.page, seq: it.seq, role: "sample", model: SAMPLER, agree: !!same, diff_fields: same ? [] : ["ir"], adopted: false });
@@ -171,9 +197,10 @@ async function transcribeOne(sb, job, pg) {
       if ((job.arb_mode || "api") === "queue") { escal = true; escErrs = v.errs.map((x) => x.code); }
       else {
         try {
-          const t = await callModel(ARBITER, SYS_T, [img, { type: "text",
+          const ra = await callModel(ARBITER, SYS_T, [img, { type: "text",
             text: `문항 ${it.seq}번만 본다. 아래 시도가 검증에 실패했다(${v.errs.map((x) => x.code).join(",") || "표본 불일치"}). 이미지를 근거로 올바른 전사를 같은 규격의 "단일 객체"로 출력해라.\n시도: ${JSON.stringify(it)}` }], 1800);
-          const fixed = parseObj(t);
+          tr.ai("arbiter", ra);
+          const fixed = parseObj(ra.text);
           if (fixed) {
             const v2 = verifyItem(fixed, job.unit_hint);
             if (!v2.errs.length) { it = fixed; model = ARBITER; v = v2; }
@@ -208,8 +235,10 @@ async function transcribeOne(sb, job, pg) {
   const saved = items.filter((x) => norm(x.question).length >= 5);
   if (saved.some((x) => x.status === "escalated"))
     await sb.storage.from("corpus").copy(pg.storage_path, `esc/${job.doc_id}/p${pg.page}.jpg`).catch(() => {});
+  const _ts = Date.now();
   if (saved.length) await sb.from("corpus_items").upsert(saved, { onConflict: "content_key", ignoreDuplicates: true });
   if (runs.length) await sb.from("transcribe_runs").insert(runs);
+  tr.add("save", { ms: Date.now() - _ts, note: `items:${saved.length} arb:${arb}` });
   return { saved: saved.length, arbitrated: arb };
 }
 
@@ -224,8 +253,12 @@ async function classifyBatch(sb, job, known, cmapSys) {
     id: r.id,
     text: (r.question || "") + ((r.choices || []).length ? "\n보기: " + r.choices.join(" / ") : "") + (r.answer ? "\n답: " + r.answer : ""),
   }));
-  const out = parseArr(await callModel(PRIMARY, cmapSys,
-    [{ type: "text", text: "다음 문항들을 분류해라.\n" + JSON.stringify(payload) }], 2500));
+  const rc = await callModel(PRIMARY, cmapSys,
+    [{ type: "text", text: "다음 문항들을 분류해라.\n" + JSON.stringify(payload) }], 2500);
+  try { await sb.from("transcribe_traces").insert([{ job_id: job.id, page: 0, chain: CHAIN, seq_no: 0, step: "classify",
+    model: rc.model, ms: rc.ms, in_tok: rc.usage?.input_tokens ?? null, out_tok: rc.usage?.output_tokens ?? null,
+    cache_r: rc.usage?.cache_read_input_tokens ?? null, cache_w: rc.usage?.cache_creation_input_tokens ?? null, ok: true }]); } catch {}
+  const out = parseArr(rc.text);
   const byId = new Map((out || []).map((x) => [x.id, x]));
   for (const r of rows) {
     const c = byId.get(r.id) || {};
@@ -292,16 +325,20 @@ export default async function handler(req, res) {
       const { data: claimed } = await sb.rpc("claim_job_page", { p_job: job_id });
       const pg = claimed?.[0];
       if (!pg) break;
+      const tr = mkTracer();
       try {
-        const r = await transcribeOne(sb, job, pg);
+        const r = await transcribeOne(sb, job, pg, tr);
         await sb.from("transcribe_job_pages").update({ status: "done", saved: r.saved, arbitrated: r.arbitrated, updated_at: new Date().toISOString() }).eq("id", pg.id);
       } catch (e) {
+        tr.add("page_error", { ok: false, note: String(e.message || e).slice(0, 80) });
         if (RETRYABLE(e)) {
           await sb.from("transcribe_job_pages").update({ status: "pending", updated_at: new Date().toISOString() }).eq("id", pg.id);
+          await tr.flush(sb, job_id, pg.page);
           return res.status(200).json({ ok: true, paused: true, reason: String(e.message || e).slice(0, 120) });
         }
         await sb.from("transcribe_job_pages").update({ status: "error", error: String(e.message || e).slice(0, 300), updated_at: new Date().toISOString() }).eq("id", pg.id);
       }
+      await tr.flush(sb, job_id, pg.page);
       did++;
       await sb.from("transcribe_jobs").update({ updated_at: new Date().toISOString() }).eq("id", job_id);
       const { data: j2 } = await sb.from("transcribe_jobs").select("status").eq("id", job_id).single();
