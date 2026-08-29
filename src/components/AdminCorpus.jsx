@@ -440,6 +440,35 @@ export default function AdminCorpus() {
     say("재개 — 다음 틱에 자동 점화");
   }
 
+  async function exportFiltered() {
+    setBusy(true); say("필터 내보내기 수집 중…");
+    try {
+      const rows = [];
+      for (let i = 0; ; i += 1000) {
+        let q = supabase.from("corpus_items")
+          .select("id,unit_id,src_tags,p_correct,seq,page,doc_id,qtype,question,choices,answer,difficulty_est,has_figure,figure,model_final,status,agree,drafts,concept_main,confidence,created_at")
+          .order("created_at", { ascending: true }).range(i, i + 999);
+        if (cUnit !== "all") q = q.eq("unit_id", cUnit);
+        if (mFilter === "esc") q = q.eq("status", "escalated");
+        else if (mFilter === "legacy") q = q.eq("status", "legacy");
+        else if (mFilter === "haiku") q = q.in("model_final", ["haiku", "haiku+retry"]);
+        else if (mFilter !== "all") q = q.eq("model_final", mFilter);
+        const { data, error } = await q;
+        if (error) throw new Error(error.message);
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(),
+        filter: { model: mFilter, unit: cUnit }, count: rows.length, items: rows })], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `corpus_${mFilter}_${cUnit}_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click(); URL.revokeObjectURL(a.href);
+      say(`내보내기 완료 — ${rows.length}건`);
+    } catch (e) { say("내보내기 실패: " + e.message); }
+    setBusy(false);
+  }
+
   async function backupAll() {
     setBusy(true); say("백업 수집 중…");
     try {
@@ -610,6 +639,7 @@ export default function AdminCorpus() {
                 {l}{mStats ? ` ${k === "all" ? "" : k === "esc" ? mStats.esc : k === "legacy" ? mStats.legacy : k === "fable-chat" ? mStats.fable : mStats[k] ?? ""}` : ""}
               </button>
             ))}
+            <button className="cp-btn" onClick={exportFiltered} disabled={busy}>필터 내보내기(JSON)</button>
             {mStats?.esc > 0 && <button className="cp-btn" onClick={exportEsc} disabled={busy}>대기 내보내기(zip)</button>}
             <button className="cp-btn" onClick={() => impRef.current?.click()} disabled={busy}>전사 반영(JSON)</button>
             <button className="cp-btn" onClick={backupAll} disabled={busy}>전체 백업(JSON)</button>
