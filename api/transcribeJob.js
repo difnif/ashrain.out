@@ -48,7 +48,8 @@ solid{kind} net{kind} boxplot{values} scatter{points} venn{sets} tree{levels} fu
 conic{kind} vecfig{vectors} space normcurve{m,v} — 표현 불가하면 {"fn":"unsupported","args":{"raw":"짧은 서술"}}
 인자 속 수치·식도 MathIR 문자열.
 원문 그대로 옮기되(오탈자 포함) 머리말·페이지번호·배점 표기([3점], 4점 등)는 무시.
-자주 틀리는 치환 — 반드시 이렇게: √x→sqrt(x), ³√x→root(3,x), Σ→sum(...), π→pi, ×→*, ÷→/, ≤→<=, ≥→>=, ≠!=, x²→pow(x,2), 순환마디 표기→recdec. 유니코드 수학기호가 하나라도 남으면 실패다. JSON 문자열 안 백슬래시는 \\\\ 이스케이프.
+자주 틀리는 치환 — 반드시 이렇게: √x→sqrt(x), ³√x→root(3,x), Σ→sum(...), π→pi, ×→*, ÷→/, ≤→<=, ≥→>=, ≠!=, x²→pow(x,2), 순환마디 표기→recdec. 유니코드 수학기호가 하나라도 남으면 실패다.
+행렬은 mat(행,열, 성분을 행 우선 나열): [[A = mat(2,2, 1,2, 3,4)]]. (i,j) 성분 기호는 sub(a,i,j). 세미콜론·괄호 나열식 행렬 표기 금지. ±는 pm(a,b) 또는 pm(a). JSON 문자열 안 백슬래시는 \\\\ 이스케이프.
 
 ■ 페이지 종류
 - 문항이 실린 문제지 페이지 → 위 규격의 문항 배열.
