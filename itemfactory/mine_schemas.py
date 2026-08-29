@@ -47,6 +47,7 @@ SYS_M = """너는 수학 문항 스키마 채굴자다. 같은 유형의 문항 
  "notes":"표본에서 관찰된 특징·주의점 한두 줄"}
 
 규칙:
+- 변수명은 라틴 소문자 1자 + 선택적 숫자 첨자만 (t, v1, t2). 언더스코어·다문자(delta_t 등) 금지.
 - relations는 MathIR 문법만: 숫자, 변수, + - * / = != < > <= >=, 괄호, 병치곱,
   함수 frac mixed pow sqrt root abs recdec floor fact max min ratio pct log ln sin cos tan
   sum lim prime perm comb prob 등. 유니코드 수학기호·LaTeX 금지. 관계 하나당 문자열 하나.
@@ -98,14 +99,18 @@ def groups(sb, unit=None):
     return out
 
 
-def pick_sample(sb, unit, tag, cap=10):
-    rows = sb.table("corpus_items").select("id,question,choices,answer,p_correct,difficulty_est") \
-        .eq("status", "active").eq("unit_id", unit).contains("src_tags", [tag]) \
-        .order("p_correct", desc=False).limit(60).execute().data or []
-    if len(rows) <= cap:
-        return rows
-    step = max(1, len(rows) // cap)          # 정답률 스펙트럼 고르게
-    return rows[::step][:cap]
+def pick_sample(sb, group_rows, cap=10):
+    """그룹의 (id, p_correct) 목록에서 정답률 스펙트럼 고르게 표본 추출 → id로 본문 조회
+    (유형명에 쉼표·괄호가 있어도 안전 — 텍스트 필터를 쓰지 않음)"""
+    rows = sorted(group_rows, key=lambda r: (r.get("p_correct") is None, r.get("p_correct") or 0))
+    if len(rows) > cap:
+        step = max(1, len(rows) // cap)
+        rows = rows[::step][:cap]
+    ids = [r["id"] for r in rows]
+    got = sb.table("corpus_items").select("id,question,choices,answer,p_correct,difficulty_est") \
+        .in_("id", ids).execute().data or []
+    by = {g["id"]: g for g in got}
+    return [by[i] for i in ids if i in by]
 
 
 def mine_group(sb, unit, tag, items):
@@ -178,7 +183,9 @@ def main():
     spent, ok = 0.0, 0
     for (u, tag), rows in todo:
         try:
-            items = pick_sample(sb, u, tag)
+            items = pick_sample(sb, rows)
+            if not items:
+                print(f"  ✗ {u} 「{tag}」 표본 0건 — 건너뜀 (필터·분류 확인)"); continue
             sc, errs, cost = mine_group(sb, u, tag, items)
             spent += cost
             ok += 1
