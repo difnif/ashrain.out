@@ -85,6 +85,9 @@ export default function AdminCorpus() {
   const [arbMode, setArbMode] = useState("api");
   const [runnerSel, setRunnerSel] = useState("cloud");
   const [workerState, setWorkerState] = useState(null);
+  const [mon, setMon] = useState(null);
+  const [budget, setBudget] = useState(() => Number(localStorage.getItem("cp_budget") || 300000));
+  const alertsRef = useRef({});
   const [mFilter, setMFilter] = useState("all");
   const [mStats, setMStats] = useState(null);
   const impRef = useRef(null);
@@ -390,6 +393,53 @@ export default function AdminCorpus() {
     setBusy(false);
   }
 
+  const RETRO_USD = { primary: 0.005, retry: 0.005, sample: 0.015, arbiter: 0.025, answer_sheet: 0.005, classify: 0.002 };
+  function monDerived(d) {
+    if (!d) return null;
+    const P = d.pages || {}, H = d.hour || {};
+    const total = (P.done || 0) + (P.pending || 0) + (P.doing || 0) + (P.error || 0);
+    const tracedUsd = (d.cost || []).reduce((a, c) => a + Number(c.usd || 0), 0);
+    const retroUsd = (d.retro || []).reduce((a, r) => a + (RETRO_USD[r.role] || 0.005) * r.n, 0);
+    const krw = Math.round((tracedUsd + retroUsd) * 1400);
+    const rate = H.pages_done || 0;
+    const callsPerPage = rate ? ((H.primary || 0) + (H.retry || 0) + (H.sample || 0) + (H.arbiter || 0)) / rate : 0;
+    const leftH = rate ? (P.pending || 0) / rate : null;
+    return { P, H, total, tracedUsd, retroUsd, krw, rate, callsPerPage, leftH };
+  }
+  function checkAlerts(d) {
+    const m = monDerived(d); if (!m) return;
+    const fire = (key, msg) => {
+      if (!alertsRef.current[key]) { alertsRef.current[key] = msg; window.alert("⚠ 파이프라인 경보\n\n" + msg); }
+      alertsRef.current[key] = msg;
+    };
+    const clear = (key) => { delete alertsRef.current[key]; };
+    if (m.krw > budget) fire("budget", `누적 지출 추정 ${m.krw.toLocaleString()}원이 예산 상한(${budget.toLocaleString()}원)을 넘었어요 — 일시정지 권장`); else clear("budget");
+    if ((d.hour?.arbiter || 0) > 0) fire("opus", `최근 1시간 오푸스 중재 ${d.hour.arbiter}회 — arb_mode 큐 전환이 안 먹은 작업이 있어요`); else clear("opus");
+    if (m.rate > 5 && m.callsPerPage > 2.6) fire("burst", `페이지당 호출 ${m.callsPerPage.toFixed(1)}회 — 재시도 폭주 의심 (정상 1.3~2.2)`); else clear("burst");
+    if ((d.chains || 0) === 0 && (m.P.pending || 0) > 0 && (d.jobs_running || 0) > 0) fire("dead", "활성 체인 0 — 진행이 멈춰 있었어요. 이 화면이 곧 재점화합니다 (탭을 닫아두면 다시 멈춰요)"); else clear("dead");
+  }
+  useEffect(() => {
+    if (tab !== "mon") return;
+    let on = true;
+    const load = async () => {
+      const { data, error } = await supabase.rpc("pipeline_stats", { p_hours: 1 });
+      if (on && !error && data) { setMon(data); checkAlerts(data); }
+      if (on && error) say("통계 RPC 실패 — v11 SQL 실행했는지 확인: " + error.message);
+    };
+    load();
+    const iv = setInterval(load, 30000);
+    return () => { on = false; clearInterval(iv); };
+  }, [tab, budget]);  // eslint-disable-line
+
+  async function pauseAll() {
+    await supabase.from("transcribe_jobs").update({ status: "paused" }).eq("status", "running");
+    say("전 작업 일시정지 — 체인이 1분 내 멈춥니다. [전체 재개]로 복귀");
+  }
+  async function resumeAll() {
+    await supabase.from("transcribe_jobs").update({ status: "running" }).eq("status", "paused");
+    say("재개 — 다음 틱에 자동 점화");
+  }
+
   async function backupAll() {
     setBusy(true); say("백업 수집 중…");
     try {
@@ -475,7 +525,7 @@ export default function AdminCorpus() {
 
       <h2>자료 전사 코퍼스</h2>
       <div className="cp-tabs">
-        {[["run", "① 전사 실행"], ["browse", "② 코퍼스"], ["route", "③ 라우팅"]].map(([k, l]) => (
+        {[["run", "① 전사 실행"], ["browse", "② 코퍼스"], ["route", "③ 라우팅"], ["mon", "④ 모니터"]].map(([k, l]) => (
           <button key={k} className={"cp-tab" + (tab === k ? " on" : "")} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
@@ -603,6 +653,57 @@ export default function AdminCorpus() {
           </tbody>
         </table>
       )}
+
+      {tab === "mon" && (() => { const m = monDerived(mon); return (
+        <div className="cp-card">
+          <div className="cp-row" style={{ flexWrap: "wrap", gap: 8 }}>
+            <button className="cp-btn" onClick={pauseAll}>⏸ 전체 일시정지</button>
+            <button className="cp-btn" onClick={resumeAll}>▶ 전체 재개{mon?.jobs_paused ? ` (${mon.jobs_paused})` : ""}</button>
+            <span className="cp-note" style={{ marginLeft: "auto" }}>예산 상한 ₩</span>
+            <input className="cp-in" style={{ width: 110 }} type="number" step="10000" value={budget}
+              onChange={(e) => { const v = Number(e.target.value) || 0; setBudget(v); localStorage.setItem("cp_budget", String(v)); }} />
+          </div>
+          {Object.keys(alertsRef.current).length > 0 && (
+            <div style={{ background: "#7f1d1d", color: "#fecaca", borderRadius: 8, padding: "8px 10px", margin: "8px 0", fontSize: 13 }}>
+              {Object.values(alertsRef.current).map((msg, i) => <div key={i}>⚠ {msg}</div>)}
+            </div>
+          )}
+          {!m ? <p className="cp-note">통계 수집 중… (v11 SQL 실행 + v2.7 배포 후부터 계측이 쌓입니다)</p> : (
+            <>
+              <div className="cp-row" style={{ flexWrap: "wrap", gap: 14, margin: "10px 0" }}>
+                <span>진행 <b>{(m.P.done || 0).toLocaleString()}</b>/{m.total.toLocaleString()}p{m.leftH != null ? ` · 잔여 ~${m.leftH.toFixed(1)}h` : ""}</span>
+                <span>시간당 <b>{m.rate.toLocaleString()}</b>p · 문항 {(m.H.items || 0).toLocaleString()}</span>
+                <span>체인 <b style={{ color: (mon.chains || 0) ? "#4ade80" : "#f87171" }}>{mon.chains || 0}</b></span>
+                <span>재시도율 <b>{m.H.primary ? Math.round(100 * (m.H.retry || 0) / m.H.primary) : 0}%</b> · 대기行 {(m.H.esc || 0)}</span>
+                <span>오푸스(1h) <b style={{ color: (m.H.arbiter || 0) ? "#f87171" : "#4ade80" }}>{m.H.arbiter || 0}</b></span>
+              </div>
+              <div className="cp-row" style={{ flexWrap: "wrap", gap: 14 }}>
+                <span>실측 지출(계측 이후) <b>${m.tracedUsd.toFixed(2)}</b></span>
+                <span>소급 추정(계측 이전) ~${m.retroUsd.toFixed(0)}</span>
+                <span>누적 <b>{m.krw.toLocaleString()}원</b> / {budget.toLocaleString()}원</span>
+              </div>
+              <p className="cp-note" style={{ margin: "10px 0 4px" }}>단계별 평균 (최근 1시간)</p>
+              {(mon.steps || []).map((st) => (
+                <div key={st.step} className="cp-row" style={{ gap: 8 }}>
+                  <span style={{ width: 92, fontSize: 12 }}>{st.step}</span>
+                  <div style={{ flex: 1, background: "#1e293b", borderRadius: 4, height: 10 }}>
+                    <div style={{ width: Math.min(100, (st.avg_ms || 0) / 120) + "%", background: "#38bdf8", height: 10, borderRadius: 4 }} />
+                  </div>
+                  <span style={{ fontSize: 12, minWidth: 86 }}>{st.avg_ms}ms · {st.n}회</span>
+                </div>
+              ))}
+              <p className="cp-note" style={{ margin: "10px 0 4px" }}>실시간 티커</p>
+              <div style={{ fontFamily: "monospace", fontSize: 12, lineHeight: 1.7 }}>
+                {(mon.recent || []).map((r, i) => (
+                  <div key={i} style={{ color: r.ok === false ? "#f87171" : "#94a3b8" }}>
+                    p.{r.page} {r.step}{r.model ? `·${r.model}` : ""}{r.ms ? ` ${r.ms}ms` : ""}{r.note ? ` — ${r.note}` : ""}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      ); })()}
     </div>
   );
 }
