@@ -26,6 +26,7 @@ import AdminItemGen from "./components/AdminItemGen";
 import AdminItemReview from "./components/AdminItemReview";
 import AdminCorpus from "./components/AdminCorpus";
 import AdminMonitor from "./components/AdminMonitor";
+import AdminSchemas from "./components/AdminSchemas";
 import GuardianConsent from "./components/GuardianConsent";
 import AdminGuardians from "./components/AdminGuardians";
 import Philosophy from "./components/Philosophy";
@@ -281,6 +282,7 @@ function AppRoutes() {
   if (hash === "#/admin/items") return <Rx theme={theme}><AdminItemReview /></Rx>;
   if (hash === "#/admin/corpus") return <Rx theme={theme}><AdminCorpus /></Rx>;
   if (hash === "#/admin/monitor") return <Rx theme={theme}><AdminMonitor /></Rx>;
+  if (hash === "#/admin/schemas") return <Rx theme={theme}><AdminSchemas /></Rx>;
   if (hash === "#/admin/guardians") return <Rx theme={theme}><AdminGuardians /></Rx>;
   if (hash.startsWith("#/guardian")) return <Rx theme={theme}><GuardianConsent /></Rx>;
   if (hash === "#/admin/calendar") return <Rx theme={theme}><AdminCalendar theme={theme} /></Rx>;
