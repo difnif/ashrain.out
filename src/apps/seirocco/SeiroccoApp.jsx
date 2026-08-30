@@ -1,26 +1,25 @@
-// src/apps/seirocco/SeiroccoApp.jsx — 강사앱 셸 v2 (전 페이지 골격 + 데모 라우팅)
-// 내부 해시: #/ 홈 · #/students(/:id) · #/predict · #/contracts · #/interview
-//           #/career · #/survey · #/verify · #/support · #/more
+// src/apps/seirocco/SeiroccoApp.jsx — 시록고 셸 v3 (기록 중심 재편)
+// 본질: 기록. 서고(장서고·문서고·기록고) · 사무(행정, 무료) · 서무(코퍼스, 유료) + 공통 광장(하소·방).
+// 내부 해시: #/ 홈 · #/seogo(/:tab) · #/samu(/:id) · #/seomu(/:tab) · #/more
+//           #/haso · #/bang · #/my · #/support · #/fonts(관리자)
 import { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import RoleSwitch from "../../shared/RoleSwitch";
 import { getMemberships, navigatePath, studentPath } from "../../shared/roles";
 import { Kit, useAppHash } from "../../shared/demo";
+import Haso from "../../shared/spaces/Haso";
+import Bang from "../../shared/spaces/Bang";
 import Home from "./pages/Home";
-import Students from "./pages/Students";
-import StudentDetail from "./pages/StudentDetail";
-import Predict from "./pages/Predict";
-import Interview from "./pages/Interview";
-import Contracts from "./pages/Contracts";
-import Career from "./pages/Career";
-import Survey from "./pages/Survey";
-import Verify from "./pages/Verify";
+import Seogo from "./pages/Seogo";
+import Samu from "./pages/Samu";
+import Seomu from "./pages/Seomu";
+import My from "./pages/My";
 import Support from "./pages/Support";
-import More from "./pages/More";
 import Fonts from "./pages/Fonts";
+import More from "./pages/More";
 
-const NAV = [["", "홈"], ["students", "학생"], ["predict", "예측"], ["contracts", "계약"], ["more", "더보기"]];
-const MORE_SET = ["interview", "career", "survey", "verify", "support", "fonts", "more"];
+const NAV = [["", "홈"], ["seogo", "서고"], ["samu", "사무"], ["seomu", "서무"], ["more", "더보기"]];
+const MORE_SET = ["haso", "bang", "my", "support", "fonts", "more"];
 
 export default function SeiroccoApp() {
   const [ms, setMs] = useState(null);
@@ -44,17 +43,14 @@ export default function SeiroccoApp() {
   }, []);
 
   const roles = (ms || []).map((m) => m.role);
-  const isInstructor = roles.includes("instructor") || adm; // 운영자는 전 앱 열람
+  const isInstructor = roles.includes("instructor") || adm;
   const isAssistant = !isInstructor && roles.includes("assistant");
   const allowed = isInstructor || isAssistant;
 
-  const PAGES = {
-    "": Home, students: param ? StudentDetail : Students, predict: Predict,
-    contracts: Contracts, interview: Interview, career: Career, survey: Survey,
-    verify: Verify, support: Support, fonts: Fonts, more: More,
-  };
-  // 조교 제한 모드: 1층 화면만
-  const AST = { "": Home, interview: Interview, support: Support, more: More };
+  const PAGES = { "": Home, seogo: Seogo, samu: Samu, seomu: Seomu,
+    haso: Haso, bang: Bang, my: My, support: Support, fonts: Fonts, more: More };
+  // 조교 제한 모드: 광장과 문의만
+  const AST = { "": Home, haso: Haso, bang: Bang, support: Support };
   const Cmp = (isAssistant ? AST[page] : PAGES[page]) || Home;
   const navCur = MORE_SET.includes(page) ? "more" : page;
 
@@ -80,7 +76,7 @@ export default function SeiroccoApp() {
         {ms === null ? null : allowed ? (
           <>
             <div className="d-tabs" style={{ marginBottom: 10 }}>
-              {(isAssistant ? [["", "홈"], ["interview", "면담"], ["support", "문의"]] : NAV).map(([k, l]) => (
+              {(isAssistant ? [["", "홈"], ["haso", "하소"], ["bang", "방"], ["support", "문의"]] : NAV).map(([k, l]) => (
                 <button key={k} className={"d-tab" + (navCur === k ? " on" : "")}
                   onClick={() => (location.hash = "#/" + k)}>{l}</button>
               ))}

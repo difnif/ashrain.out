@@ -1,30 +1,32 @@
-// 세이로코 홈 — 오늘: 새 흔적 · 마감 · 계약 요약
+// 시록고 홈 — 기록하는 자의 책상: 이번 주 쌓인 기록 + 사무 할 일 + 광장
 import { Page, Card, Row, Chip, Stat } from "../../../shared/demo";
 
 export default function Home({ isAssistant }) {
   if (isAssistant) return (
     <Page title="오늘">
       <Card title="조교 모드">
-        <p className="d-note">1층 기능만 열려 있어요. AI 학생 면담으로 진단 훈련을 이어가고, 학생앱 활동은 그대로 실적에 쌓여요.</p>
+        <p className="d-note">광장(하소·방)과 문의만 열려 있어요. 학생앱 활동은 그대로 향임 실적에 쌓여요.</p>
       </Card>
     </Page>
   );
   return (
     <Page title="오늘">
       <div className="d-stats">
-        <Stat label="활성 계약" value="4" />
-        <Stat label="새 흔적" value="12" />
-        <Stat label="예측 마감" value="D-2" />
-        <Stat label="이달 설문" value="미제출" />
+        <Stat label="이번 주 풀이 메모" value="12" />
+        <Stat label="표시 기록" value="58" />
+        <Stat label="수집 문제" value="7" />
+        <Stat label="채점 대기" value="3" />
       </div>
-      <Card title="새 흔적">
-        <Row main="김하늘 · 오답노트 3건 추가" sub="이차방정식 근의 공식 · 어제 21:40" right={<Chip tone="ac">보기</Chip>} onClick={() => (location.hash = "#/students/1")} />
-        <Row main="이도윤 · 스피드 연산 2세트" sub="정답률 78% · 오늘 07:55" right={<Chip>보기</Chip>} onClick={() => (location.hash = "#/students/2")} />
-        <Row main="박서준 · 문제 세트 제출" sub="함수의 그래프 · 오늘 08:10" right={<Chip>보기</Chip>} onClick={() => (location.hash = "#/students/3")} />
+      <Card title="기록 (서무 · 코퍼스)">
+        <Row main="어제 남긴 풀이 메모 이어쓰기" sub="이차방정식 활용 — 속력" right={<Chip tone="warn">유료</Chip>} onClick={() => (location.hash = "#/seomu/sol")} />
       </Card>
-      <Card title="할 일">
-        <Row main="중간 대비 3회차 예측 입력" sub="시험일 D-2 — 마감 전 문항별 예측을 남겨두세요" right={<Chip tone="warn">D-2</Chip>} onClick={() => (location.hash = "#/predict")} />
-        <Row main="8월 월례 설문" sub="제출 여부만 확인해요 — 환급 조건" right={<Chip tone="down">미제출</Chip>} onClick={() => (location.hash = "#/survey")} />
+      <Card title="사무 (무료)">
+        <Row main="채점 대기 3건" sub="김하늘 · 근의 공식 연습" right={<Chip tone="ok">무료</Chip>} onClick={() => (location.hash = "#/samu/1")} />
+        <Row main="주간 보고서 쓸 차례" sub="이번 주 마루 발신 전" onClick={() => (location.hash = "#/samu/1")} />
+      </Card>
+      <Card title="광장">
+        <Row main="하소 — 날아든 연" sub="시험 전날 뭐라고 말해주는 게 좋을까요" onClick={() => (location.hash = "#/haso")} />
+        <Row main="방 — 오늘의 벽" sub="틀린 문제는 다음날 아침에 다시" onClick={() => (location.hash = "#/bang")} />
       </Card>
     </Page>
   );
