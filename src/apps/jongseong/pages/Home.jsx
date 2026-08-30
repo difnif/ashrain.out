@@ -1,30 +1,27 @@
-// 종성 홈 — 숫자 없는 홈: 서신 · D-day · 응원 · 선물
-import { Page, Card, Chip } from "../../../shared/demo";
+// 종성 홈 — 안방: 세 화폐 잔고 + 마루 소식 + 하소 · 결제(밥 짓는 소리)가 중심
+// 반감시 원칙 유지: 성적·문항 숫자는 없다. 잔고는 화폐일 뿐.
+import { Page, Card, Row, Chip, Stat } from "../../../shared/demo";
 
 export default function Home() {
   return (
     <Page title="안녕하세요">
-      <Card title="이번 주 서신">
-        <p className="d-serif" style={{ fontSize: 14.5, margin: 0 }}>
-          이번 주는 닮음비를 지났습니다. 오답노트에 스스로 단 메모가 눈에 띄게 늘었습니다…
-        </p>
-        <button className="d-btn" style={{ marginTop: 12 }} onClick={() => (location.hash = "#/letters/1")}>이어 읽기</button>
-      </Card>
-      <Card title="다가오는 일정">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Chip tone="down">D-2</Chip>
-          <span className="d-main">2학기 중간고사</span>
-          <span className="d-sp" />
-          <button className="d-btn" onClick={() => (location.hash = "#/calendar")}>일정 보기</button>
+      <div className="d-stats">
+        <Stat label="장작" value="240근" />
+        <Stat label="연" value="3" />
+        <Stat label="전서구" value="21+2" />
+      </div>
+      <Card title="불씨">
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="d-btn pri" style={{ flex: 1 }} onClick={() => (location.hash = "#/firewood")}>밥 짓는 소리 — 장작 들이기</button>
+          <button className="d-btn" style={{ flex: 1 }} onClick={() => (location.hash = "#/stoke")}>아궁이에 불 때기</button>
         </div>
       </Card>
-      <Card title="응원 한 마디">
-        <p className="d-note" style={{ marginBottom: 10 }}>점수 이야기 없이, 마음만 보내는 채널이에요.</p>
-        <button className="d-btn pri" onClick={() => (location.hash = "#/cheer")}>응원 보내기</button>
+      <Card title="마루에 새로 놓인 것">
+        <Row main="여덟 번째 보고서" sub="8월 넷째 주 · 담당 강사" right={<Chip tone="ac">새 글</Chip>} onClick={() => (location.hash = "#/maru")} />
+        <Row main="문제 꾸러미 — 판별식 확인 3문항" sub="자녀에게 출제해보세요" right={<Chip tone="warn">대기</Chip>} onClick={() => (location.hash = "#/maru")} />
       </Card>
-      <Card title="선물">
-        <p className="d-note" style={{ marginBottom: 10 }}>카드 스킨·오답노트 표지 같은 작은 선물로 마음을 전해요.</p>
-        <button className="d-btn" onClick={() => (location.hash = "#/gift")}>선물 고르기</button>
+      <Card title="하소">
+        <Row main="시험 전날 뭐라고 말해주는 게 좋을까요" sub="익명 · 연 31개 받음" right={<Chip>인기</Chip>} onClick={() => (location.hash = "#/haso")} />
       </Card>
     </Page>
   );

@@ -1,16 +1,18 @@
-// 더보기
+// 더보기 — 종성의 나머지 방들
 import { Page, Card, Row, Chip } from "../../../shared/demo";
 
 export default function More({ isAdmin }) {
   return (
     <Page title="더보기">
       <Card>
-        <Row main="게시판" sub="익명 편지 커뮤니티" onClick={() => (location.hash = "#/board")} />
-        <Row main="결제" sub="수강 결제 · 내역" right={<Chip tone="warn">9월분 대기</Chip>} onClick={() => (location.hash = "#/pay")} />
-        <Row main="선물" sub="스킨·표지 카탈로그" onClick={() => (location.hash = "#/gift")} />
-        <Row main="설문" sub="선택 참여" onClick={() => (location.hash = "#/survey")} />
+        <Row main="밥 짓는 소리" sub="장작·구독권 결제" right={<Chip tone="ac">결제</Chip>} onClick={() => (location.hash = "#/firewood")} />
+        <Row main="아궁이에 불 때기" sub="자녀에게 장작 선물" onClick={() => (location.hash = "#/stoke")} />
+        <Row main="정안수 떠놓는 곳" sub="구독권 지정 선물 · 스킨" onClick={() => (location.hash = "#/offering")} />
+        <Row main="글 읽는 소리" sub="학부모 서재 — 글로 연을 벌어요" onClick={() => (location.hash = "#/reading")} />
+        <Row main="백돌길" sub="아이들 사이에서 반짝인 것들" onClick={() => (location.hash = "#/baekdol")} />
+        <Row main="전서구" sub="대화 문턱·합성 관리" onClick={() => (location.hash = "#/pigeon")} />
         <Row main="자녀 연결" sub="연결 코드로 등록" onClick={() => (location.hash = "#/link")} />
-        {isAdmin && <Row main="녹음 창고" sub="음성 자산 보관처(추후)" right={<Chip tone="warn">관리자</Chip>} onClick={() => (location.hash = "#/vault")} />}
+        {isAdmin && <Row main="녹음 창고" sub="음성 자산 보관처" right={<Chip tone="warn">관리자</Chip>} onClick={() => (location.hash = "#/vault")} />}
       </Card>
     </Page>
   );

@@ -1,26 +1,29 @@
-// src/apps/jongseong/JongseongApp.jsx — 학부모앱 셸 v2 (전 페이지 골격 + 데모 라우팅)
-// 반감시 원칙: 점수·문항으로 가는 경로 자체가 없다. 홈은 서신·응원·일정 중심.
-// 내부 해시: #/ 홈 · #/letters(/:id) · #/cheer · #/calendar · #/more
-//           #/board · #/pay · #/gift · #/survey · #/link
+// src/apps/jongseong/JongseongApp.jsx — 학부모앱 셸 v3 (소통 허브 재편)
+// 공통 공간(하소·방)은 shared/spaces에서 임포트 — 추후 학생앱·시록고도 같은 컴포넌트를 쓴다.
+// 내부 해시: #/ 홈 · #/haso · #/maru · #/bang · #/more
+//           #/firewood(밥 짓는 소리) · #/stoke(아궁이) · #/offering(정안수) · #/reading(글 읽는 소리)
+//           #/baekdol · #/pigeon · #/link · #/vault(관리자)
 import { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import RoleSwitch from "../../shared/RoleSwitch";
 import { getMemberships, navigatePath, studentPath } from "../../shared/roles";
 import { Kit, useAppHash } from "../../shared/demo";
+import Haso from "../../shared/spaces/Haso";
+import Bang from "../../shared/spaces/Bang";
 import Home from "./pages/Home";
-import Letters from "./pages/Letters";
-import Cheer from "./pages/Cheer";
-import Calendar from "./pages/Calendar";
-import Board from "./pages/Board";
-import Pay from "./pages/Pay";
-import Gift from "./pages/Gift";
-import Survey from "./pages/Survey";
+import Maru from "./pages/Maru";
+import Firewood from "./pages/Firewood";
+import Stoke from "./pages/Stoke";
+import Offering from "./pages/Offering";
+import Reading from "./pages/Reading";
+import Baekdol from "./pages/Baekdol";
+import Pigeon from "./pages/Pigeon";
 import Link from "./pages/Link";
-import More from "./pages/More";
 import Vault from "./pages/Vault";
+import More from "./pages/More";
 
-const NAV = [["", "홈"], ["letters", "서신"], ["cheer", "응원"], ["calendar", "일정"], ["more", "더보기"]];
-const MORE_SET = ["board", "pay", "gift", "survey", "link", "vault", "more"];
+const NAV = [["", "홈"], ["haso", "하소"], ["maru", "마루"], ["bang", "방"], ["more", "더보기"]];
+const MORE_SET = ["firewood", "stoke", "offering", "reading", "baekdol", "pigeon", "link", "vault", "more"];
 
 export default function JongseongApp() {
   const [ms, setMs] = useState(null);
@@ -44,8 +47,9 @@ export default function JongseongApp() {
   }, []);
 
   const allowed = adm || (ms || []).some((m) => m.role === "guardian");
-  const PAGES = { "": Home, letters: Letters, cheer: Cheer, calendar: Calendar,
-    board: Board, pay: Pay, gift: Gift, survey: Survey, link: Link, vault: Vault, more: More };
+  const PAGES = { "": Home, haso: Haso, maru: Maru, bang: Bang,
+    firewood: Firewood, stoke: Stoke, offering: Offering, reading: Reading,
+    baekdol: Baekdol, pigeon: Pigeon, link: Link, vault: Vault, more: More };
   const Cmp = PAGES[page] || Home;
   const navCur = MORE_SET.includes(page) ? "more" : page;
 
