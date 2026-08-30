@@ -180,9 +180,21 @@
    본문·입력은 가독성 위해 기존 산세리프 유지 — 크롬(제목·탭·버튼·섹션 라벨)만 적용. */
 @font-face {
   font-family: "EBS Hunminjeongeum Saeron";
+  src: url("/fonts/EBSHunminjeongeumSaeronL.woff2") format("woff2"),
+       url("/fonts/EBSHunminjeongeumSaeronL.ttf") format("truetype");
+  font-weight: 300; font-display: swap;
+}
+@font-face {
+  font-family: "EBS Hunminjeongeum Saeron";
   src: url("/fonts/EBSHunminjeongeumSaeronR.woff2") format("woff2"),
        url("/fonts/EBSHunminjeongeumSaeronR.ttf") format("truetype");
   font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: "EBS Hunminjeongeum Saeron";
+  src: url("/fonts/EBSHunminjeongeumSaeronSB.woff2") format("woff2"),
+       url("/fonts/EBSHunminjeongeumSaeronSB.ttf") format("truetype");
+  font-weight: 600 800; font-display: swap; /* 700·800 요청도 SB 실글리프로 */
 }
 :root { --font-display: "Tangerine", "EBS Hunminjeongeum Saeron", var(--font-ui); }
 
