@@ -415,6 +415,8 @@ export default function AdminCorpus() {
     const clear = (key) => { delete alertsRef.current[key]; };
     if (m.krw > budget) fire("budget", `누적 지출 추정 ${m.krw.toLocaleString()}원이 예산 상한(${budget.toLocaleString()}원)을 넘었어요 — 일시정지 권장`); else clear("budget");
     if ((d.hour?.arbiter2 || 0) > 150) fire("opus", `최근 1시간 오푸스 중재 ${d.hour.arbiter2}회 — 과열 (사다리 게이트 점검)`); else clear("opus");
+    const clsN = (d.steps || []).find((x) => x.step === "classify")?.n || 0;
+    if (clsN > 400) fire("clsloop", `분류 호출 ${clsN}회/1h — 좀비 마감 루프 의심 (v2.12 배포·지혈 SQL 확인)`); else clear("clsloop");
     if (m.rate > 5 && m.callsPerPage > 2.6) fire("burst", `페이지당 호출 ${m.callsPerPage.toFixed(1)}회 — 재시도 폭주 의심 (정상 1.3~2.2)`); else clear("burst");
     if ((d.chains || 0) === 0 && (m.P.pending || 0) > 0 && (d.jobs_running || 0) > 0) fire("dead", "활성 체인 0 — 진행이 멈춰 있었어요. 이 화면이 곧 재점화합니다 (탭을 닫아두면 다시 멈춰요)"); else clear("dead");
   }
