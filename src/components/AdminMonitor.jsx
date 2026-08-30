@@ -51,6 +51,8 @@ export default function AdminMonitor() {
     };
     const clear = (key) => { delete alertsRef.current[key]; };
     if (m.krw > budget) fire("budget", `누적 지출 추정 ${m.krw.toLocaleString()}원 > 예산 ${budget.toLocaleString()}원 — 일시정지 권장`); else clear("budget");
+    const clsN = (d.steps || []).find((x) => x.step === "classify")?.n || 0;
+    if (clsN > 400) fire("clsloop", `분류 호출 ${clsN}회/1h — 좀비 마감 루프 의심 (v2.12 배포·지혈 SQL 확인)`); else clear("clsloop");
     if (m.rate > 5 && m.callsPerPage > 2.6) fire("burst", `페이지당 호출 ${m.callsPerPage.toFixed(1)}회 — 재시도 폭주 의심 (정상 1.3~2.2)`); else clear("burst");
     if ((d.chains || 0) === 0 && (m.P.pending || 0) > 0 && (d.jobs_running || 0) > 0) alertsRef.current.dead = "활성 체인 0 — 워치독이 재점화 중"; else clear("dead");
     force((x) => x + 1);
