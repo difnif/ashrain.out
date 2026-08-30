@@ -1,7 +1,7 @@
 // 더보기 — 부속 화면 진입
 import { Page, Card, Row, Chip } from "../../../shared/demo";
 
-export default function More() {
+export default function More({ isAdmin }) {
   return (
     <Page title="더보기">
       <Card>
@@ -10,6 +10,7 @@ export default function More() {
         <Row main="월례 설문" sub="환급 조건 — 이번 달 미제출" right={<Chip tone="down">D-1</Chip>} onClick={() => (location.hash = "#/survey")} />
         <Row main="강사 검증" sub="서류 심사로 2층 진입" right={<Chip tone="warn">미제출</Chip>} onClick={() => (location.hash = "#/verify")} />
         <Row main="문의" sub="운영자 채널" onClick={() => (location.hash = "#/support")} />
+        {isAdmin && <Row main="폰트 창고" sub="UI 서체 수집처" right={<Chip tone="warn">관리자</Chip>} onClick={() => (location.hash = "#/fonts")} />}
       </Card>
     </Page>
   );

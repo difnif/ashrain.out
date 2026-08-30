@@ -173,3 +173,25 @@
   --ok: var(--rl-good); --warn: var(--rl-amber); --down: var(--rl-bad);
   --focus: 0 0 0 3px rgba(138, 103, 23, .22);
 }
+
+/* ── 시록고·종성 UI 서체 ──────────────────────────────────────────
+   한글 = EBS 훈민정음 새론체(셀프호스팅: public/fonts/에 파일 커밋), 영문 = Tangerine(구글 CDN).
+   스택 순서가 곧 분담: 라틴 글리프는 Tangerine이 먼저 먹고, 한글은 새론체로 떨어진다.
+   본문·입력은 가독성 위해 기존 산세리프 유지 — 크롬(제목·탭·버튼·섹션 라벨)만 적용. */
+@font-face {
+  font-family: "EBS Hunminjeongeum Saeron";
+  src: url("/fonts/EBSHunminjeongeumSaeronR.woff2") format("woff2"),
+       url("/fonts/EBSHunminjeongeumSaeronR.ttf") format("truetype");
+  font-weight: 400; font-display: swap;
+}
+:root { --font-display: "Tangerine", "EBS Hunminjeongeum Saeron", var(--font-ui); }
+
+[data-app="seirocco"] h1, [data-app="seirocco"] h2,
+[data-app="seirocco"] .d-tab, [data-app="seirocco"] .d-ct,
+[data-app="seirocco"] .d-btn, [data-app="seirocco"] .ap-btn,
+[data-app="jongseong"] h1, [data-app="jongseong"] h2,
+[data-app="jongseong"] .d-tab, [data-app="jongseong"] .d-ct,
+[data-app="jongseong"] .d-btn, [data-app="jongseong"] .ap-btn {
+  font-family: var(--font-display);
+  letter-spacing: .01em;
+}

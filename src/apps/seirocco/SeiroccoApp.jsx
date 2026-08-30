@@ -17,9 +17,10 @@ import Survey from "./pages/Survey";
 import Verify from "./pages/Verify";
 import Support from "./pages/Support";
 import More from "./pages/More";
+import Fonts from "./pages/Fonts";
 
 const NAV = [["", "홈"], ["students", "학생"], ["predict", "예측"], ["contracts", "계약"], ["more", "더보기"]];
-const MORE_SET = ["interview", "career", "survey", "verify", "support", "more"];
+const MORE_SET = ["interview", "career", "survey", "verify", "support", "fonts", "more"];
 
 export default function SeiroccoApp() {
   const [ms, setMs] = useState(null);
@@ -50,7 +51,7 @@ export default function SeiroccoApp() {
   const PAGES = {
     "": Home, students: param ? StudentDetail : Students, predict: Predict,
     contracts: Contracts, interview: Interview, career: Career, survey: Survey,
-    verify: Verify, support: Support, more: More,
+    verify: Verify, support: Support, fonts: Fonts, more: More,
   };
   // 조교 제한 모드: 1층 화면만
   const AST = { "": Home, interview: Interview, support: Support, more: More };
@@ -63,7 +64,7 @@ export default function SeiroccoApp() {
       <div className="ap-wrap">
         <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <h1 style={{ fontSize: 19, margin: 0, letterSpacing: ".02em", cursor: "pointer" }}
-            onClick={() => (location.hash = "")}>세이로코</h1>
+            onClick={() => (location.hash = "")}>시록고 <span style={{ fontSize: 15, color: "var(--mut)", fontWeight: 400 }}>SEIROCCO</span></h1>
           {isAssistant && (
             <span style={{ fontSize: 11, fontWeight: 800, color: "var(--ac)",
               border: "1px solid var(--ac)", borderRadius: 999, padding: "3px 9px" }}>조교 모드</span>
@@ -84,7 +85,7 @@ export default function SeiroccoApp() {
                   onClick={() => (location.hash = "#/" + k)}>{l}</button>
               ))}
             </div>
-            <Cmp param={param} isAssistant={isAssistant} />
+            <Cmp param={param} isAssistant={isAssistant} isAdmin={adm} />
           </>
         ) : (
           <div className="ap-card">

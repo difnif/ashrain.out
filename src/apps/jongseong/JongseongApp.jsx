@@ -17,9 +17,10 @@ import Gift from "./pages/Gift";
 import Survey from "./pages/Survey";
 import Link from "./pages/Link";
 import More from "./pages/More";
+import Vault from "./pages/Vault";
 
 const NAV = [["", "홈"], ["letters", "서신"], ["cheer", "응원"], ["calendar", "일정"], ["more", "더보기"]];
-const MORE_SET = ["board", "pay", "gift", "survey", "link", "more"];
+const MORE_SET = ["board", "pay", "gift", "survey", "link", "vault", "more"];
 
 export default function JongseongApp() {
   const [ms, setMs] = useState(null);
@@ -44,7 +45,7 @@ export default function JongseongApp() {
 
   const allowed = adm || (ms || []).some((m) => m.role === "guardian");
   const PAGES = { "": Home, letters: Letters, cheer: Cheer, calendar: Calendar,
-    board: Board, pay: Pay, gift: Gift, survey: Survey, link: Link, more: More };
+    board: Board, pay: Pay, gift: Gift, survey: Survey, link: Link, vault: Vault, more: More };
   const Cmp = PAGES[page] || Home;
   const navCur = MORE_SET.includes(page) ? "more" : page;
 
@@ -54,7 +55,7 @@ export default function JongseongApp() {
       <div className="ap-wrap">
         <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <h1 style={{ fontSize: 19, margin: 0, letterSpacing: ".02em", cursor: "pointer" }}
-            onClick={() => (location.hash = "")}>종성</h1>
+            onClick={() => (location.hash = "")}>종성 <span style={{ fontSize: 15, color: "var(--mut)", fontWeight: 400 }}>JONGSEONG</span></h1>
           <span style={{ flex: 1 }} />
           <button className="ap-btn" onClick={async () => { await supabase.auth.signOut(); navigatePath("/"); }}>
             로그아웃
@@ -71,7 +72,7 @@ export default function JongseongApp() {
                   onClick={() => (location.hash = "#/" + k)}>{l}</button>
               ))}
             </div>
-            <Cmp param={param} />
+            <Cmp param={param} isAdmin={adm} />
           </>
         ) : (
           <div className="ap-card">
