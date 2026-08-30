@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import RoleSwitch from "../../shared/RoleSwitch";
+import LogoTrigger from "../../shared/LogoTrigger";
 import { getMemberships, navigatePath, studentPath } from "../../shared/roles";
 import { Kit, useAppHash } from "../../shared/demo";
 import Haso from "../../shared/spaces/Haso";
@@ -58,6 +59,11 @@ export default function JongseongApp() {
       <Kit />
       <div className="ap-wrap">
         <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <LogoTrigger handle={<span className="lt-tile">종</span>}
+            right={{ tag: "강", label: "시록고", go: () => navigatePath("/seirocco") }}
+            down={{ tag: <img src="/brand/ashrain_logo.png" alt="학생" />, label: "학생앱",
+              go: async () => navigatePath(await studentPath()) }}
+            onLogoClick={() => (location.hash = "")} />
           <h1 style={{ fontSize: 19, margin: 0, letterSpacing: ".02em", cursor: "pointer" }}
             onClick={() => (location.hash = "")}>종성 <span style={{ fontSize: 15, color: "var(--mut)", fontWeight: 400 }}>JONGSEONG</span></h1>
           <span style={{ flex: 1 }} />
