@@ -38,7 +38,8 @@ import News from "./pages/News";
 import Duty from "./pages/Duty";
 // P0 셸 — 관문·경로층 라우터
 import Gate from "./gate/Gate";
-import { rolePath } from "./shared/roles";
+import { rolePath, navigatePath } from "./shared/roles";
+import LogoTrigger from "./shared/LogoTrigger";
 const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
 const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
 
@@ -381,13 +382,14 @@ function TopBar({ theme, onToggleTheme, hash }) {
       `}</style>
       <div className="tb-in">
         <div className="tb-r1">
-          {dday ? (
+          <LogoTrigger src="/brand/ashrain_logo.png" height={28}
+            right={{ tag: "모", label: "학부모", go: () => navigatePath("/jongseong") }}
+            down={{ tag: "강", label: "강사", go: () => navigatePath("/seirocco") }}
+            onLogoClick={() => (location.hash = "")} />
+          {dday && (
             <div className="tb-dday" title={dday.title} onClick={() => (location.hash = "")} style={{ cursor: "pointer" }}>
               {dday.days === 0 ? "D-DAY" : `D-${dday.days}`}
             </div>
-          ) : (
-            <img className="tb-logo" src="/brand/ashrain_logo.png" alt="ashrain"
-              style={{ cursor: "pointer" }} onClick={() => (location.hash = "")} />
           )}
           <span className="tb-sp" />
           <button className="tb-btn" onClick={() => (location.hash = "#/me")}>👤 마이페이지</button>
