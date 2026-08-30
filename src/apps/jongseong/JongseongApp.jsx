@@ -19,12 +19,12 @@ import Offering from "./pages/Offering";
 import Reading from "./pages/Reading";
 import Baekdol from "./pages/Baekdol";
 import Pigeon from "./pages/Pigeon";
-import Link from "./pages/Link";
+import My from "./pages/My";
 import Vault from "./pages/Vault";
 import More from "./pages/More";
 
 const NAV = [["", "홈"], ["haso", "하소"], ["maru", "마루"], ["bang", "방"], ["more", "더보기"]];
-const MORE_SET = ["firewood", "stoke", "offering", "reading", "baekdol", "pigeon", "link", "vault", "more"];
+const MORE_SET = ["firewood", "stoke", "offering", "reading", "baekdol", "pigeon", "my", "vault", "more"];
 
 export default function JongseongApp() {
   const [ms, setMs] = useState(null);
@@ -50,7 +50,7 @@ export default function JongseongApp() {
   const allowed = adm || (ms || []).some((m) => m.role === "guardian");
   const PAGES = { "": Home, haso: Haso, maru: Maru, bang: Bang,
     firewood: Firewood, stoke: Stoke, offering: Offering, reading: Reading,
-    baekdol: Baekdol, pigeon: Pigeon, link: Link, vault: Vault, more: More };
+    baekdol: Baekdol, pigeon: Pigeon, my: My, vault: Vault, more: More };
   const Cmp = PAGES[page] || Home;
   const navCur = MORE_SET.includes(page) ? "more" : page;
 

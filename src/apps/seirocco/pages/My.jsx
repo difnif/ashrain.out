@@ -1,5 +1,6 @@
 // 마이페이지 — 등급(현감~) · 산식 · 심사 · 검증 · 이용권
 import { Page, Card, Row, Chip, Stat } from "../../../shared/demo";
+import Ties from "../../../shared/Ties";
 
 export default function My() {
   return (
@@ -18,6 +19,7 @@ export default function My() {
       <Card title="검증">
         <Row main="강사등록증" sub="서류 심사로 실명 활동 자격(2층)" right={<Chip tone="warn">미제출</Chip>} />
       </Card>
+      <Ties />
       <Card title="이용권">
         <Row main="사무 (행정)" sub="학생·숙제·발신" right={<Chip tone="ok">무료</Chip>} />
         <Row main="서무 + 문서고 (코퍼스)" sub="가격·구성 [미결]" right={<Chip tone="warn">유료</Chip>} />
