@@ -44,6 +44,7 @@ export default function Onboarding() {
   const [otpLeft, setOtpLeft] = useState(0);
 
   useEffect(() => {
+    sessionStorage.setItem('ob_nudged', '1'); // 이 화면을 봤으면 다시 강제로 끌어오지 않는다
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setMe(null); return; }
@@ -93,7 +94,7 @@ export default function Onboarding() {
     ...(nickname.trim() ? { nickname: nickname.trim() } : {}),
     ...(normCode(code) ? { member_code: normCode(code) } : {}),
     ...(phoneToken ? { phone_token: phoneToken } : {}),
-  });
+  }, { auth: true });
 
   const next = () => run(async () => {
     const age = checkInfo();
@@ -189,13 +190,18 @@ export default function Onboarding() {
           <label className="ob-label">생년월일 <i className="ob-req">필수 — 만 14세 미만은 보호자 동의가 필요해요</i></label>
           <BirthInput value={birth} onChange={setBirth} inputClass="ob-inp" />
 
-          <label className="ob-label">닉네임 <i className="ob-opt">선택</i></label>
-          <input className="ob-inp" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="앱에서 표시될 이름" />
+          <details className="ob-fold">
+            <summary>닉네임 · 학원 고유번호 <i className="ob-opt">선택</i></summary>
+            <div className="ob-fold-in">
+              <label className="ob-label">닉네임</label>
+              <input className="ob-inp" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="앱에서 표시될 이름" />
 
-          <label className="ob-label">학원 고유번호 <i className="ob-opt">선택 — AI 기능 활성화</i></label>
-          <input className="ob-inp ob-code" value={code} onChange={(e) => setCode(e.target.value)}
-            placeholder="ASH37-1A2B3CD-4E5 (없으면 비워두세요)" autoCapitalize="characters" />
-          {normCode(code).length === 15 && <p className="ob-hint">{fmtCode(code)}</p>}
+              <label className="ob-label">학원 고유번호 <i className="ob-opt">AI 기능 활성화</i></label>
+              <input className="ob-inp ob-code" value={code} onChange={(e) => setCode(e.target.value)}
+                placeholder="ASH37-1A2B3CD-4E5 (없으면 비워두세요)" autoCapitalize="characters" />
+              {normCode(code).length === 15 && <p className="ob-hint">{fmtCode(code)}</p>}
+            </div>
+          </details>
 
           <button className="ob-btn ob-main" disabled={busy} onClick={next}>다음</button>
         </div>
@@ -284,6 +290,12 @@ function Style() {
       .ob-hint { font-size: .76rem; opacity: .55; margin: 2px 0 0; }
       .ob-timer { font-size: .78rem; color: #e05252; font-weight: 700; margin: 2px 0 0;
         font-variant-numeric: tabular-nums; }
+      .ob-fold { border: 1px dashed rgba(127,127,127,.3); border-radius: 10px; padding: 2px 12px 10px; margin-top: 4px; }
+      .ob-fold summary { cursor: pointer; font-size: .8rem; opacity: .75; padding: 8px 0; list-style: none; user-select: none; }
+      .ob-fold summary::-webkit-details-marker { display: none; }
+      .ob-fold summary::before { content: '▸ '; }
+      .ob-fold[open] summary::before { content: '▾ '; }
+      .ob-fold-in { display: flex; flex-direction: column; gap: 8px; }
       .ob-done { margin: 0 0 4px; font-size: 1.05rem; }
       .ob-desc { font-size: .86rem; line-height: 1.65; margin: 0 0 6px; }
       .ob-err { font-size: .84rem; color: #e05252; margin: 12px 0 0; text-align: center; }

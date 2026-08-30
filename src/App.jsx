@@ -121,12 +121,14 @@ function MfaGate({ theme, onPass }) {
 function VerifyGate({ theme, prof }) {
   const minor = prof?.is_minor;
   const trial = prof?.role === "trial";
+  const noBirth = !trial && !prof?.birth_date;
   return (
     <Rx theme={theme}>
       <div style={{ maxWidth: 400, margin: "0 auto", padding: "72px 16px", textAlign: "center", color: "var(--text)" }}>
         <h2 style={{ fontSize: 20 }}>🔒 지금은 개념 열람만 가능해요</h2>
         <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.7 }}>
           {trial ? "체험 계정은 개념 열람만 가능해요. 정식 가입 후 모든 기능을 쓸 수 있어요."
+            : noBirth ? "나이 확인이 아직 안 됐어요. 생년월일 확인과 본인 인증을 마치면 모든 기능이 열려요."
             : minor ? "만 14세 미만 학생은 보호자(법정대리인) 동의가 확인되면 모든 기능이 열려요."
             : "본인 인증(휴대폰)이 확인되면 모든 기능이 열려요. 마이페이지에서 인증할 수 있어요."}
         </p>
@@ -135,10 +137,10 @@ function VerifyGate({ theme, prof }) {
             style={{ marginTop: 8, padding: "12px 20px", borderRadius: 12, border: "none",
               background: "var(--accent)", color: "#fff", fontSize: 15, fontWeight: 700 }}>회원가입 하러 가기</button>
         ) : (
-          <button onClick={() => (location.hash = minor ? "#/guardian" : "#/me")}
+          <button onClick={() => (location.hash = noBirth ? "#/onboarding" : minor ? "#/guardian" : "#/me")}
             style={{ marginTop: 8, padding: "12px 20px", borderRadius: 12, border: "none",
               background: "var(--accent)", color: "#fff", fontSize: 15, fontWeight: 700 }}>
-            {minor ? "보호자 동의 진행하기" : "마이페이지로 이동"}</button>
+            {noBirth ? "확인 이어서 하기" : minor ? "보호자 동의 진행하기" : "마이페이지로 이동"}</button>
         )}
         <p style={{ marginTop: 14 }}>
           <a href="#/" style={{ color: "var(--muted)", fontSize: 13 }}>개념 학습 계속하기</a>
@@ -248,8 +250,11 @@ function AppRoutes() {
   const provider = session.user.app_metadata?.provider || "email";
 
   // 소셜 첫 로그인 — 생년월일(나이 확인)이 없으면 온보딩부터
+  // 소셜 미온보딩: 세션당 1회만 온보딩으로 안내 — 이후엔 자유 이동(기능 잠금은 VerifyGate 담당)
   if (prof && prof.role !== "admin" && provider !== "email" && !prof.birth_date
-      && !hash.startsWith("#/onboarding") && !hash.startsWith("#/qr-approve")) {
+      && !hash.startsWith("#/onboarding") && !hash.startsWith("#/qr-approve")
+      && !sessionStorage.getItem("ob_nudged")) {
+    sessionStorage.setItem("ob_nudged", "1");
     location.hash = "#/onboarding";
   }
   const verified =
