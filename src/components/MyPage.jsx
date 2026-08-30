@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient";
 import SecurityCard from "./SecurityCard";
 import PointsCard from "./PointsCard";
 import { fmtCode, api } from "../lib/authx";
+import RoleSwitch from "../shared/RoleSwitch";
 
 const GRADES = ["초3","초4","초5","초6","중1","중2","중3","기타"];
 const THIS_YEAR = new Date().getFullYear();
@@ -144,6 +145,8 @@ export default function MyPage({ theme, onToggleTheme }) {
       <style>{CSS}</style>
       <div className="mp-wrap">
         <h1 className="mp-h">마이페이지 <span className="mp-back" style={{ float: "right", fontWeight: 400 }} onClick={() => (location.hash = "")}>← 홈</span></h1>
+
+        <RoleSwitch current="student" />
 
         <div className="mp-card">
           <p className="mp-sec">프로필</p>

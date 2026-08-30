@@ -1,0 +1,49 @@
+/* src/shared/theme/tokens.css — P0: 전역 스케일 + 역할별 시맨틱 스코프
+   기존 학생앱 컴포넌트(.hm-* .mp-* .tb-* 등)는 자기 스타일을 그대로 쓰고,
+   이 파일은 관문·세이로코·종성(신규 셸)과 이후 공용 컴포넌트가 참조한다.
+   변수명은 현행 관례(--ink --mut --card --bd --ac)를 그대로 확장한 것. */
+
+:root {
+  --font-ui: "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-serif: "Noto Serif KR", "Nanum Myeongjo", Batang, serif; /* 종성 서신 본문 전용 */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px;
+}
+
+/* ashrain(학생) — 밤길. 현행 다크 팔레트와 동일(등불 옐로). */
+[data-app="ashrain"] {
+  --bg: #0B0C0F; --card: #15171C; --in: #101116;
+  --ink: #E2E8F0; --mut: #6B7280; --bd: #23262D;
+  --ac: #FFE03C; --ac2: #F5B94A;
+  --ok: #4ADE80; --warn: #F5B94A; --down: #F87171;
+  --focus: 0 0 0 3px rgba(255, 224, 60, .28);
+}
+
+/* 세이로코(강사) — 새벽 서고. 회청 바탕, 쪽빛 액센트. */
+[data-app="seirocco"] {
+  --bg: #EEF1F5; --card: #FFFFFF; --in: #F5F7FA;
+  --ink: #1C2430; --mut: #5A6478; --bd: #D8DEE8;
+  --ac: #2E4A8C; --ac2: #5A79C4;
+  --ok: #1D9E75; --warn: #BA7517; --down: #C0392B;
+  --focus: 0 0 0 3px rgba(46, 74, 140, .22);
+}
+
+/* 종성(학부모) — 해질녘 마루. 미색 한지, 대추빛 액센트. */
+[data-app="jongseong"] {
+  --bg: #F6EFE4; --card: #FFFDF8; --in: #F1E8D8;
+  --ink: #33291F; --mut: #8A7B66; --bd: #E2D5C2;
+  --ac: #A4512E; --ac2: #C98A5E;
+  --ok: #4C7A4C; --warn: #B07A2A; --down: #A33B3B;
+  --focus: 0 0 0 3px rgba(164, 81, 46, .22);
+}
+
+/* 신규 셸 공통 최소 프리미티브 — ap- 접두로 기존 화면과 격리 */
+.ap-shell { min-height: 100vh; background: var(--bg); color: var(--ink); font-family: var(--font-ui); }
+.ap-shell * { box-sizing: border-box; }
+.ap-wrap { max-width: 680px; margin: 0 auto; padding: 16px 14px 40px; }
+.ap-card { background: var(--card); border: 1px solid var(--bd); border-radius: var(--r-lg); padding: 16px; }
+.ap-sec { color: var(--mut); font-size: 12px; font-weight: 700; letter-spacing: .04em; margin: 0 0 10px; }
+.ap-btn { background: var(--card); border: 1px solid var(--bd); border-radius: 999px; color: var(--ink);
+  font-size: 12.5px; font-weight: 700; padding: 8px 12px; cursor: pointer; font-family: inherit; }
+.ap-btn.pri { background: var(--ac); border-color: var(--ac); color: var(--bg); }
+.ap-btn:focus-visible, .ap-card:focus-visible { outline: none; box-shadow: var(--focus); }

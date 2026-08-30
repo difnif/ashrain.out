@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { useTheme } from "./lib/theme";
 import SplashAuth from "./components/SplashAuth";
@@ -33,6 +33,11 @@ import Philosophy from "./components/Philosophy";
 import HomeDash from "./components/HomeDash";
 import AdminCalendar from "./components/AdminCalendar";
 import QnaBoard from "./components/QnaBoard";
+// P0 셸 — 관문·경로층 라우터
+import Gate from "./gate/Gate";
+import { rolePath } from "./shared/roles";
+const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
+const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
 
 function useHash() {
   const [hash, setHash] = useState(location.hash);
@@ -406,7 +411,8 @@ function TopBar({ theme, onToggleTheme, hash }) {
   );
 }
 
-export default function App() {
+// ── 학생앱(기존 전체) — 경로층 아래서 무수정 동작 ──
+function StudentApp() {
   const hash = useHash();
   const { theme, toggle } = useTheme();
   return (
@@ -415,4 +421,94 @@ export default function App() {
       <AppRoutes />
     </>
   );
+}
+
+const KNOWN_SEGS = ["", "walking", "running", "seirocco", "jongseong"];
+
+function usePathSeg() {
+  const read = () => location.pathname.split("/")[1] || "";
+  const [seg, setSeg] = useState(read);
+  useEffect(() => {
+    const h = () => setSeg(read());
+    window.addEventListener("popstate", h);
+    window.addEventListener("pathchange", h);
+    return () => { window.removeEventListener("popstate", h); window.removeEventListener("pathchange", h); };
+  }, []);
+  return [seg, setSeg];
+}
+
+// ── 경로층 라우터(P0): pathname 1단계 = 앱 선택, 해시 = 앱 내부(현행 그대로) ──
+function PathRouter() {
+  const { theme, toggle } = useTheme();
+  const hash = useHash();
+  const [seg, setSeg] = usePathSeg();
+  const [session, setSession] = useState(undefined);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s ?? null));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // 경로 → 테마 스코프(신규 셸·향후 공용 컴포넌트용)
+  useEffect(() => {
+    document.documentElement.dataset.app =
+      seg === "seirocco" ? "seirocco" : seg === "jongseong" ? "jongseong" : "ashrain";
+  }, [seg]);
+
+  // 미지의 경로 → 관문으로 정리
+  useEffect(() => {
+    if (!KNOWN_SEGS.includes(seg)) {
+      history.replaceState(null, "", "/" + location.hash);
+      setSeg("");
+    }
+  }, [seg, setSeg]);
+
+  // 관문(/) + 로그인 → 마지막 역할 경로로 (주소만 교체, 리로드 없음)
+  useEffect(() => {
+    if (seg !== "" || !session) return;
+    const last = session.user.user_metadata?.last_role || "student";
+    const to = rolePath(last);
+    history.replaceState(null, "", to + location.search + location.hash);
+    setSeg(to.slice(1));
+  }, [seg, session, setSeg]);
+
+  // /walking ↔ /running 무음 동기화 — honor_path 기준. 컬럼 미존재·조회 실패는 조용히 통과.
+  // 합격 공지 없음: 자격이 생기면 다음 접속부터 주소만 바뀌고, 미자격 /running 진입은 잠금 화면 없이 치환.
+  useEffect(() => {
+    if (!session || (seg !== "walking" && seg !== "running")) return;
+    let alive = true;
+    supabase.from("profiles").select("honor_path").eq("id", session.user.id).maybeSingle()
+      .then(({ data, error }) => {
+        if (!alive || error) return;
+        const honor = !!data?.honor_path;
+        if (seg === "running" && !honor) { history.replaceState(null, "", "/walking" + location.hash); setSeg("walking"); }
+        else if (seg === "walking" && honor) { history.replaceState(null, "", "/running" + location.hash); setSeg("running"); }
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [seg, session?.user?.id, setSeg]);
+
+  if (seg === "walking" || seg === "running") return <StudentApp />;
+
+  if (seg === "seirocco" || seg === "jongseong") {
+    if (session === undefined) return null;
+    if (!session) return <SplashAuth theme={theme} onToggleTheme={toggle} onSuccess={() => {}} />;
+    const Shell = seg === "seirocco" ? SeiroccoApp : JongseongApp;
+    return <Suspense fallback={null}><Shell /></Suspense>;
+  }
+
+  if (!KNOWN_SEGS.includes(seg)) return null;
+
+  // seg === "" — 관문
+  if (session === undefined) return null;
+  if (session) return null; // 위 효과가 역할 경로로 옮기는 중
+  // pushState는 hashchange를 발생시키지 않으므로 상태(hash) 대신 실제 값을 읽는다
+  const liveHash = location.hash;
+  if (liveHash && liveHash !== "#" && liveHash !== "#/") return <StudentApp />; // 레거시 비로그인 해시(#/signup, #/qr 등)
+  return <Gate />;
+}
+
+export default function App() {
+  return <PathRouter />;
 }
