@@ -11,6 +11,7 @@ import {
   normPhone, quickCheckCode, normCode, fmtCode, codeRoleType,
   recordLoginMethod, PW_MIN,
 } from '../lib/authx';
+import BirthInput from '../shared/BirthInput';
 
 
 // 남은 시간 mm:ss
@@ -228,7 +229,7 @@ export default function Signup() {
           <input className="su-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="실명" />
 
           <label className="su-label">생년월일 <i className="su-req">필수</i></label>
-          <input className="su-input" type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
+          <BirthInput value={birth} onChange={setBirth} inputClass="su-input" />
 
           <label className="su-label">아이디 <i className="su-req">필수</i></label>
           <div className="su-row">

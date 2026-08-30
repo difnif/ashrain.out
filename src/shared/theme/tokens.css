@@ -1,43 +1,160 @@
-/* src/shared/theme/tokens.css — P0: 전역 스케일 + 역할별 시맨틱 스코프
-   기존 학생앱 컴포넌트(.hm-* .mp-* .tb-* 등)는 자기 스타일을 그대로 쓰고,
-   이 파일은 관문·세이로코·종성(신규 셸)과 이후 공용 컴포넌트가 참조한다.
-   변수명은 현행 관례(--ink --mut --card --bd --ac)를 그대로 확장한 것. */
+/* src/shared/theme/tokens.css — v2 컨셉 리스킨
+   ashrain(학생) = 르네상스: 양피지·금박·군청(라피스)·녹청(베르디그리). 다크 기본 = 밤의 화실.
+   세이로코·종성 = 조선 중기: 한지·먹·쪽염·꼭두서니.
+   방식: ① 신규 셸(관문·세이로코·종성)은 [data-app] 스코프 변수 사용.
+        ② 기존 학생앱 16가족(.hm- .tb- .mp- …)은 아래 리스킨 층이
+          [data-app="ashrain"] 특이도로 컴포넌트 내 정의를 덮는다 — 컴포넌트 파일 무수정. */
 
 :root {
   --font-ui: "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
   --font-serif: "Noto Serif KR", "Nanum Myeongjo", Batang, serif; /* 종성 서신 본문 전용 */
   --r-sm: 6px; --r-md: 10px; --r-lg: 16px;
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px;
+
+  /* 르네상스 팔레트 — 다크(밤의 화실) */
+  --rn-bg:#1A140D; --rn-card:#241B10; --rn-in:#1E160C; --rn-bd:#3B2F1D; --rn-inbd:#4A3B24;
+  --rn-ink:#F1E7D2; --rn-mut:#A79A80;
+  --rn-gold:#E1B54B; --rn-verd:#4FB596; --rn-lapis:#4A6BB0;
+  --rn-good:#58B37E; --rn-bad:#E0604A; --rn-amber:#E0A93F; --rn-me:#2C2517;
+
+  /* 르네상스 팔레트 — 라이트(양피지) */
+  --rl-bg:#F1E8D5; --rl-card:#FBF5E7; --rl-in:#EFE5CE; --rl-bd:#DACAA6; --rl-inbd:#CDBB92;
+  --rl-ink:#33291A; --rl-mut:#7E6F54;
+  --rl-gold:#8A6717; --rl-verd:#1E6B57; --rl-lapis:#35548F;
+  --rl-good:#2E7D53; --rl-bad:#B3402C; --rl-amber:#8F6510; --rl-me:#E8DFC5;
 }
 
-/* ashrain(학생) — 밤길. 현행 다크 팔레트와 동일(등불 옐로). */
+/* ── 앱 스코프(신규 셸·공용 컴포넌트) ─────────────────────────── */
+
+/* ashrain(학생) — 르네상스 다크 기본 */
 [data-app="ashrain"] {
-  --bg: #0B0C0F; --card: #15171C; --in: #101116;
-  --ink: #E2E8F0; --mut: #6B7280; --bd: #23262D;
-  --ac: #FFE03C; --ac2: #F5B94A;
-  --ok: #4ADE80; --warn: #F5B94A; --down: #F87171;
-  --focus: 0 0 0 3px rgba(255, 224, 60, .28);
+  --bg: var(--rn-bg); --card: var(--rn-card); --in: var(--rn-in);
+  --ink: var(--rn-ink); --mut: var(--rn-mut); --bd: var(--rn-bd);
+  --ac: var(--rn-gold); --ac2: var(--rn-lapis);
+  --ok: var(--rn-good); --warn: var(--rn-amber); --down: var(--rn-bad);
+  --focus: 0 0 0 3px rgba(225, 181, 75, .26);
 }
 
-/* 세이로코(강사) — 새벽 서고. 회청 바탕, 쪽빛 액센트. */
+/* 세이로코(강사) — 조선 중기: 한지에 쪽빛 */
 [data-app="seirocco"] {
-  --bg: #EEF1F5; --card: #FFFFFF; --in: #F5F7FA;
-  --ink: #1C2430; --mut: #5A6478; --bd: #D8DEE8;
-  --ac: #2E4A8C; --ac2: #5A79C4;
-  --ok: #1D9E75; --warn: #BA7517; --down: #C0392B;
-  --focus: 0 0 0 3px rgba(46, 74, 140, .22);
+  --bg: #F1EBDD; --card: #FAF6EB; --in: #ECE4D2;
+  --ink: #26221B; --mut: #7B7260; --bd: #DCD2BC;
+  --ac: #2F4B76; --ac2: #6B83A8;
+  --ok: #2F6E58; --warn: #9C6D1D; --down: #A23B2A;
+  --focus: 0 0 0 3px rgba(47, 75, 118, .22);
 }
 
-/* 종성(학부모) — 해질녘 마루. 미색 한지, 대추빛 액센트. */
+/* 종성(학부모) — 조선 중기: 한지 저녁에 꼭두서니 */
 [data-app="jongseong"] {
-  --bg: #F6EFE4; --card: #FFFDF8; --in: #F1E8D8;
-  --ink: #33291F; --mut: #8A7B66; --bd: #E2D5C2;
-  --ac: #A4512E; --ac2: #C98A5E;
-  --ok: #4C7A4C; --warn: #B07A2A; --down: #A33B3B;
-  --focus: 0 0 0 3px rgba(164, 81, 46, .22);
+  --bg: #F5ECDA; --card: #FCF6E9; --in: #F0E6D0;
+  --ink: #2E2519; --mut: #85765D; --bd: #E0D3B8;
+  --ac: #9E3B2E; --ac2: #C06B4A;
+  --ok: #4C7A4C; --warn: #A9752B; --down: #8F2F23;
+  --focus: 0 0 0 3px rgba(158, 59, 46, .22);
 }
 
-/* 신규 셸 공통 최소 프리미티브 — ap- 접두로 기존 화면과 격리 */
+/* ── 학생앱 리스킨 층: 레거시 테마 클래스 덮어쓰기 ───────────────
+   특이도 (0,2,0) > 컴포넌트 내 (0,1,0). 변수만 갈아끼우므로 레이아웃 무영향. */
+
+/* 금박 가족 — 다크 (hm aq ac ah ai ig mp qb qc) */
+[data-app="ashrain"] .hm-dark, [data-app="ashrain"] .aq-dark,
+[data-app="ashrain"] .ac-dark, [data-app="ashrain"] .ah-dark,
+[data-app="ashrain"] .ai-dark, [data-app="ashrain"] .ig-dark,
+[data-app="ashrain"] .mp-dark, [data-app="ashrain"] .qb-dark,
+[data-app="ashrain"] .qc-dark {
+  background: var(--rn-bg);
+  --card: var(--rn-card); --bd: var(--rn-bd); --ink: var(--rn-ink); --mut: var(--rn-mut);
+  --ac: var(--rn-gold); --in: var(--rn-in); --inbd: var(--rn-inbd);
+  --me: var(--rn-me); --amber: var(--rn-amber);
+}
+/* 금박 가족 — 라이트 */
+[data-app="ashrain"] .hm-light, [data-app="ashrain"] .aq-light,
+[data-app="ashrain"] .ac-light, [data-app="ashrain"] .ah-light,
+[data-app="ashrain"] .ai-light, [data-app="ashrain"] .ig-light,
+[data-app="ashrain"] .mp-light, [data-app="ashrain"] .qb-light,
+[data-app="ashrain"] .qc-light {
+  background: var(--rl-bg);
+  --card: var(--rl-card); --bd: var(--rl-bd); --ink: var(--rl-ink); --mut: var(--rl-mut);
+  --ac: var(--rl-gold); --in: var(--rl-in); --inbd: var(--rl-inbd);
+  --me: var(--rl-me); --amber: var(--rl-amber);
+}
+/* qch — 배경 없는 내장 패널: 변수만 */
+[data-app="ashrain"] .qch-dark {
+  --card: var(--rn-card); --bd: var(--rn-bd); --ink: var(--rn-ink); --mut: var(--rn-mut);
+  --ac: var(--rn-gold); --in: var(--rn-in); --inbd: var(--rn-inbd); --me: var(--rn-me);
+}
+[data-app="ashrain"] .qch-light {
+  --card: var(--rl-card); --bd: var(--rl-bd); --ink: var(--rl-ink); --mut: var(--rl-mut);
+  --ac: var(--rl-gold); --in: var(--rl-in); --inbd: var(--rl-inbd); --me: var(--rl-me);
+}
+
+/* 녹청 가족 — 상단바·홈대시·철학 (기존 틸 액센트 → 베르디그리) */
+[data-app="ashrain"] .tb-dark, [data-app="ashrain"] .ph-dark {
+  background: var(--rn-bg);
+  --card: var(--rn-card); --bd: var(--rn-bd); --ink: var(--rn-ink); --mut: var(--rn-mut);
+  --ac: var(--rn-verd); --in: var(--rn-in);
+}
+[data-app="ashrain"] .tb-light, [data-app="ashrain"] .ph-light {
+  background: var(--rl-bg);
+  --card: var(--rl-card); --bd: var(--rl-bd); --ink: var(--rl-ink); --mut: var(--rl-mut);
+  --ac: var(--rl-verd); --in: var(--rl-in);
+}
+[data-app="ashrain"] .hd-dark {
+  --bg: var(--rn-bg); --card: var(--rn-card); --bd: var(--rn-bd);
+  --ink: var(--rn-ink); --mut: var(--rn-mut); --ac: var(--rn-verd); --in: var(--rn-in);
+}
+[data-app="ashrain"] .hd-light {
+  --bg: var(--rl-bg); --card: var(--rl-card); --bd: var(--rl-bd);
+  --ink: var(--rl-ink); --mut: var(--rl-mut); --ac: var(--rl-verd); --in: var(--rl-in);
+}
+
+/* rx 가족 — 인증·가입·온보딩 셸 (버튼 흰 글자 → 라피스 군청 액센트) */
+[data-app="ashrain"] .rx-dark {
+  background: var(--rn-bg);
+  --text: var(--rn-ink); --muted: var(--rn-mut);
+  --surface: var(--rn-card); --surface2: #2E2314; --surface3: var(--rn-bd);
+  --border: var(--rn-bd); --accent: var(--rn-lapis);
+  --good: var(--rn-good); --bad: var(--rn-bad);
+}
+[data-app="ashrain"] .rx-light {
+  background: var(--rl-bg);
+  --text: var(--rl-ink); --muted: var(--rl-mut);
+  --surface: var(--rl-card); --surface2: var(--rl-in); --surface3: var(--rl-bd);
+  --border: var(--rl-bd); --accent: var(--rl-lapis);
+  --good: var(--rl-good); --bad: var(--rl-bad);
+}
+
+/* cv — 개념 뷰어 크롬 (콘텐츠 패널 고정색·표지 그라데이션은 유지) */
+[data-app="ashrain"] .cv-dark {
+  background: var(--rn-bg);
+  --surface: #211910; --surface-bd: var(--rn-bd); --ink: var(--rn-ink); --mut: var(--rn-mut);
+}
+[data-app="ashrain"] .cv-light {
+  background: var(--rl-bg);
+  --surface: var(--rl-card); --surface-bd: var(--rl-bd); --ink: var(--rl-ink); --mut: var(--rl-mut);
+}
+
+/* th — 스플래시(빗속 로그인): 배경·유리·금박 글로우 */
+[data-app="ashrain"] .th-dark {
+  background: radial-gradient(1200px 800px at 50% 20%, #261C10 0%, #17110A 55%, #0F0A06 100%);
+  --card-bg: rgba(36, 27, 16, .88); --card-bd: #3B2F1D; --input-bg: #1E160C; --input-bd: #4A3B24;
+  --text: var(--rn-ink); --muted: var(--rn-mut); --label: #B3A588; --ph: #6E6250;
+  --accent: var(--rn-gold); --accent-tx: #221807; --link: #C9A85C; --link-h: #E5C77E; --sep: #463823;
+  --focus: #C89A3F; --focus-ring: rgba(225, 181, 75, .18);
+  --ctrl-bg: rgba(30, 23, 13, .8); --ctrl-tx: var(--rn-mut);
+  --logo-filter: drop-shadow(0 0 20px rgba(225, 181, 75, .22));
+}
+[data-app="ashrain"] .th-light {
+  background: linear-gradient(to bottom, #F6EEDC 0%, #EFE3C8 55%, #E2D2AC 78%, #D6C29A 100%);
+  --card-bg: rgba(255, 251, 240, .92); --card-bd: #DACAA6; --input-bg: #F3EAD6; --input-bd: #CDBB92;
+  --text: var(--rl-ink); --muted: var(--rl-mut); --label: #6F6248; --ph: #A2947A;
+  --accent: var(--rl-gold); --accent-tx: #FFF7E4; --link: #7A5E22; --link-h: #5E4715; --sep: #CFC0A0;
+  --focus: var(--rl-gold); --focus-ring: rgba(138, 103, 23, .2);
+  --ctrl-bg: rgba(255, 252, 244, .8); --ctrl-tx: var(--rl-mut);
+  --logo-filter: drop-shadow(0 0 14px rgba(170, 120, 25, .5));
+}
+
+/* ── 신규 셸 공통 최소 프리미티브 — ap- 접두로 기존 화면과 격리 ── */
 .ap-shell { min-height: 100vh; background: var(--bg); color: var(--ink); font-family: var(--font-ui); }
 .ap-shell * { box-sizing: border-box; }
 .ap-wrap { max-width: 680px; margin: 0 auto; padding: 16px 14px 40px; }

@@ -51,7 +51,7 @@ function useHash() {
 
 // raindrop 신규 화면용 테마 변수 매핑 (페이지들은 var(--text) 등만 사용)
 const RX_CSS = `
-.rx-shell{min-height:100vh}
+.rx-shell{min-height:100vh;color:var(--text)}
 .rx-light{background:#EDEFF2;--text:#1F2937;--muted:#6B7480;--surface:#FFFFFF;--surface2:#F1F2F4;--surface3:#E4E7EB;--border:#D9DEE4;--accent:#0DA95F;--good:#16A34A;--bad:#DC2626}
 .rx-dark{background:#0B0C0F;--text:#E2E8F0;--muted:#8A929C;--surface:#15171C;--surface2:#1C1F26;--surface3:#23262D;--border:#2B2E36;--accent:#5B8DEF;--good:#4ADE80;--bad:#F87171}
 `;

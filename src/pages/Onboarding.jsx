@@ -6,6 +6,7 @@
 //  · 고유번호는 선택 — 있으면 즉시 확정(AI 기능 활성화), 없어도 진행 가능.
 // 서버: /api/account { action: 'social-onboard' }
 import { useEffect, useState } from 'react';
+import BirthInput from '../shared/BirthInput';
 import {
   supabase, api, otpSend, otpVerify,
   normPhone, quickCheckCode, normCode, fmtCode, codeRoleType,
@@ -186,7 +187,7 @@ export default function Onboarding() {
           <input className="ob-inp" value={name} onChange={(e) => setName(e.target.value)} placeholder="실명" />
 
           <label className="ob-label">생년월일 <i className="ob-req">필수 — 만 14세 미만은 보호자 동의가 필요해요</i></label>
-          <input className="ob-inp" type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
+          <BirthInput value={birth} onChange={setBirth} inputClass="ob-inp" />
 
           <label className="ob-label">닉네임 <i className="ob-opt">선택</i></label>
           <input className="ob-inp" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="앱에서 표시될 이름" />
@@ -274,12 +275,12 @@ function Style() {
         border: 1px solid rgba(127,127,127,.3); background: rgba(127,127,127,.08);
         color: inherit; white-space: nowrap; }
       .ob-btn:disabled { opacity: .45; cursor: default; }
-      .ob-main { background: rgba(20,164,148,.16); border-color: rgba(20,164,148,.5);
+      .ob-main { background: rgba(74,107,176,.18); border-color: rgba(74,107,176,.55);
         font-weight: 700; margin-top: 8px; }
-      .ob-main:not(:disabled):hover { background: rgba(20,164,148,.26); }
+      .ob-main:not(:disabled):hover { background: rgba(74,107,176,.3); }
       .ob-ghost { border-style: dashed; opacity: .7; }
       .ob-note { font-size: .82rem; line-height: 1.6; padding: 9px 12px; border-radius: 10px;
-        background: rgba(20,164,148,.1); border: 1px solid rgba(20,164,148,.35); margin: 0; }
+        background: rgba(74,107,176,.12); border: 1px solid rgba(74,107,176,.4); margin: 0; }
       .ob-hint { font-size: .76rem; opacity: .55; margin: 2px 0 0; }
       .ob-timer { font-size: .78rem; color: #e05252; font-weight: 700; margin: 2px 0 0;
         font-variant-numeric: tabular-nums; }
