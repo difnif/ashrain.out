@@ -33,6 +33,9 @@ import Philosophy from "./components/Philosophy";
 import HomeDash from "./components/HomeDash";
 import AdminCalendar from "./components/AdminCalendar";
 import QnaBoard from "./components/QnaBoard";
+import Library from "./pages/Library";
+import News from "./pages/News";
+import Duty from "./pages/Duty";
 // P0 셸 — 관문·경로층 라우터
 import Gate from "./gate/Gate";
 import { rolePath } from "./shared/roles";
@@ -317,6 +320,9 @@ function AppRoutes() {
   if (hash.startsWith("#/admin/qna")) return <AdminQna theme={theme} />;
   if (hash.startsWith("#/admin/concepts")) return <AdminConcepts theme={theme} />;
   if (hash.startsWith("#/me")) return <MyPage theme={theme} onToggleTheme={toggle} />;
+  if (hash.startsWith("#/library")) return <Library hash={hash} />;
+  if (hash.startsWith("#/news")) return <News hash={hash} />;
+  if (hash.startsWith("#/duty")) return <Duty />;
   if (hash.startsWith("#/learn")) {
     const sub = hash.split("/")[2];
     return <Home theme={theme} onToggleTheme={toggle} initialCat={sub || "concept"} />;

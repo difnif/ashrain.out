@@ -293,6 +293,16 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
             <p className="hd-sub">A01-1 약수 질문에 답이 달렸어요</p>
             <button className="hd-go" onClick={() => (location.hash = "#/board")}>보러 가기 →</button>
           </div>
+
+          <div className="hd-card wide">
+            <span className="hd-demo">DEMO</span>
+            <p className="hd-t">🏛 새 공간</p>
+            <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+              <button className="hd-go" onClick={() => (location.hash = "#/library")}>📖 서재 →</button>
+              <button className="hd-go" onClick={() => (location.hash = "#/news")}>📰 신문 →</button>
+              <button className="hd-go" onClick={() => (location.hash = "#/duty")}>🧭 조교 →</button>
+            </div>
+          </div>
           <button className="hd-philo" onClick={() => (location.hash = "#/philosophy")}>
             <p className="hd-philo-eyebrow">ASHRAIN PHILOSOPHY</p>
             <p className="hd-philo-t">우리가 이렇게 가르치는 이유</p>

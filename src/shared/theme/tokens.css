@@ -164,3 +164,12 @@
   font-size: 12.5px; font-weight: 700; padding: 8px 12px; cursor: pointer; font-family: inherit; }
 .ap-btn.pri { background: var(--ac); border-color: var(--ac); color: var(--bg); }
 .ap-btn:focus-visible, .ap-card:focus-visible { outline: none; box-shadow: var(--focus); }
+
+/* ashrain 라이트(양피지) — 학생 신규 페이지·관문이 테마 토글을 따르도록 */
+[data-app="ashrain"][data-theme="light"] {
+  --bg: var(--rl-bg); --card: var(--rl-card); --in: var(--rl-in);
+  --ink: var(--rl-ink); --mut: var(--rl-mut); --bd: var(--rl-bd);
+  --ac: var(--rl-gold); --ac2: var(--rl-lapis);
+  --ok: var(--rl-good); --warn: var(--rl-amber); --down: var(--rl-bad);
+  --focus: 0 0 0 3px rgba(138, 103, 23, .22);
+}
