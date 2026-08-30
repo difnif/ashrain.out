@@ -270,6 +270,7 @@ async function classifyBatch(sb, job, known, cmapSys) {
   const { data: rows } = await sb.from("corpus_items")
     .select("id,question,choices,answer")
     .eq("doc_id", job.doc_id).eq("status", "active").is("concept_main", null)
+    .is("cluster_key", null)                       // 시도 흔적 없는 문항만 — 재시도 루프 원천 차단
     .order("page").limit(CLS_BATCH);
   if (!rows?.length) return 0;
   const payload = rows.map((r) => ({
@@ -398,7 +399,8 @@ export default async function handler(req, res) {
         try { n = await classifyBatch(sb, job, known, cmapSys); }
         catch (e) {
           if (RETRYABLE(e)) return res.status(200).json({ ok: true, paused: true, reason: String(e.message || e).slice(0, 120) });
-          break;
+          await sb.from("transcribe_jobs").update({ status: "done", updated_at: new Date().toISOString() }).eq("id", job_id).eq("status", "running");
+          return res.status(200).json({ ok: true, done: true, processed: did, classified, note: "classify 오류 — 잔여는 분류불확실로 마감" });
         }
         classified += n;
         await sb.from("transcribe_jobs").update({ updated_at: new Date().toISOString() }).eq("id", job_id);
