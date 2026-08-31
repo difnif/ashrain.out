@@ -1,4 +1,8 @@
-# ashrain.out — MathIR 파서·렌더·평가기 (mathir.py, v1.0 / 스펙 v1.1 구현)
+# ashrain.out — MathIR 파서·렌더·평가기 (mathir.py, v1.4)
+# v1.4 (답 표기층만 확장, 핵심 문법 불변 — mathir.js 동형 패치 필수):
+#   ① 낱말 답에 ㄱ~ㅎ(합답형)·①~⑳(선지) 허용   ② '21°' → deg(21)
+#   ③ '[[식]]단위'·'49.5 kg'·'frac(24,7) cm'·'72pi cm³' → 식 + unit 주석 (π→pi, ○× 낱말)   ④ 'a = 5, b = -1' / 'a < 0 and b > 0' → set(모두 성립)
+#   ⑤ '좌변: [[x + 3y]]' 같은 라벨 접두 제거
 # 위치: itemfactory/mathir.py
 # 역할: [[ ]] 혼합문 분해 → 닫힌 문법 파싱(V-01·02·08) → 정식 직렬화(왕복 V-04)
 #       → 표시 문자열(유니코드) → 정밀 평가(검산 V-03: 유리수 정확, 무리수 1e-9)
@@ -461,24 +465,52 @@ def render_text(text):
     segs, _, _ = parse_text(text)
     return "".join(s["disp"] if s["kind"] == "ir" else s["raw"] for s in segs)
 
+# v1.4③ 단위 꼬리: 답 끝의 단위 토큰(길이·넓이·부피·질량·시간·개수 등)을 떼어 unit 주석으로 보관
+_UNITS = r"(?:cm³|cm²|m³|m²|km²|mm²|cm3|cm2|m3|m2|km|cm|mm|m|kg|g|L|mL|%|개|명|원|시간|분|초|번|살|점|회|장|권|마리|가지|자루|송이|그루|대|병|봉지|통|칸)"
+
+def _split_unit(s):
+    s = re.sub(r"\s*pow\((cm|m|km|mm),\s*([23])\)$", lambda m: " " + m.group(1) + ("²" if m.group(2) == "2" else "³"), s)
+    m = re.fullmatch(r"(.+?)\s*(" + _UNITS + r")", s, re.S)
+    if m and m.group(1).strip():
+        return m.group(1).strip(), m.group(2)
+    return s, None
+
 def _parse_answer_one(s):
     s = s.strip()
-    m = re.fullmatch(r"\[\[(.+)\]\]", s, re.S)      # [[마커]] 관용 탈피
+    s = re.sub(r"^[가-힣]{1,4}\s*[:：]\s*", "", s)          # v1.4⑤ '좌변:' 라벨 접두 제거
+    unit = None
+    m = re.fullmatch(r"\[\[(.+)\]\]\s*(" + _UNITS + r")?", s, re.S)   # [[마커]] 관용 탈피 (+ 단위 꼬리)
     if m:
-        s = m.group(1).strip()
+        s, unit = m.group(1).strip(), m.group(2)
+    else:
+        s, unit = _split_unit(s)                                          # '49.5 kg' · 'frac(24,7) cm' · '500*pi cm³'
+    s = re.sub(r"(\d+(?:\.\d+)?)\s*°", r"deg(\1)", s)         # v1.4② 각도
+    s = s.replace("π", "pi")
+    s = re.sub(r"(\d)\s*pi\b", r"\1*pi", s)                     # '72pi' → 72*pi
     try:
         node, _ = parse(s)
-        return {"kind": "ir", "node": node}
+        out = {"kind": "ir", "node": node}
+        if unit: out["unit"] = unit
+        return out
     except MathIRError:
-        if re.fullmatch(r"[가-힣A-Za-z0-9 ,·~]+", s):
+        if re.fullmatch(r"[가-힣ㄱ-ㅎ①-⑳○×A-Za-z0-9 ,·~]+", s):   # v1.4① 합답형·선지·○× 기호
             return {"kind": "word", "v": s}
         raise
 
 def parse_answer(s):
-    parts = re.split(r"\s*(?:또는|\|)\s*", s.strip())
+    s = s.strip()
+    parts = re.split(r"\s*(?:또는|\|)\s*", s)
     if len(parts) >= 2:
-        items = [_parse_answer_one(p) for p in parts if p.strip()]
-        return {"kind": "set", "items": items}
+        return {"kind": "set", "items": [_parse_answer_one(p) for p in parts if p.strip()]}
+    # v1.4④ 병립 답: 'a = 5, b = -1' · 'a < 0 and b > 0' — 각 조각이 관계식/식으로 파싱될 때만 set
+    conj = re.split(r"\s*,\s*|\s+and\s+", s)
+    if len(conj) >= 2 and all(c.strip() for c in conj):
+        try:
+            its = [_parse_answer_one(c) for c in conj]
+            if all(it["kind"] == "ir" for it in its):
+                return {"kind": "set", "items": its}
+        except MathIRError:
+            pass
     return _parse_answer_one(s)
 
 def check_equation_answer(question_text, answer_str):
