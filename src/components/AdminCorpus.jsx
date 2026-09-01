@@ -1,4 +1,4 @@
-// ashrain.out — 자료 전사 코퍼스 (AdminCorpus v3.13, 관리자 전용, #/admin/corpus)
+// ashrain.out — 자료 전사 코퍼스 (AdminCorpus v3.14, 관리자 전용, #/admin/corpus)
 // v3: 전사가 "서버 작업(job)"으로 — 시작만 하면 탭을 닫아도 계속 돌고, 재접속 시 자동 재개.
 //     상단 고정 진행바 + 취소 3옵션(전체 취소 / 최근 10페이지 되돌리기 / 지금까지 저장).
 //     썸네일은 저해상 고속 렌더, 고해상 렌더는 시작 시 선택 페이지만.
@@ -6,6 +6,8 @@
 //        (사다리 규칙 복원: p_correct<45=오푸스까지 실패, 그 외=소넷까지 실패), T0-중복 제외,
 //        manifest.json(id·doc·쪽·seq·유형·처방·p_correct·초안·빠른정답·출력 규격) 동봉.
 //        전사 반영(JSON) 시 esc_triage='T1-재전사-chat' 표식.
+// v3.14: 대기 원본 내보내기 v3 — 모델×단원 체크 선택, [선택 전부 받기](zip 연속 자동 다운로드) / [하나만 받기],
+//        이미지 8병렬 다운로드(청크당 소요 1/6), 중단 버튼, 진행 표시.
 // 탭: ① 전사 실행 ② 코퍼스 열람 ③ 라우팅 현황 ④ 모니터
 
 import { useEffect, useRef, useState } from "react";
@@ -99,10 +101,13 @@ export default function AdminCorpus() {
   const [mStats, setMStats] = useState(null);
   const impRef = useRef(null);
 
-  // 대기 원본 내보내기 v2
-  const [escTier, setEscTier] = useState("sonnet");   // sonnet | opus | all
-  const [escPlan, setEscPlan] = useState(null);        // {items, chunks:[{tier,unit,idx,of,pages:[{pk,items}]}]}
-  const [escChunk, setEscChunk] = useState(1);
+  // 대기 원본 내보내기 v3 (모델×단원 체크 → 연속 다운로드)
+  const [escPlan, setEscPlan] = useState(null);        // {items, chunks:[{tier,unit,idx,of,pages:[{pk,items}]}], units:[]}
+  const [escTiers, setEscTiers] = useState(new Set(["sonnet", "opus"]));
+  const [escUnits, setEscUnits] = useState(new Set());
+  const [escOne, setEscOne] = useState(0);             // 하나만 받기 — chunks 인덱스
+  const [escRun, setEscRun] = useState(null);          // {i, n, name} 진행 중
+  const escStopRef = useRef(false);
 
   // 준비 단계
   const [title, setTitle] = useState("");
@@ -340,24 +345,28 @@ export default function AdminCorpus() {
     });
   }
 
-  // ---- 대기 원본 내보내기 v2: 계획(청크 나누기) → 청크 하나씩 zip
+  // ---- 대기 원본 내보내기 v3: 전량 계획 → 모델×단원 체크 → 선택 청크 연속 zip (이미지 8병렬)
   const tierOf = (r) => (r.p_correct != null && Number(r.p_correct) < OPUS_GATE ? "opus" : "sonnet");
+  async function pmap(list, n, fn) {
+    const out = new Array(list.length); let i = 0;
+    await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => {
+      while (i < list.length) { const k = i++; out[k] = await fn(list[k], k); }
+    }));
+    return out;
+  }
   async function planEsc() {
     setBusy(true); say("대기 원본 계획 수집 중…");
     try {
       const rows = [];
       for (let i = 0; ; i += 1000) {
-        let q = supabase.from("corpus_items")
+        const { data, error } = await supabase.from("corpus_items")
           .select("id,doc_id,page,seq,unit_id,src_tags,esc_triage,p_correct,drafts")
           .eq("status", "escalated").order("doc_id").order("page").order("seq").range(i, i + 999);
-        if (cUnit !== "all") q = q.eq("unit_id", cUnit);
-        const { data, error } = await q;
         if (error) throw new Error(error.message);
         rows.push(...(data || []));
         if (!data || data.length < 1000) break;
       }
-      const use = rows.filter((r) => !String(r.esc_triage || "").startsWith("T0")
-        && (escTier === "all" || tierOf(r) === escTier));
+      const use = rows.filter((r) => !String(r.esc_triage || "").startsWith("T0"));
       const groups = {};
       for (const r of use) {
         const gk = `${tierOf(r)}|${r.unit_id || "x"}`;
@@ -377,59 +386,78 @@ export default function AdminCorpus() {
           chunks.push({ tier, unit, idx: c + 1, of,
             pages: pks.slice(c * ESC_CHUNK, (c + 1) * ESC_CHUNK).map((pk) => ({ pk, items: groups[gk][pk] })) });
       }
-      setEscPlan({ items: use.length, chunks });
-      setEscChunk(1);
-      const totalPages = chunks.reduce((a, c) => a + c.pages.length, 0);
-      say(chunks.length
-        ? `계획 — 문항 ${use.length} · 쪽 ${totalPages} · zip ${chunks.length}개: ${chunks.slice(0, 8).map((c) => `${c.tier} ${c.unit} ${c.idx}/${c.of}(${c.pages.length}쪽)`).join(", ")}${chunks.length > 8 ? " …" : ""}`
-        : "대상 없음 (필터·티어 확인)");
+      const unitList = [...new Set(chunks.map((c) => c.unit))].sort((a, b) => (a[0] === b[0] ? a.localeCompare(b) : a[0] === "m" ? -1 : 1));
+      setEscPlan({ items: use.length, chunks, units: unitList });
+      setEscUnits(new Set(unitList)); setEscOne(0);
+      say(`계획 — 문항 ${use.length} · 쪽 ${chunks.reduce((a, c) => a + c.pages.length, 0)} · zip ${chunks.length}개. 아래에서 모델·단원 체크 후 받기`);
     } catch (e) { say("계획 실패: " + String(e.message || e)); }
     setBusy(false);
   }
-  async function exportEscChunk() {
-    const ch = escPlan?.chunks?.[escChunk - 1];
-    if (!ch) return;
-    setBusy(true); say(`zip 만드는 중 — ${ch.tier} ${ch.unit} ${ch.idx}/${ch.of} (${ch.pages.length}쪽)…`);
+  const escSelected = () => (escPlan?.chunks || []).filter((c) => escTiers.has(c.tier) && escUnits.has(c.unit));
+  const escStat = (unit, tier) => {
+    const cs = (escPlan?.chunks || []).filter((c) => c.unit === unit && c.tier === tier);
+    return cs.length ? `${cs.reduce((a, c) => a + c.pages.length, 0)}쪽·${cs.length}zip` : "-";
+  };
+  async function buildEscZip(ch) {
+    const JSZip = await loadJszip();
+    const zip = new JSZip();
+    const docIds = [...new Set(ch.pages.map((p) => p.pk.split("|")[0]))];
+    const docs = {};
+    for (let i = 0; i < docIds.length; i += 100) {
+      const { data } = await supabase.from("corpus_docs").select("id,title,answers").in("id", docIds.slice(i, i + 100));
+      (data || []).forEach((d) => { docs[d.id] = d; });
+    }
+    let missing = 0;
+    const fnameOf = (d, p) => `${ch.tier}_${ch.unit}_${safeName(docs[d]?.title || d.slice(0, 8))}_p${p}.jpg`;
+    await pmap(ch.pages, 8, async ({ pk }) => {
+      const [d, p] = pk.split("|");
+      const { data: blob, error } = await supabase.storage.from("corpus").download(`esc/${d}/p${p}.jpg`);
+      if (blob && !error) zip.file(`images/${fnameOf(d, p)}`, blob); else missing++;
+    });
+    const manifest = [];
+    for (const { pk, items } of ch.pages) {
+      const [d, p] = pk.split("|");
+      for (const r of items) manifest.push({
+        id: r.id, image: `images/${fnameOf(d, p)}`, doc_id: d, doc_title: docs[d]?.title || null,
+        page: Number(p), seq: r.seq, unit_id: r.unit_id, src_tag: r.src_tags?.[0] || null,
+        esc_triage: r.esc_triage || null, p_correct: r.p_correct ?? null, tier: ch.tier,
+        diff: r.drafts?.diff || [], draft_a: r.drafts?.a || null,
+        quick_answer: docs[d]?.answers?.[String(r.seq)] ?? null,
+      });
+    }
+    zip.file("manifest.json", JSON.stringify({
+      exported_at: new Date().toISOString(),
+      chunk: { tier: ch.tier, unit: ch.unit, idx: ch.idx, of: ch.of, pages: ch.pages.length, items: manifest.length, missing_images: missing },
+      instructions: "각 항목의 image(쪽당 문항 1개)를 보고 seq 문항을 mathir 문법(첨부 mathir.py v1.4 기준)으로 최종 전사하라. draft_a·diff는 참고만, 이미지가 근거. quick_answer는 자료의 빠른정답(있으면 대입 검산). 출력은 전사 반영(JSON) 형식: [{id, final:{seq,qtype,question,choices,answer,difficulty_est,has_math,has_figure,figure,unit_id,concept_main,concept_subs,pattern_tags,confidence}}] JSON 배열만.",
+      items: manifest,
+    }, null, 1));
+    const blob = await zip.generateAsync({ type: "blob" });
+    return { blob, name: `esc_${ch.tier}_${ch.unit}_${ch.idx}of${ch.of}.zip`, items: manifest.length, missing };
+  }
+  const saveBlob = (blob, name) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+  };
+  async function exportEscMany(list) {
+    if (!list.length) { say("선택된 zip 없음"); return; }
+    setBusy(true); escStopRef.current = false;
+    let done = 0;
     try {
-      const JSZip = await loadJszip();
-      const zip = new JSZip();
-      const docIds = [...new Set(ch.pages.map((p) => p.pk.split("|")[0]))];
-      const docs = {};
-      for (let i = 0; i < docIds.length; i += 100) {
-        const { data } = await supabase.from("corpus_docs").select("id,title,answers").in("id", docIds.slice(i, i + 100));
-        (data || []).forEach((d) => { docs[d.id] = d; });
+      for (let i = 0; i < list.length; i++) {
+        if (escStopRef.current) { say(`중단 — ${done}/${list.length}개 받음`); break; }
+        const ch = list[i];
+        setEscRun({ i: i + 1, n: list.length, name: `${ch.tier} ${ch.unit} ${ch.idx}/${ch.of}` });
+        const t0 = Date.now();
+        const z = await buildEscZip(ch);
+        saveBlob(z.blob, z.name);
+        done++;
+        say(`${i + 1}/${list.length} ${z.name} — 문항 ${z.items} · ${Math.round((Date.now() - t0) / 1000)}초${z.missing ? ` · 이미지 없음 ${z.missing}` : ""}`);
+        if (i < list.length - 1) await new Promise((ok) => setTimeout(ok, 1500));   // 브라우저 연속 다운로드 간격
       }
-      const manifest = [];
-      let missing = 0, k = 0;
-      for (const { pk, items } of ch.pages) {
-        const [d, p] = pk.split("|");
-        k++; if (k % 10 === 0) say(`  ${k}/${ch.pages.length}쪽…`);
-        const fname = `${ch.tier}_${ch.unit}_${safeName(docs[d]?.title || d.slice(0, 8))}_p${p}.jpg`;
-        const { data: blob, error } = await supabase.storage.from("corpus").download(`esc/${d}/p${p}.jpg`);
-        if (blob && !error) zip.file(`images/${fname}`, blob); else missing++;
-        for (const r of items) manifest.push({
-          id: r.id, image: `images/${fname}`, doc_id: d, doc_title: docs[d]?.title || null,
-          page: Number(p), seq: r.seq, unit_id: r.unit_id, src_tag: r.src_tags?.[0] || null,
-          esc_triage: r.esc_triage || null, p_correct: r.p_correct ?? null, tier: ch.tier,
-          diff: r.drafts?.diff || [], draft_a: r.drafts?.a || null,
-          quick_answer: docs[d]?.answers?.[String(r.seq)] ?? null,
-        });
-      }
-      zip.file("manifest.json", JSON.stringify({
-        exported_at: new Date().toISOString(),
-        chunk: { tier: ch.tier, unit: ch.unit, idx: ch.idx, of: ch.of, pages: ch.pages.length, items: manifest.length, missing_images: missing },
-        instructions: "각 항목의 image(쪽당 문항 1개)를 보고 seq 문항을 mathir 문법(첨부 mathir.py v1.4 기준)으로 최종 전사하라. draft_a·diff는 참고만, 이미지가 근거. quick_answer는 자료의 빠른정답(있으면 대입 검산). 출력은 전사 반영(JSON) 형식: [{id, final:{seq,qtype,question,choices,answer,difficulty_est,has_math,has_figure,figure,unit_id,concept_main,concept_subs,pattern_tags,confidence}}] JSON 배열만.",
-        items: manifest,
-      }, null, 1));
-      const blob = await zip.generateAsync({ type: "blob" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `esc_${ch.tier}_${ch.unit}_${ch.idx}of${ch.of}.zip`;
-      a.click(); URL.revokeObjectURL(a.href);
-      say(`내보내기 완료 — ${a.download} · 문항 ${manifest.length} · 쪽 ${ch.pages.length}${missing ? ` · 이미지 없음 ${missing}` : ""}`);
-      if (escChunk < escPlan.chunks.length) setEscChunk(escChunk + 1);
+      if (!escStopRef.current) say(`완료 — zip ${done}개. (브라우저가 "여러 파일 다운로드 허용" 물으면 허용)`);
     } catch (e) { say("내보내기 실패: " + String(e.message || e)); }
-    setBusy(false);
+    setEscRun(null); setBusy(false);
   }
 
   async function importFinal(e) {
@@ -704,7 +732,7 @@ export default function AdminCorpus() {
       {tab === "browse" && (
         <>
           <div className="cp-row">
-            <select className="cp-in" value={cUnit} onChange={(e) => { setCUnit(e.target.value); setEscPlan(null); }}>
+            <select className="cp-in" value={cUnit} onChange={(e) => setCUnit(e.target.value)}>
               <option value="all">단원 전체</option>
               {units.map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
@@ -723,29 +751,55 @@ export default function AdminCorpus() {
             <input ref={impRef} type="file" accept="application/json,.json" hidden onChange={importFinal} />
           </div>
           {mStats?.esc > 0 && (
-            <div className="cp-row">
-              <span className="cp-note" style={{ margin: 0 }}>대기 원본:</span>
-              <select className="cp-in" value={escTier} onChange={(e) => { setEscTier(e.target.value); setEscPlan(null); }}>
-                <option value="sonnet">소넷까지 실패분</option>
-                <option value="opus">오푸스까지 실패분</option>
-                <option value="all">전부</option>
-              </select>
-              {!escPlan
-                ? <button className="cp-btn" onClick={planEsc} disabled={busy}>대기 원본 계획</button>
-                : (
-                  <>
-                    <button className="cp-btn go" onClick={exportEscChunk} disabled={busy || !escPlan.chunks.length}>
-                      원본 내보내기(zip) {escPlan.chunks.length ? `${escChunk}/${escPlan.chunks.length}` : "— 대상 없음"}
+            <div className="cp-card" style={{ marginTop: 8 }}>
+              <div className="cp-row">
+                <b style={{ fontSize: 13 }}>대기 원본 내보내기</b>
+                {!escPlan
+                  ? <button className="cp-btn" onClick={planEsc} disabled={busy}>계획 세우기</button>
+                  : <button className="cp-btn sm" onClick={() => setEscPlan(null)} disabled={busy}>다시 계획</button>}
+                <span className="cp-note" style={{ margin: 0 }}>{ESC_CHUNK}쪽/zip · 파일명 앞에 실패 모델 · manifest 동봉 · T0-중복 제외</span>
+              </div>
+              {escPlan && (
+                <>
+                  <div className="cp-row" style={{ marginTop: 6 }}>
+                    <span className="cp-note" style={{ margin: 0 }}>모델:</span>
+                    {["sonnet", "opus"].map((t) => (
+                      <label key={t} className={"cp-tab" + (escTiers.has(t) ? " on" : "")} style={{ cursor: "pointer" }}>
+                        <input type="checkbox" hidden checked={escTiers.has(t)}
+                          onChange={() => setEscTiers((s) => { const n = new Set(s); n.has(t) ? n.delete(t) : n.add(t); return n; })} />
+                        {t === "sonnet" ? "소넷까지 실패" : "오푸스까지 실패"}
+                      </label>
+                    ))}
+                    <button className="cp-btn sm" onClick={() => setEscUnits(new Set(escPlan.units))}>단원 전체</button>
+                    <button className="cp-btn sm" onClick={() => setEscUnits(new Set())}>해제</button>
+                  </div>
+                  <div className="cp-row" style={{ marginTop: 4 }}>
+                    {escPlan.units.map((u) => (
+                      <label key={u} className={"cp-tab" + (escUnits.has(u) ? " on" : "")} style={{ cursor: "pointer", fontSize: 12 }}
+                        title={`소넷 ${escStat(u, "sonnet")} / 오푸스 ${escStat(u, "opus")}`}>
+                        <input type="checkbox" hidden checked={escUnits.has(u)}
+                          onChange={() => setEscUnits((s) => { const n = new Set(s); n.has(u) ? n.delete(u) : n.add(u); return n; })} />
+                        {u} <small style={{ opacity: .75 }}>{escStat(u, "sonnet")}{escTiers.has("opus") && escStat(u, "opus") !== "-" ? ` +${escStat(u, "opus")}` : ""}</small>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="cp-row" style={{ marginTop: 8 }}>
+                    <button className="cp-btn go" onClick={() => exportEscMany(escSelected())} disabled={busy || !escSelected().length}>
+                      선택 전부 받기 ({escSelected().length}개 zip · {escSelected().reduce((a, c) => a + c.pages.length, 0)}쪽)
                     </button>
-                    {escPlan.chunks.length > 1 && (
-                      <select className="cp-in" value={escChunk} onChange={(e) => setEscChunk(Number(e.target.value))}>
-                        {escPlan.chunks.map((c, i) => <option key={i} value={i + 1}>{`${i + 1}. ${c.tier} ${c.unit} ${c.idx}/${c.of} (${c.pages.length}쪽)`}</option>)}
-                      </select>
+                    <select className="cp-in" value={escOne} onChange={(e) => setEscOne(Number(e.target.value))} disabled={busy}>
+                      {escPlan.chunks.map((c, i) => <option key={i} value={i}>{`${c.tier} ${c.unit} ${c.idx}/${c.of} (${c.pages.length}쪽)`}</option>)}
+                    </select>
+                    <button className="cp-btn" onClick={() => exportEscMany([escPlan.chunks[escOne]].filter(Boolean))} disabled={busy}>하나만 받기</button>
+                    {escRun && (
+                      <>
+                        <span className="cp-note" style={{ margin: 0 }}>받는 중 {escRun.i}/{escRun.n} — {escRun.name}</span>
+                        <button className="cp-btn danger sm" onClick={() => { escStopRef.current = true; }}>중단</button>
+                      </>
                     )}
-                    <button className="cp-btn sm" onClick={() => setEscPlan(null)} disabled={busy}>다시 계획</button>
-                  </>
-                )}
-              <span className="cp-note" style={{ margin: 0 }}>{ESC_CHUNK}쪽/zip · 파일명 앞에 실패 모델 · manifest 동봉 · T0-중복 제외</span>
+                  </div>
+                </>
+              )}
             </div>
           )}
           {corpus.map((it) => (
