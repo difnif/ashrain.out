@@ -1,4 +1,4 @@
-// ashrain.out — 자료 전사 코퍼스 (AdminCorpus v3.14, 관리자 전용, #/admin/corpus)
+// ashrain.out — 자료 전사 코퍼스 (AdminCorpus v3.14.1, 관리자 전용, #/admin/corpus)
 // v3: 전사가 "서버 작업(job)"으로 — 시작만 하면 탭을 닫아도 계속 돌고, 재접속 시 자동 재개.
 //     상단 고정 진행바 + 취소 3옵션(전체 취소 / 최근 10페이지 되돌리기 / 지금까지 저장).
 //     썸네일은 저해상 고속 렌더, 고해상 렌더는 시작 시 선택 페이지만.
@@ -8,6 +8,7 @@
 //        전사 반영(JSON) 시 esc_triage='T1-재전사-chat' 표식.
 // v3.14: 대기 원본 내보내기 v3 — 모델×단원 체크 선택, [선택 전부 받기](zip 연속 자동 다운로드) / [하나만 받기],
 //        이미지 8병렬 다운로드(청크당 소요 1/6), 중단 버튼, 진행 표시.
+// v3.14.1: 단원 칩 수치가 체크된 티어만 반영하도록 수정 (내려받는 내용물은 원래 정확 — 라벨만 오류였음).
 // 탭: ① 전사 실행 ② 코퍼스 열람 ③ 라우팅 현황 ④ 모니터
 
 import { useEffect, useRef, useState } from "react";
@@ -779,7 +780,10 @@ export default function AdminCorpus() {
                         title={`소넷 ${escStat(u, "sonnet")} / 오푸스 ${escStat(u, "opus")}`}>
                         <input type="checkbox" hidden checked={escUnits.has(u)}
                           onChange={() => setEscUnits((s) => { const n = new Set(s); n.has(u) ? n.delete(u) : n.add(u); return n; })} />
-                        {u} <small style={{ opacity: .75 }}>{escStat(u, "sonnet")}{escTiers.has("opus") && escStat(u, "opus") !== "-" ? ` +${escStat(u, "opus")}` : ""}</small>
+                        {u} <small style={{ opacity: .75 }}>{[
+                          escTiers.has("sonnet") ? escStat(u, "sonnet") : null,
+                          escTiers.has("opus") ? escStat(u, "opus") : null,
+                        ].filter((x) => x && x !== "-").join(" + ") || "-"}</small>
                       </label>
                     ))}
                   </div>
