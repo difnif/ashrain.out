@@ -1,0 +1,152 @@
+--- mathir.py	2026-09-03 08:57:48.495787361 +0000
++++ mathir_v15.py	2026-09-03 15:33:48.018386638 +0000
+@@ -1,4 +1,8 @@
+-# ashrain.out — MathIR 파서·렌더·평가기 (mathir.py, v1.4)
++# ashrain.out — MathIR 파서·렌더·평가기 (mathir.py, v1.5 제안판 — 2026-09-04, mathir.js 동형 패치 필수)
++# v1.5 (함수표 추가 + 소규모 파서 확장, v1.4 문법은 전부 그대로 통과):
++#   ① cases(식1, 조건1, 식2, 조건2, …) 경우 나눔 정의   ② app(F, x, …) 파생 함수 적용: app(prime(f), x)=f′(x), app(comp(f,g), x)=(f∘g)(x), app(inv(f), 2), app(sub(S,1), t)
++#   ③ iter(f, n, x) = fⁿ(x)   ④ 그리스 문자 함수 적용 alpha(t)   ⑤ 기하 라벨에 첨자·프라임 허용: seg(O1A), angle(A'PB), tri(P1P2P3)  (' 토큰 추가)
++#   ⑥ xbar(X)=X̄, hat(p)=p̂, box(1)=□(가), 상수 cdots=⋯, GREEK에 sigma 추가·그리스 문자 표시   ⑦ point3 렉서 버그 수정(point+3 분리)   ⑧ FIGS에 image(src)·scene(pts) 추가
+ # v1.4 (답 표기층만 확장, 핵심 문법 불변 — mathir.js 동형 패치 필수):
+ #   ① 낱말 답에 ㄱ~ㅎ(합답형)·①~⑳(선지) 허용   ② '21°' → deg(21)
+ #   ③ '[[식]]단위'·'49.5 kg'·'frac(24,7) cm'·'72pi cm³' → 식 + unit 주석 (π→pi, ○× 낱말)   ④ 'a = 5, b = -1' / 'a < 0 and b > 0' → set(모두 성립)
+@@ -51,9 +55,18 @@
+     "prob": (1, 1, "h3", "sym"), "cprob": (2, 2, "h3", "sym"),
+     "ev": (1, 1, "h3", "sym"), "var": (1, 1, "h3", "sym"), "sd": (1, 1, "h3", "sym"),
+     "binomd": (2, 2, "h3", "sym"), "normald": (2, 2, "h3", "sym"),
++    # 1.7 v1.5 추가
++    "cases": (2, 8, "h1", "sym"),      # 경우 나눔: (식, 조건) 쌍 — 짝수 인자
++    "app": (2, 6, "h1", "sym"),        # 파생 함수 적용: app(F, x, …)
++    "iter": (3, 3, "h2", "sym"),       # 거듭 합성 fⁿ(x)
++    "xbar": (1, 1, "h3", "sym"), "hat": (1, 1, "h3", "sym"),
++    "box": (1, 1, "m1", "sym"),        # 빈칸 상자 □(가)
+ }
+-CONSTS = {"pi": math.pi, "e": math.e, "inf": math.inf, "empty": None, "i": None}
+-GREEK = {"alpha", "beta", "gamma", "delta", "theta", "lam", "mu", "omega", "phi"}
++LABEL_FNS = ("seg", "line", "ray", "arc", "angle", "tri", "quad", "vec")
++CONSTS = {"pi": math.pi, "e": math.e, "inf": math.inf, "empty": None, "i": None, "cdots": None}
++GREEK = {"alpha", "beta", "gamma", "delta", "theta", "lam", "mu", "omega", "phi", "sigma"}
++GREEK_DISP = {"alpha": "α", "beta": "β", "gamma": "γ", "delta": "δ", "theta": "θ", "lam": "λ", "mu": "μ", "omega": "ω", "phi": "φ", "sigma": "σ"}
++_BOX = "가나다라마바사아자차카타파하"
+ GRADE_ORD = {"m1": 1, "m2": 2, "m3": 3, "h1": 4, "h2": 5, "h3": 6}
+ 
+ FIGS = {  # figure DSL: 필수 인자 키 (존재 검사)
+@@ -64,6 +77,7 @@
+     "boxplot": ["values"], "scatter": ["points"], "venn": ["sets"], "tree": ["levels"],
+     "funcgraph": ["expr"], "unitcircle": [], "conic": ["kind"], "vecfig": ["vectors"],
+     "space": [], "normcurve": ["m", "v"], "unsupported": ["raw"],
++    "image": ["src"], "scene": ["pts"],   # v1.5: 도형 이미지 자산 / 선언형 장면(점·선분·원·표시)
+ }
+ FIG_STAGE = {"numline": 1, "coordplane": 1, "table": 1, "hist": 1}  # 1=●, 없으면 ◐○
+ 
+@@ -76,7 +90,7 @@
+ _TOKEN = re.compile(r"""
+     (?P<num>\d+\.\d+|\d+)
+   | (?P<id>[A-Za-z][A-Za-z]*)
+-  | (?P<op><=|>=|!=|[=<>+\-*/(),|])
++  | (?P<op><=|>=|!=|[=<>+\-*/(),|'])
+   | (?P<sp>\s+)
+ """, re.X)
+ _OPMAP = {"<=": "≤", ">=": "≥", "!=": "≠", "*": "×", "/": "÷"}
+@@ -93,6 +107,8 @@
+             continue
+         kind = m.lastgroup
+         val = m.group()
++        if kind == "id" and i < len(s) and s[i].isdigit() and (val + s[i]) in FUNCS:   # v1.5⑦ point3
++            val += s[i]; i += 1
+         if kind == "op" and val in _OPMAP:
+             val = _OPMAP[val]
+         out.append((kind, val, m.start()))
+@@ -181,8 +197,11 @@
+         args = []
+         if self.peek()[1] != ")":
+             while True:
+-                if name in ("seg", "line", "ray", "arc", "angle", "tri", "quad", "vec") and self.peek()[0] == "id":
+-                    args.append({"t": "label", "v": self.take()[1]})   # 점 라벨 나열형
++                if name in LABEL_FNS and (self.peek()[0] in ("id", "num") or self.peek()[1] == "'"):
++                    lab = ""                                            # 점 라벨 나열형 (v1.5⑤ 첨자·프라임 허용)
++                    while self.peek()[0] in ("id", "num") or self.peek()[1] == "'":
++                        lab += self.take()[1]
++                    args.append({"t": "label", "v": lab})
+                 elif name == "lim" and len(args) == 3 and self.peek()[1] in ("+", "-"):
+                     args.append({"t": "label", "v": self.take()[1]})
+                 elif name == "itv" and len(args) == 2:
+@@ -199,9 +218,11 @@
+             if not (lo <= len(args) <= hi):
+                 raise MathIRError("V-02" if len(args) in (lo, hi) or True else "V-08",
+                                   f"{name} 인자 {len(args)}개 — 허용 {lo}~{hi}", pos)
++            if name == "cases" and len(args) % 2:
++                raise MathIRError("V-02", "cases 인자는 (식, 조건) 쌍이어야 함", pos)
+             self.max_grade = max(self.max_grade, GRADE_ORD[grade])
+             return {"t": "fn", "f": name, "args": args}
+-        if len(name) == 1:                              # 함수 적용 f(x)
++        if len(name) == 1 or name in GREEK:             # 함수 적용 f(x), v1.5④ alpha(t)
+             self.max_grade = max(self.max_grade, GRADE_ORD["h1"])
+             return {"t": "apply", "f": name, "args": args}
+         raise MathIRError("V-01", f"미지의 함수 '{name}'", pos)
+@@ -248,8 +269,9 @@
+ def disp(n):
+     t = n["t"]
+     if t == "num": return n["v"]
+-    if t == "const": return {"pi": "π", "e": "e", "inf": "∞", "i": "i", "empty": "∅"}[n["v"]]
+-    if t in ("var", "label"): return n["v"]
++    if t == "const": return {"pi": "π", "e": "e", "inf": "∞", "i": "i", "empty": "∅", "cdots": "⋯"}[n["v"]]
++    if t == "var": return GREEK_DISP.get(n["v"], n["v"])
++    if t == "label": return re.sub(r"\d+", lambda m: m.group().translate(_SUB), n["v"]).replace("'", "′")
+     if t == "neg": return "−" + _wrap(n["a"])
+     if t == "paren": return "(" + disp(n["a"]) + ")"
+     if t == "bin":
+@@ -266,7 +288,7 @@
+             out += f" {op} " + disp(arg)
+         return out
+     if t == "apply":
+-        return n["f"] + "(" + ", ".join(disp(a) for a in n["args"]) + ")"
++        return GREEK_DISP.get(n["f"], n["f"]) + "(" + ", ".join(disp(a) for a in n["args"]) + ")"
+     f, a = n["f"], n["args"]
+     D = disp
+     if f == "mat":
+@@ -356,6 +378,20 @@
+     if f == "sd": return "σ(" + D(a[0]) + ")"
+     if f == "binomd": return "B(" + D(a[0]) + ", " + D(a[1]) + ")"
+     if f == "normald": return "N(" + D(a[0]) + ", " + D(a[1]) + ")"
++    # ---- v1.5
++    if f == "cases": return "{" + " ; ".join(D(a[i]) + " (" + D(a[i + 1]) + ")" for i in range(0, len(a), 2)) + "}"
++    if f == "app":
++        F = a[0]
++        head = D(F) if (F["t"] in ("var", "label") or (F["t"] == "fn" and F["f"] in ("prime", "inv", "sub", "iter", "xbar", "hat"))) else "(" + D(F) + ")"
++        return head + "(" + ", ".join(D(x) for x in a[1:]) + ")"
++    if f == "iter":
++        ex = to_ir(a[1]).replace(" ", "")
++        return _wrap(a[0]) + (ex.translate(_SUP) if re.fullmatch(r"-?\d+", ex) else "^(" + D(a[1]) + ")") + "(" + D(a[2]) + ")"
++    if f == "xbar": return D(a[0]) + "\u0304"
++    if f == "hat": return D(a[0]) + "\u0302"
++    if f == "box":
++        k = to_ir(a[0])
++        return "□(" + (_BOX[int(k) - 1] if re.fullmatch(r"\d+", k) and 1 <= int(k) <= len(_BOX) else D(a[0])) + ")"
+     return to_ir(n)   # 표시 규칙 미정의 → 정식 IR로 폴백
+ 
+ # ---------------------------------------------------------------- 평가기 (검산용)
+@@ -601,4 +637,23 @@
+         pass
+     assert not check_figure([{"fn": "numline", "args": {"min": -5, "max": 5}}])
+     assert check_figure([{"fn": "banana", "args": {}}])
++    # ---- v1.5 자가 시험
++    for src, d in [("cases(pow(3,x) + 1, x <= 1, 9 - 3 log(3,x), x > 1)", "{3^(x) + 1 (x ≤ 1) ; 9 − 3log₃ x (x > 1)}"),
++                   ("app(prime(f), x)", "f′(x)"), ("app(comp(f, g), x)", "(f∘g)(x)"), ("app(inv(f), 2)", "f⁻¹(2)"),
++                   ("app(sub(S, 1), t)", "S₁(t)"), ("alpha(t) + beta(t) = 5", "α(t) + β(t) = 5"),
++                   ("iter(f, 3, x)", "f³(x)"), ("xbar(X)", "X\u0304"), ("hat(p)", "p\u0302"), ("box(1)", "□(가)"),
++                   ("angle(A'PB)", "∠A′PB"), ("tri(P1P2P3)", "△P₁P₂P₃"), ("point3(1, 2, 3)", "(1, 2, 3)"),
++                   ("sub(a,1) + cdots + sub(a,n)", "a₁ + ⋯ + a_n"), ("sigma", "σ")]:
++        n, _ = parse(src); rt, _ = parse(to_ir(n))
++        assert to_ir(rt) == to_ir(n), "v1.5 왕복 실패 " + src
++        assert disp(n) == d, f"v1.5 표시 {disp(n)!r} != {d!r} ({src})"
++    n, _ = parse("seg(O1A) = 21"); assert "₁" in disp(n) and to_ir(parse(to_ir(n))[0]) == to_ir(n)
++    try:
++        parse("cases(x, x > 0, y)"); assert False
++    except MathIRError as e:
++        assert e.code == "V-02"
++    assert not check_figure([{"fn": "image", "args": {"src": "figs/x.png", "raw": "설명"}}])
++    assert check_figure([{"fn": "image", "args": {}}])
++    _, _, e = parse_text("[[f(x) = cases(pow(x,2), x < 1, 2x - 1, x >= 1)]]에서 [[app(prime(f), 3)]]의 값은?")
++    assert not e
+     print("mathir.py 자가 시험 전부 통과")
