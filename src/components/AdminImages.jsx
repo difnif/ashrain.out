@@ -1,279 +1,445 @@
-// ashrain.out — 이미지 등록 현황 (v2.0, 관리자 전용)
-// v2.0: ① 교육과정 순 정렬 ② 컷 이름 클릭 → 프롬프트·미리보기·개별 업로드(✂️ 잘라오기 포함) 모달
-import { useEffect, useState } from "react";
+// ashrain.out — 이미지 관리 v3.0 (슬롯 시스템, 관리자 전용)
+// - 원장: public/slots.json (번호·이름·프롬프트·사용처)
+// - 저장: figures 버킷 slots/{번호}/{후보k}.webp + figure_slots.meta(채택·필터·통계)
+// - 드롭 파이프라인: 파일/zip 드래그 → 번호 매칭 → 배경 제거(브라우저) → WebP 변환 → 업로드
+// - 슬롯 모달: 종이 미리보기(다크/라이트) · 후보 탭 채택 · 필터 슬라이더 · 후보 추가/삭제 · 프롬프트 복사
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { qcode, UNIT_LETTER, UNIT_NAME } from "../lib/qcode";
-import { CropAssign, MJ_STYLE } from "./AnimFigure";
+import { UNIT_NAME } from "../lib/qcode";
+import { slotUrl, adoptedCand, filterCss, bustSlotMeta } from "./StageFigure";
+
+const SLOT_ROOT = "slots";
+const ORT_CDN = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/";
+const MODEL_PATH = "models/silueta.onnx"; // figures 버킷에 업로드해 둘 것
+const PARAMS = "--style raw --ar {ar} --no text, letters, numbers, watermark, frame, border";
 
 const CSS = `
-.ai-root { min-height: 100vh; padding: 18px 12px 60px; box-sizing: border-box;
+.ai3 { min-height: 100vh; padding: 18px 12px 70px; box-sizing: border-box;
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
-.ai-light { background:#EDEFF2; --card:#fff; --bd:#DFE3E8; --ink:#1F2937; --mut:#8A929C; --ac:#0DA95F; --in:#F4F6F8; --inbd:#D3D9DF; }
-.ai-dark  { background:#0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#FFE03C; --in:#1B1E24; --inbd:#2A2E36; }
-.ai-wrap { max-width: 720px; margin: 0 auto; }
-.ai-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.ai-h { color: var(--ink); font-size: 18px; font-weight: 800; margin: 0; flex: 1; }
-.ai-back { color: var(--mut); font-size: 13px; cursor: pointer; text-decoration: underline; }
-.ai-filters { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
-.ai-sel { background: var(--card); border: 1px solid var(--bd); border-radius: 10px; color: var(--ink); font-size: 13px; padding: 8px 10px; }
-.ai-tgl { background: transparent; border: 1px solid var(--bd); border-radius: 999px; color: var(--mut);
+.ai3.light { background:#EDEFF2; --card:#fff; --bd:#DFE3E8; --ink:#1F2937; --mut:#8A929C; --ac:#0DA95F; --in:#F4F6F8; --inbd:#D3D9DF; }
+.ai3.dark { background:#0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#FFE03C; --in:#1B1E24; --inbd:#2A2E36; }
+.ai3 .wrap { max-width: 760px; margin: 0 auto; }
+.ai3 h2 { color: var(--ink); font-size: 18px; font-weight: 800; margin: 0; flex: 1; }
+.ai3 .top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ai3 .back { color: var(--mut); font-size: 13px; cursor: pointer; text-decoration: underline; background: none; border: none; }
+.ai3 .drop { border: 2px dashed var(--inbd); border-radius: 14px; padding: 18px 14px; text-align: center;
+  color: var(--mut); font-size: 13px; line-height: 1.7; margin-bottom: 10px; background: var(--card); }
+.ai3 .drop.over { border-color: var(--ac); color: var(--ac); }
+.ai3 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.ai3 select { background: var(--card); border: 1px solid var(--bd); border-radius: 10px; color: var(--ink); font-size: 13px; padding: 8px 10px; }
+.ai3 .tgl { background: transparent; border: 1px solid var(--bd); border-radius: 999px; color: var(--mut);
   font-size: 12.5px; font-weight: 700; padding: 7px 12px; cursor: pointer; }
-.ai-tgl.on { border-color: var(--ac); color: var(--ac); }
-.ai-sum { font-size: 12.5px; color: var(--mut); margin: 0 0 10px; }
-.ai-row { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--bd);
-  border-radius: 10px; padding: 9px 12px; margin-bottom: 6px; }
-.ai-code { font-size: 11.5px; font-weight: 800; letter-spacing: .5px; color: var(--ac); cursor: pointer;
-  text-decoration: underline; white-space: nowrap; }
-.ai-name { flex: 1; min-width: 0; color: var(--ink); font-size: 13.5px; cursor: pointer;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ai-name:active { color: var(--ac); }
-.ai-key { font-size: 11px; color: var(--mut); white-space: nowrap; }
-.ai-ok { font-size: 13px; font-weight: 800; color: var(--ac); }
-.ai-no { font-size: 13px; font-weight: 800; color: #DC2626; }
-.ai-empty { color: var(--mut); text-align: center; padding: 36px 0; font-size: 14px; }
-/* ── 컷 모달 ── */
-.ai-dim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 80; }
-.ai-modal { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: 81;
-  width: min(560px, 94vw); max-height: 88vh; overflow-y: auto; background: var(--card, #fff);
-  border: 1px solid var(--bd, #DFE3E8); border-radius: 16px; padding: 16px; box-sizing: border-box; }
-.ai-mh { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
-.ai-mt { font-size: 15px; font-weight: 800; color: var(--ink); margin: 0; flex: 1; line-height: 1.45; }
-.ai-x { background: none; border: none; color: var(--mut); font-size: 16px; cursor: pointer; }
-.ai-sub { font-size: 12px; color: var(--mut); margin: 0 0 10px; }
-.ai-chain { font-size: 12px; color: var(--mut); background: var(--in); border-radius: 8px; padding: 8px 10px; margin: 0 0 10px; line-height: 1.6; }
-.ai-chain b { color: var(--ac); }
-.ai-pcard { border: 1px solid var(--bd); border-radius: 10px; padding: 9px 11px; margin-bottom: 8px; }
-.ai-plab { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.ai-plab b { font-size: 12px; color: var(--ink); flex: 1; }
-.ai-ptxt { font-size: 11px; color: var(--mut); margin: 0; line-height: 1.6; word-break: break-all; }
-.ai-btn { border: none; border-radius: 10px; font-size: 13px; font-weight: 800; padding: 9px 14px; cursor: pointer; }
-.ai-bok { background: var(--ac); color: #fff; }
-.ai-bghost { background: transparent; color: var(--mut); border: 1px solid var(--bd); }
-.ai-bdel { background: transparent; color: #DC2626; border: 1px solid #DC2626; }
-.ai-pill { background: transparent; border: 1px solid var(--inbd); border-radius: 999px; color: var(--mut);
-  font-size: 12px; font-weight: 700; padding: 6px 11px; cursor: pointer; }
-.ai-pill.hot { border-color: var(--ac); color: var(--ac); }
-.ai-prev { width: 100%; max-width: 260px; height: 170px; margin: 0 auto 10px; border: 1.5px dashed var(--inbd);
-  border-radius: 12px; background: var(--in); display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.ai-prev img { width: 100%; height: 100%; object-fit: contain; }
-.ai-prev.has { border-style: solid; }
-.ai-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; flex-wrap: wrap; }
-.ai-warn { color: #DC2626; font-size: 12px; margin: 8px 0 0; }
+.ai3 .tgl.on { border-color: var(--ac); color: var(--ac); }
+.ai3 .stat { color: var(--mut); font-size: 12.5px; }
+.ai3 table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--bd); border-radius: 12px; overflow: hidden; }
+.ai3 th { text-align: left; font-size: 11.5px; color: var(--mut); padding: 8px 10px; border-bottom: 1px solid var(--bd); }
+.ai3 td { font-size: 13px; color: var(--ink); padding: 8px 10px; border-bottom: 1px solid var(--bd); }
+.ai3 tr:last-child td { border-bottom: none; }
+.ai3 .num { font-weight: 800; color: var(--ac); white-space: nowrap; cursor: pointer; }
+.ai3 .nm { cursor: pointer; }
+.ai3 .sub { color: var(--mut); font-size: 11.5px; }
+.ai3 .pill { display: inline-block; border: 1px solid var(--inbd); border-radius: 6px; font-size: 11px;
+  padding: 1px 6px; color: var(--mut); margin-right: 4px; }
+.ai3 .pill.ok { color: var(--ac); border-color: var(--ac); font-weight: 800; }
+.ai3 .cp { background: var(--in); border: 1px solid var(--inbd); border-radius: 7px; font-size: 11.5px;
+  padding: 4px 7px; cursor: pointer; color: var(--ink); margin-right: 4px; }
+.ai3 .prog { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 10px 12px;
+  margin-bottom: 10px; font-size: 12.5px; color: var(--ink); }
+.ai3 .bar { height: 6px; background: var(--in); border-radius: 999px; overflow: hidden; margin-top: 6px; }
+.ai3 .bar i { display: block; height: 100%; background: var(--ac); transition: width .2s; }
+.ai3 .warn { color: #DC2626; font-size: 12px; white-space: pre-wrap; margin-top: 6px; }
+/* 모달 */
+.ai3-dim { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 90; }
+.ai3-md { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: 91;
+  width: min(560px, 94vw); max-height: 90vh; overflow-y: auto; background: var(--card); border: 1px solid var(--bd);
+  border-radius: 16px; padding: 14px; box-sizing: border-box; }
+.ai3-md h3 { margin: 0 0 8px; font-size: 15px; color: var(--ink); }
+.ai3 .paper { position: relative; width: 100%; aspect-ratio: 3/2; border-radius: 12px; overflow: hidden; border: 1px solid var(--bd); }
+.ai3 .paper.dark { background: radial-gradient(130% 100% at 50% 12%, #26325a 0%, #1b2544 52%, #121a33 100%); }
+.ai3 .paper.light { background: radial-gradient(120% 130% at 50% 0%, #faf4e6 0%, #f3ead6 60%, #eadfc4 100%); }
+.ai3 .paper img { position: absolute; inset: 10%; width: 80%; height: 80%; object-fit: contain; }
+.ai3 .cands { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.ai3 .cand { position: relative; width: 76px; height: 76px; border: 2px solid var(--inbd); border-radius: 10px;
+  background: var(--in); cursor: pointer; overflow: hidden; }
+.ai3 .cand img { width: 100%; height: 100%; object-fit: contain; }
+.ai3 .cand.on { border-color: var(--ac); }
+.ai3 .cand .k { position: absolute; left: 3px; top: 2px; font-size: 10px; font-weight: 800; color: var(--mut); }
+.ai3 .cand .del { position: absolute; right: -6px; top: -6px; width: 18px; height: 18px; border-radius: 999px;
+  background: #DC2626; color: #fff; border: none; font-size: 10px; cursor: pointer; line-height: 1; }
+.ai3 .sl { display: grid; grid-template-columns: 64px 1fr 44px; gap: 6px; align-items: center; font-size: 12px; color: var(--mut); }
+.ai3 .btn { border: 1px solid var(--inbd); border-radius: 9px; font-size: 12.5px; font-weight: 800;
+  padding: 8px 12px; cursor: pointer; background: var(--in); color: var(--ink); }
+.ai3 .btn.pri { background: var(--ac); color: #fff; border-color: transparent; }
 `;
 
-const UORDER = Object.keys(UNIT_LETTER);
-const parseCid = (cid) => { const m = String(cid).match(/^([mh]\d-\d)-(\d+)$/);
-  return m ? [UORDER.indexOf(m[1]), +m[2]] : [99, 999]; };
+/* ══════════ 배경 제거 (onnxruntime-web + silueta) ══════════ */
+let sessP = null;
+async function getSession() {
+  if (!sessP) sessP = (async () => {
+    const ort = await import(/* @vite-ignore */ ORT_CDN + "ort.min.mjs");
+    ort.env.wasm.wasmPaths = ORT_CDN;
+    const url = supabase.storage.from("figures").getPublicUrl(MODEL_PATH).data.publicUrl;
+    let sess;
+    try { sess = await ort.InferenceSession.create(url, { executionProviders: ["webgpu", "wasm"] }); }
+    catch { sess = await ort.InferenceSession.create(url, { executionProviders: ["wasm"] }); }
+    return { ort, sess };
+  })();
+  return sessP;
+}
+function canvas(w, h) {
+  if (typeof OffscreenCanvas !== "undefined") return new OffscreenCanvas(w, h);
+  const c = document.createElement("canvas"); c.width = w; c.height = h; return c;
+}
+async function removeBg(bitmap) {
+  const { ort, sess } = await getSession();
+  const S = 320, c = canvas(S, S), g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(bitmap, 0, 0, S, S);
+  const d = g.getImageData(0, 0, S, S).data;
+  const arr = new Float32Array(3 * S * S);
+  const M = [0.485, 0.456, 0.406], SD = [0.229, 0.224, 0.225];
+  for (let i = 0; i < S * S; i++)
+    for (let ch = 0; ch < 3; ch++) arr[ch * S * S + i] = (d[i * 4 + ch] / 255 - M[ch]) / SD[ch];
+  const out = await sess.run({ [sess.inputNames[0]]: new ort.Tensor("float32", arr, [1, 3, S, S]) });
+  const m = out[sess.outputNames[0]].data;
+  let mi = Infinity, ma = -Infinity;
+  for (let i = 0; i < m.length; i++) { if (m[i] < mi) mi = m[i]; if (m[i] > ma) ma = m[i]; }
+  const mc = canvas(S, S), mg = mc.getContext("2d");
+  const md = mg.createImageData(S, S);
+  for (let i = 0; i < S * S; i++) {
+    let a = (m[i] - mi) / (ma - mi + 1e-6);
+    a = a < 0.15 ? 0 : a > 0.85 ? 1 : (a - 0.15) / 0.7;   // 부드러운 임계
+    md.data[i * 4 + 3] = Math.round(a * 255);
+  }
+  mg.putImageData(md, 0, 0);
+  const W = bitmap.width, H = bitmap.height;
+  const oc = canvas(W, H), og = oc.getContext("2d");
+  og.drawImage(bitmap, 0, 0);
+  og.globalCompositeOperation = "destination-in";
+  og.imageSmoothingEnabled = true; og.imageSmoothingQuality = "high";
+  og.drawImage(mc, 0, 0, W, H);
+  return oc;
+}
+function trimAlpha(cv) {
+  const g = cv.getContext("2d", { willReadFrequently: true });
+  const W = cv.width, H = cv.height, step = Math.max(1, Math.floor(Math.min(W, H) / 400));
+  const d = g.getImageData(0, 0, W, H).data;
+  let x0 = W, y0 = H, x1 = 0, y1 = 0, lum = 0, cnt = 0;
+  for (let y = 0; y < H; y += step) for (let x = 0; x < W; x += step) {
+    const i = (y * W + x) * 4;
+    if (d[i + 3] > 20) {
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      lum += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255; cnt++;
+    }
+  }
+  if (!cnt || x1 <= x0 || y1 <= y0) return { cv, lum: 0.5 };
+  const pad = Math.round(Math.min(W, H) * 0.02);
+  x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
+  x1 = Math.min(W, x1 + pad); y1 = Math.min(H, y1 + pad);
+  const oc = canvas(x1 - x0, y1 - y0);
+  oc.getContext("2d").drawImage(cv, x0, y0, x1 - x0, y1 - y0, 0, 0, x1 - x0, y1 - y0);
+  return { cv: oc, lum: lum / cnt };
+}
+async function toWebp(cv, long = 1600, q = 0.9) {
+  const r = Math.min(1, long / Math.max(cv.width, cv.height));
+  let out = cv;
+  if (r < 1) {
+    out = canvas(Math.round(cv.width * r), Math.round(cv.height * r));
+    const g = out.getContext("2d"); g.imageSmoothingQuality = "high";
+    g.drawImage(cv, 0, 0, out.width, out.height);
+  }
+  if (out.convertToBlob) return out.convertToBlob({ type: "image/webp", quality: q });
+  return new Promise((res) => out.toBlob(res, "image/webp", q));
+}
 
-/* ══════════ 컷 상세 모달 ══════════ */
-function CutModal({ row, onClose, onChanged }) {
-  const dir = `${row.concept_id}/${row.block_id}`;
-  const [cur, setCur] = useState(undefined);        // {name,url} | null
-  const [pend, setPend] = useState(null);           // File
-  const [crop, setCrop] = useState(false);
-  const [busy, setBusy] = useState(false);
+/* ══════════ 페이지 ══════════ */
+export default function AdminImages({ theme = "light" }) {
+  const [ledger, setLedger] = useState(null);   // slots.json
+  const [rows, setRows] = useState({});         // slot -> meta
+  const [unit, setUnit] = useState("all");
+  const [onlyMissing, setOnlyMissing] = useState(false);
+  const [doRemove, setDoRemove] = useState(true);
+  const [over, setOver] = useState(false);
+  const [prog, setProg] = useState(null);       // {done,total,cur}
   const [warn, setWarn] = useState("");
-  const [copied, setCopied] = useState("");
+  const [openSlot, setOpenSlot] = useState(null);
+  const fileRef = useRef(null);
 
-  const loadCur = async () => {
-    const { data } = await supabase.storage.from("figures").list(dir, { limit: 100 });
-    const f = (data || []).find((x) => x.name.replace(/\.[^.]+$/, "") === row.key);
-    if (!f) { setCur(null); return; }
-    const { data: pu } = supabase.storage.from("figures").getPublicUrl(`${dir}/${f.name}`);
-    setCur({ name: f.name, url: pu.publicUrl + "?v=" + encodeURIComponent(f.updated_at || Date.now()) });
+  useEffect(() => {
+    fetch("/slots.json").then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(setLedger)
+      .catch(() => setWarn("public/slots.json 을 읽지 못했습니다 — 원장 파일을 리포 public/ 폴더에 커밋해 주세요."));
+    refreshMeta();
+  }, []);
+  async function refreshMeta() {
+    const { data } = await supabase.from("figure_slots").select("slot, meta");
+    const m = {}; for (const r of data || []) m[r.slot] = r.meta || {};
+    setRows(m);
+  }
+
+  // 원장 인덱스: slot -> {name, ar, A,B,C, cid, sid} / usage
+  const idx = useMemo(() => {
+    if (!ledger) return null;
+    const def = {}, usage = {};
+    for (const sc of ledger.scenes || []) {
+      for (const L of sc.layers || []) {
+        const n = L.slot;
+        (usage[n] = usage[n] || []).push(`${sc.cid}·${sc.sid}`);
+        if (!L.reuse && !def[n]) def[n] = { name: L.name, ar: L.ar, A: L.A, B: L.B, C: L.C, cid: sc.cid, sid: sc.sid };
+      }
+    }
+    return { def, usage, order: Object.keys(def).map(Number).sort((a, b) => a - b) };
+  }, [ledger]);
+
+  const units = useMemo(() => {
+    if (!idx) return [];
+    return [...new Set(idx.order.map((n) => idx.def[n].cid.slice(0, idx.def[n].cid.lastIndexOf("-"))))];
+  }, [idx]);
+
+  const list = useMemo(() => {
+    if (!idx) return [];
+    return idx.order.filter((n) => {
+      const u = idx.def[n].cid.slice(0, idx.def[n].cid.lastIndexOf("-"));
+      if (unit !== "all" && u !== unit) return false;
+      if (onlyMissing && rows[n]) return false;
+      return true;
+    });
+  }, [idx, unit, onlyMissing, rows]);
+
+  const prompt = (n, k) => {
+    const d = idx.def[n];
+    return `${d[k]}, ${ledger.style} ${PARAMS.replace("{ar}", d.ar)}`;
   };
-  useEffect(() => { loadCur(); }, []); // eslint-disable-line
+  const copy = (t) => navigator.clipboard?.writeText(t);
 
-  const sc = row.scene;
-  const setPrompt = sc.prompt ? sc.prompt + ", " + (sc.style || MJ_STYLE) : "";
-  const cutPrompt = sc.cutPrompts?.[row.ci - 1] ? sc.cutPrompts[row.ci - 1] + ", " + (sc.style || MJ_STYLE) : "";
+  /* 드롭 파이프라인 */
+  async function collectFiles(dt) {
+    const out = [], items = [...dt.files];
+    for (const f of items) {
+      if (/\.zip$/i.test(f.name)) {
+        try {
+          const mod = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm");
+          const zip = await mod.default.loadAsync(f);
+          for (const name of Object.keys(zip.files)) {
+            const e = zip.files[name];
+            if (e.dir || !/\.(png|jpe?g|webp)$/i.test(name) || name.includes("__MACOSX")) continue;
+            out.push(new File([await e.async("blob")], name.split("/").pop()));
+          }
+        } catch { setWarn((w) => w + "\nzip 해제 실패: " + f.name); }
+      } else if (/\.(png|jpe?g|webp)$/i.test(f.name)) out.push(f);
+    }
+    return out;
+  }
+  async function processFiles(files) {
+    if (!idx) return;
+    const jobs = [], bad = [];
+    const nextK = {}; // slot -> 다음 후보 번호
+    for (const f of files) {
+      const m = f.name.match(/^(\d+)(?:-(\d+))?\.(png|jpe?g|webp)$/i);
+      if (!m || !idx.def[+m[1]]) { bad.push(f.name); continue; }
+      jobs.push({ f, slot: +m[1], k: m[2] ? +m[2] : null });
+    }
+    jobs.sort((a, b) => a.slot - b.slot || (a.k || 99) - (b.k || 99));
+    setWarn(bad.length ? "번호 매칭 실패(건너뜀): " + bad.join(", ") : "");
+    if (!jobs.length) return;
+    setProg({ done: 0, total: jobs.length, cur: "" });
+    const touched = {};
+    for (const j of jobs) {
+      setProg((p) => ({ ...p, cur: `#${j.slot} ${idx.def[j.slot].name}` }));
+      try {
+        const bmp = await createImageBitmap(j.f);
+        let cv;
+        if (doRemove) cv = await removeBg(bmp);
+        else { cv = canvas(bmp.width, bmp.height); cv.getContext("2d").drawImage(bmp, 0, 0); }
+        const { cv: cut, lum } = trimAlpha(cv);
+        const blob = await toWebp(cut);
+        const meta = touched[j.slot] || rows[j.slot] || {};
+        const k = j.k || ((nextK[j.slot] = (nextK[j.slot] ?? meta.n ?? 0) + 1));
+        const { error } = await supabase.storage.from("figures")
+          .upload(`${SLOT_ROOT}/${j.slot}/${k}.webp`, blob, { upsert: true, contentType: "image/webp" });
+        if (error) throw error;
+        touched[j.slot] = {
+          ...meta, n: Math.max(meta.n || 0, k),
+          adopted: meta.adopted || { dark: k },
+          stats: { lum: +lum.toFixed(3) }, updated: Date.now(),
+        };
+      } catch (e) { setWarn((w) => (w ? w + "\n" : "") + `#${j.slot} 실패: ${e?.message || e}`); }
+      setProg((p) => ({ ...p, done: p.done + 1 }));
+    }
+    const ups = Object.entries(touched).map(([slot, meta]) => ({ slot: +slot, meta, updated_at: new Date().toISOString() }));
+    if (ups.length) {
+      const { error } = await supabase.from("figure_slots").upsert(ups);
+      if (error) setWarn((w) => w + "\n메타 저장 실패: " + error.message + " (figure_slots SQL 실행 여부 확인)");
+    }
+    for (const s of Object.keys(touched)) bustSlotMeta(+s);
+    setProg(null); refreshMeta();
+  }
+  const onDrop = async (e) => { e.preventDefault(); setOver(false); processFiles(await collectFiles(e.dataTransfer)); };
 
-  const copy = async (text, tag) => {
-    try { await navigator.clipboard.writeText(text); }
-    catch { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta);
-      ta.select(); document.execCommand("copy"); document.body.removeChild(ta); }
-    setCopied(tag); setTimeout(() => setCopied(""), 1400);
-  };
-
-  const save = async () => {
-    if (!pend) return; setBusy(true); setWarn("");
-    try {
-      const ext = (pend.name.match(/\.[^.]+$/) || [".png"])[0].toLowerCase();
-      const { error } = await supabase.storage.from("figures")
-        .upload(`${dir}/${row.key}${ext}`, pend, { upsert: true, contentType: pend.type || "image/png" });
-      if (error) throw error;
-      if (cur && cur.name !== `${row.key}${ext}`)
-        await supabase.storage.from("figures").remove([`${dir}/${cur.name}`]);
-      setPend(null); await loadCur(); onChanged(true);
-    } catch (e) { setWarn("업로드 실패: " + (e?.message || String(e))); }
-    setBusy(false);
-  };
-  const del = async () => {
-    if (!cur) return; setBusy(true); setWarn("");
-    try { await supabase.storage.from("figures").remove([`${dir}/${cur.name}`]);
-      setCur(null); onChanged(false);
-    } catch (e) { setWarn("삭제 실패: " + (e?.message || String(e))); }
-    setBusy(false);
-  };
-
-  const prevUrl = pend ? URL.createObjectURL(pend) : cur?.url;
+  const cls = "ai3 " + (theme === "dark" ? "dark" : "light");
+  const registered = idx ? idx.order.filter((n) => rows[n]).length : 0;
   return (
-    <>
-      <div className="ai-dim" onClick={busy ? undefined : onClose} />
-      <div className="ai-modal">
-        <div className="ai-mh">
-          <h3 className="ai-mt">{row.name} <span style={{ color: "var(--mut)", fontWeight: 700 }}>({row.key})</span></h3>
-          <button className="ai-x" onClick={onClose}>✕</button>
+    <div className={cls}>
+      <style>{CSS}</style>
+      <div className="wrap">
+        <div className="top">
+          <h2>🖼 이미지 관리 <span className="stat">v3 · 슬롯</span></h2>
+          <button className="back" onClick={() => (location.hash = "#/admin")}>← 관리자</button>
         </div>
-        <p className="ai-sub">{row.code} · {row.title} — {sc.label}</p>
-        {sc.cuts?.length ? (
-          <p className="ai-chain">컷 구성: {sc.cuts.map((c, i) => i === row.ci - 1
-            ? <b key={i}>▶ {c}</b> : <span key={i}>{c}</span>).reduce((a, b) => [a, " → ", b])}</p>
-        ) : null}
 
-        {setPrompt && (
-          <div className="ai-pcard">
-            <div className="ai-plab"><b>🎨 세트 프롬프트 (씬 전체 — 한 장에 {sc.count}컷 서사)</b>
-              <button className="ai-pill" onClick={() => copy(setPrompt, "set")}>{copied === "set" ? "✓ 복사됨" : "📋 복사"}</button></div>
-            <p className="ai-ptxt">{setPrompt}</p>
+        <div className="drop" onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+          onDragLeave={() => setOver(false)} onDrop={onDrop}
+          onClick={() => fileRef.current?.click()} style={over ? { borderColor: "var(--ac)" } : null}>
+          이미지·zip을 여기로 드래그 (파일명 = 슬롯 번호: <b>7.png</b>, <b>7-2.png</b> …)<br />
+          <span className="stat">떨어뜨리면 자동으로 배경 제거 → WebP 변환 → 등록됩니다</span>
+          <input ref={fileRef} type="file" multiple accept=".png,.jpg,.jpeg,.webp,.zip" style={{ display: "none" }}
+            onChange={(e) => { processFiles([...e.target.files].filter((f) => /\.(png|jpe?g|webp|zip)$/i.test(f.name))); e.target.value = ""; }} />
+        </div>
+
+        <div className="row">
+          <select value={unit} onChange={(e) => setUnit(e.target.value)}>
+            <option value="all">전체 단원</option>
+            {units.map((u) => <option key={u} value={u}>{u} {UNIT_NAME?.[u] || ""}</option>)}
+          </select>
+          <button className={"tgl" + (onlyMissing ? " on" : "")} onClick={() => setOnlyMissing((v) => !v)}>미등록만</button>
+          <button className={"tgl" + (doRemove ? " on" : "")} onClick={() => setDoRemove((v) => !v)}
+            title="끄면 이미 오려낸 이미지를 그대로 등록">배경 제거 {doRemove ? "ON" : "OFF"}</button>
+          <span style={{ flex: 1 }} />
+          <span className="stat">{registered} / {idx ? idx.order.length : "…"} 등록</span>
+        </div>
+
+        {prog && (
+          <div className="prog">
+            처리 중 {prog.done}/{prog.total} — {prog.cur}
+            <div className="bar"><i style={{ width: `${(100 * prog.done) / prog.total}%` }} /></div>
           </div>
         )}
-        {cutPrompt && (
-          <div className="ai-pcard">
-            <div className="ai-plab"><b>🎯 이 컷 전용 프롬프트</b>
-              <button className="ai-pill" onClick={() => copy(cutPrompt, "cut")}>{copied === "cut" ? "✓ 복사됨" : "📋 복사"}</button></div>
-            <p className="ai-ptxt">{cutPrompt}</p>
-          </div>
-        )}
-        {!setPrompt && !cutPrompt && <p className="ai-sub">(프롬프트 미작성 씬)</p>}
+        {warn && <div className="warn">{warn}</div>}
 
-        {!crop ? (
-          <>
-            <div className={"ai-prev" + (prevUrl ? " has" : "")}>
-              {prevUrl ? <img src={prevUrl} alt="" /> : <span style={{ color: "var(--mut)", fontSize: 13 }}>미등록 컷</span>}
-            </div>
-            {pend && <p className="ai-sub" style={{ textAlign: "center" }}>새 파일 대기 중 — 저장을 눌러야 반영돼요</p>}
-            {warn && <p className="ai-warn">⚠ {warn}</p>}
-            <div className="ai-foot">
-              <label className="ai-pill hot" style={{ display: "inline-flex", alignItems: "center" }}>
-                🖼 파일 선택
-                <input type="file" accept="image/*" style={{ display: "none" }}
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) setPend(f); e.target.value = ""; }} />
-              </label>
-              <button className="ai-pill hot" onClick={() => setCrop(true)}>✂️ 세트에서 잘라오기</button>
-              {cur && <button className="ai-btn ai-bdel" disabled={busy} onClick={del}>삭제</button>}
-              <button className="ai-btn ai-bghost" onClick={onClose} disabled={busy}>닫기</button>
-              <button className="ai-btn ai-bok" disabled={!pend || busy} onClick={save}>{busy ? "저장 중…" : "저장"}</button>
-            </div>
-          </>
-        ) : (
-          <CropAssign single targets={[row.key]} labels={{ [row.key]: row.name }}
-            onCancel={() => setCrop(false)}
-            onAssign={(m) => { if (m[row.key]) setPend(m[row.key]); setCrop(false); }} />
-        )}
+        <table>
+          <thead><tr><th>#</th><th>이름</th><th>쓰임</th><th>후보</th><th>프롬프트</th></tr></thead>
+          <tbody>
+            {list.map((n) => {
+              const d = idx.def[n], m = rows[n];
+              return (
+                <tr key={n}>
+                  <td className="num" onClick={() => setOpenSlot(n)}>{n}</td>
+                  <td className="nm" onClick={() => setOpenSlot(n)}>
+                    {d.name}<br /><span className="sub">{d.cid} · --ar {d.ar}</span>
+                  </td>
+                  <td><span className="pill">{idx.usage[n]?.length || 0}곳</span></td>
+                  <td>{m ? <span className="pill ok">{m.n || 0}장</span> : <span className="pill">—</span>}</td>
+                  <td>
+                    <button className="cp" onClick={() => copy(prompt(n, "A"))}>📋A</button>
+                    <button className="cp" onClick={() => copy(prompt(n, "B"))}>B</button>
+                    <button className="cp" onClick={() => copy(prompt(n, "C"))}>C</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-    </>
+      {openSlot != null && idx && (
+        <SlotModal slot={openSlot} def={idx.def[openSlot]} usage={idx.usage[openSlot] || []}
+          meta={rows[openSlot] || null} themeInit={theme === "dark" ? "dark" : "light"}
+          onClose={(changed) => { setOpenSlot(null); if (changed) { bustSlotMeta(openSlot); refreshMeta(); } }} />
+      )}
+    </div>
   );
 }
 
-/* ══════════ 현황 페이지 ══════════ */
-export default function AdminImages({ theme = "light" }) {
-  const [allowed, setAllowed] = useState(null);
-  const [rows, setRows] = useState(null);
-  const [f, setF] = useState({ letter: "", onlyMissing: true });
-  const [open, setOpen] = useState(null);   // row index in rows
+/* ══════════ 슬롯 모달 ══════════ */
+function SlotModal({ slot, def, usage, meta: meta0, themeInit, onClose }) {
+  const [meta, setMeta] = useState(meta0 || {});
+  const [cands, setCands] = useState(null);   // [k...]
+  const [pv, setPv] = useState(themeInit);    // 미리보기 테마
+  const [changed, setChanged] = useState(false);
+  const [warn, setWarn] = useState("");
+  const addRef = useRef(null);
 
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: prof } = await supabase.from("profiles").select("role").eq("id", user?.id).maybeSingle();
-      if (prof?.role !== "admin") { setAllowed(false); return; }
-      setAllowed(true);
-      const { data: cs } = await supabase.from("concepts").select("id, title, blocks");
-      const targets = [];
-      for (const c of cs || []) {
-        (c.blocks || []).forEach((b, bi) => {
-          (b.figure?.scenes || []).forEach((s, si) => {
-            if (s.anim !== "diagram" && s.count > 0)
-              targets.push({ concept_id: c.id, title: c.title, block_id: b.id, bi, si, scene: s });
-          });
-        });
-      }
-      const dirs = [...new Set(targets.map((t) => `${t.concept_id}/${t.block_id}`))];
-      const have = {};
-      await Promise.all(dirs.map(async (d) => {
-        const { data } = await supabase.storage.from("figures").list(d, { limit: 100 });
-        have[d] = new Set((data || []).map((x) => x.name.replace(/\.[^.]+$/, "")));
-      }));
-      const out = [];
-      for (const t of targets) {
-        const dir = `${t.concept_id}/${t.block_id}`;
-        for (let i = 1; i <= t.scene.count; i++) {
-          const key = `${t.scene.id}${i}`;
-          out.push({
-            concept_id: t.concept_id, title: t.title, block_id: t.block_id, key, ci: i,
-            bi: t.bi, si: t.si, scene: t.scene,
-            code: qcode(t.concept_id, t.block_id),
-            name: t.scene.cuts?.[i - 1] || `${t.scene.label} ${i}컷`,
-            ok: have[dir]?.has(key) || false,
-          });
-        }
-      }
-      // ── 교육과정 순 정렬: 과정 → 개념 번호 → 블록 → 씬 → 컷 ──
-      out.sort((a, b) => {
-        const [ua, na] = parseCid(a.concept_id), [ub, nb] = parseCid(b.concept_id);
-        return (ua - ub) || (na - nb) || (a.bi - b.bi) || (a.si - b.si) || (a.ci - b.ci);
-      });
-      setRows(out);
-    })();
-  }, []);
+  const load = async () => {
+    const { data } = await supabase.storage.from("figures").list(`${SLOT_ROOT}/${slot}`, { limit: 100 });
+    setCands((data || []).map((f) => +f.name.replace(/\.webp$/i, "")).filter(Number.isFinite).sort((a, b) => a - b));
+  };
+  useEffect(() => { load(); }, [slot]);
 
-  if (allowed === false) return (
-    <div className={`ai-root ai-${theme}`}><style>{CSS}</style><p className="ai-empty">관리자 전용 화면입니다.</p></div>
-  );
-
-  const shown = (rows || []).filter((r) =>
-    (!f.letter || r.code.startsWith(f.letter)) && (!f.onlyMissing || !r.ok));
-  const done = (rows || []).filter((r) => r.ok).length;
+  const adopted = adoptedCand(meta, pv);
+  const saveMeta = async (next) => {
+    setMeta(next); setChanged(true);
+    const { error } = await supabase.from("figure_slots")
+      .upsert({ slot, meta: { ...next, updated: Date.now() }, updated_at: new Date().toISOString() });
+    if (error) setWarn("저장 실패: " + error.message);
+  };
+  const adopt = (k) => saveMeta({ ...meta, n: Math.max(meta.n || 0, ...(cands || [k])), adopted: { ...(meta.adopted || {}), [pv]: k } });
+  const setF = (key, v) => {
+    const f = { ...(meta.filters || {}) };
+    f[pv] = { ...(f[pv] || {}), [key]: +v };
+    saveMeta({ ...meta, filters: f });
+  };
+  const fcur = { b: 1, c: 1, s: 1, e: pv === "light" ? 0.12 : 0, ...((meta.filters || {})[pv] || {}) };
+  const del = async (k) => {
+    if (!confirm(`후보 ${k}번을 삭제할까?`)) return;
+    await supabase.storage.from("figures").remove([`${SLOT_ROOT}/${slot}/${k}.webp`]);
+    const left = (cands || []).filter((x) => x !== k);
+    setCands(left);
+    const ad = { ...(meta.adopted || {}) };
+    for (const t of Object.keys(ad)) if (ad[t] === k) ad[t] = left[0] || 1;
+    saveMeta({ ...meta, n: left.length ? Math.max(...left) : 0, adopted: ad });
+  };
+  const addFiles = async (files) => {
+    let k = Math.max(0, ...(cands || [0]));
+    for (const f of files) {
+      try {
+        const bmp = await createImageBitmap(f);
+        const cv = canvas(bmp.width, bmp.height); cv.getContext("2d").drawImage(bmp, 0, 0);
+        const { cv: cut } = trimAlpha(cv);
+        const blob = await toWebp(cut);
+        k += 1;
+        await supabase.storage.from("figures").upload(`${SLOT_ROOT}/${slot}/${k}.webp`, blob, { upsert: true, contentType: "image/webp" });
+      } catch (e) { setWarn("추가 실패: " + (e?.message || e)); }
+    }
+    await load(); saveMeta({ ...meta, n: k, adopted: meta.adopted || { dark: k } });
+  };
 
   return (
-    <div className={`ai-root ai-${theme}`}>
-      <style>{CSS}</style>
-      <div className="ai-wrap">
-        <div className="ai-top">
-          <h1 className="ai-h">🖼 이미지 등록 현황</h1>
-          <span className="ai-back" onClick={() => (location.hash = "")}>← 홈</span>
+    <>
+      <div className="ai3-dim" onClick={() => onClose(changed)} />
+      <div className="ai3-md">
+        <h3>#{slot} {def.name} <span className="sub" style={{ fontWeight: 400 }}>· {usage.join(", ")}</span></h3>
+        <div className={"paper " + pv}>
+          {cands && cands.includes(adopted) &&
+            <img src={slotUrl(slot, adopted, meta.updated || "")} alt="" style={{ filter: filterCss(meta, pv) }} />}
         </div>
-        <div className="ai-filters">
-          <select className="ai-sel" value={f.letter} onChange={(e) => setF((s) => ({ ...s, letter: e.target.value }))}>
-            <option value="">전체 과정</option>
-            {Object.entries(UNIT_LETTER).map(([u, l]) => <option key={l} value={l}>{l} · {UNIT_NAME[u]}</option>)}
-          </select>
-          <button className={"ai-tgl" + (f.onlyMissing ? " on" : "")}
-            onClick={() => setF((s) => ({ ...s, onlyMissing: !s.onlyMissing }))}>미등록만 보기</button>
+        <div className="row" style={{ margin: "8px 0" }}>
+          <button className={"tgl" + (pv === "dark" ? " on" : "")} onClick={() => setPv("dark")}>감지(다크)</button>
+          <button className={"tgl" + (pv === "light" ? " on" : "")} onClick={() => setPv("light")}>한지(라이트)</button>
+          <span style={{ flex: 1 }} />
+          <button className="btn" onClick={() => addRef.current?.click()}>후보 추가</button>
+          <input ref={addRef} type="file" multiple accept=".png,.webp" style={{ display: "none" }}
+            onChange={(e) => { addFiles([...e.target.files]); e.target.value = ""; }} />
         </div>
-        {rows === null ? <p className="ai-empty">불러오는 중…</p> : (
-          <>
-            <p className="ai-sum">전체 {rows.length}컷 중 등록 {done} · 미등록 {rows.length - done} · 이름을 누르면 프롬프트·업로드 창이 열려요</p>
-            {shown.length === 0 && <p className="ai-empty">{f.onlyMissing ? "미등록 컷이 없어요 🎉" : "대상 컷이 없어요"}</p>}
-            {shown.map((r) => {
-              const idx = rows.indexOf(r);
-              return (
-                <div key={idx} className="ai-row">
-                  <span className="ai-code" onClick={() => (location.hash = `#/c/${encodeURIComponent(r.concept_id)}`)}>{r.code}</span>
-                  <span className="ai-name" onClick={() => setOpen(idx)}>{r.name}</span>
-                  <span className="ai-key">{r.key}</span>
-                  <span className={r.ok ? "ai-ok" : "ai-no"}>{r.ok ? "O" : "X"}</span>
-                </div>
-              );
-            })}
-          </>
-        )}
+        <div className="cands">
+          {(cands || []).map((k) => (
+            <div key={k} className={"cand" + (k === adopted ? " on" : "")} onClick={() => adopt(k)}>
+              <span className="k">{k}</span>
+              <img src={slotUrl(slot, k, meta.updated || "")} alt="" />
+              <button className="del" onClick={(e) => { e.stopPropagation(); del(k); }}>✕</button>
+            </div>
+          ))}
+          {cands && !cands.length && <span className="sub">후보 없음 — 드롭 화면에서 {slot}.png로 등록</span>}
+        </div>
+        {[["b", "밝기", 0.6, 1.4], ["c", "대비", 0.6, 1.4], ["s", "채도", 0.4, 1.6], ["e", "세피아", 0, 0.5]].map(([key, label, lo, hi]) => (
+          <div className="sl" key={key}>
+            <span>{label}</span>
+            <input type="range" min={lo} max={hi} step="0.01" value={fcur[key]} onChange={(e) => setF(key, e.target.value)} />
+            <span>{Number(fcur[key]).toFixed(2)}</span>
+          </div>
+        ))}
+        {warn && <div className="warn">{warn}</div>}
+        <div className="row" style={{ marginTop: 10, justifyContent: "flex-end" }}>
+          <button className="btn pri" onClick={() => onClose(changed)}>닫기</button>
+        </div>
       </div>
-      {open !== null && rows?.[open] && (
-        <CutModal row={rows[open]} onClose={() => setOpen(null)}
-          onChanged={(ok) => setRows((rs) => rs.map((r, i) => i === open ? { ...r, ok } : r))} />
-      )}
-    </div>
+    </>
   );
 }
