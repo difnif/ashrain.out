@@ -162,6 +162,7 @@ export default function AdminImages({ theme = "light" }) {
   const [prog, setProg] = useState(null);       // {done,total,cur}
   const [warn, setWarn] = useState("");
   const [openSlot, setOpenSlot] = useState(null);
+  const [review, setReview] = useState(null); // 자동 매칭 확인 목록
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -229,22 +230,39 @@ export default function AdminImages({ theme = "light" }) {
     }
     return out;
   }
-  async function processFiles(files) {
-    if (!idx) return;
-    const jobs = [], bad = [];
-    const nextK = {}; // slot -> 다음 후보 번호
-    for (const f of files) {
-      const m = f.name.match(/^(\d+)(?:-(\d+))?\.(png|jpe?g|webp)$/i);
-      if (!m || !idx.def[+m[1]]) { bad.push(f.name); continue; }
-      jobs.push({ f, slot: +m[1], k: m[2] ? +m[2] : null });
+
+  // 미드저니 파일명(프롬프트 앞 단어들)로 슬롯 추측
+  const STOP = new Set(("a an the of on in to with and its seen from view straight directly above side front no " +
+    "gouache painting manner korean gold ink landscape paintings dark indigo dyed paper opaque matte brush strokes " +
+    "visible texture fine accents muted lapis verdigris warm ochre palette simple friendly educational illustration " +
+    "single clear subject isolated plain flat background full object margins cast shadow ground text style raw one small large").split(" "));
+  const tok = (t) => t.toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 2 && !STOP.has(w));
+  const slotTokens = useMemo(() => {
+    if (!idx) return {};
+    const m = {};
+    for (const n of idx.order) m[n] = new Set(tok(`${idx.def[n].A} ${idx.def[n].B} ${idx.def[n].C}`));
+    return m;
+  }, [idx]);
+  function guessSlot(fname) {
+    const ft = new Set(tok(fname.replace(/\.[^.]+$/, "")).slice(1)); // 첫 토큰(계정명) 제외
+    let best = null, bs = 0, second = 0;
+    for (const n of idx.order) {
+      let sc = 0;
+      for (const w of ft) if (slotTokens[n].has(w)) sc++;
+      if (sc > bs) { second = bs; bs = sc; best = n; }
+      else if (sc > second) second = sc;
     }
-    jobs.sort((a, b) => a.slot - b.slot || (a.k || 99) - (b.k || 99));
-    setWarn(bad.length ? "번호 매칭 실패(건너뜀): " + bad.join(", ") : "");
+    return bs >= 2 && bs - second >= 1 ? { slot: best, score: bs } : { slot: null, score: bs };
+  }
+
+  // 공통 등록 루프: jobs = [{f, slot, k|null}]
+  async function runJobs(jobs) {
     if (!jobs.length) return;
+    jobs.sort((a, b) => a.slot - b.slot || (a.k || 99) - (b.k || 99));
     setProg({ done: 0, total: jobs.length, cur: "" });
-    const touched = {};
+    const touched = {}, nextK = {};
     for (const j of jobs) {
-      setProg((p) => ({ ...p, cur: `#${j.slot} ${idx.def[j.slot].name}` }));
+      setProg((p) => ({ ...p, cur: `#${j.slot} ${idx.def[j.slot]?.name || ""}` }));
       try {
         const bmp = await createImageBitmap(j.f);
         let cv;
@@ -273,6 +291,21 @@ export default function AdminImages({ theme = "light" }) {
     for (const s of Object.keys(touched)) bustSlotMeta(+s);
     setProg(null); refreshMeta();
   }
+
+  // 전체 드롭: 번호 이름은 바로, 그 외는 자동 매칭 → 확인 목록
+  async function processFiles(files) {
+    if (!idx) return;
+    const jobs = [], toGuess = [];
+    for (const f of files) {
+      const m = f.name.match(/^(\d+)(?:-(\d+))?\.(png|jpe?g|webp)$/i);
+      if (m && idx.def[+m[1]]) jobs.push({ f, slot: +m[1], k: m[2] ? +m[2] : null });
+      else toGuess.push(f);
+    }
+    setWarn("");
+    if (jobs.length) await runJobs(jobs);
+    if (toGuess.length)
+      setReview(toGuess.map((f) => ({ f, url: URL.createObjectURL(f), ...guessSlot(f.name) })));
+  }
   const onDrop = async (e) => { e.preventDefault(); setOver(false); processFiles(await collectFiles(e.dataTransfer)); };
 
   const cls = "ai3 " + (theme === "dark" ? "dark" : "light");
@@ -289,8 +322,8 @@ export default function AdminImages({ theme = "light" }) {
         <div className="drop" onDragOver={(e) => { e.preventDefault(); setOver(true); }}
           onDragLeave={() => setOver(false)} onDrop={onDrop}
           onClick={() => fileRef.current?.click()} style={over ? { borderColor: "var(--ac)" } : null}>
-          이미지·zip을 여기로 드래그 (파일명 = 슬롯 번호: <b>7.png</b>, <b>7-2.png</b> …)<br />
-          <span className="stat">떨어뜨리면 자동으로 배경 제거 → WebP 변환 → 등록됩니다</span>
+          이미지·zip을 여기로 드래그 — 번호 이름(<b>7.png</b>)은 바로, 미드저니 원본 이름은 <b>자동 매칭 후 확인</b><br />
+          <span className="stat">개별 슬롯 <b>행 위에</b> 떨어뜨리면 이름과 무관하게 그 슬롯에 등록됩니다 · 배경 제거 → WebP 자동</span>
           <input ref={fileRef} type="file" multiple accept=".png,.jpg,.jpeg,.webp,.zip" style={{ display: "none" }}
             onChange={(e) => { processFiles([...e.target.files].filter((f) => /\.(png|jpe?g|webp|zip)$/i.test(f.name))); e.target.value = ""; }} />
         </div>
@@ -315,13 +348,43 @@ export default function AdminImages({ theme = "light" }) {
         )}
         {warn && <div className="warn">{warn}</div>}
 
+        {review && (
+          <div className="prog">
+            <b>자동 매칭 확인</b> — 파일명 단어로 추측했어요. 번호를 고치거나 비우면 건너뜁니다.
+            <div className="cands" style={{ marginTop: 8 }}>
+              {review.map((r, i) => (
+                <div key={i} style={{ width: 96, textAlign: "center" }}>
+                  <div className="cand" style={{ width: 96, height: 96, cursor: "default" }}>
+                    <img src={r.url} alt="" />
+                  </div>
+                  <input type="number" value={r.slot ?? ""} placeholder="?"
+                    onChange={(e) => setReview((v) => v.map((x, j) => j === i ? { ...x, slot: e.target.value === "" ? null : +e.target.value } : x))}
+                    style={{ width: 64, marginTop: 4, textAlign: "center", background: "var(--in)", border: "1px solid var(--inbd)", borderRadius: 7, padding: "3px 4px", color: "var(--ink)" }} />
+                  <div className="sub">{r.slot && idx.def[r.slot] ? idx.def[r.slot].name : "직접 입력"}</div>
+                </div>
+              ))}
+            </div>
+            <div className="row" style={{ marginTop: 8, justifyContent: "flex-end" }}>
+              <button className="btn" onClick={() => { review.forEach((r) => URL.revokeObjectURL(r.url)); setReview(null); }}>취소</button>
+              <button className="btn pri" onClick={() => {
+                const jobs = review.filter((r) => r.slot && idx.def[r.slot]).map((r) => ({ f: r.f, slot: r.slot, k: null }));
+                review.forEach((r) => URL.revokeObjectURL(r.url)); setReview(null); runJobs(jobs);
+              }}>{review.filter((r) => r.slot && idx.def[r.slot]).length}건 등록</button>
+            </div>
+          </div>
+        )}
+
         <table>
           <thead><tr><th>#</th><th>이름</th><th>쓰임</th><th>후보</th><th>프롬프트</th></tr></thead>
           <tbody>
             {list.map((n) => {
               const d = idx.def[n], m = rows[n];
               return (
-                <tr key={n}>
+                <tr key={n}
+                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.outline = "2px dashed var(--ac)"; }}
+                  onDragLeave={(e) => { e.currentTarget.style.outline = ""; }}
+                  onDrop={async (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.outline = "";
+                    runJobs((await collectFiles(e.dataTransfer)).map((f) => ({ f, slot: n, k: null }))); }}>
                   <td className="num" onClick={() => setOpenSlot(n)}>{n}</td>
                   <td className="nm" onClick={() => setOpenSlot(n)}>
                     {d.name}<br /><span className="sub">{d.cid} · --ar {d.ar}</span>
@@ -354,6 +417,7 @@ function SlotModal({ slot, def, usage, meta: meta0, themeInit, onClose }) {
   const [cands, setCands] = useState(null);   // [k...]
   const [pv, setPv] = useState(themeInit);    // 미리보기 테마
   const [changed, setChanged] = useState(false);
+  const [rmBg, setRmBg] = useState(false); // 모달 추가는 기본 "이미 오려낸 파일"
   const [warn, setWarn] = useState("");
   const addRef = useRef(null);
 
@@ -391,7 +455,9 @@ function SlotModal({ slot, def, usage, meta: meta0, themeInit, onClose }) {
     for (const f of files) {
       try {
         const bmp = await createImageBitmap(f);
-        const cv = canvas(bmp.width, bmp.height); cv.getContext("2d").drawImage(bmp, 0, 0);
+        let cv;
+        if (rmBg) cv = await removeBg(bmp);
+        else { cv = canvas(bmp.width, bmp.height); cv.getContext("2d").drawImage(bmp, 0, 0); }
         const { cv: cut } = trimAlpha(cv);
         const blob = await toWebp(cut);
         k += 1;
@@ -406,7 +472,9 @@ function SlotModal({ slot, def, usage, meta: meta0, themeInit, onClose }) {
       <div className="ai3-dim" onClick={() => onClose(changed)} />
       <div className="ai3-md">
         <h3>#{slot} {def.name} <span className="sub" style={{ fontWeight: 400 }}>· {usage.join(", ")}</span></h3>
-        <div className={"paper " + pv}>
+        <div className={"paper " + pv}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); addFiles([...e.dataTransfer.files].filter((f) => /\.(png|jpe?g|webp)$/i.test(f.name))); }}>
           {cands && cands.includes(adopted) &&
             <img src={slotUrl(slot, adopted, meta.updated || "")} alt="" style={{ filter: filterCss(meta, pv) }} />}
         </div>
@@ -414,8 +482,9 @@ function SlotModal({ slot, def, usage, meta: meta0, themeInit, onClose }) {
           <button className={"tgl" + (pv === "dark" ? " on" : "")} onClick={() => setPv("dark")}>감지(다크)</button>
           <button className={"tgl" + (pv === "light" ? " on" : "")} onClick={() => setPv("light")}>한지(라이트)</button>
           <span style={{ flex: 1 }} />
+          <button className={"tgl" + (rmBg ? " on" : "")} onClick={() => setRmBg((v) => !v)}>배경 제거</button>
           <button className="btn" onClick={() => addRef.current?.click()}>후보 추가</button>
-          <input ref={addRef} type="file" multiple accept=".png,.webp" style={{ display: "none" }}
+          <input ref={addRef} type="file" multiple accept=".png,.jpg,.jpeg,.webp" style={{ display: "none" }}
             onChange={(e) => { addFiles([...e.target.files]); e.target.value = ""; }} />
         </div>
         <div className="cands">
