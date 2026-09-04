@@ -255,6 +255,15 @@ export default function AdminImages({ theme = "light" }) {
     return bs >= 2 && bs - second >= 1 ? { slot: best, score: bs } : { slot: null, score: bs };
   }
 
+  // 등록 직전 저장소 기준으로 다음 후보 번호 산출 (여러 탭 병렬 사용 대비)
+  async function baseK(slot, meta) {
+    try {
+      const { data } = await supabase.storage.from("figures").list(`${SLOT_ROOT}/${slot}`, { limit: 100 });
+      const ks = (data || []).map((f) => +f.name.replace(/\.webp$/i, "")).filter(Number.isFinite);
+      return Math.max(meta.n || 0, ...(ks.length ? ks : [0]));
+    } catch { return meta.n || 0; }
+  }
+
   // 공통 등록 루프: jobs = [{f, slot, k|null}]
   async function runJobs(jobs) {
     if (!jobs.length) return;
@@ -272,7 +281,7 @@ export default function AdminImages({ theme = "light" }) {
         const { cv: cut, lum } = trimAlpha(cv);
         const blob = await toWebp(cut);
         const meta = touched[j.slot] || rows[j.slot] || {};
-        const k = j.k || ((nextK[j.slot] = (nextK[j.slot] ?? meta.n ?? 0) + 1));
+        const k = j.k || ((nextK[j.slot] = (nextK[j.slot] ?? await baseK(j.slot, meta)) + 1));
         const { error } = await supabase.storage.from("figures")
           .upload(`${SLOT_ROOT}/${j.slot}/${k}.webp`, blob, { upsert: true, contentType: "image/webp" });
         if (error) throw error;
@@ -454,7 +463,9 @@ function SlotModal({ slot, def, usage, meta: meta0, themeInit, onClose }) {
     saveMeta({ ...meta, n: left.length ? Math.max(...left) : 0, adopted: ad });
   };
   const addFiles = async (files) => {
-    let k = Math.max(0, ...(cands || [0]));
+    const { data } = await supabase.storage.from("figures").list(`${SLOT_ROOT}/${slot}`, { limit: 100 });
+    const ks = (data || []).map((f) => +f.name.replace(/\.webp$/i, "")).filter(Number.isFinite);
+    let k = Math.max(0, ...(ks.length ? ks : [0]), ...(cands || [0]));
     for (const f of files) {
       try {
         const bmp = await createImageBitmap(f);
