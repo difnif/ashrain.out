@@ -255,6 +255,12 @@ export default function AdminImages({ theme = "light" }) {
     return bs >= 2 && bs - second >= 1 ? { slot: best, score: bs } : { slot: null, score: bs };
   }
 
+  // 원본 지문 — 같은 파일 재드롭 시 건너뛰기용
+  async function fhash(f) {
+    const d = await crypto.subtle.digest("SHA-1", await f.arrayBuffer());
+    return [...new Uint8Array(d)].slice(0, 10).map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
   // 등록 직전 저장소 기준으로 다음 후보 번호 산출 (여러 탭 병렬 사용 대비)
   async function baseK(slot, meta) {
     try {
@@ -271,16 +277,21 @@ export default function AdminImages({ theme = "light" }) {
     jobs.sort((a, b) => a.slot - b.slot || (a.k || 99) - (b.k || 99));
     setProg({ done: 0, total: jobs.length, cur: "" });
     const touched = {}, nextK = {};
+    let skipped = 0;
     for (const j of jobs) {
       setProg((p) => ({ ...p, cur: `#${j.slot} ${idx.def[j.slot]?.name || ""}` }));
       try {
+        const meta = touched[j.slot] || rows[j.slot] || {};
+        const h = await fhash(j.f);
+        if (!j.k && meta.src && meta.src[h] != null) { // 같은 원본이 이미 후보로 존재
+          skipped++; setProg((p) => ({ ...p, done: p.done + 1 })); continue;
+        }
         const bmp = await createImageBitmap(j.f);
         let cv;
         if (doRemove) cv = await removeBg(bmp);
         else { cv = canvas(bmp.width, bmp.height); cv.getContext("2d").drawImage(bmp, 0, 0); }
         const { cv: cut, lum } = trimAlpha(cv);
         const blob = await toWebp(cut);
-        const meta = touched[j.slot] || rows[j.slot] || {};
         const k = j.k || ((nextK[j.slot] = (nextK[j.slot] ?? await baseK(j.slot, meta)) + 1));
         const { error } = await supabase.storage.from("figures")
           .upload(`${SLOT_ROOT}/${j.slot}/${k}.webp`, blob, { upsert: true, contentType: "image/webp" });
@@ -288,7 +299,7 @@ export default function AdminImages({ theme = "light" }) {
         touched[j.slot] = {
           ...meta, n: Math.max(meta.n || 0, k),
           adopted: meta.adopted || { dark: k },
-          stats: { lum: +lum.toFixed(3) }, updated: Date.now(),
+          stats: { lum: +lum.toFixed(3) }, src: { ...(meta.src || {}), [h]: k }, updated: Date.now(),
         };
       } catch (e) { setWarn((w) => (w ? w + "\n" : "") + `#${j.slot} 실패: ${e?.message || e}`); }
       setProg((p) => ({ ...p, done: p.done + 1 }));
@@ -301,6 +312,7 @@ export default function AdminImages({ theme = "light" }) {
         bustSlotMeta(j.slot);
       }
     }
+    if (skipped) setWarn((w) => (w ? w + "\n" : "") + `중복 원본 ${skipped}건 건너뜀 (이미 등록된 후보)`);
     setProg(null); refreshMeta();
   }
 
