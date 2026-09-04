@@ -258,6 +258,7 @@ export default function AdminImages({ theme = "light" }) {
   // 공통 등록 루프: jobs = [{f, slot, k|null}]
   async function runJobs(jobs) {
     if (!jobs.length) return;
+    if (prog) { setWarn("이전 배치 처리 중 — 진행 막대가 끝난 뒤 다시 드래그해 주세요."); return; }
     jobs.sort((a, b) => a.slot - b.slot || (a.k || 99) - (b.k || 99));
     setProg({ done: 0, total: jobs.length, cur: "" });
     const touched = {}, nextK = {};
@@ -282,13 +283,15 @@ export default function AdminImages({ theme = "light" }) {
         };
       } catch (e) { setWarn((w) => (w ? w + "\n" : "") + `#${j.slot} 실패: ${e?.message || e}`); }
       setProg((p) => ({ ...p, done: p.done + 1 }));
+      // 이 슬롯의 마지막 파일이면 메타 즉시 저장 — 중간에 끊겨도 완료분은 등록 상태 유지
+      const last = !jobs.some((x, xi) => x.slot === j.slot && xi > jobs.indexOf(j));
+      if (last && touched[j.slot]) {
+        const { error } = await supabase.from("figure_slots")
+          .upsert({ slot: j.slot, meta: touched[j.slot], updated_at: new Date().toISOString() });
+        if (error) setWarn((w) => w + "\n메타 저장 실패 #" + j.slot + ": " + error.message + " (figure_slots SQL 실행 여부 확인)");
+        bustSlotMeta(j.slot);
+      }
     }
-    const ups = Object.entries(touched).map(([slot, meta]) => ({ slot: +slot, meta, updated_at: new Date().toISOString() }));
-    if (ups.length) {
-      const { error } = await supabase.from("figure_slots").upsert(ups);
-      if (error) setWarn((w) => w + "\n메타 저장 실패: " + error.message + " (figure_slots SQL 실행 여부 확인)");
-    }
-    for (const s of Object.keys(touched)) bustSlotMeta(+s);
     setProg(null); refreshMeta();
   }
 
