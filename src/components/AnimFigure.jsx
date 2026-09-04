@@ -6,6 +6,7 @@
 // 저장: Supabase Storage 'figures' 버킷, {conceptId}/{blockId}/{씬id}{n}.png
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
+import { StageScene } from "./StageFigure";
 
 const CSS = `
 .afs { margin: 14px auto; max-width: 430px; }
@@ -118,6 +119,8 @@ const DIAGRAMS = { "equal-bars": EqualBars, "hanja-modify": HanjaModify };
 /* ══════════ 인라인 씬 ══════════ */
 export function AnimScene({ sceneId, figure, conceptId, blockId, isAdmin = false, theme = "light" }) {
   const scene = (figure?.scenes || []).find((s) => s.id === sceneId);
+  if (scene && scene.anim === "stage")
+    return <StageScene scene={scene} figure={figure} conceptId={conceptId} blockId={blockId} isAdmin={isAdmin} theme={theme} />;
   const dir = `${conceptId}/${blockId}`;
   const [files, setFiles] = useState(null);
   const [frame, setFrame] = useState(0);
