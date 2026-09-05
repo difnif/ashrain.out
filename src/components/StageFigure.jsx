@@ -383,6 +383,7 @@ function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onReplay })
           x <input type="number" step="0.01" value={sel.x ?? 0.5} onChange={(e) => setLayer({ x: +e.target.value })} style={{ width: 62 }} />
           y <input type="number" step="0.01" value={sel.y ?? 0.33} onChange={(e) => setLayer({ y: +e.target.value })} style={{ width: 62 }} />
           w <input type="number" step="0.01" value={sel.w ?? 0.2} onChange={(e) => setLayer({ w: +e.target.value })} style={{ width: 62 }} />
+          회전 <input type="number" step="1" value={sel.rotate ?? 0} onChange={(e) => setLayer({ rotate: +e.target.value })} style={{ width: 56 }} />
           <button className={"sf3-btn" + (sel.flip ? " on" : "")} onClick={() => setLayer({ flip: !sel.flip })}>좌우반전</button>
           <button className="sf3-btn" onClick={() => setLayer({ z: (sel.z ?? 1) + 1 })}>앞으로</button>
           <button className="sf3-btn" onClick={() => setLayer({ z: Math.max(0, (sel.z ?? 1) - 1) })}>뒤로</button>
