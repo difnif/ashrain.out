@@ -90,7 +90,7 @@ function canvas(w, h) {
   if (typeof OffscreenCanvas !== "undefined") return new OffscreenCanvas(w, h);
   const c = document.createElement("canvas"); c.width = w; c.height = h; return c;
 }
-async function removeBg(bitmap) {
+async function removeBg(bitmap, holes = false) {
   const { ort, sess } = await getSession();
   const S = 320, c = canvas(S, S), g = c.getContext("2d", { willReadFrequently: true });
   g.drawImage(bitmap, 0, 0, S, S);
@@ -117,7 +117,28 @@ async function removeBg(bitmap) {
   og.globalCompositeOperation = "destination-in";
   og.imageSmoothingEnabled = true; og.imageSmoothingQuality = "high";
   og.drawImage(mc, 0, 0, W, H);
+  if (holes) punchHoles(oc, bitmap);
   return oc;
+}
+// 원본 모서리에서 배경색을 뽑아, 마스크 안쪽에 남은 배경색 픽셀(틀 구멍·바퀴살 사이)을 투명화
+function punchHoles(oc, bitmap) {
+  const W = oc.width, H = oc.height;
+  const sc = canvas(W, H); sc.getContext("2d").drawImage(bitmap, 0, 0, W, H);
+  const src = sc.getContext("2d").getImageData(0, 0, W, H).data;
+  const pick = (x, y) => { const i = (y * W + x) * 4; return [src[i], src[i + 1], src[i + 2]]; };
+  const pts = [];
+  for (const [cx, cy] of [[4, 4], [W - 5, 4], [4, H - 5], [W - 5, H - 5]])
+    for (let dy = 0; dy < 4; dy++) for (let dx = 0; dx < 4; dx++) pts.push(pick(cx + dx - 2, cy + dy - 2));
+  const bg = [0, 1, 2].map((c) => { const v = pts.map((p) => p[c]).sort((a, b) => a - b); return v[v.length >> 1]; });
+  const g = oc.getContext("2d", { willReadFrequently: true });
+  const im = g.getImageData(0, 0, W, H), d = im.data;
+  const T2 = 34 * 34;
+  for (let i = 0; i < W * H; i++) {
+    const a = d[i * 4 + 3]; if (!a) continue;
+    const dr = src[i * 4] - bg[0], dg = src[i * 4 + 1] - bg[1], db = src[i * 4 + 2] - bg[2];
+    if (dr * dr + dg * dg + db * db < T2) d[i * 4 + 3] = 0;
+  }
+  g.putImageData(im, 0, 0);
 }
 function trimAlpha(cv) {
   const g = cv.getContext("2d", { willReadFrequently: true });
@@ -158,6 +179,7 @@ export default function AdminImages({ theme = "light" }) {
   const [unit, setUnit] = useState("all");
   const [onlyMissing, setOnlyMissing] = useState(false);
   const [doRemove, setDoRemove] = useState(true);
+  const [doHoles, setDoHoles] = useState(true); // 내부(구멍) 배경까지 제거
   const [over, setOver] = useState(false);
   const [prog, setProg] = useState(null);       // {done,total,cur}
   const [warn, setWarn] = useState("");
@@ -288,7 +310,7 @@ export default function AdminImages({ theme = "light" }) {
         }
         const bmp = await createImageBitmap(j.f);
         let cv;
-        if (doRemove) cv = await removeBg(bmp);
+        if (doRemove) cv = await removeBg(bmp, doHoles);
         else { cv = canvas(bmp.width, bmp.height); cv.getContext("2d").drawImage(bmp, 0, 0); }
         const { cv: cut, lum } = trimAlpha(cv);
         const blob = await toWebp(cut);
@@ -360,6 +382,8 @@ export default function AdminImages({ theme = "light" }) {
           <button className={"tgl" + (onlyMissing ? " on" : "")} onClick={() => setOnlyMissing((v) => !v)}>미등록만</button>
           <button className={"tgl" + (doRemove ? " on" : "")} onClick={() => setDoRemove((v) => !v)}
             title="끄면 이미 오려낸 이미지를 그대로 등록">배경 제거 {doRemove ? "ON" : "OFF"}</button>
+          {doRemove && <button className={"tgl" + (doHoles ? " on" : "")} onClick={() => setDoHoles((v) => !v)}
+            title="틀 구멍·바퀴살 사이처럼 물체 안쪽에 남는 배경색까지 투명화. 유리병처럼 배경이 비쳐야 하는 물건은 끄기">구멍 뚫기 {doHoles ? "ON" : "OFF"}</button>}
           <span style={{ flex: 1 }} />
           <span className="stat">{registered} / {idx ? idx.order.length : "…"} 등록</span>
         </div>
@@ -472,7 +496,8 @@ function SlotModal({ slot, def, usage, meta: meta0, themeInit, onClose }) {
     setCands(left);
     const ad = { ...(meta.adopted || {}) };
     for (const t of Object.keys(ad)) if (ad[t] === k) ad[t] = left[0] || 1;
-    saveMeta({ ...meta, n: left.length ? Math.max(...left) : 0, adopted: ad });
+    const src = Object.fromEntries(Object.entries(meta.src || {}).filter(([, kk]) => kk !== k));
+    saveMeta({ ...meta, n: left.length ? Math.max(...left) : 0, adopted: ad, src });
   };
   const addFiles = async (files) => {
     const { data } = await supabase.storage.from("figures").list(`${SLOT_ROOT}/${slot}`, { limit: 100 });
