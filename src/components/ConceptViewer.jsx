@@ -243,6 +243,10 @@ function DefinitionBlock({ b, sz, t, theme, conceptId, isAdmin }) {
       </p>
       <p className="cv-chiplab">{b.chipLabel}</p>
       <div className="cv-chips">{b.chips?.map((n) => <span key={n} className="cv-chip" style={{ background: t.solid }}>{n}</span>)}</div>
+      {(b.lines || []).map((l, i) => {
+        const fm = typeof l === "string" && l.match(/^\[\[fig:([\w-]+)\]\]$/);
+        return fm ? <AnimScene key={"f" + i} sceneId={fm[1]} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} /> : null;
+      })}
       <Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
       <Panels panels={b.panels} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} sz={sz} />
     </div>
@@ -257,6 +261,10 @@ function WarningBlock({ b, sz, t, theme, conceptId, isAdmin }) {
           <p className="cv-p" style={{ fontSize: sz.body, margin: 0, color: "var(--ink)" }}><Rich text={it} tn={b.style?.tone} theme={theme} /></p>
         </div>
       ))}
+      {(b.lines || []).map((l, i) => {
+        const fm = typeof l === "string" && l.match(/^\[\[fig:([\w-]+)\]\]$/);
+        return fm ? <AnimScene key={"f" + i} sceneId={fm[1]} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} /> : null;
+      })}
       <Figure figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} />
       <Panels panels={b.panels} figure={b.figure} conceptId={conceptId} blockId={b.id} isAdmin={isAdmin} theme={theme} sz={sz} />
     </div>
