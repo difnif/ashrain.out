@@ -120,23 +120,67 @@ async function removeBg(bitmap, holes = false) {
   if (holes) punchHoles(oc, bitmap);
   return oc;
 }
-// 원본 모서리에서 배경색을 뽑아, 마스크 안쪽에 남은 배경색 픽셀(틀 구멍·바퀴살 사이)을 투명화
+// 물체 안쪽에 남은 배경(틀 구멍·바퀴살 사이)을 투명화.
+// 배경을 2차 곡면 c(x,y)=a+bx+cy+dx²+ey²+fxy 로 피팅(미드저니 비네트 대응) 후 예측색과 비교
 function punchHoles(oc, bitmap) {
   const W = oc.width, H = oc.height;
-  const sc = canvas(W, H); sc.getContext("2d").drawImage(bitmap, 0, 0, W, H);
-  const src = sc.getContext("2d").getImageData(0, 0, W, H).data;
-  const pick = (x, y) => { const i = (y * W + x) * 4; return [src[i], src[i + 1], src[i + 2]]; };
-  const pts = [];
-  for (const [cx, cy] of [[4, 4], [W - 5, 4], [4, H - 5], [W - 5, H - 5]])
-    for (let dy = 0; dy < 4; dy++) for (let dx = 0; dx < 4; dx++) pts.push(pick(cx + dx - 2, cy + dy - 2));
-  const bg = [0, 1, 2].map((c) => { const v = pts.map((p) => p[c]).sort((a, b) => a - b); return v[v.length >> 1]; });
+  const sc = canvas(W, H); const sg = sc.getContext("2d", { willReadFrequently: true });
+  sg.drawImage(bitmap, 0, 0, W, H);
+  const src = sg.getImageData(0, 0, W, H).data;
   const g = oc.getContext("2d", { willReadFrequently: true });
   const im = g.getImageData(0, 0, W, H), d = im.data;
-  const T2 = 34 * 34;
-  for (let i = 0; i < W * H; i++) {
-    const a = d[i * 4 + 3]; if (!a) continue;
-    const dr = src[i * 4] - bg[0], dg = src[i * 4 + 1] - bg[1], db = src[i * 4 + 2] - bg[2];
-    if (dr * dr + dg * dg + db * db < T2) d[i * 4 + 3] = 0;
+  // 1) 바깥 배경(alpha≈0) 표본 수집
+  const step = Math.max(1, Math.floor(Math.min(W, H) / 220));
+  const X = [], Y = [[], [], []];
+  for (let y = 0; y < H; y += step) for (let x = 0; x < W; x += step) {
+    const i = (y * W + x) * 4;
+    if (d[i + 3] < 8) {
+      const u = x / W, v = y / H;
+      X.push([1, u, v, u * u, v * v, u * v]);
+      for (let c = 0; c < 3; c++) Y[c].push(src[i + c]);
+    }
+  }
+  if (X.length < 60) return; // 표본 부족 시 건너뜀
+  // 2) 정규방정식 6×6 최소제곱 (채널별)
+  const AtA = Array.from({ length: 6 }, () => new Float64Array(6));
+  const Atb = [new Float64Array(6), new Float64Array(6), new Float64Array(6)];
+  for (let r = 0; r < X.length; r++) {
+    const row = X[r];
+    for (let i = 0; i < 6; i++) {
+      for (let j = i; j < 6; j++) AtA[i][j] += row[i] * row[j];
+      for (let c = 0; c < 3; c++) Atb[c][i] += row[i] * Y[c][r];
+    }
+  }
+  for (let i = 0; i < 6; i++) for (let j = 0; j < i; j++) AtA[i][j] = AtA[j][i];
+  const solve = (A0, b0) => {
+    const A = A0.map((r) => Float64Array.from(r)), b = Float64Array.from(b0);
+    for (let i = 0; i < 6; i++) {
+      let p = i; for (let r = i + 1; r < 6; r++) if (Math.abs(A[r][i]) > Math.abs(A[p][i])) p = r;
+      [A[i], A[p]] = [A[p], A[i]]; [b[i], b[p]] = [b[p], b[i]];
+      if (Math.abs(A[i][i]) < 1e-9) return null;
+      for (let r = i + 1; r < 6; r++) { const f = A[r][i] / A[i][i];
+        for (let cx = i; cx < 6; cx++) A[r][cx] -= f * A[i][cx]; b[r] -= f * b[i]; }
+    }
+    const out = new Float64Array(6);
+    for (let i = 5; i >= 0; i--) { let acc = b[i];
+      for (let cx = i + 1; cx < 6; cx++) acc -= A[i][cx] * out[cx]; out[i] = acc / A[i][i]; }
+    return out;
+  };
+  const coef = [0, 1, 2].map((c) => solve(AtA, Atb[c]));
+  if (coef.some((c) => !c)) return;
+  // 3) 물체 안쪽 픽셀을 위치별 예측 배경색과 비교해 투명화
+  const T2 = 36 * 36;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4;
+    if (!d[i + 3]) continue;
+    const u = x / W, v = y / H;
+    const bx = [1, u, v, u * u, v * v, u * v];
+    let dist = 0;
+    for (let c = 0; c < 3; c++) {
+      let pr = 0; for (let k = 0; k < 6; k++) pr += coef[c][k] * bx[k];
+      const df = src[i + c] - pr; dist += df * df;
+    }
+    if (dist < T2) d[i + 3] = 0;
   }
   g.putImageData(im, 0, 0);
 }
