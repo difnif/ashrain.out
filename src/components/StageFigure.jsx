@@ -202,10 +202,12 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
   const raf = useRef(0);
   const playedOnce = useRef(false);
 
-  const imgLayers = useMemo(() => (sc.layers || []).filter((l) => !l.mark), [sc]);
+  const imgAll = useMemo(() => (sc.layers || []).filter((l) => !l.mark), [sc]);
+  const imgRoots = useMemo(() => imgAll.filter((l) => !l.parent), [imgAll]);
+  const imgChildren = useMemo(() => imgAll.filter((l) => l.parent), [imgAll]);
   const markLayers = useMemo(() => (sc.layers || []).filter((l) => l.mark && !l.parent), [sc]);
   const childMarks = useMemo(() => (sc.layers || []).filter((l) => l.mark && l.parent), [sc]);
-  const slots = useMemo(() => imgLayers.flatMap((l) => l.slots || [l.slot]).filter(Number.isFinite), [imgLayers]);
+  const slots = useMemo(() => imgAll.flatMap((l) => l.slots || [l.slot]).filter(Number.isFinite), [imgAll]);
   const tlData = useMemo(() => buildTracks(sc), [sc]);
   const play = sc.play || {};
   const hasLoop = (sc.tl || []).some((t) => t.loop) || play.loop;
@@ -252,8 +254,9 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
     if (!edit) return;
     e.preventDefault(); e.stopPropagation(); setSelId(L.id);
     const r = stageRef.current.getBoundingClientRect();
+    const parW = L.parent ? ((sc.layers.find((pp) => pp.id === L.parent)?.w) ?? 0.2) : 1;
     drag.current = { id: L.id, mode: e.target.dataset.grip ? "size" : "move",
-      sx: e.clientX, sy: e.clientY, w: r.width, x0: L.x ?? 0.5, y0: L.y ?? STAGE_H / 2, w0: L.w ?? 0.2 };
+      sx: e.clientX, sy: e.clientY, w: r.width * parW, x0: L.x ?? 0.5, y0: L.y ?? STAGE_H / 2, w0: L.w ?? 0.2 };
     const mv = (ev) => {
       const d = drag.current; if (!d) return;
       const dx = (ev.clientX - d.sx) / d.w, dy = (ev.clientY - d.sy) / d.w;
@@ -274,15 +277,26 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
         <div ref={stageRef} className={`sf3-stage ${theme}`}
           onClick={() => { if (!edit) { playedOnce.current = true; start(); } else setSelId(null); }}>
           <div className="sf3-noise" />
-          {imgLayers.map((L) => {
+          {imgRoots.map((L) => {
             const s = st[L.id] || {};
             const slotList = L.slots || [L.slot];
             const stateIdx = Math.round(s.state || 0);
-            const m0 = meta?.[slotList[0]];
             const ar = dims[slotList[Math.min(stateIdx, slotList.length - 1)]] || dims[slotList[0]] || 1;
             const w = s.w ?? L.w ?? 0.2, h = w / ar;
             const rot = (s.rotate || 0), sk = s.skew || 0, scl = (s.scale ?? 1) * (L.flip ? -1 : 1);
             const pv = L.pivot || [0.5, 0.5];
+            const imgs = (LL, ss) => {
+              const sl = LL.slots || [LL.slot];
+              const si = Math.round(ss.state || 0);
+              return sl.map((n, i) => {
+                const mm = meta?.[n];
+                if (!mm) return null;
+                const k = adoptedCand(mm, theme);
+                return <img key={n} src={slotUrl(n, k, mm?.updated || "")} alt=""
+                  onLoad={(e) => { const im = e.target; if (!dims[n]) setDims((d) => ({ ...d, [n]: im.naturalWidth / im.naturalHeight })); }}
+                  style={{ opacity: i === Math.min(si, sl.length - 1) ? 1 : 0, filter: filterCss(mm, theme) }} />;
+              });
+            };
             return (
               <div key={L.id} className={"sf3-layer" + (edit && selId === L.id ? " sf3-sel" : "")}
                 onPointerDown={(e) => onPointerDown(e, L)}
@@ -295,13 +309,28 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
                   clipPath: (s.wipe ?? 1) >= 1 ? undefined : `inset(0 ${(1 - (s.wipe ?? 1)) * 100}% 0 0)`,
                   cursor: edit ? "grab" : undefined,
                 }}>
-                {slotList.map((n, i) => {
-                  const mm = meta?.[n];
-                  if (!mm) return null;
-                  const k = adoptedCand(mm, theme);
-                  return <img key={n} src={slotUrl(n, k, mm?.updated || "")} alt=""
-                    onLoad={(e) => { const im = e.target; if (!dims[n]) setDims((d) => ({ ...d, [n]: im.naturalWidth / im.naturalHeight })); }}
-                    style={{ opacity: i === Math.min(stateIdx, slotList.length - 1) ? 1 : 0, filter: filterCss(mm, theme) }} />;
+                {imgs(L, s)}
+                {imgChildren.filter((C) => C.parent === L.id).map((C) => {
+                  const cs = st[C.id] || {};
+                  const csl = C.slots || [C.slot];
+                  const car = dims[csl[Math.min(Math.round(cs.state || 0), csl.length - 1)]] || dims[csl[0]] || 1;
+                  const cw = cs.w ?? C.w ?? 0.3, chh = cw / car;
+                  const cro = (cs.rotate || 0), cscl = (cs.scale ?? 1) * (C.flip ? -1 : 1);
+                  return (
+                    <div key={C.id} className={"sf3-layer" + (edit && selId === C.id ? " sf3-sel" : "")}
+                      onPointerDown={(e) => { e.stopPropagation(); onPointerDown(e, C); }}
+                      style={{
+                        left: `${(cs.x - cw / 2) * 100}%`, top: `${(cs.y - chh / 2) * ar * 100}%`,
+                        width: `${cw * 100}%`, height: `${chh * ar * 100}%`,
+                        transformOrigin: "50% 50%",
+                        transform: `rotate(${cro}deg) scaleX(${cscl}) scaleY(${cs.scale ?? 1})`,
+                        opacity: cs.fade, zIndex: C.z ?? 2, pointerEvents: edit ? "auto" : "none",
+                        cursor: edit ? "grab" : undefined,
+                      }}>
+                      {imgs(C, cs)}
+                      {edit && selId === C.id && <span className="sf3-grip" data-grip onPointerDown={(e) => { e.stopPropagation(); onPointerDown(e, C); }} />}
+                    </div>
+                  );
                 })}
                 {childMarks.filter((c) => c.parent === L.id).map((c) => {
                   const co = st[c.id] ? st[c.id].fade : (c.opacity ?? 1);
