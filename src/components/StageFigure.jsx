@@ -200,6 +200,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
   const [selId, setSelId] = useState(null);
   const stageRef = useRef(null);
   const raf = useRef(0);
+  const clickGuard = useRef(false); // 레이어 조작 직후의 click이 선택을 풀지 않게
   const playedOnce = useRef(false);
 
   const imgAll = useMemo(() => (sc.layers || []).filter((l) => !l.mark), [sc]);
@@ -264,7 +265,12 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
         d.mode === "move" ? { ...x, x: +(d.x0 + dx).toFixed(3), y: +(d.y0 + dy).toFixed(3) }
                           : { ...x, w: +Math.max(0.03, d.w0 + dx * 2).toFixed(3) }) }));
     };
-    const up = () => { drag.current = null; window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); };
+    const up = () => {
+      drag.current = null;
+      clickGuard.current = true;
+      setTimeout(() => { clickGuard.current = false; }, 250);
+      window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up);
+    };
     window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
   };
 
@@ -275,7 +281,11 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
       <div style={{ position: "relative" }}>
         {isAdmin && <button className="sf3-gear" onClick={() => setEdit((v) => !v)} title="무대 편집">{edit ? "✕" : "⚙️"}</button>}
         <div ref={stageRef} className={`sf3-stage ${theme}`}
-          onClick={() => { if (!edit) { playedOnce.current = true; start(); } else setSelId(null); }}>
+          onClick={() => {
+            if (!edit) { playedOnce.current = true; start(); return; }
+            if (clickGuard.current) { clickGuard.current = false; return; }
+            setSelId(null);
+          }}>
           <div className="sf3-noise" />
           {imgRoots.map((L) => {
             const s = st[L.id] || {};
@@ -300,6 +310,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
             return (
               <div key={L.id} className={"sf3-layer" + (edit && selId === L.id ? " sf3-sel" : "")}
                 onPointerDown={(e) => onPointerDown(e, L)}
+                onClick={(e) => { if (edit) e.stopPropagation(); }}
                 style={{
                   left: `${(s.x - w / 2) * 100}%`, top: `${((s.y - h / 2) / STAGE_H) * 100}%`,
                   width: `${w * 100}%`, height: `${(h / STAGE_H) * 100}%`,
@@ -319,6 +330,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
                   return (
                     <div key={C.id} className={"sf3-layer" + (edit && selId === C.id ? " sf3-sel" : "")}
                       onPointerDown={(e) => { e.stopPropagation(); onPointerDown(e, C); }}
+                      onClick={(e) => { if (edit) e.stopPropagation(); }}
                       style={{
                         left: `${(cs.x - cw / 2) * 100}%`, top: `${(cs.y - chh / 2) * ar * 100}%`,
                         width: `${cw * 100}%`, height: `${chh * ar * 100}%`,
