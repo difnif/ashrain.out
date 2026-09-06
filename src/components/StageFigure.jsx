@@ -136,6 +136,12 @@ const CSS = `
 .sf3-layer img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
   transition: opacity .45s ease; pointer-events: none; -webkit-user-drag: none; }
 .sf3-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.sf3-sub { position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%); max-width: 84%;
+  padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; text-align: center;
+  line-height: 1.45; pointer-events: none; animation: sf3subin .35s ease; }
+.sf3-stage.dark .sf3-sub { background: rgba(8,12,26,.55); color: #F2E8CE; }
+.sf3-stage.light .sf3-sub { background: rgba(255,252,242,.72); color: #4A3B25; }
+@keyframes sf3subin { from { opacity: 0; transform: translate(-50%, 5px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .sf3-cap { font-size: 12px; color: var(--mut, #64748B); text-align: center; margin: 7px 4px 0; line-height: 1.5; }
 .sf3-badge { position: absolute; right: 7px; bottom: 5px; font-size: 8px; letter-spacing: .4px;
   color: rgba(150,150,150,.65); pointer-events: none; font-weight: 700; }
@@ -332,20 +338,42 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
 
   /* 편집: 드래그 */
   const drag = useRef(null);
+  // 이 시점 화면 값을 만든 마지막 트윈(있으면)의 인덱스 — 드래그는 그 도착값을 옮긴다
+  const propDest = (id, prop) => {
+    let best = null;
+    (sc.tl || []).forEach((tw, i) => {
+      if (tw.target === id && tw[prop] != null && (tw.t || 0) <= time + 1) best = i;
+    });
+    return best;
+  };
   const onPointerDown = (e, L) => {
     if (!edit) return;
     e.preventDefault(); e.stopPropagation(); setSelId(L.id);
     const r = stageRef.current.getBoundingClientRect();
     const parW = L.parent ? ((sc.layers.find((pp) => pp.id === L.parent)?.w) ?? 0.2) : 1;
+    const cur = st[L.id] || {};
     drag.current = { id: L.id, mode: e.target.dataset.grip ? "size" : "move",
-      sx: e.clientX, sy: e.clientY, w: r.width * parW, x0: L.x ?? 0.5, y0: L.y ?? STAGE_H / 2, w0: L.w ?? 0.2 };
+      sx: e.clientX, sy: e.clientY, w: r.width * parW,
+      x0: cur.x ?? L.x ?? 0.5, y0: cur.y ?? L.y ?? STAGE_H / 2, w0: cur.w ?? L.w ?? 0.2,
+      xDest: propDest(L.id, "x"), yDest: propDest(L.id, "y") };
     const mv = (ev) => {
       const d = drag.current; if (!d) return;
       if (!d.pushed) { d.pushed = true; pushHist(); }
       const dx = (ev.clientX - d.sx) / d.w, dy = (ev.clientY - d.sy) / d.w;
-      setSc((s) => ({ ...s, layers: s.layers.map((x) => x.id !== d.id ? x :
-        d.mode === "move" ? { ...x, x: +(d.x0 + dx).toFixed(3), y: +(d.y0 + dy).toFixed(3) }
-                          : { ...x, w: +Math.max(0.03, d.w0 + dx * 2).toFixed(3) }) }));
+      setSc((s) => {
+        let layers = s.layers, tl = s.tl ? [...s.tl] : [];
+        const put = (dest, prop, val) => {
+          if (dest != null) tl[dest] = { ...tl[dest], [prop]: val };
+          else layers = layers.map((x) => x.id !== d.id ? x : { ...x, [prop]: val });
+        };
+        if (d.mode === "move") {
+          put(d.xDest, "x", +(d.x0 + dx).toFixed(3));
+          put(d.yDest, "y", +(d.y0 + dy).toFixed(3));
+        } else {
+          layers = layers.map((x) => x.id !== d.id ? x : { ...x, w: +Math.max(0.03, d.w0 + dx * 2).toFixed(3) });
+        }
+        return { ...s, layers, tl };
+      });
     };
     const up = () => {
       drag.current = null;
@@ -462,6 +490,13 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
             );
           })}
           <MarkSvg marks={markLayers} st={st} theme={theme} />
+          {(() => {
+            const subs = [...(sc.subs || [])].sort((a, b) => (a.t || 0) - (b.t || 0));
+            let cur = null;
+            for (const su of subs) { if ((su.t || 0) <= time + 1) cur = su; else break; }
+            if (cur && cur.d && time > (cur.t || 0) + cur.d) cur = null;
+            return cur ? <div key={(cur.t || 0) + cur.text} className="sf3-sub">{cur.text}</div> : null;
+          })()}
           {meta && missing.length > 0 && (
             <div className="sf3-empty">
               <b>{sc.label}</b>
@@ -596,6 +631,8 @@ function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onToggle, o
           <button className={"sf3-btn" + (sel.flip ? " on" : "")} onClick={() => setLayer({ flip: !sel.flip })}>좌우반전</button>
           <button className="sf3-btn" onClick={() => setLayer({ z: (sel.z ?? 1) + 1 })}>앞으로</button>
           <button className="sf3-btn" onClick={() => setLayer({ z: Math.max(0, (sel.z ?? 1) - 1) })}>뒤로</button>
+          {(sc.tl || []).some((t) => t.target === selId && (t.x != null || t.y != null)) &&
+            <span style={{ fontSize: 11, color: "var(--mut,#8A929C)" }}>x·y칸은 시작값 — 도착 위치는 무대에서 드래그</span>}
         </div>
       )}
       {!sel && <div className="sf3-row" style={{ color: "var(--mut)" }}>무대 위 레이어를 탭하면 선택 · 드래그로 이동 · 우하단 점으로 크기</div>}
