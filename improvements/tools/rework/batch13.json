@@ -1,0 +1,634 @@
+[
+ {
+  "id": "883c59b9-f869-4d3a-9bc7-8a80c4c5a027",
+  "zip": "esc_sonnet_h1-2_5of7",
+  "image": "/root/esc/work/esc_sonnet_h1-2_5of7/images/sonnet_h1-2_260828_원의 방정식과 그래프_p76.jpg",
+  "reason": "선지 ①~⑤가 자취 그림 — 문법·텍스트로 표현 불가(설명문으로 대체) — 프라임 라벨 AP′를 seg(AP')로 교체. 답 ④ 유지(P′는 A에서 OP에 내린 수선의 발 → OA를 지름으로 하는 원)",
+  "seq": 76,
+  "qtype": "choice",
+  "question": "다음 그림과 같이 중심이 O이고 반지름의 길이가 [[r]]인 원 [[C]]와 이 원 위의 한 점 A에서 접하는 직선 [[l]]이 있다.\n점 P가 직선 [[l]] 위를 움직일 때, [[seg(AP') = r × frac(seg(AP), seg(OP))]] 를 만족시키는 선분 OP 위의 점 P′의 자취를 가장 옳게 나타낸 것은? (단, 점선은 원 [[C]]이다.)",
+  "choices": [
+   "(그림) 선분 OA",
+   "(그림) 선분 OA를 대각선으로 하는 정사각형",
+   "(그림) 선분 OA를 긴 대각선으로 하는 마름모",
+   "(그림) 선분 OA를 지름으로 하는 원",
+   "(그림) 두 점 O, A를 양 끝으로 하는 볼록한 두 호(렌즈 모양)"
+  ],
+  "answer": "④",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "원 C(중심 O, 반지름 r), 접점 A, 접선 l 위의 점 P, 선분 OP 위의 점 P′; 선지 ①~⑤는 점선 원 C 안에 그린 자취 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h1-2",
+  "confidence": 0.75,
+  "quick_answer": "4",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "5a15878a-fbd6-4600-a858-95ba2e9c329b",
+  "zip": "esc_sonnet_h1-2_5of7",
+  "image": "/root/esc/work/esc_sonnet_h1-2_5of7/images/sonnet_h1-2_260828_원의 방정식과 그래프_p78.jpg",
+  "reason": "선지 ①~⑤가 자취 그림 — 문법·텍스트로 표현 불가(설명문으로 대체) — [2004년 6월 고2 이과 19번]. 프라임 라벨 OP′를 seg(OP')로 교체. 답 ③ 유지(반전 → OA를 지름으로 하는 원)",
+  "seq": 78,
+  "qtype": "choice",
+  "question": "중심이 O이고 반지름의 길이가 [[r]]인 원 [[C]]와 이 원 위의 한 점 A에서 접하는 직선 [[l]]이 있다.\n점 P가 직선 [[l]] 위를 움직일 때, [[seg(OP) × seg(OP') = pow(r,2)]]을 만족시키는 선분 OP 위의 점 P′의 자취를 가장 옳게 나타낸 것은? (단, 점선은 원 [[C]]이다.)",
+  "choices": [
+   "(그림) 선분 OA",
+   "(그림) 두 점 O, A를 양 끝으로 하는 볼록한 두 호(렌즈 모양)",
+   "(그림) 선분 OA를 지름으로 하는 원",
+   "(그림) 선분 OA를 대각선으로 하는 정사각형",
+   "(그림) 선분 OA를 긴 대각선으로 하는 마름모"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "원 C(중심 O, 반지름 r), 접점 A, 접선 l 위의 점 P, 선분 OP 위의 점 P′; 선지 ①~⑤는 점선 원 C 안에 그린 자취 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h1-2",
+  "confidence": 0.75,
+  "quick_answer": "41",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "21455b85-228f-4212-bd13-c30c58cc81b7",
+  "zip": "esc_sonnet_h2-1_2of4",
+  "image": "/root/esc/work/esc_sonnet_h2-1_2of4/images/sonnet_h2-1_260828_로그함수의 뜻과 그래프_p21.jpg",
+  "reason": "선지 ①~⑤가 모두 그래프 그림 — 문법·텍스트로 표현 불가(설명문으로 대체) — 합성 적용을 app으로. 답 ④ 유지(y=|log₃|x−3||)",
+  "seq": 21,
+  "qtype": "choice",
+  "question": "함수 [[f(x) = abs(log(3, abs(x)))]]와 함수 [[g(x) = x - 3]] ([[x != 3]])에\n대하여 함수 [[y = app(comp(f, g), x)]] 의 그래프의 개형은?",
+  "choices": [
+   "[그래프] 수직 점선(점근선)의 왼쪽에서만 정의된 감소 곡선, 점근선 부근에서 아래로 발산",
+   "[그래프] 수직 점선의 오른쪽에서만 정의된 증가 곡선, 점근선 부근에서 아래로 발산",
+   "[그래프] 수직 점선 양쪽에서 정의, 점근선 부근에서 아래로 발산, [[x]]절편 2개",
+   "[그래프] 수직 점선 양쪽에서 정의, 점근선 부근에서 위로 발산, [[x]]축 위에서 두 점에 닿는 V자 모양",
+   "[그래프] 수직 점선 양쪽에서 정의, 점근선 부근에서 아래로 발산, [[x]]축 아래에서 두 점에 닿는 ∧자 모양"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-1",
+  "confidence": 0.75,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "abe7bcf0-f9b3-4d8c-951c-7e1bb3c1ec5c",
+  "zip": "esc_sonnet_h2-1_2of4",
+  "image": "/root/esc/work/esc_sonnet_h2-1_2of4/images/sonnet_h2-1_260828_로그함수의 뜻과 그래프_p24.jpg",
+  "reason": "선지 ①~⑤가 모두 그래프 그림 — 문법·텍스트로 표현 불가(설명문으로 대체) — [2013년 9월 고2 문과 18번/4점]. 합성 적용을 app으로. 답 ③ 유지(y=log₂|x−2|)",
+  "seq": 24,
+  "qtype": "choice",
+  "question": "함수 [[f(x) = log(2, abs(x))]]와 함수 [[g(x) = x - 2]]\n([[x != 2]])에 대하여 함수 [[y = app(comp(f, g), x)]] 의 그래프의\n개형은?",
+  "choices": [
+   "[그래프] 수직 점선(점근선)의 왼쪽에서만 정의된 감소 곡선, 점근선 부근에서 아래로 발산",
+   "[그래프] 수직 점선의 오른쪽에서만 정의된 증가 곡선, 점근선 부근에서 아래로 발산",
+   "[그래프] 수직 점선 양쪽에서 정의, 점근선 부근에서 아래로 발산, [[x]]절편 2개, 양쪽 바깥으로 증가",
+   "[그래프] 수직 점선 양쪽에서 정의, 점근선 부근에서 위로 발산, [[x]]축 위에서 두 점에 닿는 V자 모양",
+   "[그래프] 수직 점선 양쪽에서 정의, 점근선 부근에서 아래로 발산, [[x]]축 아래에서 두 점에 닿는 ∧자 모양"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-1",
+  "confidence": 0.75,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "87be4fdc-44f7-4cff-a817-7d12a543b155",
+  "zip": "esc_sonnet_m1-1_2of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_2of3/images/sonnet_m1-1_260827_정비례_p32.jpg",
+  "reason": "선지 ①~⑤가 모두 좌표평면 그래프 그림 — 문법·텍스트로 표현 불가(설명문으로 대체) — x가 5개 값이므로 점 5개, y=−2x → (−2,4),…,(2,−4). 답 ③ 유지(빠른정답 1과 불일치는 1차와 동일)",
+  "seq": 32,
+  "qtype": "choice",
+  "question": "[[x]]의 범위가 [[-2]], [[-1]], [[0]], [[1]], [[2]]일 때, [[y = -2x]]의 그래프는?",
+  "choices": [
+   "(그림) 좌표평면 위의 점 5개: [[point(-2, -4)]], [[point(-1, -2)]], [[point(0, 0)]], [[point(1, 2)]], [[point(2, 4)]]",
+   "(그림) 원점과 점 [[point(1, 2)]]를 지나는 직선",
+   "(그림) 좌표평면 위의 점 5개: [[point(-2, 4)]], [[point(-1, 2)]], [[point(0, 0)]], [[point(1, -2)]], [[point(2, -4)]]",
+   "(그림) 원점과 점 [[point(2, -1)]]을 지나는 직선",
+   "(그림) 원점과 점 [[point(1, -2)]]를 지나는 직선"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "선지 ①~⑤가 각각 모눈 좌표평면 그림(눈금 −2, 2 표시). ① 점 (−2,−4),(−1,−2),(0,0),(1,2),(2,4) ② 원점을 지나는 직선 y=2x ③ 점 (−2,4),(−1,2),(0,0),(1,−2),(2,−4) ④ 원점을 지나는 직선 y=−x/2 ⑤ 원점을 지나는 직선 y=−2x"
+    }
+   }
+  ],
+  "difficulty_est": 1,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": "1",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "818da9cd-e7aa-4c86-8654-084f3afea230",
+  "zip": "esc_sonnet_m1-2_2of4",
+  "image": "/root/esc/work/esc_sonnet_m1-2_2of4/images/sonnet_m1-2_260827_다각형_p57.jpg",
+  "reason": "선지 ①~⑤가 모두 다각형 그림 — 문법·텍스트로 표현 불가(설명문으로 대체) — v1.5로 고칠 표기 없음(초안 유지). 답 ③ 유지(외각 180°−45°=135°가 최대)",
+  "seq": 57,
+  "qtype": "choice",
+  "question": "다음 중 [[angle(x)]]의 크기가 가장 큰 것은?",
+  "choices": [
+   "(그림) 삼각형: 한 내각 [[deg(60)]]과 이웃한 외각 [[angle(x)]]",
+   "(그림) 사각형: 한 내각 [[deg(70)]]과 이웃한 외각 [[angle(x)]]",
+   "(그림) 사각형: 한 내각 [[deg(45)]]과 이웃한 외각 [[angle(x)]]",
+   "(그림) 오각형: 한 내각 [[deg(85)]]과 이웃한 외각 [[angle(x)]]",
+   "(그림) 오각형: 한 내각 [[deg(110)]]과 이웃한 외각 [[angle(x)]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "선지 ①~⑤가 각각 다각형 그림: ① 삼각형(내각 60°, 외각 x) ② 사각형(내각 70°, 외각 x) ③ 사각형(내각 45°, 외각 x) ④ 오각형(내각 85°, 외각 x) ⑤ 오각형(내각 110°, 외각 x)"
+    }
+   }
+  ],
+  "difficulty_est": 1,
+  "unit_id": "m1-2",
+  "confidence": 0.7,
+  "quick_answer": "deg(60)",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "48837e7a-f5e8-4223-9f0a-1b6780ce0891",
+  "zip": "esc_sonnet_m2-2_2of5",
+  "image": "/root/esc/work/esc_sonnet_m2-2_2of5/images/sonnet_m2-2_260827_평행선과 선분의 길이의 비_p26.jpg",
+  "reason": "선지 ①~⑤가 모두 도형 그림(치수는 그림에만) — 문법·텍스트로 표현 불가(설명문으로 대체) — v1.5로 고칠 표기 없음(초안 유지, 같은 이미지 id 2개). 답 ⑤ 유지(AE:AC=AD:AB=5:1)",
+  "seq": 26,
+  "qtype": "choice",
+  "question": "다음 그림에서 [[par(seg(DE), seg(BC))]]인 것은?",
+  "choices": [
+   "(그림) 삼각형 ABC(B 위)에서 AB 위의 점 D, AC 위의 점 E: [[seg(AD) = 20]], [[seg(DB) = 4]], [[seg(AE) = 15]], [[seg(EC) = 5]]",
+   "(그림) 삼각형 ADE에서 AD 위의 점 B, AE 위의 점 C: [[seg(DB) = 2]], [[seg(BA) = 4]], [[seg(DE) = 8]], [[seg(BC) = 6]]",
+   "(그림) 두 선분 BD, CE가 점 A에서 만나는 나비 모양: [[seg(BA) = 3]], [[seg(CA) = 4]], [[seg(AE) = 10]], [[seg(AD) = 6]]",
+   "(그림) 삼각형 ABC(A 위)에서 AB 위의 점 D, AC 위의 점 E: [[seg(BA) = 8]], [[seg(BD) = 3]], [[seg(AE) = 4]], [[seg(EC) = 1]]",
+   "(그림) 두 선분 EC, DB가 점 A에서 만나는 나비 모양: [[seg(EA) = 20]], [[seg(AC) = 4]], [[seg(DA) = 15]], [[seg(AB) = 3]]"
+  ],
+  "answer": "⑤",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "선지 ①~⑤가 각각 도형: ① △ABC(A 왼쪽 아래, B 위, C 오른쪽 아래), D∈AB, E∈AC, AD=20·DB=4·AE=15·EC=5 ② D–B–A 가로 배열(DB=2, BA=4), C∈AE, DE=8, BC=6 ③ 나비 모양(B–A–D, C–A–E 직선), BA=3·CA=4·AE=10·AD=6 ④ △ABC(B 왼쪽 아래, A 오른쪽 위, C 오른쪽 아래), D∈BA, E∈AC, BA=8·BD=3·AE=4·EC=1 ⑤ 나비 모양(E–A–C, D–A–B 직선), EA=20·AC=4·DA=15·AB=3 (치수는 점선 호)"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m2-2",
+  "confidence": 0.75,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "d63b12c2-80de-468b-9ec9-08c45ef5f755",
+  "zip": "esc_sonnet_m2-2_2of5",
+  "image": "/root/esc/work/esc_sonnet_m2-2_2of5/images/sonnet_m2-2_260827_평행선과 선분의 길이의 비_p26.jpg",
+  "reason": "선지 ①~⑤가 모두 도형 그림(치수는 그림에만) — 문법·텍스트로 표현 불가(설명문으로 대체) — v1.5로 고칠 표기 없음(초안 유지, 같은 이미지 id 2개). 답 ⑤ 유지(AE:AC=AD:AB=5:1)",
+  "seq": 26,
+  "qtype": "choice",
+  "question": "다음 그림에서 [[par(seg(DE), seg(BC))]]인 것은?",
+  "choices": [
+   "(그림) 삼각형 ABC(B 위)에서 AB 위의 점 D, AC 위의 점 E: [[seg(AD) = 20]], [[seg(DB) = 4]], [[seg(AE) = 15]], [[seg(EC) = 5]]",
+   "(그림) 삼각형 ADE에서 AD 위의 점 B, AE 위의 점 C: [[seg(DB) = 2]], [[seg(BA) = 4]], [[seg(DE) = 8]], [[seg(BC) = 6]]",
+   "(그림) 두 선분 BD, CE가 점 A에서 만나는 나비 모양: [[seg(BA) = 3]], [[seg(CA) = 4]], [[seg(AE) = 10]], [[seg(AD) = 6]]",
+   "(그림) 삼각형 ABC(A 위)에서 AB 위의 점 D, AC 위의 점 E: [[seg(BA) = 8]], [[seg(BD) = 3]], [[seg(AE) = 4]], [[seg(EC) = 1]]",
+   "(그림) 두 선분 EC, DB가 점 A에서 만나는 나비 모양: [[seg(EA) = 20]], [[seg(AC) = 4]], [[seg(DA) = 15]], [[seg(AB) = 3]]"
+  ],
+  "answer": "⑤",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "선지 ①~⑤가 각각 도형: ① △ABC(A 왼쪽 아래, B 위, C 오른쪽 아래), D∈AB, E∈AC, AD=20·DB=4·AE=15·EC=5 ② D–B–A 가로 배열(DB=2, BA=4), C∈AE, DE=8, BC=6 ③ 나비 모양(B–A–D, C–A–E 직선), BA=3·CA=4·AE=10·AD=6 ④ △ABC(B 왼쪽 아래, A 오른쪽 위, C 오른쪽 아래), D∈BA, E∈AC, BA=8·BD=3·AE=4·EC=1 ⑤ 나비 모양(E–A–C, D–A–B 직선), EA=20·AC=4·DA=15·AB=3 (치수는 점선 호)"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m2-2",
+  "confidence": 0.75,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "dd9a2e1c-82b4-432d-ad16-3029cf1c9cca",
+  "zip": "esc_sonnet_m2-2_2of5",
+  "image": "/root/esc/work/esc_sonnet_m2-2_2of5/images/sonnet_m2-2_260827_평행선과 선분의 길이의 비_p28.jpg",
+  "reason": "선지 ①~⑤가 모두 도형 그림(치수는 그림에만) — 문법·텍스트로 표현 불가(설명문으로 대체) — v1.5로 고칠 표기 없음(초안 유지, 같은 이미지 id 3개). 답 ③ 유지(AB:AD=AC:AE=3:5)",
+  "seq": 28,
+  "qtype": "choice",
+  "question": "다음 중에서 [[par(seg(BC), seg(DE))]] 인 것은?",
+  "choices": [
+   "(그림) 삼각형 ADE(A 위)에서 AD 위의 점 B, AE 위의 점 C: [[seg(AB) = 3]], [[seg(BD) = 1.5]], [[seg(AC) = 4]], [[seg(CE) = 3]]",
+   "(그림) 삼각형 ABC(C 위)에서 AC 위의 점 E, AB 위의 점 D: [[seg(AE) = 6]], [[seg(EC) = 4]], [[seg(AD) = 5]], [[seg(DB) = 3]]",
+   "(그림) 두 선분 BD, CE가 점 A에서 만나는 나비 모양: [[seg(BA) = 6]], [[seg(CA) = 9]], [[seg(AE) = 15]], [[seg(AD) = 10]]",
+   "(그림) 삼각형 ABC(A 위)에서 AB 위의 점 D, AC 위의 점 E: [[seg(AD) = 8]], [[seg(AB) = 12]], [[seg(AE) = 6]], [[seg(AC) = 10]]",
+   "(그림) 두 선분 EC, DB가 점 A에서 만나는 나비 모양: [[seg(EA) = 4]], [[seg(AD) = 3]], [[seg(AB) = 5]], [[seg(AC) = 6]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "선지 ①~⑤가 각각 도형: ① △ADE(A 위, D 왼쪽 아래, E 오른쪽 아래), B∈AD, C∈AE, AB=3·BD=1.5·AC=4·CE=3 ② △ABC(C 위, A 왼쪽 아래, B 오른쪽 아래), E∈AC, D∈AB, AE=6·EC=4·AD=5·DB=3 ③ 나비 모양(B–A–D, C–A–E 직선), BA=6·CA=9·AE=15·AD=10 ④ △ABC(A 위, B 왼쪽 아래, C 오른쪽 아래), D∈AB, E∈AC, AD=8·AB=12·AE=6·AC=10 ⑤ 나비 모양(E–A–C, D–A–B 직선), EA=4·AD=3·AB=5·AC=6 (치수는 점선 호)"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m2-2",
+  "confidence": 0.75,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "9b33e483-2742-4383-88bc-6f4e17a057b3",
+  "zip": "esc_sonnet_m2-2_2of5",
+  "image": "/root/esc/work/esc_sonnet_m2-2_2of5/images/sonnet_m2-2_260827_평행선과 선분의 길이의 비_p28.jpg",
+  "reason": "선지 ①~⑤가 모두 도형 그림(치수는 그림에만) — 문법·텍스트로 표현 불가(설명문으로 대체) — v1.5로 고칠 표기 없음(초안 유지, 같은 이미지 id 3개). 답 ③ 유지(AB:AD=AC:AE=3:5)",
+  "seq": 28,
+  "qtype": "choice",
+  "question": "다음 중에서 [[par(seg(BC), seg(DE))]] 인 것은?",
+  "choices": [
+   "(그림) 삼각형 ADE(A 위)에서 AD 위의 점 B, AE 위의 점 C: [[seg(AB) = 3]], [[seg(BD) = 1.5]], [[seg(AC) = 4]], [[seg(CE) = 3]]",
+   "(그림) 삼각형 ABC(C 위)에서 AC 위의 점 E, AB 위의 점 D: [[seg(AE) = 6]], [[seg(EC) = 4]], [[seg(AD) = 5]], [[seg(DB) = 3]]",
+   "(그림) 두 선분 BD, CE가 점 A에서 만나는 나비 모양: [[seg(BA) = 6]], [[seg(CA) = 9]], [[seg(AE) = 15]], [[seg(AD) = 10]]",
+   "(그림) 삼각형 ABC(A 위)에서 AB 위의 점 D, AC 위의 점 E: [[seg(AD) = 8]], [[seg(AB) = 12]], [[seg(AE) = 6]], [[seg(AC) = 10]]",
+   "(그림) 두 선분 EC, DB가 점 A에서 만나는 나비 모양: [[seg(EA) = 4]], [[seg(AD) = 3]], [[seg(AB) = 5]], [[seg(AC) = 6]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "선지 ①~⑤가 각각 도형: ① △ADE(A 위, D 왼쪽 아래, E 오른쪽 아래), B∈AD, C∈AE, AB=3·BD=1.5·AC=4·CE=3 ② △ABC(C 위, A 왼쪽 아래, B 오른쪽 아래), E∈AC, D∈AB, AE=6·EC=4·AD=5·DB=3 ③ 나비 모양(B–A–D, C–A–E 직선), BA=6·CA=9·AE=15·AD=10 ④ △ABC(A 위, B 왼쪽 아래, C 오른쪽 아래), D∈AB, E∈AC, AD=8·AB=12·AE=6·AC=10 ⑤ 나비 모양(E–A–C, D–A–B 직선), EA=4·AD=3·AB=5·AC=6 (치수는 점선 호)"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m2-2",
+  "confidence": 0.75,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "f10ce79e-ee0c-402e-8761-212ec5e0777a",
+  "zip": "esc_sonnet_m2-2_2of5",
+  "image": "/root/esc/work/esc_sonnet_m2-2_2of5/images/sonnet_m2-2_260827_평행선과 선분의 길이의 비_p28.jpg",
+  "reason": "선지 ①~⑤가 모두 도형 그림(치수는 그림에만) — 문법·텍스트로 표현 불가(설명문으로 대체) — v1.5로 고칠 표기 없음(초안 유지, 같은 이미지 id 3개). 답 ③ 유지(AB:AD=AC:AE=3:5)",
+  "seq": 28,
+  "qtype": "choice",
+  "question": "다음 중에서 [[par(seg(BC), seg(DE))]] 인 것은?",
+  "choices": [
+   "(그림) 삼각형 ADE(A 위)에서 AD 위의 점 B, AE 위의 점 C: [[seg(AB) = 3]], [[seg(BD) = 1.5]], [[seg(AC) = 4]], [[seg(CE) = 3]]",
+   "(그림) 삼각형 ABC(C 위)에서 AC 위의 점 E, AB 위의 점 D: [[seg(AE) = 6]], [[seg(EC) = 4]], [[seg(AD) = 5]], [[seg(DB) = 3]]",
+   "(그림) 두 선분 BD, CE가 점 A에서 만나는 나비 모양: [[seg(BA) = 6]], [[seg(CA) = 9]], [[seg(AE) = 15]], [[seg(AD) = 10]]",
+   "(그림) 삼각형 ABC(A 위)에서 AB 위의 점 D, AC 위의 점 E: [[seg(AD) = 8]], [[seg(AB) = 12]], [[seg(AE) = 6]], [[seg(AC) = 10]]",
+   "(그림) 두 선분 EC, DB가 점 A에서 만나는 나비 모양: [[seg(EA) = 4]], [[seg(AD) = 3]], [[seg(AB) = 5]], [[seg(AC) = 6]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "선지 ①~⑤가 각각 도형: ① △ADE(A 위, D 왼쪽 아래, E 오른쪽 아래), B∈AD, C∈AE, AB=3·BD=1.5·AC=4·CE=3 ② △ABC(C 위, A 왼쪽 아래, B 오른쪽 아래), E∈AC, D∈AB, AE=6·EC=4·AD=5·DB=3 ③ 나비 모양(B–A–D, C–A–E 직선), BA=6·CA=9·AE=15·AD=10 ④ △ABC(A 위, B 왼쪽 아래, C 오른쪽 아래), D∈AB, E∈AC, AD=8·AB=12·AE=6·AC=10 ⑤ 나비 모양(E–A–C, D–A–B 직선), EA=4·AD=3·AB=5·AC=6 (치수는 점선 호)"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m2-2",
+  "confidence": 0.75,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "e22e754a-e2b9-4258-9201-d3a5e75520ff",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p39.jpg",
+  "reason": "보기 ㄱ·ㄴ·ㄷ가 함수 y=f(x)의 그래프 3개 — 문법·텍스트로 표현 불가(설명문으로 대체) — 경우 나눔을 cases로, (f∘f)(x)를 app(comp(f, f), x)로 교체. 답 ⑤ 유지(그래프 판독 기반)",
+  "seq": 39,
+  "qtype": "choice",
+  "question": "닫힌구간 [[itv(0, 4, cc)]]에서 정의된 함수 [[y = f(x)]]에 대하여\n함수 [[g(x)]]를 [[g(x) = cases(pow(f(x), 2), 0 <= x <= 2, app(comp(f, f), x), 2 < x <= 4)]]\n라 하자. 다음 보기 중 함수 [[g(x)]]가 닫힌구간 [[itv(0, 4, cc)]]에서\n불연속이 되도록 하는 함수 [[y = f(x)]]의 그래프로 옳은\n것만을 있는 대로 고른 것은?\n<보기>\nㄱ. (그래프 ㄱ)\nㄴ. (그래프 ㄴ)\nㄷ. (그래프 ㄷ)",
+  "choices": [
+   "ㄱ",
+   "ㄱ, ㄴ",
+   "ㄱ, ㄷ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "⑤",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "보기 그래프 3개(모두 [0,4] 위의 y=f(x), 격자 점선). ㄱ: (0,3)에서 감소해 (1,1), (2,0)에서 최소, (3,2) 극대, (4,1)까지 연속. ㄴ: (0,0)에서 (1,1) 극대, (2,0) 최소, 증가해 (3,2)(채운 점), x=3에서 (3,3) 빈 점부터 (4,4)까지 증가. ㄷ: (0,3)에서 감소해 (1,1), 1.5에서 0 최소, (2,1), (3,2)(채운 점), x=3에서 (3,3) 빈 점부터 (4,4)까지 증가"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.7,
+  "quick_answer": "73",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "d679e9af-8fb7-4979-8b68-d11eede9eb30",
+  "zip": "esc_sonnet_m3-1_3of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_3of6/images/sonnet_m3-1_260828_이차함수 y=ax²+q의 그래프_p41.jpg",
+  "reason": "답 기호 ㉡이 답 문법(ㄱㄴㄷ·①~⑤) 범위 밖이라 answer 미기재(−a>0 아래로 볼록, q<0 → 꼭짓점이 y축 음의 부분인 ㉡) / 선지가 ㉠~㉣ 포물선 그래프라 정보가 그림에만 있음 — 문법 문제 없음. 도형은 unsupported(raw) 유지",
+  "seq": 41,
+  "qtype": "short",
+  "question": "[[a < 0]], [[q < 0]]일 때, ㉠~㉣ 중 [[y = -a pow(x,2) + q]]의 그래프로\n알맞은 것을 고르시오. (단, [[a]], [[q]]는 상수)",
+  "choices": null,
+  "answer": null,
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면 위 포물선 4개(원점 O): ㉠ 초록, 아래로 볼록, 꼭짓점이 y축의 양의 부분 ㉡ 보라, 아래로 볼록, 꼭짓점이 y축의 음의 부분 ㉢ 빨강, 위로 볼록, 꼭짓점이 y축의 양의 부분 ㉣ 하늘색, 위로 볼록, 꼭짓점이 y축의 음의 부분"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m3-1",
+  "confidence": 0.75,
+  "quick_answer": "1",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "477729e7-79c7-45c1-9854-543d317a5ff9",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_수직선_p31.jpg",
+  "reason": "정보가 그림에만 있음(등분 눈금 수직선 위 점 A, B의 위치 — 도형 표현 불가) / 선지의 양의 부호 +는 텍스트 — A=−2+2/5=−8/5, B=+2+3/4=+11/4. 답 ④ 유지(빠른정답 2와 불일치는 1차와 동일)",
+  "seq": 31,
+  "qtype": "choice",
+  "question": "다음 수직선 위에 점 A, B에 대응하는 수를 부호 +, −를 사용하여 바르게 나타낸 것은?",
+  "choices": [
+   "A: [[-frac(3,5)]], B: +[[frac(7,4)]]",
+   "A: [[-frac(3,5)]], B: +[[frac(11,4)]]",
+   "A: [[-frac(8,5)]], B: +[[frac(7,4)]]",
+   "A: [[-frac(8,5)]], B: +[[frac(11,4)]]",
+   "A: [[-1.3]], B: +[[2.3]]"
+  ],
+  "answer": "④",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "수직선(양쪽 화살표), 눈금 −2, −1, 0, +1, +2, +3. −2와 −1 사이를 5등분(등간격 표시)하여 −2에서 두 칸 오른쪽에 점 A. +2와 +3 사이를 4등분(등간격 표시)하여 +2에서 세 칸 오른쪽에 점 B"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": "2",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "7673aae5-e892-4828-a20c-027939cdea55",
+  "zip": "esc_opus_h3-1_1of1",
+  "image": "/root/esc/work/esc_opus_h3-1_1of1/images/opus_h3-1_260828_확률의 뜻_p68.jpg",
+  "reason": "이미지 상단 잘림(문항 첫 문장 — [그림 1] 설정 설명 — 누락, 재확인) / 정보가 그림에만 있음(직사각형 위 점·선분) — 문법 수정 없음(보이는 부분만 전사). 답 146 유지(p69·p70과 같은 설정 가정, 빠른정답 4와 불일치)",
+  "seq": 68,
+  "qtype": "short",
+  "question": "각 점 [[sub(P,i)]] ([[i]] = 1, 2, 3, 4)에 대하여 점 [[sub(P,i)]]와 5개의 점 [[sub(Q,1)]], [[sub(Q,2)]], [[sub(Q,3)]], [[sub(Q,4)]], [[sub(Q,5)]] 중에서 임의로 선택한 한 점을 선분으로 연결한다. [그림 2]는 이러한 방법에 따라 4개의 선분을 그린 2가지 예이다. 직사각형 ABCD가 추가된 4개의 선분에 의하여 나누어진 영역의 개수가 6일 확률이 [[frac(q,p)]] 일 때, [[p + q]]의 값을 구하시오. (단, [[p]]와 [[q]]는 서로소인 자연수이다.)",
+  "choices": null,
+  "answer": "146",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "[그림 1] 직사각형 ABCD, 변 AD 위 점 P₁~P₄, 변 BC 위 점 Q₁~Q₅; [그림 2] 각 Pᵢ에서 Q점으로 선분 4개를 그은 예 2가지"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-1",
+  "confidence": 0.7,
+  "quick_answer": "4",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "655842bf-bbc5-455f-8313-43cc75c7ebee",
+  "zip": "esc_sonnet_h2-1_1of4",
+  "image": "/root/esc/work/esc_sonnet_h2-1_1of4/images/sonnet_h2-1_260828_수학적 귀납법_p81.jpg",
+  "reason": "이미지 하단 잘림(선지 ④, ⑤ 안 보임 — 임시 문자열로 채움) — [2004년 11월 고2 이과 13번]. 줄임표를 cdots로, 빈칸 (가)(나)를 box로(원문 중괄호 {…}−(나)는 소괄호). 답 ③ 유지((가)=2, (나)=−1/(k+1); 보이는 선지 기준)",
+  "seq": 81,
+  "qtype": "choice",
+  "question": "다음은 2 이상의 모든 자연수 [[n]]에 대하여\n[[1 + frac(1, pow(2, 2)) + frac(1, pow(3, 2)) + cdots + frac(1, pow(n, 2)) < 2 - frac(1, n)]]임을\n수학적 귀납법으로 증명한 것이다.\n\n<증명>\n(ⅰ) [[n = box(1)]] 일 때,\n(좌변)=[[1 + frac(1, pow(2, 2)) = frac(5, 4) < 2 - frac(1, 2) = frac(3, 2)]]=(우변)\n따라서, [[n = box(1)]] 일 때, 주어진 식은 성립한다.\n(ⅱ) [[n = k]] ([[n >= 2]])일 때, 주어진 식이 성립한다고 가정하면\n[[1 + frac(1, pow(2, 2)) + frac(1, pow(3, 2)) + cdots + frac(1, pow(k, 2)) < 2 - frac(1, k)]]이다.\n위 식의 양변에 [[frac(1, pow(k + 1, 2))]]을 더하면\n[[1 + frac(1, pow(2, 2)) + frac(1, pow(3, 2)) + cdots + frac(1, pow(k, 2)) + frac(1, pow(k + 1, 2)) < 2 - frac(1, k) + frac(1, pow(k + 1, 2))]]\n그런데\n[[(-frac(1, k) + frac(1, pow(k + 1, 2))) - box(2) = -frac(1, k pow(k + 1, 2)) < 0]] 이므로\n[[2 - frac(1, k) + frac(1, pow(k + 1, 2)) < 2 - frac(1, k + 1)]]이다.\n따라서, [[n = k + 1]]일 때에도 성립한다.\n(ⅰ), (ⅱ)에 의하여 [[n >= 2]]인 모든 자연수 [[n]]에 대하여\n[[1 + frac(1, pow(2, 2)) + frac(1, pow(3, 2)) + cdots + frac(1, pow(n, 2)) < 2 - frac(1, n)]]이 성립한다.\n\n이 증명 과정에서 (가), (나)에 알맞은 내용을 바르게 짝지은 것은?",
+  "choices": [
+   "(가) [[1]], (나) [[frac(1, k + 1)]]",
+   "(가) [[1]], (나) [[-frac(1, k + 1)]]",
+   "(가) [[2]], (나) [[-frac(1, k + 1)]]",
+   "(이미지 하단 잘림)",
+   "(이미지 하단 잘림)"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-1",
+  "confidence": 0.75,
+  "quick_answer": "3",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "ef25dc26-1eee-40e9-8c4a-0356709898db",
+  "zip": "esc_sonnet_m2-1_3of4",
+  "image": "/root/esc/work/esc_sonnet_m2-1_3of4/images/sonnet_m2-1_260827_일차함수의 그래프의 성질_p99.jpg",
+  "reason": "이미지 상단 잘림(첫 줄이 '그래프는'으로 시작, 앞 낱말 누락) / 도형 표현 불가: 좌표평면 위 직선 그래프 — v1.5로 고칠 표기 없음(초안 유지). 답 ② 유지(y=−5x+2 → x절편 2/5)",
+  "seq": 99,
+  "qtype": "choice",
+  "question": "그래프는 일차함수 [[y = a x + b]]의 그래프이다. 이 그래프에 대한 다음 설명 중 옳지 않은 것은?",
+  "choices": [
+   "[[x = 1]]일 때, 함숫값이 [[-3]]이다.",
+   "[[x]]절편은 [[-5]]이다.",
+   "[[x]]의 값이 증가하면 [[y]]의 값은 감소한다.",
+   "[[y = 5x + 2]]의 그래프와 [[y]]축에 대하여 대칭이다.",
+   "[[y = -5x]]의 그래프를 [[y]]축의 방향으로 2만큼 평행이동한 그래프이다."
+  ],
+  "answer": "②",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 두 점 (−1, 7), (1, −3)을 지나는 오른쪽 아래로 향하는 직선(점선으로 좌표 표시)"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m2-1",
+  "confidence": 0.75,
+  "quick_answer": "1",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "5d0d1373-976d-422b-a55b-ac61b5d53cfe",
+  "zip": "esc_sonnet_m2-2_1of5",
+  "image": "/root/esc/work/esc_sonnet_m2-2_1of5/images/sonnet_m2-2_260827_이등변삼각형의 성질_p3.jpg",
+  "reason": "이미지 하단 잘림(선지 ④, ⑤ 안 보임 — 임시 문자열로 채움) / 도형 표현 불가: 정삼각형 그림 — v1.5로 고칠 표기 없음(초안 유지). 답 ② 유지(보이는 선지 기준, (나)는 BA)",
+  "seq": 3,
+  "qtype": "choice",
+  "question": "다음은 정삼각형의 세 내각의 크기가 모두 같음을 보이는 과정이다. (가), (나), (다)에 알맞은 것으로 옳지 않은 것을 고르면?\n[[tri(ABC)]]가 정삼각형일 때,\n[[tri(ABC)]]는 [[seg(AB) = seg(AC)]]인 이등변삼각형이므로\n(가) = [[angle(C)]] ⋯ ㉠\n또, [[tri(ABC)]]는 (나) = [[seg(BC)]]인\n이등변삼각형이므로\n[[angle(A) = angle(C)]] ⋯ ㉡\n㉠, ㉡에서 [[angle(A) = angle(B)]] = (다)",
+  "choices": [
+   "(가) [[angle(B)]]",
+   "(나) [[seg(AC)]]",
+   "(다) [[angle(C)]]",
+   "(이미지 하단 잘림)",
+   "(이미지 하단 잘림)"
+  ],
+  "answer": "②",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "정삼각형 ABC(A 위, B 왼쪽 아래, C 오른쪽 아래), 세 변에 같은 길이 표시"
+    }
+   }
+  ],
+  "difficulty_est": 1,
+  "unit_id": "m2-2",
+  "confidence": 0.7,
+  "quick_answer": "2",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "82c1f20b-fd0c-4ef1-8690-3ea4074fd6dd",
+  "zip": "esc_sonnet_m2-2_4of5",
+  "image": "/root/esc/work/esc_sonnet_m2-2_4of5/images/sonnet_m2-2_260827_평행사변형_p14.jpg",
+  "reason": "이미지 하단 잘림(선지 ④, ⑤ 안 보임 — 임시 문자열로 채움) / 도형 표현 불가: 평행사변형·대각선 도형 — v1.5로 고칠 표기 없음(초안 유지, 같은 이미지 id 2개). 답 ① 유지(보이는 선지 기준, (가)는 ∠CAD)",
+  "seq": 14,
+  "qtype": "choice",
+  "question": "다음은 \"평행사변형은 두 쌍의 대변의 길이가 각각 같다.\"를 증명한 것이다. (가)~(다)에 알맞은 것으로 옳지 않은 것은?\n[[quad(ABCD)]]에서 대각선 AC를 그으면\n[[par(seg(AB), seg(CD))]]이므로\n[[angle(BAC) = angle(DCA)]] ⋯ ㉠\n[[par(seg(AD), seg(BC))]]이므로\n[[angle(ACB)]] = (가) ⋯ ㉡\n또, (나) 는 공통 ⋯ ㉢\n㉠, ㉡, ㉢에서\n[[tri(ABC)]] ≡ (다) (ASA 합동)\n∴ [[seg(AB) = seg(CD)]], [[seg(AD) = seg(BC)]]",
+  "choices": [
+   "(가) [[angle(ACD)]]",
+   "(나) [[seg(AC)]]",
+   "(다) [[tri(CDA)]]",
+   "(이미지 하단 잘림)",
+   "(이미지 하단 잘림)"
+  ],
+  "answer": "①",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "평행사변형 ABCD(A 왼쪽 위, D 오른쪽 위, B 왼쪽 아래, C 오른쪽 아래), 대각선 AC"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m2-2",
+  "confidence": 0.7,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "ec313eaa-207c-4d44-bf9e-c206d0f2f0ba",
+  "zip": "esc_sonnet_m2-2_4of5",
+  "image": "/root/esc/work/esc_sonnet_m2-2_4of5/images/sonnet_m2-2_260827_평행사변형_p14.jpg",
+  "reason": "이미지 하단 잘림(선지 ④, ⑤ 안 보임 — 임시 문자열로 채움) / 도형 표현 불가: 평행사변형·대각선 도형 — v1.5로 고칠 표기 없음(초안 유지, 같은 이미지 id 2개). 답 ① 유지(보이는 선지 기준, (가)는 ∠CAD)",
+  "seq": 14,
+  "qtype": "choice",
+  "question": "다음은 \"평행사변형은 두 쌍의 대변의 길이가 각각 같다.\"를 증명한 것이다. (가)~(다)에 알맞은 것으로 옳지 않은 것은?\n[[quad(ABCD)]]에서 대각선 AC를 그으면\n[[par(seg(AB), seg(CD))]]이므로\n[[angle(BAC) = angle(DCA)]] ⋯ ㉠\n[[par(seg(AD), seg(BC))]]이므로\n[[angle(ACB)]] = (가) ⋯ ㉡\n또, (나) 는 공통 ⋯ ㉢\n㉠, ㉡, ㉢에서\n[[tri(ABC)]] ≡ (다) (ASA 합동)\n∴ [[seg(AB) = seg(CD)]], [[seg(AD) = seg(BC)]]",
+  "choices": [
+   "(가) [[angle(ACD)]]",
+   "(나) [[seg(AC)]]",
+   "(다) [[tri(CDA)]]",
+   "(이미지 하단 잘림)",
+   "(이미지 하단 잘림)"
+  ],
+  "answer": "①",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "평행사변형 ABCD(A 왼쪽 위, D 오른쪽 위, B 왼쪽 아래, C 오른쪽 아래), 대각선 AC"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m2-2",
+  "confidence": 0.7,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "38d139f1-791d-48ff-a819-8e3a658b2810",
+  "zip": "esc_sonnet_m3-1_1of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_1of6/images/sonnet_m3-1_260828_곱셈 공식을 이용한 수의 계산_p98.jpg",
+  "reason": "이미지 하단 잘림(선지 ④, ⑤ 안 보임 — 임시 문자열로 채움) — 빈칸 □(공통)을 box(1)로 바꿔 유리화 등식을 한 식으로 연결. 답 ③ 유지(√7+2)",
+  "seq": 98,
+  "qtype": "choice",
+  "question": "다음 □ 안에 공통으로 들어갈 알맞은 수는?\n[[frac(1, sqrt(7) - 2) = frac(1 × (box(1)), (sqrt(7) - 2)(box(1))) = frac(box(1), 3)]]",
+  "choices": [
+   "[[-sqrt(7) + 2]]",
+   "[[sqrt(7) - 2]]",
+   "[[sqrt(7) + 2]]",
+   "(이미지 하단 잘림)",
+   "(이미지 하단 잘림)"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "m3-1",
+  "confidence": 0.8,
+  "quick_answer": "3",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ }
+]

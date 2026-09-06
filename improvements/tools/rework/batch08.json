@@ -1,0 +1,1615 @@
+[
+ {
+  "id": "1bc1beb5-6ce8-44fe-95fa-50184fe3a711",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_정사영_p61.jpg",
+  "reason": "도형 표현 불가: 구 S와 평행한 두 평면 α·β 그림 / 첨자 점 라벨(선분 OH₁, OH₂ 윗줄 표기 생략, 직선 H₁H₂ 텍스트 혼합) — 출처 [2025년 10월 고3 기하 28번/4점]. 단면원 반지름 3, 정사영 넓이 최대(직교) 9/2, △POQ 넓이 3√17/2 → cosθ = 3/√17 = 3√17/17 → ③.",
+  "seq": 61,
+  "qtype": "choice",
+  "question": "좌표공간에 서로 평행한 두 평면 [[alpha]], [[beta]]와 중심이 O이고 반지름의 길이가 [[sqrt(13)]]인 구 [[S]]가 있다. 점 O에서 두 평면 [[alpha]], [[beta]]에 내린 수선의 발을 각각 [[sub(H,1)]], [[sub(H,2)]]라 하면 O[[sub(H,1)]] = O[[sub(H,2)]] = 2이다. 구 [[S]]가 평면 [[alpha]]와 만나서 생기는 원 위를 움직이는 점을 P, 구 [[S]]가 평면 [[beta]]와 만나서 생기는 원 위를 움직이는 점을 Q라 하자.\n삼각형 POQ의 평면 [[beta]] 위로의 정사영의 넓이가 최대일 때, 평면 POQ와 평면 [[beta]]가 이루는 각의 크기를 [[theta]]라 하자. [[cos(theta)]]의 값은? (단, 세 점 O, P, Q는 한 직선 위에 있지 않고, 직선 PQ와 직선 [[sub(H,1)]][[sub(H,2)]]는 서로 평행하지 않다.)",
+  "choices": [
+   "[[frac(2 sqrt(17), 17)]]",
+   "[[frac(5 sqrt(17), 34)]]",
+   "[[frac(3 sqrt(17), 17)]]",
+   "[[frac(7 sqrt(17), 34)]]",
+   "[[frac(4 sqrt(17), 17)]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표공간: 구 S와 서로 평행한 두 평면 α(위)·β(아래), 중심 O, 수선의 발 H₁(α 위)·H₂(β 위), 점선 OH₁·OH₂ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.8
+ },
+ {
+  "id": "e21bf112-a05d-4f39-b038-a32f0a5b4185",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_정사영_p69.jpg",
+  "reason": "도형 표현 불가: 구 S와 평행한 두 평면 α·β 그림 / 첨자 점 라벨(선분 OH₁, OH₂ 윗줄 표기 생략, 직선 H₁H₂ 텍스트 혼합) / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 3 — 출처 [2025년 10월 고3 기하 28번 변형]. 단면원 반지름 4, 정사영 최대 8, △POQ 넓이 2√34 → cosθ = 4/√34 = 2√34/17 → ⑤. 빠른정답 3과 불일치.",
+  "seq": 69,
+  "qtype": "choice",
+  "question": "좌표공간에 서로 평행한 두 평면 [[alpha]], [[beta]]와 중심이 O이고 반지름의 길이가 5인 구 [[S]]가 있다. 점 O에서 두 평면 [[alpha]], [[beta]]에 내린 수선의 발을 각각 [[sub(H,1)]], [[sub(H,2)]]라 하면 O[[sub(H,1)]] = O[[sub(H,2)]] = 3이다. 구 [[S]]가 평면 [[alpha]]와 만나서 생기는 원 위를 움직이는 점을 P, 구 [[S]]가 평면 [[beta]]와 만나서 생기는 원 위를 움직이는 점을 Q라 하자.\n삼각형 POQ의 평면 [[beta]] 위로의 정사영의 넓이가 최대일 때, 평면 POQ와 평면 [[beta]]가 이루는 각의 크기를 [[theta]]라 하자. [[cos(theta)]]의 값은? (단, 세 점 O, P, Q는 한 직선 위에 있지 않고, 직선 PQ와 직선 [[sub(H,1)]][[sub(H,2)]]는 서로 평행하지 않다.)",
+  "choices": [
+   "[[frac(sqrt(34), 34)]]",
+   "[[frac(sqrt(17), 17)]]",
+   "[[frac(sqrt(34), 17)]]",
+   "[[frac(2 sqrt(17), 17)]]",
+   "[[frac(2 sqrt(34), 17)]]"
+  ],
+  "answer": "⑤",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표공간: 구 S와 서로 평행한 두 평면 α(위)·β(아래), 중심 O, 수선의 발 H₁(α 위)·H₂(β 위), 점선 OH₁·OH₂ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.8
+ },
+ {
+  "id": "06733463-2d99-4a31-8f32-daa943362e63",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_정사영_p89.jpg",
+  "reason": "도형 표현 불가: 원기둥 안에 쌓인 구 S₁·S₂·T₁·T₂·U₁·U₂ 그림 / 첨자 점 라벨(평면 O₁O₂O₃ 텍스트 혼합) / (참고) 빠른정답 불일치: 전사·풀이 답 2 vs 빠른정답 32 — 원기둥 반지름 2; O₁(1,0,1), O₂(0,1,1+√2), O₃(-1,0,1+2√2) → 법선 (2√2,0,2) → cos²θ = 1/3 → 6cos²θ = 2. 빠른정답 32와 불일치.",
+  "seq": 89,
+  "qtype": "short",
+  "question": "다음 그림과 같이 원기둥의 밑면 위에 놓여 있는 반지름의 길이가 1인 두 구 [[sub(S,1)]], [[sub(S,2)]]가 서로 한 점에서 만나고 모두 원기둥의 옆면에 접한다. 두 구 [[sub(S,1)]], [[sub(S,2)]] 위에 반지름의 길이가 1인 두 구 [[sub(T,1)]], [[sub(T,2)]]가 각각 아래쪽에 있는 두 구와 각각 한 점에서 만나면서 모두 원기둥의 옆면에 접한다. 또, 두 구 [[sub(T,1)]], [[sub(T,2)]] 위에 반지름의 길이가 1인 두 구 [[sub(U,1)]], [[sub(U,2)]]가 각각 아래쪽에 있는 두 구와 각각 한 점에서 만나면서 모두 원기둥의 옆면에 접한다.\n세 구 [[sub(S,1)]], [[sub(T,1)]], [[sub(U,2)]]의 중심을 각각 [[sub(O,1)]], [[sub(O,2)]], [[sub(O,3)]]라 할 때, 평면 [[sub(O,1)]][[sub(O,2)]][[sub(O,3)]]과 원기둥의 밑면이 이루는 예각의 크기를 [[theta]]라 하자. 이때 [[6 pow(cos(theta), 2)]]의 값을 구하시오.\n(단, 원기둥의 높이는 6보다 크다.)",
+  "choices": null,
+  "answer": "2",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "원기둥 안에 반지름 1인 구 6개가 3층으로 쌓인 그림: 아래 S₂(왼쪽)·S₁(오른쪽), 가운데 T₁(앞)·T₂(뒤), 위 U₂(왼쪽)·U₁(오른쪽)"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.8
+ },
+ {
+  "id": "88eae011-d443-4511-8c23-70d6a4457da0",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_정사영_p93.jpg",
+  "reason": "도형 표현 불가: 원기둥 안에 쌓인 구 S₁·S₂·T₁·T₂ 그림 / 첨자 점 라벨(평면 O₁O₂O₃ 텍스트 혼합) — O₁(1,0,1), O₂(0,1,1+√2), O₃(0,-1,1+√2) → 법선 (2√2,0,2) → cos²θ = 1/3 → 9cos²θ = 3.",
+  "seq": 93,
+  "qtype": "short",
+  "question": "다음 그림과 같이 원기둥의 밑면 위에 놓여 있는 반지름의 길이가 1인 두 구 [[sub(S,1)]], [[sub(S,2)]]가 서로 한 점에서 만나고 모두 원기둥의 옆면에 접한다. 두 구 [[sub(S,1)]], [[sub(S,2)]] 위에 반지름의 길이가 1인 두 구 [[sub(T,1)]], [[sub(T,2)]]가 각각 아래쪽에 있는 두 구와 각각 한 점에서 만나면서 모두 원기둥의 옆면에 접한다. 세 구 [[sub(S,1)]], [[sub(T,1)]], [[sub(T,2)]]의 중심을 각각 [[sub(O,1)]], [[sub(O,2)]], [[sub(O,3)]]라 할 때, 평면 [[sub(O,1)]][[sub(O,2)]][[sub(O,3)]]과 원기둥의 밑면이 이루는 예각의 크기를 [[theta]]라 하자. 이때 [[9 pow(cos(theta), 2)]]의 값을 구하시오.\n(단, 원기둥의 높이는 4보다 크다.)",
+  "choices": null,
+  "answer": "3",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "원기둥 안에 반지름 1인 구 4개가 2층으로 쌓인 그림: 아래 S₂(왼쪽)·S₁(오른쪽), 위 T₁(앞)·T₂(뒤)"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.8
+ },
+ {
+  "id": "6a350f45-1e4f-4675-8928-e67c152a55ff",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p6.jpg",
+  "reason": "도형 표현 불가: 쌍곡선·직선 x=c·점 P, P′, Q, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 PP′, QP′ 윗줄 표기 생략, 선분 F′P 텍스트 혼합) / (참고) 빠른정답 불일치: 전사·풀이 답 128 vs 빠른정답 52 — 출처 [2025년 3월 고3 기하 29번/4점]. c=3, P(3,5/2), PP′=5, F′P=13/2, QP = 50/13 → 장축 50/13+5 = 115/13 → 128. 빠른정답 52와 불일치.",
+  "seq": 6,
+  "qtype": "short",
+  "question": "두 초점이 [[F(c, 0)]], F′[[point(-c, 0)]] ([[c > 0]])인 쌍곡선 [[frac(pow(x,2), 4) - frac(pow(y,2), 5) = 1]]이 있다. 직선 [[x = c]]가 이 쌍곡선과 만나는 점 중 제1사분면 위의 점을 P, 제4사분면 위의 점을 P′이라 하자. 선분 F′P 위에 PP′ = QP′인 점 Q를 잡자. 두 점 P, P′을 초점으로 하고 점 Q를 지나는 타원의 장축의 길이는 [[frac(q, p)]]이다. [[p + q]]의 값을 구하시오.\n(단, [[p]]와 [[q]]는 서로소인 자연수이다.)",
+  "choices": null,
+  "answer": "128",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 쌍곡선 x²/4−y²/5=1, 초점 F·F′, 직선 x=c와의 교점 P(제1사분면)·P′(제4사분면), 선분 F′P 위의 점 Q, 선분 QP′ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.8
+ },
+ {
+  "id": "48e268b7-2dfe-4a7d-9b31-3b1498876959",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p9.jpg",
+  "reason": "도형 표현 불가: 포물선·준선·쌍곡선·점 P, Q, R, F, F′ 좌표평면 그림 / 프라임 점 라벨(∠PFF′ 텍스트 혼합) / (참고) 빠른정답 불일치: 전사·풀이 답 750 vs 빠른정답 4 — 출처 [2026년 7월 고3 기하 29번 변형]. PF=13p/10, P(3p/10, √30p/5), R(−7p/20, √30p/10), 둘레 = 17p/10 = 17 → p=10, S=5√30 → S²=750. 빠른정답 4와 불일치.",
+  "seq": 9,
+  "qtype": "short",
+  "question": "초점이 [[F(p, 0)]] ([[p > 0]])이고 준선이 [[x = -p]]인 포물선이 있다. 점 F′[[point(-p, 0)]]에 대하여 cos(∠PFF′) = [[frac(7, 13)]]을 만족시키는 이 포물선 위의 점 중 제1사분면에 있는 점을 P라 하고, 선분 PF′의 중점을 R이라 하자. 두 점 O, F′을 초점으로 하고 점 R을 지나는 쌍곡선에 대하여 선분 PF′과 쌍곡선이 만나는 점 중 R이 아닌 점을 Q라 하자.\n삼각형 QOR의 둘레의 길이가 17일 때, 삼각형 PRO의 넓이를 [[S]]라 하자. [[pow(S, 2)]]의 값을 구하시오.\n(단, O는 원점이다.)",
+  "choices": null,
+  "answer": "750",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 포물선(초점 F, 준선 x=−p), 두 갈래 쌍곡선(초점 O·F′), 점 P(제1사분면)·R(PF′ 중점)·Q, 선분 PF′·PF 그림"
+    }
+   }
+  ],
+  "difficulty_est": 5,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "8ea3dba5-245f-4a0e-867d-de89f9992319",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p11.jpg",
+  "reason": "도형 표현 불가: 타원·쌍곡선·점 P, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 PF′ 윗줄 표기 생략) — a=10, b=6, 초점거리² 100−36 = 64 = 36+c² → c² = 28.",
+  "seq": 11,
+  "qtype": "short",
+  "question": "다음 그림과 같이 타원 [[frac(pow(x,2), pow(a,2)) + frac(pow(y,2), pow(b,2)) = 1]]과\n쌍곡선 [[frac(pow(x,2), pow(b,2)) - frac(pow(y,2), pow(c,2)) = 1]]은 두 초점 F, F′을 공유한다.\n이 두 곡선의 한 교점 P에 대하여 [[seg(PF) = 4]], PF′ = 16일 때, [[pow(c, 2)]]의 값을 구하시오. (단, [[a]], [[b]], [[c]]는 상수)",
+  "choices": null,
+  "answer": "28",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 타원과 쌍곡선이 초점 F·F′을 공유, 제1사분면 교점 P와 선분 PF·PF′ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "e9be9648-6256-439f-b085-38bedbd4bf63",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p20.jpg",
+  "reason": "도형 표현 불가: 타원·포물선·점 P, Q, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 PF′ 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 35 vs 빠른정답 5 — PF′²−PF² = 4c·x_P = y_P² = 24, PF′+PF = 12 → PF′−PF = 2 → 7·5 = 35. 빠른정답 5와 불일치.",
+  "seq": 20,
+  "qtype": "short",
+  "question": "다음 그림과 같이 두 점 [[A(6, 0)]], [[B(-6, 0)]]을 장축의 양 끝 점으로 하는 타원의 두 초점을 F, F′이라 하고, 초점이 F이고 꼭짓점이 원점인 포물선이 타원과 만나는 두 점을 각각 P, Q라 하자. [[seg(PQ) = 4 sqrt(6)]]일 때,\n[[seg(PF)]] · PF′의 값을 구하시오.",
+  "choices": null,
+  "answer": "35",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 장축 양 끝 A·B인 타원, 초점 F′·F, 꼭짓점 원점·초점 F인 포물선, 교점 P(위)·Q(아래), 선분 PF·PF′·PQ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "ee5ae668-388a-40c7-bda0-816bf1bef0cc",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p21.jpg",
+  "reason": "도형 표현 불가: 포물선·준선·쌍곡선·점 P, Q, R, F, F′ 좌표평면 그림 / 프라임 점 라벨(∠PFF′ 텍스트 혼합) / (참고) 빠른정답 불일치: 전사·풀이 답 216 vs 빠른정답 4 — 출처 [2026년 7월 고3 기하 29번/4점]. PF=5p/3, P(2p/3, 2√6p/3), R(−p/6, √6p/3), 둘레 = 7p/3 = 14 → p=6, S=6√6 → S²=216. 빠른정답 4와 불일치.",
+  "seq": 21,
+  "qtype": "short",
+  "question": "초점이 [[F(p, 0)]] ([[p > 0]])이고 준선이 [[x = -p]]인 포물선이 있다. 점 F′[[point(-p, 0)]]에 대하여 cos(∠PFF′) = [[frac(1, 5)]]을 만족시키는 이 포물선 위의 점 중 제1사분면에 있는 점을 P라 하고, 선분 PF′의 중점을 R이라 하자. 두 점 O, F′을 초점으로 하고 점 R을 지나는 쌍곡선에 대하여 선분 PF′과 쌍곡선이 만나는 점 중 R이 아닌 점을 Q라 하자.\n삼각형 QOR의 둘레의 길이가 14일 때, 삼각형 PRO의 넓이를 [[S]]라 하자. [[pow(S, 2)]]의 값을 구하시오.\n(단, O는 원점이다.)",
+  "choices": null,
+  "answer": "216",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 포물선(초점 F, 준선 x=−p), 두 갈래 쌍곡선(초점 O·F′), 점 P(제1사분면)·R(PF′ 중점)·Q, 선분 PF′·PF 그림"
+    }
+   }
+  ],
+  "difficulty_est": 5,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "1cc1862e-86e7-4a87-b60b-a4433cc0783b",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p23.jpg",
+  "reason": "도형 표현 불가: 타원·포물선·점 P, Q, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 PF′ 윗줄 표기 생략) — PF′²−PF² = y_P² = 10, PF′+PF = 10 → PF′−PF = 1 → (11/2)(9/2) = 99/4.",
+  "seq": 23,
+  "qtype": "short",
+  "question": "다음 그림과 같이 두 점 [[A(5, 0)]], [[B(-5, 0)]]을 장축의 양 끝 점으로 하는 타원의 두 초점을 F, F′이라 하고, 초점이 F이고 꼭짓점이 원점인 포물선이 타원과 만나는 두 점을 각각 P, Q라 하자. [[seg(PQ) = 2 sqrt(10)]]일 때,\n[[seg(PF)]] · PF′의 값을 구하시오.",
+  "choices": null,
+  "answer": "frac(99,4)",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 장축 양 끝 A·B인 타원, 초점 F′·F, 꼭짓점 원점·초점 F인 포물선, 교점 P(위)·Q(아래), 선분 PF·PF′·PQ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "0ed2a7b9-8f60-455a-9d98-5da912282c76",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p28.jpg",
+  "reason": "도형 표현 불가: 타원·쌍곡선·점 P, F, F′ 좌표평면 그림 / 프라임 점 라벨(PF′² 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 96 vs 빠른정답 5 — PF+PF′=12, PF′−PF=8 → PF′=10, PF=2 → 100−4 = 96. 빠른정답 5와 불일치.",
+  "seq": 28,
+  "qtype": "short",
+  "question": "다음 그림과 같이 두 초점 F, F′을 공유하는\n타원 [[frac(pow(x,2), 36) + frac(pow(y,2), 11) = 1]]과 쌍곡선 [[frac(pow(x,2), 16) - frac(pow(y,2), 9) = 1]]이\n서로 다른 네 점에서 만난다. 타원과 쌍곡선의 교점 중 제1사분면에 있는 점 P에 대하여 PF′² − [[pow(seg(PF), 2)]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "96",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 타원 x²/36+y²/11=1과 쌍곡선 x²/16−y²/9=1(공통 초점 F′·F), 제1사분면 교점 P, 선분 PF·PF′ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "c5014261-695c-47ce-8d67-39efb379896c",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p30.jpg",
+  "reason": "도형 표현 불가: 타원·쌍곡선·점 P, F, F′ 좌표평면 그림 / 프라임 점 라벨(PF′² 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 56 vs 빠른정답 72 — PF+PF′=14, PF′−PF=4 → 4·14 = 56. 빠른정답 72와 불일치.",
+  "seq": 30,
+  "qtype": "short",
+  "question": "다음 그림과 같이 두 초점 F, F′을 공유하는\n타원 [[frac(pow(x,2), 49) + frac(pow(y,2), 33) = 1]]과 쌍곡선 [[frac(pow(x,2), 4) - frac(pow(y,2), 12) = 1]]이\n서로 다른 네 점에서 만난다. 타원과 쌍곡선의 교점 중 제1사분면에 있는 점 P에 대하여 PF′² − [[pow(seg(PF), 2)]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "56",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 타원 x²/49+y²/33=1과 쌍곡선 x²/4−y²/12=1(공통 초점 F′·F), 제1사분면 교점 P, 선분 PF·PF′ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "6bd16ab5-64df-4a1d-bad0-482c70c3fc16",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p33.jpg",
+  "reason": "도형 표현 불가: 쌍곡선·직선 x=c·점 P, P′, Q, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 PP′, QP′ 윗줄 표기 생략, 선분 F′P 텍스트 혼합) / (참고) 빠른정답 불일치: 전사·풀이 답 207 vs 빠른정답 56 — 출처 [2025년 3월 고3 기하 29번 변형]. c=4, P(4,7/3), PP′=14/3, F′P=25/3, QP=196/75 → 장축 182/25 → 207. 빠른정답 56과 불일치.",
+  "seq": 33,
+  "qtype": "short",
+  "question": "두 초점이 [[F(c, 0)]], F′[[point(-c, 0)]] ([[c > 0]])인 쌍곡선 [[frac(pow(x,2), 9) - frac(pow(y,2), 7) = 1]]이 있다. 직선 [[x = c]]가 이 쌍곡선과 만나는 점 중 제1사분면 위의 점을 P, 제4사분면 위의 점을 P′이라 하자. 선분 F′P 위에 PP′ = QP′인 점 Q를 잡자. 두 점 P, P′을 초점으로 하고 점 Q를 지나는 타원의 장축의 길이는 [[frac(q, p)]]이다. [[p + q]]의 값을 구하시오.\n(단, [[p]]와 [[q]]는 서로소인 자연수이다.)",
+  "choices": null,
+  "answer": "207",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 쌍곡선 x²/9−y²/7=1, 초점 F·F′, 직선 x=c와의 교점 P(제1사분면)·P′(제4사분면), 선분 F′P 위의 점 Q, 선분 QP′ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.8
+ },
+ {
+  "id": "fe4681d2-846c-4222-b6a7-c365ec28a753",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p34.jpg",
+  "reason": "프라임 점 라벨(∠F′FP 텍스트 혼합) / 답 미도출 — 출처 [2025년 3월 고3 기하 30번 변형]. PF=15/4, Q(3√3,0), PQ=9/4 → 준선 x=a에서 a≈1>0이 되어 조건 a<0과 어긋남(변형 정합성 검토 필요). 답 미도출.",
+  "seq": 34,
+  "qtype": "short",
+  "question": "두 초점이 [[F(0, 3)]], F′[[point(0, -3)]]이고, 장축의 길이가 9인 타원이 있다. 이 타원 위에 있는 제1사분면 위의 점 중 ∠F′FP = [[frac(pi, 3)]]를 만족시키는 점 P에 대하여 직선 FP가 [[x]]축과 만나는 점을 Q라 하자. 점 Q를 초점으로 하고 준선이 [[x = a]] ([[a < 0]])인 포물선이 점 P를 지난다. 직선 FP가 이 포물선과 만나는 점 중 P가 아닌 점을 R이라 할 때, [[seg(PR) = p + q sqrt(3)]]이다. [[p + q]]의 값을 구하시오. (단, [[a]]는 상수이고, [[p]], [[q]]는 유리수이다.)",
+  "choices": null,
+  "answer": null,
+  "figure": null,
+  "difficulty_est": 5,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "7c3bce99-924c-49de-995f-5043f3ae268d",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p38.jpg",
+  "reason": "도형 표현 불가: 포물선·타원·점 P, A, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 FF′, PF′ 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 14 vs 빠른정답 12 — 출처 [2017년 9월 고3 이과 27번 변형]. x_P=a+2, PF=2a+2, PF′=2c=2a+8 → a²=7 → 장축 10+4√7 → p+q=14. 빠른정답 12와 불일치.",
+  "seq": 38,
+  "qtype": "short",
+  "question": "좌표평면에서 초점이 [[A(a, 0)]] ([[a > 0]])이고 꼭짓점이 원점인 포물선과 두 초점이 [[F(c, 0)]], F′[[point(-c, 0)]] ([[c > a]])인 타원의 교점 중 제1사분면 위의 점을 P라 하자.\n[[seg(AF) = 4]], [[seg(PA) = seg(PF)]], FF′ = PF′일 때, 타원의 장축의 길이는 [[p + q sqrt(7)]]이다. [[p + q]]의 값을 구하시오.\n(단, [[p]], [[q]]는 유리수이다.)",
+  "choices": null,
+  "answer": "14",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 꼭짓점 원점·초점 A인 포물선과 초점 F′·F인 타원, 제1사분면 교점 P, PA=PF 표시(등호 표시), 선분 PF′ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "5879febc-1812-4459-98f1-d801fe89756e",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p39.jpg",
+  "reason": "도형 표현 불가: 쌍곡선·포물선·점 P, A, F, F′ 좌표평면 그림 / 프라임 점 라벨(|PF−PF′|, AF′:FF′ 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 30 — 출처 [2009년 10월 고3 이과 8번]. k=14−c, (c−k):2k=1:6 → c=8, k=6, a=5, b²=11 → 64/14 = 32/7 → ④. 빠른정답 30과 불일치.",
+  "seq": 39,
+  "qtype": "choice",
+  "question": "그림과 같이 두 점 [[F(k, 0)]], F′[[point(-k, 0)]]을 초점으로 하는 쌍곡선 [[frac(pow(x,2), pow(a,2)) - frac(pow(y,2), pow(b,2)) = 1]]과 점 F를 초점으로 하는 포물선 [[pow(y,2) = 56(x + c)]]가 있다.\n쌍곡선 위의 임의의 점 P에 대하여 |[[seg(PF)]] − PF′| = 10이 성립하고, 포물선의 꼭짓점 A에 대하여 AF′ : FF′ = 1 : 6이 성립한다.\n이때, [[frac(pow(c,2), pow(a,2) - pow(b,2))]]의 값은? (단, [[0 < k < c]]이다.)",
+  "choices": [
+   "[[frac(53, 14)]]",
+   "[[frac(55, 14)]]",
+   "[[frac(30, 7)]]",
+   "[[frac(32, 7)]]",
+   "[[frac(34, 7)]]"
+  ],
+  "answer": "④",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 쌍곡선 x²/a²−y²/b²=1(초점 F′·F), 포물선 y²=56(x+c)(꼭짓점 A, 초점 F), 쌍곡선 위의 점 P 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "7e2a876f-d270-4a69-a037-c5d89805b73b",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p47.jpg",
+  "reason": "도형 표현 불가: 포물선·타원·점 P, A, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 FF′, PF′ 윗줄 표기 생략) — 출처 [2017년 9월 고3 이과 27번/4점]. x_P=a+1, PF=2a+1, PF′=2a+4 → a²=7/4 → 장축 5+2√7 → 25+4 = 29.",
+  "seq": 47,
+  "qtype": "short",
+  "question": "좌표평면에서 초점이 [[A(a, 0)]] ([[a > 0]])이고 꼭짓점이 원점인 포물선과 두 초점이 [[F(c, 0)]], F′[[point(-c, 0)]] ([[c > a]])인 타원의 교점 중 제1사분면 위의 점을 P라 하자.\n[[seg(AF) = 2]], [[seg(PA) = seg(PF)]], FF′ = PF′일 때, 타원의 장축의 길이는 [[p + q sqrt(7)]]이다. [[pow(p,2) + pow(q,2)]]의 값을 구하시오.\n(단, [[p]], [[q]]는 유리수이다.)",
+  "choices": null,
+  "answer": "29",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 꼭짓점 원점·초점 A인 포물선과 초점 F′·F인 타원, 제1사분면 교점 P, PA=PF 표시(등호 표시), 선분 PF′ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "8cffa12f-4599-4696-9698-05204172ac72",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p49.jpg",
+  "reason": "도형 표현 불가: 타원·포물선·점 P, Q, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 PF′ 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 103 vs 빠른정답 4 — 출처 [2010년 9월 고3 이과 20번]. PF′−PF=1, PF′+PF=10 → 곱 99/4 → 103. 빠른정답 4와 불일치.",
+  "seq": 49,
+  "qtype": "short",
+  "question": "좌표평면에서 두 점 [[A(5, 0)]], [[B(-5, 0)]]에 대하여 장축이 선분 AB인 타원의 두 초점을 F, F′이라 하자. 초점이 F이고 꼭짓점이 원점인 포물선이 타원과 만나는 두 점을 각각 P, Q라 하자, [[seg(PQ) = 2 sqrt(10)]]일 때, 두 선분 PF와 PF′의 길이의 곱 [[seg(PF)]] × PF′의 값은 [[frac(q, p)]]이다. [[p + q]]의 값을 구하시오. (단, [[p]]와 [[q]]는 서로소인 자연수이다.)",
+  "choices": null,
+  "answer": "103",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 장축 양 끝 A·B인 타원, 초점 F′·F, 꼭짓점 원점·초점 F인 포물선, 교점 P(위)·Q(아래), 선분 PF·PF′·PQ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "d2c2f033-20b9-454f-93cb-b58788890da3",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p50.jpg",
+  "reason": "도형 표현 불가: 포물선·타원·점 P, A, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 FF′, PF′ 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 40 vs 빠른정답 29 — 출처 [2017년 9월 고3 이과 27번 변형]. a=√7, 장축 10+4√7 → pq = 40. 빠른정답 29와 불일치.",
+  "seq": 50,
+  "qtype": "short",
+  "question": "좌표평면에서 초점이 [[A(a, 0)]] ([[a > 0]])이고 꼭짓점이 원점인 포물선과 두 초점이 [[F(c, 0)]], F′[[point(-c, 0)]] ([[c > a]])인 타원의 교점 중 제1사분면 위의 점을 P라 하자.\n[[seg(AF) = 4]], [[seg(PA) = seg(PF)]], FF′ = PF′일 때, 타원의 장축의 길이는 [[p + q sqrt(7)]]이다. [[p q]]의 값을 구하시오.\n(단, [[p]], [[q]]는 유리수이다.)",
+  "choices": null,
+  "answer": "40",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 꼭짓점 원점·초점 A인 포물선과 초점 F′·F인 타원, 제1사분면 교점 P, PA=PF 표시(등호 표시), 선분 PF′ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "e3868b59-8805-40f9-889c-9d5e98c6a384",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p51.jpg",
+  "reason": "도형 표현 불가: 타원·포물선·점 P, Q, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 PF′ 윗줄 표기 생략) — PF′²−PF² = y_P² = 24, PF′+PF = 12 → 차 2.",
+  "seq": 51,
+  "qtype": "short",
+  "question": "다음 그림과 같이 두 점 [[A(6, 0)]]과 [[B(-6, 0)]]에 대하여 장축이 선분 AB인 타원의 두 초점을 F와 F′이라 하고, 초점이 F이고 꼭짓점이 원점인 포물선이 타원과 만나는 두 점을 각각 P와 Q라 하자. [[seg(PQ) = 4 sqrt(6)]]일 때,\nPF′ − [[seg(PF)]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "2",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 장축 양 끝 A·B인 타원, 초점 F′·F, 꼭짓점 원점·초점 F인 포물선, 교점 P(위)·Q(아래), 선분 PF·PF′·PQ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "a98181f2-27ff-41d4-9510-29dd26b8ddf4",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_이차곡선_p52.jpg",
+  "reason": "도형 표현 불가: 포물선·쌍곡선·점 A, F, F′ 좌표평면 그림 / 프라임 점 라벨(∠AFF′ 텍스트 혼합) — cos=1/5, A(p−1, 2√6), 2p−1=5 → p=3, AF′=7 → a=1, b=2√2 → ab = 2√2 → ④.",
+  "seq": 52,
+  "qtype": "choice",
+  "question": "다음 그림과 같이 [[F(p, 0)]]을 초점으로 하는 포물선 [[pow(y,2) = 4 p x]]와 [[F(p, 0)]]과 F′[[point(-p, 0)]]을 초점으로 하는 쌍곡선 [[frac(pow(x,2), pow(a,2)) - frac(pow(y,2), pow(b,2)) = 1]] ([[a > 0]], [[b > 0]])이 제1사분면에서 만나는 점을 A라 하자.\n[[seg(AF) = 5]], sin(∠AFF′) = [[frac(2 sqrt(6), 5)]]일 때, [[a b]]의 값은?\n(단, ∠AFF′은 예각이다.)",
+  "choices": [
+   "[[1]]",
+   "[[sqrt(2)]]",
+   "[[sqrt(5)]]",
+   "[[2 sqrt(2)]]",
+   "[[sqrt(11)]]"
+  ],
+  "answer": "④",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 포물선 y²=4px와 쌍곡선 x²/a²−y²/b²=1(초점 F′·F), 제1사분면 교점 A, 선분 AF(길이 5) 점선 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "47fc504e-a6e0-4c07-9b40-4c8656832d27",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_벡터의 덧셈과 뺄셈_p2.jpg",
+  "reason": "프라임 점 라벨(벡터 PF′ 화살표 표기 생략, 텍스트 혼합) — 출처 [2017년 10월 고3 이과 10번 변형]. PF→+PF′→ = 2PO→ → 최댓값 2a = 10 → ⑤.",
+  "seq": 2,
+  "qtype": "choice",
+  "question": "타원 [[frac(pow(x,2), 25) + frac(pow(y,2), 16) = 1]] 위의 점 P와 두 초점 F, F′에 대하여 |[[vec(PF)]] + PF′→|의 최댓값은?",
+  "choices": [
+   "[[6]]",
+   "[[7]]",
+   "[[8]]",
+   "[[9]]",
+   "[[10]]"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "afeb49d5-4b64-4422-8bb9-81cbd8398b2a",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_벡터의 덧셈과 뺄셈_p44.jpg",
+  "reason": "프라임 점 라벨(벡터 PF′ 화살표 표기 생략, 텍스트 혼합) / (참고) 빠른정답 불일치: 전사·풀이 답 ② vs 빠른정답 3 — 출처 [2017년 10월 고3 이과 10번/3점]. |2PO→| 최댓값 2a = 6 → ②. 빠른정답 3과 불일치.",
+  "seq": 44,
+  "qtype": "choice",
+  "question": "타원 [[frac(pow(x,2), 9) + frac(pow(y,2), 5) = 1]] 위의 점 P와 두 초점 F, F′에 대하여 |[[vec(PF)]] + PF′→|의 최댓값은?",
+  "choices": [
+   "[[5]]",
+   "[[6]]",
+   "[[7]]",
+   "[[8]]",
+   "[[9]]"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "be6fc533-f9ef-4d4e-abc7-d19405f08576",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_타원_p28.jpg",
+  "reason": "도형 표현 불가: 삼각형 PF′F·타원 좌표평면 그림 / 프라임 점 라벨(∠FPF′ 텍스트 혼합) / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 5 — 출처 [2015년 10월 고3 이과 14번 변형]. 둘레 = 4a = 12 → PF=3, F′Q=1, PQ=4 → 넓이 6 → ③. 빠른정답 5와 불일치.",
+  "seq": 28,
+  "qtype": "choice",
+  "question": "다음 그림과 같이 좌표평면에 [[x]]축 위의 두 점 F, F′과 점 [[P(0, n)]] ([[n > 0]])이 있다. 삼각형 PF′F가 ∠FPF′ = [[frac(pi, 2)]]인 직각이등변삼각형이고, 두 점 F, F′을 초점으로 하고 점 P를 지나는 타원과 직선 PF′이 만나는 점 중 점 P가 아닌 점을 Q라 하자. 삼각형 FPQ의 둘레의 길이가 12일 때, 삼각형 FPQ의 넓이는?",
+  "choices": [
+   "[[4]]",
+   "[[5]]",
+   "[[6]]",
+   "[[7]]",
+   "[[8]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 초점 F′·F인 타원, y축 위의 점 P(직각 표시), 직선 PF′과 타원의 교점 Q(제3사분면), 삼각형 FPQ 음영 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "9aaca6f4-789f-41a6-a31c-a68ada683fb0",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_타원_p29.jpg",
+  "reason": "도형 표현 불가: 타원·삼각형 PF′Q·내접원 좌표평면 그림 / 프라임 점 라벨(FQ:F′Q 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 2 — 출처 [2022년 4월 고3 기하 28번/4점]. ∠FQF′=90°, FQ=t, F′Q=4t, PF=2t/3, 내접원 r = 2t/3 = 2 → t=3, 2c = 3√17 → ③. 빠른정답 2와 불일치.",
+  "seq": 29,
+  "qtype": "choice",
+  "question": "그림과 같이 두 점 [[F(c, 0)]], F′[[point(-c, 0)]]을 초점으로 하는 타원이 있다. 타원 위의 점 중 제1사분면에 있는 점 P에 대하여 직선 PF가 타원과 만나는 점 중 점 P가 아닌 점을 Q라 하자. [[seg(OQ) = seg(OF)]], [[seg(FQ)]] : F′Q = 1 : 4이고 삼각형 PF′Q의 내접원의 반지름의 길이가 2일 때, 양수 [[c]]의 값은? (단, O는 원점이다.)",
+  "choices": [
+   "[[frac(17, 3)]]",
+   "[[frac(7 sqrt(17), 5)]]",
+   "[[frac(3 sqrt(17), 2)]]",
+   "[[frac(51, 8)]]",
+   "[[frac(8 sqrt(17), 5)]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 초점 F′·F인 타원, 제1사분면 점 P, 직선 PF와 타원의 교점 Q(제4사분면), 삼각형 PF′Q와 그 내접원 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "5459d9e3-a2ba-4d3f-a68a-e5a2ad361361",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_타원_p38.jpg",
+  "reason": "도형 표현 불가: 두 타원 E₁·E₂·점 A, B, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 BF′, AF′ 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 21 vs 빠른정답 5 — 출처 [2024년 5월 고3 기하 30번 변형]. a=5c, E₂: 장반경 4c, 초점거리 2c → 단축 4√3c = 4√7 → c² = 7/3 → 9c² = 21. 빠른정답 5와 불일치.",
+  "seq": 38,
+  "qtype": "short",
+  "question": "다음 그림과 같이 두 초점이\n[[F(c, 0)]], F′[[point(-c, 0)]] ([[c > 0]])인 타원 [[sub(E,1)]]이 있다.\n타원 [[sub(E,1)]]의 꼭짓점 중 [[x]]좌표가 양수인 점을 A라 하고, 두 점 A, F를 초점으로 하고 점 F′을 지나는 타원을 [[sub(E,2)]]라 하자. 두 타원 [[sub(E,1)]], [[sub(E,2)]]의 교점 중 [[y]]좌표가 양수인 점 B에 대하여 BF′ − [[seg(BA)]] = [[frac(1, 3)]]AF′이 성립한다. 타원 [[sub(E,2)]]의 단축의 길이가 [[4 sqrt(7)]]일 때, [[9 pow(c, 2)]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "21",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 큰 타원 E₁(초점 F′·F, 오른쪽 꼭짓점 A)과 타원 E₂(초점 A·F, F′ 통과), 교점 B(위), 선분 BF′·BA 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "74919f53-04a1-47c6-90b6-18a41874ebae",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_타원_p39.jpg",
+  "reason": "도형 표현 불가: 삼각형 PF′F·타원 좌표평면 그림 / 프라임 점 라벨(∠FPF′ 텍스트 혼합) / (참고) 빠른정답 불일치: 전사·풀이 답 ② vs 빠른정답 4 — 출처 [2015년 10월 고3 이과 14번/4점]. 4a = 12√2 → PF=3√2, F′Q=√2, PQ=4√2 → 넓이 12 → ②. 빠른정답 4와 불일치.",
+  "seq": 39,
+  "qtype": "choice",
+  "question": "그림과 같이 좌표평면에 [[x]]축 위의 두 점 F, F′과 점 [[point(0, n)]] ([[n > 0]])이 있다. 삼각형 PF′F가 ∠FPF′ = [[frac(pi, 2)]]인 직각이등변삼각형일 때, 두 점 F, F′을 초점으로 하고 점 P를 지나는 타원과 직선 PF′이 만나는 점 중 점 P가 아닌 점을 Q라 하자. 삼각형 FPQ의 둘레의 길이가 [[12 sqrt(2)]]일 때, 삼각형 FPQ의 넓이는?",
+  "choices": [
+   "[[11]]",
+   "[[12]]",
+   "[[13]]",
+   "[[14]]",
+   "[[15]]"
+  ],
+  "answer": "②",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: x축 위의 두 점 F′·F와 y축 위의 점 P(직각 표시)로 이루어진 직각이등변삼각형 PF′F 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "6c3e46c0-c46e-486e-87a2-c5816060db56",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_타원_p40.jpg",
+  "reason": "도형 표현 불가: 타원·수직선·점 A, P, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 AF′ 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 2 — 출처 [2022년 9월 고3 기하 25번 변형]. FF′=12, a²=13+36 → a=7 → 둘레 14+12 = 26 → ④. 빠른정답 2와 불일치.",
+  "seq": 40,
+  "qtype": "choice",
+  "question": "타원 [[frac(pow(x,2), pow(a,2)) + frac(pow(y,2), 13) = 1]]의 두 초점을 F, F′이라 하자.\n점 F를 지나고 [[x]]축에 수직인 직선 위의 점 A가 AF′ = 13, [[seg(AF) = 5]]를 만족시킨다. 선분 AF′과 타원이 만나는 점을 P라 할 때, 삼각형 PF′F의 둘레의 길이는?\n(단, [[a]]는 [[a > sqrt(13)]]인 상수이다.)",
+  "choices": [
+   "[[20]]",
+   "[[22]]",
+   "[[24]]",
+   "[[26]]",
+   "[[28]]"
+  ],
+  "answer": "④",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 초점 F′·F인 타원, F를 지나는 수직선 위의 점 A, 선분 AF′과 타원의 교점 P, 선분 PF, F에서 직각 표시 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "8b9bc61f-fb25-4a12-95d0-bc011613c601",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_타원_p42.jpg",
+  "reason": "도형 표현 불가: 두 타원 C₁·C₂·점 P, Q, F, F′, G, G′ 좌표평면 그림 / 프라임 점 라벨(선분 PF′, QG′ 윗줄 표기 생략) — 출처 [2025년 6월 고3 기하 28번 변형]. 2a=2√5, c=2, P는 FG의 중점 (1, d/2) → d²=16/5 → QG+QG′ = 2√(5+16/5) = 2√205/5 → ②.",
+  "seq": 42,
+  "qtype": "choice",
+  "question": "다음 그림과 같이 두 점 [[F(c, 0)]], F′[[point(-c, 0)]] ([[c > 0]])을 초점으로 하는 타원 [[sub(C,1)]]: [[frac(pow(x,2), pow(a,2)) + pow(y,2) = 1]]과 두 점 [[G(0, d)]], G′[[point(0, -d)]] ([[d > 1]])을 초점으로 하고 타원 [[sub(C,1)]]의 두 꼭짓점을 지나는 타원 [[sub(C,2)]]가 있다. 직선 FG가 타원 [[sub(C,1)]]과 제1사분면에서 만나는 점을 P라 하고, 직선 F′P가 타원 [[sub(C,2)]]와 제1사분면에서 만나는 점을 Q라 하자.\n[[seg(GP) = seg(PF)]]이고 [[seg(GP)]] + PF′ = [[2 sqrt(5)]]일 때, [[seg(QG)]] + QG′의 값은? (단, [[a]]는 양수이다.)",
+  "choices": [
+   "[[frac(sqrt(205), 5)]]",
+   "[[frac(2 sqrt(205), 5)]]",
+   "[[frac(3 sqrt(205), 5)]]",
+   "[[frac(4 sqrt(205), 5)]]",
+   "[[sqrt(205)]]"
+  ],
+  "answer": "②",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 가로로 긴 타원 C₁(초점 F′·F)과 세로로 긴 타원 C₂(초점 G·G′), 점 P(C₁ 위)·Q(C₂ 위), 선분 GP·GQ·F′Q·FQ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "2be5d1d4-368d-4934-bd6b-1384a0d2b127",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_타원_p62.jpg",
+  "reason": "도형 표현 불가: 두 타원 C₁·C₂·점 A, P, Q, F, F′ 좌표평면 그림 / 프라임 점 라벨(∠FF′A, 선분 F′Q 텍스트 혼합) / (참고) 빠른정답 불일치: 전사·풀이 답 ① vs 빠른정답 18 — 출처 [2024년 3월 고3 기하 28번 변형]. AF′=25, FF′=24, AF=7, c=12; C₂ 장축 = 4+√65 → F′Q−AQ = 32−(4+√65) = 28−√65 → ①. 빠른정답 18과 불일치.",
+  "seq": 62,
+  "qtype": "choice",
+  "question": "두 초점이 [[F(c, 0)]], F′[[point(-c, 0)]] ([[c > 0]])이고 장축의 길이가 32인 타원을 [[sub(C,1)]]이라 하자. 점 F를 지나고 [[x]]축에 수직인 직선이 타원 [[sub(C,1)]]과 제1사분면에서 만나는 점을 A라 하고, 두 초점이 F, A이고 점 [[P(16, 0)]]을 지나는 타원을 [[sub(C,2)]]라 하자. 두 타원 [[sub(C,1)]]과 [[sub(C,2)]]가 만나는 점 중 점 P가 아닌 점을 Q라 하자. cos(∠FF′A) = [[frac(24, 25)]]일 때,\nF′Q − [[seg(AQ)]]의 값은?",
+  "choices": [
+   "[[28 - sqrt(65)]]",
+   "[[37 - 2 sqrt(65)]]",
+   "[[30 - sqrt(65)]]",
+   "[[39 - 2 sqrt(65)]]",
+   "[[32 - sqrt(65)]]"
+  ],
+  "answer": "①",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 큰 타원 C₁(초점 F′·F, 오른쪽 꼭짓점 P(16,0))과 작은 타원 C₂(초점 F·A), F를 지나는 수직선 위의 점 A, 교점 Q, 직각 표시 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "c78e6374-60aa-4b54-8bbb-36fdf8c1667d",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_타원_p63.jpg",
+  "reason": "도형 표현 불가: 두 타원 C₁·C₂·점 P, Q, R, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 F′R 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 26 vs 빠른정답 160 — 출처 [2025년 9월 고3 기하 29번 변형]. P(p,4), Q는 PF′ 중점, 2a₂=PF′, F′R−PR = 2a₁−2a₂ = p = 6 → PF′=10 → 16+10 = 26. 빠른정답 160과 불일치.",
+  "seq": 63,
+  "qtype": "short",
+  "question": "두 점 [[F(0, 4)]], F′[[point(0, -4)]]를 초점으로 하는 타원 [[sub(C,1)]]에 대하여 점 F를 지나고 [[x]]축과 평행한 직선이 타원 [[sub(C,1)]]과 만나는 점 중 제1사분면 위에 있는 점을 P, 선분 PF′과 [[x]]축이 만나는 점을 Q라 하자. 두 점 P, F를 초점으로 하고 점 Q가 꼭짓점인 타원 [[sub(C,2)]]에 대하여\n두 타원 [[sub(C,1)]], [[sub(C,2)]]가 만나는 점 중 [[x]]축에 가까운 점을 R이라 하자.\nF′R − [[seg(PR)]] = 6일 때, 두 타원 [[sub(C,1)]], [[sub(C,2)]]의 장축의 길이의 합을 구하시오.",
+  "choices": null,
+  "answer": "26",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 세로로 긴 타원 C₁(초점 F·F′ y축 위)과 타원 C₂(초점 P·F), 점 P(F와 같은 높이), 선분 PF′과 x축의 교점 Q, 교점 R(x축 근처) 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "e064c42b-7851-4b1a-9698-8bcfa5de58fc",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_타원_p70.jpg",
+  "reason": "도형 표현 불가: 두 타원 C₁·C₂·점 P, Q, R, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 F′R 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 396 vs 빠른정답 23 — 출처 [2025년 9월 고3 기하 29번/4점]. p=7√2, PF′=√(98+144)=11√2 → 장축 18√2·11√2 = 396. 빠른정답 23과 불일치.",
+  "seq": 70,
+  "qtype": "short",
+  "question": "두 점 [[F(0, 6)]], F′[[point(0, -6)]]를 초점으로 하는 타원 [[sub(C,1)]]에 대하여 점 F를 지나고 [[x]]축과 평행한 직선이 타원 [[sub(C,1)]]과 만나는 점 중 제1사분면 위에 있는 점을 P, 선분 PF′과 [[x]]축이 만나는 점을 Q라 하자. 두 점 P, F를 초점으로 하고 점 Q가 꼭짓점인 타원 [[sub(C,2)]]에 대하여 두 타원 [[sub(C,1)]], [[sub(C,2)]]가 만나는 점 중 [[x]]축에 가까운 점을 R이라 하자.\nF′R − [[seg(PR)]] = [[7 sqrt(2)]]일 때, 두 타원 [[sub(C,1)]], [[sub(C,2)]]의 장축의 길이의 곱을 구하시오.",
+  "choices": null,
+  "answer": "396",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 세로로 긴 타원 C₁(초점 F·F′ y축 위)과 타원 C₂(초점 P·F), 점 P(F와 같은 높이), 선분 PF′과 x축의 교점 Q, 교점 R(x축 근처) 그림"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "f8baf748-3a38-4714-92d9-a50258a5214b",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_타원_p74.jpg",
+  "reason": "프라임 점 라벨(선분 PF′ 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 ① vs 빠른정답 63 — a=3, c=1, b²=8 → x²/9+y²/8=1 → ①. 빠른정답 63과 불일치.",
+  "seq": 74,
+  "qtype": "choice",
+  "question": "두 점 [[F(1, 0)]], F′[[point(-1, 0)]]에 대하여 점 P가 [[seg(PF)]] + PF′ = 6을 만족시킬 때, 점 P가 나타내는 도형의 방정식은?",
+  "choices": [
+   "[[frac(pow(x,2), 9) + frac(pow(y,2), 8) = 1]]",
+   "[[frac(pow(x,2), 9) + frac(pow(y,2), 6) = 1]]",
+   "[[frac(pow(x,2), 9) + frac(pow(y,2), 4) = 1]]",
+   "[[frac(pow(x,2), 8) + frac(pow(y,2), 9) = 1]]",
+   "[[frac(pow(x,2), 6) + frac(pow(y,2), 9) = 1]]"
+  ],
+  "answer": "①",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "bd5b6eb0-dddb-4434-8835-997ce4f79f80",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_쌍곡선의 접선의 방정식_p26.jpg",
+  "reason": "프라임 점 라벨(선분 PF′ 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 ② vs 빠른정답 1 — 출처 [2025년 11월 고3 기하 26번/3점]. 접선 x−√2y=−a → P(0, a/√2), 초점 (0,±√2a) → PF·PF′ = (a/√2)(3a/√2) = 3a²/2 = 8 → a = 4√3/3 → ②. 빠른정답 1과 불일치.",
+  "seq": 26,
+  "qtype": "choice",
+  "question": "양수 [[a]]에 대하여 두 초점이 F, F′인\n쌍곡선 [[frac(pow(x,2), pow(a,2)) - frac(pow(y,2), pow(a,2)) = -1]] 위의 점 [[point(a, sqrt(2) a)]]에서의 접선이 [[y]]축과 만나는 점을 P라 하자. [[seg(PF)]] · PF′ = 8일 때, [[a]]의 값은?",
+  "choices": [
+   "[[sqrt(3)]]",
+   "[[frac(4 sqrt(3), 3)]]",
+   "[[frac(5 sqrt(3), 3)]]",
+   "[[2 sqrt(3)]]",
+   "[[frac(7 sqrt(3), 3)]]"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "7c33dcb6-52b2-4f09-be52-8c7795e21c54",
+  "zip": "esc_sonnet_h3-3_4of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_4of6/images/sonnet_h3-3_260828_쌍곡선의 접선의 방정식_p77.jpg",
+  "reason": "도형 표현 불가: 쌍곡선·접선·점 P, F, F′ 좌표평면 그림 / 프라임 점 라벨(선분 PF′, FF′ 윗줄 표기 생략) / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 1 — 출처 [2022년 7월 고3 기하 26번 변형]. 9/x₀=2 → x₀=9/2, PF′=2c, PF=3c/2−3 = 2c−6 → c=6 → k=27 → ④. 빠른정답 1과 불일치.",
+  "seq": 77,
+  "qtype": "choice",
+  "question": "두 초점이 [[F(c, 0)]], F′[[point(-c, 0)]] ([[c > 0]])인\n쌍곡선 [[frac(pow(x,2), 9) - frac(pow(y,2), k) = 1]] 위의 제1사분면에 있는 점 P에서의 접선이 [[x]]축과 만나는 점의 [[x]]좌표가 2이다. PF′ = FF′일 때, 양수 [[k]]의 값은?",
+  "choices": [
+   "[[18]]",
+   "[[21]]",
+   "[[24]]",
+   "[[27]]",
+   "[[30]]"
+  ],
+  "answer": "④",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 쌍곡선 x²/9−y²/k=1(초점 F′·F), 제1사분면 점 P, P에서의 접선(x축과 x=2에서 만남), 선분 PF′ 그림"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.85
+ },
+ {
+  "id": "a6681072-dd1e-4bf7-acb7-a24f733e6399",
+  "zip": "esc_sonnet_h3-3_5of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_5of6/images/sonnet_h3-3_260828_쌍곡선의 접선의 방정식_p84.jpg",
+  "reason": "도형 표현 불가: 쌍곡선 2개+접선+선분 PF′ 좌표평면 도형 / 프라임 점 라벨(F′)을 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 160 vs 빠른정답 2 — 출처 [2023년 4월 고3 기하 29번 변형]. Q(a²/8,0) ⇒ 둘째 쌍곡선 2a'=a²/4; (RF'−RF)+(SF−SF')=a²/2=8 ⇒ a²=16, k²=144 ⇒ 160 (빠른정답 2와 불일치).",
+  "seq": 84,
+  "qtype": "short",
+  "question": "다음 그림과 같이 두 초점이 F[[point(c, 0)]], F′[[point(-c, 0)]] ([[c > 0]])인 쌍곡선 [[frac(pow(x,2), pow(a,2)) - frac(pow(y,2), 48) = 1]] 위의 점 P[[point(8, k)]] ([[k > 0]])에서의 접선이 [[x]]축과 만나는 점을 Q라 하자. 두 점 F, F′을 초점으로 하고 점 Q를 한 꼭짓점으로 하는 쌍곡선이 선분 PF′과 만나는 두 점을 R, S라 하자. [[seg(RS) + seg(SF) = seg(RF) + 8]]일 때, [[pow(a,2) + pow(k,2)]]의 값을 구하시오. (단, [[a]]는 양수이고, 점 R의 [[x]]좌표는 점 S의 [[x]]좌표보다 크다.)",
+  "choices": null,
+  "answer": "160",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 쌍곡선 x²/a²−y²/48=1(초점 F, F′), 두 초점을 공유하고 Q를 꼭짓점으로 하는 두 번째 쌍곡선, 점 P에서의 접선(x축과 Q에서 만남), 선분 PF′ 위의 점 R, S"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "4c2063db-811b-4388-97fd-89fa3c1be61d",
+  "zip": "esc_sonnet_h3-3_5of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_5of6/images/sonnet_h3-3_260828_쌍곡선의 접선의 방정식_p86.jpg",
+  "reason": "첨자 점 라벨(F₁, F₂, F₃) — 선분 기호 PF₂−PF₁, PF₃를 텍스트 혼합으로 표기 / 도형 표현 불가: 포물선·접선·초점 좌표평면 도형 / (참고) 빠른정답 불일치: 전사·풀이 답 54 vs 빠른정답 2 — 출처 [2022년 10월 고3 기하 29번/4점]. P(8,8√2), F₃(−8,0), 타원 중심(−2,0) c=6, 단축 꼭짓점(−2,3√2) b²=18 ⇒ a²=54 (빠른정답 2와 불일치).",
+  "seq": 86,
+  "qtype": "short",
+  "question": "두 점 [[sub(F,1)]][[point(4, 0)]], [[sub(F,2)]][[point(-6, 0)]]에 대하여 포물선 [[pow(y,2) = 16x]] 위의 점 중 제1사분면에 있는 점 P가 P[[sub(F,2)]] − P[[sub(F,1)]] = 6을 만족시킨다. 포물선 [[pow(y,2) = 16x]] 위의 점 P에서의 접선이 [[x]]축과 만나는 점을 [[sub(F,3)]]이라 하면 두 점 [[sub(F,1)]], [[sub(F,3)]]을 초점으로 하는 타원의 한 꼭짓점은 선분 P[[sub(F,3)]] 위에 있다. 이 타원의 장축의 길이가 [[2a]]일 때, [[pow(a,2)]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "54",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 포물선 y²=16x, 제1사분면 위의 점 P와 P에서의 접선, 접선이 x축과 만나는 점 F₃(음의 x축), x축 위의 점 F₂(−6,0), F₁(4,0), 원점 O"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "254b0db1-610b-42d8-9c89-63bd3cb168bc",
+  "zip": "esc_sonnet_h3-3_5of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_5of6/images/sonnet_h3-3_260828_쌍곡선의 접선의 방정식_p92.jpg",
+  "reason": "첨자 점 라벨(F₁, F₂, F₃) — 선분 기호 PF₂−PF₁, PF₃를 텍스트 혼합으로 표기 / 도형 표현 불가: 포물선·접선·초점 좌표평면 도형 / (참고) 빠른정답 불일치: 전사·풀이 답 147 vs 빠른정답 80 — 출처 [2022년 10월 고3 기하 29번 변형]. P(15,6√10), F₃(−15,0), c=21/2, b²=44.1 ⇒ a²=154.35 ⇒ (20/21)a²=147 (빠른정답 80과 불일치).",
+  "seq": 92,
+  "qtype": "short",
+  "question": "두 점 [[sub(F,1)]][[point(6, 0)]], [[sub(F,2)]][[point(-12, 0)]]에 대하여 포물선 [[pow(y,2) = 24x]] 위의 점 중 제1사분면에 있는 점 P가 P[[sub(F,2)]] − P[[sub(F,1)]] = 12를 만족시킨다. 포물선 [[pow(y,2) = 24x]] 위의 점 P에서의 접선이 [[x]]축과 만나는 점을 [[sub(F,3)]]이라 하면 두 점 [[sub(F,1)]], [[sub(F,3)]]을 초점으로 하는 타원의 한 꼭짓점은 선분 P[[sub(F,3)]] 위에 있다. 이 타원의 장축의 길이가 [[2a]]일 때, [[frac(20,21) pow(a,2)]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "147",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 포물선 y²=24x, 제1사분면 위의 점 P와 P에서의 접선, 접선이 x축과 만나는 점 F₃(음의 x축), x축 위의 점 F₂(−12,0), F₁(6,0), 원점 O"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "cac51041-8631-4b15-aa47-0ec257247465",
+  "zip": "esc_sonnet_h3-3_5of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_5of6/images/sonnet_h3-3_260828_타원의 접선의 방정식_p73.jpg",
+  "reason": "도형 표현 불가: 타원·초점·사각형 ABFP 음영 좌표평면 도형 / 프라임·첨자 점 라벨(F′, P₀)을 텍스트 혼합으로 표기 — 출처 [2025년 5월 고3 기하 28번/4점]. x²/6+y²/5=1, 조건 ⇒ F′,A,P₀ 한 직선·P₀ 접선∥AF ⇒ a=3/2, b=5√2/4 ⇒ ab=15√2/8 ⇒ ⑤.",
+  "seq": 73,
+  "qtype": "choice",
+  "question": "그림과 같이 두 초점이 F[[point(1, 0)]], F′[[point(-1, 0)]]이고 단축의 길이가 [[2 sqrt(5)]]인 타원과 [[y]]축 위의 점 A가 있다. 점 A를 [[x]]축에 대하여 대칭이동한 점을 B라 하자. 제1사분면에서 이 타원 위를 움직이는 점 P에 대하여 네 선분 AB, BF, FP, PA로 둘러싸인 도형의 넓이가 최대가 되도록 하는 점 P를 [[sub(P,0)]][[point(a, b)]]라 하자. [[seg(BF)]] + F[[sub(P,0)]] + [[sub(P,0)]]A = [[2 sqrt(6)]]일 때, [[a b]]의 값은?\n(단, 점 A의 [[y]]좌표는 양수이고, [[seg(AB) < 2 sqrt(5)]]이다.)",
+  "choices": [
+   "[[frac(11 sqrt(2), 8)]]",
+   "[[frac(3 sqrt(2), 2)]]",
+   "[[frac(13 sqrt(2), 8)]]",
+   "[[frac(7 sqrt(2), 4)]]",
+   "[[frac(15 sqrt(2), 8)]]"
+  ],
+  "answer": "⑤",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 초점 F(1,0), F′(−1,0)인 타원, y축 위의 점 A와 대칭점 B, 제1사분면 위의 점 P, 사각형 ABFP 음영"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "bb861f78-7d48-4c96-a6ca-3e4bc91cbf06",
+  "zip": "esc_sonnet_h3-3_5of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_5of6/images/sonnet_h3-3_260828_타원의 접선의 방정식_p81.jpg",
+  "reason": "도형 표현 불가: 타원·초점·사각형 ABPF 음영 좌표평면 도형 / 프라임·첨자 점 라벨(F′, P₀)을 텍스트 혼합으로 표기 — 출처 [2025년 5월 고3 기하 28번 변형]. x²/2+y²/3=1, F′,B,P₀ 한 직선·P₀ 접선∥BF ⇒ b=1, a=2√3/3 ⇒ ab=2√3/3 ⇒ ②.",
+  "seq": 81,
+  "qtype": "choice",
+  "question": "다음 그림과 같이 두 초점이 F[[point(0, 1)]], F′[[point(0, -1)]]이고 단축의 길이가 [[2 sqrt(2)]]인 타원과 [[x]]축 위의 점 A가 있다. 점 A를 [[y]]축에 대하여 대칭이동한 점을 B라 하자. 제1사분면에서 이 타원 위를 움직이는 점 P에 대하여 네 선분 AB, BP, PF, FA로 둘러싸인 도형의 넓이가 최대가 되도록 하는 점 P를 [[sub(P,0)]][[point(a, b)]]라 하자.\n[[seg(AF)]] + F[[sub(P,0)]] + [[sub(P,0)]]B = [[2 sqrt(3)]]일 때, [[a b]]의 값은?\n(단, 점 A의 [[x]]좌표는 음수이고, [[seg(AB) < 2 sqrt(2)]]이다.)",
+  "choices": [
+   "[[frac(3 sqrt(3), 4)]]",
+   "[[frac(2 sqrt(3), 3)]]",
+   "[[frac(7 sqrt(3), 12)]]",
+   "[[frac(sqrt(3), 2)]]",
+   "[[frac(5 sqrt(3), 12)]]"
+  ],
+  "answer": "②",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 초점 F(0,1), F′(0,−1)인 세로로 긴 타원, x축 위의 점 A(음의 x축)와 대칭점 B, 제1사분면 위의 점 P, 사각형 ABPF 음영"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "b1c5add2-fdc3-42bc-99ff-a1a9c0fc7771",
+  "zip": "esc_sonnet_h3-3_5of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_5of6/images/sonnet_h3-3_260828_타원의 접선의 방정식_p85.jpg",
+  "reason": "프라임 점 라벨(F′) — 선분 PF′을 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 1 — 출처 [2026년 7월 고3 기하 26번 변형]. 접선 x/12+y/(4b)=1, AB²=144+16b²=432 ⇒ b²=18, c²=108−72=36 ⇒ b²c=108 ⇒ ⑤ (빠른정답 1과 불일치).",
+  "seq": 85,
+  "qtype": "choice",
+  "question": "두 점 F[[point(c, 0)]], F′[[point(-c, 0)]] ([[c > 0]])을 초점으로 하는 타원 [[frac(pow(x,2), 108) + frac(pow(y,2), 4 pow(b,2)) = 1]] 위에 있는 제1사분면 위의 점 P[[point(9, b)]]에서의 접선이 [[x]]축, [[y]]축과 만나는 점을 각각 A, B라 하자. [[seg(PF)]] + PF′ = [[seg(AB)]]일 때, [[pow(b,2) c]]의 값은?",
+  "choices": [
+   "[[92]]",
+   "[[96]]",
+   "[[100]]",
+   "[[104]]",
+   "[[108]]"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.8
+ },
+ {
+  "id": "3517ae96-7645-4f29-9eea-5d004898272d",
+  "zip": "esc_sonnet_h3-3_5of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_5of6/images/sonnet_h3-3_260828_타원의 접선의 방정식_p88.jpg",
+  "reason": "도형 표현 불가: 타원·접선 l·평행선·점 P, Q, R, S 좌표평면 도형 / 프라임 점 라벨(F′)을 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 4 — 출처 [2021년 9월 고3 기하 28번 변형]. c=2, l: y=2x+8, S(0,8); △F′FQ∽△F′SR(비 4:10) ⇒ RS+RF′=(5/2)(FQ+F′Q)=(5/2)·8=20 ⇒ ⑤ (빠른정답 4와 불일치).",
+  "seq": 88,
+  "qtype": "choice",
+  "question": "다음 그림과 같이 두 점 F[[point(0, c)]], F′[[point(0, -c)]] ([[c > 0]])을 초점으로 하는 타원 [[frac(pow(x,2), 12) + frac(pow(y,2), 16) = 1]] 위의 점 P[[point(-3, 2)]]에서 타원에 접하는 직선을 [[l]]이라 하자. 점 F를 지나고 [[l]]과 평행한 직선이 타원과 만나는 점 중 제3사분면 위에 있는 점을 Q라 하자. 두 직선 F′Q와 [[l]]이 만나는 점을 R, [[l]]과 [[y]]축이 만나는 점을 S라 할 때, [[seg(RS)]] + RF′의 값은?",
+  "choices": [
+   "[[24]]",
+   "[[23]]",
+   "[[22]]",
+   "[[21]]",
+   "[[20]]"
+  ],
+  "answer": "⑤",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 타원 x²/12+y²/16=1, 초점 F(0,c)·F′(0,−c), 점 P(−3,2)에서의 접선 l(y축과 S에서 만남), F를 지나 l에 평행한 직선과 제3사분면 교점 Q, 직선 F′Q와 l의 교점 R"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "88a78d72-6586-4f33-ad72-117ec7277b54",
+  "zip": "esc_sonnet_h3-3_5of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_5of6/images/sonnet_h3-3_260828_타원의 접선의 방정식_p96.jpg",
+  "reason": "프라임 점 라벨(F′) — 선분 PF′을 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 5 — 출처 [2026년 7월 고3 기하 26번/3점]. 접선 x/8+y/(4b)=1, AB²=64+16b²=192 ⇒ b²=8, c²=48−32=16 ⇒ b²c=32 ⇒ ④ (빠른정답 5와 불일치).",
+  "seq": 96,
+  "qtype": "choice",
+  "question": "두 점 F[[point(c, 0)]], F′[[point(-c, 0)]] ([[c > 0]])을 초점으로 하는 타원 [[frac(pow(x,2), 48) + frac(pow(y,2), 4 pow(b,2)) = 1]] 위에 있는 제1사분면 위의 점 P[[point(6, b)]]에서의 접선이 [[x]]축, [[y]]축과 만나는 점을 각각 A, B라 하자. [[seg(PF)]] + PF′ = [[seg(AB)]]일 때, [[pow(b,2) c]]의 값은?",
+  "choices": [
+   "[[20]]",
+   "[[24]]",
+   "[[28]]",
+   "[[32]]",
+   "[[36]]"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.8
+ },
+ {
+  "id": "5fbc421d-bb88-4073-9439-434c1571a99b",
+  "zip": "esc_sonnet_h3-3_6of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_6of6/images/sonnet_h3-3_260828_벡터의 내적_p19.jpg",
+  "reason": "프라임 점 라벨 벡터(OP′, OQ′)를 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 0 — 평행이동 벡터 (4,3): ㄱ |(4,3)|=5 ✓, ㄴ 차 벡터 불변 ✓, ㄷ 내적은 일반적으로 달라짐 ✗ ⇒ ③ (빠른정답 0과 불일치).",
+  "seq": 19,
+  "qtype": "choice",
+  "question": "좌표평면 위에 원점 O를 시점으로 하는 서로 다른 임의의 두 벡터 [[vec(OP)]], [[vec(OQ)]]가 있다. 두 벡터의 종점 P, Q를 [[x]]축의 방향으로 4만큼, [[y]]축의 방향으로 3만큼 평행이동시킨 점을 각각 P′, Q′이라 할 때, 다음 보기 중 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. |[[vec(OP)]] − [[vec(OP)]]′| = 5\nㄴ. |[[vec(OP)]] − [[vec(OQ)]]| = |[[vec(OP)]]′ − [[vec(OQ)]]′|\nㄷ. [[dot(vec(OP), vec(OQ))]] = [[vec(OP)]]′ · [[vec(OQ)]]′",
+  "choices": [
+   "ㄱ",
+   "ㄷ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "b6d1079e-006b-4c8b-878f-c8944e452d78",
+  "zip": "esc_sonnet_h3-3_6of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_6of6/images/sonnet_h3-3_260828_벡터의 내적_p19.jpg",
+  "reason": "프라임 점 라벨 벡터(OP′, OQ′)를 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 0 — 평행이동 벡터 (4,3): ㄱ |(4,3)|=5 ✓, ㄴ 차 벡터 불변 ✓, ㄷ 내적은 일반적으로 달라짐 ✗ ⇒ ③ (빠른정답 0과 불일치).",
+  "seq": 19,
+  "qtype": "choice",
+  "question": "좌표평면 위에 원점 O를 시점으로 하는 서로 다른 임의의 두 벡터 [[vec(OP)]], [[vec(OQ)]]가 있다. 두 벡터의 종점 P, Q를 [[x]]축의 방향으로 4만큼, [[y]]축의 방향으로 3만큼 평행이동시킨 점을 각각 P′, Q′이라 할 때, 다음 보기 중 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. |[[vec(OP)]] − [[vec(OP)]]′| = 5\nㄴ. |[[vec(OP)]] − [[vec(OQ)]]| = |[[vec(OP)]]′ − [[vec(OQ)]]′|\nㄷ. [[dot(vec(OP), vec(OQ))]] = [[vec(OP)]]′ · [[vec(OQ)]]′",
+  "choices": [
+   "ㄱ",
+   "ㄷ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "78750a42-ebb9-48f4-b8b2-477add4ec65b",
+  "zip": "esc_sonnet_h3-3_6of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_6of6/images/sonnet_h3-3_260828_벡터의 내적_p22.jpg",
+  "reason": "프라임 점 라벨 벡터(OP′, OQ′)를 텍스트 혼합으로 표기 — 출처 [2005년 11월 고3 이과 4번]. 평행이동 벡터 (3,1): ㄱ √10 ✓, ㄴ ✓, ㄷ ✗ ⇒ ③.",
+  "seq": 22,
+  "qtype": "choice",
+  "question": "좌표평면 위에 원점 O를 시점으로 하는 서로 다른 임의의 두 벡터 [[vec(OP)]], [[vec(OQ)]]가 있다. 두 벡터의 종점 P, Q를 [[x]]축 방향으로 3만큼, [[y]]축 방향으로 1만큼 평행이동시킨 점을 각각 P′, Q′이라 할 때, <보기>에서 항상 옳은 것을 모두 고른 것은?\n<보기>\nㄱ. |[[vec(OP)]] − [[vec(OP)]]′| = [[sqrt(10)]]\nㄴ. |[[vec(OP)]] − [[vec(OQ)]]| = |[[vec(OP)]]′ − [[vec(OQ)]]′|\nㄷ. [[dot(vec(OP), vec(OQ))]] = [[vec(OP)]]′ · [[vec(OQ)]]′",
+  "choices": [
+   "ㄱ",
+   "ㄷ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "6462357d-e286-4942-98e0-4415abc82396",
+  "zip": "esc_sonnet_h3-3_6of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_6of6/images/sonnet_h3-3_260828_벡터의 내적_p74.jpg",
+  "reason": "첨자 점 라벨 벡터 OA₁, OA₂, OA₃을 sub(vec(OA),k)로 우회 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 1 — 출처 [2017년 9월 고3 이과 19번/4점]. ㄱ 반원 π/2 ✓, ㄴ OA₁에 수직인 지름 선분 ✓, ㄷ A₃이 사분호 위 ⇒ D에 포함 ✓ ⇒ ⑤ (빠른정답 1과 불일치).",
+  "seq": 74,
+  "qtype": "choice",
+  "question": "좌표평면에서 원점 O가 중심이고 반지름의 길이가 1인 원 위의 세 점 [[sub(A,1)]], [[sub(A,2)]], [[sub(A,3)]]에 대하여\n[[abs(vec(OX)) <= 1]]이고, [[dot(vec(OX), sub(vec(OA), k)) >= 0]] ([[k]] = 1, 2, 3)\n을 만족시키는 모든 점 X의 집합이 나타내는 도형을 [[D]]라 하자. <보기>에서 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. [[sub(vec(OA), 1) = sub(vec(OA), 2) = sub(vec(OA), 3)]]이면 [[D]]의 넓이는 [[frac(pi,2)]]이다.\nㄴ. [[sub(vec(OA), 2) = -sub(vec(OA), 1)]]이고, [[sub(vec(OA), 3) = sub(vec(OA), 1)]]이면 [[D]]의 길이는 2인 선분이다.\nㄷ. [[dot(sub(vec(OA), 1), sub(vec(OA), 2)) = 0]]인 경우에, [[D]]의 넓이가 [[frac(pi,4)]]이면 점 [[sub(A,3)]]은 [[D]]에 포함되어 있다.",
+  "choices": [
+   "ㄱ",
+   "ㄷ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "3803b558-af72-4f5e-90fd-f9fefd085a86",
+  "zip": "esc_sonnet_h3-3_6of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_6of6/images/sonnet_h3-3_260828_벡터의 내적_p76.jpg",
+  "reason": "첨자 점 라벨 벡터 OA₁, OA₂, OA₃을 sub(vec(OA),k)로 우회 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 27 — ㄱ ✓, ㄴ OA₃≠±OA₁이면 반직선 쪽만 남아 길이 1 ⇒ ✓, ㄷ 길이 1인 선분 ✗ ⇒ ③ (빠른정답 27과 불일치).",
+  "seq": 76,
+  "qtype": "choice",
+  "question": "좌표평면에서 원점 O가 중심이고 반지름의 길이가 1인 원 위의 세 점 [[sub(A,1)]], [[sub(A,2)]], [[sub(A,3)]]에 대하여 [[abs(vec(OX)) <= 1]]이고 [[dot(vec(OX), sub(vec(OA), k)) >= 0]] ([[k]] = 1, 2, 3)을 만족시키는 모든 점 X의 집합이 나타내는 도형을 [[D]]라 하자. 다음 보기 중 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. [[sub(vec(OA), 1) = sub(vec(OA), 2) = sub(vec(OA), 3)]]이면 [[D]]의 넓이는 [[frac(pi,2)]]이다.\nㄴ. [[sub(vec(OA), 2) = -sub(vec(OA), 1)]]일 때, [[D]]가 길이가 2인 선분이기 위해서는 [[sub(vec(OA), 3) = sub(vec(OA), 1)]] 또는 [[sub(vec(OA), 3) = sub(vec(OA), 2)]]이어야 한다.\nㄷ. [[dot(sub(vec(OA), 1), sub(vec(OA), 2)) = 0]], [[sub(vec(OA), 3) = -sub(vec(OA), 1)]]이면 [[D]]는 길이가 [[frac(3,2)]]인 선분이다.",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "bd2a6a3f-0c4f-480c-944b-6180866347b4",
+  "zip": "esc_sonnet_h3-3_6of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_6of6/images/sonnet_h3-3_260828_벡터의 내적_p76.jpg",
+  "reason": "첨자 점 라벨 벡터 OA₁, OA₂, OA₃을 sub(vec(OA),k)로 우회 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 27 — ㄱ ✓, ㄴ OA₃≠±OA₁이면 반직선 쪽만 남아 길이 1 ⇒ ✓, ㄷ 길이 1인 선분 ✗ ⇒ ③ (빠른정답 27과 불일치).",
+  "seq": 76,
+  "qtype": "choice",
+  "question": "좌표평면에서 원점 O가 중심이고 반지름의 길이가 1인 원 위의 세 점 [[sub(A,1)]], [[sub(A,2)]], [[sub(A,3)]]에 대하여 [[abs(vec(OX)) <= 1]]이고 [[dot(vec(OX), sub(vec(OA), k)) >= 0]] ([[k]] = 1, 2, 3)을 만족시키는 모든 점 X의 집합이 나타내는 도형을 [[D]]라 하자. 다음 보기 중 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. [[sub(vec(OA), 1) = sub(vec(OA), 2) = sub(vec(OA), 3)]]이면 [[D]]의 넓이는 [[frac(pi,2)]]이다.\nㄴ. [[sub(vec(OA), 2) = -sub(vec(OA), 1)]]일 때, [[D]]가 길이가 2인 선분이기 위해서는 [[sub(vec(OA), 3) = sub(vec(OA), 1)]] 또는 [[sub(vec(OA), 3) = sub(vec(OA), 2)]]이어야 한다.\nㄷ. [[dot(sub(vec(OA), 1), sub(vec(OA), 2)) = 0]], [[sub(vec(OA), 3) = -sub(vec(OA), 1)]]이면 [[D]]는 길이가 [[frac(3,2)]]인 선분이다.",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "c95eea8f-a515-4ad4-bd11-8780c23e6007",
+  "zip": "esc_sonnet_h3-3_6of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_6of6/images/sonnet_h3-3_260828_벡터의 내적_p76.jpg",
+  "reason": "첨자 점 라벨 벡터 OA₁, OA₂, OA₃을 sub(vec(OA),k)로 우회 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 27 — ㄱ ✓, ㄴ OA₃≠±OA₁이면 반직선 쪽만 남아 길이 1 ⇒ ✓, ㄷ 길이 1인 선분 ✗ ⇒ ③ (빠른정답 27과 불일치).",
+  "seq": 76,
+  "qtype": "choice",
+  "question": "좌표평면에서 원점 O가 중심이고 반지름의 길이가 1인 원 위의 세 점 [[sub(A,1)]], [[sub(A,2)]], [[sub(A,3)]]에 대하여 [[abs(vec(OX)) <= 1]]이고 [[dot(vec(OX), sub(vec(OA), k)) >= 0]] ([[k]] = 1, 2, 3)을 만족시키는 모든 점 X의 집합이 나타내는 도형을 [[D]]라 하자. 다음 보기 중 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. [[sub(vec(OA), 1) = sub(vec(OA), 2) = sub(vec(OA), 3)]]이면 [[D]]의 넓이는 [[frac(pi,2)]]이다.\nㄴ. [[sub(vec(OA), 2) = -sub(vec(OA), 1)]]일 때, [[D]]가 길이가 2인 선분이기 위해서는 [[sub(vec(OA), 3) = sub(vec(OA), 1)]] 또는 [[sub(vec(OA), 3) = sub(vec(OA), 2)]]이어야 한다.\nㄷ. [[dot(sub(vec(OA), 1), sub(vec(OA), 2)) = 0]], [[sub(vec(OA), 3) = -sub(vec(OA), 1)]]이면 [[D]]는 길이가 [[frac(3,2)]]인 선분이다.",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "0a59e7d6-7619-4587-a47c-5852db6d677d",
+  "zip": "esc_sonnet_h3-3_6of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_6of6/images/sonnet_h3-3_260828_벡터의 내적_p76.jpg",
+  "reason": "첨자 점 라벨 벡터 OA₁, OA₂, OA₃을 sub(vec(OA),k)로 우회 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 27 — ㄱ ✓, ㄴ OA₃≠±OA₁이면 반직선 쪽만 남아 길이 1 ⇒ ✓, ㄷ 길이 1인 선분 ✗ ⇒ ③ (빠른정답 27과 불일치).",
+  "seq": 76,
+  "qtype": "choice",
+  "question": "좌표평면에서 원점 O가 중심이고 반지름의 길이가 1인 원 위의 세 점 [[sub(A,1)]], [[sub(A,2)]], [[sub(A,3)]]에 대하여 [[abs(vec(OX)) <= 1]]이고 [[dot(vec(OX), sub(vec(OA), k)) >= 0]] ([[k]] = 1, 2, 3)을 만족시키는 모든 점 X의 집합이 나타내는 도형을 [[D]]라 하자. 다음 보기 중 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. [[sub(vec(OA), 1) = sub(vec(OA), 2) = sub(vec(OA), 3)]]이면 [[D]]의 넓이는 [[frac(pi,2)]]이다.\nㄴ. [[sub(vec(OA), 2) = -sub(vec(OA), 1)]]일 때, [[D]]가 길이가 2인 선분이기 위해서는 [[sub(vec(OA), 3) = sub(vec(OA), 1)]] 또는 [[sub(vec(OA), 3) = sub(vec(OA), 2)]]이어야 한다.\nㄷ. [[dot(sub(vec(OA), 1), sub(vec(OA), 2)) = 0]], [[sub(vec(OA), 3) = -sub(vec(OA), 1)]]이면 [[D]]는 길이가 [[frac(3,2)]]인 선분이다.",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "328d10cd-7e13-4463-a04b-4371b81a8124",
+  "zip": "esc_sonnet_h3-3_6of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_6of6/images/sonnet_h3-3_260828_벡터의 내적_p78.jpg",
+  "reason": "첨자 점 라벨 벡터 OA₁, OA₂, OA₃을 sub(vec(OA),k)로 우회 표기, 선분 A₁A₂의 윗줄 생략 / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 3 — 출처 [2017년 9월 고3 이과 19번 변형]. ㄱ 반원 넓이 π/2 ✗, ㄴ ✓, ㄷ A₃은 사분호(길이 π/2) 위 ✓ ⇒ ④ (빠른정답 3과 불일치).",
+  "seq": 78,
+  "qtype": "choice",
+  "question": "좌표평면에서 원점 O가 중심이고 반지름의 길이가 1인 원 위의 세 점 [[sub(A,1)]], [[sub(A,2)]], [[sub(A,3)]]에 대하여 [[abs(vec(OX)) <= 1]]이고, [[dot(vec(OX), sub(vec(OA), k)) >= 0]] ([[k]] = 1, 2, 3)을 만족시키는 모든 점 X의 집합이 나타내는 도형을 [[D]]라 하자. 다음 보기 중에서 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. [[sub(vec(OA), 1) = sub(vec(OA), 2) = sub(vec(OA), 3)]]이면 [[D]]의 넓이는 [[frac(pi,4)]]이다.\nㄴ. [[sub(A,1)]][[sub(A,2)]]가 원의 지름일 때, [[sub(vec(OA), 3) = sub(vec(OA), 1)]]이면 [[D]]는 길이가 2인 선분이다.\nㄷ. [[dot(sub(vec(OA), 1), sub(vec(OA), 2)) = 0]]인 경우에 ([[D]]의 넓이) = [[frac(pi,4)]]를 만족하는 점 [[sub(A,3)]]의 자취의 길이는 [[frac(pi,2)]]이다.",
+  "choices": [
+   "ㄱ",
+   "ㄷ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "e1c7b39f-d6eb-4b95-a046-f1af8346e351",
+  "zip": "esc_sonnet_h3-3_6of6",
+  "image": "/root/esc/work/esc_sonnet_h3-3_6of6/images/sonnet_h3-3_260828_벡터의 내적_p99.jpg",
+  "reason": "첨자 점 라벨 벡터 O₁P, O₂Q 텍스트 혼합 / 도형 표현 불가: 두 원과 교점·화살표 / 이미지 하단에 별개 문항(정삼각형 ABC, p+q) 추가 인쇄(id 없음) / (참고) 빠른정답 불일치: 전사·풀이 답 ② vs 빠른정답 7 — O₁P=2(cosθ,sinθ) θ∈[-60°,60°], O₂Q=2(cosφ,sinφ) φ∈[120°,240°] ⇒ 내적 4cos(θ-φ)∈[-4,2] ⇒ M+m=-2 ⇒ ② (빠른정답 7과 불일치).",
+  "seq": 99,
+  "qtype": "choice",
+  "question": "평면 위의 두 점 [[sub(O,1)]], [[sub(O,2)]] 사이의 거리가 2일 때 [[sub(O,1)]], [[sub(O,2)]]를 각각 중심으로 하고 반지름의 길이가 2인 두 원의 교점을 A, B라 하자. 호 A[[sub(O,2)]]B 위의 점 P와 호 A[[sub(O,1)]]B 위의 점 Q에 대하여 두 벡터 [[sub(O,1)]]P⃗, [[sub(O,2)]]Q⃗의 내적 [[sub(O,1)]]P⃗ · [[sub(O,2)]]Q⃗의 최댓값을 [[M]], 최솟값을 [[m]]이라 할 때, [[M + m]]의 값은?",
+  "choices": [
+   "[[-4]]",
+   "[[-2]]",
+   "[[0]]",
+   "[[2]]",
+   "[[4]]"
+  ],
+  "answer": "②",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "중심 O₁(좌), O₂(우)인 반지름 2의 두 원이 위아래 교점 A(위), B(아래)에서 만남; O₁에서 원 O₁의 오른쪽 호 위의 점 P로, O₂에서 원 O₂의 왼쪽 호 위의 점 Q로 향하는 화살표"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-3",
+  "confidence": 0.75
+ },
+ {
+  "id": "ff3cd74a-1851-4992-aacd-5ca8a617f153",
+  "zip": "esc_sonnet_m1-1_1of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_1of3/images/sonnet_m1-1_260827_유리수의 덧셈과 뺄셈_p14.jpg",
+  "reason": "답 표기 문법 범위 밖: 정답은 원문자 ㉠(1행→2행, (+3)+(−8)의 순서 교환)인데 ㉠은 답 허용 문자가 아님 — ㉠~㉤은 연속한 두 행 사이의 변형 단계를 가리키는 화살표 표시. 교환법칙은 ㉠. 빠른정답 3과 대응 불명. 양의 부호 (+3)은 텍스트 혼합.",
+  "seq": 14,
+  "qtype": "short",
+  "question": "다음 계산 과정 중 덧셈에 대한 교환법칙이 사용된 곳을 구하시오.\n[[(-1)]] + {(+3) + [[(-8)]]}\n= [[(-1)]] + {[[(-8)]] + (+3)}  ← ㉠\n= {[[(-1)]] + [[(-8)]]} + (+3)  ← ㉡\n= [[-(1 + 8)]] + (+3)  ← ㉢\n= [[(-9)]] + (+3)  ← ㉣\n= [[-6]]  ← ㉤",
+  "choices": null,
+  "answer": null,
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "m1-1",
+  "confidence": 0.75
+ },
+ {
+  "id": "ff10cc81-a554-4b17-9d53-99168647db6c",
+  "zip": "esc_sonnet_m1-1_1of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_1of3/images/sonnet_m1-1_260827_절댓값_p75.jpg",
+  "reason": "문법 한계: 조각적(경우 나눔) 정의 → 중괄호·경우 조건을 텍스트 혼합으로 적음 — a⊗b=min(|a|,|b|): (−11/2)⊗(−9/5)=9/5, (−7/18)⊗(9/5)=7/18 = 빠른정답 ✓.",
+  "seq": 75,
+  "qtype": "short",
+  "question": "절댓값이 서로 다른 두 수 [[a]], [[b]]에 대하여\n[[a]]⊗[[b]] = { [[abs(a)]] ([[abs(a) < abs(b)]]) ; [[abs(b)]] ([[abs(a) > abs(b)]]) }라 할 때,\n[[(-frac(7,18))]]⊗{[[(-frac(11,2))]]⊗[[(-frac(9,5))]]}의 값을 구하시오.",
+  "choices": null,
+  "answer": "frac(7,18)",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "53614914-c0d4-499c-a8dc-c52d06a688db",
+  "zip": "esc_sonnet_m1-1_1of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_1of3/images/sonnet_m1-1_260827_절댓값_p76.jpg",
+  "reason": "문법 한계: 조각적(경우 나눔) 정의 → 중괄호·경우 조건을 텍스트 혼합으로 적음 — a◇b=max(|a|,|b|): (−8/5)◇(−11/4)=11/4, 11/4◇(−16/3)=16/3 = 빠른정답 ✓.",
+  "seq": 76,
+  "qtype": "short",
+  "question": "절댓값이 서로 다른 두 수 [[a]], [[b]]에 대하여\n[[a]]◇[[b]] = { [[abs(a)]] ([[abs(a) > abs(b)]]) ; [[abs(b)]] ([[abs(a) < abs(b)]]) }라 할 때,\n{[[(-frac(8,5))]]◇[[(-frac(11,4))]]}◇[[(-frac(16,3))]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "frac(16,3)",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "d25f4656-fb2b-4502-a3c3-77d0836e3d87",
+  "zip": "esc_sonnet_m1-1_1of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_1of3/images/sonnet_m1-1_260827_정수와 유리수_p40.jpg",
+  "reason": "문법 한계: 조각적(경우 나눔) 정의와 약속 기호 ⟨x⟩를 텍스트 혼합으로 적음 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 2 — 1+0+1+⟨x⟩=3 → ⟨x⟩=1 → x는 정수가 아닌 유리수. 6/2=3은 정수 → ③. 빠른정답 2와 불일치.",
+  "seq": 40,
+  "qtype": "choice",
+  "question": "수 [[x]]에 대하여\n⟨[[x]]⟩ = { 0 ([[x]]는 정수) ; 1 ([[x]]는 정수가 아닌 유리수) }로 약속할 때,\n다음 중 ⟨[[-frac(3,5)]]⟩ + ⟨[[0]]⟩ + ⟨[[2.6]]⟩ + ⟨[[x]]⟩ = 3을\n만족시키는 [[x]]가 될 수 없는 것은?",
+  "choices": [
+   "[[-frac(5,4)]]",
+   "[[-0.1]]",
+   "[[frac(6,2)]]",
+   "[[frac(2,7)]]",
+   "[[2.9]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "3babd113-8f62-47ab-8632-066d21656f78",
+  "zip": "esc_sonnet_m1-1_1of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_1of3/images/sonnet_m1-1_260827_정수와 유리수_p66.jpg",
+  "reason": "문법 한계: 조각적(경우 나눔) 정의와 약속 기호 ⟨x⟩를 텍스트 혼합으로 적음 — 1+0+1+0=2 = 빠른정답 ✓.",
+  "seq": 66,
+  "qtype": "short",
+  "question": "유리수 [[x]]에 대하여\n⟨[[x]]⟩ = { 0 ([[x]]는 정수) ; 1 ([[x]]는 정수가 아닌 유리수) }\n라 할 때, ⟨[[-frac(2,3)]]⟩ + ⟨[[-2]]⟩ + ⟨[[3.4]]⟩ + ⟨[[0]]⟩의 값을 구하시오.",
+  "choices": null,
+  "answer": "2",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "959c1000-f919-4af5-a9f3-d1cd574c3f12",
+  "zip": "esc_sonnet_m1-1_1of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_1of3/images/sonnet_m1-1_260827_유리수의 곱셈과 나눗셈_p12.jpg",
+  "reason": "스키마 한계: 선지 위치 표시가 ①~④ 4개뿐이라 choice(5개) 불가 → short로 전사 — ①~④는 연속한 두 행 사이의 변형 단계 화살표. 2→3행 중괄호 묶기가 결합법칙 → ② (빠른정답 없음). 양의 부호 (+a)는 텍스트 혼합.",
+  "seq": 12,
+  "qtype": "short",
+  "question": "다음 계산 과정에서 곱셈의 결합법칙이 이용된 곳은?\n(+4) × [[(-3)]] × (+0.5)\n= (+4) × (+0.5) × [[(-3)]]  ← ①\n= {(+4) × (+0.5)} × [[(-3)]]  ← ②\n= (+2) × [[(-3)]]  ← ③\n= [[-6]]  ← ④",
+  "choices": null,
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "m1-1",
+  "confidence": 0.75
+ },
+ {
+  "id": "fe5c4e92-30c4-4c80-aa4d-d180e0006b3b",
+  "zip": "esc_sonnet_m1-1_2of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_2of3/images/sonnet_m1-1_260827_양의 부호와 음의 부호_p14.jpg",
+  "reason": "문법 범위 밖: 답 '+3000'의 양의 부호 +는 답 문법으로 표기 불가(3000으로 기재) / (참고) 빠른정답 불일치: 전사·풀이 답 3000 vs 빠른정답 3 — 입금 → +3000원. 빠른정답 3과 불일치.",
+  "seq": 14,
+  "qtype": "short",
+  "question": "다음 수를 양의 부호 + 또는 음의 부호 −를 사용하여 나타냈을 때, □ 안에 알맞은 수를 써넣으시오.\n[[3000]]원 입금 ⇨ □원",
+  "choices": null,
+  "answer": "3000",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "a21f762f-a4c8-4c0c-848c-5817cec3cac9",
+  "zip": "esc_sonnet_m1-1_2of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_2of3/images/sonnet_m1-1_260827_양의 부호와 음의 부호_p46.jpg",
+  "reason": "문법 범위 밖: 답 '+23'의 양의 부호 +는 답 문법으로 표기 불가(23으로 기재) / (참고) 빠른정답 불일치: 전사·풀이 답 23 vs 빠른정답 add 23 — 0보다 23만큼 큰 수 → +23. 빠른정답 'add 23'(+23)과 같은 취지.",
+  "seq": 46,
+  "qtype": "short",
+  "question": "0보다 23만큼 큰 수를 부호 +또는 −를 사용하여 나타내시오.",
+  "choices": null,
+  "answer": "23",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "87be4fdc-44f7-4cff-a817-7d12a543b155",
+  "zip": "esc_sonnet_m1-1_2of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_2of3/images/sonnet_m1-1_260827_정비례_p32.jpg",
+  "reason": "도형 표현 불가: 선지 5개가 모두 좌표평면 그래프(점·직선) / 선지 문구는 그림을 읽어 서술한 텍스트(원문 선지 아님) / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 1 — x가 5개 값이므로 점 5개, y=−2x → (−2,4),…,(2,−4) → ③. 빠른정답 1과 불일치.",
+  "seq": 32,
+  "qtype": "choice",
+  "question": "[[x]]의 범위가 [[-2]], [[-1]], [[0]], [[1]], [[2]]일 때, [[y = -2x]]의 그래프는?",
+  "choices": [
+   "(그림) 좌표평면 위의 점 5개: [[point(-2, -4)]], [[point(-1, -2)]], [[point(0, 0)]], [[point(1, 2)]], [[point(2, 4)]]",
+   "(그림) 원점과 점 [[point(1, 2)]]를 지나는 직선",
+   "(그림) 좌표평면 위의 점 5개: [[point(-2, 4)]], [[point(-1, 2)]], [[point(0, 0)]], [[point(1, -2)]], [[point(2, -4)]]",
+   "(그림) 원점과 점 [[point(2, -1)]]을 지나는 직선",
+   "(그림) 원점과 점 [[point(1, -2)]]를 지나는 직선"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "선지 ①~⑤가 각각 모눈 좌표평면 그림(눈금 −2, 2 표시). ① 점 (−2,−4),(−1,−2),(0,0),(1,2),(2,4) ② 원점을 지나는 직선 y=2x ③ 점 (−2,4),(−1,2),(0,0),(1,−2),(2,−4) ④ 원점을 지나는 직선 y=−x/2 ⑤ 원점을 지나는 직선 y=−2x"
+    }
+   }
+  ],
+  "difficulty_est": 1,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "e551107c-b4ae-4568-b09e-5e5f0a5269fc",
+  "zip": "esc_sonnet_m1-1_2of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_2of3/images/sonnet_m1-1_260827_등식의 성질_p53.jpg",
+  "reason": "답 표기 문법 범위 밖: 답은 원문자 ㉡(양변에 2를 곱한 곳)이나 답 문법에 원문자 없음 — ㉡에서 양변에 2를 곱함 → ㉡ (빠른정답 없음). 화살표 ㉠~㉤는 텍스트.",
+  "seq": 53,
+  "qtype": "short",
+  "question": "다음 등식의 성질을 이용하여 일차방정식 [[0.5x - 5 = frac(5,2) + 3x]]의 해를 구하는 과정이다. 이때 등식의 성질 '[[a = b]]이면 [[a c = b c]]이다.'를 이용한 곳을 고르시오. (단, [[c]]는 자연수)\n[[0.5x - 5 = frac(5,2) + 3x]]\n↓ ㉠\n[[frac(1,2) x - 5 = frac(5,2) + 3x]]\n↓ ㉡\n[[x - 10 = 5 + 6x]]\n↓ ㉢\n[[x - 6x - 10 = 5]]\n↓ ㉣\n[[-5x = 5 + 10]]\n↓ ㉤\n[[-5x = 15]]",
+  "choices": null,
+  "answer": null,
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "1ce3008b-1e03-4b15-bd27-a70260fc63eb",
+  "zip": "esc_sonnet_m1-1_2of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_2of3/images/sonnet_m1-1_260827_등식의 성질_p54.jpg",
+  "reason": "답 표기 문법 범위 밖: 답은 원문자 ㉢(양변을 3으로 나눈 곳)이나 답 문법에 원문자 없음 — ㉢에서 양변을 3으로 나눔 → ㉢ (빠른정답 없음). 화살표 ㉠~㉢는 텍스트.",
+  "seq": 54,
+  "qtype": "short",
+  "question": "다음 방정식의 풀이 과정에서 등식의 성질 '[[a = b]]이면 [[frac(a, c) = frac(b, c)]]이다.'를 이용한 곳을 고르시오. (단, [[c]]는 자연수)\n[[frac(3,7) x + 2 = 5]]\n↓㉠\n[[3x + 14 = 35]]\n↓㉡\n[[3x = 21]]\n↓㉢\n∴ [[x = 7]]",
+  "choices": null,
+  "answer": null,
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "fcc0b4a7-782a-4ad4-ab7e-285c2c3ec074",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_덧셈, 뺄셈, 곱셈, 나눗셈의 혼합 계산_p75.jpg",
+  "reason": "도형 표현 불가: 연산 상자 그림(가로·세로 계산식) / 원문자 기호 ㉠~㉣는 텍스트 — ㉠=−12/5, ㉡=11/5, ㉢=−3, ㉣=−10/27 → 9−(−132/25+162/25)=9−6/5=39/5 = 빠른정답 ✓.",
+  "seq": 75,
+  "qtype": "short",
+  "question": "아래 그림은 가로로 덧셈식과 곱셈식, 세로로 뺄셈식과 나눗셈식을 나타낸 것이다. 다음 식을 계산하시오.\n(㉢)² − (㉠ × ㉡ + ㉠ ÷ ㉣)",
+  "choices": null,
+  "answer": "frac(39,5)",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "상자 계산 그림(화살표로 방향 표시): 가로 윗줄 2/5 + ㉠ = −2, 가로 아랫줄 −1.8 × ㉣ = 2/3, 세로 왼쪽 2/5 − ㉡ = −1.8, 세로 오른쪽 −2 ÷ ㉢ = 2/3. 그 아래 상자에 (㉢)² − (㉠ × ㉡ + ㉠ ÷ ㉣)"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "477729e7-79c7-45c1-9854-543d317a5ff9",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_수직선_p31.jpg",
+  "reason": "도형 표현 불가: 등분 눈금이 있는 수직선 도형 / 선지의 부호 +는 텍스트 / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 2 — A=−2+2/5=−8/5, B=+2+3/4=+11/4 → ④. 빠른정답 2와 불일치.",
+  "seq": 31,
+  "qtype": "choice",
+  "question": "다음 수직선 위에 점 A, B에 대응하는 수를 부호 +, −를 사용하여 바르게 나타낸 것은?",
+  "choices": [
+   "A: [[-frac(3,5)]], B: +[[frac(7,4)]]",
+   "A: [[-frac(3,5)]], B: +[[frac(11,4)]]",
+   "A: [[-frac(8,5)]], B: +[[frac(7,4)]]",
+   "A: [[-frac(8,5)]], B: +[[frac(11,4)]]",
+   "A: [[-1.3]], B: +[[2.3]]"
+  ],
+  "answer": "④",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "수직선(양쪽 화살표), 눈금 −2, −1, 0, +1, +2, +3. −2와 −1 사이를 5등분(등간격 표시)하여 −2에서 두 칸 오른쪽에 점 A. +2와 +3 사이를 4등분(등간격 표시)하여 +2에서 세 칸 오른쪽에 점 B"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "c0d134e4-d7a3-4059-aa12-f88ca1160a0e",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p30.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 연산 ★ → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 4 vs 빠른정답 14 — A=−2x+c: (2+c)+(−4+c)−(4+c)−(−10+c)=4. 빠른정답 14와 불일치.",
+  "seq": 30,
+  "qtype": "short",
+  "question": "[[x]]에 대한 일차식 [[A]]에서 [[x]]의 계수는 [[-2]]이다.\n[[A]] ★ [[a]] = ([[x = a]]일 때, [[A]]의 식의 값)이라 할 때,\n[[A]] ★ [[(-1)]] + [[A]] ★ [[2]] − [[A]] ★ [[(-2)]] − [[A]] ★ [[5]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "4",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "c7632096-63a5-4bed-bc0b-f12e01a3d820",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p32.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 연산 ★ → 텍스트 혼합 전사 — A=−5x+c: (5+c)+(−15+c)−(25+c)−(−35+c)=0 (빠른정답 없음).",
+  "seq": 32,
+  "qtype": "short",
+  "question": "[[x]]에 대한 일차식 [[A]]에서 [[x]]의 계수는 [[-5]]이다.\n[[A]] ★ [[a]] = ([[x = a]]일 때, [[A]]의 식의 값)이라 할 때,\n[[A]] ★ [[(-1)]] + [[A]] ★ [[3]] − [[A]] ★ [[(-5)]] − [[A]] ★ [[7]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "0",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "c3f5bc90-d2a0-45d5-8788-b82d833f7f94",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p59.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 연산 ★, ◎ → 텍스트 혼합 전사(중괄호는 텍스트) — (3x)★y=−3x+2y, x◎(−y)=−2x−3y → 2(−3x+2y)−(−2x−3y)=−4x+7y → ② (빠른정답 없음).",
+  "seq": 59,
+  "qtype": "choice",
+  "question": "두 단항식 [[A]], [[B]]에 대하여 [[A]]★[[B]] = [[-A + 2B]],\n[[A]]◎[[B]] = [[-2A + 3B]]라 할 때,\n2{([[3x]])★[[y]]} − {[[x]]◎([[-y]])}를 계산한 것은?",
+  "choices": [
+   "[[-4x + 5y]]",
+   "[[-4x + 7y]]",
+   "[[-4x + 9y]]",
+   "[[-2x + 5y]]",
+   "[[-2x + 7y]]"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "b4aaf009-9ac3-4b97-abd6-423b207ac5b8",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p60.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 연산 ◉, ▼ → 텍스트 혼합 전사 — 2x◉y=8x−3y, x▼3y=3y−2x → 18x−9y → 18×(−9)=−162 (빠른정답 없음).",
+  "seq": 60,
+  "qtype": "short",
+  "question": "두 단항식 [[A]], [[B]]에 대하여 ([[A]]◉[[B]]) = [[4A - 3B]],\n([[A]]▼[[B]]) = [[B - 2A]]라 할 때, 2([[2x]]◉[[y]]) − ([[x]]▼[[3y]])를 계산한 식에서 [[x]]의 계수와 [[y]]의 계수의 곱을 구하시오.",
+  "choices": null,
+  "answer": "-162",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "b3b71280-e9e0-4161-8f9c-52d87403ea9f",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p61.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 연산 ★, ◎ → 텍스트 혼합 전사(중괄호는 텍스트) — (x+2y)★(3y−x)=7x/2+9y/2 → ×2=7x+9y; (x−y)◎(2x+3y)=3x+7y → 10x+16y → 160 (빠른정답 없음).",
+  "seq": 61,
+  "qtype": "short",
+  "question": "두 단항식 [[A]], [[B]]에 대하여 ([[A]]★[[B]]) = [[3A - frac(1,2) B]],\n([[A]]◎[[B]]) = [[2B - A]]라 할 때,\n2{([[x + 2y]])★([[3y - x]])} + {([[x - y]])◎([[2x + 3y]])}를 계산한 식에서 [[x]]의 계수와 [[y]]의 계수의 곱을 구하시오.",
+  "choices": null,
+  "answer": "160",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "ec503ead-7488-4b61-9f01-5f897f0cd893",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p62.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 연산 ◎, ◆ → 텍스트 혼합 전사 — x◎3y=3x−6y, 2x◆y=y−2x → 8x−13y → −104 → ② (빠른정답 없음).",
+  "seq": 62,
+  "qtype": "choice",
+  "question": "두 단항식 [[A]], [[B]]에 대하여 ([[A]]◎[[B]]) = [[3A - 2B]],\n([[A]]◆[[B]]) = [[B - A]]라 할 때, 2([[x]]◎[[3y]]) − ([[2x]]◆[[y]])를 계산한 식에서 [[x]]의 계수와 [[y]]의 계수의 곱은?",
+  "choices": [
+   "[[-120]]",
+   "[[-104]]",
+   "[[-91]]",
+   "[[91]]",
+   "[[104]]"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "41ffd03a-8546-415a-9831-19f955b40cf6",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_소인수분해를 이용하여 약수 구하기_p37.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 ⟨a⟩, {a} → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 40 vs 빠른정답 3 — 72=2³·3² → x=12, 12의 약수 합 28 → 40. 빠른정답 3과 불일치.",
+  "seq": 37,
+  "qtype": "short",
+  "question": "자연수 [[a]]의 약수의 개수를 ⟨[[a]]⟩, 자연수 [[a]]의 모든 약수의 합을 {[[a]]}라 하자. ⟨[[72]]⟩ = [[x]], {[[x]]} = [[y]]일 때, [[x + y]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "40",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "11965fe5-cdc8-4805-9a84-f59f928600fd",
+  "zip": "esc_opus_m1-2_1of1",
+  "image": "/root/esc/work/esc_opus_m1-2_1of1/images/opus_m1-2_260827_부채꼴의 호의 길이와 넓이_p66.jpg",
+  "reason": "도형 표현 불가: 원 안의 두 원+색칠 영역 복합 도형 / 프라임 라벨 O′, O″는 텍스트 / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 3 — 반지름 8·4. 한쪽 색칠 = (부채꼴 8π − (4π+8)) + 활꼴 (4π−8) = 8π−16, 양쪽 16π−32=16(π−2) → ⑤. 빠른정답 3과 불일치(색칠 영역 해석에 따라 달라질 수 있음).",
+  "seq": 66,
+  "qtype": "choice",
+  "question": "다음 그림과 같이 원 O의 지름 BC 위에 두 원 O′, O″의 중심이 있다. [[seg(BC) = 16]] cm이고 [[angle(AOB) = angle(COD) = deg(45)]]일 때, 색칠한 부분의 넓이는?",
+  "choices": [
+   "[[8(pi - 3)]] cm²",
+   "[[10(pi - 4)]] cm²",
+   "[[12(pi - 2)]] cm²",
+   "[[14(pi - 4)]] cm²",
+   "[[16(pi - 2)]] cm²"
+  ],
+  "answer": "⑤",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "중심 O, 지름 BC(수평, B 왼쪽·C 오른쪽)인 큰 원. BO·OC를 지름으로 하는 두 작은 원(중심 O′, O″). 큰 원 위의 점 A(좌상)·D(우상), ∠AOB=∠COD=45°. 색칠: 부채꼴 AOB·COD에서 작은 원 바깥 부분과, 반직선 OA·OD와 작은 원 호 사이의 활꼴(O 근처 잎 모양)"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "m1-2",
+  "confidence": 0.75
+ }
+]

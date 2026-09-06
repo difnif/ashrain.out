@@ -1,26 +1,29 @@
-# improvements — 재전사 파이프라인 개선안 묶음 (2026-09-04)
+# tools\ — 재전사 파이프라인 (세션 인계용)
 
-```
-improvements\
-  mathir_v15.py            ← mathir.py v1.5 제안 완성본 (v1.4 자가시험 + v1.5 시험 통과, 기존 산출물 2,148문항 하위 호환 확인)
-  mathir_v15.diff          ← v1.4 → v1.5 diff (152줄)
-  MATHIR_V15_CHANGES.md    ← 변경 명세 + mathir.js 동형 패치 체크리스트 + 적용 뒤 재작업 범위
-  tools\                   ← 전사 파이프라인 (build_out.py 4파일 산출 규칙 반영, GUIDE.md §8 = v1.5 표기)
-  items\                   ← 완료 43개 zip의 전사 원본(ITEMS) — 규칙을 바꿔 산출물을 다시 만들 때 build_out.py 입력
-  PROGRESS.md / ZIPS_STATUS.md ← 진행 장부·완료/남음 목록 (2026-09-04 00:30 기준)
-```
+이 폴더는 클라우드 세션 작업공간(`/root/esc`)에서 쓰던 도구를 그대로 옮긴 것입니다. 다른 컴퓨터/새 세션에서 이어갈 때
+`tools\`의 파일들을 세션 작업공간 `/root/esc/`에 두고(`mathir.py`도 같은 곳에), zip을 `/mnt/user-data/uploads/esc files/`에 스테이징하면 같은 절차로 진행됩니다.
 
-## cmd로 커밋하기 (이 폴더를 저장소 안에 두었을 때)
-```
-cd /d "C:\Users\User\Documents\esc files"
-git add improvements
-git commit -m "re-transcription: mathir v1.5 proposal, pipeline tools, transcription sources (43 zips)"
-git push
-```
+- `GUIDE.md` — 전사 규칙·mathir 문법 요약·정책(subagent용 SOP). `AGENT_PROMPT.md` — 작업자에게 주는 지시 템플릿.
+- `extract.py {zip}` — zip 해제(UTF-8 파일명 보정) + manifest 요약.  `build_out.py {zip} {items모듈}` — 4관문 검산 → out/{zip}.final.json / .review.json.
+- `reverify.py {zip}` — 산출물 재검증.  `finish.py {zip} {items모듈}` — 재검증 후 PROGRESS.md에 행 추가.
+- `items\items_*.py` — zip별 전사 원본(ITEMS 리스트). 규칙을 바꿔(예: 빠른정답 불일치도 final) 산출물을 다시 만들 때 `build_out.py`만 재실행하면 됩니다.
 
-## mathir v1.5 적용 (검토 후)
-```
-copy /Y improvements\mathir_v15.py itemfactory\mathir.py      ← 실제 mathir.py 경로에 맞게
-python itemfactory\mathir.py                                 ← "mathir.py 자가 시험 전부 통과" 출력 확인
-```
-그 다음 MATHIR_V15_CHANGES.md §5 순서대로 mathir.js를 동형 패치하고, 관리자 화면에서 v1.5 표기 문항 하나를 반영해 렌더를 확인합니다.
+판정 규칙(build_out.py): 4관문 불통과 → review / quick_answer(=manifest)와 derived_answer 불일치 → review / needs_review 플래그(문법 한계·도형 표현 불가) → review. 그 외 final.
+
+## 규칙 변경(2026-09-03 22:05) — 빠른정답 불일치는 보류 사유에서 제외
+`build_out.py`가 세 파일을 만듭니다: `{zip}.final.json`(통과) / `{zip}.final_qamismatch.json`(통과이나 quick_answer와 불일치 — 형식은 final과 같아 그대로 반영 가능, pattern_tags "빠른정답불일치") / `{zip}.review.json`(보류: 도형·문법·검산).
+
+## 로컬(RAM만) 파이프라인 — `local_pipeline.py`
+Claude API + mathir.py 검산으로 같은 절차를 노트북에서 돌립니다(GPU 불필요, 메모리 수십 MB). `pip install anthropic pillow`, `ANTHROPIC_API_KEY` 설정 후
+`python local_pipeline.py --zip-dir "C:\Users\User\Documents\esc files" --pattern "esc_sonnet_m3-1_*.zip" --resume`
+
+## 규칙 완화(2026-09-04 00:30) — 도형 표현 불가만이 사유인 보류는 통과
+`build_out.py`가 네 파일을 만듭니다: `final.json` / `final_qamismatch.json`(빠른정답 불일치 통과분) / `final_figrelax.json`(도형 완화로 소급 통과분, pattern_tags "도형완화") / `review.json`(문법 한계 등).
+
+## mathir v1.5 제안 패치
+`mathir_v15.py`(완성본) · `mathir_v15.diff` · `MATHIR_V15_CHANGES.md`(명세 + mathir.js 동형 패치 체크리스트). 적용 전까지 전사는 v1.4 규칙(GUIDE §3~§7), 적용 후 GUIDE §8 표기를 사용.
+
+## mathir v1.5 r2 (2026-09-05) — 보류 잔여 회수용 확장 + 재작업 도구
+`mathir_v15.py`·`mathir_v15.diff`·`MATHIR_V15_CHANGES.md`를 r2로 교체(§7에 추가분: `op` 사용자 정의 연산, `nota` 약속 괄호, `idx`, `tr`, `dig`, 문자 `recdec`, 변수 프라임 `a'`, 원문자·양의 부호 답, 표시 수정 3건). 하위 호환: 기존 산출물 4,436건 재검산 오류 0·IR 변화 0.
+재작업 도구(`tools\`): `GUIDE_REWORK.md`(보류 재작업 SOP, r2 절 포함) · `build_rework.py {rework_batchNN}`(v1.5 검산 → `out\v15\{zip}.rework_final.json / .rework_review.json / .rework_extra.json`) · `rework\batch00~14.json`(입력) · `rework_batch00~14.py`(재작업 전사 원본) · `make_report.py`(집계·보고서·장부 갱신).
+결과: 보류 712건 → 통과 704 · 잔여 8(이미지 잘림 7, 문항 결함 의심 1) + 둘째 문항 23건(id 발급 후 반영). 자세한 내용은 `out\v15\REWORK_REPORT.md`.

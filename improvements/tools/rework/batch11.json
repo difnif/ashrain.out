@@ -1,0 +1,810 @@
+[
+ {
+  "id": "40136dab-b554-48b7-9f5c-e32ff6be678c",
+  "zip": "esc_sonnet_h1-1_1of4",
+  "image": "/root/esc/work/esc_sonnet_h1-1_1of4/images/sonnet_h1-1_260828_이차방정식의 풀이_p6.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 <x>(올림) — v1.5에도 대응 함수 없음, 텍스트 혼합 유지 — 답 ⑤ 유지(2[x]+1=7 → 3<x<4)",
+  "seq": 6,
+  "qtype": "choice",
+  "question": "[[x]]보다 작거나 같은 정수 중에서 최대의 정수를 [[floor(x)]], [[x]]보다 크거나 같은 정수 중에서 최소의 정수를 <[[x]]>로 나타낼 때, 방정식 [[floor(x)]] + <[[x]]> = 7의 해를 구하면?",
+  "choices": [
+   "[[frac(7,2)]]",
+   "[[3 <= x <= 4]]",
+   "[[3 <= x < 4]]",
+   "[[3 < x <= 4]]",
+   "[[3 < x < 4]]"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h1-1",
+  "confidence": 0.75,
+  "quick_answer": "2",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "843dce17-144d-4e48-8e31-8c7df01d9366",
+  "zip": "esc_sonnet_h1-1_2of4",
+  "image": "/root/esc/work/esc_sonnet_h1-1_2of4/images/sonnet_h1-1_260828_행렬_p99.jpg",
+  "reason": "문법 범위 밖: 전치행렬 Bᵗ 표기 없음(pow(B, t)로 우회, 뜻이 다름) / 대응 흐름도(연산 순서)가 그림에만 있음 — [2006년 9월 고2 이과 13번]. 답 ③ 유지(전치 두 번 → A=X → n=719)",
+  "seq": 99,
+  "qtype": "choice",
+  "question": "백의 자리의 수, 십의 자리의 수, 일의 자리의 수가 각각 [[a]], [[b]], [[c]]인 세 자리 자연수 [[n]]에 행렬 [[A = mat(2,2, a, b, c, b + c)]]를 대응시키는 것을 [그림 1]과 같이 나타내자.\n그리고 행렬 [[B = mat(2,2, p, q, r, s)]]에 대하여 행렬 [[pow(B, t)]]를\n[[pow(B, t) = mat(2,2, p, r, q, s)]]라 할 때 행렬 [[B]]에 행렬 [[pow(B, t)]]를 대응시키는 것을 [그림 2]와 같이 나타내자.\n아래 그림에서 행렬 [[X = mat(2,2, 7, 1, 9, 10)]]일 때\n자연수 [[n]]의 값은?",
+  "choices": [
+   "[[179]]",
+   "[[197]]",
+   "[[719]]",
+   "[[791]]",
+   "[[971]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "[그림 1] 원 n — 회색 마름모 — 사각형 A (세로 연결). [그림 2] 사각형 B — 회색 육각형 — 사각형 Bᵗ (가로 연결). 아래 그림: 원 n — 마름모 — 빈 사각형 — 육각형 — 빈 사각형 — 육각형 — 사각형 X (마름모 1회, 육각형 2회 적용)"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "h1-1",
+  "confidence": 0.75,
+  "quick_answer": "216",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "edbc609a-0daf-4c1d-915e-6a89b791db8a",
+  "zip": "esc_sonnet_h1-1_2of4",
+  "image": "/root/esc/work/esc_sonnet_h1-1_2of4/images/sonnet_h1-1_260828_행렬의 연산_p1.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ◎ — v1.5에도 대응 표기 없음, 등식을 텍스트 혼합으로 유지 — 같은 이미지에 id 2개. 답 ④ 유지(ㄱ✗ ㄴ✓ ㄷ✓)",
+  "seq": 1,
+  "qtype": "choice",
+  "question": "실수 [[x]], [[y]]에 대하여 [[x]]◎[[y]]를 행렬 [[mat(2,2, -x, y, y, -x)]]라 할 때,\n다음 보기 중 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. 임의의 실수 [[a]], [[b]]에 대하여 [[a]]◎[[b]] = [[b]]◎[[a]]\nㄴ. 임의의 실수 [[a]], [[b]], [[c]], [[d]]에 대하여\n([[a]]◎[[b]]) − ([[c]]◎[[d]]) = ([[a - c]])◎([[b - d]])\nㄷ. 임의의 실수 [[a]], [[b]], [[k]]에 대하여\n([[k a]])◎([[k b]]) = [[k]]([[a]]◎[[b]])",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h1-1",
+  "confidence": 0.75,
+  "quick_answer": "4",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "7dce5be6-6993-4910-8da8-b0a9ac0c4960",
+  "zip": "esc_sonnet_h1-1_2of4",
+  "image": "/root/esc/work/esc_sonnet_h1-1_2of4/images/sonnet_h1-1_260828_행렬의 연산_p1.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ◎ — v1.5에도 대응 표기 없음, 등식을 텍스트 혼합으로 유지 — 같은 이미지에 id 2개. 답 ④ 유지(ㄱ✗ ㄴ✓ ㄷ✓)",
+  "seq": 1,
+  "qtype": "choice",
+  "question": "실수 [[x]], [[y]]에 대하여 [[x]]◎[[y]]를 행렬 [[mat(2,2, -x, y, y, -x)]]라 할 때,\n다음 보기 중 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. 임의의 실수 [[a]], [[b]]에 대하여 [[a]]◎[[b]] = [[b]]◎[[a]]\nㄴ. 임의의 실수 [[a]], [[b]], [[c]], [[d]]에 대하여\n([[a]]◎[[b]]) − ([[c]]◎[[d]]) = ([[a - c]])◎([[b - d]])\nㄷ. 임의의 실수 [[a]], [[b]], [[k]]에 대하여\n([[k a]])◎([[k b]]) = [[k]]([[a]]◎[[b]])",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h1-1",
+  "confidence": 0.75,
+  "quick_answer": "4",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "ad241856-7fb6-482b-ba51-cb9387a68680",
+  "zip": "esc_sonnet_h1-2_3of7",
+  "image": "/root/esc/work/esc_sonnet_h1-2_3of7/images/sonnet_h1-2_260828_충분조건과 필요조건_p9.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 꺾쇠 기호 ⟨a, b⟩ 및 조건이 한글 문장인 경우 나눔(cases 불가) — 텍스트 혼합 유지 — [2007년 6월 고1 7번]. 원문의 괄호 (A∩B), (A∪B) 반영. 답 ⑤ 유지(1+2+3=6)",
+  "seq": 9,
+  "qtype": "choice",
+  "question": "두 조건 [[a]], [[b]]에 대하여 <[[a]], [[b]]>를\n<[[a]], [[b]]> = 1 ([[a]]가 [[b]]이기 위한 충분조건), 0 ([[a]]가 [[b]]이기 위한 필요충분조건), [[-1]] ([[a]]가 [[b]]이기 위한 필요조건)\n으로 정의한다. 세 집합 [[A]], [[B]], [[X]]에 대하여 조건 [[p]], [[q]], [[r]]이 다음과 같을 때,\n[[p]]: [[subset(X, (inter(A, B)))]]\n[[q]]: [[subset(X, (union(A, B)))]]\n[[r]]: [[subset(X, A)]] 또는 [[subset(X, B)]]\n<[[p]], [[q]]> − 2<[[q]], [[r]]> − 3<[[r]], [[p]]>의 값은?",
+  "choices": [
+   "[[-6]]",
+   "[[-4]]",
+   "[[0]]",
+   "[[4]]",
+   "[[6]]"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h1-2",
+  "confidence": 0.75,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "4109eceb-fde3-4e3e-833b-a9ac8b668cc9",
+  "zip": "esc_sonnet_h1-2_3of7",
+  "image": "/root/esc/work/esc_sonnet_h1-2_3of7/images/sonnet_h1-2_260828_집합의 연산과 벤 다이어그램_p16.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 집합 기호 P[x](대괄호) — v1.5에도 대응 표기 없음, 텍스트 혼합 유지 — 답 7 유지((A−B)[2]={1,2,4}, (B−A)[8]={−7,0,7})",
+  "seq": 16,
+  "qtype": "short",
+  "question": "집합 [[P]]에 대하여 P[x]를\n(1) [[in(x, P)]]이면 P[x] = [[set(-x + 1, 0, x - 1)]]\n(2) [[notin(x, P)]]이면 P[x] = [[set(1, x, pow(x,2))]]이라고 정의한다.\n두 집합 [[A]] = { [[x]] | [[x]]는 소수인 자연수 },\n[[B]] = { [[3x - 1]] | [[x]]는 자연수 }일 때, 집합\n([[A - B]])[2] ∪ ([[B - A]])[8]의 원소의 총합을 구하시오.",
+  "choices": null,
+  "answer": "7",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h1-2",
+  "confidence": 0.75,
+  "quick_answer": "2",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "3d3cfa68-3177-4f3d-b95f-323d00c3ad14",
+  "zip": "esc_sonnet_h1-2_5of7",
+  "image": "/root/esc/work/esc_sonnet_h1-2_5of7/images/sonnet_h1-2_260828_유리함수의 그래프_p4.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 △ — v1.5에도 대응 표기 없음, 정의식·계산식을 텍스트 혼합으로 유지 — 답 ③ 유지(2/(x+4) + (x+2)/(x+4) = 1)",
+  "seq": 4,
+  "qtype": "choice",
+  "question": "두 다항식 [[A]], [[B]]에 대하여 [[A]]△[[B]]를\n[[A]]△[[B]] = [[frac(A, A + B)]] 로 정의할 때,\n{[[(2x - 4)]]△[[(pow(x,2) - 4)]]} + {[[(pow(x,2) + 2x)]]△[[2x]]}를 간단히 하면?",
+  "choices": [
+   "[[frac(1,4)]]",
+   "[[frac(1,2)]]",
+   "1",
+   "[[x]]",
+   "[[frac(1, pow(x,2))]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h1-2",
+  "confidence": 0.8,
+  "quick_answer": "1",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "ff10cc81-a554-4b17-9d53-99168647db6c",
+  "zip": "esc_sonnet_m1-1_1of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_1of3/images/sonnet_m1-1_260827_절댓값_p75.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ⊗ — v1.5에도 대응 표기 없음, 정의식·계산식을 텍스트 혼합으로 유지 — 경우 나눔 정의는 cases로 고침. a⊗b=min(|a|,|b|): (−11/2)⊗(−9/5)=9/5, (−7/18)⊗(9/5)=7/18. 답 7/18 유지(빠른정답과 일치)",
+  "seq": 75,
+  "qtype": "short",
+  "question": "절댓값이 서로 다른 두 수 [[a]], [[b]]에 대하여\n[[a]]⊗[[b]] = [[cases(abs(a), abs(a) < abs(b), abs(b), abs(a) > abs(b))]]라 할 때,\n[[(-frac(7,18))]]⊗{[[(-frac(11,2))]]⊗[[(-frac(9,5))]]}의 값을 구하시오.",
+  "choices": null,
+  "answer": "frac(7,18)",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": "frac(7,18)",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "53614914-c0d4-499c-a8dc-c52d06a688db",
+  "zip": "esc_sonnet_m1-1_1of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_1of3/images/sonnet_m1-1_260827_절댓값_p76.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ◇ — v1.5에도 대응 표기 없음, 정의식·계산식을 텍스트 혼합으로 유지 — 경우 나눔 정의는 cases로 고침. a◇b=max(|a|,|b|): 11/4◇(−16/3)=16/3. 답 16/3 유지(빠른정답과 일치)",
+  "seq": 76,
+  "qtype": "short",
+  "question": "절댓값이 서로 다른 두 수 [[a]], [[b]]에 대하여\n[[a]]◇[[b]] = [[cases(abs(a), abs(a) > abs(b), abs(b), abs(a) < abs(b))]]라 할 때,\n{[[(-frac(8,5))]]◇[[(-frac(11,4))]]}◇[[(-frac(16,3))]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "frac(16,3)",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": "frac(16,3)",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "d25f4656-fb2b-4502-a3c3-77d0836e3d87",
+  "zip": "esc_sonnet_m1-1_1of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_1of3/images/sonnet_m1-1_260827_정수와 유리수_p40.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 꺾쇠 기호 ⟨x⟩ 및 조건이 한글 문장(x는 정수 / 정수가 아닌 유리수)인 경우 나눔(cases 불가) — 텍스트 혼합 유지 — 1+0+1+⟨x⟩=3 → ⟨x⟩=1 → x는 정수가 아닌 유리수; 6/2=3은 정수. 답 ③ 유지(빠른정답 2와 불일치는 1차와 동일)",
+  "seq": 40,
+  "qtype": "choice",
+  "question": "수 [[x]]에 대하여\n⟨[[x]]⟩ = { 0 ([[x]]는 정수) ; 1 ([[x]]는 정수가 아닌 유리수) }로 약속할 때,\n다음 중 ⟨[[-frac(3,5)]]⟩ + ⟨[[0]]⟩ + ⟨[[2.6]]⟩ + ⟨[[x]]⟩ = 3을\n만족시키는 [[x]]가 될 수 없는 것은?",
+  "choices": [
+   "[[-frac(5,4)]]",
+   "[[-0.1]]",
+   "[[frac(6,2)]]",
+   "[[frac(2,7)]]",
+   "[[2.9]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": "2",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "3babd113-8f62-47ab-8632-066d21656f78",
+  "zip": "esc_sonnet_m1-1_1of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_1of3/images/sonnet_m1-1_260827_정수와 유리수_p66.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 꺾쇠 기호 ⟨x⟩ 및 조건이 한글 문장(x는 정수 / 정수가 아닌 유리수)인 경우 나눔(cases 불가) — 텍스트 혼합 유지 — 1+0+1+0=2. 답 2 유지(빠른정답과 일치)",
+  "seq": 66,
+  "qtype": "short",
+  "question": "유리수 [[x]]에 대하여\n⟨[[x]]⟩ = { 0 ([[x]]는 정수) ; 1 ([[x]]는 정수가 아닌 유리수) }\n라 할 때, ⟨[[-frac(2,3)]]⟩ + ⟨[[-2]]⟩ + ⟨[[3.4]]⟩ + ⟨[[0]]⟩의 값을 구하시오.",
+  "choices": null,
+  "answer": "2",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": "2",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "c0d134e4-d7a3-4059-aa12-f88ca1160a0e",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p30.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ★(정의가 한글 문장) — v1.5에도 대응 표기 없음, 정의식·계산식을 텍스트 혼합으로 유지 — A=−2x+c: (2+c)+(−4+c)−(4+c)−(−10+c)=4. 답 4 유지(빠른정답 14와 불일치는 1차와 동일)",
+  "seq": 30,
+  "qtype": "short",
+  "question": "[[x]]에 대한 일차식 [[A]]에서 [[x]]의 계수는 [[-2]]이다.\n[[A]] ★ [[a]] = ([[x = a]]일 때, [[A]]의 식의 값)이라 할 때,\n[[A]] ★ [[(-1)]] + [[A]] ★ [[2]] − [[A]] ★ [[(-2)]] − [[A]] ★ [[5]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "4",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": "14",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "c7632096-63a5-4bed-bc0b-f12e01a3d820",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p32.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ★(정의가 한글 문장) — v1.5에도 대응 표기 없음, 정의식·계산식을 텍스트 혼합으로 유지 — A=−5x+c: (5+c)+(−15+c)−(25+c)−(−35+c)=0. 답 0 유지(빠른정답 없음)",
+  "seq": 32,
+  "qtype": "short",
+  "question": "[[x]]에 대한 일차식 [[A]]에서 [[x]]의 계수는 [[-5]]이다.\n[[A]] ★ [[a]] = ([[x = a]]일 때, [[A]]의 식의 값)이라 할 때,\n[[A]] ★ [[(-1)]] + [[A]] ★ [[3]] − [[A]] ★ [[(-5)]] − [[A]] ★ [[7]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "0",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "c3f5bc90-d2a0-45d5-8788-b82d833f7f94",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p59.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ★, ◎ — v1.5에도 대응 표기 없음, 정의식·계산식(중괄호 포함)을 텍스트 혼합으로 유지 — (3x)★y=−3x+2y, x◎(−y)=−2x−3y → 2(−3x+2y)−(−2x−3y)=−4x+7y. 답 ② 유지(빠른정답 없음)",
+  "seq": 59,
+  "qtype": "choice",
+  "question": "두 단항식 [[A]], [[B]]에 대하여 [[A]]★[[B]] = [[-A + 2B]],\n[[A]]◎[[B]] = [[-2A + 3B]]라 할 때,\n2{([[3x]])★[[y]]} − {[[x]]◎([[-y]])}를 계산한 것은?",
+  "choices": [
+   "[[-4x + 5y]]",
+   "[[-4x + 7y]]",
+   "[[-4x + 9y]]",
+   "[[-2x + 5y]]",
+   "[[-2x + 7y]]"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "b4aaf009-9ac3-4b97-abd6-423b207ac5b8",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p60.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ◉, ▼ — v1.5에도 대응 표기 없음, 정의식·계산식을 텍스트 혼합으로 유지 — 2x◉y=8x−3y, x▼3y=3y−2x → 18x−9y → 18×(−9)=−162. 답 −162 유지(빠른정답 없음)",
+  "seq": 60,
+  "qtype": "short",
+  "question": "두 단항식 [[A]], [[B]]에 대하여 ([[A]]◉[[B]]) = [[4A - 3B]],\n([[A]]▼[[B]]) = [[B - 2A]]라 할 때, 2([[2x]]◉[[y]]) − ([[x]]▼[[3y]])를 계산한 식에서 [[x]]의 계수와 [[y]]의 계수의 곱을 구하시오.",
+  "choices": null,
+  "answer": "-162",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "b3b71280-e9e0-4161-8f9c-52d87403ea9f",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p61.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ★, ◎ — v1.5에도 대응 표기 없음, 정의식·계산식(중괄호 포함)을 텍스트 혼합으로 유지 — (x+2y)★(3y−x)=7x/2+9y/2 → ×2=7x+9y; (x−y)◎(2x+3y)=3x+7y → 10x+16y → 160. 답 160 유지(빠른정답 없음)",
+  "seq": 61,
+  "qtype": "short",
+  "question": "두 단항식 [[A]], [[B]]에 대하여 ([[A]]★[[B]]) = [[3A - frac(1,2) B]],\n([[A]]◎[[B]]) = [[2B - A]]라 할 때,\n2{([[x + 2y]])★([[3y - x]])} + {([[x - y]])◎([[2x + 3y]])}를 계산한 식에서 [[x]]의 계수와 [[y]]의 계수의 곱을 구하시오.",
+  "choices": null,
+  "answer": "160",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "ec503ead-7488-4b61-9f01-5f897f0cd893",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_일차식의 덧셈과 뺄셈_p62.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ◎, ◆ — v1.5에도 대응 표기 없음, 정의식·계산식을 텍스트 혼합으로 유지 — x◎3y=3x−6y, 2x◆y=y−2x → 8x−13y → −104. 답 ② 유지(빠른정답 없음)",
+  "seq": 62,
+  "qtype": "choice",
+  "question": "두 단항식 [[A]], [[B]]에 대하여 ([[A]]◎[[B]]) = [[3A - 2B]],\n([[A]]◆[[B]]) = [[B - A]]라 할 때, 2([[x]]◎[[3y]]) − ([[2x]]◆[[y]])를 계산한 식에서 [[x]]의 계수와 [[y]]의 계수의 곱은?",
+  "choices": [
+   "[[-120]]",
+   "[[-104]]",
+   "[[-91]]",
+   "[[91]]",
+   "[[104]]"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "41ffd03a-8546-415a-9831-19f955b40cf6",
+  "zip": "esc_sonnet_m1-1_3of3",
+  "image": "/root/esc/work/esc_sonnet_m1-1_3of3/images/sonnet_m1-1_260827_소인수분해를 이용하여 약수 구하기_p37.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 ⟨a⟩(약수의 개수)·{a}(약수의 합) — v1.5에도 대응 표기 없음, 텍스트 혼합 유지 — 72=2³·3² → x=12, 12의 약수의 합 28 → 40. 답 40 유지(빠른정답 3과 불일치는 1차와 동일)",
+  "seq": 37,
+  "qtype": "short",
+  "question": "자연수 [[a]]의 약수의 개수를 ⟨[[a]]⟩, 자연수 [[a]]의 모든 약수의 합을 {[[a]]}라 하자. ⟨[[72]]⟩ = [[x]], {[[x]]} = [[y]]일 때, [[x + y]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "40",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m1-1",
+  "confidence": 0.8,
+  "quick_answer": "3",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "caef767c-be0c-41cc-8bde-1e697971d4b0",
+  "zip": "esc_sonnet_m2-1_3of4",
+  "image": "/root/esc/work/esc_sonnet_m2-1_3of4/images/sonnet_m2-1_260827_순환소수의 분수 표현_p39.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ◎ — v1.5에도 대응 표기 없음, 정의식·계산식을 텍스트 혼합으로 유지(경우 나눔은 cases로 교체) — 경우 나눔 정의를 cases(-1, a>b, 0, a=b, 1, a<b)로 교체. 답 −1 유지(0.5<0.5̇ → 1, 1.3=1.29̇ → 0, 1◎0=−1)",
+  "seq": 39,
+  "qtype": "short",
+  "question": "두 수 [[a]], [[b]]에 대하여 [[a]]◎[[b]] = [[cases(-1, a > b, 0, a = b, 1, a < b)]]로 정의할 때, ([[0.5]]◎[[recdec(0, 5)]])◎([[1.3]]◎[[recdec(1.2, 9)]])의 값을 구하시오.",
+  "choices": null,
+  "answer": "-1",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m2-1",
+  "confidence": 0.8,
+  "quick_answer": "- 1",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "6d12b521-4c6d-4eda-bd7c-74dea50ac6b5",
+  "zip": "esc_sonnet_m2-1_3of4",
+  "image": "/root/esc/work/esc_sonnet_m2-1_3of4/images/sonnet_m2-1_260827_순환소수의 분수 표현_p40.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ∘ — v1.5에도 대응 표기 없음, 정의식·계산식을 텍스트 혼합으로 유지(경우 나눔은 cases로 교체) — 경우 나눔 정의(a=b이면 1, a≠b이면 0)를 cases(1, a = b, 0, a != b)로 교체. 답 0 유지(a=0.2=b → 1; c=1/99≠1/90 → 0; 1∘0=0)",
+  "seq": 40,
+  "qtype": "short",
+  "question": "[[a]]∘[[b]]를 [[cases(1, a = b, 0, a != b)]]이라 하면 [[a = recdec(0.1, 9)]], [[b = 0.2]], [[c = recdec(0, 01)]], [[d = frac(1, 90)]]일 때, ([[a]]∘[[b]])∘([[c]]∘[[d]])의 값을 구하시오.",
+  "choices": null,
+  "answer": "0",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "m2-1",
+  "confidence": 0.8,
+  "quick_answer": "3",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "46c6384a-325a-41f9-b857-b1a3a0cc392e",
+  "zip": "esc_sonnet_m2-1_3of4",
+  "image": "/root/esc/work/esc_sonnet_m2-1_3of4/images/sonnet_m2-1_260827_단항식의 곱셈과 나눗셈_p33.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ○·□ — v1.5에도 대응 표기 없음, 정의식·계산식(분수 형태)을 텍스트 혼합으로 유지 — v1.5로 고칠 표기 없음(초안 유지). 답 4a 유지",
+  "seq": 33,
+  "qtype": "short",
+  "question": "두 문자 [[a]], [[b]]에 대하여 기호 ○, □를 [[a]]○[[b]] = [[a pow(b,2)]], [[a]]□[[b]] = [[4a b]]라 약속할 때, ([[a]]○([[b]]□[[a]]))/([[b]]□([[b]]○[[a]]))를 구하시오.",
+  "choices": null,
+  "answer": "4a",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m2-1",
+  "confidence": 0.8,
+  "quick_answer": "3",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "ae6535ac-7bca-486a-9db2-f91153333bd1",
+  "zip": "esc_sonnet_m2-1_3of4",
+  "image": "/root/esc/work/esc_sonnet_m2-1_3of4/images/sonnet_m2-1_260827_단항식의 곱셈과 나눗셈_p58.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 △·◎ — v1.5에도 대응 표기 없음, 정의식·조건식을 텍스트 혼합으로 유지 — v1.5로 고칠 표기 없음(초안 유지). 답 ⑤ 유지(A=2xy², B=5x²y → 2y³)",
+  "seq": 58,
+  "qtype": "choice",
+  "question": "두 식 [[a]], [[b]]에 대하여 △, ◎를 [[a]]△[[b]] = [[a pow(b,2)]], [[a]]◎[[b]] = [[3 pow(a,2) b]]로 약속하자. 이때 다음을 만족시키는 두 식 [[A]], [[B]]에 대하여 [[5 pow(A,2) ÷ (2B)]]를 계산하면?\n[[A]]△[[2x]] = [[8 pow(x,3) pow(y,2)]], [[y]]◎[[B]] = [[15 pow(x,2) pow(y,3)]]",
+  "choices": [
+   "[[frac(2, x pow(y,3))]]",
+   "[[frac(1, 2 pow(x,2) y)]]",
+   "[[frac(1, 2 pow(y,3))]]",
+   "[[frac(x pow(y,3), 2)]]",
+   "[[2 pow(y,3)]]"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m2-1",
+  "confidence": 0.8,
+  "quick_answer": "5",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "2ff38624-4cac-458c-9ab7-7c92a3b1873f",
+  "zip": "esc_sonnet_m3-1_1of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_1of6/images/sonnet_m3-1_260828_복잡한 이차방정식의 풀이_p88.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 ⟨a, b⟩(최대공약수)·[a, b](최소공배수) — v1.5에도 대응 표기 없음, 방정식을 텍스트 혼합으로 유지 — 답 10 유지(근 1, 5 → gcd 2, lcm 12 → (4, 6))",
+  "seq": 88,
+  "qtype": "short",
+  "question": "두 자연수 [[a]], [[b]]의 최대공약수를 ⟨[[a]], [[b]]⟩라 하고 최소공배수를 [ [[a]], [[b]] ]라 하자. [[x]]에 대한 이차방정식 ⟨[[a]], [[b]]⟩[[pow(x,2)]] − [ [[a]], [[b]] ][[x]] + 10 = 0의 두 근이 1, 5일 때, [[a + b]]의 값을 구하시오. (단, [[a]], [[b]]는 한 자리 자연수)",
+  "choices": null,
+  "answer": "10",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m3-1",
+  "confidence": 0.8,
+  "quick_answer": "38",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "9c48e8fd-9729-41ce-a73e-2d8f03d9e4cb",
+  "zip": "esc_sonnet_m3-1_1of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_1of6/images/sonnet_m3-1_260828_복잡한 이차방정식의 풀이_p89.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 ⟨a, b⟩(최대공약수)·[a, b](최소공배수) — v1.5에도 대응 표기 없음, 방정식을 텍스트 혼합으로 유지 — 답 15 유지(근 2, 4 → gcd 3, lcm 18 → (6, 9))",
+  "seq": 89,
+  "qtype": "short",
+  "question": "두 자연수 [[a]], [[b]]의 최대공약수를 ⟨[[a]], [[b]]⟩라 하고 최소공배수를 [ [[a]], [[b]] ]라 하자. [[x]]에 대한 이차방정식 ⟨[[a]], [[b]]⟩[[pow(x,2)]] − [ [[a]], [[b]] ][[x]] + 24 = 0의 두 근이 2, 4일 때, [[a + b]]의 값을 구하시오. (단, [[a]], [[b]]는 한 자리 자연수)",
+  "choices": null,
+  "answer": "15",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m3-1",
+  "confidence": 0.8,
+  "quick_answer": "2",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "d705aba8-62fe-4437-8484-1c28d0877298",
+  "zip": "esc_sonnet_m3-1_1of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_1of6/images/sonnet_m3-1_260828_복잡한 이차방정식의 풀이_p90.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 ⟨a, b⟩(최대공약수)·[a, b](최소공배수) — v1.5에도 대응 표기 없음, 방정식을 텍스트 혼합으로 유지 — 답 14 유지(근 3, 9 → gcd 2, lcm 24 → (6, 8))",
+  "seq": 90,
+  "qtype": "short",
+  "question": "두 자연수 [[a]], [[b]]의 최대공약수를 ⟨[[a]], [[b]]⟩라 하고 최소공배수를 [ [[a]], [[b]] ]라 하자. [[x]]에 대한 이차방정식 ⟨[[a]], [[b]]⟩[[pow(x,2)]] − [ [[a]], [[b]] ][[x]] + 54 = 0의 두 근이 3, 9일 때, [[a + b]]의 값을 구하시오. (단, [[a]], [[b]]는 한 자리 자연수)",
+  "choices": null,
+  "answer": "14",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m3-1",
+  "confidence": 0.8,
+  "quick_answer": "4",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "e2eccd2a-8ded-4536-a78a-c8d3c27b31ff",
+  "zip": "esc_sonnet_m3-1_1of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_1of6/images/sonnet_m3-1_260828_복잡한 이차방정식의 풀이_p93.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 ⟨x⟩(x보다 작은 소수의 개수) — v1.5에도 대응 표기 없음, 방정식을 텍스트 혼합으로 유지 — 답 86 유지(⟨x⟩=8 → x=20~23)",
+  "seq": 93,
+  "qtype": "short",
+  "question": "⟨[[x]]⟩를 자연수 [[x]]보다 작은 소수의 개수라 할 때, 방정식 4⟨[[x]]⟩² − 29⟨[[x]]⟩ − 24 = 0을 만족시키는 모든 자연수 [[x]]의 값의 합을 구하시오.",
+  "choices": null,
+  "answer": "86",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m3-1",
+  "confidence": 0.8,
+  "quick_answer": "14",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "9834d721-920d-48f0-8fe0-7376c3c79496",
+  "zip": "esc_sonnet_m3-1_1of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_1of6/images/sonnet_m3-1_260828_복잡한 이차방정식의 풀이_p94.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 <x>(x 이하의 소수의 개수) — v1.5에도 대응 표기 없음, 방정식을 텍스트 혼합으로 유지 — 답 ⑤ 유지(<x>=6 → x=13~16, <17>=7)",
+  "seq": 94,
+  "qtype": "choice",
+  "question": "자연수 [[x]]에 대하여 <[[x]]>는 [[x]] 이하의 소수의 개수라 할 때, 다음 중 <[[x]]>² − 2<[[x]]> − 24 = 0을 만족시키는 자연수 [[x]]가 될 수 없는 것은?",
+  "choices": [
+   "[[13]]",
+   "[[14]]",
+   "[[15]]",
+   "[[16]]",
+   "[[17]]"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m3-1",
+  "confidence": 0.8,
+  "quick_answer": "38",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "e62ac95b-cc4e-4c96-86ab-e9a49fc726cb",
+  "zip": "esc_sonnet_m3-1_1of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_1of6/images/sonnet_m3-1_260828_복잡한 이차방정식의 풀이_p96.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 <x>(x 이하의 소수의 개수) — v1.5에도 대응 표기 없음, 방정식을 텍스트 혼합으로 유지 — 답 ① 유지(<x>=4 → x=7~10, <6>=3)",
+  "seq": 96,
+  "qtype": "choice",
+  "question": "자연수 [[x]]에 대하여 <[[x]]>는 [[x]] 이하의 소수의 개수라 할 때, 다음 중 <[[x]]>² + <[[x]]> − 20 = 0을 만족시키는 자연수 [[x]]가 될 수 없는 것은?",
+  "choices": [
+   "[[6]]",
+   "[[7]]",
+   "[[8]]",
+   "[[9]]",
+   "[[10]]"
+  ],
+  "answer": "①",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m3-1",
+  "confidence": 0.8,
+  "quick_answer": "86",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "b64f5373-03c7-4cf7-ac26-651a2ad8b146",
+  "zip": "esc_sonnet_m3-1_1of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_1of6/images/sonnet_m3-1_260828_복잡한 이차방정식의 풀이_p98.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 ⟨x⟩(약수의 개수) — v1.5에도 대응 표기 없음, 방정식을 텍스트 혼합으로 유지 — 답 ⑤ 유지(⟨x⟩=2 → 20 이하 소수 8개)",
+  "seq": 98,
+  "qtype": "choice",
+  "question": "자연수 [[x]]의 약수의 개수를 ⟨[[x]]⟩로 나타낼 때,\n등식 ⟨[[x]]⟩² + 2⟨[[x]]⟩ − 8 = 0을 만족시키는 20 이하의 자연수 [[x]]의 개수는?",
+  "choices": [
+   "[[4]]",
+   "[[5]]",
+   "[[6]]",
+   "[[7]]",
+   "[[8]]"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m3-1",
+  "confidence": 0.8,
+  "quick_answer": "2",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "150ffcdb-f163-4d28-8272-3e776b0a2c08",
+  "zip": "esc_sonnet_m3-1_1of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_1of6/images/sonnet_m3-1_260828_복잡한 이차방정식의 풀이_p99.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 {x}(약수의 개수) — set(x)는 집합 뜻이라 우회 불가, 방정식을 텍스트 혼합으로 유지 — 답 900 유지(같은 이미지 하단 문항; {x}=27 → 2²·3²·5²)",
+  "seq": 99,
+  "qtype": "short",
+  "question": "자연수 [[x]]의 약수의 개수를 {[[x]]}로 나타낼 때,\n등식 {[[x]]}² − 26{[[x]]} − 27 = 0을 만족시키는 가장 작은 자연수 [[x]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "900",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m3-1",
+  "confidence": 0.8,
+  "quick_answer": "1",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "edd27c48-8501-47b4-9dd3-8efe98e1446e",
+  "zip": "esc_sonnet_m3-1_1of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_1of6/images/sonnet_m3-1_260828_복잡한 이차방정식의 풀이_p99.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 기호 {x}(약수의 개수) — set(x)는 집합 뜻이라 우회 불가, 방정식을 텍스트 혼합으로 유지 — 답 12 유지(같은 이미지 상단 문항; {x}=6 → 12)",
+  "seq": 99,
+  "qtype": "short",
+  "question": "자연수 [[x]]의 약수의 개수를 {[[x]]}로 나타낼 때,\n등식 {[[x]]}² − 3{[[x]]} − 18 = 0을 만족시키는 가장 작은 자연수 [[x]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "12",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m3-1",
+  "confidence": 0.8,
+  "quick_answer": "1",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "defa43ac-e579-4ebb-8eb8-820835e297b7",
+  "zip": "esc_sonnet_m3-1_4of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_4of6/images/sonnet_m3-1_260828_실수의 대소 관계_p49.jpg",
+  "reason": "문법 범위 밖: 약속 기호 <a, b>(a, b 사이에 있는 점의 개수) — v1.5에도 대응 표기 없음, 텍스트 혼합 유지 — 수직선 도형은 unsupported(raw). 답 4000 유지(빠른정답 1과 불일치는 1차와 동일)",
+  "seq": 49,
+  "qtype": "short",
+  "question": "자연수의 양의 제곱근 1, [[sqrt(2)]], [[sqrt(3)]], 2, ⋯에 대응하는 점을 수직선 위에 다음 그림과 같이 차례대로 나타낸다. 아래 수직선에서 [[a]], [[b]] 사이에 있는 점의 개수를 <[[a]], [[b]]>라 하면 <1, 2> = 2, <2, 3> = 4이다. 이때 <2000, 2001>의 값을 구하시오.",
+  "choices": null,
+  "answer": "4000",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "수직선 위에 점 1, √2, √3, 2, √5, √6, √7, √8, 3이 차례로 찍혀 있음(√6, √8은 위쪽에 표기)"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m3-1",
+  "confidence": 0.75,
+  "quick_answer": "1",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "343af482-6e2f-4778-a159-57a0d4f3998c",
+  "zip": "esc_sonnet_m3-1_4of6",
+  "image": "/root/esc/work/esc_sonnet_m3-1_4of6/images/sonnet_m3-1_260828_이차방정식의 근의 판별_p91.jpg",
+  "reason": "문법 범위 밖: 사용자 정의 이항연산 ◎ — v1.5에도 대응 표기 없음, 정의식·계산식을 텍스트 혼합으로 유지 — 답 ④ 유지(빠른정답 ✓)",
+  "seq": 91,
+  "qtype": "choice",
+  "question": "두 실수 [[a]], [[b]]에 대하여 [[a]]◎[[b]] = [[-a + b + a b]]일 때, ([[3x - 1]])◎([[x + 2]]) = [[k]]가 근을 갖도록 하는 상수 [[k]]의 값 중 가장 작은 값은?",
+  "choices": [
+   "[[-frac(1,2)]]",
+   "[[-frac(1,4)]]",
+   "[[0]]",
+   "[[frac(1,4)]]",
+   "[[frac(1,2)]]"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "m3-1",
+  "confidence": 0.75,
+  "quick_answer": "4",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "4881c5dc-c351-4211-be58-d8429feba5a0",
+  "zip": "esc_sonnet_m2-1_1of4",
+  "image": "/root/esc/work/esc_sonnet_m2-1_1of4/images/sonnet_m2-1_260827_일차함수의 그래프와 연립방정식_p3.jpg",
+  "reason": "문법 범위 밖: 프라임 상수 a′, b′, c′ — v1.5에도 대응 표기 없음(라벨 함수 밖), prime()은 도함수 뜻이라 우회(표시는 동일) / 도형 표현 불가: 좌표평면 두 직선 그래프 — 답 ③ 유지(교점 (−1, 3) → 1+6=7)",
+  "seq": 3,
+  "qtype": "choice",
+  "question": "다음 그림은 연립방정식 [[a x + b y = c]], [[prime(a) x + prime(b) y = prime(c)]]을 그래프로 나타낸 것이다. 이 연립방정식의 해를 [[point(m, n)]]라고 할 때, [[pow(m,2) + 2n]]의 값은?",
+  "choices": [
+   "[[5]]",
+   "[[6]]",
+   "[[7]]",
+   "[[8]]",
+   "[[9]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 증가 직선 ax+by=c(점 (−2, 1), (0, 5) 통과)와 감소 직선 a′x+b′y=c′(점 (−3, 5) 통과)가 점 (−1, 3)에서 만남. x축 −3, −2, −1과 y축 1, 3, 5에 점선 좌표 표시"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m2-1",
+  "confidence": 0.8,
+  "quick_answer": "3",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "6ebd200f-77fb-49e9-a3c7-87cc7396422b",
+  "zip": "esc_sonnet_m2-1_1of4",
+  "image": "/root/esc/work/esc_sonnet_m2-1_1of4/images/sonnet_m2-1_260827_일차함수의 그래프와 연립방정식_p5.jpg",
+  "reason": "문법 범위 밖: 프라임 상수 a′, b′, c′ — v1.5에도 대응 표기 없음(라벨 함수 밖), prime()은 도함수 뜻이라 우회(표시는 동일) / 도형 표현 불가: 좌표평면 두 직선 그래프 — 답 ③ 유지(교점 (−2, 1) → m+n=−1)",
+  "seq": 5,
+  "qtype": "choice",
+  "question": "[[x]], [[y]] 에 관한 연립방정식 [[a x + b y = c]] ⋯㉠, [[prime(a) x + prime(b) y = prime(c)]] ⋯㉡ 을 다음 그림과 같이 그래프를 이용하여 풀었다. 해가 [[point(m, n)]]일 때,\n[[m + n]]의 값은?",
+  "choices": [
+   "[[-3]]",
+   "[[-2]]",
+   "[[-1]]",
+   "[[1]]",
+   "[[2]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 증가 직선 ㉠(y절편 2)과 감소 직선 ㉡이 점 (−2, 1)에서 만남(점선으로 x=−2, y=1 표시), 원점 O"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "m2-1",
+  "confidence": 0.8,
+  "quick_answer": "3",
+  "prev_tags": [
+   "v15재작업"
+  ]
+ },
+ {
+  "id": "35d63ad8-c7c9-4b41-9307-3a44041ca3bb",
+  "zip": "esc_sonnet_m2-1_1of4",
+  "image": "/root/esc/work/esc_sonnet_m2-1_1of4/images/sonnet_m2-1_260827_일차함수의 그래프와 연립방정식_p56.jpg",
+  "reason": "문법 범위 밖: 프라임 상수 a′, b′, c′ — v1.5에도 대응 표기 없음(라벨 함수 밖), prime()은 도함수 뜻이라 우회(표시는 동일) — 답 ㄴ 유지(한 점에서 만남 → 해 한 쌍)",
+  "seq": 56,
+  "qtype": "short",
+  "question": "[[x]], [[y]] 에 대한 두 일차방정식 [[a x + b y + c = 0]], [[prime(a) x + prime(b) y + prime(c) = 0]]의 그래프가 한 점에서 만날 때, 다음 보기 중 연립방정식 [[a x + b y + c = 0]], [[prime(a) x + prime(b) y + prime(c) = 0]]의 해로 알맞은 것을 고르시오.\n<보기>\nㄱ. 해가 없다.\nㄴ. 한 쌍의 해를 갖는다.\nㄷ. 해가 무수히 많다.",
+  "choices": null,
+  "answer": "ㄴ",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "m2-1",
+  "confidence": 0.8,
+  "quick_answer": null,
+  "prev_tags": [
+   "v15재작업"
+  ]
+ }
+]
