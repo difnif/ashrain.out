@@ -252,7 +252,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
     const onKey = (e) => {
       if (!(e.ctrlKey || e.metaKey)) return;
       const t = e.target?.tagName;
-      if (t === "INPUT" || t === "TEXTAREA") return; // 입력창 안은 브라우저 기본 undo
+      if (t === "TEXTAREA" || (t === "INPUT" && /text|number|search|url|email|password/.test(e.target.type))) return; // 글자 입력만 브라우저 기본 undo
       const k = e.key.toLowerCase();
       if (k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
       else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); redo(); }
@@ -406,16 +406,24 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
                 }}>
                 {L.gear ? (() => {
                   const gid = `gcp-${conceptId}-${blockId}-${sc.id}-${L.id}`.replace(/[^\w-]/g, "");
+                  const gd = gearPath(L.gear);
                   return (
                     <>
                       <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
                         <defs><clipPath id={gid} clipPathUnits="objectBoundingBox">
-                          <path d={gearPath(L.gear)} clipRule="evenodd" />
+                          <path d={gd} clipRule="evenodd" />
                         </clipPath></defs>
                       </svg>
                       <div style={{ position: "absolute", inset: 0, clipPath: `url(#${gid})`, WebkitClipPath: `url(#${gid})` }}>
                         {imgs(L, s, L.gear.bleed ?? 1.16, L.gear.ox || 0, L.gear.oy || 0)}
                       </div>
+                      {(L.gear.emboss ?? true) && (
+                        <svg viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true"
+                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible" }}>
+                          <path d={gd} fill="none" stroke="rgba(12,7,0,0.42)" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                          <path d={gd} fill="none" stroke="rgba(255,236,190,0.5)" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+                        </svg>
+                      )}
                     </>
                   );
                 })() : imgs(L, s)}
@@ -558,14 +566,25 @@ function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onToggle, o
         </div>
       )}
       {sel && !sel.mark && sel.gear && (
-        <div className="sf3-row">
-          <label>기어</label>
-          그림 <input type="number" step="0.02" value={sel.gear.bleed ?? 1.16} onChange={(e) => setLayer({ gear: { ...sel.gear, bleed: +e.target.value } })} style={{ width: 60 }} />
-          x <input type="number" step="0.01" value={sel.gear.ox ?? 0} onChange={(e) => setLayer({ gear: { ...sel.gear, ox: +e.target.value } })} style={{ width: 56 }} />
-          y <input type="number" step="0.01" value={sel.gear.oy ?? 0} onChange={(e) => setLayer({ gear: { ...sel.gear, oy: +e.target.value } })} style={{ width: 56 }} />
-          구멍 <input type="number" step="0.02" value={sel.gear.hole ?? 0.26} onChange={(e) => setLayer({ gear: { ...sel.gear, hole: +e.target.value } })} style={{ width: 60 }} />
-          뿌리 <input type="number" step="0.02" value={sel.gear.root ?? 0.72} onChange={(e) => setLayer({ gear: { ...sel.gear, root: +e.target.value } })} style={{ width: 60 }} />
-        </div>
+        <>
+          <div className="sf3-row">
+            <label>기어</label>
+            <button className={"sf3-btn" + ((sel.gear.emboss ?? true) ? " on" : "")}
+              onClick={() => setLayer({ gear: { ...sel.gear, emboss: !(sel.gear.emboss ?? true) } })}>테두리 엠보싱</button>
+            구멍 <input type="number" step="0.02" value={sel.gear.hole ?? 0.26} onChange={(e) => setLayer({ gear: { ...sel.gear, hole: +e.target.value } })} style={{ width: 60 }} />
+            뿌리 <input type="number" step="0.02" value={sel.gear.root ?? 0.72} onChange={(e) => setLayer({ gear: { ...sel.gear, root: +e.target.value } })} style={{ width: 60 }} />
+          </div>
+          <div className="sf3-row">
+            <label>그림 크기</label>
+            <input type="range" min="0.5" max="2.2" step="0.01" value={sel.gear.bleed ?? 1.16}
+              onChange={(e) => setLayer({ gear: { ...sel.gear, bleed: +e.target.value } })} style={{ flex: 1, minWidth: 110 }} />
+            <span style={{ width: 42, textAlign: "right" }}>{(sel.gear.bleed ?? 1.16).toFixed(2)}</span>
+            x <input type="range" min="-0.5" max="0.5" step="0.005" value={sel.gear.ox ?? 0}
+              onChange={(e) => setLayer({ gear: { ...sel.gear, ox: +e.target.value } })} style={{ width: 88 }} />
+            y <input type="range" min="-0.5" max="0.5" step="0.005" value={sel.gear.oy ?? 0}
+              onChange={(e) => setLayer({ gear: { ...sel.gear, oy: +e.target.value } })} style={{ width: 88 }} />
+          </div>
+        </>
       )}
       {sel && !sel.mark && (
         <div className="sf3-row">
