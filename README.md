@@ -1,29 +1,63 @@
-# tools\ — 재전사 파이프라인 (세션 인계용)
+# ASH RAIN. Out
 
-이 폴더는 클라우드 세션 작업공간(`/root/esc`)에서 쓰던 도구를 그대로 옮긴 것입니다. 다른 컴퓨터/새 세션에서 이어갈 때
-`tools\`의 파일들을 세션 작업공간 `/root/esc/`에 두고(`mathir.py`도 같은 곳에), zip을 `/mnt/user-data/uploads/esc files/`에 스테이징하면 같은 절차로 진행됩니다.
+수학은 매일. 개념 뷰어 · 질문-채택 루프 · 리브드 글라스 초상화를 담은 학습 앱.
+(라이트 = 비 오는 거리 / 다크 = 재의 밤)
 
-- `GUIDE.md` — 전사 규칙·mathir 문법 요약·정책(subagent용 SOP). `AGENT_PROMPT.md` — 작업자에게 주는 지시 템플릿.
-- `extract.py {zip}` — zip 해제(UTF-8 파일명 보정) + manifest 요약.  `build_out.py {zip} {items모듈}` — 4관문 검산 → out/{zip}.final.json / .review.json.
-- `reverify.py {zip}` — 산출물 재검증.  `finish.py {zip} {items모듈}` — 재검증 후 PROGRESS.md에 행 추가.
-- `items\items_*.py` — zip별 전사 원본(ITEMS 리스트). 규칙을 바꿔(예: 빠른정답 불일치도 final) 산출물을 다시 만들 때 `build_out.py`만 재실행하면 됩니다.
+## 시작하기
 
-판정 규칙(build_out.py): 4관문 불통과 → review / quick_answer(=manifest)와 derived_answer 불일치 → review / needs_review 플래그(문법 한계·도형 표현 불가) → review. 그 외 final.
+```bash
+npm install
+cp .env.example .env      # Supabase 값 입력
+npm run dev
+```
 
-## 규칙 변경(2026-09-03 22:05) — 빠른정답 불일치는 보류 사유에서 제외
-`build_out.py`가 세 파일을 만듭니다: `{zip}.final.json`(통과) / `{zip}.final_qamismatch.json`(통과이나 quick_answer와 불일치 — 형식은 final과 같아 그대로 반영 가능, pattern_tags "빠른정답불일치") / `{zip}.review.json`(보류: 도형·문법·검산).
+### 1) Supabase
+1. supabase.com 프로젝트 생성
+2. SQL Editor에서 아래 4개 파일을 순서대로 전체 실행:
+   `supabase/schema.sql` → `supabase/seed.sql` → `supabase/2026-07_profiles_extend.sql` → `supabase/2026-07_settings.sql`
+   (이미 앞의 둘을 실행한 프로젝트라면 뒤의 둘만 실행)
+3. Settings → API 에서 URL / anon key 복사 → `.env`
 
-## 로컬(RAM만) 파이프라인 — `local_pipeline.py`
-Claude API + mathir.py 검산으로 같은 절차를 노트북에서 돌립니다(GPU 불필요, 메모리 수십 MB). `pip install anthropic pillow`, `ANTHROPIC_API_KEY` 설정 후
-`python local_pipeline.py --zip-dir "C:\Users\User\Documents\esc files" --pattern "esc_sonnet_m3-1_*.zip" --resume`
+### 2) 첫 관리자
+앱에서 회원가입 후, SQL Editor에서:
+```sql
+update public.profiles set role='admin' where id='<본인 uuid>';
+-- uuid 확인: select id, name from public.profiles;
+```
 
-## 규칙 완화(2026-09-04 00:30) — 도형 표현 불가만이 사유인 보류는 통과
-`build_out.py`가 네 파일을 만듭니다: `final.json` / `final_qamismatch.json`(빠른정답 불일치 통과분) / `final_figrelax.json`(도형 완화로 소급 통과분, pattern_tags "도형완화") / `review.json`(문법 한계 등).
+### 3) 초상화 기능 모델 (선택, 최초 1회)
+```bash
+npm install   # @mediapipe/tasks-vision 포함됨
+cp -r node_modules/@mediapipe/tasks-vision/wasm public/models/wasm
+```
+`public/models/` 에 모델 2종 다운로드:
+- https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/latest/blaze_face_short_range.tflite
+- https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite
 
-## mathir v1.5 제안 패치
-`mathir_v15.py`(완성본) · `mathir_v15.diff` · `MATHIR_V15_CHANGES.md`(명세 + mathir.js 동형 패치 체크리스트). 적용 전까지 전사는 v1.4 규칙(GUIDE §3~§7), 적용 후 GUIDE §8 표기를 사용.
+### 4) 라이트 테마 배경 사진 (선택)
+`public/brand/rainy_street.jpg` 를 넣고 `src/components/SplashAuth.jsx`의
+`.th-light` 블록 주석에 표시된 한 줄을 교체.
 
-## mathir v1.5 r2 (2026-09-05) — 보류 잔여 회수용 확장 + 재작업 도구
-`mathir_v15.py`·`mathir_v15.diff`·`MATHIR_V15_CHANGES.md`를 r2로 교체(§7에 추가분: `op` 사용자 정의 연산, `nota` 약속 괄호, `idx`, `tr`, `dig`, 문자 `recdec`, 변수 프라임 `a'`, 원문자·양의 부호 답, 표시 수정 3건). 하위 호환: 기존 산출물 4,436건 재검산 오류 0·IR 변화 0.
-재작업 도구(`tools\`): `GUIDE_REWORK.md`(보류 재작업 SOP, r2 절 포함) · `build_rework.py {rework_batchNN}`(v1.5 검산 → `out\v15\{zip}.rework_final.json / .rework_review.json / .rework_extra.json`) · `rework\batch00~14.json`(입력) · `rework_batch00~14.py`(재작업 전사 원본) · `make_report.py`(집계·보고서·장부 갱신).
-결과: 보류 712건 → 통과 704 · 잔여 8(이미지 잘림 7, 문항 결함 의심 1) + 둘째 문항 23건(id 발급 후 반영). 자세한 내용은 `out\v15\REWORK_REPORT.md`.
+## 라우트
+| 해시 | 화면 |
+|---|---|
+| (없음) | 비로그인: 스플래시+로그인(아이디·카카오·구글) / 로그인: 개념 목록 |
+| `#/signup` | 회원가입 |
+| `#/c/:id` | 개념 뷰어 (물음표 = 질문 보기/보내기) |
+| `#/admin/qna` | (관리자) 질문 검토·채택 |
+| `#/portrait` | 리브드 글라스 초상화 → 프로필 아바타 저장 |
+| `#/me` | 마이페이지 (프로필·내 정보·환경설정·계정) |
+
+## 구조
+```
+supabase/schema.sql        프로필·권한·개념·QnA·아바타 버킷 (RLS 포함)
+supabase/seed.sql          개념 01 (소수와 합성수) + 채택 QnA
+src/lib/theme.js           라이트/다크 테마 훅
+src/lib/concepts.js        개념·QnA 데이터 접근
+src/components/            SplashAuth · Home · ConceptViewer · AdminQna · Signup
+src/features/portrait/     ribbedGlass(필터) · facePipeline(MediaPipe) · PortraitStudio
+public/brand/              손글씨 로고 레이어 (스플래시 애니메이션용)
+```
+
+## 배포
+GitHub 저장소 push → Vercel/Netlify 연결 → 환경변수(VITE_*) 등록 → 자동 배포.
