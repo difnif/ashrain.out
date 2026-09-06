@@ -315,15 +315,15 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
             const w = s.w ?? L.w ?? 0.2, h = w / ar;
             const rot = (s.rotate || 0), sk = s.skew || 0, scl = (s.scale ?? 1) * (L.flip ? -1 : 1);
             const pv = L.pivot || [0.5, 0.5];
-            const imgs = (LL, ss, bleed) => {
+            const imgs = (LL, ss, bleed, ox = 0, oy = 0) => {
               const sl = LL.slots || [LL.slot];
               const si = Math.round(ss.state || 0);
               const bs = bleed ? { width: `${bleed * 100}%`, height: `${bleed * 100}%`,
-                left: `${((1 - bleed) / 2) * 100}%`, top: `${((1 - bleed) / 2) * 100}%` } : null;
+                left: `${(((1 - bleed) / 2) + ox) * 100}%`, top: `${(((1 - bleed) / 2) + oy) * 100}%` } : null;
               return sl.map((n, i) => {
                 const mm = meta?.[n];
                 if (!mm) return null;
-                const k = adoptedCand(mm, theme);
+                const k = (sl.length === 1 && LL.cand) ? LL.cand : adoptedCand(mm, theme);
                 return <img key={n} src={slotUrl(n, k, mm?.updated || "")} alt=""
                   onLoad={(e) => { const im = e.target; if (!dims[n]) setDims((d) => ({ ...d, [n]: im.naturalWidth / im.naturalHeight })); }}
                   style={{ opacity: i === Math.min(si, sl.length - 1) ? 1 : 0, filter: filterCss(mm, theme), ...bs }} />;
@@ -352,7 +352,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
                         </clipPath></defs>
                       </svg>
                       <div style={{ position: "absolute", inset: 0, clipPath: `url(#${gid})`, WebkitClipPath: `url(#${gid})` }}>
-                        {imgs(L, s, L.gear.bleed ?? 1.16)}
+                        {imgs(L, s, L.gear.bleed ?? 1.16, L.gear.ox || 0, L.gear.oy || 0)}
                       </div>
                     </>
                   );
@@ -404,19 +404,41 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
       </div>
       {sc.caption ? <p className="sf3-cap">{sc.caption}</p> : null}
       {edit && <StageEditor sc={sc} setSc={setSc} selId={selId} figure={figure}
-        conceptId={conceptId} blockId={blockId} onReplay={start} />}
+        conceptId={conceptId} blockId={blockId} onReplay={start} theme={theme} meta={meta}
+        refreshMeta={() => { for (const n of slots) bustSlotMeta(n); loadSlotMeta(slots).then(setMeta); }} />}
     </div>
   );
 }
 
 /* ══════════ 무대 편집 패널 ══════════ */
-function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onReplay }) {
+function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onReplay, theme = "light", meta, refreshMeta }) {
   const [jsonMode, setJsonMode] = useState(false);
   const [txt, setTxt] = useState("");
   const [warn, setWarn] = useState("");
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const sel = (sc.layers || []).find((l) => l.id === selId);
+  const selSlot = sel && !sel.mark && !sel.slots ? sel.slot : null;
+  const [cands, setCands] = useState(null);
+  useEffect(() => {
+    if (selSlot == null) { setCands(null); return; }
+    let on = true;
+    supabase.storage.from("figures").list(`${SLOT_ROOT}/${selSlot}`, { limit: 100 }).then(({ data }) => {
+      if (on) setCands((data || []).map((f) => +f.name.replace(/\.webp$/i, "")).filter(Number.isFinite).sort((x, y) => x - y));
+    });
+    return () => { on = false; };
+  }, [selSlot]);
+  const effK = selSlot != null ? (sel.cand ?? adoptedCand(meta?.[selSlot], theme)) : null;
+  const makeDefault = async () => {
+    if (selSlot == null) return;
+    const cur = meta?.[selSlot] || {};
+    const next = { ...cur, adopted: { ...(cur.adopted || {}), [theme]: effK }, updated: Date.now() };
+    const { error } = await supabase.from("figure_slots")
+      .upsert({ slot: selSlot, meta: next, updated_at: new Date().toISOString() });
+    if (error) { setWarn("전역 채택 실패: " + error.message); return; }
+    setLayer({ cand: undefined });
+    refreshMeta && refreshMeta();
+  };
   const play = sc.play || {};
   const setPlay = (p) => setSc((s) => ({ ...s, play: { ...s.play, ...p } }));
   const setLayer = (patch) => setSc((s) => ({ ...s, layers: s.layers.map((l) => l.id === selId ? { ...l, ...patch } : l) }));
@@ -454,6 +476,29 @@ function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onReplay })
         <button className={"sf3-btn" + (jsonMode ? " on" : "")} onClick={() => { setJsonMode(!jsonMode); setTxt(JSON.stringify(sc, null, 1)); }}>JSON</button>
         <button className="sf3-btn pri" disabled={busy} onClick={save}>{busy ? "…" : saved ? "저장됨 ✓" : "저장"}</button>
       </div>
+      {selSlot != null && (
+        <div className="sf3-row" style={{ alignItems: "center" }}>
+          <label>이미지 #{selSlot}</label>
+          {(cands || []).map((k) => (
+            <img key={k} src={slotUrl(selSlot, k)} alt="" onClick={() => setLayer({ cand: k })}
+              style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8, cursor: "pointer",
+                background: "var(--in,#F4F6F8)", border: k === effK ? "2px solid var(--ac,#0DA95F)" : "1px solid var(--inbd,#D3D9DF)" }} />
+          ))}
+          {cands && !cands.length && <span style={{ color: "var(--mut)" }}>후보 없음</span>}
+          <button className="sf3-btn" onClick={makeDefault} title="지금 후보를 이 테마의 모든 씬 기본으로">전역 기본</button>
+          <button className="sf3-btn" onClick={() => { location.hash = "#/admin/images?slot=" + selSlot; }} title="후보 추가·삭제·필터는 이미지 관리에서">관리 ↗</button>
+        </div>
+      )}
+      {sel && !sel.mark && sel.gear && (
+        <div className="sf3-row">
+          <label>기어</label>
+          그림 <input type="number" step="0.02" value={sel.gear.bleed ?? 1.16} onChange={(e) => setLayer({ gear: { ...sel.gear, bleed: +e.target.value } })} style={{ width: 60 }} />
+          x <input type="number" step="0.01" value={sel.gear.ox ?? 0} onChange={(e) => setLayer({ gear: { ...sel.gear, ox: +e.target.value } })} style={{ width: 56 }} />
+          y <input type="number" step="0.01" value={sel.gear.oy ?? 0} onChange={(e) => setLayer({ gear: { ...sel.gear, oy: +e.target.value } })} style={{ width: 56 }} />
+          구멍 <input type="number" step="0.02" value={sel.gear.hole ?? 0.26} onChange={(e) => setLayer({ gear: { ...sel.gear, hole: +e.target.value } })} style={{ width: 60 }} />
+          뿌리 <input type="number" step="0.02" value={sel.gear.root ?? 0.72} onChange={(e) => setLayer({ gear: { ...sel.gear, root: +e.target.value } })} style={{ width: 60 }} />
+        </div>
+      )}
       {sel && !sel.mark && (
         <div className="sf3-row">
           <label>#{sel.slots ? sel.slots.join("/") : sel.slot} {sel.id}</label>
