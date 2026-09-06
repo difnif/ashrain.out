@@ -238,10 +238,10 @@ class _P:
         j, seen = self.i, False
         while j < len(self.t):
             k, v, _ = self.t[j]
-            if v in (",", ")"): break
+            if v in (",", ")"): return seen
             if k not in ("id", "num"): return False
             seen = True; j += 1
-        return seen
+        return False                                  # 종결 토큰 없음 → 일반 파싱으로(문법 오류 보고)
 
     def call(self, name, pos):
         self.expect("(")
@@ -329,6 +329,8 @@ def _wrap(n):
 def _over(s, mark):
     return "".join(c + mark for c in s)
 
+_DIGITS = set("0123456789⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉")   # 표시 문자열이 숫자(위·아래첨자 포함)로 시작하는지 — mathir.js와 동일 집합
+
 def _xprod(n):
     """곱 표시 (v1.5r2 표시 수정): 병치 사슬 2ab, −5x, 2√3x 는 그대로 잇고, 숫자끼리·숫자 앞 함수(9 × 2^(n+1))·부호 등은 ' × '.
     반환 (문자열, 왼쪽이 병치 사슬인지). 종전 v1.4는 (2a) × b, (−5) × x, 92^(n+1) 로 표시됨."""
@@ -339,7 +341,7 @@ def _xprod(n):
         lchain = A["t"] in ("num", "var", "paren") or (A["t"] == "neg" and A["a"]["t"] in ("num", "var", "paren"))
         left = disp(A) if lchain else _wrap(A)
     b = _wrap(B) if B["t"] in ("neg", "fn") else disp(B)                       # fn op 는 _wrap 이 괄호를 붙임
-    if lchain and B["t"] in ("var", "fn", "apply", "paren", "const") and not (B["t"] == "fn" and b[:1].isdigit()):
+    if lchain and B["t"] in ("var", "fn", "apply", "paren", "const") and not (B["t"] == "fn" and b[:1] in _DIGITS):
         return left + b, True
     return left + " × " + (b if B["t"] in ("neg", "fn") else _wrap(B)), False
 
