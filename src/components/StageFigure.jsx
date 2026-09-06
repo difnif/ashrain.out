@@ -101,6 +101,26 @@ function sampleTracks({ base, tracks }, time) {
   return st;
 }
 
+/* ══════════ 기어 실루엣 (형상은 수학, 질감은 그림) ══════════ */
+export function gearPath({ teeth = 12, root = 0.72, hole = 0.26, top = 0.16, bot = 0.30 } = {}) {
+  const N = teeth, cx = 0.5, cy = 0.5, Rt = 0.5, Rr = 0.5 * root, P = (2 * Math.PI) / N;
+  const pt = (r, a) => `${(cx + r * Math.cos(a)).toFixed(4)} ${(cy + r * Math.sin(a)).toFixed(4)}`;
+  let d = "";
+  for (let i = 0; i < N; i++) {
+    const c = i * P; // i=0의 이빨 중심이 각도 0(오른쪽)
+    const a1 = c - bot * P, a2 = c - top * P, a3 = c + top * P, a4 = c + bot * P;
+    d += (i ? "L " : "M ") + pt(Rr, a1) + " L " + pt(Rt, a2) + " L " + pt(Rt, a3) + " L " + pt(Rr, a4) + " ";
+    d += `A ${Rr.toFixed(4)} ${Rr.toFixed(4)} 0 0 1 ` + pt(Rr, (i + 1) * P - bot * P) + " ";
+  }
+  d = d.trim() + " Z";
+  if (hole) {
+    const hr = 0.5 * hole;
+    d += ` M ${(cx + hr).toFixed(4)} ${cy} A ${hr.toFixed(4)} ${hr.toFixed(4)} 0 1 0 ${(cx - hr).toFixed(4)} ${cy}`
+       + ` A ${hr.toFixed(4)} ${hr.toFixed(4)} 0 1 0 ${(cx + hr).toFixed(4)} ${cy} Z`;
+  }
+  return d;
+}
+
 /* ══════════ CSS ══════════ */
 const CSS = `
 .sf3 { margin: 14px auto; max-width: 430px; }
@@ -295,16 +315,18 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
             const w = s.w ?? L.w ?? 0.2, h = w / ar;
             const rot = (s.rotate || 0), sk = s.skew || 0, scl = (s.scale ?? 1) * (L.flip ? -1 : 1);
             const pv = L.pivot || [0.5, 0.5];
-            const imgs = (LL, ss) => {
+            const imgs = (LL, ss, bleed) => {
               const sl = LL.slots || [LL.slot];
               const si = Math.round(ss.state || 0);
+              const bs = bleed ? { width: `${bleed * 100}%`, height: `${bleed * 100}%`,
+                left: `${((1 - bleed) / 2) * 100}%`, top: `${((1 - bleed) / 2) * 100}%` } : null;
               return sl.map((n, i) => {
                 const mm = meta?.[n];
                 if (!mm) return null;
                 const k = adoptedCand(mm, theme);
                 return <img key={n} src={slotUrl(n, k, mm?.updated || "")} alt=""
                   onLoad={(e) => { const im = e.target; if (!dims[n]) setDims((d) => ({ ...d, [n]: im.naturalWidth / im.naturalHeight })); }}
-                  style={{ opacity: i === Math.min(si, sl.length - 1) ? 1 : 0, filter: filterCss(mm, theme) }} />;
+                  style={{ opacity: i === Math.min(si, sl.length - 1) ? 1 : 0, filter: filterCss(mm, theme), ...bs }} />;
               });
             };
             return (
@@ -320,7 +342,21 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
                   clipPath: (s.wipe ?? 1) >= 1 ? undefined : `inset(0 ${(1 - (s.wipe ?? 1)) * 100}% 0 0)`,
                   cursor: edit ? "grab" : undefined,
                 }}>
-                {imgs(L, s)}
+                {L.gear ? (() => {
+                  const gid = `gcp-${conceptId}-${blockId}-${sc.id}-${L.id}`.replace(/[^\w-]/g, "");
+                  return (
+                    <>
+                      <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
+                        <defs><clipPath id={gid} clipPathUnits="objectBoundingBox">
+                          <path d={gearPath(L.gear)} clipRule="evenodd" />
+                        </clipPath></defs>
+                      </svg>
+                      <div style={{ position: "absolute", inset: 0, clipPath: `url(#${gid})`, WebkitClipPath: `url(#${gid})` }}>
+                        {imgs(L, s, L.gear.bleed ?? 1.16)}
+                      </div>
+                    </>
+                  );
+                })() : imgs(L, s)}
                 {imgChildren.filter((C) => C.parent === L.id).map((C) => {
                   const cs = st[C.id] || {};
                   const csl = C.slots || [C.slot];
