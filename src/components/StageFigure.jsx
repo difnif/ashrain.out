@@ -171,6 +171,11 @@ const CSS = `
   background: #E6AA3C; border: 2px solid #fff; cursor: nwse-resize; z-index: 5; }
 `;
 
+const H_POS = { nw: { left: -7, top: -7 }, n: { left: "calc(50% - 6px)", top: -7 }, ne: { right: -7, top: -7 },
+  e: { right: -7, top: "calc(50% - 6px)" }, se: { right: -7, bottom: -7 }, s: { left: "calc(50% - 6px)", bottom: -7 },
+  sw: { left: -7, bottom: -7 }, w: { left: -7, top: "calc(50% - 6px)" } };
+const H_CUR = { nw: "nwse-resize", se: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize",
+  n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize" };
 const INK = { dark: "#EFE4C8", light: "#4A3B25" };
 const ACCENT = { dark: "#D9B662", light: "#8A6A2F" };
 
@@ -228,6 +233,8 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
   const [time, setTime] = useState(0);
   const [edit, setEdit] = useState(false);
   const [selId, setSelId] = useState(null);
+  const [subXform, setSubXform] = useState(false); // Ctrl+T: 대사 박스 8점 크기 조절
+  useEffect(() => { if (selId !== "@sub") setSubXform(false); }, [selId]);
   const stageRef = useRef(null);
   const raf = useRef(0);
   const scRef = useRef(scene);
@@ -256,7 +263,14 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
   useEffect(() => {
     if (!edit) return;
     const onKey = (e) => {
+      if (e.key === "Escape") { setSubXform(false); return; }
       if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key.toLowerCase() === "t") {
+        e.preventDefault();
+        if (selId !== "@sub") { setSelId("@sub"); setSubXform(true); }
+        else setSubXform((v) => !v);
+        return;
+      }
       const t = e.target?.tagName;
       if (t === "TEXTAREA" || (t === "INPUT" && /text|number|search|url|email|password/.test(e.target.type))) return; // 글자 입력만 브라우저 기본 undo
       const k = e.key.toLowerCase();
@@ -265,7 +279,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [edit, undo, redo]);
+  }, [edit, undo, redo, selId]);
   const clickGuard = useRef(false); // 레이어 조작 직후의 click이 선택을 풀지 않게
   const playedOnce = useRef(false);
 
@@ -412,6 +426,32 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
     };
     window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
   };
+  const onSubHandle = (e, h) => {
+    e.preventDefault(); e.stopPropagation();
+    const r = stageRef.current.getBoundingClientRect();
+    const base = { ...SUBDEF, ...(sc.subStyle || {}) };
+    const sx = e.clientX, sy = e.clientY;
+    let pushed = false;
+    const mv = (ev) => {
+      if (!pushed) { pushed = true; pushHist("subxf"); }
+      const dxu = (ev.clientX - sx) / r.width;
+      const dyp = ev.clientY - sy;
+      let w = base.w, x = base.x, size = base.size;
+      if (h.includes("e")) { w = base.w + dxu; x = base.x + dxu / 2; }
+      if (h.includes("w")) { w = base.w - dxu; x = base.x + dxu / 2; }
+      if (h === "n") size = base.size - dyp / 6;
+      if (h === "s") size = base.size + dyp / 6;
+      if (h.length === 2) size = base.size * (w / Math.max(0.05, base.w)); // 모서리 = 비례 확대·축소
+      w = Math.min(0.98, Math.max(0.12, w));
+      size = Math.min(26, Math.max(8, +(+size).toFixed(1)));
+      setSc((sn) => ({ ...sn, subStyle: { ...(sn.subStyle || {}), w: +w.toFixed(3), x: +x.toFixed(3), size } }));
+    };
+    const up = () => {
+      clickGuard.current = true; setTimeout(() => { clickGuard.current = false; }, 250);
+      window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
+  };
   const badge = `${conceptId}·${blockId}·${sc.id}`;
   return (
     <div className="sf3">
@@ -530,12 +570,18 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
                 onPointerDown={onSubDown} onClick={(e) => { if (edit) e.stopPropagation(); }}
                 style={{
                   left: `${ss.x * 100}%`, top: `${(ss.y / STAGE_H) * 100}%`, transform: "translate(-50%,-50%)",
-                  maxWidth: `${ss.w * 100}%`, fontSize: ss.size, textAlign: ss.align,
+                  width: `${ss.w * 100}%`, boxSizing: "border-box", fontSize: ss.size, textAlign: ss.align,
                   background: theme === "dark" ? `rgba(8,12,26,${ss.bg})` : `rgba(255,252,242,${ss.bg})`,
                   color: theme === "dark" ? "#F2E8CE" : "#4A3B25",
                   pointerEvents: edit ? "auto" : "none", cursor: edit ? "grab" : undefined,
                   outline: edit && selId === "@sub" ? "2px dashed rgba(230,170,60,.9)" : undefined, outlineOffset: 2,
-                }}>{cur.text}</div>
+                }}>{cur.text}
+                {edit && selId === "@sub" && subXform && ["nw", "n", "ne", "e", "se", "s", "sw", "w"].map((h) => (
+                  <span key={h} onPointerDown={(e) => onSubHandle(e, h)}
+                    style={{ position: "absolute", width: 12, height: 12, background: "#E6AA3C",
+                      border: "2px solid #fff", borderRadius: 3, ...H_POS[h], cursor: H_CUR[h], pointerEvents: "auto", zIndex: 7 }} />
+                ))}
+              </div>
             );
           })()}
           {meta && missing.length > 0 && (
@@ -551,7 +597,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
       {sc.caption ? <p className="sf3-cap">{sc.caption}</p> : null}
       {edit && <StageEditor sc={sc} setSc={setSc} selId={selId} figure={figure}
         conceptId={conceptId} blockId={blockId} onToggle={togglePlay} onRestart={start} isPlaying={playing} theme={theme} meta={meta}
-        setSelId={setSelId} subs={subsSorted} subIdx={subIdx} seek={seek}
+        setSelId={setSelId} subs={subsSorted} subIdx={subIdx} seek={seek} subXform={subXform} setSubXform={setSubXform}
         pushHist={pushHist} undo={undo} redo={redo}
         canUndo={hist.current.past.length > 0} canRedo={hist.current.future.length > 0}
         refreshMeta={() => { for (const n of slots) bustSlotMeta(n); loadSlotMeta(slots).then(setMeta); }} />}
@@ -560,7 +606,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
 }
 
 /* ══════════ 무대 편집 패널 ══════════ */
-function StageEditor({ sc, setSc, selId, setSelId, figure, conceptId, blockId, onToggle, onRestart, isPlaying, theme = "light", meta, refreshMeta, pushHist, undo, redo, canUndo, canRedo, subs = [], subIdx = -1, seek }) {
+function StageEditor({ sc, setSc, selId, setSelId, figure, conceptId, blockId, onToggle, onRestart, isPlaying, theme = "light", meta, refreshMeta, pushHist, undo, redo, canUndo, canRedo, subs = [], subIdx = -1, seek, subXform, setSubXform }) {
   const [jsonMode, setJsonMode] = useState(false);
   const [txt, setTxt] = useState("");
   const [warn, setWarn] = useState("");
@@ -709,11 +755,12 @@ function StageEditor({ sc, setSc, selId, setSelId, figure, conceptId, blockId, o
               글자 <input type="range" min="9" max="20" step="0.5" value={ss.size} onChange={(e) => updStyle({ size: +e.target.value })} style={{ width: 86 }} />
               <span style={{ width: 26 }}>{ss.size}</span>
               너비 <input type="range" min="0.3" max="0.96" step="0.01" value={ss.w} onChange={(e) => updStyle({ w: +e.target.value })} style={{ width: 86 }} />
+              <button className={"sf3-btn" + (subXform ? " on" : "")} onClick={() => setSubXform && setSubXform((v) => !v)}>⤡ 크기 (Ctrl+T)</button>
               정렬 {[["left", "왼"], ["center", "중"], ["right", "오"]].map(([v, lb]) => (
                 <button key={v} className={"sf3-btn" + ((ss.align || "center") === v ? " on" : "")}
                   onClick={() => updStyle({ align: v })} style={{ padding: "6px 9px" }}>{lb}</button>
               ))}
-              <span style={{ fontSize: 11, color: "var(--mut,#8A929C)" }}>위치는 무대의 대사 박스를 드래그</span>
+              <span style={{ fontSize: 11, color: "var(--mut,#8A929C)" }}>드래그 = 위치 · Ctrl+T = 8점 크기 · Esc 종료</span>
             </div>
           </>
         );
