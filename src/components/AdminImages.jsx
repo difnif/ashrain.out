@@ -257,6 +257,12 @@ export default function AdminImages({ theme = "light" }) {
     return { def, usage, order: Object.keys(def).map(Number).sort((a, b) => a - b) };
   }, [ledger]);
 
+  useEffect(() => {
+    if (!idx) return;
+    const m = location.hash.match(/[?&]slot=(\d+)/);
+    if (m && idx.def[+m[1]]) setOpenSlot(+m[1]);
+  }, [idx]);
+
   const units = useMemo(() => {
     if (!idx) return [];
     return [...new Set(idx.order.map((n) => idx.def[n].cid.slice(0, idx.def[n].cid.lastIndexOf("-"))))];
