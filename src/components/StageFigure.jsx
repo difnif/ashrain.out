@@ -136,12 +136,11 @@ const CSS = `
 .sf3-layer img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
   transition: opacity .45s ease; pointer-events: none; -webkit-user-drag: none; }
 .sf3-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.sf3-sub { position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%); max-width: 84%;
-  padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; text-align: center;
-  line-height: 1.45; pointer-events: none; animation: sf3subin .35s ease; }
+.sf3-sub { position: absolute; padding: 5px 13px; border-radius: 12px; font-weight: 700; text-align: center;
+  line-height: 1.5; pointer-events: none; animation: sf3subin .35s ease; white-space: pre-line; }
 .sf3-stage.dark .sf3-sub { background: rgba(8,12,26,.55); color: #F2E8CE; }
 .sf3-stage.light .sf3-sub { background: rgba(255,252,242,.72); color: #4A3B25; }
-@keyframes sf3subin { from { opacity: 0; transform: translate(-50%, 5px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes sf3subin { from { opacity: 0; } to { opacity: 1; } }
 .sf3-cap { font-size: 12px; color: var(--mut, #64748B); text-align: center; margin: 7px 4px 0; line-height: 1.5; }
 .sf3-badge { position: absolute; right: 7px; bottom: 5px; font-size: 8px; letter-spacing: .4px;
   color: rgba(150,150,150,.65); pointer-events: none; font-weight: 700; }
@@ -276,6 +275,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
   const childMarks = useMemo(() => (sc.layers || []).filter((l) => l.mark && l.parent), [sc]);
   const slots = useMemo(() => imgAll.flatMap((l) => l.slots || [l.slot]).filter(Number.isFinite), [imgAll]);
   const tlData = useMemo(() => buildTracks(sc), [sc]);
+  const subsSorted = useMemo(() => [...(sc.subs || [])].sort((a, b) => (a.t || 0) - (b.t || 0)), [sc]);
   const play = sc.play || {};
   const hasLoop = (sc.tl || []).some((t) => t.loop) || play.loop;
 
@@ -314,6 +314,11 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
     baseT.current = elRef.current;
     setPlaying(false);
     cancelAnimationFrame(raf.current);
+  }, []);
+  const seek = useCallback((t) => {
+    baseT.current = t + 1; elRef.current = t + 1;
+    setPlaying(false); cancelAnimationFrame(raf.current);
+    setTime(t + 1);
   }, []);
   const togglePlay = useCallback(() => {
     if (playingRef.current) { pause(); return; }
@@ -384,6 +389,27 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
     window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
   };
 
+  let subIdx = -1;
+  subsSorted.forEach((su, i) => { if ((su.t || 0) <= time + 1) subIdx = i; });
+  const SUBDEF = { x: 0.5, y: STAGE_H - 0.052, w: 0.84, size: 12, bg: theme === "dark" ? 0.55 : 0.72 };
+  const onSubDown = (e) => {
+    if (!edit) return;
+    e.preventDefault(); e.stopPropagation(); setSelId("@sub");
+    const r = stageRef.current.getBoundingClientRect();
+    const base = { ...SUBDEF, ...(sc.subStyle || {}) };
+    const sx = e.clientX, sy = e.clientY;
+    let pushed = false;
+    const mv = (ev) => {
+      if (!pushed) { pushed = true; pushHist("sub"); }
+      const dx = (ev.clientX - sx) / r.width, dy = (ev.clientY - sy) / r.width;
+      setSc((sn) => ({ ...sn, subStyle: { ...(sn.subStyle || {}), x: +(base.x + dx).toFixed(3), y: +(base.y + dy).toFixed(3) } }));
+    };
+    const up = () => {
+      clickGuard.current = true; setTimeout(() => { clickGuard.current = false; }, 250);
+      window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
+  };
   const badge = `${conceptId}·${blockId}·${sc.id}`;
   return (
     <div className="sf3">
@@ -491,11 +517,24 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
           })}
           <MarkSvg marks={markLayers} st={st} theme={theme} />
           {(() => {
-            const subs = [...(sc.subs || [])].sort((a, b) => (a.t || 0) - (b.t || 0));
-            let cur = null;
-            for (const su of subs) { if ((su.t || 0) <= time + 1) cur = su; else break; }
+            let cur = subIdx >= 0 ? subsSorted[subIdx] : null;
             if (cur && cur.d && time > (cur.t || 0) + cur.d) cur = null;
-            return cur ? <div key={(cur.t || 0) + cur.text} className="sf3-sub">{cur.text}</div> : null;
+            if (!cur && edit && selId === "@sub" && subsSorted.length) cur = subsSorted[Math.max(0, subIdx)];
+            if (!cur) return null;
+            const ss = { ...SUBDEF, ...(sc.subStyle || {}),
+              ...Object.fromEntries(["x","y","w","size","bg"].filter((k) => cur[k] != null).map((k) => [k, cur[k]])) };
+            return (
+              <div key={(cur.t || 0) + cur.text} className="sf3-sub"
+                onPointerDown={onSubDown} onClick={(e) => { if (edit) e.stopPropagation(); }}
+                style={{
+                  left: `${ss.x * 100}%`, top: `${(ss.y / STAGE_H) * 100}%`, transform: "translate(-50%,-50%)",
+                  maxWidth: `${ss.w * 100}%`, fontSize: ss.size,
+                  background: theme === "dark" ? `rgba(8,12,26,${ss.bg})` : `rgba(255,252,242,${ss.bg})`,
+                  color: theme === "dark" ? "#F2E8CE" : "#4A3B25",
+                  pointerEvents: edit ? "auto" : "none", cursor: edit ? "grab" : undefined,
+                  outline: edit && selId === "@sub" ? "2px dashed rgba(230,170,60,.9)" : undefined, outlineOffset: 2,
+                }}>{cur.text}</div>
+            );
           })()}
           {meta && missing.length > 0 && (
             <div className="sf3-empty">
@@ -510,6 +549,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
       {sc.caption ? <p className="sf3-cap">{sc.caption}</p> : null}
       {edit && <StageEditor sc={sc} setSc={setSc} selId={selId} figure={figure}
         conceptId={conceptId} blockId={blockId} onToggle={togglePlay} onRestart={start} isPlaying={playing} theme={theme} meta={meta}
+        setSelId={setSelId} subs={subsSorted} subIdx={subIdx} seek={seek}
         pushHist={pushHist} undo={undo} redo={redo}
         canUndo={hist.current.past.length > 0} canRedo={hist.current.future.length > 0}
         refreshMeta={() => { for (const n of slots) bustSlotMeta(n); loadSlotMeta(slots).then(setMeta); }} />}
@@ -518,7 +558,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
 }
 
 /* ══════════ 무대 편집 패널 ══════════ */
-function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onToggle, onRestart, isPlaying, theme = "light", meta, refreshMeta, pushHist, undo, redo, canUndo, canRedo }) {
+function StageEditor({ sc, setSc, selId, setSelId, figure, conceptId, blockId, onToggle, onRestart, isPlaying, theme = "light", meta, refreshMeta, pushHist, undo, redo, canUndo, canRedo, subs = [], subIdx = -1, seek }) {
   const [jsonMode, setJsonMode] = useState(false);
   const [txt, setTxt] = useState("");
   const [warn, setWarn] = useState("");
@@ -584,6 +624,11 @@ function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onToggle, o
         <button className="sf3-btn" onClick={onToggle}>{isPlaying ? "⏸ 정지" : "▶ 재생"}</button>
         <button className="sf3-btn" onClick={onRestart}>⟲ 처음</button>
         <span style={{ flex: 1 }} />
+        <button className={"sf3-btn" + (selId === "@sub" ? " on" : "")} title="대사 편집"
+          onClick={() => {
+            if (!subs.length) { pushHist && pushHist("sub"); setSc((sn) => ({ ...sn, subs: [{ t: 0, text: "대사" }] })); }
+            setSelId && setSelId(selId === "@sub" ? null : "@sub");
+          }}>💬</button>
         <button className={"sf3-btn" + (jsonMode ? " on" : "")} onClick={() => { setJsonMode(!jsonMode); setTxt(JSON.stringify(sc, null, 1)); }}>JSON</button>
         <button className="sf3-btn pri" disabled={busy} onClick={save}>{busy ? "…" : saved ? "저장됨 ✓" : "저장"}</button>
       </div>
@@ -635,7 +680,39 @@ function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onToggle, o
             <span style={{ fontSize: 11, color: "var(--mut,#8A929C)" }}>x·y칸은 시작값 — 도착 위치는 무대에서 드래그</span>}
         </div>
       )}
-      {!sel && <div className="sf3-row" style={{ color: "var(--mut)" }}>무대 위 레이어를 탭하면 선택 · 드래그로 이동 · 우하단 점으로 크기</div>}
+      {selId === "@sub" && (() => {
+        const i = Math.min(Math.max(subIdx, 0), subs.length - 1);
+        const su = subs[i];
+        const write = (arr) => setSc((sn) => ({ ...sn, subs: arr }));
+        const upd = (patch) => { pushHist && pushHist("sub"); write(subs.map((x, j) => (j === i ? { ...x, ...patch } : x))); };
+        const ss = { size: 12, w: 0.84, bg: theme === "dark" ? 0.55 : 0.72, ...(sc.subStyle || {}) };
+        const updStyle = (patch) => { pushHist && pushHist("substyle"); setSc((sn) => ({ ...sn, subStyle: { ...(sn.subStyle || {}), ...patch } })); };
+        return (
+          <>
+            <div className="sf3-row">
+              <label>대사 {subs.length ? `${i + 1}/${subs.length}` : "없음"}</label>
+              <button className="sf3-btn" disabled={i <= 0} onClick={() => seek && seek(subs[i - 1].t || 0)}>◀</button>
+              <button className="sf3-btn" disabled={i >= subs.length - 1} onClick={() => seek && seek(subs[i + 1].t || 0)}>▶</button>
+              {su && <>시작 <input type="number" step="100" value={su.t || 0} onChange={(e) => upd({ t: +e.target.value })} style={{ width: 76 }} /> ms</>}
+              <span style={{ flex: 1 }} />
+              <button className="sf3-btn" onClick={() => { pushHist && pushHist("sub");
+                const arr = [...subs]; arr.splice(i + 1, 0, { t: (su?.t || 0) + 800, text: "새 대사" }); write(arr); }}>＋ 추가</button>
+              {su && <button className="sf3-btn" onClick={() => { pushHist && pushHist("sub"); write(subs.filter((_, j) => j !== i)); }}>삭제</button>}
+            </div>
+            {su && <textarea value={su.text} spellCheck={false} style={{ minHeight: 58 }}
+              onChange={(e) => upd({ text: e.target.value })} placeholder="대사 내용 — 엔터로 줄바꿈" />}
+            <div className="sf3-row">
+              <label>박스</label>
+              투명도 <input type="range" min="0" max="1" step="0.02" value={ss.bg} onChange={(e) => updStyle({ bg: +e.target.value })} style={{ width: 86 }} />
+              글자 <input type="range" min="9" max="20" step="0.5" value={ss.size} onChange={(e) => updStyle({ size: +e.target.value })} style={{ width: 86 }} />
+              <span style={{ width: 26 }}>{ss.size}</span>
+              너비 <input type="range" min="0.3" max="0.96" step="0.01" value={ss.w} onChange={(e) => updStyle({ w: +e.target.value })} style={{ width: 86 }} />
+              <span style={{ fontSize: 11, color: "var(--mut,#8A929C)" }}>위치는 무대의 대사 박스를 드래그</span>
+            </div>
+          </>
+        );
+      })()}
+      {!sel && selId !== "@sub" && <div className="sf3-row" style={{ color: "var(--mut)" }}>레이어나 대사 박스를 탭하면 선택 · 드래그로 이동</div>}
       {jsonMode && (
         <>
           <textarea value={txt} onChange={(e) => setTxt(e.target.value)} spellCheck={false} />
