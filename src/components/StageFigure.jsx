@@ -158,7 +158,8 @@ const CSS = `
 .sf3-ed select, .sf3-ed input[type=number] { background: var(--in,#F4F6F8); border: 1px solid var(--inbd,#D3D9DF);
   border-radius: 8px; padding: 5px 7px; font-size: 12.5px; color: var(--ink,#1F2937); }
 .sf3-ed textarea { width: 100%; min-height: 120px; box-sizing: border-box; font-family: ui-monospace, monospace;
-  font-size: 11.5px; background: var(--in,#F4F6F8); border: 1px solid var(--inbd,#D3D9DF); border-radius: 8px; padding: 8px; }
+  font-size: 11.5px; background: var(--in,#F4F6F8); border: 1px solid var(--inbd,#D3D9DF); border-radius: 8px; padding: 8px;
+  color: var(--ink,#1F2937); caret-color: var(--ac,#0DA95F); }
 .sf3-btn { border: none; border-radius: 9px; font-size: 12.5px; font-weight: 800; padding: 8px 12px; cursor: pointer;
   background: var(--in,#F4F6F8); color: var(--ink,#1F2937); border: 1px solid var(--inbd,#D3D9DF); }
 .sf3-btn:disabled { opacity: .38; cursor: default; }
@@ -389,9 +390,10 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
     window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
   };
 
+  const subTime = sc.subLoop ? time % sc.subLoop : time;
   let subIdx = -1;
-  subsSorted.forEach((su, i) => { if ((su.t || 0) <= time + 1) subIdx = i; });
-  const SUBDEF = { x: 0.5, y: STAGE_H - 0.052, w: 0.84, size: 12, bg: theme === "dark" ? 0.55 : 0.72 };
+  subsSorted.forEach((su, i) => { if ((su.t || 0) <= subTime + 1) subIdx = i; });
+  const SUBDEF = { x: 0.5, y: STAGE_H - 0.052, w: 0.84, size: 12, align: "center", bg: theme === "dark" ? 0.55 : 0.72 };
   const onSubDown = (e) => {
     if (!edit) return;
     e.preventDefault(); e.stopPropagation(); setSelId("@sub");
@@ -518,17 +520,17 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
           <MarkSvg marks={markLayers} st={st} theme={theme} />
           {(() => {
             let cur = subIdx >= 0 ? subsSorted[subIdx] : null;
-            if (cur && cur.d && time > (cur.t || 0) + cur.d) cur = null;
+            if (cur && cur.d && subTime > (cur.t || 0) + cur.d) cur = null;
             if (!cur && edit && selId === "@sub" && subsSorted.length) cur = subsSorted[Math.max(0, subIdx)];
             if (!cur) return null;
             const ss = { ...SUBDEF, ...(sc.subStyle || {}),
-              ...Object.fromEntries(["x","y","w","size","bg"].filter((k) => cur[k] != null).map((k) => [k, cur[k]])) };
+              ...Object.fromEntries(["x","y","w","size","bg","align"].filter((k) => cur[k] != null).map((k) => [k, cur[k]])) };
             return (
               <div key={(cur.t || 0) + cur.text} className="sf3-sub"
                 onPointerDown={onSubDown} onClick={(e) => { if (edit) e.stopPropagation(); }}
                 style={{
                   left: `${ss.x * 100}%`, top: `${(ss.y / STAGE_H) * 100}%`, transform: "translate(-50%,-50%)",
-                  maxWidth: `${ss.w * 100}%`, fontSize: ss.size,
+                  maxWidth: `${ss.w * 100}%`, fontSize: ss.size, textAlign: ss.align,
                   background: theme === "dark" ? `rgba(8,12,26,${ss.bg})` : `rgba(255,252,242,${ss.bg})`,
                   color: theme === "dark" ? "#F2E8CE" : "#4A3B25",
                   pointerEvents: edit ? "auto" : "none", cursor: edit ? "grab" : undefined,
@@ -685,7 +687,7 @@ function StageEditor({ sc, setSc, selId, setSelId, figure, conceptId, blockId, o
         const su = subs[i];
         const write = (arr) => setSc((sn) => ({ ...sn, subs: arr }));
         const upd = (patch) => { pushHist && pushHist("sub"); write(subs.map((x, j) => (j === i ? { ...x, ...patch } : x))); };
-        const ss = { size: 12, w: 0.84, bg: theme === "dark" ? 0.55 : 0.72, ...(sc.subStyle || {}) };
+        const ss = { size: 12, w: 0.84, align: "center", bg: theme === "dark" ? 0.55 : 0.72, ...(sc.subStyle || {}) };
         const updStyle = (patch) => { pushHist && pushHist("substyle"); setSc((sn) => ({ ...sn, subStyle: { ...(sn.subStyle || {}), ...patch } })); };
         return (
           <>
@@ -707,6 +709,10 @@ function StageEditor({ sc, setSc, selId, setSelId, figure, conceptId, blockId, o
               글자 <input type="range" min="9" max="20" step="0.5" value={ss.size} onChange={(e) => updStyle({ size: +e.target.value })} style={{ width: 86 }} />
               <span style={{ width: 26 }}>{ss.size}</span>
               너비 <input type="range" min="0.3" max="0.96" step="0.01" value={ss.w} onChange={(e) => updStyle({ w: +e.target.value })} style={{ width: 86 }} />
+              정렬 {[["left", "왼"], ["center", "중"], ["right", "오"]].map(([v, lb]) => (
+                <button key={v} className={"sf3-btn" + ((ss.align || "center") === v ? " on" : "")}
+                  onClick={() => updStyle({ align: v })} style={{ padding: "6px 9px" }}>{lb}</button>
+              ))}
               <span style={{ fontSize: 11, color: "var(--mut,#8A929C)" }}>위치는 무대의 대사 박스를 드래그</span>
             </div>
           </>
