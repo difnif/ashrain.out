@@ -156,6 +156,7 @@ const CSS = `
   font-size: 11.5px; background: var(--in,#F4F6F8); border: 1px solid var(--inbd,#D3D9DF); border-radius: 8px; padding: 8px; }
 .sf3-btn { border: none; border-radius: 9px; font-size: 12.5px; font-weight: 800; padding: 8px 12px; cursor: pointer;
   background: var(--in,#F4F6F8); color: var(--ink,#1F2937); border: 1px solid var(--inbd,#D3D9DF); }
+.sf3-btn:disabled { opacity: .38; cursor: default; }
 .sf3-btn.pri { background: var(--ac,#0DA95F); color: #fff; border-color: transparent; }
 .sf3-btn.on { border-color: var(--ac,#0DA95F); color: var(--ac,#0DA95F); }
 .sf3-warn { color: #DC2626; font-size: 12px; margin-top: 4px; }
@@ -212,7 +213,10 @@ function MarkSvg({ marks, st, theme }) {
 /* ══════════ 무대 씬 ══════════ */
 export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false, theme = "light" }) {
   const [sc, setSc] = useState(scene);              // 편집 반영본
-  useEffect(() => setSc(scene), [scene]);
+  useEffect(() => {
+    setSc(scene);
+    hist.current = { past: [], future: [], lastTag: "", lastT: 0 }; setHv((v) => v + 1);
+  }, [scene]);
   const [meta, setMeta] = useState(null);           // slot -> meta|null
   const [dims, setDims] = useState({});             // slot -> naturalW/H 비율
   const [time, setTime] = useState(0);
@@ -220,6 +224,42 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
   const [selId, setSelId] = useState(null);
   const stageRef = useRef(null);
   const raf = useRef(0);
+  const scRef = useRef(scene);
+  useEffect(() => { scRef.current = sc; }, [sc]);
+  const hist = useRef({ past: [], future: [], lastTag: "", lastT: 0 });
+  const [, setHv] = useState(0); // 히스토리 변화 시 리렌더용
+  const pushHist = useCallback((tag = "") => {
+    const h = hist.current, now = Date.now();
+    if (tag && tag === h.lastTag && now - h.lastT < 800) { h.lastT = now; return; } // 연타 병합
+    h.past.push(JSON.stringify(scRef.current));
+    if (h.past.length > 50) h.past.shift();
+    h.future = []; h.lastTag = tag; h.lastT = now; setHv((v) => v + 1);
+  }, []);
+  const undo = useCallback(() => {
+    const h = hist.current; if (!h.past.length) return;
+    h.future.push(JSON.stringify(scRef.current));
+    const prev = JSON.parse(h.past.pop());
+    h.lastTag = ""; setSc(prev); setHv((v) => v + 1);
+  }, []);
+  const redo = useCallback(() => {
+    const h = hist.current; if (!h.future.length) return;
+    h.past.push(JSON.stringify(scRef.current));
+    const nxt = JSON.parse(h.future.pop());
+    h.lastTag = ""; setSc(nxt); setHv((v) => v + 1);
+  }, []);
+  useEffect(() => {
+    if (!edit) return;
+    const onKey = (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const t = e.target?.tagName;
+      if (t === "INPUT" || t === "TEXTAREA") return; // 입력창 안은 브라우저 기본 undo
+      const k = e.key.toLowerCase();
+      if (k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); redo(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [edit, undo, redo]);
   const clickGuard = useRef(false); // 레이어 조작 직후의 click이 선택을 풀지 않게
   const playedOnce = useRef(false);
 
@@ -235,25 +275,46 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
 
   useEffect(() => { let on = true; loadSlotMeta(slots).then((m) => on && setMeta(m)); return () => { on = false; }; }, [JSON.stringify(slots)]);
 
-  const start = useCallback(() => {
+  const [playing, setPlaying] = useState(false);
+  const playingRef = useRef(false);
+  useEffect(() => { playingRef.current = playing; }, [playing]);
+  const baseT = useRef(0);   // 일시정지 시점까지의 누적 씬 시간(ms)
+  const elRef = useRef(0);
+
+  const run = useCallback(() => { // baseT부터 이어서 재생
     cancelAnimationFrame(raf.current);
     if (typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches) { setTime(tlData.dur); return; }
-    const t0 = performance.now();
     const spd = play.speed || 1;
+    const t0 = performance.now();
+    setPlaying(true);
     const tick = (now) => {
-      let t = (now - t0) * spd;
-      const total = hasLoop ? Infinity : tlData.dur;
-      if (play.reverse) t = Math.max(0, tlData.dur - t);
-      if (!hasLoop && ((play.reverse && t <= 0) || (!play.reverse && t >= total))) {
+      const el = baseT.current + (now - t0) * spd;
+      elRef.current = el;
+      if (!hasLoop && el >= tlData.dur) {
+        baseT.current = tlData.dur; elRef.current = tlData.dur;
         setTime(play.reverse ? 0 : tlData.dur);
-        if (play.loop) raf.current = requestAnimationFrame(() => setTimeout(start, 900));
+        setPlaying(false);
+        if (play.loop) setTimeout(() => { baseT.current = 0; run(); }, 900);
         return;
       }
-      setTime(t);
+      setTime(play.reverse ? Math.max(0, tlData.dur - el) : el);
       raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
   }, [tlData, play.speed, play.reverse, play.loop, hasLoop]);
+
+  const start = useCallback(() => { baseT.current = 0; run(); }, [run]);
+  const pause = useCallback(() => {
+    baseT.current = elRef.current;
+    setPlaying(false);
+    cancelAnimationFrame(raf.current);
+  }, []);
+  const togglePlay = useCallback(() => {
+    if (playingRef.current) { pause(); return; }
+    if (!hasLoop && baseT.current >= tlData.dur) baseT.current = 0; // 끝난 상태면 처음부터
+    run();
+  }, [run, pause, hasLoop, tlData]);
+  useEffect(() => { if (edit) pause(); }, [edit, pause]);
 
   useEffect(() => {
     const el = stageRef.current;
@@ -280,6 +341,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
       sx: e.clientX, sy: e.clientY, w: r.width * parW, x0: L.x ?? 0.5, y0: L.y ?? STAGE_H / 2, w0: L.w ?? 0.2 };
     const mv = (ev) => {
       const d = drag.current; if (!d) return;
+      if (!d.pushed) { d.pushed = true; pushHist(); }
       const dx = (ev.clientX - d.sx) / d.w, dy = (ev.clientY - d.sy) / d.w;
       setSc((s) => ({ ...s, layers: s.layers.map((x) => x.id !== d.id ? x :
         d.mode === "move" ? { ...x, x: +(d.x0 + dx).toFixed(3), y: +(d.y0 + dy).toFixed(3) }
@@ -302,7 +364,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
         {isAdmin && <button className="sf3-gear" onClick={() => setEdit((v) => !v)} title="무대 편집">{edit ? "✕" : "⚙️"}</button>}
         <div ref={stageRef} className={`sf3-stage ${theme}`}
           onClick={() => {
-            if (!edit) { playedOnce.current = true; start(); return; }
+            if (!edit) { playedOnce.current = true; togglePlay(); return; }
             if (clickGuard.current) { clickGuard.current = false; return; }
             setSelId(null);
           }}>
@@ -404,14 +466,16 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
       </div>
       {sc.caption ? <p className="sf3-cap">{sc.caption}</p> : null}
       {edit && <StageEditor sc={sc} setSc={setSc} selId={selId} figure={figure}
-        conceptId={conceptId} blockId={blockId} onReplay={start} theme={theme} meta={meta}
+        conceptId={conceptId} blockId={blockId} onToggle={togglePlay} onRestart={start} isPlaying={playing} theme={theme} meta={meta}
+        pushHist={pushHist} undo={undo} redo={redo}
+        canUndo={hist.current.past.length > 0} canRedo={hist.current.future.length > 0}
         refreshMeta={() => { for (const n of slots) bustSlotMeta(n); loadSlotMeta(slots).then(setMeta); }} />}
     </div>
   );
 }
 
 /* ══════════ 무대 편집 패널 ══════════ */
-function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onReplay, theme = "light", meta, refreshMeta }) {
+function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onToggle, onRestart, isPlaying, theme = "light", meta, refreshMeta, pushHist, undo, redo, canUndo, canRedo }) {
   const [jsonMode, setJsonMode] = useState(false);
   const [txt, setTxt] = useState("");
   const [warn, setWarn] = useState("");
@@ -440,8 +504,9 @@ function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onReplay, t
     refreshMeta && refreshMeta();
   };
   const play = sc.play || {};
-  const setPlay = (p) => setSc((s) => ({ ...s, play: { ...s.play, ...p } }));
-  const setLayer = (patch) => setSc((s) => ({ ...s, layers: s.layers.map((l) => l.id === selId ? { ...l, ...patch } : l) }));
+  const setPlay = (p) => { pushHist && pushHist("play"); setSc((s) => ({ ...s, play: { ...s.play, ...p } })); };
+  const setLayer = (patch) => { pushHist && pushHist("layer:" + selId + ":" + Object.keys(patch).join(","));
+    setSc((s) => ({ ...s, layers: s.layers.map((l) => l.id === selId ? { ...l, ...patch } : l) })); };
 
   const validate = (s) => {
     if (!s || s.anim !== "stage" || !Array.isArray(s.layers)) return "anim:'stage' + layers[] 필요";
@@ -465,13 +530,16 @@ function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onReplay, t
   return (
     <div className="sf3-ed">
       <div className="sf3-row">
+        <button className="sf3-btn" disabled={!canUndo} onClick={undo} title="되돌리기 (Ctrl+Z)">↶</button>
+        <button className="sf3-btn" disabled={!canRedo} onClick={redo} title="다시 실행 (Ctrl+Shift+Z)">↷</button>
         <label>재생</label>
         <select value={play.speed || 1} onChange={(e) => setPlay({ speed: +e.target.value })}>
           {[0.25, 0.5, 0.75, 1, 1.5, 2, 3].map((v) => <option key={v} value={v}>{v}×</option>)}
         </select>
         <button className={"sf3-btn" + (play.reverse ? " on" : "")} onClick={() => setPlay({ reverse: !play.reverse })}>역재생</button>
         <button className={"sf3-btn" + (play.loop ? " on" : "")} onClick={() => setPlay({ loop: !play.loop })}>반복</button>
-        <button className="sf3-btn" onClick={onReplay}>▶ 다시</button>
+        <button className="sf3-btn" onClick={onToggle}>{isPlaying ? "⏸ 정지" : "▶ 재생"}</button>
+        <button className="sf3-btn" onClick={onRestart}>⟲ 처음</button>
         <span style={{ flex: 1 }} />
         <button className={"sf3-btn" + (jsonMode ? " on" : "")} onClick={() => { setJsonMode(!jsonMode); setTxt(JSON.stringify(sc, null, 1)); }}>JSON</button>
         <button className="sf3-btn pri" disabled={busy} onClick={save}>{busy ? "…" : saved ? "저장됨 ✓" : "저장"}</button>
@@ -517,7 +585,7 @@ function StageEditor({ sc, setSc, selId, figure, conceptId, blockId, onReplay, t
           <textarea value={txt} onChange={(e) => setTxt(e.target.value)} spellCheck={false} />
           <div className="sf3-row">
             <button className="sf3-btn" onClick={() => {
-              try { const s = JSON.parse(txt); const w = validate(s); if (w) { setWarn(w); return; } setWarn(""); setSc(s); }
+              try { const s = JSON.parse(txt); const w = validate(s); if (w) { setWarn(w); return; } setWarn(""); pushHist && pushHist("json"); setSc(s); }
               catch (e) { setWarn("JSON 파싱 실패: " + e.message); }
             }}>적용</button>
             <span style={{ fontSize: 11.5, color: "var(--mut)" }}>붙여넣기 → 적용 → 저장 (저장해야 DB 반영)</span>
