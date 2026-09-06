@@ -6,7 +6,8 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 
-export const STAGE_H = 2 / 3; // 3:2
+export const STAGE_H = 2 / 3; // 3:2 (본 무대)
+export const SUB_H = 0.095;   // 자막 띠 높이(무대 폭 단위) — 자막 있는 씬은 아래로 이만큼 확장
 const SLOT_ROOT = "slots";
 
 /* ══════════ 슬롯 메타/URL ══════════ */
@@ -136,8 +137,15 @@ const CSS = `
 .sf3-layer img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
   transition: opacity .45s ease; pointer-events: none; -webkit-user-drag: none; }
 .sf3-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.sf3-sub { position: absolute; padding: 5px 13px; border-radius: 12px; font-weight: 700; text-align: center;
-  line-height: 1.5; pointer-events: none; animation: sf3subin .35s ease; white-space: pre-line; }
+@font-face {
+  font-family: "EBS Hunminjeongeum Saeron";
+  src: url("/fonts/EBSHunminjeongeumSaeronR.woff2") format("woff2"),
+       url("/fonts/EBSHunminjeongeumSaeronR.ttf") format("truetype");
+  font-weight: 400; font-display: swap;
+}
+.sf3-sub { position: absolute; padding: 5px 13px; border-radius: 12px; font-weight: 400; text-align: center;
+  font-family: "EBS Hunminjeongeum Saeron", "Gowun Batang", serif; letter-spacing: .01em;
+  line-height: 1.55; pointer-events: none; animation: sf3subin .35s ease; white-space: pre-line; }
 .sf3-stage.dark .sf3-sub { background: rgba(8,12,26,.55); color: #F2E8CE; }
 .sf3-stage.light .sf3-sub { background: rgba(255,252,242,.72); color: #4A3B25; }
 @keyframes sf3subin { from { opacity: 0; } to { opacity: 1; } }
@@ -180,8 +188,8 @@ const INK = { dark: "#EFE4C8", light: "#4A3B25" };
 const ACCENT = { dark: "#D9B662", light: "#8A6A2F" };
 
 /* ══════════ 마크(앱이 그리는 도형) ══════════ */
-function MarkSvg({ marks, st, theme }) {
-  const S = 300, H = S * STAGE_H;
+function MarkSvg({ marks, st, theme, fullH = STAGE_H }) {
+  const S = 300, H = S * fullH;
   return (
     <svg className="sf3-marks" viewBox={`0 0 ${S} ${H}`} preserveAspectRatio="none">
       {marks.map((m) => {
@@ -291,6 +299,8 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
   const slots = useMemo(() => imgAll.flatMap((l) => l.slots || [l.slot]).filter(Number.isFinite), [imgAll]);
   const tlData = useMemo(() => buildTracks(sc), [sc]);
   const subsSorted = useMemo(() => [...(sc.subs || [])].sort((a, b) => (a.t || 0) - (b.t || 0)), [sc]);
+  const stripH = subsSorted.length ? SUB_H : 0;
+  const fullH = STAGE_H + stripH; // 같은 종이가 이어짐 — 별도 영역으로 보이지 않게 배경은 통짜
   const play = sc.play || {};
   const hasLoop = (sc.tl || []).some((t) => t.loop) || play.loop;
 
@@ -305,7 +315,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
   const run = useCallback(() => { // baseT부터 이어서 재생
     cancelAnimationFrame(raf.current);
     if (typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches) { setTime(tlData.dur); return; }
-    const spd = play.speed || 1;
+    const spd = (play.speed || 1) * 0.75; // 전 씬 공통 기본 감속 — 노브 1×가 표준(75%) 속도
     const t0 = performance.now();
     setPlaying(true);
     const tick = (now) => {
@@ -407,7 +417,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
   const subTime = sc.subLoop ? time % sc.subLoop : time;
   let subIdx = -1;
   subsSorted.forEach((su, i) => { if ((su.t || 0) <= subTime + 1) subIdx = i; });
-  const SUBDEF = { x: 0.5, y: STAGE_H - 0.052, w: 0.84, size: 12, align: "center", bg: theme === "dark" ? 0.55 : 0.72 };
+  const SUBDEF = { x: 0.5, y: stripH ? STAGE_H + stripH / 2 : STAGE_H - 0.052, w: 0.84, size: 12, align: "center", bg: theme === "dark" ? 0.55 : 0.72 };
   const onSubDown = (e) => {
     if (!edit) return;
     e.preventDefault(); e.stopPropagation(); setSelId("@sub");
@@ -459,6 +469,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
       <div style={{ position: "relative" }}>
         {isAdmin && <button className="sf3-gear" onClick={() => setEdit((v) => !v)} title="무대 편집">{edit ? "✕" : "⚙️"}</button>}
         <div ref={stageRef} className={`sf3-stage ${theme}`}
+          style={{ aspectRatio: `1 / ${fullH}` }}
           onClick={() => {
             if (!edit) { playedOnce.current = true; togglePlay(); return; }
             if (clickGuard.current) { clickGuard.current = false; return; }
@@ -492,8 +503,8 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
                 onPointerDown={(e) => onPointerDown(e, L)}
                 onClick={(e) => { if (edit) e.stopPropagation(); }}
                 style={{
-                  left: `${(s.x - w / 2) * 100}%`, top: `${((s.y - h / 2) / STAGE_H) * 100}%`,
-                  width: `${w * 100}%`, height: `${(h / STAGE_H) * 100}%`,
+                  left: `${(s.x - w / 2) * 100}%`, top: `${((s.y - h / 2) / fullH) * 100}%`,
+                  width: `${w * 100}%`, height: `${(h / fullH) * 100}%`,
                   transformOrigin: `${pv[0] * 100}% ${pv[1] * 100}%`,
                   transform: `rotate(${rot}deg) skewX(${sk}deg) scaleX(${scl}) scaleY(${s.scale ?? 1})`,
                   opacity: s.fade, zIndex: L.z ?? 1, pointerEvents: edit ? "auto" : "none",
@@ -557,7 +568,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
               </div>
             );
           })}
-          <MarkSvg marks={markLayers} st={st} theme={theme} />
+          <MarkSvg marks={markLayers} st={st} theme={theme} fullH={fullH} />
           {(() => {
             let cur = subIdx >= 0 ? subsSorted[subIdx] : null;
             if (cur && cur.d && subTime > (cur.t || 0) + cur.d) cur = null;
@@ -565,12 +576,14 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
             if (!cur) return null;
             const ss = { ...SUBDEF, ...(sc.subStyle || {}),
               ...Object.fromEntries(["x","y","w","size","bg","align"].filter((k) => cur[k] != null).map((k) => [k, cur[k]])) };
+            const fixedW = (sc.subStyle && sc.subStyle.w != null) || cur.w != null; // 손대기 전엔 글 길이에 맞춰 반응형
             return (
               <div key={(cur.t || 0) + cur.text} className="sf3-sub"
                 onPointerDown={onSubDown} onClick={(e) => { if (edit) e.stopPropagation(); }}
                 style={{
-                  left: `${ss.x * 100}%`, top: `${(ss.y / STAGE_H) * 100}%`, transform: "translate(-50%,-50%)",
-                  width: `${ss.w * 100}%`, boxSizing: "border-box", fontSize: ss.size, textAlign: ss.align,
+                  left: `${ss.x * 100}%`, top: `${(ss.y / fullH) * 100}%`, transform: "translate(-50%,-50%)",
+                  width: fixedW ? `${ss.w * 100}%` : "max-content", maxWidth: `${ss.w * 100}%`,
+                  boxSizing: "border-box", fontSize: ss.size, textAlign: ss.align,
                   background: theme === "dark" ? `rgba(8,12,26,${ss.bg})` : `rgba(255,252,242,${ss.bg})`,
                   color: theme === "dark" ? "#F2E8CE" : "#4A3B25",
                   pointerEvents: edit ? "auto" : "none", cursor: edit ? "grab" : undefined,
