@@ -1,0 +1,1280 @@
+[
+ {
+  "id": "19250d01-0fc7-42d3-8eb9-26a61e30b1f8",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_평균값 정리_p73.jpg",
+  "reason": "문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) — ㄱ: −x²|x|는 미분가능, 평균변화율 −1 = f′(c)인 c=1/√3 ✓; ㄴ: |x+4|=x+4 ✓; ㄷ: x=0에서 미분불가, 평균변화율 0 → c=±1 구간 밖 ✗ → ④ = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 73,
+  "qtype": "choice",
+  "question": "[[frac(f(1) - f(-1), 2) = prime(f)(c)]]인 [[c]]가 열린구간 [[itv(-1, 1, oo)]]에\n존재하는 함수인 것만을 보기에서 있는 대로 고른 것은?\n<보기>\nㄱ. [[f(x) = -pow(x,2) abs(x)]]\nㄴ. [[f(x) = sqrt(pow(x + 4, 2))]]\nㄷ. [[f(x) = pow(x,2) - 2 abs(x)]]",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄷ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "3e73cc1a-0a0a-4406-b632-f85175ed7226",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_평균값 정리_p74.jpg",
+  "reason": "문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) — ㄱ: −x|x| 미분가능, 평균변화율 −1 = −2c → c=1/2 ✓; ㄴ: (−1,1)에서 미분가능·연속 → 평균값 정리 ✓; ㄷ: x+|x|, 평균변화율 1인데 f′는 0 또는 2 ✗ → ④ = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 74,
+  "qtype": "choice",
+  "question": "[[frac(f(1) - f(-1), 2) = prime(f)(c)]]인 [[c]]가 열린구간 [[itv(-1, 1, oo)]]에\n존재하는 함수인 것만을 보기에서 있는 대로 고른 것은?\n<보기>\nㄱ. [[f(x) = -x abs(x)]]\nㄴ. [[f(x) = -sqrt(x + 2)]]\nㄷ. [[f(x) = x + sqrt(pow(x,2))]]",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄷ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "11ff3746-63bd-4d59-ad8d-9835b53d58ea",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_평균값 정리_p75.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 2 vs 빠른정답 3 — f(−5)=31, f(6)=4, 평균변화율 −27/11; x=0에서 f′=−8로 미분가능; 2c−8=−27/11 → c=61/22, −2c−8=−27/11 → c=−61/22 → 2개. 빠른정답 3과 불일치. 출처 머리말 없음.",
+  "seq": 75,
+  "qtype": "short",
+  "question": "[[f(x)]] = { [[pow(x,2) - 8x + 16]] ([[x >= 0]]) ; [[-pow(x,2) - 8x + 16]] ([[x < 0]]) }에 대하여\n닫힌구간 [[itv(-5, 6, cc)]]에서 평균값의 정리를 만족시키는\n상수 [[c]]의 개수를 구하시오.",
+  "choices": null,
+  "answer": "2",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "78ea83e8-cf26-4f87-b309-378647374d84",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_평균값 정리_p92.jpg",
+  "reason": "도형 표현 불가: 함수 y=f(x)의 그래프(좌표평면) / 문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 5 — 현과 평행한 접선: 첫 증가 구간 1개 + 두 번째 증가 구간(현을 아래→위로 가로지름) 2개 = 3 → ③. 빠른정답 5와 불일치(그래프 판독 기반). 출처 머리말 없음.",
+  "seq": 92,
+  "qtype": "choice",
+  "question": "함수 [[y = f(x)]]의 그래프가 다음 그림과 같을 때,\n[[frac(f(b) - f(a), b - a) = prime(f)(c)]]\n를 만족시키는 상수 [[c]]의 개수는? (단, [[a < c < b]])",
+  "choices": [
+   "[[1]]",
+   "[[2]]",
+   "[[3]]",
+   "[[4]]",
+   "[[5]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면 위 곡선 y=f(x): x=a(원점 왼쪽)에서 점 찍고 올라가 극대, 내려가 극소(원점 오른쪽), 다시 올라가 극대(b 직전) 후 x=b에서 점 찍고 급감; 두 점 (a,f(a)), (b,f(b))를 잇는 직선, a·b에서 x축까지 점선"
+    }
+   }
+  ],
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.75
+ },
+ {
+  "id": "df171387-5385-4557-ba0a-8542372bc20f",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p7.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 2 — ④: 극한 2 = f(1) ✓; ①②는 x=1에서 불연속·정의 안 됨, ③ 극한 0≠1, ⑤ 좌우극한 ∓4 → ④. 빠른정답 2와 불일치. 출처 머리말 없음.",
+  "seq": 7,
+  "qtype": "choice",
+  "question": "다음 중 [[x = 1]]에서 연속인 함수는?\n(단, [[floor(x)]]는 [[x]]보다 크지 않은 최대의 정수이다.)",
+  "choices": [
+   "[[f(x) = 4 pow(floor(x), 2)]]",
+   "[[f(x) = frac(1, x - 1)]]",
+   "[[f(x)]] = { [[pow(x - 1, 2)]] ([[x != 1]]) ; [[1]] ([[x = 1]]) }",
+   "[[f(x)]] = { [[frac(pow(x,2) - 1, x - 1)]] ([[x != 1]]) ; [[2]] ([[x = 1]]) }",
+   "[[f(x)]] = { [[frac(4 abs(x - 1), x - 1)]] ([[x != 1]]) ; [[4]] ([[x = 1]]) }"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "0c3d90f2-0941-4396-bc55-4372fd635380",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p8.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ②, ④, ⑤ vs 빠른정답 5 — ① 연속, ② x−[x]는 정수에서 불연속, ③ 극한 (x+4)/x→3 = f(2) 연속, ④ 극한 3≠2, ⑤ 좌우극한 ∓1 → ②, ④, ⑤ (정답 3개; 빠른정답 5는 그중 하나). 출처 머리말 없음.",
+  "seq": 8,
+  "qtype": "choice",
+  "question": "다음 중 [[x = 2]]에서 불연속인 함수를 모두 고르면?\n(단, [[floor(x)]]는 [[x]]보다 크지 않은 최대의 정수이다.)\n(정답 3개)",
+  "choices": [
+   "[[f(x) = x abs(x - 2)]]",
+   "[[f(x) = x - floor(x)]]",
+   "[[f(x)]] = { [[frac(pow(x,2) + 2x - 8, pow(x,2) - 2x)]] ([[x != 2]]) ; [[3]] ([[x = 2]]) }",
+   "[[f(x)]] = { [[pow(x - 2, 2) + 3]] ([[x != 2]]) ; [[2]] ([[x = 2]]) }",
+   "[[f(x)]] = { [[frac(abs(x - 2), x - 2)]] ([[x != 2]]) ; [[1]] ([[x = 2]]) }"
+  ],
+  "answer": "②, ④, ⑤",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "159ea7cc-b7f1-4fdf-b036-8720729e0743",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p8.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ②, ④, ⑤ vs 빠른정답 5 — ① 연속, ② x−[x]는 정수에서 불연속, ③ 극한 (x+4)/x→3 = f(2) 연속, ④ 극한 3≠2, ⑤ 좌우극한 ∓1 → ②, ④, ⑤ (정답 3개; 빠른정답 5는 그중 하나). 출처 머리말 없음.",
+  "seq": 8,
+  "qtype": "choice",
+  "question": "다음 중 [[x = 2]]에서 불연속인 함수를 모두 고르면?\n(단, [[floor(x)]]는 [[x]]보다 크지 않은 최대의 정수이다.)\n(정답 3개)",
+  "choices": [
+   "[[f(x) = x abs(x - 2)]]",
+   "[[f(x) = x - floor(x)]]",
+   "[[f(x)]] = { [[frac(pow(x,2) + 2x - 8, pow(x,2) - 2x)]] ([[x != 2]]) ; [[3]] ([[x = 2]]) }",
+   "[[f(x)]] = { [[pow(x - 2, 2) + 3]] ([[x != 2]]) ; [[2]] ([[x = 2]]) }",
+   "[[f(x)]] = { [[frac(abs(x - 2), x - 2)]] ([[x != 2]]) ; [[1]] ([[x = 2]]) }"
+  ],
+  "answer": "②, ④, ⑤",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "2bfb83cb-3b37-4c98-be1e-b4a847a55a22",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p10.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — ②만 x=0에서 정의되고 연속 → ② = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 10,
+  "qtype": "choice",
+  "question": "다음 중 [[x = 0]]에서 연속인 함수는?",
+  "choices": [
+   "[[f(x) = -frac(3, pow(x,2))]]",
+   "[[f(x) = sqrt(x + 1)]]",
+   "[[f(x) = frac(10, x) - 9]]",
+   "[[f(x)]] = { [[frac(abs(x), x)]] ([[x != 0]]) ; [[1]] ([[x = 0]]) }",
+   "[[f(x)]] = { [[pow(x,2) - 1]] ([[x >= 0]]) ; [[-pow(x,2) + 2]] ([[x < 0]]) }"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "3e19ea11-7b2a-42ac-84aa-9c3e3eedfa03",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p11.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — ㄱ ✓, ㄴ x=−3에서 정의 안 됨 ✗, ㄷ 극한 (x+3)→1 = f(−2) ✓ → ⑤ = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 11,
+  "qtype": "choice",
+  "question": "모든 실수 [[x]]에서 연속인 함수인 것만을 보기에서 있는 대로\n고른 것은?\n<보기>\nㄱ. [[f(x) = pow(x,2) abs(x)]]\nㄴ. [[f(x) = frac(2 pow(x,2) + 5x - 3, x + 3)]]\nㄷ. [[f(x)]] = { [[frac(pow(x,2) + 5x + 6, x + 2)]] ([[x != -2]]) ; [[1]] ([[x = -2]]) }",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄷ",
+   "ㄱ, ㄴ",
+   "ㄱ, ㄷ"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "8ba42773-8dcb-4ec5-bd8a-0ace380698d3",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p12.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — 출처 [2022년 3월 고3 12번/4점]. g=(x−1)(x−2)(x−a), h(1)=(1−a)/2=h(a)=−(a−1)(a−2)/a → a=4; h(1)=−3/2, h(3)=−2/3 → −13/6 → ③ = 빠른정답 ✓.",
+  "seq": 12,
+  "qtype": "choice",
+  "question": "[[a > 2]]인 상수 [[a]]에 대하여 함수 [[f(x)]]를\n[[f(x)]] = { [[pow(x,2) - 4x + 3]] ([[x <= 2]]) ; [[-pow(x,2) + a x]] ([[x > 2]]) }라 하자.\n최고차항의 계수가 1인 삼차함수 [[g(x)]]에 대하여\n실수 전체의 집합에서 연속인 함수 [[h(x)]]가\n다음 조건을 만족시킬 때, [[h(1) + h(3)]]의 값은?\n(가) [[x != 1]], [[x != a]]일 때, [[h(x) = frac(g(x), f(x))]]이다.\n(나) [[h(1) = h(a)]]",
+  "choices": [
+   "[[-frac(15,6)]]",
+   "[[-frac(7,3)]]",
+   "[[-frac(13,6)]]",
+   "[[-2]]",
+   "[[-frac(11,6)]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "c18d0ca1-f4c4-4e9a-908d-ca74c47aff03",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p13.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — 출처 [2022년 3월 고3 12번 변형]. g=(x−1)(x−3)(x−a), h(1)=(1−a)/2=h(a)=−(a−1)(a−3)/a → a=6; h(1)=−5/2, h(5)=−8/5 → −41/10 → ② = 빠른정답 ✓.",
+  "seq": 13,
+  "qtype": "choice",
+  "question": "[[a > 3]]인 상수 [[a]]에 대하여 함수 [[f(x)]]를\n[[f(x)]] = { [[pow(x,2) - 6x + 5]] ([[x <= 3]]) ; [[-pow(x,2) + a x]] ([[x > 3]]) }이라 하자.\n최고차항의 계수가 1인 삼차함수 [[g(x)]]에 대하여\n실수 전체의 집합에서 연속인 함수 [[h(x)]]가\n다음 조건을 만족시킬 때, [[h(1) + h(5)]]의 값은?\n(가) [[x != 1]], [[x != a]]일 때, [[h(x) = frac(g(x), f(x))]]이다.\n(나) [[h(1) = h(a)]]",
+  "choices": [
+   "[[-frac(21,5)]]",
+   "[[-frac(41,10)]]",
+   "[[-4]]",
+   "[[-frac(39,10)]]",
+   "[[-frac(19,5)]]"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "710ca9ce-2a8c-4be6-a5da-3ef241def4da",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p13.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — 출처 [2022년 3월 고3 12번 변형]. g=(x−1)(x−3)(x−a), h(1)=(1−a)/2=h(a)=−(a−1)(a−3)/a → a=6; h(1)=−5/2, h(5)=−8/5 → −41/10 → ② = 빠른정답 ✓.",
+  "seq": 13,
+  "qtype": "choice",
+  "question": "[[a > 3]]인 상수 [[a]]에 대하여 함수 [[f(x)]]를\n[[f(x)]] = { [[pow(x,2) - 6x + 5]] ([[x <= 3]]) ; [[-pow(x,2) + a x]] ([[x > 3]]) }이라 하자.\n최고차항의 계수가 1인 삼차함수 [[g(x)]]에 대하여\n실수 전체의 집합에서 연속인 함수 [[h(x)]]가\n다음 조건을 만족시킬 때, [[h(1) + h(5)]]의 값은?\n(가) [[x != 1]], [[x != a]]일 때, [[h(x) = frac(g(x), f(x))]]이다.\n(나) [[h(1) = h(a)]]",
+  "choices": [
+   "[[-frac(21,5)]]",
+   "[[-frac(41,10)]]",
+   "[[-4]]",
+   "[[-frac(39,10)]]",
+   "[[-frac(19,5)]]"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "184c1695-09b2-4990-9688-6d328dedfb7f",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p16.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 2 — ⑤: 극한 (x−1)→−2 = f(−1) ✓; ② [x]²은 정수 −1에서 불연속 → ⑤. 빠른정답 2와 불일치. 출처 머리말 없음.",
+  "seq": 16,
+  "qtype": "choice",
+  "question": "다음 중 [[x = -1]]에서 연속인 함수는?\n(단, [[floor(x)]]는 [[x]]보다 크지 않은 최대의 정수이다.)",
+  "choices": [
+   "[[f(x) = sqrt(x)]]",
+   "[[f(x) = pow(floor(x), 2)]]",
+   "[[f(x) = frac(2, x + 1)]]",
+   "[[f(x)]] = { [[frac(3 abs(x + 1), x + 1)]] ([[x != -1]]) ; [[0]] ([[x = -1]]) }",
+   "[[f(x)]] = { [[frac(pow(x,2) - 1, x + 1)]] ([[x != -1]]) ; [[-2]] ([[x = -1]]) }"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "e22e754a-e2b9-4258-9201-d3a5e75520ff",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p39.jpg",
+  "reason": "도형 표현 불가: 보기 ㄱ·ㄴ·ㄷ가 함수 그래프 3개 / 문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / 합성함수 적용 (f∘f)(x) 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 73 — ㄱ: x→2+에서 f(f(x))→f(0)=3 ≠ g(2)=0 불연속 ✓; ㄴ: x=3에서 g(3)=f(2)=0, 우극한 f(3+)=3 불연속 ✓; ㄷ: x=3에서 g(3)=f(2)=1, 우극한 3 불연속 ✓ → ⑤ (그래프 판독 기반, 검토 필요). 빠른정답 73은 값 아님. 출처 머리말 없음.",
+  "seq": 39,
+  "qtype": "choice",
+  "question": "닫힌구간 [[itv(0, 4, cc)]]에서 정의된 함수 [[y = f(x)]]에 대하여\n함수 [[g(x)]]를 [[g(x)]] = { [[pow(f(x), 2)]] ([[0 <= x <= 2]]) ; ([[comp(f, f)]])([[x]]) ([[2 < x <= 4]]) }\n라 하자. 다음 보기 중 함수 [[g(x)]]가 닫힌구간 [[itv(0, 4, cc)]]에서\n불연속이 되도록 하는 함수 [[y = f(x)]]의 그래프로 옳은\n것만을 있는 대로 고른 것은?\n<보기>\nㄱ. (그래프 ㄱ)\nㄴ. (그래프 ㄴ)\nㄷ. (그래프 ㄷ)",
+  "choices": [
+   "ㄱ",
+   "ㄱ, ㄴ",
+   "ㄱ, ㄷ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "⑤",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "보기 그래프 3개(모두 [0,4] 위의 y=f(x), 격자 점선). ㄱ: (0,3)에서 감소해 (1,1), (2,0)에서 최소, (3,2) 극대, (4,1)까지 연속. ㄴ: (0,0)에서 (1,1) 극대, (2,0) 최소, 증가해 (3,2)(채운 점), x=3에서 (3,3) 빈 점부터 (4,4)까지 증가. ㄷ: (0,3)에서 감소해 (1,1), 1.5에서 0 최소, (2,1), (3,2)(채운 점), x=3에서 (3,3) 빈 점부터 (4,4)까지 증가"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.7
+ },
+ {
+  "id": "940a9d3b-438b-4e9a-aa1b-167505795cfe",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p40.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 5 — ㄱ: f(f(x))=2 상수 ✓; ㄴ: 좌극한 f(−1)=1, 우극한 f(1)=2 ✗; ㄷ: g(f(x))=1 상수 ✓ → ④. 빠른정답 5와 불일치. 출처 머리말 없음.",
+  "seq": 40,
+  "qtype": "choice",
+  "question": "실수 전체의 집합에서 정의된 두 함수\n[[f(x)]] = { [[2]] ([[x > -1]]) ; [[1]] ([[x = -1]]) ; [[0]] ([[x < -1]]) }, [[g(x)]] = { [[frac(abs(x + 1), x + 1)]] ([[x != -1]]) ; [[0]] ([[x = -1]]) }\n에 대하여 옳은 것만을 보기에서 있는 대로 고른 것은?\n<보기>\nㄱ. [[f(f(x))]]는 실수 전체의 집합에서 연속이다.\nㄴ. [[lim(x, -1, f(g(x)))]]의 값이 존재한다.\nㄷ. [[g(f(x))]]는 [[x = -1]]에서 연속이다.",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄱ, ㄴ",
+   "ㄱ, ㄷ",
+   "ㄴ, ㄷ"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "12ccfc71-e877-4c10-9d27-6272f84d0245",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p52.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — 출처 [2016년 4월 고3 문과 6번 변형]. 2a−9=6−a → a=5 → ⑤ = 빠른정답 ✓.",
+  "seq": 52,
+  "qtype": "choice",
+  "question": "함수\n[[f(x)]] = { [[a x - 9]] ([[x <= 2]]) ; [[3x - a]] ([[x > 2]]) }\n가 실수 전체의 집합에서 연속일 때, 상수 [[a]]의 값은?",
+  "choices": [
+   "[[1]]",
+   "[[2]]",
+   "[[3]]",
+   "[[4]]",
+   "[[5]]"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "8f41c800-fb9c-44da-91b5-dc5649f7e086",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p57.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — 출처 [2017년 7월 고3 문과 24번 변형]. 2 = 1+a−3 → a=4 = 빠른정답 ✓.",
+  "seq": 57,
+  "qtype": "short",
+  "question": "함수 [[f(x)]] = { [[-2x + 4]] ([[x < 1]]) ; [[pow(x,2) + a x - 3]] ([[x >= 1]]) }이 실수 전체의\n집합에서 연속일 때, 상수 [[a]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "4",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "697cb4d0-5946-4e0a-9d8c-25f04866d34f",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p59.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 -3 — 13 = 3+a → a=10 → ④. 빠른정답 −3과 불일치. 출처 머리말 없음.",
+  "seq": 59,
+  "qtype": "choice",
+  "question": "함수 [[f(x)]] = { [[2 pow(x,2) - 3x + 4]] ([[x < 3]]) ; [[x + a]] ([[x >= 3]]) }이 실수 전체의\n집합에서 연속일 때, 상수 [[a]]의 값은?",
+  "choices": [
+   "[[4]]",
+   "[[6]]",
+   "[[8]]",
+   "[[10]]",
+   "[[12]]"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "41d7b923-ad70-4786-aaf0-0e810645d9e0",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p61.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — 출처 [2016년 4월 고3 문과 6번/3점]. a−4=2−a → a=3 → ③ = 빠른정답 ✓.",
+  "seq": 61,
+  "qtype": "choice",
+  "question": "함수 [[f(x)]] = { [[a x - 4]] ([[x < 1]]) ; [[2x - a]] ([[x >= 1]]) }이 실수 전체의 집합에서\n연속일 때, 상수 [[a]]의 값은?",
+  "choices": [
+   "[[1]]",
+   "[[2]]",
+   "[[3]]",
+   "[[4]]",
+   "[[5]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "765905e6-b4e0-4c26-832a-1ab610764b6c",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p66.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 11 — 출처 [2023년 7월 고3 14번/4점]. c=f(0): x=0에서는 항상 연속(ㄱ ✓); 불연속 후보 x=−3(c·f(−6)≠0), x=3(c·f(3)≠0) 중 하나만 → f(−6)f(3)=0 (ㄴ ✓); k=−3이면 f(3)=0, 근의 합 −1 → f=(x−3)²(x+4) → g(−1)=−f(−1)=−48 (ㄷ ✓) → ⑤. 빠른정답 11은 값 아님.",
+  "seq": 66,
+  "qtype": "choice",
+  "question": "최고차항의 계수가 1이고 [[f(-3) = f(0)]]인\n삼차함수 [[f(x)]]에 대하여 함수 [[g(x)]]를\n[[g(x)]] = { [[f(x)]] ([[x < -3]] 또는 [[x >= 0]]) ; [[-f(x)]] ([[-3 <= x < 0]]) }\n이라 하자. 함수 [[g(x) g(x - 3)]]이 [[x = k]]에서 불연속인\n실수 [[k]]의 값이 한 개일 때, <보기>에서 옳은 것만을 있는\n대로 고른 것은?\n<보기>\nㄱ. 함수 [[g(x) g(x - 3)]]은 [[x = 0]]에서 연속이다.\nㄴ. [[f(-6) × f(3) = 0]]\nㄷ. 함수 [[g(x) g(x - 3)]]이 [[x = k]]에서 불연속인\n실수 [[k]]가 음수일 때\n집합 { [[x]] | [[f(x) = 0]], [[x]]는 실수 }의 모든 원소의\n합이 [[-1]]이면 [[g(-1) = -48]]이다.",
+  "choices": [
+   "ㄱ",
+   "ㄱ, ㄴ",
+   "ㄱ, ㄷ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 5,
+  "unit_id": "h2-2",
+  "confidence": 0.8
+ },
+ {
+  "id": "df4992ae-454f-4991-9c31-f7f2d8be4991",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p67.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — 출처 [2018년 6월 고2 이과 27번/4점]. f(1)=−1, f(1+)=15: (−1)(−1−a)=15(15−a) → a=14 = 빠른정답 ✓.",
+  "seq": 67,
+  "qtype": "short",
+  "question": "함수\n[[f(x)]] = { [[x(x - 2)]] ([[x <= 1]]) ; [[x(x - 2) + 16]] ([[x > 1]]) }\n에 대하여 함수 [[f(x)(f(x) - a)]]가 실수 전체의 집합에서\n연속이 되도록 하는 상수 [[a]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "14",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "e94ee10e-6c9e-4f4e-9292-af2a79adbf62",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p69.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 5 — 출처 [2021년 6월 고3 8번/3점]. (−2a+6)²=a² → a=2, 6 → 합 8 → ④. 빠른정답 5와 불일치.",
+  "seq": 69,
+  "qtype": "choice",
+  "question": "함수 [[f(x)]] = { [[-2x + 6]] ([[x < a]]) ; [[2x - a]] ([[x >= a]]) }에 대하여\n함수 [[pow(f(x), 2)]]이 실수 전체의 집합에서 연속이 되도록\n하는 모든 상수 [[a]]의 값의 합은?",
+  "choices": [
+   "[[2]]",
+   "[[4]]",
+   "[[6]]",
+   "[[8]]",
+   "[[10]]"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "a823a7ba-5482-4fab-a3e3-6b1debbc86b0",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p70.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — g(a)=0 (a=−1/2) 또는 a+2=a²+2a (a=−2, 1) → 합 −3/2 = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 70,
+  "qtype": "short",
+  "question": "두 함수\n[[f(x)]] = { [[x + 2]] ([[x <= a]]) ; [[pow(x,2) + 2x]] ([[x > a]]) }, [[g(x) = x - (3a + 1)]]에\n대하여 함수 [[f(x) g(x)]]가 실수 전체의 집합에서 연속이\n되도록 하는 모든 실수 [[a]]의 값의 합을 구하시오.",
+  "choices": null,
+  "answer": "frac(-3,2)",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "8ae0e6db-67e7-4fcd-9e68-46b4c8977254",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 연속_p82.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ④ vs 빠른정답 80 — 출처 [2023년 9월 고3 15번/4점]. f(3)=0, g(3)=3, lim g=2 → f(x+3)/f(x)→2 → f=(x−3)(x−4)(x−6) → g(5)=40·(−1)/(−2)=20 → ④. 빠른정답 80과 불일치.",
+  "seq": 82,
+  "qtype": "choice",
+  "question": "최고차항의 계수가 1인 삼차함수 [[f(x)]]에 대하여\n함수 [[g(x)]]를\n[[g(x)]] = { [[frac(f(x + 3)(f(x) + 1), f(x))]] ([[f(x) != 0]]) ; [[3]] ([[f(x) = 0]]) }이라 하자.\n[[lim(x, 3, g(x)) = g(3) - 1]]일 때, [[g(5)]]의 값은?",
+  "choices": [
+   "[[14]]",
+   "[[16]]",
+   "[[18]]",
+   "[[20]]",
+   "[[22]]"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "c1a1eb14-714e-4bfd-b1b7-35d276c14106",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_연속함수의 성질_p49.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 4 — 출처 [2017년 9월 고2 문과 20번 변형]. (가) → a<3; f(3)=f(a)=0, f((3+a)/2)=−(3−a)²/4 → 넓이 (3−a)³/8=1/8 → a=2 → f(6)=3·4=12 → ③. 빠른정답 4와 불일치.",
+  "seq": 49,
+  "qtype": "choice",
+  "question": "3이 아닌 양수 [[a]]에 대하여 함수\n[[f(x)]] = { [[pow(x - a, 2)]] ([[x <= a]]) ; [[(x - 3)(x - a)]] ([[x > a]]) }\n가 다음 조건을 만족시킬 때, [[f(3a)]]의 값은?\n(가) [[f(c) = 0]]인 [[c]]가 0과 [[frac(3 + a, 2)]] 사이에\n적어도 하나 존재한다.\n(나) 세 점 [[point(3, f(3))]], [[point(a, f(a))]],\n[[point(frac(3 + a, 2), f(frac(3 + a, 2)))]]를 꼭짓점으로 하는\n삼각형의 넓이는 [[frac(1,8)]] 이다.",
+  "choices": [
+   "[[3]]",
+   "[[6]]",
+   "[[12]]",
+   "[[24]]",
+   "[[48]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "aef686b6-f7f4-48bd-ad08-a6665795bb00",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_연속함수의 성질_p54.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 56 vs 빠른정답 3 — 출처 [2016년 4월 고3 문과 30번/4점]. (가) f(0)>0>f(2) → 0<a<12; (나) f(a)(a−8)(a+2)=0, f(a)=a(a−7) → a=7, 8 → 곱 56. 빠른정답 3과 불일치.",
+  "seq": 54,
+  "qtype": "short",
+  "question": "함수 [[f(x) = pow(x,2) - 8x + a]]에 대하여 함수 [[g(x)]]를\n[[g(x)]] = { [[2x + 5a]] ([[x >= a]]) ; [[f(x + 4)]] ([[x < a]]) }라 할 때, 다음 조건을\n만족시키는 모든 실수 [[a]]의 값의 곱을 구하시오.\n(가) 방정식 [[f(x) = 0]]은 열린 구간 [[itv(0, 2, oo)]]에서 적어도\n하나의 실근을 갖는다.\n(나) 함수 [[f(x) g(x)]]는 [[x = a]]에서 연속이다.",
+  "choices": null,
+  "answer": "56",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "c8d5dc9d-0469-4a7f-bf05-76af8a389cc6",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_부정적분_p9.jpg",
+  "reason": "문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 13 vs 빠른정답 4 — f=3x³+4x+5, f′=9x²+4 → f′(1)=13. 빠른정답 4와 불일치. d/dx∫…dx는 dydx(integ(…,x),x)로 전사. 출처 머리말 없음.",
+  "seq": 9,
+  "qtype": "short",
+  "question": "함수 [[f(x)]]에 대하여 [[f(x) = dydx(integ(3 pow(x,3) + 4x + 5, x), x)]]일\n때, [[prime(f)(1)]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "13",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "9c42633f-f023-41bf-a69f-04ec88054008",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_부정적분_p10.jpg",
+  "reason": "문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) — f=5x³+2x+1, f′=15x²+2 → f′(1)=17 = 빠른정답 ✓. d/dx∫…dx는 dydx(integ(…,x),x)로 전사. 출처 머리말 없음.",
+  "seq": 10,
+  "qtype": "short",
+  "question": "함수 [[f(x)]]에 대하여 [[f(x) = dydx(integ(5 pow(x,3) + 2x + 1, x), x)]]일\n때, [[prime(f)(1)]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "17",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "1bdf9683-0189-4593-87d6-3152b37b5b8e",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_부정적분_p13.jpg",
+  "reason": "문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 10 vs 빠른정답 17 — f=x³−2x+3, f′=3x²−2 → f′(2)=10. 빠른정답 17과 불일치. 출처 머리말 없음.",
+  "seq": 13,
+  "qtype": "short",
+  "question": "함수 [[f(x)]]에 대하여 [[f(x) = dydx(integ(pow(x,3) - 2x + 3, x), x)]]일\n때, [[prime(f)(2)]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "10",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "1ad2af91-bf51-415e-9c3e-bf65e124a225",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_부정적분_p29.jpg",
+  "reason": "문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 48 vs 빠른정답 3 — f=px³+qx: 3p²=3, 4pq+2p=−14, q²+2q=2a → p=1, q=−4, a=4 → f(4)=64−16=48. 빠른정답 3과 불일치. 출처 머리말 없음.",
+  "seq": 29,
+  "qtype": "short",
+  "question": "최고차항의 계수가 양수인 다항함수 [[f(x)]]가 다음 조건을\n모두 만족할 때, [[f(a)]]의 값을 구하시오.\n(단, [[a]]는 상수이고, [[C]]는 적분상수이다.)\n(가) 함수 [[y = f(x)]]의 그래프는 원점에 대하여\n대칭이다.\n(나) [[integ(2f(x) + f(x) prime(f)(x), x) = frac(1,2) pow(x,6) - frac(7,2) pow(x,4) + a pow(x,2) + C]]",
+  "choices": null,
+  "answer": "48",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "34170754-e422-48f7-9685-c3ab9d57627a",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_부정적분_p36.jpg",
+  "reason": "문법 범위 밖: 첨자 함수 적용 표기(v₁(t)·Fₙ(x) 등)를 sub(v,1)(t) 꼴로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 2 — k∫x^{k−1}dx=x^k+C → Fₙ(x)=x+x²+…+x^{n+1} (C=0) → Fₙ(1)=n+1 → ⑤. 빠른정답 2와 불일치. 출처 머리말 없음.",
+  "seq": 36,
+  "qtype": "choice",
+  "question": "함수 [[sub(F,n)(x) = sum(k, 1, n + 1, (k integ(pow(x, k - 1), x)))]]에 대하여\n[[sub(F,n)(0) = 0]]일 때, [[sub(F,n)(1)]]의 값은? (단, [[n]] = 1, 2, 3, ⋯)",
+  "choices": [
+   "[[frac(n,2)]]",
+   "[[frac(n + 1, 2)]]",
+   "[[n - 1]]",
+   "[[n]]",
+   "[[n + 1]]"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "e6324ec4-0837-4252-b2e3-bf0e08fe6429",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_부정적분_p53.jpg",
+  "reason": "문법 범위 밖: 첨자 함수 적용 표기(v₁(t)·Fₙ(x) 등)를 sub(v,1)(t) 꼴로 전사(파서는 곱으로 해석) / 문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 100 vs 빠른정답 4 — Fₙ(x)=−Σ_{m=0}^{n+1}(−1)^{n+1−m}x^m/m! → Gₙ(x)=−x^{n+2}/(n+2)! → Gₙ′(1)/Gₙ(1)=n+2 → 100 (파이썬 확인). 빠른정답 4와 불일치. 출처 머리말 없음.",
+  "seq": 53,
+  "qtype": "short",
+  "question": "함수 [[f(x) = -x + 1]]에 대하여 함수 [[sub(F,n)(x)]]는 다음 조건을\n모두 만족시킨다.\n(가) [[sub(F,1)(x) = integ(f(x), x)]], [[sub(F,1)(0) = -1]]\n(나) [[sub(F, n + 1)(x) = integ(sub(F,n)(x), x)]],\n[[sub(F, n + 1)(0) = pow(-1, n + 1)]]\n[[sub(G,n)(x) = sub(F,n)(x) + sub(F, n + 1)(x)]]일 때, [[frac(prime(sub(G,98))(1), sub(G,98)(1))]]의\n값을 구하시오. (단, [[n]] = 1, 2, 3, ⋯)",
+  "choices": null,
+  "answer": "100",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.8
+ },
+ {
+  "id": "ced862e3-81a4-4a7e-9372-a6438f0e437c",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_부정적분_p56.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / 문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 2 vs 빠른정답 100 — x<1: f=x³−4x+2 → f(−2)=−8+8+2=2. 빠른정답 100과 불일치. 출처 머리말 없음.",
+  "seq": 56,
+  "qtype": "short",
+  "question": "모든 실수 [[x]]에 대하여 연속인 함수 [[f(x)]]의\n도함수 [[prime(f)(x)]]가 [[prime(f)(x)]] = { [[-2x + 1]] ([[x > 1]]) ; [[3 pow(x,2) - 4]] ([[x < 1]]) }이고\n[[f(0) = 2]]일 때, [[f(-2)]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "2",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "b2925b8a-b749-4d0f-b0a4-205852eb42fb",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_부정적분_p83.jpg",
+  "reason": "문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) — f(0)=−1, f′(x)=f′(0)+6x² → f=2x³+ax−1: ㄱ f(1)=a+1≠a ✗, ㄴ a=0이면 극값 없음 ✓, ㄷ 극값 합 = 2(x₁³+x₂³)+a(x₁+x₂)−2=−2 ✓ → ④ = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 83,
+  "qtype": "choice",
+  "question": "다항함수 [[f(x)]]가 모든 실수 [[x]], [[y]]에 대하여\n[[f(x + y) = f(x) + f(y) + 6x y(x + y) + 1]]일 때, 옳은\n것만을 보기에서 있는 대로 고른 것은?\n<보기>\nㄱ. [[prime(f)(0) = f(1)]]\nㄴ. [[prime(f)(0) = 0]]이면 함수 [[f(x)]]는 극값을 갖지\n않는다.\nㄷ. 함수 [[f(x)]]가 극값을 가질 때, 극댓값과\n극솟값의 합은 [[-2]]이다.",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄱ, ㄷ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "7a66e82f-51bb-40f3-9e74-2efca86b9c9d",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_속도와 거리_p4.jpg",
+  "reason": "문법 범위 밖: 첨자 함수 적용 표기(v₁(t)·Fₙ(x) 등)를 sub(v,1)(t) 꼴로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 8 — x_P−x_Q = t³−(9/2)t²+4−k: h(t)=t³−(9/2)t²+4는 (0,3) 감소·(3,∞) 증가, h(3)=−19/2, h(0)=4 → −19/2<k<4 → 정수 −9~3의 13개 → ③. 빠른정답 8과 불일치. 출처 머리말 없음.",
+  "seq": 4,
+  "qtype": "choice",
+  "question": "수직선 위를 움직이는 두 점 P, Q의 시각 [[t]] ([[t > 0]])에서의\n속도를 각각 [[sub(v,1)(t)]], [[sub(v,2)(t)]]라 할 때, [[sub(v,1)(t) = 3 pow(t,2) - 7t + 2]],\n[[sub(v,2)(t) = 2t + 2]]이다. 시각 [[t = 0]]에서의 점 P의 위치는\n4이고 점 Q의 위치는 [[k]]일 때, 두 점 P, Q가 동시에\n출발한 후 2번 만나도록 하는 정수 [[k]]의 개수는?",
+  "choices": [
+   "[[11]]",
+   "[[12]]",
+   "[[13]]",
+   "[[14]]",
+   "[[15]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "6edf187f-8e82-46b1-92f0-46db0d06cc55",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_속도와 거리_p34.jpg",
+  "reason": "문법 범위 밖: 첨자 함수 적용 표기(v₁(t)·Fₙ(x) 등)를 sub(v,1)(t) 꼴로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 180m — 출처 [2017년 11월 고2 이과 18번/4점]. (가) −t³/6+t²/2, f(2)=2/3; l=−t³/3+2t², (나) a=4, (다) b=32/3 → ab/f(2)=64 → ③. 빠른정답 '180m'은 값 아님.",
+  "seq": 34,
+  "qtype": "choice",
+  "question": "원점을 동시에 출발하여 수직선 위를 움직이는\n두 점 P, Q의 시각 [[t]]에서의 속도가 각각\n[[sub(v,1)(t) = frac(1,2) pow(t,2) - 3t]], [[sub(v,2)(t) = -frac(1,2) pow(t,2) + t]]\n이다. 다음은 두 점 P, Q가 출발 후 처음으로 만날 때까지\n두 점 P, Q 사이의 거리의 최댓값을 구하는 과정이다.\n두 점 P, Q의 시각 [[t]]에서의 위치를 각각\n[[sub(x,1)(t)]], [[sub(x,2)(t)]]라 하면\n[[sub(x,1)(t) = frac(1,6) pow(t,3) - frac(3,2) pow(t,2)]]\n[[sub(x,2)(t)]] = (가)\n출발 후 처음으로 두 점 P, Q가 만나는 시각은\n[[t = 6]]이다.\n[[0 < t <= 6]]에서 두 점 P, Q 사이의 거리를 [[l(t)]]라\n하면\n[[l(t)]]는 [[t]] = (나) 일 때 극대이면서 최대이므로\n[[l(t)]]의 최댓값은 (다) 이다.\n위의 (가)에 알맞은 식을 [[f(t)]]라 하고, (나), (다)에 알맞은\n수를 각각 [[a]], [[b]]라 할 때, [[frac(a × b, f(2))]]의 값은?",
+  "choices": [
+   "[[60]]",
+   "[[62]]",
+   "[[64]]",
+   "[[66]]",
+   "[[68]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "18ab835c-7db5-49d4-8480-5fde46d3aad1",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_속도와 거리_p99.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 5 — v≥0: s(t)=2t² (t<1), −t²+6t−3 (1≤t<3), 6+(t−3)²/2 (t≥3); (0,1)에서 f=2x², [1,2]에서 f=2−(x−1)²/2 → ∫₀²f=5/2 → 2∫=5 → ③ = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 99,
+  "qtype": "choice",
+  "question": "수직선 위에서 원점을 출발하여 움직이는 점 P의\n시각 [[t]]([[0 <= t <= 5]])일 때의 속도 [[v(t)]]가 다음과 같다.\n[[v(t)]] = { [[4t]] ([[0 <= t < 1]]) ; [[-2t + 6]] ([[1 <= t < 3]]) ; [[t - 3]] ([[3 <= t <= 5]]) }\n실수 [[x]] ([[0 < x < 3]])에 대하여 점 P가\n시각 [[t = 0]]에서 [[t = x]]까지 움직인 거리,\n시각 [[t = x]]에서 [[t = x + 2]]까지 움직인 거리,\n시각 [[t = x + 2]]에서 [[t = 5]]까지 움직인 거리\n중에서 최소인 값을 [[f(x)]]라고 하자. [[f(0) = 0]]일 때,\n[[2 dinteg(0, 2, f(x), x)]]의 값은?",
+  "choices": [
+   "[[3]]",
+   "[[4]]",
+   "[[5]]",
+   "[[6]]",
+   "[[7]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "17844967-ab5d-45c6-9904-06a3bfd53183",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 증가와 감소, 극대와 극소_p8.jpg",
+  "reason": "문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 1 — 출처 [2013년 9월 고3 문과 21번/4점]. x=−1에서 부호가 안 바뀌려면 f′=(x+1)²(x+b), −2≤b≤0, a=b+1 → a²+b²=2b²+2b+1: 최대 5(b=−2), 최소 1/2(b=−1/2) → 11/2 → ③. 빠른정답 1과 불일치.",
+  "seq": 8,
+  "qtype": "choice",
+  "question": "사차함수 [[f(x)]] 의 도함수 [[prime(f)(x)]] 가\n[[prime(f)(x) = (x + 1)(pow(x,2) + a x + b)]]\n이다. 함수 [[y = f(x)]] 가 구간 [[itv(-inf, 0, oo)]] 에서 감소하고\n구간 [[itv(2, inf, oo)]] 에서 증가하도록 하는 실수 [[a]], [[b]] 의\n순서쌍 [[point(a, b)]] 에 대하여, [[pow(a,2) + pow(b,2)]] 의 최댓값을 [[M]],\n최솟값을 [[m]] 이라 하자. [[M + m]] 의 값은?",
+  "choices": [
+   "[[frac(21,4)]]",
+   "[[frac(43,8)]]",
+   "[[frac(11,2)]]",
+   "[[frac(45,8)]]",
+   "[[frac(23,4)]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "08f7ee20-d93e-40d1-b0eb-bec469714ce3",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 증가와 감소, 극대와 극소_p30.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 4 — 출처 [2023년 9월 고3 13번/4점]. x<0: x²+2ax+b=(x+1)(x−r), r≥0 → a=(1−r)/2, b=−r; x≥0: x²+(1−r)x+r≥0 → r≤3+2√2 → a+b=1/2−3r/2: M=1/2, m=−4−3√2 → M−m=9/2+3√2 → ③. 빠른정답 4와 불일치.",
+  "seq": 30,
+  "qtype": "choice",
+  "question": "두 실수 [[a]], [[b]]에 대하여\n함수 [[f(x)]] = { [[-frac(1,3) pow(x,3) - a pow(x,2) - b x]] ([[x < 0]]) ; [[frac(1,3) pow(x,3) + a pow(x,2) - b x]] ([[x >= 0]]) }이\n구간 [[itv(-inf, -1, oc)]]에서 감소하고 구간 [[itv(-1, inf, co)]]에서\n증가할 때, [[a + b]]의 최댓값을 [[M]], 최솟값을 [[m]]이라 하자.\n[[M - m]]의 값은?",
+  "choices": [
+   "[[frac(3,2) + 3 sqrt(2)]]",
+   "[[3 + 3 sqrt(2)]]",
+   "[[frac(9,2) + 3 sqrt(2)]]",
+   "[[6 + 3 sqrt(2)]]",
+   "[[frac(15,2) + 3 sqrt(2)]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "ba35e6d9-cf84-4091-8e56-bf1a573fda19",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 증가와 감소, 극대와 극소_p40.jpg",
+  "reason": "도형 표현 불가: 도함수 y=f′(x)의 그래프(좌표평면) / 문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 3 — f′<0: (−∞,−2), (1,3), (6,∞); f′>0: (−2,1), (3,6) → ⑤만 옳음. 빠른정답 3과 불일치. 출처 머리말 없음.",
+  "seq": 40,
+  "qtype": "choice",
+  "question": "다항함수 [[y = f(x)]]의 도함수 [[y = prime(f)(x)]]의 그래프가\n아래 그림과 같을 때, 다음 중 옳은 것은?",
+  "choices": [
+   "[[f(x)]]는 구간 [[itv(-inf, -2, oo)]]에서 증가한다.",
+   "[[f(x)]]는 구간 [[itv(0, 1, oo)]]에서 감소한다.",
+   "[[f(x)]]는 구간 [[itv(2, 3, oo)]]에서 증가한다.",
+   "[[f(x)]]는 구간 [[itv(3, 6, oo)]]에서 증가하다가 감소한다.",
+   "[[f(x)]]는 구간 [[itv(6, inf, oo)]]에서 감소한다."
+  ],
+  "answer": "⑤",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면 위 y=f′(x)의 그래프: x=−2, 1, 3, 6에서 x축과 만남; (−∞,−2)와 (1,3)(x=2에서 극소, 점선), (6,∞)에서 음수; (−2,1), (3,6)에서 양수"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "af8cd741-7a72-4fc7-be70-189fa91fa45b",
+  "zip": "esc_sonnet_h2-2_2of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_2of3/images/sonnet_h2-2_260828_함수의 그래프_p61.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / 문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) — f=x³+ax²+2 (f(0)=2, f′(0)=0), 최솟값<2 → a<0: ㄱ ✓, ㄴ g(1)=3+a<3 ✓, ㄷ 최솟값 4a³/27+2=3/2 → a=−3/2 → g(2)=4≠2 ✗ → ② = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 61,
+  "qtype": "choice",
+  "question": "삼차함수 [[f(x)]]의 최고차항의 계수가 1이고 함수 [[g(x)]]는\n[[g(x)]] = { [[2]] ([[x < 0]]) ; [[f(x)]] ([[x >= 0]]) }이다.\n[[g(x)]]가 실수 전체의 집합에서 미분가능하고 [[g(x)]]의\n최솟값이 2보다 작을 때, 다음 보기 중에서 옳은 것을\n있는 대로 고른 것은?\n<보기>\nㄱ. [[g(0) + prime(g)(0) = 2]]\nㄴ. [[g(1) < 3]]\nㄷ. [[g(x)]]의 최솟값이 [[frac(3,2)]] 일 때, [[g(2) = 2]]이다.",
+  "choices": [
+   "ㄱ",
+   "ㄱ, ㄴ",
+   "ㄱ, ㄷ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "204c586d-7f7a-41ed-b387-667b46f90bbd",
+  "zip": "esc_sonnet_h2-2_3of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_3of3/images/sonnet_h2-2_260828_넓이_p93.jpg",
+  "reason": "도형 표현 불가: 함수와 역함수의 그래프(좌표평면) — ∫₁⁵x dx=12, f가 y=x 아래 → 직선과 f 사이 넓이 3, 대칭이므로 2배 → 6 → ③ = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 93,
+  "qtype": "choice",
+  "question": "다음 그림은 함수 [[y = f(x)]]와 그 역함수 [[y = g(x)]]의\n그래프이다. 두 그래프가 점 [[point(1, 1)]], [[point(5, 5)]]에서 만나고\n[[dinteg(1, 5, f(x), x) = 9]]일 때, 두 곡선 [[y = f(x)]]와\n[[y = g(x)]]로 둘러싸인 도형의 넓이는?",
+  "choices": [
+   "[[3]]",
+   "[[4]]",
+   "[[6]]",
+   "[[8]]",
+   "[[12]]"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면: 가파르게 증가하는 곡선 y=f(x)와 완만하게 증가하는 곡선 y=g(x)(서로 역함수)가 점 (1,1), (5,5)에서 만남; 두 교점에서 축으로 점선, 축 눈금 1, 5"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.8
+ },
+ {
+  "id": "d8e6aed4-4f38-4285-b4ca-af14023dc4f2",
+  "zip": "esc_sonnet_h2-2_3of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_3of3/images/sonnet_h2-2_260828_미분계수_p41.jpg",
+  "reason": "문법 범위 밖: 도함수 적용 표기 f′(x)를 prime(f)(x)로 전사(파서는 곱으로 해석) — f 우함수 → f(3)=f(−3), f′(−3)=−3; 분자/(x+3)→f′(9)·(−6)=6, 분모/(x+3)→−3 → −2 = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 41,
+  "qtype": "short",
+  "question": "다항함수 [[f(x)]]에 대하여 [[y = f(x)]]의 그래프가 [[y]]축에\n대하여 대칭이고 [[prime(f)(3) = 3]], [[prime(f)(9) = -1]]일 때,\n[[lim(x, -3, frac(f(pow(x,2)) - f(9), f(x) - f(3)))]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "-2",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "9fcb51b4-413c-40b4-b842-1324e9cb72a9",
+  "zip": "esc_sonnet_h2-2_3of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_3of3/images/sonnet_h2-2_260828_미분계수_p92.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — 출처 [2021년 11월 고2 12번/3점]. 도함수 3−a=−3 → a=6, 연속 1−a+2b=−3+b → b=2 → ab=12 → ④ = 빠른정답 ✓.",
+  "seq": 92,
+  "qtype": "choice",
+  "question": "함수 [[f(x)]] = { [[pow(x,3) - a x + 2b]] ([[x < 1]]) ; [[-3x + b]] ([[x >= 1]]) }이 실수 전체의\n집합에서 미분가능할 때, [[a b]]의 값은?\n(단, [[a]]와 [[b]]는 상수이다.)",
+  "choices": [
+   "[[3]]",
+   "[[6]]",
+   "[[9]]",
+   "[[12]]",
+   "[[15]]"
+  ],
+  "answer": "④",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "68d93f53-56a8-422f-b283-9c18e907c49b",
+  "zip": "esc_sonnet_h2-2_3of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_3of3/images/sonnet_h2-2_260828_미분계수_p94.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 — f′(1)=1=a, 연속 1=a+b → b=0 → ab=0 → ③ = 빠른정답 ✓. 출처 머리말 없음.",
+  "seq": 94,
+  "qtype": "choice",
+  "question": "함수 [[f(x)]] = { [[pow(x,2) - x + 1]] ([[x <= 1]]) ; [[a x + b]] ([[x > 1]]) }가 [[x = 1]]에서\n미분가능할 때, [[a b]]의 값은?",
+  "choices": [
+   "[[-2]]",
+   "[[-1]]",
+   "[[0]]",
+   "[[1]]",
+   "[[2]]"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 1,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "a61f49df-6502-4c0f-9a00-abf676cb6894",
+  "zip": "esc_sonnet_h2-2_3of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_3of3/images/sonnet_h2-2_260828_미분계수_p97.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / 도형 표현 불가: 조각적 함수의 그래프(좌표평면) — 출처 [2022년 4월 고3 14번 변형]. ㄱ✗(좌극한 0, g(0)=1), ㄴ✓(f는 0에서 불연속, g는 x=k+2에서만 불연속), ㄷ✗(미분가능 k=−3, 1 → 합 −2) → ② = 빠른정답 ✓.",
+  "seq": 97,
+  "qtype": "choice",
+  "question": "정수 [[k]]와 함수 [[f(x)]] = { [[-x - 1]] ([[x < 0]]) ; [[-x + 1]] ([[0 <= x < 1]]) ; [[0]] ([[1 <= x < 2]]) ; [[x - 3]] ([[x >= 2]]) }에\n대하여 함수 [[g(x)]]를 [[g(x) = abs(f(x - k))]]라 할 때,\n다음 보기 중 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ. [[k = -2]]일 때, [[lim(x, 0, g(x), -) = g(0)]]이다.\nㄴ. 모든 정수 [[k]]에 대하여 함수 [[f(x) + g(x)]]는\n[[x = 0]]에서 불연속이다.\nㄷ. 함수 [[f(x) g(x)]]가 [[x = 0]]에서 미분가능하도록\n하는 모든 정수 [[k]]의 값의 합은 2이다.",
+  "choices": [
+   "ㄱ",
+   "ㄴ",
+   "ㄷ",
+   "ㄱ, ㄴ",
+   "ㄴ, ㄷ"
+  ],
+  "answer": "②",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면 위 y=f(x)의 그래프: x<0에서 기울기 −1인 직선(x=−1에서 x축과 만남, x=0에서 −1로 접근하는 빈 점), 0≤x<1에서 (0,1)(채운 점)부터 (1,0)까지 감소, 1≤x<2에서 y=0(x=2에서 빈 점), x≥2에서 (2,−1)(채운 점)부터 기울기 1로 증가하여 (3,0) 지남; (2,−1)과 축을 잇는 점선"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h2-2",
+  "confidence": 0.75
+ },
+ {
+  "id": "6b6bdce2-30b9-40d3-a3e5-f24145818f44",
+  "zip": "esc_sonnet_h2-2_3of3",
+  "image": "/root/esc/work/esc_sonnet_h2-2_3of3/images/sonnet_h2-2_260828_미분계수_p99.jpg",
+  "reason": "문법 범위 밖: 조각적 정의(중괄호 경우 나눔) → 텍스트 혼합 전사 / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 3 — 도함수 4a=2 → a=1/2, 연속 4a+b=4+4a → b=4 → b/a=8 → ⑤. 빠른정답 3과 불일치. 출처 머리말 없음.",
+  "seq": 99,
+  "qtype": "choice",
+  "question": "함수 [[f(x)]] = { [[a pow(x,2) + b]] ([[x < 2]]) ; [[2x + 4a]] ([[x >= 2]]) }가 [[x = 2]]에서 미분가능할\n때, [[frac(b, a)]]의 값은? (단, [[a]], [[b]]는 상수이다.)",
+  "choices": [
+   "[[frac(1,2)]]",
+   "[[1]]",
+   "[[2]]",
+   "[[4]]",
+   "[[8]]"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h2-2",
+  "confidence": 0.85
+ },
+ {
+  "id": "c99f5383-b890-427a-b635-ad478c76c4de",
+  "zip": "esc_opus_h3-1_1of1",
+  "image": "/root/esc/work/esc_opus_h3-1_1of1/images/opus_h3-1_260828_중복조합_p62.jpg",
+  "reason": "문법 한계: 빈칸이 첨자인 중복조합 기호 ₄H₍가₎·₄H₍다₎를 텍스트 '₄H(가)'로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ② vs 빠른정답 100 — 출처 [2018년 10월 고3 이과 19번/4점]. f(n)=n−4, g(n)=n−1, h(n)=n−2 → 2+6+6=14 → ② (빠른정답 100과 불일치).",
+  "seq": 62,
+  "qtype": "choice",
+  "question": "다음은 4 이상의 자연수 [[n]]에 대하여 등식\n[[a × b × c × d = pow(2,n) × pow(3,n)]]\n을 만족시키는 2 이상의 자연수 [[a]], [[b]], [[c]], [[d]]의 순서쌍 ([[a]], [[b]], [[c]], [[d]]) 중에서 [[a + b + c + d]]가 짝수가 되도록 하는 모든 순서쌍의 개수를 구하는 과정이다.\n[[a = pow(2, sub(x,1)) × pow(3, sub(y,1))]], [[b = pow(2, sub(x,2)) × pow(3, sub(y,2))]], [[c = pow(2, sub(x,3)) × pow(3, sub(y,3))]], [[d = pow(2, sub(x,4)) × pow(3, sub(y,4))]]이라 하면 [[sub(x,1) + sub(x,2) + sub(x,3) + sub(x,4) = n]], [[sub(y,1) + sub(y,2) + sub(y,3) + sub(y,4) = n]] (단, [[i]] = 1, 2, 3, 4에 대하여 [[sub(x,i)]], [[sub(y,i)]]는 음이 아닌 정수) 이다. 이때 [[a + b + c + d]]가 짝수이므로 [[a]], [[b]], [[c]], [[d]]가 모두 짝수이거나 [[a]], [[b]], [[c]], [[d]] 중에서 2개만 짝수이다.\n(i) [[a]], [[b]], [[c]], [[d]]가 모두 짝수인 경우 [[sub(x,1)]], [[sub(x,2)]], [[sub(x,3)]], [[sub(x,4)]]가 모두 자연수이고 [[sub(y,1)]], [[sub(y,2)]], [[sub(y,3)]], [[sub(y,4)]]는 음이 아닌 정수이므로 순서쌍 ([[sub(x,1)]], [[sub(x,2)]], [[sub(x,3)]], [[sub(x,4)]], [[sub(y,1)]], [[sub(y,2)]], [[sub(y,3)]], [[sub(y,4)]])의 개수는 ₄H(가) × [[hcomb(4, n)]] ⋯ ㉠\n(ii) [[a]], [[b]], [[c]], [[d]] 중에서 2개만 짝수인 경우 [[sub(x,1)]], [[sub(x,2)]], [[sub(x,3)]], [[sub(x,4)]] 중에서 자연수가 2개이고 0이 2개이므로 순서쌍 ([[sub(x,1)]], [[sub(x,2)]], [[sub(x,3)]], [[sub(x,4)]])의 개수는 [[comb(4, 2)]] × (나) 이다. 이때 [[a]], [[b]], [[c]], [[d]] 중 홀수인 두 수는 1이 될 수 없으므로 순서쌍 ([[sub(y,1)]], [[sub(y,2)]], [[sub(y,3)]], [[sub(y,4)]])의 개수는 ₄H(다) 이다. 따라서 순서쌍 ([[sub(x,1)]], [[sub(x,2)]], [[sub(x,3)]], [[sub(x,4)]], [[sub(y,1)]], [[sub(y,2)]], [[sub(y,3)]], [[sub(y,4)]])의 개수는 [[comb(4, 2)]] × (나) × ₄H(다) ⋯ ㉡\n(i), (ii)에 의하여 구하는 경우의 수는 ㉠+㉡이다.\n위의 (가), (나), (다)에 알맞은 식을 각각 [[f(n)]], [[g(n)]], [[h(n)]]이라 할 때, [[f(6) + g(7) + h(8)]]의 값은?",
+  "choices": [
+   "[[13]]",
+   "[[14]]",
+   "[[15]]",
+   "[[16]]",
+   "[[17]]"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "7673aae5-e892-4828-a20c-027939cdea55",
+  "zip": "esc_opus_h3-1_1of1",
+  "image": "/root/esc/work/esc_opus_h3-1_1of1/images/opus_h3-1_260828_확률의 뜻_p68.jpg",
+  "reason": "이미지 상단 잘림(그림 1 설명 첫 문장 누락) / 도형 표현 불가: 직사각형 위 점·선분 그림 / (참고) 빠른정답 불일치: 전사·풀이 답 146 vs 빠른정답 4 — 영역 6개 ⇔ 선분 교점 1개 ⇔ 역순쌍 1개: 105/625=21/125 → 146 (p69·p70과 같은 설정 가정, 빠른정답 4와 불일치).",
+  "seq": 68,
+  "qtype": "short",
+  "question": "각 점 [[sub(P,i)]] ([[i]] = 1, 2, 3, 4)에 대하여 점 [[sub(P,i)]]와 5개의 점 [[sub(Q,1)]], [[sub(Q,2)]], [[sub(Q,3)]], [[sub(Q,4)]], [[sub(Q,5)]] 중에서 임의로 선택한 한 점을 선분으로 연결한다. [그림 2]는 이러한 방법에 따라 4개의 선분을 그린 2가지 예이다. 직사각형 ABCD가 추가된 4개의 선분에 의하여 나누어진 영역의 개수가 6일 확률이 [[frac(q,p)]] 일 때, [[p + q]]의 값을 구하시오. (단, [[p]]와 [[q]]는 서로소인 자연수이다.)",
+  "choices": null,
+  "answer": "146",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "[그림 1] 직사각형 ABCD, 변 AD 위 점 P₁~P₄, 변 BC 위 점 Q₁~Q₅; [그림 2] 각 Pᵢ에서 Q점으로 선분 4개를 그은 예 2가지"
+    }
+   }
+  ],
+  "difficulty_est": 4,
+  "unit_id": "h3-1",
+  "confidence": 0.7
+ },
+ {
+  "id": "dfb31e08-9f7e-4e73-8dc8-d952adc70470",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_모비율의 추정_p49.jpg",
+  "reason": "문법 범위 밖: 표본비율 p̂(hat) 표기 → 텍스트 혼합 / (참고) 빠른정답 불일치: 전사·풀이 답 0.6 vs 빠른정답 1 — 신뢰구간의 중점 (0.5484+0.6516)/2=0.6. 빠른정답 1과 불일치(정렬 어긋남 추정).",
+  "seq": 49,
+  "qtype": "short",
+  "question": "어느 모집단에서 표본을 임의추출하여 구한 모비율 [[p]]의 신뢰도 99%의 신뢰구간이 [[0.5484 <= p <= 0.6516]]일 때, 이 표본의 표본비율 p̂의 값을 구하시오.\n(단, [[prob(abs(Z) <= 2.58) = 0.99]])",
+  "choices": null,
+  "answer": "0.6",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "4864355c-769e-4718-8b3a-5505d487c9a8",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_모비율의 추정_p68.jpg",
+  "reason": "문법 범위 밖: 표본비율 p̂(hat) 표기 → 부등식 |p̂−p| ≤ 0.16√(p̂(1−p̂))을 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 157 vs 빠른정답 1 — 출처 [2010년 11월 고3 이과 확률과 통계 30번]. 2√(p̂(1−p̂)/n) ≤ 0.16√(p̂(1−p̂)) → √n ≥ 12.5 → n ≥ 156.25 → 157. 빠른정답 1과 불일치. 원문 '표준정규분포가 따르는' 그대로.",
+  "seq": 68,
+  "qtype": "short",
+  "question": "우리나라 성인을 대상으로 특정 질병에 대한 항체 보유 비율을 조사하려고 한다. 모집단의 항체 보유 비율을 [[p]], 모집단에서 임의로 추출한 [[n]]명을 대상으로 조사한 표본의 항체 보유 비율을 p̂이라고 할 때,\n| p̂ − [[p]] | ≤ 0.16 √( p̂(1 − p̂) ) 일 확률이 0.9544 이상이 되도록 하는 [[n]]의 최솟값을 구하시오.\n(단, [[Z]]가 표준정규분포가 따르는 확률변수일 때, [[prob(0 <= Z <= 2) = 0.4772]]이다.)",
+  "choices": null,
+  "answer": "157",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "531aac0c-3e85-495e-bd79-c35fac1a6fab",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_중복조합_p73.jpg",
+  "reason": "합성함수 적용 표기 (f∘f)(x) = x를 텍스트 혼합으로 표기 — 출처 [2025년 3월 고3 확률과 통계 27번 변형]. f(1)=1, f(4)=4 강제 → f(2)≤f(3)∈[1,4] 10가지 × f(5)∈{4,5} 2가지 = 20 → ⑤ = 빠른정답 ✓.",
+  "seq": 73,
+  "qtype": "choice",
+  "question": "집합 [[X = set(1, 2, 3, 4, 5)]]에 대하여 다음 조건을 만족시키는 함수 [[f]]: [[X]]→[[X]]의 개수는?\n(가) [[x]] = 1, 2, 3, 4일 때 [[f(x) <= f(x + 1)]]이다.\n(나) [[x]]가 소수가 아니면 ([[comp(f, f)]])([[x]]) = [[x]]이다.",
+  "choices": [
+   "12",
+   "14",
+   "16",
+   "18",
+   "20"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "ff432543-5c71-4713-87e1-173781573498",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_이항분포_p48.jpg",
+  "reason": "문법 범위 밖: 그리스 문자 σ(표준편차) → P(|X−m| < (√2/2)σ)를 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 1792 vs 빠른정답 6 — n(1−p)=18p, np(1−p)=2 → p=1/3, n=9, m=3, σ=√2 → P(X=3)=₉C₃(1/3)³(2/3)⁶=1792/3⁸ → k=1792. 빠른정답 6과 불일치.",
+  "seq": 48,
+  "qtype": "short",
+  "question": "이항분포 [[binomd(n, p)]]를 따르는 확률변수 [[X]]의 분산은 2이고,\n[[prob(X = n - 1) = 18 prob(X = n)]]이 성립한다.\n확률변수 [[X]]의 평균을 [[m]], 표준편차를 σ라 할 때,\nP( | [[X - m]] | < [[frac(sqrt(2), 2)]] σ ) = [[frac(k, pow(3, 8))]]이다. [[k]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "1792",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "d7b25562-045d-4e7c-b619-4423783db019",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_이산확률변수의 기댓값과 표준편차_p70.jpg",
+  "reason": "문법 범위 밖: 그리스 문자 σ → T = a((X−m)/σ) + b를 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 11 — 출처 [2004년 3월 고3 이과 14번]. E(T)=b=100, σ(T)=a=20 → 120 → ⑤. 빠른정답 11과 불일치(정렬 어긋남).",
+  "seq": 70,
+  "qtype": "choice",
+  "question": "2005학년도 대학수학능력시험 수리영역의 원점수 [[X]]의 평균을 [[m]], 표준편차를 σ라 할 때 표준점수 [[T]]는\n[[T]] = [[a]] × ( ([[X - m]]) / σ ) + [[b]] (단, [[a > 0]])\n꼴로 나타내어진다. 수리영역의 표준점수 [[T]]가 평균이 100, 표준편차가 20인 분포를 이룬다고 할 때, 두 상수 [[a]], [[b]]의 합 [[a + b]]의 값은?",
+  "choices": [
+   "80",
+   "90",
+   "100",
+   "110",
+   "120"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "b05684dc-a4d9-4d33-a8d6-da319d340a9b",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_이산확률변수의 기댓값과 표준편차_p80.jpg",
+  "reason": "문법 범위 밖: 그리스 문자 σ → T = a·(X−m)/σ + b를 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 ② vs 빠른정답 16 — a=10, b=80 → 90 → ②. 빠른정답 16과 불일치(정렬 어긋남).",
+  "seq": 80,
+  "qtype": "choice",
+  "question": "어느 과목의 시험점수 [[X]]의 평균이 [[m]]점이고 표준편차가 σ점일 때, 새로운 확률변수 [[T]]를\n[[T]] = [[a]] · ([[X - m]]) / σ + [[b]]로 정하였다. [[T]]의 평균이 80점, 표준편차가 10점이 되도록 하는 두 상수 [[a]], [[b]]에 대하여 [[a + b]]의 값은? (단, [[a > 0]])",
+  "choices": [
+   "80",
+   "90",
+   "100",
+   "110",
+   "120"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "86645a45-2fc3-4f33-a75f-67c86385cd95",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_정규분포_p1.jpg",
+  "reason": "도형 표현 불가: 정규분포곡선 그래프 / 문법 범위 밖: 그리스 문자 σ₁, σ₂ 텍스트 혼합 — A가 오른쪽·뾰족 → m₁>m₂, σ₁<σ₂ → ④ = 빠른정답 ✓.",
+  "seq": 1,
+  "qtype": "choice",
+  "question": "2학년 재학생 수가 동일한 두 고등학교 A, B의 2학년 학생의 수학 성적 분포가 각각 정규분포를 이루고 그 정규분포곡선이 다음 그림과 같다. 두 고등학교 A, B의 수학 성적의 평균을 각각 [[sub(m,1)]], [[sub(m,2)]], 표준편차를 각각 σ₁, σ₂라 할 때, 다음 중 옳은 것은?",
+  "choices": [
+   "[[sub(m,1) < sub(m,2)]], σ₁ < σ₂",
+   "[[sub(m,1) < sub(m,2)]], σ₁ > σ₂",
+   "[[sub(m,1) < sub(m,2)]], σ₁ = σ₂",
+   "[[sub(m,1) > sub(m,2)]], σ₁ < σ₂",
+   "[[sub(m,1) > sub(m,2)]], σ₁ > σ₂"
+  ],
+  "answer": "④",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면 위 두 정규분포곡선: A(초록)는 오른쪽에 있고 높고 좁음, B(주황)는 왼쪽에 있고 낮고 넓음"
+    }
+   }
+  ],
+  "difficulty_est": 1,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "4c30c7df-5272-4b99-ada7-d6a8f300d4a7",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_정규분포_p3.jpg",
+  "reason": "문법 범위 밖: 그리스 문자 σ → 정규분포 N(14, σ²)을 텍스트로 표기 — 평균 14 대칭: ㄱ✓(5↔23, 11↔17), ㄴ✗(k=11에서 최대), ㄷ✓ → ③ = 빠른정답 ✓.",
+  "seq": 3,
+  "qtype": "choice",
+  "question": "정규분포 N(14, σ²)을 따르는 확률변수 [[X]]에 대하여 함수 [[f(k)]]를 [[f(k) = prob(k <= X <= k + 6)]]이라 할 때, 다음 보기 중 옳은 것을 있는 대로 고른 것은?\n<보기>\nㄱ. [[f(5) = f(17)]]\nㄴ. 함수 [[f(k)]]는 [[k = 14]]일 때, 최댓값을 갖는다.\nㄷ. 임의의 실수 [[a]]에 대하여 [[f(a) = f(22 - a)]]이다.",
+  "choices": [
+   "ㄱ",
+   "ㄱ, ㄴ",
+   "ㄱ, ㄷ",
+   "ㄴ, ㄷ",
+   "ㄱ, ㄴ, ㄷ"
+  ],
+  "answer": "③",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "2845703b-d42a-4926-acfe-add351a048be",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_정규분포_p4.jpg",
+  "reason": "도형 표현 불가: 정규분포곡선 3개 그래프 / 문법 범위 밖: σ_A², σ_B², σ_C² 텍스트 혼합 / (참고) 빠른정답 불일치: 전사·풀이 답 ② vs 빠른정답 4 — B=f(x−k) 평행이동 → σ_A=σ_B, C는 B와 중심 같고 넓음 → m_B=m_C>m_A, σ_C²>σ_A²=σ_B² → ②. 빠른정답 4와 불일치.",
+  "seq": 4,
+  "qtype": "choice",
+  "question": "다음 세 곡선 A, B, C는 각각 정규분포를 따르는 확률분포의 정규분포곡선이다. 세 확률분포의 평균을 각각 [[sub(m,A)]], [[sub(m,B)]], [[sub(m,C)]], 분산을 각각 σ_A², σ_B², σ_C²이라 할 때, 다음 중 옳은 것은? (단, 곡선 A는 함수 [[y = f(x)]]의 그래프이고, 곡선 B는 함수 [[y = f(x - k)]]의 그래프이다.)",
+  "choices": [
+   "[[sub(m,A) = sub(m,B) > sub(m,C)]], σ_B² > σ_A² = σ_C²",
+   "[[sub(m,B) = sub(m,C) > sub(m,A)]], σ_C² > σ_A² = σ_B²",
+   "[[sub(m,B) > sub(m,A) = sub(m,C)]], σ_A² = σ_B² > σ_C²",
+   "[[sub(m,C) > sub(m,A) = sub(m,B)]], σ_A² = σ_C² > σ_B²",
+   "[[sub(m,C) > sub(m,A) = sub(m,B)]], σ_B² > σ_A² = σ_C²"
+  ],
+  "answer": "②",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "좌표평면 위 세 정규분포곡선: A(빨강, 왼쪽, 높고 좁음, 꼭대기 아래 점선), B(청록, 오른쪽, A와 같은 모양, 꼭대기 아래 점선), C(노랑, B와 같은 중심, 낮고 넓음)"
+    }
+   }
+  ],
+  "difficulty_est": 2,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "992d8e58-163b-4f1d-9255-176f47360350",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_정규분포_p5.jpg",
+  "reason": "도형 표현 불가: 정규분포곡선 그래프 / 문법 범위 밖: 그리스 문자 σ₁, σ₂ 텍스트 혼합 / (참고) 빠른정답 불일치: 전사·풀이 답 ③ vs 빠른정답 4 — A 왼쪽·넓음 → m₁<m₂, σ₁>σ₂ → ③. 빠른정답 4와 불일치.",
+  "seq": 5,
+  "qtype": "choice",
+  "question": "다음 그림은 A반과 B반의 수학 성적을 나타내는 정규분포의 확률밀도함수의 그래프이다. A반과 B반의 성적의 평균을 각각 [[sub(m,1)]], [[sub(m,2)]], 표준편차를 각각 σ₁, σ₂라 할 때, 다음 중 옳은 것은?",
+  "choices": [
+   "[[sub(m,1) > sub(m,2)]], σ₁ > σ₂",
+   "[[sub(m,1) > sub(m,2)]], σ₁ < σ₂",
+   "[[sub(m,1) < sub(m,2)]], σ₁ > σ₂",
+   "[[sub(m,1) < sub(m,2)]], σ₁ < σ₂",
+   "[[sub(m,1) = sub(m,2)]], σ₁ = σ₂"
+  ],
+  "answer": "③",
+  "figure": [
+   {
+    "fn": "unsupported",
+    "args": {
+     "raw": "x축 위 두 정규분포곡선: A는 왼쪽에 있고 낮고 넓음, B는 오른쪽에 있고 높고 좁음(각 꼭대기 아래 점선)"
+    }
+   }
+  ],
+  "difficulty_est": 1,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "5082298d-3103-4aa4-9b43-5aabc265ff32",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_정규분포_p13.jpg",
+  "reason": "문법 범위 밖: 그리스 문자 σ → N(m, σ²), m+σ²을 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 39 vs 빠른정답 673 — σ²/9=1 → σ²=9, m=30 → 39. 빠른정답 673과 불일치(정렬 어긋남).",
+  "seq": 13,
+  "qtype": "short",
+  "question": "확률변수 [[X]]는 정규분포 N([[m]], σ²)을 따른다.\n[[frac(1,3) X]]의 분산이 1이고, [[prob(X <= 25) = prob(X >= 35)]]일 때,\n[[m]] + σ²의 값을 구하시오.",
+  "choices": null,
+  "answer": "39",
+  "figure": null,
+  "difficulty_est": 2,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "98dd587a-1fad-4b40-97e4-06e49f0aa3f5",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_정규분포_p35.jpg",
+  "reason": "문법 범위 밖: 그리스 문자 σ → N(m²+4m+36, σ²)을 텍스트 혼합으로 표기 / (참고) 빠른정답 불일치: 전사·풀이 답 176 vs 빠른정답 126 — 출처 [2024년 7월 고3 확률과 통계 29번 변형]. σ=(m²+4m+36)/m=m+36/m+4 ≥ 16 (m=6) → X~N(6,1), Y~N(96,16²); P(X≥1)=P(Z≤5) → (k−96)/16=5 → k=176. 빠른정답 126과 불일치.",
+  "seq": 35,
+  "qtype": "short",
+  "question": "두 양수 [[m]], σ에 대하여 확률변수 [[X]]는 정규분포 [[normald(m, pow(1, 2))]], 확률변수 [[Y]]는 정규분포 N([[pow(m, 2) + 4m + 36]], σ²)을 따르고, 두 확률변수 [[X]], [[Y]]는 [[prob(X <= 0) = prob(Y <= 0)]]을 만족시킨다. σ의 값이 최소가 되도록 하는 [[m]]의 값을 [[sub(m,1)]]이라 하자. [[m = sub(m,1)]]일 때, 두 확률변수 [[X]], [[Y]]에 대하여 [[prob(X >= 1) = prob(Y <= k)]]를 만족시키는 상수 [[k]]의 값을 구하시오.",
+  "choices": null,
+  "answer": "176",
+  "figure": null,
+  "difficulty_est": 4,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "e924b723-2c62-4720-bf18-b27d449c27b8",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_정규분포_p55.jpg",
+  "reason": "문법 범위 밖: 그리스 문자 σ(표준편차) 텍스트 혼합 / (참고) 빠른정답 불일치: 전사·풀이 답 ⑤ vs 빠른정답 400 — 출처 [2014년 9월 고3 이과 19번/4점]. (80−m)/σ=1.34, (77−m)/σ=1.04 → σ=10, m=66.6 → 76.6 → ⑤. 빠른정답 400과 불일치(정렬 어긋남).",
+  "seq": 55,
+  "qtype": "choice",
+  "question": "어느 학교 3학년 학생의 A 과목 시험 점수는 평균이 [[m]], 표준편차가 σ인 정규분포를 따르고, B 과목 시험 점수는 평균이 [[m + 3]], 표준편차가 σ인 정규분포를 따른다고 한다. 이 학교 3학년 학생 중에서 A 과목 시험 점수가 80점 이상인 학생의 비율이 9%이고, B 과목 시험 점수가 80점 이상인 학생의 비율이 15%일 때, [[m]] + σ의 값은?\n(단, [[Z]]가 표준정규분포를 따르는 확률변수일 때, [[prob(0 <= Z <= 1.04) = 0.35]], [[prob(0 <= Z <= 1.34) = 0.41]]로 계산한다.)",
+  "choices": [
+   "68.6",
+   "70.6",
+   "72.6",
+   "74.6",
+   "76.6"
+  ],
+  "answer": "⑤",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ },
+ {
+  "id": "a5771908-71cd-4c2e-ae19-16296eaf90f4",
+  "zip": "esc_sonnet_h3-1_1of2",
+  "image": "/root/esc/work/esc_sonnet_h3-1_1of2/images/sonnet_h3-1_260828_정규분포_p57.jpg",
+  "reason": "문법 범위 밖: 그리스 문자 σ(표준편차) 텍스트 혼합 — (m−25)/σ=1.34, (m−28)/σ=1.04 → σ=10, m=38.4 → 48.4 → ② = 빠른정답 ✓.",
+  "seq": 57,
+  "qtype": "choice",
+  "question": "어느 학교 3학년 학생의 A 과목 시험 점수는 평균이 [[m]], 표준편차가 σ인 정규분포를 따르고, B 과목 시험 점수는 평균이 [[m - 3]], 표준편차가 σ인 정규분포를 따른다고 한다. 이 학교 3학년 학생 중에서 A 과목 시험 점수가 25점 이하인 학생의 비율이 9%이고, B 과목 시험 점수가 25점 이하인 학생의 비율이 15%일 때, [[m]] + σ의 값은?\n(단, [[Z]]가 표준정규분포를 따르는 확률변수일 때, [[prob(0 <= Z <= 1.04) = 0.35]], [[prob(0 <= Z <= 1.34) = 0.41]]로 계산한다.)",
+  "choices": [
+   "45.4",
+   "48.4",
+   "51.4",
+   "54.4",
+   "57.4"
+  ],
+  "answer": "②",
+  "figure": null,
+  "difficulty_est": 3,
+  "unit_id": "h3-1",
+  "confidence": 0.8
+ }
+]
