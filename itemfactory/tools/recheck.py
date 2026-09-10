@@ -555,6 +555,57 @@ def recompute(it):
         A, a, H, h = [Fraction(x) for x in re.findall(r"(\d+) cm", q)][:4]; return A * A * H / 3 - a * a * h / 3
     if tid.startswith("m1-2-prism-pyramid-t6"):
         a, h, p, qq = [Fraction(x) for x in re.findall(r"(\d+) cm", q)][:4]; return a * a * h / (3 * p * qq)
+    # ── 정다각형 외각 (09-11)
+    if tid.startswith("m1-2-polygon-exterior"):
+        def by_n(nn, q=q):
+            ask = re.search(r"정다각형의 (.+?)[을를] 구하시오", q).group(1)
+            if ask.startswith("변의 개수"): return Fraction(nn)
+            if ask.startswith("대각선"): return Fraction(nn * (nn - 3), 2)
+            if ask.startswith("한 내각"): return Fraction(180 - Fraction(360, nn))
+            if ask.startswith("한 외각"): return Fraction(360, nn)
+            return Fraction(180 * (nn - 2))
+        if tid.startswith("m1-2-polygon-exterior-t1"):
+            return Fraction(360, _kor_polygon(q))
+        if tid.startswith("m1-2-polygon-exterior-t2"):
+            ext = int(re.search(r"\[\[deg\((\d+)\)\]\]", q).group(1)); return by_n(360 // ext) if 360 % ext == 0 else None
+        if tid.startswith("m1-2-polygon-exterior-t3"):
+            m = re.search(r"비가 (\d+) : (\d+)", q); a, b = int(m.group(1)), int(m.group(2)); ext = Fraction(180 * b, a + b)
+            return by_n(int(360 / ext)) if ext.denominator == 1 and 360 % int(ext) == 0 else None
+        if tid.startswith("m1-2-polygon-exterior-t4"):
+            return 360 - sum(Fraction(v) for v in re.findall(r"\[\[deg\((\d+)\)\]\]", q))
+        if tid.startswith("m1-2-polygon-exterior-t5"):
+            inn = int(re.search(r"\[\[deg\((\d+)\)\]\]", q).group(1)); ext = 180 - inn
+            return by_n(360 // ext) if 360 % ext == 0 else None
+    # ── 호의 길이 비례 (09-11)
+    if tid.startswith("m1-2-arc-ratio-t1") or tid.startswith("m1-2-arc-ratio-t5"):
+        l1, l2 = [Fraction(v) for v in re.findall(r"(\d+) cm", q)][:2]; _, t1 = _given_angle(q); return t1 * l2 / l1
+    if tid.startswith("m1-2-arc-ratio-t2"):
+        l1 = Fraction(re.search(r"(\d+) cm", q).group(1)); degs = [Fraction(v) for v in re.findall(r"\[\[deg\((\d+)\)\]\]", q)]; return l1 * degs[1] / degs[0]
+    if tid.startswith("m1-2-arc-ratio-t3"):
+        m = re.search(r"= (\d+) : (\d+)", q); a, b = Fraction(m.group(1)), Fraction(m.group(2))
+        return 180 * a / (a + b) if _asked_angle(q) == "AOC" else 180 * b / (a + b)
+    if tid.startswith("m1-2-arc-ratio-t4"):
+        m = re.search(r"= (\d+) : (\d+) : (\d+)", q); a, b, c = [Fraction(m.group(i)) for i in (1, 2, 3)]
+        part = {"AOB": a, "BOC": b, "COA": c}[_asked_angle(q)]; return 360 * part / (a + b + c)
+    # ── 선분의 중점 (09-11) — 토막(AB/4·AB/6) 위치로 다시 센다
+    if tid.startswith("m1-2-segment-mid"):
+        X = _asked_seg(q)
+        if tid.startswith("m1-2-segment-mid-t1"):
+            L = _after(q, "[[seg(AB)]] = "); second = re.search(r"\[\[seg\(([A-Z]{2})\)\]\]의 중점이다\. \[\[seg\(AB\)\]\]", q).group(1)
+            pos = {"A": 0, "M": 2, "B": 4, "N": 3 if second == "MB" else 1}
+            return L / 4 * abs(pos[X[0]] - pos[X[1]])
+        if tid.startswith("m1-2-segment-mid-t2"):
+            L = _after(q, "[[seg(AB)]] = "); second = re.search(r"점 M은 \[\[seg\(([A-Z]{2})\)\]\]의 중점", q).group(1)
+            pos = {"A": 0, "P": 2, "Q": 4, "B": 6, "M": {"PQ": 3, "AP": 1, "QB": 5}[second]}
+            return L / 6 * abs(pos[X[0]] - pos[X[1]])
+        if tid.startswith("m1-2-segment-mid-t3"):
+            g = re.search(r"\[\[seg\(([A-Z]{2})\)\]\] = (\d+) cm", q); k = Fraction(g.group(2))
+            pos = {"A": 0, "N": 1, "M": 2, "B": 4}
+            return k * abs(pos[X[0]] - pos[X[1]])                                        # 주어진 토막(NM·AN)은 언제나 1토막
+        if tid.startswith("m1-2-segment-mid-t4"):
+            a, b = _segs(q)["AB"], _segs(q)["BC"]; return (a + b) / 2
+        if tid.startswith("m1-2-segment-mid-t5"):
+            a, mn = _segs(q)["AB"], _segs(q)["MN"]; return 2 * (mn - a / 2)
     return "skip"
 
 

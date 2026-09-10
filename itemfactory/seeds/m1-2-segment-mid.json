@@ -1,0 +1,1608 @@
+{
+  "seed_id": "m1-2-segment-mid",
+  "category": "도형",
+  "title": "선분의 중점 — 중점의 중점·삼등분점과 중점·거꾸로·이어진 두 선분의 중점",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-01"
+  ],
+  "schema_id": "4edd7671-5297-4b26-98b4-135ed1b94759",
+  "schema_name": "선분의 등분점과 중점 관계 / 중점 연쇄와 선분 길이 관계",
+  "source_item_ids": [],
+  "note": "출판사 5.1 유형(선분 중점 AM·MN 길이) 차용. 점은 y = 0 위에 실제 길이 좌표로 두고 aspect_min 으로 납작하게. 구하는 선분·둘째 중점의 위치는 표 행(계수 × AB), 거꾸로(토막 → 전체)와 이어진 두 선분(MN = AC/2)도 표로.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동",
+        "역연산"
+      ],
+      "prereq": [
+        "선분의 중점: 선분을 이등분하는 점",
+        "선분의 길이의 합·차"
+      ],
+      "ops": [
+        "비례",
+        "사칙"
+      ],
+      "tags": [
+        "선분",
+        "중점",
+        "등분점"
+      ],
+      "title": "중점의 중점 — AB의 길이로 부분 선분 구하기",
+      "skill": "중점은 선분을 반으로 나눈다 — 두 번 반으로 나누면 1/4, 합치면 3/4",
+      "variant_axis": {
+        "구하는 것": "MN·AN·NB",
+        "두 번째 중점": "MB의 중점·AM의 중점",
+        "AB": "4의 배수"
+      },
+      "discriminates": "중점 조건을 길이 관계(½)로 옮기고 두 번 적용하는가, 구하는 선분이 어느 부분들의 합인지 그림에서 읽는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "r",
+        "rows": {
+          "1": {
+            "SECOND": "MB",
+            "ASKS": "MN",
+            "cf4": 1,
+            "nx4": 3,
+            "STEP": "MN = MB ÷ 2 = (AB ÷ 2) ÷ 2"
+          },
+          "2": {
+            "SECOND": "MB",
+            "ASKS": "AN",
+            "cf4": 3,
+            "nx4": 3,
+            "STEP": "AN = AM + MN = AB ÷ 2 + AB ÷ 4"
+          },
+          "3": {
+            "SECOND": "AM",
+            "ASKS": "NB",
+            "cf4": 3,
+            "nx4": 1,
+            "STEP": "NB = NM + MB = AB ÷ 4 + AB ÷ 2"
+          },
+          "4": {
+            "SECOND": "AM",
+            "ASKS": "AN",
+            "cf4": 1,
+            "nx4": 1,
+            "STEP": "AN = AM ÷ 2 = (AB ÷ 2) ÷ 2"
+          },
+          "5": {
+            "SECOND": "MB",
+            "ASKS": "NB",
+            "cf4": 1,
+            "nx4": 3,
+            "STEP": "NB = MB ÷ 2 = (AB ÷ 2) ÷ 2"
+          },
+          "6": {
+            "SECOND": "AM",
+            "ASKS": "MN",
+            "cf4": 1,
+            "nx4": 1,
+            "STEP": "MN = AM ÷ 2 = (AB ÷ 2) ÷ 2"
+          }
+        }
+      },
+      "derive": {
+        "L": "4*k",
+        "hL": "2*k",
+        "qL": "k",
+        "ans": "cf4*k",
+        "xn": "nx4*k"
+      },
+      "constraints": [
+        "ans != L",
+        "ans != hL or cf4 == 2"
+      ],
+      "cost_values": [
+        "L",
+        "hL",
+        "qL",
+        "ans"
+      ],
+      "relation": "X - cf4*L/4",
+      "unknown": "X",
+      "answer_var": "ans",
+      "verify": [
+        "4*ans == cf4*L"
+      ],
+      "question": "다음 그림에서 점 M은 [[seg(AB)]]의 중점이고 점 N은 [[seg({SECOND})]]의 중점이다. [[seg(AB)]] = {L} cm일 때, [[seg({ASKS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "M": [
+                "{hL}",
+                0
+              ],
+              "N": [
+                "{xn}",
+                0
+              ],
+              "B": [
+                "{L}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ]
+            ],
+            "labels": [
+              {
+                "at": [
+                  "{2*k}",
+                  0
+                ],
+                "text": "{L} cm",
+                "dy": 26
+              }
+            ],
+            "aspect_min": 0.22
+          }
+        }
+      ],
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans} cm"
+      ],
+      "sol1": "점 M이 AB의 중점이므로 AM = MB = AB ÷ 2 = {hL} cm다. 점 N은 {SECOND}의 중점이므로 {SECOND}{eul(SECOND)} 다시 반으로 나누어 {qL} cm짜리 토막이 생긴다. 그림에서 {ASKS}{ika(ASKS)} 어느 토막들로 이루어지는지 읽으면 {STEP}이다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "M": [
+                "{hL}",
+                0
+              ],
+              "N": [
+                "{xn}",
+                0
+              ],
+              "B": [
+                "{L}",
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "M",
+                "label": "{hL}"
+              },
+              {
+                "a": "M",
+                "b": "B",
+                "label": "{hL}"
+              }
+            ],
+            "aspect_min": 0.22
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:M",
+              "lbl:M"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:N",
+              "lbl:N"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "M이 AB의 중점이므로 AM = MB = {L} ÷ 2 = {hL} (cm)",
+        "N이 {SECOND}의 중점이므로 {SECOND}의 절반은 {hL} ÷ 2 = {qL} (cm)",
+        "{STEP} = {ans} (cm)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AM = MB = {L} ÷ 2 = {hL}",
+                "hint": "중점 → 절반"
+              },
+              {
+                "text": "{SECOND} ÷ 2 = {qL}",
+                "hint": "다시 절반"
+              },
+              {
+                "text": "{ASKS} = {ans} (cm)",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "[[frac({cf4}, 4)]] × AB"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol_check": "AB는 {qL} cm짜리 토막 4개로 나뉘고 {ASKS}{eun(ASKS)} 그중 {cf4}개이므로 {qL} × {cf4} = {ans} (cm)다. 답: {ans} cm",
+      "model_answer": "점 M이 AB의 중점이므로 AM = MB = {L} ÷ 2 = {hL} (cm)이고, 점 N이 {SECOND}의 중점이므로 {SECOND}의 절반은 {qL} cm이다. 따라서 {STEP} = {ans} (cm)이다.",
+      "rubric": [
+        {
+          "element": "첫 중점",
+          "points": 2,
+          "criterion": "M이 중점이므로 AM = MB = {hL} cm임을 구했다.",
+          "partial": "중점의 뜻을 쓰지 않았으면 인정하지 않는다."
+        },
+        {
+          "element": "둘째 중점",
+          "points": 2,
+          "criterion": "N이 {SECOND}의 중점이므로 {qL} cm짜리 토막이 생김을 구했다.",
+          "partial": "어느 선분의 중점인지 잘못 읽었으면 인정하지 않는다."
+        },
+        {
+          "element": "구하는 선분",
+          "points": 3,
+          "criterion": "{ASKS}{ika(ASKS)} 어느 토막들로 이루어지는지 밝혀 {ans} cm를 구했다.",
+          "partial": "토막 하나를 빠뜨리거나 더했으면 1점."
+        }
+      ],
+      "id": "m1-2-segment-mid-t1",
+      "pitfalls": [
+        {
+          "text": "N이 {SECOND}의 중점인데 AB의 중점처럼 읽어 토막을 잘못 나눔",
+          "on": "둘째",
+          "effect": "불인정"
+        },
+        {
+          "text": "{ASKS}가 어느 토막들로 이루어지는지 그림에서 읽지 않고 {qL}{ro(qL)} 답함",
+          "on": "구하는",
+          "effect": "부분"
+        },
+        {
+          "text": "중점이 선분을 반으로 나눈다는 근거(AM = MB)를 적지 않음",
+          "on": "첫 중점",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동",
+        "역연산"
+      ],
+      "prereq": [
+        "선분의 중점: 선분을 이등분하는 점",
+        "선분의 길이의 합·차"
+      ],
+      "ops": [
+        "비례",
+        "사칙"
+      ],
+      "tags": [
+        "선분",
+        "중점",
+        "등분점"
+      ],
+      "title": "삼등분점과 중점 — AB의 길이로 부분 선분 구하기",
+      "skill": "삼등분점은 선분을 1/3씩, 중점은 1/2 — 토막(AB의 1/6)으로 세면 빠르다",
+      "variant_axis": {
+        "구하는 것": "MB·PM·AM·MQ",
+        "중점": "AQ·PB·PQ의 중점",
+        "AB": "6의 배수"
+      },
+      "discriminates": "삼등분점과 중점의 조건을 함께 길이로 옮기고, 구하는 선분을 토막의 합·차로 읽는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              2,
+              10
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "r",
+        "rows": {
+          "1": {
+            "SECOND": "PQ",
+            "ASKS": "AM",
+            "cf6": 3,
+            "mx": 3,
+            "STEP": "AM = AP + PM = 2토막 + 1토막"
+          },
+          "2": {
+            "SECOND": "PQ",
+            "ASKS": "PM",
+            "cf6": 1,
+            "mx": 3,
+            "STEP": "PM = PQ ÷ 2 = 1토막"
+          },
+          "3": {
+            "SECOND": "AP",
+            "ASKS": "MB",
+            "cf6": 5,
+            "mx": 1,
+            "STEP": "MB = MP + PQ + QB = 1토막 + 2토막 + 2토막"
+          },
+          "4": {
+            "SECOND": "AP",
+            "ASKS": "MQ",
+            "cf6": 3,
+            "mx": 1,
+            "STEP": "MQ = MP + PQ = 1토막 + 2토막"
+          },
+          "5": {
+            "SECOND": "QB",
+            "ASKS": "AM",
+            "cf6": 5,
+            "mx": 5,
+            "STEP": "AM = AQ + QM = 4토막 + 1토막"
+          },
+          "6": {
+            "SECOND": "QB",
+            "ASKS": "PM",
+            "cf6": 3,
+            "mx": 5,
+            "STEP": "PM = PQ + QM = 2토막 + 1토막"
+          }
+        }
+      },
+      "derive": {
+        "L": "6*k",
+        "tL": "2*k",
+        "sL": "k",
+        "ans": "cf6*k",
+        "xm": "mx*k"
+      },
+      "constraints": [
+        "ans != L",
+        "ans != tL or cf6 == 2"
+      ],
+      "cost_values": [
+        "L",
+        "tL",
+        "sL",
+        "ans"
+      ],
+      "relation": "X - cf6*L/6",
+      "unknown": "X",
+      "answer_var": "ans",
+      "verify": [
+        "6*ans == cf6*L"
+      ],
+      "question": "다음 그림에서 두 점 P, Q는 [[seg(AB)]]의 삼등분점이고 점 M은 [[seg({SECOND})]]의 중점이다. [[seg(AB)]] = {L} cm일 때, [[seg({ASKS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "P": [
+                "{tL}",
+                0
+              ],
+              "M": [
+                "{xm}",
+                0
+              ],
+              "Q": [
+                "{2*tL}",
+                0
+              ],
+              "B": [
+                "{L}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ]
+            ],
+            "labels": [
+              {
+                "at": [
+                  "{3*k}",
+                  0
+                ],
+                "text": "{L} cm",
+                "dy": 26
+              }
+            ],
+            "aspect_min": 0.22
+          }
+        }
+      ],
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans} cm"
+      ],
+      "sol1": "P, Q가 AB의 삼등분점이므로 AP = PQ = QB = AB ÷ 3 = {tL} cm다. M은 {SECOND}의 중점이므로 {SECOND}{eul(SECOND)} 반으로 나눈다. AB를 {sL} cm짜리 토막 6개로 보면 삼등분점은 2토막마다, 중점은 그 절반 자리에 놓이므로 {ASKS}{ika(ASKS)} 몇 토막인지 세면 된다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "P": [
+                "{tL}",
+                0
+              ],
+              "M": [
+                "{xm}",
+                0
+              ],
+              "Q": [
+                "{2*tL}",
+                0
+              ],
+              "B": [
+                "{L}",
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "P",
+                "label": "{tL}"
+              },
+              {
+                "a": "P",
+                "b": "Q",
+                "label": "{tL}"
+              },
+              {
+                "a": "Q",
+                "b": "B",
+                "label": "{tL}"
+              }
+            ],
+            "aspect_min": 0.22
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:P",
+              "pt:Q",
+              "lbl:P",
+              "lbl:Q"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:M",
+              "lbl:M"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "삼등분점이므로 AP = PQ = QB = {L} ÷ 3 = {tL} (cm)",
+        "M은 {SECOND}의 중점이므로 {SECOND}의 절반을 구한다 — AB를 {sL} cm 토막 6개로 나누면 편하다",
+        "{STEP}이므로 {ASKS} = {sL} × {cf6} = {ans} (cm)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AP = PQ = QB = {tL}",
+                "hint": "삼등분"
+              },
+              {
+                "text": "토막 1개 = {sL} cm (AB ÷ 6)",
+                "hint": "중점은 토막의 절반 자리"
+              },
+              {
+                "text": "{ASKS} = {sL} × {cf6} = {ans} (cm)",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{cf6}토막"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol_check": "AB = {L} cm는 {sL} cm 토막 6개이고 {ASKS}{eun(ASKS)} 그중 {cf6}개이므로 {ans} cm다. 답: {ans} cm",
+      "model_answer": "P, Q가 AB의 삼등분점이므로 AP = PQ = QB = {L} ÷ 3 = {tL} (cm)이다. M이 {SECOND}의 중점이므로 {SECOND}의 절반을 생각하면, AB를 {sL} cm짜리 토막 6개로 나눌 때 {ASKS}{eun(ASKS)} {cf6}토막이다. 따라서 {ASKS} = {sL} × {cf6} = {ans} (cm)이다.",
+      "rubric": [
+        {
+          "element": "삼등분점",
+          "points": 2,
+          "criterion": "AP = PQ = QB = {tL} cm임을 구했다.",
+          "partial": "2로 나누었으면 인정하지 않는다."
+        },
+        {
+          "element": "중점",
+          "points": 2,
+          "criterion": "M이 {SECOND}의 중점임을 길이({SECOND}의 절반)로 옮겼다.",
+          "partial": "어느 선분의 중점인지 잘못 읽었으면 인정하지 않는다."
+        },
+        {
+          "element": "구하는 선분",
+          "points": 3,
+          "criterion": "{ASKS}{eul(ASKS)} 토막의 합·차로 읽어 {ans} cm를 구했다.",
+          "partial": "토막 하나를 빠뜨리거나 더했으면 1점."
+        }
+      ],
+      "id": "m1-2-segment-mid-t2",
+      "pitfalls": [
+        {
+          "text": "삼등분점인데 AB를 2로 나누어 AP = {sL*3}{ro(sL*3)} 둠",
+          "on": "삼등분점",
+          "effect": "불인정"
+        },
+        {
+          "text": "M이 {SECOND}의 중점인데 AB의 중점으로 읽음",
+          "on": "중점",
+          "effect": "불인정"
+        },
+        {
+          "text": "{ASKS}를 토막 {cf6}개가 아닌 수로 셈",
+          "on": "구하는",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동",
+        "역연산"
+      ],
+      "prereq": [
+        "선분의 중점: 선분을 이등분하는 점",
+        "선분의 길이의 합·차"
+      ],
+      "ops": [
+        "비례",
+        "사칙"
+      ],
+      "tags": [
+        "선분",
+        "중점",
+        "등분점"
+      ],
+      "title": "짧은 토막의 길이로 전체 선분 구하기 — 중점 거꾸로",
+      "skill": "중점 관계를 거꾸로: 절반이 k이면 전체는 2k — 두 번 되돌리면 4k",
+      "variant_axis": {
+        "구하는 것": "AB·NB·MB",
+        "주어진 것": "NM·AN",
+        "토막": "2~15"
+      },
+      "discriminates": "중점 조건을 거꾸로(×2) 적용하는가, 구하는 선분이 토막 몇 개인지 세는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              2,
+              15
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "r",
+        "rows": {
+          "1": {
+            "GIVS": "NM",
+            "G1": "N",
+            "G2": "M",
+            "ASKS": "AB",
+            "cf": 4,
+            "STEP": "AB = 2 × AM = 2 × (2 × NM)"
+          },
+          "2": {
+            "GIVS": "NM",
+            "G1": "N",
+            "G2": "M",
+            "ASKS": "NB",
+            "cf": 3,
+            "STEP": "NB = NM + MB = NM + 2 × NM"
+          },
+          "3": {
+            "GIVS": "AN",
+            "G1": "A",
+            "G2": "N",
+            "ASKS": "AB",
+            "cf": 4,
+            "STEP": "AB = 2 × AM = 2 × (2 × AN)"
+          },
+          "4": {
+            "GIVS": "AN",
+            "G1": "A",
+            "G2": "N",
+            "ASKS": "MB",
+            "cf": 2,
+            "STEP": "MB = AM = 2 × AN"
+          },
+          "5": {
+            "GIVS": "AN",
+            "G1": "A",
+            "G2": "N",
+            "ASKS": "NB",
+            "cf": 3,
+            "STEP": "NB = NM + MB = AN + 2 × AN"
+          }
+        }
+      },
+      "derive": {
+        "ans": "cf*k",
+        "L": "4*k"
+      },
+      "constraints": [
+        "ans != k"
+      ],
+      "cost_values": [
+        "k",
+        "ans"
+      ],
+      "relation": "X - cf*k",
+      "unknown": "X",
+      "answer_var": "ans",
+      "verify": [
+        "ans == cf*k"
+      ],
+      "question": "다음 그림에서 점 M은 [[seg(AB)]]의 중점이고 점 N은 [[seg(AM)]]의 중점이다. [[seg({GIVS})]] = {k} cm일 때, [[seg({ASKS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "N": [
+                "{k}",
+                0
+              ],
+              "M": [
+                "{2*k}",
+                0
+              ],
+              "B": [
+                "{4*k}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              {
+                "a": "{G1}",
+                "b": "{G2}",
+                "label": "{k} cm"
+              }
+            ],
+            "aspect_min": 0.22
+          }
+        }
+      ],
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans} cm"
+      ],
+      "sol1": "N이 AM의 중점이므로 AN = NM = {k} cm이고 AM = 2 × {k} = {2*k} (cm)다. M이 AB의 중점이므로 MB = AM = {2*k} cm, AB = 2 × {2*k} = {4*k} (cm)다. 중점 조건을 거꾸로 두 번 쓰면 AB는 {k} cm짜리 토막 4개다. {ASKS}{ika(ASKS)} 그중 몇 토막인지 센다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "N": [
+                "{k}",
+                0
+              ],
+              "M": [
+                "{2*k}",
+                0
+              ],
+              "B": [
+                "{4*k}",
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "N",
+                "label": "{k}"
+              },
+              {
+                "a": "N",
+                "b": "M",
+                "label": "{k}"
+              },
+              {
+                "a": "M",
+                "b": "B",
+                "label": "{2*k}"
+              }
+            ],
+            "aspect_min": 0.22
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:N",
+              "lbl:N"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:M",
+              "lbl:M"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "N이 AM의 중점이므로 AN = NM = {k} cm, AM = {k} × 2 = {2*k} (cm)",
+        "M이 AB의 중점이므로 MB = AM = {2*k} cm, AB = {2*k} × 2 = {4*k} (cm)",
+        "{STEP} = {ans} (cm)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AN = NM = {k} → AM = {2*k}",
+                "hint": "중점 거꾸로 ×2"
+              },
+              {
+                "text": "MB = AM = {2*k} → AB = {4*k}",
+                "hint": "다시 ×2"
+              },
+              {
+                "text": "{ASKS} = {ans} (cm)",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{cf}토막"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol_check": "AB = {4*k} cm를 반으로 나누면 AM = {2*k}, 다시 반으로 나누면 AN = {k} cm로 조건과 같다. 답: {ans} cm",
+      "model_answer": "N이 AM의 중점이므로 AM = 2 × {k} = {2*k} (cm)이고, M이 AB의 중점이므로 AB = 2 × {2*k} = {4*k} (cm), MB = {2*k} cm이다. 따라서 {STEP} = {ans} (cm)이다.",
+      "rubric": [
+        {
+          "element": "AM 구하기",
+          "points": 2,
+          "criterion": "N이 AM의 중점이므로 AM = 2 × {k} = {2*k} cm임을 구했다.",
+          "partial": "2로 나누었으면 인정하지 않는다."
+        },
+        {
+          "element": "AB 구하기",
+          "points": 2,
+          "criterion": "M이 AB의 중점이므로 AB = 2 × {2*k} = {4*k} cm임을 구했다.",
+          "partial": "한 번만 되돌렸으면 1점."
+        },
+        {
+          "element": "구하는 선분",
+          "points": 3,
+          "criterion": "{ASKS}{ika(ASKS)} 토막 {cf}개임을 밝혀 {ans} cm를 구했다.",
+          "partial": "토막 하나를 빠뜨리거나 더했으면 1점."
+        }
+      ],
+      "id": "m1-2-segment-mid-t3",
+      "pitfalls": [
+        {
+          "text": "중점을 거꾸로 쓸 때 ×2 대신 ÷2를 해서 AM = {k} ÷ 2로 둠",
+          "on": "AM",
+          "effect": "불인정"
+        },
+        {
+          "text": "한 번만 되돌려 AB = {2*k}{ro(2*k)} 둠",
+          "on": "AB",
+          "effect": "부분"
+        },
+        {
+          "text": "{ASKS}가 토막 {cf}개임을 세지 않고 다른 선분을 답함",
+          "on": "구하는",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동",
+        "역연산"
+      ],
+      "prereq": [
+        "선분의 중점: 선분을 이등분하는 점",
+        "선분의 길이의 합·차"
+      ],
+      "ops": [
+        "비례",
+        "사칙"
+      ],
+      "tags": [
+        "선분",
+        "중점",
+        "등분점"
+      ],
+      "title": "이어진 두 선분의 중점 사이의 거리 MN 구하기",
+      "skill": "MN = MB + BN = AB ÷ 2 + BC ÷ 2 = AC ÷ 2",
+      "variant_axis": {
+        "구하는 것": "MN",
+        "주어진 것": "AB·BC 또는 AB·MN",
+        "수치": "짝수"
+      },
+      "discriminates": "MN이 두 선분의 절반의 합임을 그림에서 읽는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "u",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        },
+        {
+          "name": "v",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "isMN": "1",
+        "a": "2*u",
+        "b": "2*v",
+        "mn": "u + v",
+        "ans": "isMN*(u + v) + (1 - isMN)*2*v"
+      },
+      "constraints": [
+        "u != v",
+        "ans != a",
+        "ans != b or isMN == 0",
+        "mn != a",
+        "mn != b"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "mn",
+        "ans"
+      ],
+      "relation": "X - ans",
+      "unknown": "X",
+      "answer_var": "ans",
+      "verify": [
+        "2*mn == a + b",
+        "ans == isMN*mn + (1 - isMN)*b"
+      ],
+      "question": "다음 그림과 같이 한 직선 위에 세 점 A, B, C가 이 순서로 있고, 두 점 M, N은 각각 [[seg(AB)]], [[seg(BC)]]의 중점이다. [[seg(AB)]] = {a} cm, [[seg(BC)]] = {b} cm일 때, [[seg(MN)]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "M": [
+                "{u}",
+                0
+              ],
+              "B": [
+                "{a}",
+                0
+              ],
+              "N": [
+                "{a + v}",
+                0
+              ],
+              "C": [
+                "{a + b}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "C"
+              ]
+            ],
+            "aspect_min": 0.22
+          }
+        }
+      ],
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans} cm"
+      ],
+      "sol1": "세 점 A, B, C가 한 직선 위에 이 순서로 있고 M, N이 각각 AB, BC의 중점이면 MB = AB ÷ 2, BN = BC ÷ 2다. 그림에서 MN = MB + BN이므로 MN은 두 선분의 절반을 더한 것, 곧 AC의 절반이다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "M": [
+                "{u}",
+                0
+              ],
+              "B": [
+                "{a}",
+                0
+              ],
+              "N": [
+                "{a + v}",
+                0
+              ],
+              "C": [
+                "{a + b}",
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "M",
+                "b": "B",
+                "label": "{u}"
+              },
+              {
+                "a": "B",
+                "b": "N",
+                "label": "{v}"
+              }
+            ],
+            "aspect_min": 0.22
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:M",
+              "lbl:M",
+              "pt:N",
+              "lbl:N"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:M-B",
+              "seg:B-N"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "M이 AB의 중점이므로 MB = {a} ÷ 2 = {u} (cm)",
+        "N이 BC의 중점이므로 BN = {b} ÷ 2 = {v} (cm)",
+        "MN = MB + BN = {u} + {v} = {mn} (cm)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "MB = {a} ÷ 2 = {u}",
+                "hint": "중점 → 절반"
+              },
+              {
+                "text": "BN = {b} ÷ 2 = {v}"
+              },
+              {
+                "text": "MN = {u} + {v} = {mn}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "MN"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol_check": "MN = MB + BN = {u} + {v} = {mn} (cm)이고 AC = {a + b} cm의 절반과 같다. 답: {ans} cm",
+      "model_answer": "M, N이 각각 AB, BC의 중점이므로 MB = {a} ÷ 2 = {u} (cm), BN = {b} ÷ 2 = {v} (cm)이다. 따라서 MN = MB + BN = {u} + {v} = {mn} (cm)이다.",
+      "rubric": [
+        {
+          "element": "중점 읽기",
+          "points": 3,
+          "criterion": "MB = AB ÷ 2, BN = BC ÷ 2임을 밝혔다.",
+          "partial": "한쪽만 옳으면 1점."
+        },
+        {
+          "element": "식 세우기",
+          "points": 2,
+          "criterion": "MN = MB + BN으로 식을 세웠다.",
+          "partial": "MN을 AB 또는 BC의 절반으로 두었으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "MN = {ans} cm로 답했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "id": "m1-2-segment-mid-t4",
+      "pitfalls": [
+        {
+          "text": "MN을 AB의 절반이나 BC의 절반 하나로만 봄",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "MB = AB ÷ 2, BN = BC ÷ 2 의 근거(중점)를 적지 않음",
+          "on": "중점",
+          "effect": "부분"
+        },
+        {
+          "text": "{u} + {v}의 덧셈이 어긋남",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동",
+        "역연산"
+      ],
+      "prereq": [
+        "선분의 중점: 선분을 이등분하는 점",
+        "선분의 길이의 합·차"
+      ],
+      "ops": [
+        "비례",
+        "사칙"
+      ],
+      "tags": [
+        "선분",
+        "중점",
+        "등분점"
+      ],
+      "title": "중점 사이의 거리 MN으로 BC 구하기",
+      "skill": "BN = MN − MB 로 되돌린 뒤 BC = 2 × BN",
+      "variant_axis": {
+        "구하는 것": "BC",
+        "주어진 것": "AB·BC 또는 AB·MN",
+        "수치": "짝수"
+      },
+      "discriminates": "MN이 두 선분의 절반의 합임을 그림에서 읽는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "u",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        },
+        {
+          "name": "v",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "isMN": "0",
+        "a": "2*u",
+        "b": "2*v",
+        "mn": "u + v",
+        "ans": "isMN*(u + v) + (1 - isMN)*2*v"
+      },
+      "constraints": [
+        "u != v",
+        "ans != a",
+        "ans != b or isMN == 0",
+        "mn != a",
+        "mn != b"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "mn",
+        "ans"
+      ],
+      "relation": "X - ans",
+      "unknown": "X",
+      "answer_var": "ans",
+      "verify": [
+        "2*mn == a + b",
+        "ans == isMN*mn + (1 - isMN)*b"
+      ],
+      "question": "다음 그림과 같이 한 직선 위에 세 점 A, B, C가 이 순서로 있고, 두 점 M, N은 각각 [[seg(AB)]], [[seg(BC)]]의 중점이다. [[seg(AB)]] = {a} cm, [[seg(MN)]] = {mn} cm일 때, [[seg(BC)]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "M": [
+                "{u}",
+                0
+              ],
+              "B": [
+                "{a}",
+                0
+              ],
+              "N": [
+                "{a + v}",
+                0
+              ],
+              "C": [
+                "{a + b}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "C"
+              ]
+            ],
+            "aspect_min": 0.22
+          }
+        }
+      ],
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans} cm"
+      ],
+      "sol1": "세 점 A, B, C가 한 직선 위에 이 순서로 있고 M, N이 각각 AB, BC의 중점이면 MB = AB ÷ 2, BN = BC ÷ 2다. 그림에서 MN = MB + BN이므로 MN은 두 선분의 절반을 더한 것, 곧 AC의 절반이다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "M": [
+                "{u}",
+                0
+              ],
+              "B": [
+                "{a}",
+                0
+              ],
+              "N": [
+                "{a + v}",
+                0
+              ],
+              "C": [
+                "{a + b}",
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "M",
+                "b": "B",
+                "label": "{u}"
+              },
+              {
+                "a": "B",
+                "b": "N",
+                "label": "{v}"
+              }
+            ],
+            "aspect_min": 0.22
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:M",
+              "lbl:M",
+              "pt:N",
+              "lbl:N"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:M-B",
+              "seg:B-N"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "M이 AB의 중점이므로 MB = {a} ÷ 2 = {u} (cm)",
+        "MN = MB + BN이므로 BN = {mn} − {u} = {v} (cm)",
+        "N이 BC의 중점이므로 BC = 2 × BN = 2 × {v} = {b} (cm)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "MB = {a} ÷ 2 = {u}",
+                "hint": "중점 → 절반"
+              },
+              {
+                "text": "BN = MN − MB = {mn} − {u} = {v}"
+              },
+              {
+                "text": "BC = 2 × {v} = {b}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "BC"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol_check": "MN = MB + BN = {u} + {v} = {mn} (cm)이고 AC = {a + b} cm의 절반과 같다. 답: {ans} cm",
+      "model_answer": "M이 AB의 중점이므로 MB = {a} ÷ 2 = {u} (cm)이고, MN = MB + BN에서 BN = {mn} − {u} = {v} (cm)이다. N이 BC의 중점이므로 BC = 2 × {v} = {b} (cm)이다.",
+      "rubric": [
+        {
+          "element": "중점 읽기",
+          "points": 3,
+          "criterion": "MB = AB ÷ 2, BN = BC ÷ 2임을 밝혔다.",
+          "partial": "한쪽만 옳으면 1점."
+        },
+        {
+          "element": "식 세우기",
+          "points": 2,
+          "criterion": "MN = MB + BN으로 식을 세웠다.",
+          "partial": "MN을 AB 또는 BC의 절반으로 두었으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "BC = {ans} cm로 답했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "id": "m1-2-segment-mid-t5",
+      "pitfalls": [
+        {
+          "text": "BN = MN − MB 로 되돌리지 않고 MN을 BC의 절반으로 봄",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "BN = {v}{eul(v)} 구한 뒤 2를 곱하지 않고 BC = {v}{ro(v)} 답함",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "MB = {a} ÷ 2의 근거(중점)를 적지 않음",
+          "on": "중점",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}
