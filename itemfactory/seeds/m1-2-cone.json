@@ -1,0 +1,1232 @@
+{
+  "seed_id": "m1-2-cone",
+  "category": "도형",
+  "title": "원뿔·각뿔 — 부피·겉넓이·전개도의 중심각",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-15"
+  ],
+  "schema_id": "3c211805-73b1-47fc-b0d2-3b7857974ffa",
+  "schema_name": "원뿔의 부피 / 원뿔의 겉넓이 / 원뿔 전개도 부채꼴 중심각",
+  "source_item_ids": [],
+  "note": "관계식 V = (1/3)πr²h, S = πr² + πrl, θ = 360·r/l 만 차용. 높이는 3의 배수로 생성해 정수 계수 보장, (r, l)은 중심각이 정수인 쌍만 표로. 전개도 도식은 sector + circle.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원기둥의 부피",
+        "부채꼴의 호의 길이와 넓이"
+      ],
+      "ops": [
+        "부피",
+        "넓이",
+        "지수"
+      ],
+      "tags": [
+        "원뿔",
+        "부피"
+      ],
+      "title": "반지름·높이로 원뿔의 부피 구하기",
+      "skill": "뿔의 부피 = (1/3) × (밑넓이) × (높이)",
+      "variant_axis": {
+        "구하는 것": "부피",
+        "제시 방식": "반지름·높이"
+      },
+      "discriminates": "같은 밑면·높이의 기둥 부피의 1/3임을 알고 반지름을 제곱하는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "rad",
+              "dia"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              8
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "rad": {
+            "GIVEN": "반지름",
+            "isD": 0,
+            "RL": "r"
+          },
+          "dia": {
+            "GIVEN": "지름",
+            "isD": 1,
+            "RL": "r"
+          }
+        }
+      },
+      "derive": {
+        "h": "3*k",
+        "g": "r*(1 + isD)",
+        "kb": "r*r",
+        "kv": "r*r*k",
+        "kc": "r*r*3*k"
+      },
+      "constraints": [
+        "h != r",
+        "h != g",
+        "kv <= 900",
+        "kv != h",
+        "kv != g"
+      ],
+      "cost_values": [
+        "r",
+        "g",
+        "h",
+        "kb",
+        "kc",
+        "kv"
+      ],
+      "relation": "3*X - r*r*h",
+      "unknown": "X",
+      "answer_var": "kv",
+      "verify": [
+        "3*ans == kb*h",
+        "ans > 0",
+        "g == r*(1 + isD)"
+      ],
+      "question": "다음 그림과 같이 밑면의 {GIVEN}의 길이가 {g} cm, 높이가 {h} cm인 원뿔의 부피를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cone",
+            "radius": "{RL}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "answer": "[[{kv} * pi]]",
+      "answer_alt": [
+        "[[{kv} * pi]] cm³"
+      ],
+      "sol1": "뿔의 부피는 밑면과 높이가 같은 기둥의 부피의 1/3이다 — 그릇에 물을 부어 보면 뿔 세 번이 기둥 한 번과 같다. 주어진 것은 밑면의 {GIVEN} {g} cm이므로 반지름은 {r} cm이고, 밑넓이는 π × {r}² = {kb}π (cm²), 높이는 {h} cm다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cone",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "height",
+              "h-lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "밑면의 반지름은 {r} cm이므로 밑넓이: π × {r}² = {kb}π (cm²)",
+        "같은 밑면·높이의 원기둥의 부피: {kb}π × {h} = {kc}π (cm³)",
+        "원뿔의 부피는 그 1/3이므로 {kc}π × 1/3 = {kv}π (cm³)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "밑넓이 = π × {r}² = {kb}π",
+                "hint": "{GIVEN} {g} cm → 반지름 {r} cm, 제곱"
+              },
+              {
+                "text": "원기둥 부피 = {kb}π × {h} = {kc}π"
+              },
+              {
+                "text": "원뿔 부피 = {kc}π × 1/3 = {kv}π (cm³)",
+                "hint": "뿔은 기둥의 1/3",
+                "marks": [
+                  {
+                    "on": "{kv}π",
+                    "note": "{kc}÷3"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ]
+      ],
+      "sol_check": "1/3을 빠뜨리면 원기둥의 부피 {kc}π가 나오고, 반지름을 제곱하지 않으면 {r*k}π가 나온다 — 둘 다 답이 아니다. 답은 [[{kv} * pi]] cm³다.",
+      "model_answer": "원뿔의 부피는 (1/3) × (밑넓이) × (높이)이다. 밑면의 반지름은 {r} cm이므로 밑넓이는 π × {r}² = {kb}π (cm²)이고, 부피는 (1/3) × {kb}π × {h} = {kv}π (cm³)다.",
+      "rubric": [
+        {
+          "element": "부피 공식",
+          "points": 2,
+          "criterion": "뿔의 부피 = (1/3) × (밑넓이) × (높이)임을 밝혔다.",
+          "partial": "1/3 없이 기둥의 공식을 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "밑넓이",
+          "points": 2,
+          "criterion": "반지름 {r} cm를 확인하고 π × {r}² = {kb}π로 제곱해 구했다.",
+          "partial": "제곱을 빠뜨리거나 지름을 반지름으로 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "부피 계산",
+          "points": 3,
+          "criterion": "(1/3) × {kb}π × {h} = {kv}π (cm³)를 바르게 계산했다.",
+          "partial": "식은 옳으나 약분·계산이 틀렸으면 1점."
+        }
+      ],
+      "id": "m1-2-cone-t1",
+      "pitfalls": [
+        {
+          "text": "1/3을 곱하지 않아 원기둥의 부피 {kc}π로 답함",
+          "on": "부피 공식",
+          "effect": "불인정"
+        },
+        {
+          "text": "반지름을 제곱하지 않음",
+          "on": "밑넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "1/3을 높이에만 곱하거나 약분 순서를 틀려 계산이 어긋남",
+          "on": "부피 계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원기둥의 부피",
+        "부채꼴의 호의 길이와 넓이"
+      ],
+      "ops": [
+        "부피",
+        "넓이",
+        "지수"
+      ],
+      "tags": [
+        "원뿔",
+        "겉넓이"
+      ],
+      "title": "반지름·모선으로 원뿔의 겉넓이 구하기",
+      "skill": "원뿔의 겉넓이 = πr² + πrl (옆넓이는 반지름이 모선인 부채꼴의 넓이 = (1/2) × l × 2πr)",
+      "variant_axis": {
+        "구하는 것": "겉넓이",
+        "제시 방식": "반지름·모선"
+      },
+      "discriminates": "옆넓이를 모선 l로 계산하는가(높이가 아니라), 밑면을 더하는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "rl",
+          "values": {
+            "in": [
+              103,
+              104,
+              105,
+              106,
+              203,
+              205,
+              209,
+              304,
+              305,
+              308,
+              310,
+              405,
+              409,
+              506,
+              508,
+              509,
+              512,
+              708,
+              709,
+              710,
+              712,
+              910,
+              1112
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "r": "k*floor(rl/100)",
+        "l": "k*(rl % 100)",
+        "kb": "(k*floor(rl/100))**2",
+        "kl": "k*floor(rl/100)*k*(rl % 100)",
+        "ks": "(k*floor(rl/100))**2 + k*floor(rl/100)*k*(rl % 100)",
+        "th": "360*floor(rl/100)/(rl % 100)"
+      },
+      "constraints": [
+        "ks <= 900",
+        "r >= 2",
+        "ks != l",
+        "ks != r"
+      ],
+      "cost_values": [
+        "r",
+        "l",
+        "kb",
+        "kl",
+        "ks"
+      ],
+      "relation": "X - r*r - r*l",
+      "unknown": "X",
+      "answer_var": "ks",
+      "verify": [
+        "ans == kb + kl",
+        "kl == r*l"
+      ],
+      "question": "밑면의 반지름의 길이가 {r} cm, 모선의 길이가 {l} cm인 원뿔의 겉넓이를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cone",
+            "radius": "{r}"
+          }
+        }
+      ],
+      "answer": "[[{ks} * pi]]",
+      "answer_alt": [
+        "[[{ks} * pi]] cm²"
+      ],
+      "sol1": "원뿔을 펼치면 밑면인 원(반지름 {r} cm)과 옆면인 부채꼴이 나온다. 부채꼴의 반지름은 모선의 길이 {l} cm이고, 호의 길이는 밑면의 원주 2π × {r} = {2*r}π (cm)와 같다. 부채꼴의 넓이는 (1/2) × (반지름) × (호의 길이)이므로 옆넓이 = (1/2) × {l} × {2*r}π = π × {r} × {l}이다. 겉넓이 = (밑넓이) + (옆넓이).",
+      "sol1_fig": [
+        {
+          "fn": "sector",
+          "args": {
+            "r": "{l}",
+            "angle": "{th}"
+          }
+        },
+        {
+          "fn": "circle",
+          "args": {
+            "r": "{r}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "sector"
+          }
+        ]
+      ],
+      "sol2": [
+        "밑넓이: π × {r}² = {kb}π (cm²)",
+        "옆넓이: 부채꼴의 넓이 = (1/2) × (모선) × (호의 길이) = (1/2) × {l} × 2π × {r} = π × {r} × {l} = {kl}π (cm²)",
+        "겉넓이 = {kb}π + {kl}π = {ks}π (cm²)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "밑넓이 = π × {r}² = {kb}π"
+              },
+              {
+                "text": "옆넓이 = π × {r} × {l} = {kl}π",
+                "hint": "πrl — 반지름 × 모선",
+                "marks": [
+                  {
+                    "on": "{kl}π",
+                    "note": "{r}×{l}"
+                  }
+                ]
+              },
+              {
+                "text": "겉넓이 = {kb}π + {kl}π = {ks}π (cm²)"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol_check": "옆넓이를 π × {r}² 처럼 반지름만으로 계산하거나 밑면을 빠뜨리면 다른 값이 나온다. 부채꼴의 중심각은 360° × {r}/{l} = {th}°이고 그 넓이는 π × {l}² × {th}/360 = {kl}π로 같다. 답은 [[{ks} * pi]] cm²다.",
+      "model_answer": "원뿔의 겉넓이는 (밑넓이) + (옆넓이)이다. 밑넓이는 π × {r}² = {kb}π (cm²), 옆넓이는 반지름이 모선 {l} cm이고 호의 길이가 밑면의 원주 2π × {r}인 부채꼴의 넓이이므로 (1/2) × {l} × 2π × {r} = {kl}π (cm²)이다. 따라서 겉넓이는 {kb}π + {kl}π = {ks}π (cm²)다.",
+      "rubric": [
+        {
+          "element": "전개도 읽기",
+          "points": 3,
+          "criterion": "옆면이 반지름 {l}(모선), 호의 길이 2π × {r}(밑면의 원주)인 부채꼴임을 밝혔다.",
+          "partial": "부채꼴임은 밝혔으나 호의 길이가 밑면의 원주와 같다는 근거가 없으면 1점."
+        },
+        {
+          "element": "옆넓이",
+          "points": 2,
+          "criterion": "(1/2) × {l} × 2π × {r} = {kl}π(또는 π × {r} × {l})를 구했다.",
+          "partial": "모선 대신 다른 길이를 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "겉넓이",
+          "points": 2,
+          "criterion": "밑넓이 {kb}π를 더해 {ks}π (cm²)로 답했다.",
+          "partial": "밑넓이를 빠뜨렸으면 1점."
+        }
+      ],
+      "id": "m1-2-cone-t2",
+      "pitfalls": [
+        {
+          "text": "옆면 부채꼴의 호의 길이가 밑면의 원주와 같다는 근거 없이 πrl 만 씀",
+          "on": "전개도",
+          "effect": "부분"
+        },
+        {
+          "text": "옆넓이를 π × {r}² 이나 π × {r} × (높이)로 계산함 (모선이 아닌 길이 사용)",
+          "on": "옆넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "밑면인 원의 넓이 {kb}π를 빠뜨림",
+          "on": "겉넓이",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원기둥의 부피",
+        "부채꼴의 호의 길이와 넓이"
+      ],
+      "ops": [
+        "부피",
+        "넓이",
+        "지수"
+      ],
+      "tags": [
+        "원뿔",
+        "전개도",
+        "중심각"
+      ],
+      "title": "원뿔의 전개도에서 부채꼴의 중심각 구하기",
+      "skill": "(부채꼴의 호의 길이) = (밑면의 원주) 로부터 중심각 = 360° × r/l",
+      "variant_axis": {
+        "구하는 것": "중심각",
+        "제시 방식": "반지름·모선"
+      },
+      "discriminates": "옆면 부채꼴의 호의 길이가 밑면의 원주와 같다는 조건을 세우는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "rl",
+          "values": {
+            "in": [
+              103,
+              104,
+              105,
+              106,
+              203,
+              205,
+              209,
+              304,
+              305,
+              308,
+              310,
+              405,
+              409,
+              506,
+              508,
+              509,
+              512,
+              708,
+              709,
+              710,
+              712,
+              910,
+              1112
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "r": "k*floor(rl/100)",
+        "l": "k*(rl % 100)",
+        "th": "360*floor(rl/100)/(rl % 100)",
+        "kc": "2*k*floor(rl/100)",
+        "kl2": "2*k*(rl % 100)"
+      },
+      "constraints": [
+        "r >= 2",
+        "th != r",
+        "th != l",
+        "l <= 48"
+      ],
+      "cost_values": [
+        "r",
+        "l",
+        "th",
+        "kc",
+        "kl2"
+      ],
+      "relation": "2*l*X/360 - 2*r",
+      "unknown": "X",
+      "answer_var": "th",
+      "verify": [
+        "ans*l == 360*r",
+        "ans < 360"
+      ],
+      "question": "밑면의 반지름의 길이가 {r} cm, 모선의 길이가 {l} cm인 원뿔의 전개도에서 옆면인 부채꼴의 중심각의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cone",
+            "radius": "{r}"
+          }
+        }
+      ],
+      "answer": "[[deg({th})]]",
+      "answer_alt": [
+        "{th}°",
+        "{th}"
+      ],
+      "sol1": "옆면을 펼친 부채꼴은 반지름이 모선 {l} cm이고, 그 호를 말면 밑면의 둘레가 되므로 호의 길이는 밑면의 원주 2π × {r} = {kc}π (cm)와 같다. 중심각을 x°라 하면 호의 길이 = 2π × {l} × x/360이므로 이것을 {kc}π와 같다고 놓는다.",
+      "sol1_fig": [
+        {
+          "fn": "sector",
+          "args": {
+            "r": "{l}",
+            "angle": "x"
+          }
+        },
+        {
+          "fn": "circle",
+          "args": {
+            "r": "{r}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "arc",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "angle-lbl"
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "중심각을 x°라 하면 부채꼴의 호의 길이는 2π × {l} × x/360 = {kl2}π × x/360 (cm)",
+        "이 호의 길이가 밑면의 원주 2π × {r} = {kc}π (cm)와 같으므로 {kl2}π × x/360 = {kc}π",
+        "양변을 π로 나누고 정리하면 x = 360 × {kc}/{kl2} = 360 × {r}/{l} = {th}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "2π × {l} × x/360 = 2π × {r}",
+                "hint": "호의 길이 = 밑면의 원주"
+              },
+              {
+                "text": "x = 360 × {r}/{l}",
+                "hint": "양변 ÷ 2π, × 360, ÷ {l}"
+              },
+              {
+                "text": "x = {th}",
+                "marks": [
+                  {
+                    "on": "{th}",
+                    "note": "360×{r}÷{l}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol_check": "중심각 {th}°인 반지름 {l} cm 부채꼴의 호의 길이는 2π × {l} × {th}/360 = {kc}π (cm)로 밑면의 원주와 같다. 중심각은 (반지름) : (모선) = {r} : {l}의 비율로 360°를 나눈 것이다. 답은 [[deg({th})]]다.",
+      "model_answer": "옆면인 부채꼴의 반지름은 모선 {l} cm이고 호의 길이는 밑면의 원주 2π × {r} = {kc}π (cm)와 같다. 중심각을 x°라 하면 2π × {l} × x/360 = 2π × {r}에서 x = 360 × {r}/{l} = {th}이다. 따라서 중심각의 크기는 {th}°다.",
+      "rubric": [
+        {
+          "element": "조건 세우기",
+          "points": 3,
+          "criterion": "부채꼴의 호의 길이가 밑면의 원주 2π × {r}{wa(r)} 같음을 밝혔다.",
+          "partial": "호의 길이 공식만 쓰고 밑면의 원주와 같다는 조건이 없으면 1점."
+        },
+        {
+          "element": "방정식 풀이",
+          "points": 2,
+          "criterion": "2π × {l} × x/360 = 2π × {r}{eul(r)} 풀어 x = 360 × {r}/{l}{eul(l)} 얻었다.",
+          "partial": "식은 세웠으나 정리가 틀렸으면 1점."
+        },
+        {
+          "element": "중심각",
+          "points": 2,
+          "criterion": "중심각 {th}°를 구하고 단위(°)와 함께 썼다.",
+          "partial": "약분·계산 실수면 1점."
+        }
+      ],
+      "id": "m1-2-cone-t3",
+      "pitfalls": [
+        {
+          "text": "'부채꼴의 호의 길이 = 밑면의 원주'라는 조건을 세우지 않고 공식만 씀",
+          "on": "조건",
+          "effect": "부분"
+        },
+        {
+          "text": "부채꼴의 반지름을 모선 {l}{ika(l)} 아니라 밑면의 반지름 {r}{ro(r)} 잡음",
+          "on": "조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "360 × {r}/{l} 을 뒤집어 360 × {l}/{r} 로 계산함",
+          "on": "방정식",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원기둥의 부피",
+        "부채꼴의 호의 길이와 넓이"
+      ],
+      "ops": [
+        "부피",
+        "넓이",
+        "지수"
+      ],
+      "tags": [
+        "사각뿔",
+        "부피"
+      ],
+      "title": "정사각뿔의 부피 구하기",
+      "skill": "뿔의 부피 = (1/3) × (밑넓이) × (높이), 밑면이 정사각형이면 밑넓이 = a²",
+      "variant_axis": {
+        "구하는 것": "부피",
+        "입체": "정사각뿔"
+      },
+      "discriminates": "밑넓이를 한 변의 제곱으로 구하고 1/3을 곱하는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              2,
+              14
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              8
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "h": "3*k",
+        "kb": "a*a",
+        "kv": "a*a*k",
+        "kc": "a*a*3*k"
+      },
+      "constraints": [
+        "h != a",
+        "kv <= 900",
+        "kv != a",
+        "kv != h"
+      ],
+      "cost_values": [
+        "a",
+        "h",
+        "kb",
+        "kc",
+        "kv"
+      ],
+      "relation": "3*X - a*a*h",
+      "unknown": "X",
+      "answer_var": "kv",
+      "verify": [
+        "3*ans == kb*h"
+      ],
+      "question": "밑면이 한 변의 길이가 {a} cm인 정사각형이고 높이가 {h} cm인 사각뿔의 부피를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "square_pyramid"
+          }
+        }
+      ],
+      "answer": "{kv}",
+      "answer_alt": [
+        "{kv} cm³"
+      ],
+      "sol1": "뿔의 부피는 밑면과 높이가 같은 기둥의 부피의 1/3이다. 밑면은 한 변이 {a} cm인 정사각형이므로 밑넓이는 {a} × {a} = {kb} (cm²)이고, 높이는 {h} cm다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "square_pyramid"
+          }
+        }
+      ],
+      "sol2": [
+        "밑넓이: {a} × {a} = {kb} (cm²)",
+        "같은 밑면·높이의 사각기둥의 부피: {kb} × {h} = {kc} (cm³)",
+        "사각뿔의 부피는 그 1/3이므로 {kc} × 1/3 = {kv} (cm³)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "밑넓이 = {a}² = {kb}"
+              },
+              {
+                "text": "기둥 부피 = {kb} × {h} = {kc}"
+              },
+              {
+                "text": "뿔 부피 = {kc} × 1/3 = {kv} (cm³)",
+                "hint": "뿔은 기둥의 1/3",
+                "marks": [
+                  {
+                    "on": "{kv}",
+                    "note": "{kc}÷3"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ]
+      ],
+      "sol_check": "1/3을 빠뜨리면 사각기둥의 부피 {kc} cm³가 나온다. 답은 {kv} cm³다.",
+      "model_answer": "사각뿔의 부피는 (1/3) × (밑넓이) × (높이)이다. 밑넓이는 {a} × {a} = {kb} (cm²)이므로 부피는 (1/3) × {kb} × {h} = {kv} (cm³)다.",
+      "rubric": [
+        {
+          "element": "부피 공식",
+          "points": 2,
+          "criterion": "뿔의 부피 = (1/3) × (밑넓이) × (높이)임을 밝혔다.",
+          "partial": "1/3 없이 기둥의 공식을 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "밑넓이",
+          "points": 2,
+          "criterion": "{a} × {a} = {kb}{eul(kb)} 구했다.",
+          "partial": "한 변의 길이를 그대로 넓이로 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "부피 계산",
+          "points": 3,
+          "criterion": "(1/3) × {kb} × {h} = {kv} (cm³)를 바르게 계산했다.",
+          "partial": "식은 옳으나 계산이 틀렸으면 1점."
+        }
+      ],
+      "id": "m1-2-cone-t4",
+      "pitfalls": [
+        {
+          "text": "1/3을 곱하지 않아 사각기둥의 부피 {kc} cm³로 답함",
+          "on": "부피 공식",
+          "effect": "불인정"
+        },
+        {
+          "text": "밑넓이를 {a}²이 아니라 {a} × 4(둘레)나 {a}{ro(a)} 씀",
+          "on": "밑넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "1/3을 밑넓이와 높이 양쪽에 곱함",
+          "on": "부피 계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 60,
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원기둥의 부피",
+        "부채꼴의 호의 길이와 넓이"
+      ],
+      "ops": [
+        "부피",
+        "넓이",
+        "지수"
+      ],
+      "tags": [
+        "원뿔",
+        "부피"
+      ],
+      "title": "원뿔의 부피 고르기 (5지선다)",
+      "skill": "뿔의 부피 = (1/3) × πr² × h",
+      "variant_axis": {
+        "구하는 것": "부피",
+        "출제 형식": "선다형"
+      },
+      "discriminates": "1/3과 반지름의 제곱을 모두 반영한 값을 고르는가",
+      "qtype": "choice",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              10
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "h": "3*k",
+        "kb": "r*r",
+        "kv": "r*r*k",
+        "kc": "r*r*3*k"
+      },
+      "constraints": [
+        "h != r",
+        "kv <= 500"
+      ],
+      "cost_values": [
+        "r",
+        "h",
+        "kb",
+        "kc",
+        "kv"
+      ],
+      "relation": "3*X - r*r*h",
+      "unknown": "X",
+      "answer_var": "kv",
+      "verify": [
+        "3*ans == kb*h"
+      ],
+      "question": "밑면의 반지름의 길이가 {r} cm, 높이가 {h} cm인 원뿔의 부피는?",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cone",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "answer": "[[{kv} * pi]]",
+      "answer_alt": [
+        "[[{kv} * pi]] cm³"
+      ],
+      "distractor_fmt": "[[{v} * pi]]",
+      "distractors": [
+        {
+          "expr": "r*r*h",
+          "misconception": "MC-CONE-01"
+        },
+        {
+          "expr": "r*k",
+          "misconception": "MC-CYL-01"
+        },
+        {
+          "expr": "r*h",
+          "misconception": "MC-CYL-01"
+        },
+        {
+          "expr": "4*r*r*k",
+          "misconception": "MC-CYL-02"
+        },
+        {
+          "expr": "r*r*h*2/3",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "r*r + h",
+          "misconception": "MC-GEO-04"
+        },
+        {
+          "expr": "r*r*k + r",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "2*r*h",
+          "misconception": "MC-GEO-04"
+        }
+      ],
+      "sol1": "뿔의 부피는 같은 밑면·높이의 기둥의 1/3이다. 밑넓이는 π × {r}² = {kb}π (cm²), 높이는 {h} cm다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cone",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "height",
+              "h-lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "밑넓이: π × {r}² = {kb}π (cm²)",
+        "부피 = (1/3) × {kb}π × {h} = {kv}π (cm³)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "밑넓이 = π × {r}² = {kb}π",
+                "hint": "반지름을 제곱"
+              },
+              {
+                "text": "부피 = (1/3) × {kb}π × {h} = {kv}π",
+                "hint": "뿔은 기둥의 1/3",
+                "marks": [
+                  {
+                    "on": "{kv}π",
+                    "note": "{kc}÷3"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "sol_check": "1/3을 빠뜨리면 {kc}π(원기둥의 부피), 반지름을 제곱하지 않으면 {r*k}π가 되어 보기의 다른 값이 나온다. 답은 [[{kv} * pi]] cm³다.",
+      "model_answer": "원뿔의 부피 = (1/3) × (밑넓이) × (높이) = (1/3) × π × {r}² × {h} = {kv}π (cm³)이다.",
+      "rubric": [
+        {
+          "element": "부피 공식",
+          "points": 2,
+          "criterion": "(1/3) × (밑넓이) × (높이)를 썼다.",
+          "partial": "1/3이 없으면 인정하지 않는다."
+        },
+        {
+          "element": "밑넓이",
+          "points": 2,
+          "criterion": "π × {r}² = {kb}π를 구했다.",
+          "partial": "제곱을 빠뜨렸으면 인정하지 않는다."
+        },
+        {
+          "element": "부피 계산",
+          "points": 3,
+          "criterion": "{kv}π를 골랐다.",
+          "partial": "식은 옳으나 계산이 틀렸으면 1점."
+        }
+      ],
+      "id": "m1-2-cone-t5",
+      "pitfalls": [
+        {
+          "text": "1/3 없이 원기둥의 부피 {kc}π를 고름",
+          "on": "부피 공식",
+          "effect": "불인정"
+        },
+        {
+          "text": "반지름을 제곱하지 않은 값을 고름",
+          "on": "밑넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "약분을 잘못해 이웃한 값을 고름",
+          "on": "부피 계산",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

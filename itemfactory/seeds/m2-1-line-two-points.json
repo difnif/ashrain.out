@@ -1,0 +1,1287 @@
+{
+  "seed_id": "m2-1-line-two-points",
+  "category": "연산",
+  "title": "두 점을 지나는 직선 — a + b·절편·직선 위의 점·평행 조건",
+  "unit_id": "m2-1",
+  "concept_ids": [
+    "m2-1-19"
+  ],
+  "schema_id": "8dea0362-a176-42f3-a743-98a70f3780c6",
+  "schema_name": "두 점을 지나는 일차함수 식 구하기",
+  "source_item_ids": [],
+  "note": "관계식 a = (y2 − y1)/(x2 − x1), b = y1 − a x1 만 차용. 기울기는 정수(±1~±4)로 두어 답을 정수로 유지. 좌표평면은 해설 도식에만 둔다(문항 도형 없음).",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "prereq": [
+        "일차함수의 그래프",
+        "기울기"
+      ],
+      "ops": [
+        "함수",
+        "사칙"
+      ],
+      "traps": [
+        "기울기 계산",
+        "부호"
+      ],
+      "time_limit": 80,
+      "points": 4,
+      "tags": [
+        "일차함수",
+        "일차함수의 식"
+      ],
+      "title": "두 점을 지나는 일차함수 y = ax + b — a + b, a − b, ab",
+      "skill": "두 점으로 기울기를 구하고 한 점을 대입해 y절편을 구한 뒤, 묻는 식의 값을 계산하기",
+      "variant_axis": {
+        "구하는 것": "a + b / a − b / ab",
+        "기울기": "±1~±4",
+        "점": "x좌표 −5~8"
+      },
+      "discriminates": "증가량의 순서를 맞춰 기울기의 부호를 바르게 구하는가, 마지막에 묻는 식을 확인하는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              "sum",
+              "diff",
+              "prod"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "x1",
+          "values": {
+            "int": [
+              -5,
+              4
+            ]
+          }
+        },
+        {
+          "name": "dx",
+          "values": {
+            "in": [
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "q",
+        "rows": {
+          "sum": {
+            "Q": "a + b",
+            "c1": 1,
+            "c2": 1,
+            "cp": 0
+          },
+          "diff": {
+            "Q": "a − b",
+            "c1": 1,
+            "c2": -1,
+            "cp": 0
+          },
+          "prod": {
+            "Q": "ab",
+            "c1": 0,
+            "c2": 0,
+            "cp": 1
+          }
+        }
+      },
+      "derive": {
+        "x2": "x1 + dx",
+        "y1": "a*x1 + b",
+        "y2": "a*(x1 + dx) + b",
+        "dy": "a*dx",
+        "ans": "c1*a + c2*b + cp*a*b",
+        "xlo": "min(x1, x2, 0) - 2",
+        "xhi": "max(x1, x2, 0) + 2",
+        "ylo": "min(y1, y2, 0) - 2",
+        "yhi": "max(y1, y2, 0) + 2",
+        "xs": "max(xlo, min((ylo - b)/a, (yhi - b)/a))",
+        "xe": "min(xhi, max((ylo - b)/a, (yhi - b)/a))",
+        "ys": "a*xs + b",
+        "ye": "a*xe + b"
+      },
+      "constraints": [
+        "x1 != 0",
+        "x2 != 0",
+        "abs(y1) <= 18",
+        "abs(y2) <= 18",
+        "y1 != y2",
+        "ans != 0",
+        "a != b"
+      ],
+      "cost_values": [
+        "x1",
+        "y1",
+        "x2",
+        "y2",
+        "a",
+        "b",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "(y2 - y1)/(x2 - x1) == a",
+        "y1 - a*x1 == b",
+        "ans == c1*a + c2*b + cp*a*b"
+      ],
+      "question": "두 점 ({x1}, {y1}), ({x2}, {y2}){eul(y2)} 지나는 일차함수의 식을 y = ax + b라 할 때, {Q}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "두 점을 지나는 직선의 기울기는 (y의 증가량) ÷ (x의 증가량)이다: a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] — 어느 점을 먼저 빼든 분자와 분모의 순서만 같으면 된다. 기울기를 알면 y = {co(a)}x + b에 한 점을 넣어 b를 구한다. 마지막에 묻는 것이 {Q}임을 확인한다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{x1}",
+                  "{y1}"
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  "{x2}",
+                  "{y2}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{xs}",
+                    "{ys}"
+                  ],
+                  [
+                    "{xe}",
+                    "{ye}"
+                  ]
+                ]
+              }
+            ],
+            "rise_run": [
+              "A",
+              "B"
+            ],
+            "run_label": "x의 증가량 {dx}",
+            "rise_label": "y의 증가량 {dy}"
+          }
+        }
+      ],
+      "sol2": [
+        "기울기 a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = [[frac({dy}, {dx})]] = {a}",
+        "y = {co(a)}x + b에 점 ({x1}, {y1}){eul(y1)} 대입하면 {y1} = {a} × {pn(x1)} + b, b = {y1} − {pn(a*x1)} = {b}",
+        "따라서 y = {co(a)}x {sgn(b)}이고, {Q} = {ans}이다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}",
+                "hint": "기울기 = y의 증가량 ÷ x의 증가량"
+              },
+              {
+                "text": "{y1} = {a} × {pn(x1)} + b  →  b = {b}",
+                "hint": "점 ({x1}, {y1}) 대입"
+              },
+              {
+                "text": "y = {co(a)}x {sgn(b)}  →  {Q} = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "구한 식 y = {co(a)}x {sgn(b)}에 다른 점 ({x2}, {y2}){eul(y2)} 넣으면 {a} × {pn(x2)} {sgn(b)} = {y2}{ro(y2)} 맞는다. 따라서 a = {a}, b = {b}이고 {Q} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{x1}",
+                  "{y1}"
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  "{x2}",
+                  "{y2}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{xs}",
+                    "{ys}"
+                  ],
+                  [
+                    "{xe}",
+                    "{ye}"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "model_answer": "기울기는 a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}이고, y = {co(a)}x + b에 ({x1}, {y1}){eul(y1)} 대입하면 b = {b}이다. 따라서 {Q} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "기울기 구하기",
+          "points": 3,
+          "criterion": "두 점으로 기울기 a = {a}{eul(a)} 구했다.",
+          "partial": "증가량의 순서를 어긋나게 빼 부호가 반대({-a})이면 1점."
+        },
+        {
+          "element": "y절편 구하기",
+          "points": 2,
+          "criterion": "한 점을 대입해 b = {b}{eul(b)} 구했다.",
+          "partial": "대입은 옳고 계산이 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} = {ans}{eul(ans)} 답했다.",
+          "partial": "a, b는 옳은데 {Q}{eul(Q)} 잘못 계산했으면 1점."
+        }
+      ],
+      "id": "m2-1-line-two-points-t1",
+      "pitfalls": [
+        {
+          "text": "기울기를 (x의 증가량)/(y의 증가량)으로 거꾸로 계산함",
+          "on": "기울기",
+          "effect": "불인정"
+        },
+        {
+          "text": "y의 증가량과 x의 증가량을 서로 다른 순서로 빼서 기울기의 부호가 반대({-a})가 됨",
+          "on": "기울기",
+          "effect": "부분"
+        },
+        {
+          "text": "b를 구할 때 점의 x좌표와 y좌표를 바꿔 대입함",
+          "on": "y절편",
+          "effect": "불인정"
+        },
+        {
+          "text": "a, b를 구하고 {Q} 대신 a나 b만 답함",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "prereq": [
+        "일차함수의 그래프",
+        "기울기"
+      ],
+      "ops": [
+        "함수",
+        "사칙"
+      ],
+      "traps": [
+        "기울기 계산",
+        "부호"
+      ],
+      "time_limit": 80,
+      "points": 4,
+      "tags": [
+        "일차함수",
+        "일차함수의 식"
+      ],
+      "title": "두 점을 지나는 직선의 x절편·y절편",
+      "skill": "직선의 식을 구한 뒤 y절편은 상수항, x절편은 y = 0을 풀어 구하기",
+      "variant_axis": {
+        "구하는 것": "y절편 / x절편",
+        "기울기": "±1~±4"
+      },
+      "discriminates": "x절편(y = 0)과 y절편(x = 0)을 구별하는가, x절편의 부호(−b/a)를 바르게 처리하는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              "y",
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "x1",
+          "values": {
+            "int": [
+              -5,
+              4
+            ]
+          }
+        },
+        {
+          "name": "dx",
+          "values": {
+            "in": [
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "q",
+        "rows": {
+          "y": {
+            "Q": "y절편",
+            "isX": 0,
+            "STEP3": "y절편은 x = 0을 대입한 y의 값, 곧 상수항 b이다.",
+            "EQ3": "x = 0  →  y = b",
+            "HINT3": "y축과 만나는 점",
+            "CHECK3": "x = 0을 넣으면 y = b이므로 y절편은 상수항과 같다."
+          },
+          "x": {
+            "Q": "x절편",
+            "isX": 1,
+            "STEP3": "x절편은 y = 0을 대입해 0 = ax + b를 푼 x의 값이다.",
+            "EQ3": "y = 0  →  0 = ax + b",
+            "HINT3": "x축과 만나는 점",
+            "CHECK3": "구한 x절편을 넣으면 y = 0이 되어 x축 위의 점임을 확인할 수 있다."
+          }
+        }
+      },
+      "derive": {
+        "x2": "x1 + dx",
+        "y1": "a*x1 + b",
+        "y2": "a*(x1 + dx) + b",
+        "dy": "a*dx",
+        "xi": "-b/a",
+        "ans": "isX*(-b/a) + (1 - isX)*b",
+        "xlo": "min(x1, x2, 0, isX*xi) - 2",
+        "xhi": "max(x1, x2, 0, isX*xi) + 2",
+        "ylo": "min(y1, y2, 0, b) - 2",
+        "yhi": "max(y1, y2, 0, b) + 2",
+        "xs": "max(xlo, min((ylo - b)/a, (yhi - b)/a))",
+        "xe": "min(xhi, max((ylo - b)/a, (yhi - b)/a))",
+        "ys": "a*xs + b",
+        "ye": "a*xe + b"
+      },
+      "constraints": [
+        "x1 != 0",
+        "x2 != 0",
+        "abs(y1) <= 18",
+        "abs(y2) <= 18",
+        "y1 != y2",
+        "isX == 0 or b/a == floor(b/a)",
+        "ans != 0"
+      ],
+      "cost_values": [
+        "x1",
+        "y1",
+        "x2",
+        "y2",
+        "a",
+        "b",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "(y2 - y1)/(x2 - x1) == a",
+        "y1 - a*x1 == b",
+        "isX == 0 or a*ans + b == 0",
+        "isX == 1 or ans == b"
+      ],
+      "question": "두 점 ({x1}, {y1}), ({x2}, {y2}){eul(y2)} 지나는 직선의 {Q}{eul(Q)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "두 점으로 기울기를 구하고 y = ax + b에 한 점을 넣어 b를 구하면 직선의 식이 나온다. y절편은 x = 0일 때의 y값, 곧 b이고, x절편은 y = 0일 때의 x값이므로 0 = ax + b를 풀어 x = −b/a를 구한다. 둘을 혼동하지 않도록 '어느 축과 만나는가'를 먼저 확인한다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{x1}",
+                  "{y1}"
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  "{x2}",
+                  "{y2}"
+                ]
+              },
+              {
+                "name": "{Q}",
+                "coord": [
+                  "{isX*xi}",
+                  "{(1 - isX)*b}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{xs}",
+                    "{ys}"
+                  ],
+                  [
+                    "{xe}",
+                    "{ye}"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "기울기 a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}",
+        "y = {co(a)}x + b에 ({x1}, {y1}){eul(y1)} 대입하면 {y1} = {pn(a*x1)} + b, b = {b}이므로 직선의 식은 y = {co(a)}x {sgn(b)}",
+        "{STEP3} 따라서 {Q}{eun(Q)} {ans}이다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}",
+                "hint": "기울기"
+              },
+              {
+                "text": "y = {co(a)}x {sgn(b)}",
+                "hint": "b = {y1} − {pn(a*x1)}"
+              },
+              {
+                "text": "{EQ3}  →  {Q} = {ans}",
+                "hint": "{HINT3}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ]
+      ],
+      "sol3": "y = {co(a)}x {sgn(b)}에 x = {x2}{eul(x2)} 넣으면 {a} × {pn(x2)} {sgn(b)} = {y2}{ro(y2)} 두 번째 점도 지난다. {CHECK3} 답은 {ans}이다.",
+      "model_answer": "a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}, b = {b}이므로 직선의 식은 y = {co(a)}x {sgn(b)}이다. {STEP3} 따라서 {Q}{eun(Q)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "직선의 식 구하기",
+          "points": 4,
+          "criterion": "기울기 {a}{wa(a)} y절편 {b}{ro(b)} y = {co(a)}x {sgn(b)}{eul(b)} 구했다.",
+          "partial": "기울기만 옳으면 2점, 대입 실수로 b가 틀렸으면 2점."
+        },
+        {
+          "element": "절편 구하기",
+          "points": 3,
+          "criterion": "{STEP3} {Q} {ans}{eul(ans)} 구했다.",
+          "partial": "x절편과 y절편을 바꿔 구했으면 1점."
+        }
+      ],
+      "id": "m2-1-line-two-points-t2",
+      "pitfalls": [
+        {
+          "text": "기울기의 부호를 반대({-a})로 구함",
+          "on": "직선의 식",
+          "effect": "부분"
+        },
+        {
+          "text": "b를 구할 때 점의 좌표를 (y, x) 순서로 대입함",
+          "on": "직선의 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "x절편(y = 0)과 y절편(x = 0)을 바꿔 구함",
+          "on": "절편",
+          "effect": "불인정"
+        },
+        {
+          "text": "x절편을 구할 때 0 = ax + b에서 x = b/a로 부호를 빠뜨림",
+          "on": "절편",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "prereq": [
+        "일차함수의 그래프",
+        "기울기"
+      ],
+      "ops": [
+        "함수",
+        "사칙"
+      ],
+      "traps": [
+        "기울기 계산",
+        "부호"
+      ],
+      "time_limit": 80,
+      "points": 4,
+      "tags": [
+        "일차함수",
+        "일차함수의 식"
+      ],
+      "title": "두 점을 지나는 직선 위의 또 다른 점 — (k, m)의 m",
+      "skill": "직선의 식을 구해 x = k를 대입하기(또는 어느 두 점이든 기울기가 같다는 성질 쓰기)",
+      "variant_axis": {
+        "기울기": "±1~±4",
+        "k": "−6~6"
+      },
+      "discriminates": "세 점이 한 직선 위에 있다는 조건을 '직선의 식에 대입' 또는 '기울기가 같다'로 옮기는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "x1",
+          "values": {
+            "int": [
+              -5,
+              4
+            ]
+          }
+        },
+        {
+          "name": "dx",
+          "values": {
+            "in": [
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "x2": "x1 + dx",
+        "y1": "a*x1 + b",
+        "y2": "a*(x1 + dx) + b",
+        "dy": "a*dx",
+        "m": "a*k + b",
+        "xlo": "min(x1, x2, 0, k) - 2",
+        "xhi": "max(x1, x2, 0, k) + 2",
+        "ylo": "min(y1, y2, 0, m) - 2",
+        "yhi": "max(y1, y2, 0, m) + 2",
+        "xs": "max(xlo, min((ylo - b)/a, (yhi - b)/a))",
+        "xe": "min(xhi, max((ylo - b)/a, (yhi - b)/a))",
+        "ys": "a*xs + b",
+        "ye": "a*xe + b"
+      },
+      "constraints": [
+        "x1 != 0",
+        "x2 != 0",
+        "abs(y1) <= 18",
+        "abs(y2) <= 18",
+        "y1 != y2",
+        "k != x1",
+        "k != x2",
+        "abs(m) <= 25",
+        "m != k",
+        "m != 0"
+      ],
+      "cost_values": [
+        "x1",
+        "y1",
+        "x2",
+        "y2",
+        "a",
+        "b",
+        "k",
+        "m"
+      ],
+      "relation": "X - ((y2 - y1)/(x2 - x1)*k + (y1 - (y2 - y1)/(x2 - x1)*x1))",
+      "unknown": "X",
+      "answer_var": "m",
+      "verify": [
+        "ans == a*k + b",
+        "(ans - y1)*(x2 - x1) == (y2 - y1)*(k - x1)"
+      ],
+      "question": "두 점 ({x1}, {y1}), ({x2}, {y2}){eul(y2)} 지나는 직선이 점 ({k}, m)을 지날 때, m의 값을 구하시오.",
+      "answer": "{m}",
+      "answer_alt": [],
+      "sol1": "세 점이 한 직선 위에 있으려면 두 점으로 구한 직선의 식이 세 번째 점도 만족해야 한다. 먼저 기울기 a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]]를 구하고 한 점을 대입해 b를 구한 뒤, x = {k}일 때의 y값이 m이다. (어느 두 점을 잡아도 기울기가 같다는 성질로 바로 세울 수도 있다.)",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{x1}",
+                  "{y1}"
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  "{x2}",
+                  "{y2}"
+                ]
+              },
+              {
+                "name": "P",
+                "coord": [
+                  "{k}",
+                  "{m}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{xs}",
+                    "{ys}"
+                  ],
+                  [
+                    "{xe}",
+                    "{ye}"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "기울기 a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}",
+        "y = {co(a)}x + b에 ({x1}, {y1}){eul(y1)} 대입하면 b = {y1} − {pn(a*x1)} = {b}이므로 직선의 식은 y = {co(a)}x {sgn(b)}",
+        "x = {k}{eul(k)} 대입하면 m = {a} × {pn(k)} {sgn(b)} = {m}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}",
+                "hint": "기울기"
+              },
+              {
+                "text": "y = {co(a)}x {sgn(b)}",
+                "hint": "b = {y1} − {pn(a*x1)}"
+              },
+              {
+                "text": "m = {a} × {pn(k)} {sgn(b)} = {m}",
+                "hint": "x = {k} 대입"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ]
+      ],
+      "sol3": "기울기로 확인: 점 ({x1}, {y1})과 ({k}, {m})의 기울기는 [[frac({m} − {pn(y1)}, {k} − {pn(x1)})]] = {a}{ro(a)} 처음 두 점의 기울기 {a}{wa(a)} 같으므로 세 점은 한 직선 위에 있다. 답은 {m}이다.",
+      "model_answer": "a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}, b = {b}이므로 직선의 식은 y = {co(a)}x {sgn(b)}이다. x = {k}{eul(k)} 대입하면 m = {m}이다.",
+      "rubric": [
+        {
+          "element": "직선의 식 구하기",
+          "points": 4,
+          "criterion": "기울기 {a}, y절편 {b}{ro(b)} y = {co(a)}x {sgn(b)}{eul(b)} 구했다.",
+          "partial": "기울기만 옳으면 2점."
+        },
+        {
+          "element": "m 구하기",
+          "points": 3,
+          "criterion": "x = {k}{eul(k)} 대입해 m = {m}{eul(m)} 구했다.",
+          "partial": "대입은 옳고 계산이 틀렸으면 1점."
+        }
+      ],
+      "id": "m2-1-line-two-points-t3",
+      "pitfalls": [
+        {
+          "text": "기울기의 부호를 반대({-a})로 구함",
+          "on": "직선의 식",
+          "effect": "부분"
+        },
+        {
+          "text": "직선의 식 없이 두 점 사이의 y의 증가량만으로 어림함",
+          "on": "직선의 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "x = {k} 대신 y = {k}{eul(k)} 대입해 x를 구함",
+          "on": "m 구",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "prereq": [
+        "일차함수의 그래프",
+        "기울기"
+      ],
+      "ops": [
+        "함수",
+        "사칙"
+      ],
+      "traps": [
+        "기울기 계산",
+        "부호"
+      ],
+      "time_limit": 80,
+      "points": 4,
+      "tags": [
+        "일차함수",
+        "일차함수의 식"
+      ],
+      "title": "평행한 직선 + 한 점 — y절편 구하기",
+      "skill": "평행하면 기울기가 같다는 성질로 기울기를 정하고, 점을 대입해 y절편 구하기",
+      "variant_axis": {
+        "기울기": "±1~±4",
+        "주어진 직선의 y절편": "−6~6"
+      },
+      "discriminates": "'평행 → 기울기 같음'을 근거로 쓰는가, 주어진 직선의 y절편을 그대로 답하지 않는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "px",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "py": "a*px + b",
+        "apx": "a*px",
+        "xlo": "min(px, 0) - 2",
+        "xhi": "max(px, 0) + 2",
+        "ylo": "min(py, b, c, 0) - 2",
+        "yhi": "max(py, b, c, 0) + 2",
+        "xs": "max(xlo, min((ylo - b)/a, (yhi - b)/a))",
+        "xe": "min(xhi, max((ylo - b)/a, (yhi - b)/a))",
+        "ys": "a*xs + b",
+        "ye": "a*xe + b",
+        "xs2": "max(xlo, min((ylo - c)/a, (yhi - c)/a))",
+        "xe2": "min(xhi, max((ylo - c)/a, (yhi - c)/a))",
+        "ys2": "a*xs2 + c",
+        "ye2": "a*xe2 + c"
+      },
+      "constraints": [
+        "b != c",
+        "abs(py) <= 20",
+        "b != px",
+        "b != py",
+        "b != a",
+        "py != 0"
+      ],
+      "cost_values": [
+        "a",
+        "c",
+        "px",
+        "py",
+        "b"
+      ],
+      "relation": "a*px + X - py",
+      "unknown": "X",
+      "answer_var": "b",
+      "verify": [
+        "py == a*px + ans",
+        "ans != c"
+      ],
+      "question": "일차함수 y = {co(a)}x {sgn(c)}의 그래프와 평행하고 점 ({px}, {py}){eul(py)} 지나는 직선의 y절편을 구하시오.",
+      "answer": "{b}",
+      "answer_alt": [],
+      "sol1": "평행한 두 직선은 기울기가 같다. 따라서 구하는 직선의 기울기는 {a}이고, y = {co(a)}x + b에 점 ({px}, {py}){eul(py)} 대입해 b를 구한다. y절편은 b이다. (y절편 {c}까지 같으면 평행이 아니라 같은 직선이 된다.)",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{px}",
+                  "{py}"
+                ]
+              },
+              {
+                "name": "y절편",
+                "coord": [
+                  0,
+                  "{b}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{xs2}",
+                    "{ys2}"
+                  ],
+                  [
+                    "{xe2}",
+                    "{ye2}"
+                  ]
+                ],
+                "style": "dashed"
+              },
+              {
+                "points": [
+                  [
+                    "{xs}",
+                    "{ys}"
+                  ],
+                  [
+                    "{xe}",
+                    "{ye}"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "평행하므로 기울기가 같다: a = {a}, 구하는 직선은 y = {co(a)}x + b",
+        "점 ({px}, {py}){eul(py)} 대입하면 {py} = {a} × {pn(px)} + b = {apx} + b",
+        "b = {py} − {pn(apx)} = {b}이므로 y절편은 {b}이다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = {co(a)}x + b",
+                "hint": "평행 → 기울기 {a} 그대로"
+              },
+              {
+                "text": "{py} = {apx} + b",
+                "hint": "점 ({px}, {py}) 대입"
+              },
+              {
+                "text": "b = {b}",
+                "hint": "y절편"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ]
+      ],
+      "sol3": "y = {co(a)}x {sgn(b)}{eun(b)} 기울기가 {a}{ro(a)} 주어진 직선과 같고 y절편 {b}{eun(b)} {c}{wa(c)} 다르므로 평행하며, x = {px}{eul(px)} 넣으면 {apx} {sgn(b)} = {py}{ro(py)} 점을 지난다. 답은 {b}이다.",
+      "model_answer": "평행한 직선은 기울기가 같으므로 구하는 직선은 y = {co(a)}x + b이다. 점 ({px}, {py}){eul(py)} 대입하면 {py} = {apx} + b, b = {b}이다. 따라서 y절편은 {b}이다.",
+      "rubric": [
+        {
+          "element": "기울기 판단",
+          "points": 3,
+          "criterion": "평행하므로 기울기가 {a}{ro(a)} 같음을 근거와 함께 밝혔다.",
+          "partial": "기울기만 쓰고 근거(평행)가 없으면 1점."
+        },
+        {
+          "element": "y절편 구하기",
+          "points": 4,
+          "criterion": "점을 대입해 b = {b}{eul(b)} 구했다.",
+          "partial": "대입은 옳고 계산이 틀렸으면 2점."
+        }
+      ],
+      "id": "m2-1-line-two-points-t4",
+      "pitfalls": [
+        {
+          "text": "기울기의 값이나 부호를 바꾸어 씀 — 평행이면 기울기가 {a}로 같다",
+          "on": "기울기",
+          "effect": "불인정"
+        },
+        {
+          "text": "'평행하므로 기울기가 같다'는 근거를 쓰지 않고 a = {a}만 씀",
+          "on": "기울기",
+          "effect": "부분"
+        },
+        {
+          "text": "주어진 직선의 y절편 {c}{eul(c)} 그대로 답함",
+          "on": "y절편",
+          "effect": "불인정"
+        },
+        {
+          "text": "점의 좌표를 (y, x)로 바꿔 대입하거나 b = {py} − {pn(apx)}에서 부호 실수",
+          "on": "y절편",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

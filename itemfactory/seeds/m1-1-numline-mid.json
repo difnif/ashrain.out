@@ -1,0 +1,751 @@
+{
+  "seed_id": "m1-1-numline-mid",
+  "category": "연산",
+  "title": "수직선 위 두 점의 거리와 중점",
+  "unit_id": "m1-1",
+  "concept_ids": [
+    "m1-1-11",
+    "m1-1-12"
+  ],
+  "schema_id": null,
+  "schema_name": "수직선 위 점 사이의 거리와 중점",
+  "source_item_ids": [
+    "000bfe90-c6e2-4adb-8ad6-b6e7fb36643e",
+    "872f76cc-d062-4fd4-87a5-7e23e02e819e"
+  ],
+  "note": "원문항은 유형 참조 전용. 관계식(d=abs(x-y), m=(x+y)/2)과 변주축(구하는 대상·중첩 구조)만 가져와 새로 씀.",
+  "geometry": false,
+  "templates": [
+    {
+      "id": "m1-1-numline-mid-t1",
+      "title": "두 점의 한가운데 수 구하기",
+      "skill": "중점 공식 적용",
+      "prereq": [
+        "정수의 덧셈",
+        "2로 나누기",
+        "수직선 읽기"
+      ],
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "사칙"
+      ],
+      "traps": [
+        "부호",
+        "구하는대상혼동"
+      ],
+      "variant_axis": {
+        "구하는 대상": "중점 m",
+        "수치 범위": "정수"
+      },
+      "discriminates": "중점을 '합의 절반'으로 이해했는가 (거리와 혼동하지 않는가)",
+      "qtype": "short",
+      "difficulty": 2,
+      "time_limit": 60,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "중점",
+        "수직선"
+      ],
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              -12,
+              10
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              1,
+              11
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "b": "a + 2*h",
+        "m": "a + h",
+        "d": "2*h"
+      },
+      "constraints": [
+        "a + 2*h <= 12",
+        "h >= 1"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "m",
+        "a+b"
+      ],
+      "relation": "2*X - (a+b)",
+      "unknown": "X",
+      "answer_var": "m",
+      "verify": [
+        "abs(ans-a) == abs(ans-b)",
+        "abs(a-b) == d",
+        "ans == a + h"
+      ],
+      "question": "수직선 위의 두 점 A, B가 나타내는 수가 각각 {a}, {b}이다. 두 점 A, B로부터 같은 거리에 있는 점이 나타내는 수를 구하시오.",
+      "figure": [
+        {
+          "fn": "numline",
+          "args": {
+            "min": "{a-1}",
+            "max": "{b+1}",
+            "points": [
+              {
+                "x": "{a}",
+                "label": "A"
+              },
+              {
+                "x": "{b}",
+                "label": "B"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{m}",
+      "sol1": "두 점으로부터 같은 거리에 있는 점은 두 점의 한가운데에 있다. 수직선에서 한가운데 수를 구하는 방법은 두 가지인데, 어느 쪽으로 풀어도 같은 값이 나온다. ㉠ 두 수의 합을 2로 나눈다. ㉡ 왼쪽 점에서 출발해 두 점 사이 거리의 절반만큼 오른쪽으로 간다.",
+      "sol1_fig": [
+        {
+          "fn": "numline",
+          "args": {
+            "min": "{a-1}",
+            "max": "{b+1}",
+            "points": [
+              {
+                "x": "{a}",
+                "label": "A"
+              },
+              {
+                "x": "{m}",
+                "label": "?"
+              },
+              {
+                "x": "{b}",
+                "label": "B"
+              }
+            ],
+            "segments": [
+              [
+                "{a}",
+                "{m}"
+              ],
+              [
+                "{m}",
+                "{b}"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "㉠ 방법으로 풀어 본다. 두 수의 합을 구한다: {pn(a)} + {pn(b)} = {a+b}",
+        "합을 2로 나눈다: {a+b} ÷ 2 = {m}",
+        "㉡ 방법으로도 확인한다. 두 점 사이의 거리는 |{a} − {pn(b)}| = {d}이고, 그 절반은 {d} ÷ 2 = {h}이다.",
+        "왼쪽 점 {a}에서 {h}만큼 오른쪽으로 가면 {a} + {pn(h)} = {m}이다.",
+        "두 방법의 결과가 {m}{ro(m)} 같다."
+      ],
+      "sol3": "구한 {m}에서 A까지의 거리는 |{m} − {pn(a)}| = {h}, B까지의 거리는 |{b} − {pn(m)}| = {h}{ro(h)} 서로 같다. 또 {m}{eun(m)} {a}{wa(a)} {b} 사이에 있으므로 위치도 자연스럽다. 따라서 답은 {m}이다.",
+      "model_answer": "두 점으로부터 같은 거리에 있는 점은 두 점의 한가운데이므로 두 수의 합을 2로 나누면 된다. {pn(a)} + {pn(b)} = {a+b}이고 {a+b} ÷ 2 = {m}이다. 다른 방법으로, 두 점 사이의 거리 {d}의 절반 {h}만큼 {a}에서 오른쪽으로 가도 {m}{ika(m)} 된다. 실제로 {m}에서 두 점까지의 거리가 각각 {h}{ro(h)} 같으므로 답은 {m}이다.",
+      "rubric": [
+        {
+          "element": "중점의 뜻 파악",
+          "points": 3,
+          "criterion": "두 점에서 같은 거리에 있는 점이 두 수의 한가운데임을 말이나 식으로 나타냈다."
+        },
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "{pn(a)} + {pn(b)} ÷ 2 꼴, 또는 {a} + (거리 ÷ 2) 꼴로 바르게 식을 세웠다.",
+          "partial": "부호를 빠뜨린 식이면 1점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "합 {a+b}{wa(a+b)} 그 절반 {m}{eul(m)} 바르게 계산했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {m}{ro(m)} 썼다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "양쪽 거리가 {h}{ro(h)} 같음을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:A",
+              "lbl:A",
+              "pt:B",
+              "lbl:B"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:?",
+              "lbl:?"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:0",
+              "seg:1"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{pn(a)} + {pn(b)} = {a+b}",
+                "hint": "㉠ 두 수의 합"
+              },
+              "{a+b} ÷ 2 = {m}",
+              {
+                "text": "|{a} − {pn(b)}| = {d},  {d} ÷ 2 = {h}",
+                "hint": "㉡ 거리의 절반"
+              },
+              "{a} + {h} = {m}"
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "line:1",
+              "line:3"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "pitfalls": [
+        {
+          "text": "'두 점에서 같은 거리 = 두 수의 한가운데'라는 뜻을 밝히지 않고 (a + b) ÷ 2 만 씀",
+          "on": "중점의 뜻",
+          "effect": "부분"
+        },
+        {
+          "text": "합이 아니라 차를 2로 나눔 (거리와 혼동)",
+          "on": "식 세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "음수가 섞였을 때 부호를 떼고 절댓값끼리 더함",
+          "on": "계산",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "id": "m1-1-numline-mid-t2",
+      "title": "중점과 한 점으로 나머지 점 구하기",
+      "skill": "중점 공식 역산",
+      "prereq": [
+        "중점 공식",
+        "일차식 이항",
+        "절댓값과 거리"
+      ],
+      "process": "추론",
+      "context": "무맥락",
+      "ops": [
+        "사칙",
+        "방정식"
+      ],
+      "traps": [
+        "부호",
+        "역연산"
+      ],
+      "variant_axis": {
+        "구하는 대상": "한 점 x",
+        "추가 제약": "제약 없음"
+      },
+      "discriminates": "중점 관계를 역방향으로 쓸 수 있는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "time_limit": 70,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "중점",
+        "수직선",
+        "역산"
+      ],
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              -10,
+              10
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              9
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "m": "a + k",
+        "b": "a + 2*k"
+      },
+      "constraints": [
+        "k >= 2"
+      ],
+      "cost_values": [
+        "a",
+        "m",
+        "b",
+        "k"
+      ],
+      "relation": "(a + X)/2 - m",
+      "unknown": "X",
+      "answer_var": "b",
+      "verify": [
+        "abs(m-a) == abs(m-ans)",
+        "ans != a",
+        "(a + ans)/2 == m"
+      ],
+      "question": "수직선 위의 두 점 A, B가 나타내는 수를 각각 {a}, b라 하자. 두 점 A, B로부터 같은 거리에 있는 점이 나타내는 수가 {m}일 때, b의 값을 구하시오.",
+      "figure": [
+        {
+          "fn": "numline",
+          "args": {
+            "min": "{a-1}",
+            "max": "{b+1}",
+            "points": [
+              {
+                "x": "{a}",
+                "label": "A"
+              },
+              {
+                "x": "{m}",
+                "label": "M"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{b}",
+      "sol1": "한가운데 점 M은 A와 B의 정확히 중간이므로, A에서 M까지의 거리와 M에서 B까지의 거리가 같다. 그러니 A에서 M까지 간 만큼 M에서 한 번 더 가면 B에 닿는다. 식으로 쓰면 ({a} + b) ÷ 2 = {m}이다.",
+      "sol1_fig": [
+        {
+          "fn": "numline",
+          "args": {
+            "min": "{a-1}",
+            "max": "{b+1}",
+            "points": [
+              {
+                "x": "{a}",
+                "label": "A"
+              },
+              {
+                "x": "{m}",
+                "label": "M"
+              },
+              {
+                "x": "{b}",
+                "label": "B?"
+              }
+            ],
+            "segments": [
+              [
+                "{a}",
+                "{m}"
+              ],
+              [
+                "{m}",
+                "{b}"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "A에서 M까지의 거리를 구한다: |{m} − {pn(a)}| = {k}",
+        "M에서 B까지도 같은 거리 {k}만큼 떨어져 있고, B는 M의 오른쪽에 있다.",
+        "그러므로 b = {m} + {pn(k)} = {b}",
+        "식으로 풀어도 같다. ({a} + b) ÷ 2 = {m}의 양변에 2를 곱하면 {a} + b = {2*m}",
+        "이항하면 b = {2*m} − {pn(a)} = {b}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "({a} + b) ÷ 2 = {m}",
+              "{a} + b = {2*m}",
+              "b = {2*m} − ({a})",
+              "b = {b}"
+            ]
+          }
+        }
+      ],
+      "sol3": "구한 b = {b}{ro(b)} 중점을 다시 계산하면 ({a} + {pn(b)}) ÷ 2 = {2*m} ÷ 2 = {m}{ro(m)} 문제에서 준 값과 같다. 또 {m}에서 A까지 {k}, B까지 {k}{ro(k)} 거리도 같다. 따라서 답은 {b}이다.",
+      "model_answer": "한가운데 점 M은 두 점의 중간이므로 ({a} + b) ÷ 2 = {m}이다. 양변에 2를 곱하면 {a} + b = {2*m}이고, 이항하면 b = {2*m} − {pn(a)} = {b}이다. 거리로 봐도 A에서 M까지 {k}이므로 M에서 {k}만큼 더 간 {b}{ika(b)} B다. 실제로 ({a} + {pn(b)}) ÷ 2 = {m}이므로 답은 {b}이다.",
+      "rubric": [
+        {
+          "element": "중점 관계 세우기",
+          "points": 4,
+          "criterion": "({a} + b) ÷ 2 = {m}, 또는 A–M 거리와 M–B 거리가 같다는 관계를 바르게 나타냈다."
+        },
+        {
+          "element": "역산 수행",
+          "points": 3,
+          "criterion": "양변에 2를 곱하고 이항해 b = {b}{eul(b)} 구했다.",
+          "partial": "2를 곱하는 단계까지 옳으면 2점."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {b}{ro(b)} 썼다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "구한 값으로 중점을 다시 계산해 {m}{ika(m)} 나옴을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:A",
+              "lbl:A",
+              "pt:M",
+              "lbl:M"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:1",
+              "pt:B?",
+              "lbl:B?"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "line:3",
+            "keep": true
+          }
+        ]
+      ],
+      "pitfalls": [
+        {
+          "text": "중점 관계식 (a + b) ÷ 2 = m 을 세우지 않고 m − a 를 답으로 씀",
+          "on": "중점 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "양변에 2를 곱한 뒤 a를 이항할 때 부호를 바꾸지 않음",
+          "on": "역산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "id": "m1-1-numline-mid-t3",
+      "title": "중점 고르기 (오개념 대조)",
+      "skill": "중점 공식 적용",
+      "prereq": [
+        "정수의 덧셈",
+        "절댓값과 거리"
+      ],
+      "process": "개념이해",
+      "context": "무맥락",
+      "ops": [
+        "사칙"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "부호"
+      ],
+      "variant_axis": {
+        "구하는 대상": "중점 m",
+        "제시 형식": "선다형"
+      },
+      "discriminates": "중점·거리·합을 구분하는가",
+      "qtype": "choice",
+      "difficulty": 2,
+      "time_limit": 60,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "중점",
+        "수직선",
+        "보기고르기"
+      ],
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              -11,
+              1
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "b": "a + 2*h",
+        "m": "a + h",
+        "d": "2*h"
+      },
+      "constraints": [
+        "a + 2*h >= 2",
+        "a + 2*h <= 13",
+        "a != 0",
+        "a + 2*h != 0"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "m",
+        "a+b"
+      ],
+      "relation": "2*X - (a+b)",
+      "unknown": "X",
+      "answer_var": "m",
+      "verify": [
+        "abs(ans-a) == abs(ans-b)"
+      ],
+      "question": "수직선 위의 두 점 A, B가 나타내는 수가 각각 {a}, {b}일 때, 두 점의 한가운데에 있는 점이 나타내는 수는?",
+      "figure": [
+        {
+          "fn": "numline",
+          "args": {
+            "min": "{a-1}",
+            "max": "{b+1}",
+            "points": [
+              {
+                "x": "{a}",
+                "label": "A"
+              },
+              {
+                "x": "{b}",
+                "label": "B"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{m}",
+      "distractors": [
+        {
+          "expr": "a+b",
+          "misconception": "MC-MID-01"
+        },
+        {
+          "expr": "abs(a-b)",
+          "misconception": "MC-DIST-01"
+        },
+        {
+          "expr": "abs(a-b)/2",
+          "misconception": "MC-MID-01"
+        },
+        {
+          "expr": "m+1",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "m-2",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "(abs(a)+abs(b))/2",
+          "misconception": "MC-ABS-01"
+        }
+      ],
+      "sol1": "한가운데 수는 두 수의 합을 2로 나눈 값이다. 이 유형에서 가장 많이 나오는 실수는 두 가지다. ① 두 수의 합 {a+b}{eul(a+b)} 그대로 답으로 쓰는 것 ② 두 점 사이의 거리 {d}(또는 그 절반 {h})를 답으로 쓰는 것. 거리는 '얼마나 떨어져 있나'이고 중점은 '어디에 있나'라서 서로 다른 값이다.",
+      "sol1_fig": [
+        {
+          "fn": "numline",
+          "args": {
+            "min": "{a-1}",
+            "max": "{b+1}",
+            "points": [
+              {
+                "x": "{a}",
+                "label": "A"
+              },
+              {
+                "x": "{m}",
+                "label": "중점"
+              },
+              {
+                "x": "{b}",
+                "label": "B"
+              }
+            ],
+            "segments": [
+              [
+                "{a}",
+                "{b}"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "두 수의 합을 구한다: {pn(a)} + {pn(b)} = {a+b}",
+        "2로 나눈다: {a+b} ÷ 2 = {m}",
+        "거리와 비교해 둔다. 두 점 사이의 거리는 |{a} − {pn(b)}| = {d}이고 그 절반은 {h}이다 — 둘 다 위치가 아니라 길이라서 답이 아니다."
+      ],
+      "sol3": "{m}에서 A까지 {h}, B까지 {h}{ro(h)} 양쪽이 같으므로 {m}{ika(m)} 한가운데가 맞다.",
+      "model_answer": "한가운데 수는 두 수의 합을 2로 나눈 값이므로 ({pn(a)} + {pn(b)}) ÷ 2 = {a+b} ÷ 2 = {m}이다. 두 점 사이의 거리 {d}, 그 절반 {h} 같은 값은 길이일 뿐 위치가 아니므로 답이 될 수 없다. 실제로 {m}에서 양쪽 점까지의 거리가 각각 {h}{ro(h)} 같으므로 답은 {m}이다.",
+      "rubric": [
+        {
+          "element": "중점과 거리 구분",
+          "points": 3,
+          "criterion": "구하는 것이 위치(중점)이고 거리가 아님을 밝혔다."
+        },
+        {
+          "element": "계산",
+          "points": 3,
+          "criterion": "{pn(a)} + {pn(b)} = {a+b}, {a+b} ÷ 2 = {m}{eul(m)} 바르게 계산했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {m}{ro(m)} 썼다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "양쪽 거리가 {h}{ro(h)} 같음을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "거리(차의 절댓값)와 한가운데(합의 반)를 바꿔 계산함",
+          "on": "중점과 거리",
+          "effect": "불인정"
+        },
+        {
+          "text": "음수 부호를 떼고 계산함",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

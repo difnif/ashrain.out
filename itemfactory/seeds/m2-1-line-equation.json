@@ -1,0 +1,543 @@
+{
+  "seed_id": "m2-1-line-equation",
+  "category": "연산",
+  "title": "기울기와 점으로 직선의 방정식 구하기",
+  "unit_id": "m2-1",
+  "concept_ids": [
+    "m2-1-19"
+  ],
+  "schema_id": "d635f013-722e-4c76-9b83-30b2ef4e1bd7",
+  "schema_name": "기울기와 한 점으로 직선의 방정식 구하기",
+  "source_item_ids": [],
+  "note": "관계식 y = a*x + b, 두 점의 기울기 = (y2-y1)/(x2-x1) 만 차용.",
+  "geometry": false,
+  "templates": [
+    {
+      "id": "m2-1-line-equation-t1",
+      "title": "기울기와 한 점으로 y절편 구하기",
+      "skill": "y = ax + b에 점 대입",
+      "prereq": [
+        "일차방정식",
+        "대입",
+        "부호 있는 곱셈"
+      ],
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "함수",
+        "방정식"
+      ],
+      "traps": [
+        "부호"
+      ],
+      "variant_axis": {
+        "구하는 것": "y절편",
+        "수치 범위": "정수"
+      },
+      "discriminates": "기울기와 y절편의 역할을 구분하는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "time_limit": 70,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "일차함수",
+        "y절편"
+      ],
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "px",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              -6,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "py": "a*px + b",
+        "ap": "a*px"
+      },
+      "constraints": [
+        "px != 0",
+        "b != 0",
+        "abs(py) <= 20",
+        "b != px",
+        "b != py",
+        "b != a"
+      ],
+      "cost_values": [
+        "a",
+        "px",
+        "py",
+        "b",
+        "ap"
+      ],
+      "relation": "a*px + X - py",
+      "unknown": "X",
+      "answer_var": "b",
+      "verify": [
+        "py == a*px + ans"
+      ],
+      "question": "기울기가 {a}이고 점 ({px}, {py})을 지나는 직선의 y절편을 구하시오.",
+      "answer": "{b}",
+      "sol1": "기울기가 {a}인 직선의 식은 y = {a}x + b 꼴이다. 여기서 b가 바로 y절편이므로, 구하려는 것이 이미 식 안에 미지수로 들어 있다. 직선이 점 ({px}, {py})을 지난다는 것은 그 점의 좌표를 식에 넣었을 때 등식이 성립한다는 뜻이므로, 대입하면 b에 대한 일차방정식이 된다.",
+      "sol2": [
+        "직선의 식을 세운다: y = {a}x + b",
+        "지나는 점의 좌표 x = {px}, y = {py}{eul(py)} 대입한다: {py} = {a} × {pn(px)} + b",
+        "곱셈을 먼저 계산한다: {a} × {pn(px)} = {ap} (부호에 주의한다)",
+        "식이 {py} = {ap} + b가 되므로 이항하면 b = {py} − {pn(ap)}",
+        "따라서 b = {b}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "y = {a}x + b",
+              "{py} = {a} × ({px}) + b",
+              "{py} = {ap} + b",
+              "b = {b}"
+            ]
+          }
+        }
+      ],
+      "sol3": "구한 직선의 식 y = {a}x {sgn(b)}에 x = {px}{eul(px)} 넣으면 y = {ap} {sgn(b)} = {py}{ro(py)} 주어진 점을 실제로 지난다. 또 x = 0을 넣으면 y = {b}이므로 y절편이 {b}인 것도 맞는다. 답은 {b}다.",
+      "sol3_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{min(px,0)-2}",
+              "{max(px,0)+2}"
+            ],
+            "y": [
+              "{min(py,b,0)-2}",
+              "{max(py,b,0)+2}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{px}",
+                  "{py}"
+                ]
+              },
+              {
+                "name": "y절편",
+                "coord": [
+                  0,
+                  "{b}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "expr": "{a}*x + {b}"
+              }
+            ]
+          }
+        }
+      ],
+      "model_answer": "기울기가 {a}이므로 직선의 식을 y = {a}x + b로 놓는다. 이 직선이 점 ({px}, {py})을 지나므로 {py} = {a} × {pn(px)} + b이고, {a} × {pn(px)} = {ap}이므로 {py} = {ap} + b이다. 이항하면 b = {py} − {pn(ap)} = {b}이다. 구한 식 y = {a}x {sgn(b)}에 x = {px}{eul(px)} 넣으면 y = {py}{ika(py)} 되어 맞으므로 y절편은 {b}다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "기울기를 이용해 y = {a}x + b 꼴로 놓았다."
+        },
+        {
+          "element": "점 대입",
+          "points": 3,
+          "criterion": "x = {px}, y = {py}{eul(py)} 대입해 {py} = {ap} + b를 얻었다.",
+          "partial": "대입은 했으나 부호를 틀렸으면 1점."
+        },
+        {
+          "element": "b 계산",
+          "points": 2,
+          "criterion": "b = {b}{eul(b)} 바르게 구했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "y절편이 {b}임을 밝혔다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "구한 식이 주어진 점을 지남을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "y = ax + b 에서 기울기와 y절편의 자리를 바꿔 씀",
+          "on": "식 세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "점을 대입할 때 x좌표와 y좌표를 바꿔 넣음",
+          "on": "점 대입",
+          "effect": "불인정"
+        },
+        {
+          "text": "b를 구하며 이항할 때 부호를 바꾸지 않음",
+          "on": "b 계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "id": "m2-1-line-equation-t2",
+      "title": "두 점으로 기울기 고르기 (오개념 대조)",
+      "skill": "기울기 = y의 증가량 ÷ x의 증가량",
+      "prereq": [
+        "좌표 읽기",
+        "부호 있는 뺄셈"
+      ],
+      "process": "개념이해",
+      "context": "무맥락",
+      "ops": [
+        "함수",
+        "사칙"
+      ],
+      "traps": [
+        "부호",
+        "역연산"
+      ],
+      "variant_axis": {
+        "구하는 것": "기울기",
+        "제시 형식": "선다형"
+      },
+      "discriminates": "x와 y의 증가량을 뒤집지 않는가, 부호를 지키는가",
+      "qtype": "choice",
+      "difficulty": 3,
+      "time_limit": 80,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "일차함수",
+        "기울기",
+        "보기고르기"
+      ],
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "px",
+          "values": {
+            "int": [
+              -5,
+              3
+            ]
+          }
+        },
+        {
+          "name": "dx",
+          "values": {
+            "in": [
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "py": "a*px + b",
+        "qx": "px + dx",
+        "qy": "a*(px + dx) + b",
+        "dy": "a*dx"
+      },
+      "constraints": [
+        "abs(py) <= 18",
+        "abs(qy) <= 18",
+        "dy != dx",
+        "px != 0"
+      ],
+      "cost_values": [
+        "px",
+        "py",
+        "qx",
+        "qy",
+        "dx",
+        "dy",
+        "a"
+      ],
+      "relation": "X*dx - dy",
+      "unknown": "X",
+      "answer_var": "a",
+      "verify": [
+        "qy - py == ans*(qx - px)"
+      ],
+      "question": "두 점 ({px}, {py}), ({qx}, {qy})를 지나는 직선의 기울기는?",
+      "figure": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{min(px,qx,0)-2}",
+              "{max(px,qx,0)+2}"
+            ],
+            "y": [
+              "{min(py,qy,0)-2}",
+              "{max(py,qy,0)+2}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{px}",
+                  "{py}"
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  "{qx}",
+                  "{qy}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{px}",
+                    "{py}"
+                  ],
+                  [
+                    "{qx}",
+                    "{qy}"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{a}",
+      "distractors": [
+        {
+          "expr": "dx",
+          "misconception": "MC-FUN-02"
+        },
+        {
+          "expr": "-a",
+          "misconception": "MC-SIGN-01"
+        },
+        {
+          "expr": "dy",
+          "misconception": "MC-FUN-01"
+        },
+        {
+          "expr": "b",
+          "misconception": "MC-FUN-01"
+        },
+        {
+          "expr": "a+1",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "a-1",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "dy - dx",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "2*a",
+          "misconception": "MC-CALC-01"
+        }
+      ],
+      "sol1": "기울기는 x가 늘어난 만큼에 대해 y가 얼마나 변했는지를 나타내는 값이다. 곧 (y의 증가량) ÷ (x의 증가량)이며, 분자와 분모의 순서를 뒤집으면 안 된다. 두 점을 뺄 때는 x끼리·y끼리 같은 순서로 빼는 것도 중요하다 — 순서를 섞으면 부호가 뒤집힌다.",
+      "sol2": [
+        "두 점을 A({px}, {py}), B({qx}, {qy})라 하고 A에서 B로 갈 때의 변화를 본다.",
+        "x의 증가량: {qx} − {pn(px)} = {dx}",
+        "y의 증가량: {qy} − {pn(py)} = {dy}",
+        "기울기 = (y의 증가량) ÷ (x의 증가량) = {dy} ÷ {dx} = {a}",
+        "순서를 바꿔 B에서 A로 빼도 x의 증가량 {-dx}, y의 증가량 {-dy}{ika(-dy)} 되어 나눈 값은 {a}{ro(a)} 같다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{min(px,qx,0)-2}",
+              "{max(px,qx,0)+2}"
+            ],
+            "y": [
+              "{min(py,qy,0)-2}",
+              "{max(py,qy,0)+2}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{px}",
+                  "{py}"
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  "{qx}",
+                  "{qy}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{px}",
+                    "{py}"
+                  ],
+                  [
+                    "{qx}",
+                    "{qy}"
+                  ]
+                ]
+              }
+            ],
+            "rise_run": [
+              "A",
+              "B"
+            ],
+            "run_label": "x의 증가량 {dx}",
+            "rise_label": "y의 증가량 {dy}"
+          }
+        }
+      ],
+      "sol3": "기울기가 {a}라면 x가 1 늘 때 y는 {a}만큼 변해야 한다. 실제로 x가 {dx} 늘 때 y가 {dy} 변했고 {dy} ÷ {dx} = {a}이므로 맞는다. 분모와 분자를 뒤집었다면 {dx} ÷ {dy}{ika(dy)} 되어 다른 값이 나온다. 답은 {a}다.",
+      "model_answer": "기울기는 (y의 증가량) ÷ (x의 증가량)이다. x의 증가량은 {qx} − {pn(px)} = {dx}, y의 증가량은 {qy} − {pn(py)} = {dy}이므로 기울기는 {dy} ÷ {dx} = {a}이다. 분모와 분자를 뒤집으면 안 되고, 두 점을 뺄 때는 같은 순서로 빼야 한다. 답은 {a}다.",
+      "rubric": [
+        {
+          "element": "기울기의 뜻",
+          "points": 3,
+          "criterion": "기울기가 (y의 증가량) ÷ (x의 증가량)임을 밝혔다."
+        },
+        {
+          "element": "증가량 계산",
+          "points": 3,
+          "criterion": "x의 증가량 {dx}, y의 증가량 {dy}{eul(dy)} 부호까지 바르게 구했다.",
+          "partial": "한쪽만 맞으면 1점."
+        },
+        {
+          "element": "기울기 계산",
+          "points": 2,
+          "criterion": "{dy} ÷ {dx} = {a}{eul(a)} 구했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {a}{ro(a)} 썼다."
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:A",
+              "lbl:A",
+              "pt:B",
+              "lbl:B"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "run",
+              "run-lbl"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "rise",
+              "rise-lbl"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "run",
+              "rise",
+              "run-lbl",
+              "rise-lbl",
+              "line:0"
+            ],
+            "keep": true
+          }
+        ],
+        []
+      ],
+      "pitfalls": [
+        {
+          "text": "x의 증가량과 y의 증가량을 뒤집어 나눔",
+          "on": "기울기의 뜻",
+          "effect": "불인정"
+        },
+        {
+          "text": "두 점의 좌표를 빼는 순서를 다르게 해 부호가 뒤바뀜 ((y2 − y1)/(x1 − x2))",
+          "on": "증가량",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

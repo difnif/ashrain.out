@@ -1,4 +1,4 @@
-// ashrain.out — MathIR 파서·렌더·평가기 (mathir.js, v1.5 r2 / 파이썬 itemfactory/mathir.py v1.5 r2 동형)
+// ashrain.out — MathIR 파서·렌더·평가기 (mathir.js, v1.5 r2 / 파이썬 itemfactory/mathir.py v1.5 r2 동형 · 09-07 renderHtml 상하 분수 표시층 추가)
 // 위치: src/lib/mathir.js — 앱(ItemCard·검토·코퍼스 화면)과 api/transcribeJob(러너 v2)이 공유.
 // 파이썬 itemfactory/mathir.py 와 동형 — 함수표·문법·표시 규칙을 항상 함께 수정할 것.
 // 이력: v1.0(스펙 v1.1) → v1.4 답 표기층(ㄱ~ㅎ·①~⑳ 낱말 답, '21°'→deg, 단위 꼬리, 'a = 5, b = -1' 병립, '좌변:' 접두 제거)
@@ -291,6 +291,10 @@ function xprod(n) {
   return [left + " × " + ((B.t === "neg" || B.t === "fn") ? b : wrap(B)), false];
 }
 
+// 표시 모드 — 기본은 한 줄 텍스트("a/b"). _H 가 켜지면 frac/mixed 를 상하 분자·분모 자리표(\u0001 분자 \u0002 분모 \u0003)로 내보내고
+// renderHtml 이 그 자리표를 <span class="mf"> 구조로 바꾼다. 텍스트 규칙(toIR·파서·파이썬 mathir.py)은 건드리지 않는다.
+let _H = false;
+const FR = (a, b) => "\u0001" + a + "\u0002" + b + "\u0003";
 export function disp(n) {
   const t = n.t;
   if (t === "num") return n.v;
@@ -313,8 +317,8 @@ export function disp(n) {
   const f = n.f, a = n.args, D = disp;
   const lab = () => a.map(D).join("");
   switch (f) {
-    case "frac": return wrap(a[0]) + "/" + wrap(a[1]);
-    case "mixed": return D(a[0]) + " " + D(a[1]) + "/" + D(a[2]);
+    case "frac": return _H ? FR(D(a[0]), D(a[1])) : wrap(a[0]) + "/" + wrap(a[1]);
+    case "mixed": return _H ? D(a[0]) + FR(D(a[1]), D(a[2])) : D(a[0]) + " " + D(a[1]) + "/" + D(a[2]);
     case "pow": { const ex = toIR(a[1]).replace(/ /g, ""); return wrap(a[0]) + (/^-?\d+$/.test(ex) ? sup(ex) : "^(" + D(a[1]) + ")"); }
     case "sqrt": return "√" + wrap(a[0]);
     case "root": return sup(toIR(a[0])) + "√" + wrap(a[1]);
@@ -555,6 +559,51 @@ function parseAnswerOne(s) {
     throw e;
   }
 }
+// ---------------------------------------------------------------- HTML 렌더 (상하 분수)
+// 분수는 손으로 쓰는 모양 그대로 — 분자 위, 가로줄, 분모 아래 (Park, 2026-09-07).
+//   · [[frac(a,b)]] · [[mixed(w,a,b)]] 마커는 파서 결과로 그린다.
+//   · 마커 밖의 평문 "x/5", "17/2", "(30 − x)/6", "2x/3" 도 상하로 세운다 (분자·분모가 짧은 수식 토큰일 때만).
+//     "m/분", "km/h" 같은 단위나 한글이 낀 것은 그대로 둔다. 괄호 분자·분모는 괄호를 벗긴다.
+// 반환값은 HTML 문자열(이스케이프 완료). 앱은 dangerouslySetInnerHTML + MATH_CSS 로 쓴다.
+export const MATH_CSS = `
+.mf{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.1;margin:0 .12em;font-size:.94em;text-align:center;position:relative;top:-0.05em}
+.mf>.mn{padding:0 .22em .05em;border-bottom:1.5px solid currentColor}
+.mf>.md{padding:.05em .22em 0}
+.mf .mf{font-size:.9em}
+`;
+const _escH = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const FRAC_HTML = (nu, de) => `<span class="mf"><span class="mn">${nu}</span><span class="md">${de}</span></span>`;
+function _fracPlaceholders(escaped) {
+  // 안쪽(중첩 없는) 자리표부터 span 으로 — 중첩 분수도 처리된다
+  const re = /\u0001([^\u0001\u0002\u0003]*)\u0002([^\u0001\u0002\u0003]*)\u0003/g;
+  let prev;
+  do { prev = escaped; escaped = escaped.replace(re, (_, a, b) => FRAC_HTML(a, b)); } while (escaped !== prev);
+  return escaped;
+}
+// 평문 분수: 분자·분모 = (괄호묶음) | 숫자[소수][변수|π] | 변수 1글자 | [숫자]π
+const _TOK = "(?:\\([^()\\n]{1,40}\\)|\\d+(?:\\.\\d+)?[A-Za-zπ]?|[A-Za-z]|\\d*π)";
+const _PLAIN_FRAC = new RegExp(`(^|[^\\wπ)\\]])(${_TOK})/(${_TOK})(?![\\wπ(])`, "g");
+const _strip = (t) => (t.startsWith("(") && t.endsWith(")") ? t.slice(1, -1).trim() : t);
+function _plainFracs(raw) {
+  return raw.replace(_PLAIN_FRAC, (m, pre, nu, de) => {
+    if (/[가-힣]/.test(nu + de) && !(nu.startsWith("(") || de.startsWith("("))) return m;   // 단위(m/분) 등은 그대로
+    if (/^[A-Za-z]$/.test(nu) && /^[A-Za-z]$/.test(de)) return m;                            // km/h 류 문자/문자
+    return pre + FRAC_HTML(_escH(_strip(nu)), _escH(_strip(de)));
+  });
+}
+export function renderHtml(text) {
+  const segs = parseText(String(text ?? "")).segs;
+  _H = true;
+  let out = "";
+  try {
+    for (const s of segs) {
+      if (s.kind === "ir") out += _fracPlaceholders(_escH(disp(s.node)));
+      else out += _plainFracs(_escH(s.raw));
+    }
+  } finally { _H = false; }
+  return out;
+}
+
 export function parseAnswer(s) {
   s = s.trim();
   const parts = s.split(/\s*(?:또는|\|)\s*/);

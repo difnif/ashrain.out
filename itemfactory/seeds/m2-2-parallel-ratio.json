@@ -1,0 +1,2719 @@
+{
+  "seed_id": "m2-2-parallel-ratio",
+  "category": "도형",
+  "title": "평행선과 선분의 길이의 비 — BC ∥ DE, 세 평행선, 중점연결정리(삼각형·둘레·사각형)",
+  "unit_id": "m2-2",
+  "concept_ids": [
+    "m2-2-07"
+  ],
+  "schema_id": "19f0ba5b-344d-4e7d-9d66-ab4142e18e84",
+  "schema_name": "평행선과 선분의 길이비 / 삼각형 중점연결정리 / 사각형 중점연결",
+  "source_item_ids": [],
+  "note": "출판사 평가자료 유형(TYPES.md 7.3)을 참고해 새로 씀. 비는 u : w 와 배율의 곱으로 정수화, 좌표는 길이 그대로. 세 평행선(t2)의 오른쪽 횡단선은 기울기를 고정해 그려 비만 맞다(길이는 축척 아님).",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형에서 평행선과 선분의 길이의 비 AD : AB = AE : AC = DE : BC",
+        "삼각형의 두 변의 중점을 연결한 선분의 성질"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "평행선",
+        "선분의비",
+        "중점연결정리"
+      ],
+      "title": "삼각형과 평행선 — BC ∥ DE일 때 선분의 길이",
+      "skill": "AD : AB = AE : AC = DE : BC와 AD : DB = AE : EC를 구별해 쓰기",
+      "variant_axis": {
+        "구하는 것": "EC / DE / BC",
+        "닮음비": "12쌍",
+        "배율": "m, n, t"
+      },
+      "discriminates": "DE : BC는 AD : AB(전체)와 같고 AD : DB(부분)와는 다름을 구별하는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "EC",
+              "DE",
+              "BC"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "1-2",
+              "2-3",
+              "3-4",
+              "2-5",
+              "3-5",
+              "4-5",
+              "1-3",
+              "3-7",
+              "4-7",
+              "5-7",
+              "5-6",
+              "5-8"
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "t",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "wv",
+          "rows": {
+            "EC": {
+              "XS": "EC",
+              "i1": 1,
+              "i2": 0,
+              "i3": 0,
+              "XEC": "x",
+              "XDE": "",
+              "XBC": "",
+              "G3T": "[[seg(AE)]] = ",
+              "F1": "AD : DB = AE : EC → EC = ",
+              "LAW": "AD : DB = AE : EC"
+            },
+            "DE": {
+              "XS": "DE",
+              "i1": 0,
+              "i2": 1,
+              "i3": 0,
+              "XEC": "",
+              "XDE": "x",
+              "XBC": "",
+              "G3T": "[[seg(BC)]] = ",
+              "F1": "AD : AB = DE : BC → DE = ",
+              "LAW": "AD : AB = DE : BC"
+            },
+            "BC": {
+              "XS": "BC",
+              "i1": 0,
+              "i2": 0,
+              "i3": 1,
+              "XEC": "",
+              "XDE": "",
+              "XBC": "x",
+              "G3T": "[[seg(DE)]] = ",
+              "F1": "AD : AB = DE : BC → BC = ",
+              "LAW": "AD : AB = DE : BC"
+            }
+          }
+        },
+        {
+          "key": "r",
+          "rows": {
+            "1-2": {
+              "u": 1,
+              "w": 2
+            },
+            "2-3": {
+              "u": 2,
+              "w": 3
+            },
+            "3-4": {
+              "u": 3,
+              "w": 4
+            },
+            "2-5": {
+              "u": 2,
+              "w": 5
+            },
+            "3-5": {
+              "u": 3,
+              "w": 5
+            },
+            "4-5": {
+              "u": 4,
+              "w": 5
+            },
+            "1-3": {
+              "u": 1,
+              "w": 3
+            },
+            "3-7": {
+              "u": 3,
+              "w": 7
+            },
+            "4-7": {
+              "u": 4,
+              "w": 7
+            },
+            "5-7": {
+              "u": 5,
+              "w": 7
+            },
+            "5-6": {
+              "u": 5,
+              "w": 6
+            },
+            "5-8": {
+              "u": 5,
+              "w": 8
+            }
+          }
+        }
+      ],
+      "derive": {
+        "ad": "u*m",
+        "db": "(w - u)*m",
+        "ab": "w*m",
+        "ae": "u*n",
+        "ec": "(w - u)*n",
+        "ac": "w*n",
+        "de": "u*t",
+        "bc": "w*t",
+        "ans_v": "(w - u)*n*i1 + u*t*i2 + w*t*i3",
+        "g3": "u*n*i1 + w*t*i2 + u*t*i3",
+        "lae": "u*n*i1",
+        "lec": "0*i1",
+        "lbc": "w*t*i2",
+        "lde": "u*t*i3",
+        "v1": "u*n*i1 + w*t*i2 + u*t*i3",
+        "cth": "(m*m + n*n - t*t)/(2*m*n)",
+        "s2": "sqrt(abs((1 - cth)/2))",
+        "c2": "sqrt(abs((1 + cth)/2))",
+        "L": "max(ab, ac, bc)",
+        "mn": "min(ad, db, ae, ec, de)",
+        "cB": "(m*m + t*t - n*n)/(2*m*t)",
+        "cC": "(n*n + t*t - m*m)/(2*n*t)"
+      },
+      "constraints": [
+        "m != n or n != t",
+        "t > abs(m - n)",
+        "t < m + n",
+        "2*cth > -1",
+        "100*cth < 76",
+        "100*cB <= 88",
+        "100*cC <= 88",
+        "10*mn >= L",
+        "ab <= 21",
+        "ac <= 21",
+        "bc <= 21",
+        "ans_v != ad",
+        "ans_v != db",
+        "ans_v != g3"
+      ],
+      "cost_values": [
+        "ad",
+        "db",
+        "g3",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "ad*ec == db*ae",
+        "ad*bc == ab*de",
+        "(i1 == 1 and ans == ec) or (i2 == 1 and ans == de) or (i3 == 1 and ans == bc)"
+      ],
+      "question": "다음 그림의 △ABC에서 [[seg(BC)]] ∥ [[seg(DE)]]이고 [[seg(AD)]] = {ad} cm, [[seg(DB)]] = {db} cm, {G3T}{g3} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                "{-ab*s2}",
+                "{-ab*c2}"
+              ],
+              "C": [
+                "{ac*s2}",
+                "{-ac*c2}"
+              ],
+              "D": [
+                "{-ad*s2}",
+                "{-ad*c2}"
+              ],
+              "E": [
+                "{ae*s2}",
+                "{-ae*c2}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "D",
+                "b": "A",
+                "label": "{ad}"
+              },
+              {
+                "a": "B",
+                "b": "D",
+                "label": "{db}"
+              },
+              {
+                "a": "A",
+                "b": "E",
+                "label": "{lae}"
+              },
+              {
+                "a": "E",
+                "b": "C",
+                "label": "{lec}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{lbc}"
+              },
+              {
+                "a": "D",
+                "b": "E",
+                "label": "{lde}"
+              },
+              {
+                "a": "E",
+                "b": "C",
+                "label": "{XEC}"
+              },
+              {
+                "a": "D",
+                "b": "E",
+                "label": "{XDE}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{XBC}"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "BC ∥ DE이면 △ADE ∽ △ABC(동위각, AA)이므로 AD : AB = AE : AC = DE : BC다. 또 두 변이 같은 비로 나뉘어 AD : DB = AE : EC도 성립한다. 부분끼리의 비(AD : DB)와 전체에 대한 비(AD : AB)를 섞어 쓰지 않는 것이 핵심 — DE : BC는 AD : AB와 같다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                "{-ab*s2}",
+                "{-ab*c2}"
+              ],
+              "C": [
+                "{ac*s2}",
+                "{-ac*c2}"
+              ],
+              "D": [
+                "{-ad*s2}",
+                "{-ad*c2}"
+              ],
+              "E": [
+                "{ae*s2}",
+                "{-ae*c2}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "D",
+                "b": "A",
+                "label": "{ad}"
+              },
+              {
+                "a": "B",
+                "b": "D",
+                "label": "{db}"
+              },
+              {
+                "a": "A",
+                "b": "E",
+                "label": "{ae}"
+              },
+              {
+                "a": "E",
+                "b": "C",
+                "label": "{ec}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{bc}"
+              },
+              {
+                "a": "D",
+                "b": "E",
+                "label": "{de}"
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "D",
+                  "from": "E",
+                  "to": "B",
+                  "label": "•",
+                  "k": "arc:d"
+                },
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "label": "•",
+                  "k": "arc:b"
+                }
+              ]
+            },
+            "shade": [
+              [
+                "A",
+                "D",
+                "E"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:d",
+              "arc:b"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "shade:0",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:D-E",
+              "seg:B-C",
+              "seglbl:D-E",
+              "seglbl:B-C"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "BC ∥ DE이므로 AD : DB = AE : EC, AD : AB = AE : AC = DE : BC",
+        "AD : DB = {ad} : {db} = {u} : {w - u}, AD : AB = {ad} : {ab} = {u} : {w}",
+        "{F1}{v1} × [[frac({(w - u)*i1 + u*i2 + w*i3}, {u*i1 + w*i2 + u*i3})]] = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AD : DB = AE : EC",
+                "hint": "부분 : 부분"
+              },
+              {
+                "text": "AD : AB = DE : BC",
+                "hint": "전체에 대한 비"
+              },
+              {
+                "text": "{XS} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "AD : DB = {ad} : {db}, AE : EC = {ae} : {ec}{ika(ec)} 같은 비 {u} : {w - u}이고, DE : BC = {de} : {bc} = {u} : {w} = AD : AB다. 답은 {ans_v} cm다.",
+      "model_answer": "BC ∥ DE이므로 AD : DB = AE : EC이고 AD : AB = DE : BC이다. {F1}{v1} × [[frac({(w - u)*i1 + u*i2 + w*i3}, {u*i1 + w*i2 + u*i3})]] = {ans_v}이므로 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "비례 관계",
+          "points": 3,
+          "criterion": "BC ∥ DE에서 {LAW}{eul(LAW)} 바르게 세웠다.",
+          "partial": "부분의 비와 전체의 비를 섞어 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "비례식을 풀어 {XS} = {ans_v}{eul(ans_v)} 구했다.",
+          "partial": "식은 옳고 계산이 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-parallel-ratio-t1",
+      "pitfalls": [
+        {
+          "text": "DE : BC를 AD : AB가 아니라 AD : DB({ad} : {db})로 둠",
+          "on": "비례 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "AD : DB = AE : EC를 AD : DB = EC : AE처럼 대응 위치를 바꿈",
+          "on": "비례 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "비례식은 옳게 세우고 계산을 틀림",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "평행한 세 직선이 두 직선과 만나서 생기는 선분의 길이의 비는 같다"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "평행선",
+        "선분의비",
+        "중점연결정리"
+      ],
+      "title": "평행선 사이의 선분의 길이의 비 — l ∥ m ∥ n",
+      "skill": "세 평행선이 두 직선을 같은 비로 자름(AB : BC = DE : EF)을 쓰기",
+      "variant_axis": {
+        "구하는 것": "EF / DE",
+        "비": "12쌍 × 배율 1~3"
+      },
+      "discriminates": "평행선 사이의 선분의 비가 같음을 쓰되 대응 위치(위 : 아래)를 맞추는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "EF",
+              "DE"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "1-2",
+              "2-3",
+              "3-4",
+              "2-5",
+              "3-5",
+              "4-5",
+              "1-3",
+              "3-7",
+              "4-7",
+              "5-7",
+              "5-6",
+              "5-8"
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "wv",
+          "rows": {
+            "EF": {
+              "XS": "EF",
+              "i1": 1,
+              "XEF": "x",
+              "XDE": "",
+              "G3T": "[[seg(DE)]] = ",
+              "F1": "EF = ",
+              "LAW": "AB : BC = DE : EF"
+            },
+            "DE": {
+              "XS": "DE",
+              "i1": 0,
+              "XEF": "",
+              "XDE": "x",
+              "G3T": "[[seg(EF)]] = ",
+              "F1": "DE = ",
+              "LAW": "AB : BC = DE : EF"
+            }
+          }
+        },
+        {
+          "key": "r",
+          "rows": {
+            "1-2": {
+              "u": 1,
+              "w": 2
+            },
+            "2-3": {
+              "u": 2,
+              "w": 3
+            },
+            "3-4": {
+              "u": 3,
+              "w": 4
+            },
+            "2-5": {
+              "u": 2,
+              "w": 5
+            },
+            "3-5": {
+              "u": 3,
+              "w": 5
+            },
+            "4-5": {
+              "u": 4,
+              "w": 5
+            },
+            "1-3": {
+              "u": 1,
+              "w": 3
+            },
+            "3-7": {
+              "u": 3,
+              "w": 7
+            },
+            "4-7": {
+              "u": 4,
+              "w": 7
+            },
+            "5-7": {
+              "u": 5,
+              "w": 7
+            },
+            "5-6": {
+              "u": 5,
+              "w": 6
+            },
+            "5-8": {
+              "u": 5,
+              "w": 8
+            }
+          }
+        }
+      ],
+      "derive": {
+        "ab": "u*m",
+        "bc": "w*m",
+        "de": "u*n",
+        "ef": "w*n",
+        "ans_v": "w*n*i1 + u*n*(1 - i1)",
+        "g3": "u*n*i1 + w*n*(1 - i1)",
+        "lde": "u*n*i1",
+        "lef": "w*n*(1 - i1)",
+        "dx0": "3",
+        "v1": "u*n*i1 + w*n*(1 - i1)"
+      },
+      "constraints": [
+        "m != n",
+        "ab + bc <= 21",
+        "ans_v != ab",
+        "ans_v != bc",
+        "ans_v != g3"
+      ],
+      "cost_values": [
+        "ab",
+        "bc",
+        "g3",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "ab*ef == bc*de",
+        "(i1 == 1 and ans == ef) or (i1 == 0 and ans == de)"
+      ],
+      "question": "다음 그림에서 세 직선 l, m, n이 평행하고(l ∥ m ∥ n) [[seg(AB)]] = {ab} cm, [[seg(BC)]] = {bc} cm, {G3T}{g3} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                0,
+                "{-ab}"
+              ],
+              "C": [
+                0,
+                "{-ab - bc}"
+              ],
+              "D": [
+                "{dx0}",
+                0
+              ],
+              "E": [
+                "{dx0 + ab*0.45}",
+                "{-ab}"
+              ],
+              "F": [
+                "{dx0 + (ab + bc)*0.45}",
+                "{-ab - bc}"
+              ],
+              "L1": [
+                -1.5,
+                0
+              ],
+              "L2": [
+                "{dx0 + (ab + bc)*0.45 + 1.5}",
+                0
+              ],
+              "M1": [
+                -1.5,
+                "{-ab}"
+              ],
+              "M2": [
+                "{dx0 + (ab + bc)*0.45 + 1.5}",
+                "{-ab}"
+              ],
+              "N1": [
+                -1.5,
+                "{-ab - bc}"
+              ],
+              "N2": [
+                "{dx0 + (ab + bc)*0.45 + 1.5}",
+                "{-ab - bc}"
+              ]
+            },
+            "segs": [
+              [
+                "L1",
+                "L2"
+              ],
+              [
+                "M1",
+                "M2"
+              ],
+              [
+                "N1",
+                "N2"
+              ],
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{ab}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{bc}"
+              },
+              {
+                "a": "E",
+                "b": "D",
+                "label": "{lde}"
+              },
+              {
+                "a": "F",
+                "b": "E",
+                "label": "{lef}"
+              },
+              [
+                "A",
+                "C"
+              ],
+              [
+                "D",
+                "F"
+              ],
+              {
+                "a": "E",
+                "b": "D",
+                "label": "{XDE}"
+              },
+              {
+                "a": "F",
+                "b": "E",
+                "label": "{XEF}"
+              }
+            ],
+            "labels": [
+              {
+                "at": "L1",
+                "text": "l",
+                "dx": -10,
+                "dy": 4,
+                "k": "lbl:l"
+              },
+              {
+                "at": "M1",
+                "text": "m",
+                "dx": -10,
+                "dy": 4,
+                "k": "lbl:m"
+              },
+              {
+                "at": "N1",
+                "text": "n",
+                "dx": -10,
+                "dy": 4,
+                "k": "lbl:n"
+              }
+            ],
+            "nodot": [
+              "L1",
+              "L2",
+              "M1",
+              "M2",
+              "N1",
+              "N2"
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "평행한 세 직선이 두 직선과 만나면 잘린 선분의 길이의 비가 같다: AB : BC = DE : EF. 왼쪽 직선에서 위·아래 토막의 비 {ab} : {bc} = {u} : {w}{ika(w)} 오른쪽 직선에서도 그대로다. (점 A를 지나고 DF에 평행한 직선을 그으면 삼각형과 평행선의 성질로 돌아간다.)",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                0,
+                "{-ab}"
+              ],
+              "C": [
+                0,
+                "{-ab - bc}"
+              ],
+              "D": [
+                "{dx0}",
+                0
+              ],
+              "E": [
+                "{dx0 + ab*0.45}",
+                "{-ab}"
+              ],
+              "F": [
+                "{dx0 + (ab + bc)*0.45}",
+                "{-ab - bc}"
+              ],
+              "L1": [
+                -1.5,
+                0
+              ],
+              "L2": [
+                "{dx0 + (ab + bc)*0.45 + 1.5}",
+                0
+              ],
+              "M1": [
+                -1.5,
+                "{-ab}"
+              ],
+              "M2": [
+                "{dx0 + (ab + bc)*0.45 + 1.5}",
+                "{-ab}"
+              ],
+              "N1": [
+                -1.5,
+                "{-ab - bc}"
+              ],
+              "N2": [
+                "{dx0 + (ab + bc)*0.45 + 1.5}",
+                "{-ab - bc}"
+              ]
+            },
+            "segs": [
+              [
+                "L1",
+                "L2"
+              ],
+              [
+                "M1",
+                "M2"
+              ],
+              [
+                "N1",
+                "N2"
+              ],
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{ab}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{bc}"
+              },
+              {
+                "a": "E",
+                "b": "D",
+                "label": "{de}"
+              },
+              {
+                "a": "F",
+                "b": "E",
+                "label": "{ef}"
+              },
+              [
+                "A",
+                "C"
+              ],
+              [
+                "D",
+                "F"
+              ]
+            ],
+            "labels": [
+              {
+                "at": "L1",
+                "text": "l",
+                "dx": -10,
+                "dy": 4,
+                "k": "lbl:l"
+              },
+              {
+                "at": "M1",
+                "text": "m",
+                "dx": -10,
+                "dy": 4,
+                "k": "lbl:m"
+              },
+              {
+                "at": "N1",
+                "text": "n",
+                "dx": -10,
+                "dy": 4,
+                "k": "lbl:n"
+              }
+            ],
+            "nodot": [
+              "L1",
+              "L2",
+              "M1",
+              "M2",
+              "N1",
+              "N2"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:A-B",
+              "seg:B-C",
+              "seglbl:A-B",
+              "seglbl:B-C"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:E-D",
+              "seg:F-E",
+              "seglbl:E-D",
+              "seglbl:F-E"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "l ∥ m ∥ n이므로 AB : BC = DE : EF",
+        "{ab} : {bc} = {u} : {w}",
+        "{F1}{v1} × [[frac({w*i1 + u*(1 - i1)}, {u*i1 + w*(1 - i1)})]] = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AB : BC = DE : EF",
+                "hint": "l ∥ m ∥ n"
+              },
+              {
+                "text": "{ab} : {bc} = {u} : {w}",
+                "hint": "왼쪽 비"
+              },
+              {
+                "text": "{XS} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "DE : EF = {de} : {ef} = {u} : {w} = AB : BC로 비가 맞는다. 답은 {ans_v} cm다.",
+      "model_answer": "l ∥ m ∥ n이므로 AB : BC = DE : EF이다. {ab} : {bc} = {u} : {w}이므로 {F1}{v1} × [[frac({w*i1 + u*(1 - i1)}, {u*i1 + w*(1 - i1)})]] = {ans_v}이다. 따라서 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "비례 관계",
+          "points": 3,
+          "criterion": "l ∥ m ∥ n에서 AB : BC = DE : EF를 세웠다.",
+          "partial": "대응 위치를 바꿔 AB : BC = EF : DE로 두었으면 인정하지 않는다."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "비례식을 풀어 {XS} = {ans_v}{eul(ans_v)} 구했다.",
+          "partial": "식은 옳고 계산이 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-parallel-ratio-t2",
+      "pitfalls": [
+        {
+          "text": "AB : BC = EF : DE처럼 위·아래 대응을 바꿈",
+          "on": "비례 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "AB : BC = DE : EF 대신 AB : DE = BC : EF … 좌우 대응(같은 비이나 방향을 바꿔 계산 실수)",
+          "on": "계산",
+          "effect": "부분"
+        },
+        {
+          "text": "평행선의 조건 없이 길이를 같다고 둠(DE = AB)",
+          "on": "비례 관계",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 60,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형에서 평행선과 선분의 길이의 비 AD : AB = AE : AC = DE : BC",
+        "삼각형의 두 변의 중점을 연결한 선분의 성질"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "평행선",
+        "선분의비",
+        "중점연결정리"
+      ],
+      "title": "삼각형의 두 변의 중점을 연결한 선분 — DE = ½BC",
+      "skill": "두 변의 중점을 이은 선분은 나머지 변과 평행하고 길이는 그 절반임을 쓰기",
+      "variant_axis": {
+        "구하는 것": "DE / BC",
+        "BC": "4~40"
+      },
+      "discriminates": "중점연결정리를 2배·절반 방향에 맞게 쓰는가",
+      "qtype": "short",
+      "difficulty": 1,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "DE",
+              "BC"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              2,
+              20
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "wv",
+        "rows": {
+          "DE": {
+            "XS": "DE",
+            "isD": 1,
+            "XDE": "x",
+            "XBC": "",
+            "G1T": "[[seg(BC)]] = ",
+            "F1": "DE = [[frac(1, 2)]]BC = [[frac(1, 2)]] × ",
+            "LAW": "DE = ½BC"
+          },
+          "BC": {
+            "XS": "BC",
+            "isD": 0,
+            "XDE": "",
+            "XBC": "x",
+            "G1T": "[[seg(DE)]] = ",
+            "F1": "BC = 2DE = 2 × ",
+            "LAW": "BC = 2DE"
+          }
+        }
+      },
+      "derive": {
+        "bc": "2*h",
+        "de": "h",
+        "ans_v": "h*isD + 2*h*(1 - isD)",
+        "g1": "2*h*isD + h*(1 - isD)",
+        "lbc": "2*h*isD",
+        "lde": "h*(1 - isD)",
+        "ab": "2*h*8/9",
+        "ac": "2*h*8/9"
+      },
+      "constraints": [],
+      "cost_values": [
+        "g1",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "bc == 2*de",
+        "(isD == 1 and ans == de) or (isD == 0 and ans == bc)"
+      ],
+      "question": "다음 그림의 △ABC에서 두 점 D, E는 각각 변 AB, AC의 중점이다. {G1T}{g1} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                "{-ab*sin(pi*33/180)}",
+                "{-ab*cos(pi*33/180)}"
+              ],
+              "C": [
+                "{ac*sin(pi*37/180)}",
+                "{-ac*cos(pi*37/180)}"
+              ],
+              "D": [
+                "{-ab*sin(pi*33/180)/2}",
+                "{-ab*cos(pi*33/180)/2}"
+              ],
+              "E": [
+                "{ac*sin(pi*37/180)/2}",
+                "{-ac*cos(pi*37/180)/2}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{lbc}"
+              },
+              {
+                "a": "E",
+                "b": "D",
+                "label": "{lde}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{XBC}"
+              },
+              {
+                "a": "E",
+                "b": "D",
+                "label": "{XDE}"
+              }
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "B"
+                  ]
+                ],
+                [
+                  [
+                    "A",
+                    "E"
+                  ],
+                  [
+                    "E",
+                    "C"
+                  ]
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "D, E가 각각 AB, AC의 중점이므로 AD : AB = AE : AC = 1 : 2다. 그러면 △ADE ∽ △ABC(SAS)이고 닮음비가 1 : 2이므로 DE ∥ BC, DE = [[frac(1, 2)]]BC — 삼각형의 두 변의 중점을 연결한 선분의 성질이다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                "{-ab*sin(pi*33/180)}",
+                "{-ab*cos(pi*33/180)}"
+              ],
+              "C": [
+                "{ac*sin(pi*37/180)}",
+                "{-ac*cos(pi*37/180)}"
+              ],
+              "D": [
+                "{-ab*sin(pi*33/180)/2}",
+                "{-ab*cos(pi*33/180)/2}"
+              ],
+              "E": [
+                "{ac*sin(pi*37/180)/2}",
+                "{-ac*cos(pi*37/180)/2}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{bc}"
+              },
+              {
+                "a": "E",
+                "b": "D",
+                "label": "{de}"
+              }
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "B"
+                  ]
+                ],
+                [
+                  [
+                    "A",
+                    "E"
+                  ],
+                  [
+                    "E",
+                    "C"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "D",
+                  "from": "E",
+                  "to": "B",
+                  "label": "•",
+                  "k": "arc:d"
+                },
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "label": "•",
+                  "k": "arc:b"
+                }
+              ]
+            },
+            "shade": [
+              [
+                "A",
+                "D",
+                "E"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:A-D",
+              "eq:D-B",
+              "eq:A-E",
+              "eq:E-C"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "shade:0",
+              "arc:d",
+              "arc:b"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seglbl:E-D",
+              "seglbl:B-C"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "D, E가 AB, AC의 중점이므로 AD : AB = AE : AC = 1 : 2",
+        "△ADE ∽ △ABC (닮음비 1 : 2)이므로 DE ∥ BC, DE : BC = 1 : 2",
+        "{F1}{g1} = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AD : AB = AE : AC = 1 : 2",
+                "hint": "중점"
+              },
+              {
+                "text": "DE = [[frac(1, 2)]]BC",
+                "hint": "중점연결정리"
+              },
+              {
+                "text": "{F1}{g1} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "DE = {de} cm, BC = {bc} cm로 BC가 DE의 2배다. 답은 {ans_v} cm다.",
+      "model_answer": "D, E가 각각 AB, AC의 중점이므로 DE ∥ BC이고 DE = [[frac(1, 2)]]BC이다. {F1}{g1} = {ans_v}이므로 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "중점연결정리",
+          "points": 3,
+          "criterion": "두 변의 중점을 이은 선분이 나머지 변의 절반(DE = ½BC)임을 근거와 함께 썼다.",
+          "partial": "관계만 쓰고 근거(닮음비 1 : 2)가 없으면 1점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{F1}{g1} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "2배·절반을 거꾸로 했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-parallel-ratio-t3",
+      "pitfalls": [
+        {
+          "text": "DE = ½BC를 거꾸로 써서 2배·절반을 바꿈",
+          "on": "계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "DE = BC로 두어 절반을 빠뜨림",
+          "on": "중점연결정리",
+          "effect": "불인정"
+        },
+        {
+          "text": "중점연결정리의 근거(닮음비 1 : 2)를 쓰지 않음",
+          "on": "중점연결정리",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형에서 평행선과 선분의 길이의 비 AD : AB = AE : AC = DE : BC",
+        "삼각형의 두 변의 중점을 연결한 선분의 성질"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "평행선",
+        "선분의비",
+        "중점연결정리"
+      ],
+      "title": "세 변의 중점을 연결한 삼각형 — 둘레와 변",
+      "skill": "각 변의 중점을 이은 선분이 마주 보는 변의 절반이므로 △DEF의 둘레가 △ABC의 절반임을 쓰기",
+      "variant_axis": {
+        "구하는 것": "둘레 / EF / DF / DE",
+        "세 변": "짝수 6~20"
+      },
+      "discriminates": "중점연결선분을 마주 보는(평행한) 변과 짝짓는가(EF ↔ AB 등)",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "perim",
+              "EF",
+              "DF",
+              "DE"
+            ]
+          }
+        },
+        {
+          "name": "a2",
+          "values": {
+            "int": [
+              3,
+              10
+            ]
+          }
+        },
+        {
+          "name": "b2",
+          "values": {
+            "int": [
+              3,
+              10
+            ]
+          }
+        },
+        {
+          "name": "c2",
+          "values": {
+            "int": [
+              3,
+              10
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "wv",
+        "rows": {
+          "perim": {
+            "Q": "△DEF의 둘레의 길이",
+            "isP": 1,
+            "i1": 0,
+            "i2": 0,
+            "i3": 0,
+            "F1": "(△DEF의 둘레) = [[frac(1, 2)]] × (",
+            "F2": " + ",
+            "F3": " + ",
+            "F4": ")",
+            "LAW": "세 변의 절반의 합"
+          },
+          "EF": {
+            "Q": "[[seg(EF)]]의 길이",
+            "isP": 0,
+            "i1": 1,
+            "i2": 0,
+            "i3": 0,
+            "F1": "EF = [[frac(1, 2)]]AB = [[frac(1, 2)]] × ",
+            "F2": "",
+            "F3": "",
+            "F4": "",
+            "LAW": "EF ∥ AB, EF = ½AB"
+          },
+          "DF": {
+            "Q": "[[seg(DF)]]의 길이",
+            "isP": 0,
+            "i1": 0,
+            "i2": 1,
+            "i3": 0,
+            "F1": "DF = [[frac(1, 2)]]BC = [[frac(1, 2)]] × ",
+            "F2": "",
+            "F3": "",
+            "F4": "",
+            "LAW": "DF ∥ BC, DF = ½BC"
+          },
+          "DE": {
+            "Q": "[[seg(DE)]]의 길이",
+            "isP": 0,
+            "i1": 0,
+            "i2": 0,
+            "i3": 1,
+            "F1": "DE = [[frac(1, 2)]]CA = [[frac(1, 2)]] × ",
+            "F2": "",
+            "F3": "",
+            "F4": "",
+            "LAW": "DE ∥ CA, DE = ½CA"
+          }
+        }
+      },
+      "derive": {
+        "a": "2*a2",
+        "b": "2*b2",
+        "c": "2*c2",
+        "P": "a + b + c",
+        "ans_v": "(a2 + b2 + c2)*isP + c2*i1 + a2*i2 + b2*i3",
+        "v1": "c*(isP + i1) + a*i2 + b*i3",
+        "v2": "a*isP",
+        "v3": "b*isP",
+        "ax": "(a*a + c*c - b*b)/(2*a)",
+        "ay": "sqrt(abs(c*c - ax*ax))"
+      },
+      "constraints": [
+        "a2 != b2",
+        "b2 != c2",
+        "a2 != c2",
+        "a2 + b2 > c2",
+        "b2 + c2 > a2",
+        "a2 + c2 > b2",
+        "ans_v != a",
+        "ans_v != b",
+        "ans_v != c"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "2*ans_v == P or isP == 0",
+        "(isP == 1 and ans == P/2) or (i1 == 1 and 2*ans == c) or (i2 == 1 and 2*ans == a) or (i3 == 1 and 2*ans == b)"
+      ],
+      "question": "다음 그림의 △ABC에서 세 점 D, E, F는 각각 변 AB, BC, CA의 중점이다. [[seg(AB)]] = {c} cm, [[seg(BC)]] = {a} cm, [[seg(CA)]] = {b} cm일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{a}",
+                0
+              ],
+              "D": [
+                "{ax/2}",
+                "{ay/2}"
+              ],
+              "E": [
+                "{a/2}",
+                0
+              ],
+              "F": [
+                "{(ax + a)/2}",
+                "{ay/2}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "F",
+                "D"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "B"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "E"
+                  ],
+                  [
+                    "E",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "C",
+                    "F"
+                  ],
+                  [
+                    "F",
+                    "A"
+                  ]
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{ax/4}",
+                  "{ay/4}"
+                ],
+                "text": "{c} cm",
+                "dx": -22,
+                "dy": 4,
+                "k": "lbl:c"
+              },
+              {
+                "at": [
+                  "{a/4}",
+                  0
+                ],
+                "text": "{a} cm",
+                "dx": 0,
+                "dy": 15,
+                "k": "lbl:a"
+              },
+              {
+                "at": [
+                  "{a + (ax - a)/4}",
+                  "{ay/4}"
+                ],
+                "text": "{b} cm",
+                "dx": 24,
+                "dy": 4,
+                "k": "lbl:b"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "두 변의 중점을 이은 선분은 나머지 변과 평행하고 길이는 그 절반이다. D, E가 AB, BC의 중점이므로 DE = [[frac(1, 2)]]CA, 마찬가지로 EF = [[frac(1, 2)]]AB, FD = [[frac(1, 2)]]BC — 각 선분은 자신과 마주 보는 변의 절반이다. 그래서 △DEF의 둘레는 △ABC의 둘레의 절반이다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{a}",
+                0
+              ],
+              "D": [
+                "{ax/2}",
+                "{ay/2}"
+              ],
+              "E": [
+                "{a/2}",
+                0
+              ],
+              "F": [
+                "{(ax + a)/2}",
+                "{ay/2}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "F",
+                "D"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "B"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "E"
+                  ],
+                  [
+                    "E",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "C",
+                    "F"
+                  ],
+                  [
+                    "F",
+                    "A"
+                  ]
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{ax/4}",
+                  "{ay/4}"
+                ],
+                "text": "{c} cm",
+                "dx": -22,
+                "dy": 4,
+                "k": "lbl:c"
+              },
+              {
+                "at": [
+                  "{a/4}",
+                  0
+                ],
+                "text": "{a} cm",
+                "dx": 0,
+                "dy": 15,
+                "k": "lbl:a"
+              },
+              {
+                "at": [
+                  "{a + (ax - a)/4}",
+                  "{ay/4}"
+                ],
+                "text": "{b} cm",
+                "dx": 24,
+                "dy": 4,
+                "k": "lbl:b"
+              },
+              {
+                "at": [
+                  "{(ax/2 + a/2)/2}",
+                  "{ay/4}"
+                ],
+                "text": "{b2}",
+                "dx": -8,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:de"
+              },
+              {
+                "at": [
+                  "{(a/2 + (ax + a)/2)/2}",
+                  "{ay/4}"
+                ],
+                "text": "{c2}",
+                "dx": 8,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:ef"
+              },
+              {
+                "at": [
+                  "{(ax/2 + (ax + a)/2)/2}",
+                  "{ay/2}"
+                ],
+                "text": "{a2}",
+                "dx": 0,
+                "dy": 14,
+                "accent": true,
+                "k": "lbl:fd"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:D-E",
+              "lbl:de",
+              "seg:C-A"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:E-F",
+              "lbl:ef",
+              "seg:A-B"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:F-D",
+              "lbl:fd",
+              "seg:B-C"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "중점연결정리: DE = [[frac(1, 2)]]CA = {b2}, EF = [[frac(1, 2)]]AB = {c2}, FD = [[frac(1, 2)]]BC = {a2}",
+        "{F1}{v1}{F2}{v2}{F3}{v3}{F4} = {ans_v}",
+        "따라서 {Q}{eun(Q)} {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "DE = {b2}, EF = {c2}, FD = {a2}",
+                "hint": "마주 보는 변의 절반"
+              },
+              {
+                "text": "{Q}: {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        []
+      ],
+      "sol_check": "△DEF의 둘레 {a2} + {b2} + {c2} = {a2 + b2 + c2}(cm)는 △ABC의 둘레 {P} cm의 절반이다. 답은 {ans_v} cm다.",
+      "model_answer": "두 변의 중점을 이은 선분은 나머지 변의 절반이므로 DE = {b2} cm, EF = {c2} cm, FD = {a2} cm이다. {F1}{v1}{F2}{v2}{F3}{v3}{F4} = {ans_v}이므로 {Q}{eun(Q)} {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "중점연결정리",
+          "points": 3,
+          "criterion": "각 중점연결선분이 마주 보는 변의 절반임을 바르게 짝지어 썼다.",
+          "partial": "한 쌍을 잘못 짝지었으면 1점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{F1}{v1}{F2}{v2}{F3}{v3}{F4} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "절반을 빠뜨렸으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-parallel-ratio-t4",
+      "pitfalls": [
+        {
+          "text": "EF를 AB가 아니라 BC나 CA의 절반으로 잘못 짝지음",
+          "on": "중점연결정리",
+          "effect": "불인정"
+        },
+        {
+          "text": "△DEF의 둘레를 △ABC의 둘레 {P}{ro(P)} 그대로 두거나 ¼로 둠",
+          "on": "계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "절반을 빠뜨리고 세 변을 그대로 더함",
+          "on": "계산",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형에서 평행선과 선분의 길이의 비 AD : AB = AE : AC = DE : BC",
+        "삼각형의 두 변의 중점을 연결한 선분의 성질"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "평행선",
+        "선분의비",
+        "중점연결정리"
+      ],
+      "title": "사각형의 네 변의 중점을 연결한 사각형 — 둘레 = 두 대각선의 합",
+      "skill": "각 삼각형에서 중점연결정리를 써서 □EFGH의 각 변이 대각선의 절반임을 밝히기",
+      "variant_axis": {
+        "구하는 것": "둘레 / BD",
+        "대각선": "4~14"
+      },
+      "discriminates": "EF = HG = ½AC, EH = FG = ½BD(평행사변형)로 둘레가 두 대각선의 합임을 쓰는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "perim",
+              "bd"
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              4,
+              14
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "int": [
+              4,
+              14
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "wv",
+        "rows": {
+          "perim": {
+            "Q": "□EFGH의 둘레의 길이",
+            "isP": 1,
+            "XBD": "",
+            "G2T": "[[seg(BD)]] = ",
+            "G2U": " cm",
+            "F1": "(둘레) = AC + BD = ",
+            "F2": " + ",
+            "LAW": "둘레 = AC + BD"
+          },
+          "bd": {
+            "Q": "[[seg(BD)]]의 길이",
+            "isP": 0,
+            "XBD": "x",
+            "G2T": "□EFGH의 둘레의 길이가 ",
+            "G2U": " cm",
+            "F1": "BD = (둘레) − AC = ",
+            "F2": " − ",
+            "LAW": "둘레 = AC + BD"
+          }
+        }
+      },
+      "derive": {
+        "P": "p + q",
+        "ans_v": "(p + q)*isP + q*(1 - isP)",
+        "g2": "q*isP + (p + q)*(1 - isP)",
+        "lbd": "q*isP",
+        "v1": "p*isP + (p + q)*(1 - isP)",
+        "v2": "q*isP + p*(1 - isP)"
+      },
+      "constraints": [
+        "p != q",
+        "ans_v != p",
+        "ans_v != g2"
+      ],
+      "cost_values": [
+        "p",
+        "g2",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "P == p + q",
+        "(isP == 1 and ans == P) or (isP == 0 and ans == q)"
+      ],
+      "question": "다음 그림의 □ABCD에서 네 점 E, F, G, H는 각각 변 AB, BC, CD, DA의 중점이다. [[seg(AC)]] = {p} cm이고 {G2T}{g2}{G2U}일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                1.5,
+                5
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                7,
+                0
+              ],
+              "D": [
+                6.5,
+                4.2
+              ],
+              "E": [
+                0.75,
+                2.5
+              ],
+              "F": [
+                3.5,
+                0
+              ],
+              "G": [
+                6.75,
+                2.1
+              ],
+              "H": [
+                4,
+                4.6
+              ],
+              "K": [
+                4.875,
+                3.15
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "F",
+                "G"
+              ],
+              [
+                "G",
+                "H"
+              ],
+              [
+                "H",
+                "E"
+              ],
+              {
+                "a": "A",
+                "b": "C",
+                "dash": true
+              },
+              {
+                "a": "B",
+                "b": "K",
+                "dash": true
+              },
+              {
+                "a": "K",
+                "b": "D",
+                "dash": true,
+                "label": "{lbd}"
+              },
+              {
+                "a": "K",
+                "b": "D",
+                "label": "{XBD}"
+              }
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "E"
+                  ],
+                  [
+                    "E",
+                    "B"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "F"
+                  ],
+                  [
+                    "F",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "C",
+                    "G"
+                  ],
+                  [
+                    "G",
+                    "D"
+                  ]
+                ],
+                [
+                  [
+                    "D",
+                    "H"
+                  ],
+                  [
+                    "H",
+                    "A"
+                  ]
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  2.875,
+                  3.75
+                ],
+                "text": "{p} cm",
+                "dx": 22,
+                "dy": 2,
+                "k": "lbl:ac"
+              }
+            ],
+            "nodot": [
+              "K"
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "대각선 AC를 그으면 △ABC에서 E, F가 두 변의 중점이므로 EF ∥ AC, EF = [[frac(1, 2)]]AC이고, △ACD에서도 HG ∥ AC, HG = [[frac(1, 2)]]AC다. 대각선 BD에 대해서도 EH = FG = [[frac(1, 2)]]BD. 그래서 □EFGH는 평행사변형이고 둘레는 2 × ([[frac(1, 2)]]AC + [[frac(1, 2)]]BD) = AC + BD다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                1.5,
+                5
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                7,
+                0
+              ],
+              "D": [
+                6.5,
+                4.2
+              ],
+              "E": [
+                0.75,
+                2.5
+              ],
+              "F": [
+                3.5,
+                0
+              ],
+              "G": [
+                6.75,
+                2.1
+              ],
+              "H": [
+                4,
+                4.6
+              ],
+              "K": [
+                4.875,
+                3.15
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "F",
+                "G"
+              ],
+              [
+                "G",
+                "H"
+              ],
+              [
+                "H",
+                "E"
+              ],
+              {
+                "a": "A",
+                "b": "C",
+                "dash": true
+              },
+              {
+                "a": "B",
+                "b": "K",
+                "dash": true
+              },
+              {
+                "a": "K",
+                "b": "D",
+                "dash": true,
+                "label": "{q} cm"
+              }
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "E"
+                  ],
+                  [
+                    "E",
+                    "B"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "F"
+                  ],
+                  [
+                    "F",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "C",
+                    "G"
+                  ],
+                  [
+                    "G",
+                    "D"
+                  ]
+                ],
+                [
+                  [
+                    "D",
+                    "H"
+                  ],
+                  [
+                    "H",
+                    "A"
+                  ]
+                ],
+                [
+                  [
+                    "E",
+                    "F"
+                  ],
+                  [
+                    "H",
+                    "G"
+                  ]
+                ],
+                [
+                  [
+                    "E",
+                    "H"
+                  ],
+                  [
+                    "F",
+                    "G"
+                  ]
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  2.875,
+                  3.75
+                ],
+                "text": "{p} cm",
+                "dx": 22,
+                "dy": 2,
+                "k": "lbl:ac"
+              }
+            ],
+            "nodot": [
+              "K"
+            ],
+            "shade": [
+              [
+                "A",
+                "B",
+                "C"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "shade:0",
+              "seg:A-C"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:E-F",
+              "seg:H-G",
+              "eq:E-F",
+              "eq:H-G"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:E-H",
+              "seg:F-G",
+              "eq:E-H",
+              "eq:F-G",
+              "seg:D-B"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "△ABC, △ACD에서 중점연결정리: EF = HG = [[frac(1, 2)]]AC",
+        "△ABD, △BCD에서 중점연결정리: EH = FG = [[frac(1, 2)]]BD",
+        "□EFGH의 둘레 = 2 × ([[frac(1, 2)]]AC + [[frac(1, 2)]]BD) = AC + BD",
+        "{F1}{v1}{F2}{v2} = {ans_v}",
+        "따라서 {Q}{eun(Q)} {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "EF = HG = [[frac(1, 2)]]AC",
+                "hint": "△ABC, △ACD"
+              },
+              {
+                "text": "EH = FG = [[frac(1, 2)]]BD",
+                "hint": "△ABD, △BCD"
+              },
+              {
+                "text": "둘레 = AC + BD",
+                "hint": "{LAW}"
+              },
+              {
+                "text": "{F1}{v1}{F2}{v2} = {ans_v}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ],
+        []
+      ],
+      "sol_check": "AC = {p} cm, BD = {q} cm이면 □EFGH의 네 변은 {p/2}, {q/2}, {p/2}, {q/2}(cm)로 둘레가 {P} cm다. 답은 {ans_v} cm다.",
+      "model_answer": "중점연결정리에 의해 EF = HG = [[frac(1, 2)]]AC, EH = FG = [[frac(1, 2)]]BD이므로 □EFGH의 둘레는 AC + BD이다. {F1}{v1}{F2}{v2} = {ans_v}이므로 {Q}{eun(Q)} {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "중점연결정리",
+          "points": 3,
+          "criterion": "대각선을 그어 EF = HG = ½AC, EH = FG = ½BD임을 밝혔다.",
+          "partial": "한 대각선에 대해서만 밝혔으면 1점."
+        },
+        {
+          "element": "둘레 식",
+          "points": 2,
+          "criterion": "둘레 = AC + BD를 세워 {F1}{v1}{F2}{v2} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "절반을 빠뜨려 2(AC + BD)로 두었으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-parallel-ratio-t5",
+      "pitfalls": [
+        {
+          "text": "둘레를 AC + BD의 2배 {2*p + 2*q}{ro(2*p + 2*q)} 둠(절반을 빠뜨림)",
+          "on": "둘레 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "EF = ½AC만 쓰고 EH = ½BD를 밝히지 않음",
+          "on": "중점연결정리",
+          "effect": "부분"
+        },
+        {
+          "text": "EF = AC로 두어 중점연결정리의 절반을 빠뜨림",
+          "on": "중점연결정리",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

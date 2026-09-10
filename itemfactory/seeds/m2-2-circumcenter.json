@@ -1,0 +1,2919 @@
+{
+  "seed_id": "m2-2-circumcenter",
+  "category": "도형",
+  "title": "삼각형의 외심 — ∠BOC = 2∠A, 세 각의 합 90°, 직각삼각형의 외접원, △OAB 둘레, 비로 나뉜 각",
+  "unit_id": "m2-2",
+  "concept_ids": [
+    "m2-2-02"
+  ],
+  "schema_id": "dffe0bf8-3f6e-4906-a6bd-83bb15cfc294",
+  "schema_name": "삼각형 외심에서 중심각과 원주각 관계 / 직각삼각형의 외접원 / 외심 각 조합",
+  "source_item_ids": [],
+  "note": "출판사 평가자료 유형(TYPES.md 5.3)을 참고해 새로 씀. 외접원 반지름 3(그림 단위)으로 두고 꼭짓점을 원 위의 각으로 배치(t1·t2: 내각에서 호의 중심각을 계산해 예각삼각형 보장). t3·t4 직각삼각형은 AC 길이에서 A의 좌표를 정확히 계산. π 답은 [[k*pi]] 마커(t4·t5).",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 70,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "외심: 세 변의 수직이등분선의 교점",
+        "외심에서 세 꼭짓점까지의 거리는 같다 (OA = OB = OC)",
+        "이등변삼각형의 두 밑각은 같다"
+      ],
+      "ops": [
+        "각도"
+      ],
+      "tags": [
+        "외심",
+        "외접원"
+      ],
+      "title": "외심 — ∠BOC = 2∠A",
+      "skill": "외심 O에 대해 ∠BOC = 2∠A임을 쓰기 (OA = OB = OC인 두 이등변삼각형의 외각; 세 꼭짓점에 돌려 적용)",
+      "variant_axis": {
+        "주어진 것": "꼭짓점각 / 중심각",
+        "꼭짓점": "A·B·C",
+        "각": "20°~80°"
+      },
+      "discriminates": "OA = OB = OC에서 두 이등변삼각형을 읽고 중심각 = 2 × 꼭짓점각으로 옮기는가(2배·절반 방향)",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "A>BOC",
+              "BOC>A",
+              "B>AOC",
+              "AOC>B",
+              "C>AOB",
+              "AOB>C"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              20,
+              80
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "A>BOC": {
+            "P": "A",
+            "Q1": "B",
+            "Q2": "C",
+            "OQ": "BOC",
+            "s": 0,
+            "LDX": 0,
+            "LDY": 24,
+            "aP": 1,
+            "aQ1": 0,
+            "aQ2": 0,
+            "bP": 0,
+            "bQ1": 1,
+            "bQ2": 0,
+            "cP": 0,
+            "cQ1": 0,
+            "cQ2": 1,
+            "GQ": "A",
+            "XQ": "BOC",
+            "isB": 1,
+            "GA": "A",
+            "GF": "B",
+            "GT": "C",
+            "XA": "O",
+            "XF": "B",
+            "XT": "C",
+            "F1": "∠BOC = 2∠A = 2 × ",
+            "F2": "°",
+            "LAW": "중심각은 2배"
+          },
+          "BOC>A": {
+            "P": "A",
+            "Q1": "B",
+            "Q2": "C",
+            "OQ": "BOC",
+            "s": 15,
+            "LDX": 0,
+            "LDY": 34,
+            "aP": 1,
+            "aQ1": 0,
+            "aQ2": 0,
+            "bP": 0,
+            "bQ1": 1,
+            "bQ2": 0,
+            "cP": 0,
+            "cQ1": 0,
+            "cQ2": 1,
+            "GQ": "BOC",
+            "XQ": "A",
+            "isB": 0,
+            "GA": "O",
+            "GF": "B",
+            "GT": "C",
+            "XA": "A",
+            "XF": "B",
+            "XT": "C",
+            "F1": "∠A = [[frac(1, 2)]]∠BOC = [[frac(1, 2)]] × ",
+            "F2": "°",
+            "LAW": "∠A는 절반"
+          },
+          "B>AOC": {
+            "P": "B",
+            "Q1": "A",
+            "Q2": "C",
+            "OQ": "AOC",
+            "s": -15,
+            "LDX": 0,
+            "LDY": 24,
+            "aP": 0,
+            "aQ1": 1,
+            "aQ2": 0,
+            "bP": 1,
+            "bQ1": 0,
+            "bQ2": 0,
+            "cP": 0,
+            "cQ1": 0,
+            "cQ2": 1,
+            "GQ": "B",
+            "XQ": "AOC",
+            "isB": 1,
+            "GA": "B",
+            "GF": "A",
+            "GT": "C",
+            "XA": "O",
+            "XF": "A",
+            "XT": "C",
+            "F1": "∠AOC = 2∠B = 2 × ",
+            "F2": "°",
+            "LAW": "중심각은 2배"
+          },
+          "AOC>B": {
+            "P": "B",
+            "Q1": "A",
+            "Q2": "C",
+            "OQ": "AOC",
+            "s": 0,
+            "LDX": 0,
+            "LDY": 34,
+            "aP": 0,
+            "aQ1": 1,
+            "aQ2": 0,
+            "bP": 1,
+            "bQ1": 0,
+            "bQ2": 0,
+            "cP": 0,
+            "cQ1": 0,
+            "cQ2": 1,
+            "GQ": "AOC",
+            "XQ": "B",
+            "isB": 0,
+            "GA": "O",
+            "GF": "A",
+            "GT": "C",
+            "XA": "B",
+            "XF": "A",
+            "XT": "C",
+            "F1": "∠B = [[frac(1, 2)]]∠AOC = [[frac(1, 2)]] × ",
+            "F2": "°",
+            "LAW": "∠B는 절반"
+          },
+          "C>AOB": {
+            "P": "C",
+            "Q1": "A",
+            "Q2": "B",
+            "OQ": "AOB",
+            "s": 15,
+            "LDX": 0,
+            "LDY": 24,
+            "aP": 0,
+            "aQ1": 1,
+            "aQ2": 0,
+            "bP": 0,
+            "bQ1": 0,
+            "bQ2": 1,
+            "cP": 1,
+            "cQ1": 0,
+            "cQ2": 0,
+            "GQ": "C",
+            "XQ": "AOB",
+            "isB": 1,
+            "GA": "C",
+            "GF": "A",
+            "GT": "B",
+            "XA": "O",
+            "XF": "A",
+            "XT": "B",
+            "F1": "∠AOB = 2∠C = 2 × ",
+            "F2": "°",
+            "LAW": "중심각은 2배"
+          },
+          "AOB>C": {
+            "P": "C",
+            "Q1": "A",
+            "Q2": "B",
+            "OQ": "AOB",
+            "s": -15,
+            "LDX": 0,
+            "LDY": 34,
+            "aP": 0,
+            "aQ1": 1,
+            "aQ2": 0,
+            "bP": 0,
+            "bQ1": 0,
+            "bQ2": 1,
+            "cP": 1,
+            "cQ1": 0,
+            "cQ2": 0,
+            "GQ": "AOB",
+            "XQ": "C",
+            "isB": 0,
+            "GA": "O",
+            "GF": "A",
+            "GT": "B",
+            "XA": "C",
+            "XF": "A",
+            "XT": "B",
+            "F1": "∠C = [[frac(1, 2)]]∠AOB = [[frac(1, 2)]] × ",
+            "F2": "°",
+            "LAW": "∠C는 절반"
+          }
+        }
+      },
+      "derive": {
+        "a2": "2*a",
+        "gv": "a*isB + 2*a*(1 - isB)",
+        "ans_v": "2*a*isB + a*(1 - isB)",
+        "hb": "90 - a",
+        "bx": "3*cos(pi*(270 - a - s)/180)",
+        "by": "3*sin(pi*(270 - a - s)/180)",
+        "cx": "3*cos(pi*(270 + a - s)/180)",
+        "cy": "3*sin(pi*(270 + a - s)/180)"
+      },
+      "constraints": [
+        "ans_v != gv"
+      ],
+      "cost_values": [
+        "a",
+        "a2",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "a2 == 2*a",
+        "(isB == 1 and ans == a2) or (isB == 0 and ans == a)"
+      ],
+      "question": "다음 그림에서 점 O는 △ABC의 외심이다. [[angle({GQ})]] = [[deg({gv})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{bx*aQ1 + cx*aQ2}",
+                "{3*aP + by*aQ1 + cy*aQ2}"
+              ],
+              "B": [
+                "{bx*bQ1 + cx*bQ2}",
+                "{3*bP + by*bQ1 + cy*bQ2}"
+              ],
+              "C": [
+                "{bx*cQ1 + cx*cQ2}",
+                "{3*cP + by*cQ1 + cy*cQ2}"
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "O",
+                "{Q1}"
+              ],
+              [
+                "O",
+                "{Q2}"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "점 O는 외심이므로 OA = OB = OC다. 그러면 △O{P}{Q1}, △O{P}{Q2}{eun(Q2)} 이등변삼각형이라 ∠O{P}{Q1} = ∠O{Q1}{P}, ∠O{P}{Q2} = ∠O{Q2}{P}이고, 각각의 외각을 모으면 ∠{OQ} = 2∠O{P}{Q1} + 2∠O{P}{Q2} = 2∠{P}{ika(P)} 된다. 즉 외심을 중심으로 한 각 ∠{OQ}{eun(OQ)} ∠{P}의 2배다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{bx*aQ1 + cx*aQ2}",
+                "{3*aP + by*aQ1 + cy*aQ2}"
+              ],
+              "B": [
+                "{bx*bQ1 + cx*bQ2}",
+                "{3*bP + by*bQ1 + cy*bQ2}"
+              ],
+              "C": [
+                "{bx*cQ1 + cx*cQ2}",
+                "{3*cP + by*cQ1 + cy*cQ2}"
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "O",
+                "{Q1}"
+              ],
+              [
+                "O",
+                "{Q2}"
+              ],
+              {
+                "a": "O",
+                "b": "{P}",
+                "dash": true
+              }
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "O",
+                    "A"
+                  ],
+                  [
+                    "O",
+                    "B"
+                  ],
+                  [
+                    "O",
+                    "C"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": 3
+              }
+            ],
+            "labels": [
+              {
+                "at": "{XA}",
+                "text": "{ans_v}°",
+                "dx": "{LDX}",
+                "dy": "{LDY}",
+                "accent": true,
+                "k": "lbl:ans"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:O-A",
+              "eq:O-B",
+              "eq:O-C",
+              "seg:O-{P}"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:given",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "lbl:ans",
+              "arc:ask"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "점 O가 외심이므로 OA = OB = OC → △O{P}{Q1}, △O{P}{Q2}{eun(Q2)} 이등변삼각형",
+        "∠O{P}{Q1} = ∠O{Q1}{P}, ∠O{P}{Q2} = ∠O{Q2}{P}이므로 외각의 성질에서 ∠{OQ} = 2(∠O{P}{Q1} + ∠O{P}{Q2}) = 2∠{P}",
+        "{F1}{gv}{F2} = {ans_v}°",
+        "따라서 ∠{XQ} = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "OA = OB = OC",
+                "hint": "외심"
+              },
+              {
+                "text": "∠{OQ} = 2∠{P}",
+                "hint": "두 이등변삼각형의 외각"
+              },
+              {
+                "text": "{F1}{gv}{F2} = {ans_v}°",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "△O{Q1}{Q2}{eun(Q2)} O{Q1} = O{Q2}인 이등변삼각형이므로 ∠O{Q1}{Q2} = ∠O{Q2}{Q1} = (180° − {a2}°) ÷ 2 = {hb}°가 되어 ∠{OQ} = {a2}°와 어긋나지 않는다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "점 O는 △ABC의 외심이므로 OA = OB = OC이고, △O{P}{Q1}{wa(Q1)} △O{P}{Q2}{eun(Q2)} 이등변삼각형이다. 외각의 성질에서 ∠{OQ} = 2∠{P}이므로 {F1}{gv}{F2} = {ans_v}°이다. 따라서 ∠{XQ} = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "외심의 성질",
+          "points": 3,
+          "criterion": "OA = OB = OC임을 밝히고 ∠{OQ} = 2∠{P}의 근거(이등변삼각형·외각)를 썼다.",
+          "partial": "∠{OQ} = 2∠{P}만 쓰고 근거가 없으면 1점."
+        },
+        {
+          "element": "각의 계산",
+          "points": 2,
+          "criterion": "{F1}{gv}{F2} = {ans_v}°를 계산했다.",
+          "partial": "2배·절반을 거꾸로 했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans_v}°를 구했다.",
+          "partial": ""
+        }
+      ],
+      "id": "m2-2-circumcenter-t1",
+      "pitfalls": [
+        {
+          "text": "∠{OQ} = 2∠{P}를 거꾸로 써서 2배 대신 절반(또는 절반 대신 2배)을 취함",
+          "on": "각의 계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "외심을 내심으로 혼동해 ∠{OQ} = 90° + [[frac(1, 2)]]∠{P}로 계산함",
+          "on": "외심의 성질",
+          "effect": "불인정"
+        },
+        {
+          "text": "OA = OB = OC를 밝히지 않고 공식만 씀",
+          "on": "외심의 성질",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "외심: 세 변의 수직이등분선의 교점",
+        "외심에서 세 꼭짓점까지의 거리는 같다 (OA = OB = OC)",
+        "이등변삼각형의 두 밑각은 같다"
+      ],
+      "ops": [
+        "각도"
+      ],
+      "tags": [
+        "외심",
+        "외접원"
+      ],
+      "title": "외심 — ∠OAB + ∠OBC + ∠OCA = 90°",
+      "skill": "OA = OB = OC인 세 이등변삼각형의 밑각을 모아 세 각의 합이 90°임을 쓰기",
+      "variant_axis": {
+        "구하는 것": "∠OAB / ∠OBC / ∠OCA",
+        "각": "10°~60°"
+      },
+      "discriminates": "세 이등변삼각형의 밑각이 두 번씩 나타나 2(x + y + z) = 180°임을 세우는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "OAB",
+              "OBC",
+              "OCA"
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              10,
+              60
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "int": [
+              10,
+              60
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "OAB": {
+            "XQ": "OAB",
+            "G1": "OBC",
+            "G2": "OCA",
+            "uA": 1,
+            "uB": 0,
+            "uC": 0,
+            "XA": "A",
+            "XF": "O",
+            "XT": "B",
+            "G1A": "B",
+            "G1F": "O",
+            "G1T": "C",
+            "G2A": "C",
+            "G2F": "O",
+            "G2T": "A"
+          },
+          "OBC": {
+            "XQ": "OBC",
+            "G1": "OAB",
+            "G2": "OCA",
+            "uA": 0,
+            "uB": 1,
+            "uC": 0,
+            "XA": "B",
+            "XF": "O",
+            "XT": "C",
+            "G1A": "A",
+            "G1F": "O",
+            "G1T": "B",
+            "G2A": "C",
+            "G2F": "O",
+            "G2T": "A"
+          },
+          "OCA": {
+            "XQ": "OCA",
+            "G1": "OAB",
+            "G2": "OBC",
+            "uA": 0,
+            "uB": 0,
+            "uC": 1,
+            "XA": "C",
+            "XF": "O",
+            "XT": "A",
+            "G1A": "A",
+            "G1F": "O",
+            "G1T": "B",
+            "G2A": "B",
+            "G2F": "O",
+            "G2T": "C"
+          }
+        }
+      },
+      "derive": {
+        "z": "90 - p - q",
+        "g1": "p*(1 - uA) + q*uA",
+        "g2": "z*(1 - uC) + q*uC",
+        "ans_v": "p*uA + q*uB + z*uC",
+        "bx": "3*cos(pi*(270 - 2*p)/180)",
+        "by": "3*sin(pi*(270 - 2*p)/180)",
+        "cx": "3*cos(pi*(90 - 2*p - 2*q)/180)",
+        "cy": "3*sin(pi*(90 - 2*p - 2*q)/180)"
+      },
+      "constraints": [
+        "z >= 10",
+        "ans_v != g1",
+        "ans_v != g2",
+        "g1 != g2"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "z",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "p + q + z == 90",
+        "g1 + g2 + ans == 90"
+      ],
+      "question": "다음 그림에서 점 O는 △ABC의 외심이다. [[angle({G1})]] = [[deg({g1})]], [[angle({G2})]] = [[deg({g2})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                3
+              ],
+              "B": [
+                "{bx}",
+                "{by}"
+              ],
+              "C": [
+                "{cx}",
+                "{cy}"
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "O",
+                "A"
+              ],
+              [
+                "O",
+                "B"
+              ],
+              [
+                "O",
+                "C"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{G1A}",
+                  "from": "{G1F}",
+                  "to": "{G1T}",
+                  "label": "{g1}°",
+                  "k": "arc:g1"
+                },
+                {
+                  "at": "{G2A}",
+                  "from": "{G2F}",
+                  "to": "{G2T}",
+                  "label": "{g2}°",
+                  "k": "arc:g2"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "점 O는 외심이므로 OA = OB = OC이고, △OAB, △OBC, △OCA는 모두 이등변삼각형이다. 그래서 ∠OAB = ∠OBA, ∠OBC = ∠OCB, ∠OCA = ∠OAC — 세 각 ∠OAB, ∠OBC, ∠OCA가 △ABC의 세 내각 안에 두 번씩 들어 있으므로 그 합은 180° ÷ 2 = 90°다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                3
+              ],
+              "B": [
+                "{bx}",
+                "{by}"
+              ],
+              "C": [
+                "{cx}",
+                "{cy}"
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "O",
+                "A"
+              ],
+              [
+                "O",
+                "B"
+              ],
+              [
+                "O",
+                "C"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "O",
+                    "A"
+                  ],
+                  [
+                    "O",
+                    "B"
+                  ],
+                  [
+                    "O",
+                    "C"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "{G1A}",
+                  "from": "{G1F}",
+                  "to": "{G1T}",
+                  "label": "{g1}°",
+                  "k": "arc:g1"
+                },
+                {
+                  "at": "{G2A}",
+                  "from": "{G2F}",
+                  "to": "{G2T}",
+                  "label": "{g2}°",
+                  "k": "arc:g2"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                },
+                {
+                  "at": "B",
+                  "from": "A",
+                  "to": "O",
+                  "label": "{p}°",
+                  "k": "arc:ba"
+                },
+                {
+                  "at": "C",
+                  "from": "B",
+                  "to": "O",
+                  "label": "{q}°",
+                  "k": "arc:cb"
+                },
+                {
+                  "at": "A",
+                  "from": "C",
+                  "to": "O",
+                  "label": "{z}°",
+                  "k": "arc:ac"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:O-A",
+              "eq:O-B",
+              "eq:O-C"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:g1",
+              "arc:ba",
+              "arc:g2",
+              "arc:cb",
+              "arc:ac"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:ask"
+          }
+        ]
+      ],
+      "sol2": [
+        "OA = OB = OC이므로 ∠OAB = ∠OBA, ∠OBC = ∠OCB, ∠OCA = ∠OAC",
+        "△ABC의 내각의 합: 2(∠OAB + ∠OBC + ∠OCA) = 180° → ∠OAB + ∠OBC + ∠OCA = 90°",
+        "∠{XQ} = 90° − {g1}° − {g2}° = {ans_v}°",
+        "따라서 ∠{XQ} = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠OAB = ∠OBA, ∠OBC = ∠OCB, ∠OCA = ∠OAC",
+                "hint": "OA = OB = OC"
+              },
+              {
+                "text": "∠OAB + ∠OBC + ∠OCA = 90°",
+                "hint": "내각의 합 180°의 절반"
+              },
+              {
+                "text": "∠{XQ} = 90° − {g1}° − {g2}° = {ans_v}°"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "세 각 {g1}° + {g2}° + {ans_v}° = 90°이고, △ABC의 세 내각은 각각 두 각의 합(∠A = ∠OAB + ∠OCA 등)이 되어 모두 더하면 180°다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "점 O가 외심이므로 OA = OB = OC이고 ∠OAB = ∠OBA, ∠OBC = ∠OCB, ∠OCA = ∠OAC이다. △ABC의 내각의 합에서 2(∠OAB + ∠OBC + ∠OCA) = 180°이므로 ∠OAB + ∠OBC + ∠OCA = 90°이다. 따라서 ∠{XQ} = 90° − {g1}° − {g2}° = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "세 이등변삼각형",
+          "points": 3,
+          "criterion": "OA = OB = OC에서 세 쌍의 밑각이 같음을 밝혔다.",
+          "partial": "한 쌍만 밝혔으면 1점."
+        },
+        {
+          "element": "합이 90°",
+          "points": 2,
+          "criterion": "2(∠OAB + ∠OBC + ∠OCA) = 180°에서 세 각의 합이 90°임을 세웠다.",
+          "partial": "합이 90°임을 근거 없이 썼으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans_v}°를 구했다.",
+          "partial": ""
+        }
+      ],
+      "id": "m2-2-circumcenter-t2",
+      "pitfalls": [
+        {
+          "text": "세 각의 합을 90°가 아니라 180°로 두어 {90 + ans_v}°로 답함",
+          "on": "합이 90°",
+          "effect": "불인정"
+        },
+        {
+          "text": "OA = OB = OC를 쓰지 않고 각의 상등을 근거 없이 둠",
+          "on": "세 이등변삼각형",
+          "effect": "부분"
+        },
+        {
+          "text": "∠OAB = ∠OAC처럼 다른 꼭짓점의 각끼리 같다고 잘못 짝지음",
+          "on": "세 이등변삼각형",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 70,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "직각삼각형의 외심은 빗변의 중점",
+        "외심에서 세 꼭짓점까지의 거리는 같다"
+      ],
+      "ops": [
+        "사칙"
+      ],
+      "tags": [
+        "외심",
+        "외접원"
+      ],
+      "title": "직각삼각형의 외심 — 빗변의 중점, 반지름 = 빗변 ÷ 2",
+      "skill": "직각삼각형의 외심은 빗변의 중점이므로 외접원의 반지름은 빗변의 절반임을 쓰기",
+      "variant_axis": {
+        "구하는 것": "외접원의 반지름 / △AOC의 둘레",
+        "BC": "6~24",
+        "AC": "3~20"
+      },
+      "discriminates": "외심이 빗변의 중점임을 알고 OA = OB = OC = BC ÷ 2로 옮기는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "r",
+              "aoc"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              3,
+              12
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              3,
+              20
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "r": {
+            "Q": "△ABC의 외접원의 반지름의 길이",
+            "isR": 1,
+            "U": " cm",
+            "F1": "R = ",
+            "F2": " ÷ ",
+            "LAW": "빗변의 절반"
+          },
+          "aoc": {
+            "Q": "△AOC의 둘레의 길이",
+            "isR": 0,
+            "U": " cm",
+            "F1": "OA + OC + AC = 2 × ",
+            "F2": " + ",
+            "LAW": "OA = OC = R"
+          }
+        }
+      },
+      "derive": {
+        "d": "2*r",
+        "per": "2*r + m",
+        "ans_v": "r*isR + (2*r + m)*(1 - isR)",
+        "v1": "2*r*isR + r*(1 - isR)",
+        "v2": "2*isR + m*(1 - isR)",
+        "ax": "r - m*m/(2*r)",
+        "ay": "sqrt(abs(r*r - (r - m*m/(2*r))*(r - m*m/(2*r))))"
+      },
+      "constraints": [
+        "10*m >= 7*r",
+        "10*m <= 18*r",
+        "m != r",
+        "m != 2*r"
+      ],
+      "cost_values": [
+        "d",
+        "m",
+        "r",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "d == 2*r",
+        "(isR == 1 and ans == r) or (isR == 0 and ans == 2*r + m)"
+      ],
+      "question": "다음 그림과 같이 [[angle(A)]] = [[deg(90)]]인 직각삼각형 ABC에서 점 O는 △ABC의 외심이다. [[seg(BC)]] = {2*r} cm, [[seg(AC)]] = {m} cm일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                "{-r}",
+                0
+              ],
+              "C": [
+                "{r}",
+                0
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              {
+                "a": "C",
+                "b": "A",
+                "label": "{m} cm"
+              },
+              [
+                "O",
+                "A"
+              ]
+            ],
+            "marks": {
+              "right": [
+                [
+                  "B",
+                  "A",
+                  "C"
+                ]
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": "{r}"
+              }
+            ],
+            "labels": [
+              {
+                "at": [
+                  "{-r/2}",
+                  0
+                ],
+                "text": "{2*r} cm",
+                "dx": 0,
+                "dy": 15,
+                "k": "lbl:bc"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v}{U}"
+      ],
+      "sol1": "직각삼각형의 외심은 빗변의 중점이다. 빗변 BC가 외접원의 지름이므로 반지름은 BC ÷ 2 = {r} cm이고, 외심에서 세 꼭짓점까지의 거리가 모두 같아 OA = OB = OC = {r} cm다. AC = {m} cm는 반지름과 무관하다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                "{-r}",
+                0
+              ],
+              "C": [
+                "{r}",
+                0
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              {
+                "a": "C",
+                "b": "A",
+                "label": "{m} cm"
+              },
+              [
+                "O",
+                "A"
+              ]
+            ],
+            "marks": {
+              "right": [
+                [
+                  "B",
+                  "A",
+                  "C"
+                ]
+              ],
+              "eq": [
+                [
+                  [
+                    "O",
+                    "A"
+                  ],
+                  [
+                    "O",
+                    "B"
+                  ],
+                  [
+                    "O",
+                    "C"
+                  ]
+                ]
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": "{r}"
+              }
+            ],
+            "labels": [
+              {
+                "at": [
+                  "{-r/2}",
+                  0
+                ],
+                "text": "{2*r} cm",
+                "dx": 0,
+                "dy": 15,
+                "k": "lbl:bc"
+              },
+              {
+                "at": "O",
+                "text": "R = {r}",
+                "dx": 22,
+                "dy": -10,
+                "accent": true,
+                "k": "lbl:r"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "right:A",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "circle:0",
+              "lbl:bc"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:O-A",
+              "eq:O-B",
+              "eq:O-C",
+              "lbl:r"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "∠A = 90°이므로 △ABC의 외심 O는 빗변 BC의 중점이고, 외접원의 지름은 BC = {2*r} cm",
+        "외접원의 반지름 R = [[frac(1, 2)]] × {2*r} = {r}(cm), 따라서 OA = OB = OC = {r} cm",
+        "{Q}: {F1}{v1}{F2}{v2} = {ans_v}(cm)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "O = BC의 중점, 지름 = {2*r}",
+                "hint": "직각삼각형의 외심"
+              },
+              {
+                "text": "R = {2*r} ÷ 2 = {r}",
+                "hint": "반지름 = 빗변 ÷ 2"
+              },
+              {
+                "text": "{Q}: {ans_v}{U}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ]
+      ],
+      "sol_check": "OA = OB = OC = {r} cm로 세 꼭짓점이 모두 중심 O에서 같은 거리에 있고, 지름 {2*r} cm는 빗변 BC의 길이와 같다. 답은 {ans_v}{U}다.",
+      "model_answer": "∠A = 90°인 직각삼각형의 외심은 빗변 BC의 중점이므로 외접원의 반지름은 BC ÷ 2 = {r} cm이고 OA = OB = OC = {r} cm이다. 따라서 {Q}{eun(Q)} {ans_v}{U}다.",
+      "rubric": [
+        {
+          "element": "빗변의 중점",
+          "points": 3,
+          "criterion": "직각삼각형의 외심이 빗변의 중점이므로 반지름이 BC ÷ 2 = {r} cm임을 밝혔다.",
+          "partial": "반지름 {r} cm만 쓰고 근거가 없으면 1점."
+        },
+        {
+          "element": "길이 계산",
+          "points": 2,
+          "criterion": "OA = OB = OC = {r} cm를 써서 {Q}{eul(Q)} 계산했다.",
+          "partial": "AC를 반지름으로 잘못 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans_v}{U}{eul(U)} 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-circumcenter-t3",
+      "pitfalls": [
+        {
+          "text": "빗변 BC = {2*r} cm를 그대로 반지름으로 씀",
+          "on": "빗변의 중점",
+          "effect": "불인정"
+        },
+        {
+          "text": "AC = {m} cm를 반지름이나 OA로 잘못 씀",
+          "on": "길이 계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "△AOC의 둘레에서 OA, OC 중 하나를 빠뜨림",
+          "on": "길이 계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 70,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "직각삼각형의 외심은 빗변의 중점",
+        "원의 넓이 πr²"
+      ],
+      "ops": [
+        "넓이",
+        "사칙"
+      ],
+      "tags": [
+        "외심",
+        "외접원"
+      ],
+      "title": "직각삼각형의 외접원의 넓이",
+      "skill": "빗변이 지름임을 써서 외접원의 넓이 πR² 구하기 (둘레 2πR은 지름과 계수가 같아 R-05에 걸리므로 넓이만)",
+      "variant_axis": {
+        "구하는 것": "넓이",
+        "빗변": "6~28",
+        "직각 꼭짓점": "A·B·C"
+      },
+      "discriminates": "지름과 반지름을 구별해 R = (빗변) ÷ 2를 쓰는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "A",
+              "B",
+              "C"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              3,
+              14
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "A": {
+            "RA": "A",
+            "H1": "B",
+            "H2": "C",
+            "HY": "BC",
+            "vA": 1,
+            "vB": 0,
+            "vC": 0,
+            "s": 4,
+            "isS": 1,
+            "Q": "△ABC의 외접원의 넓이",
+            "U": " cm²",
+            "UA": "cm²",
+            "F1": "π × ",
+            "F2": "²",
+            "LAW": "πR²"
+          },
+          "B": {
+            "RA": "B",
+            "H1": "C",
+            "H2": "A",
+            "HY": "CA",
+            "vA": 0,
+            "vB": 1,
+            "vC": 0,
+            "s": 6,
+            "isS": 1,
+            "Q": "△ABC의 외접원의 넓이",
+            "U": " cm²",
+            "UA": "cm²",
+            "F1": "π × ",
+            "F2": "²",
+            "LAW": "πR²"
+          },
+          "C": {
+            "RA": "C",
+            "H1": "A",
+            "H2": "B",
+            "HY": "AB",
+            "vA": 0,
+            "vB": 0,
+            "vC": 1,
+            "s": 8,
+            "isS": 1,
+            "Q": "△ABC의 외접원의 넓이",
+            "U": " cm²",
+            "UA": "cm²",
+            "F1": "π × ",
+            "F2": "²",
+            "LAW": "πR²"
+          }
+        }
+      },
+      "derive": {
+        "d": "2*r",
+        "ans_v": "r*r*isS + 2*r*(1 - isS)",
+        "ax": "r*(1 - s*s/50)",
+        "ay": "sqrt(r*r - ax*ax)"
+      },
+      "constraints": [],
+      "cost_values": [
+        "d",
+        "r",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "(isS == 1 and ans == r*r) or (isS == 0 and ans == 2*r)"
+      ],
+      "question": "다음 그림과 같이 [[angle({RA})]] = [[deg(90)]]인 직각삼각형 ABC에서 [[seg({HY})]] = {2*r} cm일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax*vA + r*vB - r*vC}",
+                "{ay*vA}"
+              ],
+              "B": [
+                "{-r*vA + ax*vB + r*vC}",
+                "{ay*vB}"
+              ],
+              "C": [
+                "{r*vA - r*vB + ax*vC}",
+                "{ay*vC}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ]
+            ],
+            "marks": {
+              "right": [
+                [
+                  "{H1}",
+                  "{RA}",
+                  "{H2}"
+                ]
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": "{r}"
+              }
+            ],
+            "labels": [
+              {
+                "at": [
+                  "{-r/2}",
+                  0
+                ],
+                "text": "{2*r} cm",
+                "dx": 0,
+                "dy": 15,
+                "k": "lbl:bc"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[{ans_v}*pi]]",
+      "answer_alt": [
+        "[[{ans_v}*pi]]{U}",
+        "{ans_v}π{U}"
+      ],
+      "sol1": "직각삼각형의 외심은 빗변의 중점이므로 빗변 {HY}{eun(HY)} 외접원의 지름이다. 지름이 {2*r} cm이니 반지름은 {r} cm — 원의 넓이는 π × (반지름)²으로 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax*vA + r*vB - r*vC}",
+                "{ay*vA}"
+              ],
+              "B": [
+                "{-r*vA + ax*vB + r*vC}",
+                "{ay*vB}"
+              ],
+              "C": [
+                "{r*vA - r*vB + ax*vC}",
+                "{ay*vC}"
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "O",
+                "{RA}"
+              ]
+            ],
+            "marks": {
+              "right": [
+                [
+                  "{H1}",
+                  "{RA}",
+                  "{H2}"
+                ]
+              ],
+              "eq": [
+                [
+                  [
+                    "O",
+                    "A"
+                  ],
+                  [
+                    "O",
+                    "B"
+                  ],
+                  [
+                    "O",
+                    "C"
+                  ]
+                ]
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": "{r}"
+              }
+            ],
+            "labels": [
+              {
+                "at": [
+                  "{-r/2}",
+                  0
+                ],
+                "text": "{2*r} cm",
+                "dx": 0,
+                "dy": 15,
+                "k": "lbl:bc"
+              },
+              {
+                "at": "O",
+                "text": "R = {r}",
+                "dx": 22,
+                "dy": -10,
+                "accent": true,
+                "k": "lbl:r"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "right:{RA}",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "lbl:bc",
+              "circle:0"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:O-A",
+              "eq:O-B",
+              "eq:O-C",
+              "lbl:r"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "∠{RA} = 90°이므로 외심은 빗변 {HY}의 중점이고, {HY} = {2*r} cm가 외접원의 지름",
+        "외접원의 반지름 R = {2*r} ÷ 2 = {r}(cm)",
+        "{Q}: {F1}{r}{F2} = {ans_v}π({UA})"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "지름 = {HY} = {2*r}",
+                "hint": "직각삼각형의 외심 = 빗변의 중점"
+              },
+              {
+                "text": "R = {r}",
+                "hint": "지름 ÷ 2"
+              },
+              {
+                "text": "{F1}{r}{F2} = {ans_v}π",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ]
+      ],
+      "sol_check": "반지름 {r} cm인 원의 넓이는 {r*r}π cm², 둘레는 {2*r}π cm다. 지름 {2*r} cm를 반지름으로 쓰면 4배·2배로 어긋난다. 답은 [[{ans_v}*pi]]{U}다.",
+      "model_answer": "∠{RA} = 90°인 직각삼각형의 외심은 빗변의 중점이므로 {HY} = {2*r} cm는 외접원의 지름이고 반지름은 {r} cm이다. 따라서 {Q}{eun(Q)} {F1}{r}{F2} = {ans_v}π({UA})이다.",
+      "rubric": [
+        {
+          "element": "지름 = 빗변",
+          "points": 3,
+          "criterion": "외심이 빗변의 중점이므로 {HY}{ika(HY)} 지름, 반지름이 {r} cm임을 밝혔다.",
+          "partial": "반지름 {r} cm만 쓰고 근거가 없으면 1점."
+        },
+        {
+          "element": "원의 공식",
+          "points": 2,
+          "criterion": "{LAW}에 R = {r}{eul(r)} 넣어 {ans_v}π{eul(UA)} 계산했다.",
+          "partial": "지름을 반지름으로 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans_v}π{U}{eul(UA)} 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-circumcenter-t4",
+      "pitfalls": [
+        {
+          "text": "지름 {2*r} cm를 반지름으로 넣어 넓이를 {4*r*r}π cm²로 구함",
+          "on": "지름 = 빗변",
+          "effect": "불인정"
+        },
+        {
+          "text": "넓이 πR² 대신 둘레 2πR을 구함",
+          "on": "원의 공식",
+          "effect": "불인정"
+        },
+        {
+          "text": "π를 빠뜨리거나 단위를 cm로 씀",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "외심에서 세 꼭짓점까지의 거리는 같다",
+        "원의 넓이 πr²·둘레 2πr"
+      ],
+      "ops": [
+        "방정식",
+        "넓이"
+      ],
+      "tags": [
+        "외심",
+        "외접원"
+      ],
+      "title": "△OAB의 둘레 → 외접원의 둘레·넓이",
+      "skill": "OA = OB = R이므로 △OAB의 둘레 = 2R + AB에서 R을 구하고 원의 둘레·넓이로 옮기기",
+      "variant_axis": {
+        "구하는 것": "외접원의 둘레 / 넓이",
+        "R": "3~12",
+        "AB": "3~20"
+      },
+      "discriminates": "△OAB의 둘레에서 AB를 빼고 2로 나누어 R을 얻는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "circ",
+              "area"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              3,
+              12
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "int": [
+              3,
+              20
+            ]
+          }
+        },
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              -8,
+              0,
+              8
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "circ": {
+            "Q": "△ABC의 외접원의 둘레의 길이",
+            "isS": 0,
+            "U": " cm",
+            "UA": "cm",
+            "F1": "2π × ",
+            "F2": "",
+            "LAW": "2πR"
+          },
+          "area": {
+            "Q": "△ABC의 외접원의 넓이",
+            "isS": 1,
+            "U": " cm²",
+            "UA": "cm²",
+            "F1": "π × ",
+            "F2": "²",
+            "LAW": "πR²"
+          }
+        }
+      },
+      "derive": {
+        "P": "2*r + c",
+        "ans_v": "r*r*isS + 2*r*(1 - isS)",
+        "hh": "sqrt(abs(r*r - c*c/4))",
+        "cx": "r*cos(pi*(270 + s)/180)",
+        "cy": "r*sin(pi*(270 + s)/180)"
+      },
+      "constraints": [
+        "5*c >= 3*r",
+        "5*c <= 9*r",
+        "c != r",
+        "c != 2*r"
+      ],
+      "cost_values": [
+        "P",
+        "c",
+        "r",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "P == 2*r + c",
+        "(isS == 1 and ans == r*r) or (isS == 0 and ans == 2*r)"
+      ],
+      "question": "다음 그림에서 점 O는 △ABC의 외심이다. [[seg(AB)]] = {c} cm이고 △OAB의 둘레의 길이가 {P} cm일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{-c/2}",
+                "{hh}"
+              ],
+              "B": [
+                "{c/2}",
+                "{hh}"
+              ],
+              "C": [
+                "{cx}",
+                "{cy}"
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{c} cm"
+              },
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "O",
+                "A"
+              ],
+              [
+                "O",
+                "B"
+              ]
+            ],
+            "circles": [
+              {
+                "c": "O",
+                "r": "{r}"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[{ans_v}*pi]]",
+      "answer_alt": [
+        "[[{ans_v}*pi]]{U}",
+        "{ans_v}π{U}"
+      ],
+      "sol1": "외심 O에서 세 꼭짓점까지의 거리는 외접원의 반지름 R로 모두 같다: OA = OB = R. 그러므로 △OAB의 둘레 = OA + OB + AB = 2R + {c}이고, 여기서 R이 나온다. 외접원의 둘레는 2πR, 넓이는 πR²다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{-c/2}",
+                "{hh}"
+              ],
+              "B": [
+                "{c/2}",
+                "{hh}"
+              ],
+              "C": [
+                "{cx}",
+                "{cy}"
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{c} cm"
+              },
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "O",
+                "A"
+              ],
+              [
+                "O",
+                "B"
+              ],
+              {
+                "a": "O",
+                "b": "C",
+                "dash": true
+              }
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "O",
+                    "A"
+                  ],
+                  [
+                    "O",
+                    "B"
+                  ],
+                  [
+                    "O",
+                    "C"
+                  ]
+                ]
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": "{r}"
+              }
+            ],
+            "labels": [
+              {
+                "at": "O",
+                "text": "R",
+                "dx": -22,
+                "dy": -6,
+                "accent": true,
+                "k": "lbl:r"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:O-A",
+              "eq:O-B",
+              "eq:O-C",
+              "lbl:r"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:O-A",
+              "seg:O-B",
+              "seg:A-B",
+              "seglbl:A-B"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "외접원의 반지름을 R cm라 하면 OA = OB = R (외심의 성질)",
+        "△OAB의 둘레: R + R + {c} = {P} → 2R = {2*r}, R = {r}",
+        "{Q}: {F1}{r}{F2} = {ans_v}π({UA})"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "OA = OB = R",
+                "hint": "외심"
+              },
+              {
+                "text": "2R + {c} = {P} → R = {r}",
+                "hint": "△OAB의 둘레"
+              },
+              {
+                "text": "{F1}{r}{F2} = {ans_v}π",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ]
+      ],
+      "sol_check": "R = {r}이면 △OAB의 둘레는 {r} + {r} + {c} = {P}(cm)로 조건과 맞는다. 답은 [[{ans_v}*pi]]{U}다.",
+      "model_answer": "점 O는 외심이므로 OA = OB = R(외접원의 반지름)이다. △OAB의 둘레가 {P} cm이므로 2R + {c} = {P}, R = {r}이다. 따라서 {Q}{eun(Q)} {F1}{r}{F2} = {ans_v}π({UA})이다.",
+      "rubric": [
+        {
+          "element": "반지름 세우기",
+          "points": 3,
+          "criterion": "OA = OB = R로 두고 2R + {c} = {P}{eul(P)} 세웠다.",
+          "partial": "OA = OB만 쓰고 식을 세우지 못했으면 1점."
+        },
+        {
+          "element": "R 구하기",
+          "points": 2,
+          "criterion": "R = {r}{eul(r)} 구했다.",
+          "partial": "AB를 빼지 않고 {P} ÷ 2로 했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans_v}π{U}{eul(UA)} 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-circumcenter-t5",
+      "pitfalls": [
+        {
+          "text": "△OAB의 둘레 {P} cm를 2로 나누어 R = {P/2}로 둠(AB를 빼지 않음)",
+          "on": "R 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "OA = OB가 외접원의 반지름임을 쓰지 않음",
+          "on": "반지름 세우기",
+          "effect": "부분"
+        },
+        {
+          "text": "둘레와 넓이 공식을 바꿔 씀(2πR ↔ πR²)",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "외심: 세 변의 수직이등분선의 교점",
+        "외심에서 세 꼭짓점까지의 거리는 같다 (OA = OB = OC)",
+        "이등변삼각형의 두 밑각은 같다"
+      ],
+      "ops": [
+        "각도"
+      ],
+      "tags": [
+        "외심",
+        "외접원"
+      ],
+      "title": "직각삼각형의 외심 — ∠AOB : ∠AOC = p : q → 예각",
+      "skill": "OA = OC인 이등변삼각형의 외각 ∠AOB = 2∠C를 써서 비로 나뉜 각을 예각으로 옮기기",
+      "variant_axis": {
+        "구하는 것": "∠C / ∠B",
+        "비": "정수 답이 되는 17쌍"
+      },
+      "discriminates": "∠AOB가 △AOC의 외각(= 2∠C)임을 읽어 절반을 취하는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "C",
+              "B"
+            ]
+          }
+        },
+        {
+          "name": "pr",
+          "values": {
+            "in": [
+              "1-2",
+              "2-1",
+              "4-5",
+              "5-4",
+              "1-5",
+              "5-1",
+              "2-7",
+              "7-2",
+              "1-8",
+              "8-1",
+              "7-11",
+              "11-7",
+              "13-17",
+              "17-13",
+              "7-23",
+              "23-7",
+              "4-11",
+              "11-4",
+              "2-3",
+              "3-2",
+              "1-4",
+              "4-1",
+              "3-7",
+              "7-3",
+              "1-9",
+              "9-1",
+              "5-13",
+              "13-5",
+              "11-19",
+              "19-11",
+              "7-8",
+              "8-7"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "w",
+          "rows": {
+            "C": {
+              "XQ": "C",
+              "isC": 1,
+              "XA": "C",
+              "XF": "A",
+              "XT": "B"
+            },
+            "B": {
+              "XQ": "B",
+              "isC": 0,
+              "XA": "B",
+              "XF": "A",
+              "XT": "C"
+            }
+          }
+        },
+        {
+          "key": "pr",
+          "rows": {
+            "1-2": {
+              "p": 1,
+              "q": 2,
+              "aob": 60,
+              "aoc": 120
+            },
+            "2-1": {
+              "p": 2,
+              "q": 1,
+              "aob": 120,
+              "aoc": 60
+            },
+            "4-5": {
+              "p": 4,
+              "q": 5,
+              "aob": 80,
+              "aoc": 100
+            },
+            "5-4": {
+              "p": 5,
+              "q": 4,
+              "aob": 100,
+              "aoc": 80
+            },
+            "1-5": {
+              "p": 1,
+              "q": 5,
+              "aob": 30,
+              "aoc": 150
+            },
+            "5-1": {
+              "p": 5,
+              "q": 1,
+              "aob": 150,
+              "aoc": 30
+            },
+            "2-7": {
+              "p": 2,
+              "q": 7,
+              "aob": 40,
+              "aoc": 140
+            },
+            "7-2": {
+              "p": 7,
+              "q": 2,
+              "aob": 140,
+              "aoc": 40
+            },
+            "1-8": {
+              "p": 1,
+              "q": 8,
+              "aob": 20,
+              "aoc": 160
+            },
+            "8-1": {
+              "p": 8,
+              "q": 1,
+              "aob": 160,
+              "aoc": 20
+            },
+            "7-11": {
+              "p": 7,
+              "q": 11,
+              "aob": 70,
+              "aoc": 110
+            },
+            "11-7": {
+              "p": 11,
+              "q": 7,
+              "aob": 110,
+              "aoc": 70
+            },
+            "13-17": {
+              "p": 13,
+              "q": 17,
+              "aob": 78,
+              "aoc": 102
+            },
+            "17-13": {
+              "p": 17,
+              "q": 13,
+              "aob": 102,
+              "aoc": 78
+            },
+            "7-23": {
+              "p": 7,
+              "q": 23,
+              "aob": 42,
+              "aoc": 138
+            },
+            "23-7": {
+              "p": 23,
+              "q": 7,
+              "aob": 138,
+              "aoc": 42
+            },
+            "4-11": {
+              "p": 4,
+              "q": 11,
+              "aob": 48,
+              "aoc": 132
+            },
+            "11-4": {
+              "p": 11,
+              "q": 4,
+              "aob": 132,
+              "aoc": 48
+            },
+            "2-3": {
+              "p": 2,
+              "q": 3,
+              "aob": 72,
+              "aoc": 108
+            },
+            "3-2": {
+              "p": 3,
+              "q": 2,
+              "aob": 108,
+              "aoc": 72
+            },
+            "1-4": {
+              "p": 1,
+              "q": 4,
+              "aob": 36,
+              "aoc": 144
+            },
+            "4-1": {
+              "p": 4,
+              "q": 1,
+              "aob": 144,
+              "aoc": 36
+            },
+            "3-7": {
+              "p": 3,
+              "q": 7,
+              "aob": 54,
+              "aoc": 126
+            },
+            "7-3": {
+              "p": 7,
+              "q": 3,
+              "aob": 126,
+              "aoc": 54
+            },
+            "1-9": {
+              "p": 1,
+              "q": 9,
+              "aob": 18,
+              "aoc": 162
+            },
+            "9-1": {
+              "p": 9,
+              "q": 1,
+              "aob": 162,
+              "aoc": 18
+            },
+            "5-13": {
+              "p": 5,
+              "q": 13,
+              "aob": 50,
+              "aoc": 130
+            },
+            "13-5": {
+              "p": 13,
+              "q": 5,
+              "aob": 130,
+              "aoc": 50
+            },
+            "11-19": {
+              "p": 11,
+              "q": 19,
+              "aob": 66,
+              "aoc": 114
+            },
+            "19-11": {
+              "p": 19,
+              "q": 11,
+              "aob": 114,
+              "aoc": 66
+            },
+            "7-8": {
+              "p": 7,
+              "q": 8,
+              "aob": 84,
+              "aoc": 96
+            },
+            "8-7": {
+              "p": 8,
+              "q": 7,
+              "aob": 96,
+              "aoc": 84
+            }
+          }
+        }
+      ],
+      "derive": {
+        "cv": "aob/2",
+        "bv": "90 - aob/2",
+        "ans_v": "aob/2*isC + (90 - aob/2)*(1 - isC)",
+        "ax": "-3*cos(pi*aob/180)",
+        "ay": "3*sin(pi*aob/180)"
+      },
+      "constraints": [
+        "aob != 90",
+        "cv == floor(cv)"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "aob",
+        "aoc",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "aob + aoc == 180",
+        "aob*q == aoc*p",
+        "(isC == 1 and 2*ans == aob) or (isC == 0 and 2*ans == aoc)"
+      ],
+      "question": "다음 그림에서 △ABC는 [[angle(A)]] = [[deg(90)]]인 직각삼각형이고, 점 O는 [[seg(BC)]]의 중점이다. [[angle(AOB)]] : [[angle(AOC)]] = {p} : {q}일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                -3,
+                0
+              ],
+              "C": [
+                3,
+                0
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "O",
+                "A"
+              ]
+            ],
+            "marks": {
+              "right": [
+                [
+                  "B",
+                  "A",
+                  "C"
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "O",
+                  "from": "A",
+                  "to": "B",
+                  "k": "arc:aob"
+                },
+                {
+                  "at": "O",
+                  "from": "C",
+                  "to": "A",
+                  "k": "arc:aoc"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "직각삼각형에서 빗변의 중점 O는 외심이므로 OA = OB = OC다. 그러면 △OAC는 OA = OC인 이등변삼각형이라 ∠OAC = ∠OCA이고, ∠AOB는 △OAC의 외각이므로 ∠AOB = 2∠C다. 마찬가지로 ∠AOC = 2∠B. ∠AOB + ∠AOC = 180°(평각)를 {p} : {q}{ro(q)} 나눈다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                -3,
+                0
+              ],
+              "C": [
+                3,
+                0
+              ],
+              "O": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "O",
+                "A"
+              ]
+            ],
+            "marks": {
+              "right": [
+                [
+                  "B",
+                  "A",
+                  "C"
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "O",
+                  "from": "A",
+                  "to": "B",
+                  "k": "arc:aob"
+                },
+                {
+                  "at": "O",
+                  "from": "C",
+                  "to": "A",
+                  "k": "arc:aoc"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ],
+              "eq": [
+                [
+                  [
+                    "O",
+                    "A"
+                  ],
+                  [
+                    "O",
+                    "B"
+                  ],
+                  [
+                    "O",
+                    "C"
+                  ]
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": "O",
+                "text": "{aob}°",
+                "dx": -22,
+                "dy": -12,
+                "accent": true,
+                "k": "lbl:aob"
+              },
+              {
+                "at": "O",
+                "text": "{aoc}°",
+                "dx": 22,
+                "dy": -12,
+                "accent": true,
+                "k": "lbl:aoc"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:O-A",
+              "eq:O-B",
+              "eq:O-C"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:aob",
+              "arc:aoc",
+              "lbl:aob",
+              "lbl:aoc"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:ask"
+          }
+        ]
+      ],
+      "sol2": [
+        "∠AOB + ∠AOC = 180°이고 비가 {p} : {q}이므로 ∠AOB = 180° × [[frac({p}, {p + q})]] = {aob}°, ∠AOC = {aoc}°",
+        "점 O는 외심이므로 OA = OC, 즉 △OAC는 이등변삼각형이고 ∠OAC = ∠OCA",
+        "∠AOB는 △OAC의 외각이므로 ∠AOB = ∠OAC + ∠OCA = 2∠C → ∠C = {aob}° ÷ 2 = {cv}°",
+        "∠B = 90° − ∠C = {bv}°, 따라서 ∠{XQ} = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠AOB = {aob}°, ∠AOC = {aoc}°",
+                "hint": "180°를 {p} : {q}{ro(q)}"
+              },
+              {
+                "text": "∠AOB = 2∠C",
+                "hint": "△OAC의 외각 (OA = OC)"
+              },
+              {
+                "text": "∠C = {cv}°, ∠B = {bv}°",
+                "hint": "절반, 90°에서 빼기"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "∠AOC = 2∠B = 2 × {bv}° = {aoc}°로 나머지 각과도 맞고, ∠B + ∠C = {bv}° + {cv}° = 90°다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "∠AOB + ∠AOC = 180°이고 ∠AOB : ∠AOC = {p} : {q}이므로 ∠AOB = {aob}°이다. 점 O는 직각삼각형의 외심이므로 OA = OC이고 ∠OAC = ∠OCA이며, ∠AOB는 △OAC의 외각이므로 ∠AOB = 2∠C, ∠C = {cv}°이다. ∠B = 90° − {cv}° = {bv}°이므로 ∠{XQ} = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "비례배분",
+          "points": 2,
+          "criterion": "180°를 {p} : {q}{ro(q)} 나누어 ∠AOB = {aob}°를 구했다.",
+          "partial": "비의 방향을 바꿨으면 인정하지 않는다."
+        },
+        {
+          "element": "외심·외각",
+          "points": 3,
+          "criterion": "OA = OC에서 △OAC가 이등변삼각형이고 ∠AOB = 2∠C임을 밝혔다.",
+          "partial": "OA = OC만 쓰고 외각으로 옮기지 못했으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans_v}°를 구했다.",
+          "partial": "∠B와 ∠C를 바꿔 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-circumcenter-t6",
+      "pitfalls": [
+        {
+          "text": "∠AOB({aob}°)를 ∠C 자체로 답함(절반을 취하지 않음)",
+          "on": "외심·외각",
+          "effect": "불인정"
+        },
+        {
+          "text": "비의 순서를 바꿔 ∠AOB = {aoc}°로 둠",
+          "on": "비례배분",
+          "effect": "불인정"
+        },
+        {
+          "text": "∠B와 ∠C를 바꿔 답함",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

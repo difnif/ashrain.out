@@ -1,0 +1,27 @@
+# ashrain.out — git 에 넣지 않는 것 (2026-09-10)
+
+# 의존성·빌드·비밀
+node_modules/
+dist/
+.env
+.env.*
+**/.env
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+
+# itemfactory 산출물 — 시드 + genkit 에서 결정적으로 재생성된다 (2분):
+#   python -m genkit.build seeds/*.json --n 300 --outdir out/gen
+# 풀(*_pool.json, 240 MB)은 저장소에 넣지 않고, 틀별 통계(_report.json)·총합(_summary.json)만 남긴다.
+itemfactory/out/gen/*_pool.json
+itemfactory/out/gen/review*.html
+itemfactory/out/legible*.json
+itemfactory/out/s[0-9]*/
+itemfactory/out/gen_prev/
+itemfactory/legacy/
+
+# 참고 코퍼스(출판사 교사자료·교육청 채점표·동아 서술형 문항) — 저작물이라 공개 저장소에 올리지 않는다.
+# README·TYPES.md(유형 이름·빈도만)는 남기고 문항 본문이 든 파일만 제외.
+itemfactory/reference/**/*.json
+itemfactory/reference/**/*.txt

@@ -1,0 +1,715 @@
+{
+  "seed_id": "m1-1-mixture",
+  "category": "활용",
+  "title": "소금물의 농도",
+  "unit_id": "m1-1",
+  "concept_ids": [
+    "m1-1-27"
+  ],
+  "schema_id": "7afda36f-3ef8-4d5c-9092-fc049ea47333",
+  "schema_name": "농도_소금추가와_물증발",
+  "source_item_ids": [],
+  "note": "관계식 (소금의 양) = (농도/100)×(소금물의 양), 섞어도 소금의 총량은 변하지 않는다 — 만 차용.",
+  "geometry": false,
+  "templates": [
+    {
+      "id": "m1-1-mixture-t1",
+      "title": "두 소금물을 섞은 뒤의 농도",
+      "skill": "소금의 총량 보존",
+      "prereq": [
+        "백분율",
+        "비례",
+        "나눗셈"
+      ],
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "백분율",
+        "사칙"
+      ],
+      "traps": [
+        "평균오용",
+        "구하는대상혼동"
+      ],
+      "variant_axis": {
+        "구하는 것": "섞은 후 농도",
+        "시나리오": "두 소금물 혼합"
+      },
+      "discriminates": "농도를 단순 평균하지 않고 소금의 양으로 계산하는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "time_limit": 120,
+      "points": 5,
+      "pool_target": 300,
+      "tags": [
+        "농도",
+        "혼합"
+      ],
+      "params": [
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              8
+            ]
+          }
+        },
+        {
+          "name": "u",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "name": "v",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "name": "j",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "g": "gcd(u,v)",
+        "m": "(u+v)/gcd(u,v)",
+        "k": "((u+v)/gcd(u,v))*j",
+        "p": "q + ((u+v)/gcd(u,v))*j",
+        "x": "100*u",
+        "y": "100*v",
+        "sa": "(q + ((u+v)/gcd(u,v))*j)*u",
+        "sb": "q*v",
+        "tot": "100*(u+v)",
+        "c": "q + j*u/gcd(u,v)",
+        "salt": "(q + ((u+v)/gcd(u,v))*j)*u + q*v",
+        "avg": "(2*q + ((u+v)/gcd(u,v))*j)/2",
+        "wa": "100*u - (q + ((u+v)/gcd(u,v))*j)*u",
+        "wb": "100*v - q*v"
+      },
+      "constraints": [
+        "u != v",
+        "p <= 24",
+        "p > q",
+        "c != (p+q)/2",
+        "c > q",
+        "c < p"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "x",
+        "y",
+        "sa",
+        "sb",
+        "tot",
+        "c"
+      ],
+      "relation": "X*(x + y) - (p*x + q*y)",
+      "unknown": "X",
+      "answer_var": "c",
+      "verify": [
+        "sa + sb == c*(x+y)/100",
+        "c < p",
+        "c > q"
+      ],
+      "question": "농도가 {p} %인 소금물 {x} g과 농도가 {q} %인 소금물 {y} g을 모두 섞었다. 섞은 소금물의 농도는 몇 %인지 구하시오.",
+      "answer": "{c}",
+      "answer_alt": [
+        "{c} %"
+      ],
+      "sol1": "농도를 그냥 평균 내면 안 된다. 두 소금물의 양이 다르면 많은 쪽 농도에 더 끌려가기 때문이다. 섞기 전과 후에 변하지 않는 것은 소금의 양이므로, 양쪽 소금을 각각 구해 더한 뒤 전체 소금물의 양으로 다시 나눈다. 농도(%) = (소금의 양) ÷ (소금물의 양) × 100 이다.",
+      "sol1_fig": [
+        {
+          "fn": "vessel",
+          "args": {
+            "rows": [
+              {
+                "name": "{p} %",
+                "parts": [
+                  {
+                    "label": "소금 {sa} g",
+                    "value": "{sa}",
+                    "kind": "salt"
+                  },
+                  {
+                    "label": "물 {wa} g",
+                    "value": "{wa}",
+                    "kind": "water"
+                  }
+                ],
+                "total": "{x} g"
+              },
+              {
+                "name": "{q} %",
+                "parts": [
+                  {
+                    "label": "소금 {sb} g",
+                    "value": "{sb}",
+                    "kind": "salt"
+                  },
+                  {
+                    "label": "물 {wb} g",
+                    "value": "{wb}",
+                    "kind": "water"
+                  }
+                ],
+                "total": "{y} g"
+              },
+              {
+                "name": "섞음",
+                "parts": [
+                  {
+                    "label": "소금 {salt} g",
+                    "value": "{salt}",
+                    "kind": "salt"
+                  },
+                  {
+                    "label": "물 {wa+wb} g",
+                    "value": "{wa+wb}",
+                    "kind": "water"
+                  }
+                ],
+                "total": "{tot} g"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "{p} % 소금물 {x} g에 들어 있는 소금의 양을 구한다: {x} × {p}/100 = {sa} (g)",
+        "{q} % 소금물 {y} g에 들어 있는 소금의 양을 구한다: {y} × {q}/100 = {sb} (g)",
+        "섞으면 소금은 그대로 합쳐지므로 {sa} + {pn(sb)} = {salt} (g)",
+        "소금물 전체의 양도 합쳐진다: {x} + {pn(y)} = {tot} (g)",
+        "농도를 구한다: {salt} ÷ {tot} × 100 = {c} (%)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "소금 = {x} × {p}/100 + {y} × {q}/100 = {salt} (g)",
+              "소금물 = {x} + {y} = {tot} (g)",
+              "농도 = {salt} ÷ {tot} × 100 = {c} (%)"
+            ]
+          }
+        }
+      ],
+      "sol3": "구한 {c} %가 타당한지 두 가지로 본다. 첫째, 섞은 농도는 반드시 두 농도 사이에 있어야 하는데 {q} % < {c} % < {p} %로 맞는다. 둘째, 양이 더 많은 쪽 농도에 가까워야 하는데 실제로 그렇다. 참고로 단순 평균 ({p} + {pn(q)}) ÷ 2 = {dec(avg)} %와는 다른 값이다. 답은 {c} %다.",
+      "model_answer": "농도는 평균이 아니라 소금의 양으로 구해야 한다. {p} % 소금물 {x} g 속의 소금은 {x} × {p}/100 = {sa} (g)이고, {q} % 소금물 {y} g 속의 소금은 {y} × {q}/100 = {sb} (g)이다. 섞으면 소금은 {salt} g, 소금물은 {tot} g이 되므로 농도는 {salt} ÷ {tot} × 100 = {c} (%)이다. 이 값은 {q} %와 {p} % 사이에 있으므로 타당하며, 답은 {c} %다.",
+      "rubric": [
+        {
+          "element": "보존량 파악",
+          "points": 3,
+          "criterion": "섞어도 변하지 않는 것이 소금의 양임을 밝히고, 농도를 평균 내지 않았다."
+        },
+        {
+          "element": "소금의 양 계산",
+          "points": 4,
+          "criterion": "양쪽 소금의 양 {sa} g과 {sb} g을 각각 바르게 구했다.",
+          "partial": "한쪽만 바르게 구했으면 2점."
+        },
+        {
+          "element": "농도 계산",
+          "points": 3,
+          "criterion": "{salt} ÷ {tot} × 100 = {c}{eul(c)} 바르게 계산했다.",
+          "partial": "× 100을 빠뜨렸으면 1점."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {c} %로 단위와 함께 썼다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "섞은 농도가 두 농도 사이에 있음을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "두 농도를 그냥 평균 내어 답함 — 소금의 양을 거치지 않음",
+          "on": "보존량",
+          "effect": "불인정"
+        },
+        {
+          "text": "농도(%)를 100으로 나누지 않고 소금의 양을 계산함",
+          "on": "소금의 양",
+          "effect": "부분"
+        },
+        {
+          "text": "농도를 구할 때 소금물 전체의 양이 아니라 물의 양으로 나눔",
+          "on": "농도 계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "id": "m1-1-mixture-t2",
+      "title": "물을 증발시킨 뒤의 농도",
+      "skill": "증발해도 소금의 양은 그대로",
+      "prereq": [
+        "백분율",
+        "나눗셈"
+      ],
+      "process": "추론",
+      "context": "생활맥락",
+      "ops": [
+        "백분율",
+        "사칙"
+      ],
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "variant_axis": {
+        "구하는 것": "증발 후 농도",
+        "시나리오": "물 증발"
+      },
+      "discriminates": "분모(소금물의 양)만 줄어든다는 것을 아는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "time_limit": 110,
+      "points": 5,
+      "pool_target": 300,
+      "tags": [
+        "농도",
+        "증발"
+      ],
+      "params": [
+        {
+          "name": "rt",
+          "values": {
+            "in": [
+              23,
+              34,
+              35,
+              45,
+              47,
+              56,
+              57,
+              58,
+              59
+            ]
+          }
+        },
+        {
+          "name": "e",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        },
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              50,
+              100,
+              150,
+              200
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "dd": "floor(rt/10)",
+        "nn": "rt % 10",
+        "p": "floor(rt/10)*e",
+        "c": "(rt % 10)*e",
+        "x": "s*(rt % 10)",
+        "left": "s*floor(rt/10)",
+        "w": "s*((rt % 10) - floor(rt/10))",
+        "sa": "floor(rt/10)*e*s*(rt % 10)/100",
+        "wat0": "s*(rt % 10) - floor(rt/10)*e*s*(rt % 10)/100",
+        "wat1": "s*floor(rt/10) - floor(rt/10)*e*s*(rt % 10)/100"
+      },
+      "constraints": [
+        "p >= 4",
+        "p <= 12",
+        "c <= 30",
+        "x >= 200",
+        "x <= 900",
+        "w >= 50",
+        "(dd*e*s*nn) % 100 == 0",
+        "wat1 > 0",
+        "c != p"
+      ],
+      "cost_values": [
+        "p",
+        "x",
+        "w",
+        "sa",
+        "left",
+        "c"
+      ],
+      "relation": "X*(x - w) - p*x",
+      "unknown": "X",
+      "answer_var": "c",
+      "verify": [
+        "sa == c*(x-w)/100",
+        "c > p"
+      ],
+      "question": "농도가 {p} %인 소금물 {x} g에서 물 {w} g을 증발시켰다. 남은 소금물의 농도는 몇 %인지 구하시오.",
+      "answer": "{c}",
+      "answer_alt": [
+        "{c} %"
+      ],
+      "sol1": "증발하는 것은 물뿐이고 소금은 그대로 남는다. 그러니 농도 식 (소금의 양) ÷ (소금물의 양) × 100 에서 분자는 변하지 않고 분모만 줄어든다. 분모가 줄면 값은 커지므로, 답은 처음 농도 {p} %보다 커야 한다.",
+      "sol1_fig": [
+        {
+          "fn": "vessel",
+          "args": {
+            "rows": [
+              {
+                "name": "처음",
+                "parts": [
+                  {
+                    "label": "소금 {sa} g",
+                    "value": "{sa}",
+                    "kind": "salt"
+                  },
+                  {
+                    "label": "물 {wat0} g",
+                    "value": "{wat0}",
+                    "kind": "water"
+                  }
+                ],
+                "total": "{x} g"
+              },
+              {
+                "name": "증발 후",
+                "parts": [
+                  {
+                    "label": "소금 {sa} g",
+                    "value": "{sa}",
+                    "kind": "salt"
+                  },
+                  {
+                    "label": "물 {wat1} g",
+                    "value": "{wat1}",
+                    "kind": "water"
+                  }
+                ],
+                "total": "{left} g"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "처음 들어 있던 소금의 양을 구한다: {x} × {p}/100 = {sa} (g)",
+        "물 {w} g이 날아갔으므로 남은 소금물의 양은 {x} − {pn(w)} = {left} (g)",
+        "소금의 양 {sa} g은 그대로다.",
+        "남은 소금물의 농도를 구한다: {sa} ÷ {left} × 100 = {c} (%)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "소금 = {x} × {p}/100 = {sa} (g)  ← 변하지 않음",
+              "소금물 = {x} − {w} = {left} (g)  ← 줄어듦",
+              "농도 = {sa} ÷ {left} × 100 = {c} (%)"
+            ]
+          }
+        }
+      ],
+      "sol3": "물이 줄었으니 농도는 처음보다 진해져야 한다. {c} % > {p} %이므로 방향이 맞다. 또 남은 소금물 {left} g의 {c} %는 {left} × {c}/100 = {sa} g으로 처음 소금의 양과 같다. 답은 {c} %다.",
+      "model_answer": "증발하는 것은 물뿐이므로 소금의 양은 그대로다. 처음 소금의 양은 {x} × {p}/100 = {sa} (g)이고, 남은 소금물의 양은 {x} − {pn(w)} = {left} (g)이다. 따라서 농도는 {sa} ÷ {left} × 100 = {c} (%)이다. 물이 줄었으므로 처음 {p} %보다 진해진 것이 맞고, 답은 {c} %다.",
+      "rubric": [
+        {
+          "element": "변하는 것과 변하지 않는 것 구분",
+          "points": 3,
+          "criterion": "소금의 양은 그대로이고 소금물의 양만 줄어든다는 점을 밝혔다."
+        },
+        {
+          "element": "소금의 양 계산",
+          "points": 3,
+          "criterion": "{x} × {p}/100 = {sa} (g)을 바르게 구했다."
+        },
+        {
+          "element": "농도 계산",
+          "points": 3,
+          "criterion": "{sa} ÷ {left} × 100 = {c}{eul(c)} 바르게 계산했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {c} %로 단위와 함께 썼다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "농도가 처음보다 커졌음을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "'증발해도 소금의 양은 변하지 않는다'는 근거 없이 바로 계산함",
+          "on": "변하는 것",
+          "effect": "부분"
+        },
+        {
+          "text": "증발한 물의 양을 소금물이 아니라 소금의 양에서 빼거나, 빼지 않고 더함",
+          "on": "소금의 양",
+          "effect": "불인정"
+        },
+        {
+          "text": "농도가 처음보다 진해져야 하는데 묽어진 값을 답하고도 이상함을 알아채지 못함",
+          "on": "농도 계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "id": "m1-1-mixture-t3",
+      "title": "섞은 뒤의 농도 고르기 (오개념 대조)",
+      "skill": "소금의 총량 보존",
+      "prereq": [
+        "백분율"
+      ],
+      "process": "개념이해",
+      "context": "생활맥락",
+      "ops": [
+        "백분율"
+      ],
+      "traps": [
+        "평균오용"
+      ],
+      "variant_axis": {
+        "구하는 것": "섞은 후 농도",
+        "제시 형식": "선다형"
+      },
+      "discriminates": "농도의 단순 평균이라는 오개념을 갖고 있는가",
+      "qtype": "choice",
+      "difficulty": 3,
+      "time_limit": 100,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "농도",
+        "혼합",
+        "보기고르기"
+      ],
+      "params": [
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              8
+            ]
+          }
+        },
+        {
+          "name": "u",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "name": "v",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "name": "j",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "g": "gcd(u,v)",
+        "m": "(u+v)/gcd(u,v)",
+        "k": "((u+v)/gcd(u,v))*j",
+        "p": "q + ((u+v)/gcd(u,v))*j",
+        "x": "100*u",
+        "y": "100*v",
+        "sa": "(q + ((u+v)/gcd(u,v))*j)*u",
+        "sb": "q*v",
+        "tot": "100*(u+v)",
+        "c": "q + j*u/gcd(u,v)",
+        "salt": "(q + ((u+v)/gcd(u,v))*j)*u + q*v",
+        "avg": "(2*q + ((u+v)/gcd(u,v))*j)/2",
+        "wa": "100*u - (q + ((u+v)/gcd(u,v))*j)*u",
+        "wb": "100*v - q*v"
+      },
+      "constraints": [
+        "u != v",
+        "p <= 24",
+        "p > q",
+        "c != (p+q)/2",
+        "c > q",
+        "c < p"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "x",
+        "y",
+        "sa",
+        "sb",
+        "tot",
+        "c"
+      ],
+      "relation": "X*(x + y) - (p*x + q*y)",
+      "unknown": "X",
+      "answer_var": "c",
+      "verify": [
+        "sa + sb == c*(x+y)/100"
+      ],
+      "question": "농도가 {p} %인 소금물 {x} g과 농도가 {q} %인 소금물 {y} g을 섞었을 때, 섞은 소금물의 농도는?",
+      "answer": "{c}",
+      "distractors": [
+        {
+          "expr": "(p+q)/2",
+          "misconception": "MC-CONC-01"
+        },
+        {
+          "expr": "p+q",
+          "misconception": "MC-CONC-01"
+        },
+        {
+          "expr": "salt",
+          "misconception": "MC-READ-01"
+        },
+        {
+          "expr": "p-q",
+          "misconception": "MC-CONC-01"
+        },
+        {
+          "expr": "c+2",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "c-1",
+          "misconception": "MC-CALC-01"
+        }
+      ],
+      "sol1": "보기 중 하나는 두 농도의 단순 평균 {dec(avg)} %다. 양이 서로 다르면 이 값은 답이 될 수 없다. 소금의 양을 각각 구해 더한 뒤 전체 소금물의 양으로 나누는 것이 정석이다.",
+      "sol1_fig": [
+        {
+          "fn": "vessel",
+          "args": {
+            "rows": [
+              {
+                "name": "{p} %",
+                "parts": [
+                  {
+                    "label": "소금 {sa}",
+                    "value": "{sa}",
+                    "kind": "salt"
+                  },
+                  {
+                    "label": "",
+                    "value": "{x - sa}",
+                    "kind": "water"
+                  }
+                ],
+                "total": "{x} g"
+              },
+              {
+                "name": "{q} %",
+                "parts": [
+                  {
+                    "label": "소금 {sb}",
+                    "value": "{sb}",
+                    "kind": "salt"
+                  },
+                  {
+                    "label": "",
+                    "value": "{y - sb}",
+                    "kind": "water"
+                  }
+                ],
+                "total": "{y} g"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "각각의 소금의 양: {x} × {p}/100 = {sa} (g), {y} × {q}/100 = {sb} (g)",
+        "섞은 뒤 소금은 {salt} g, 소금물은 {tot} g이다.",
+        "농도: {salt} ÷ {tot} × 100 = {c} (%)",
+        "오답 대조 — 단순 평균은 {dec(avg)} %, 소금의 양 자체는 {salt}{ro(salt)} 둘 다 농도가 아니다."
+      ],
+      "sol3": "{c} %가 {q} %와 {p} % 사이에 있고, 양이 많은 쪽으로 치우쳐 있으므로 타당하다. 답은 {c} %다.",
+      "model_answer": "각 소금물 속의 소금은 {x} × {p}/100 = {sa} (g), {y} × {q}/100 = {sb} (g)이다. 섞으면 소금 {salt} g, 소금물 {tot} g이므로 농도는 {salt} ÷ {tot} × 100 = {c} (%)이다. 단순 평균 {dec(avg)} %는 두 소금물의 양이 다르므로 답이 될 수 없다. 답은 {c} %다.",
+      "rubric": [
+        {
+          "element": "평균 오개념 배제",
+          "points": 3,
+          "criterion": "농도의 단순 평균이 답이 아닌 이유를 밝혔다."
+        },
+        {
+          "element": "소금의 양 계산",
+          "points": 3,
+          "criterion": "{sa} g과 {sb} g을 바르게 구했다."
+        },
+        {
+          "element": "농도 계산",
+          "points": 2,
+          "criterion": "{salt} ÷ {tot} × 100 = {c}{eul(c)} 구했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {c} %로 썼다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "두 농도를 평균 내어 고름 — 양이 다르면 평균이 아님",
+          "on": "평균",
+          "effect": "불인정"
+        },
+        {
+          "text": "소금의 양을 합치지 않고 한쪽 소금물의 농도로 답함",
+          "on": "소금의 양",
+          "effect": "불인정"
+        },
+        {
+          "text": "소금의 양을 물의 양으로 나눔",
+          "on": "농도 계산",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

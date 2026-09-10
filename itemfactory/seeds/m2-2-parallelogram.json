@@ -1,0 +1,2553 @@
+{
+  "seed_id": "m2-2-parallelogram",
+  "category": "도형",
+  "title": "평행사변형의 성질 — 각의 비, 둘레·변, 대각선의 교점, 각의 이등분선, 내부의 점과 넓이",
+  "unit_id": "m2-2",
+  "concept_ids": [
+    "m2-2-03"
+  ],
+  "schema_id": "3d6e730c-f860-4fbc-96eb-8c941a22d54c",
+  "schema_name": "평행사변형 대각 크기 비율 응용 / 대변·대각선 길이 / 이등분선 / 내부 점 분할 넓이",
+  "source_item_ids": [],
+  "note": "출판사 평가자료 유형(TYPES.md 6.1~6.2)을 참고해 새로 씀. 둘레·변(t2)은 모르는 변의 라벨 수치를 0으로 두어 숨기고 행 문자열 'x'를 겹쳐 그린다. 대각선(t3)의 꼭짓점은 평행사변형 법칙(AC² + BD² = 2(AB² + BC²))으로 BC를 계산해 정확히 배치. 이등분선(t4)은 (변형 × 도형 요소) 행 선택.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 70,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "평행사변형의 성질: 두 쌍의 대변·대각이 각각 같고 두 대각선은 서로 다른 것을 이등분한다",
+        "평행선의 엇각·동측내각"
+      ],
+      "ops": [
+        "각도",
+        "사칙"
+      ],
+      "tags": [
+        "평행사변형",
+        "대변",
+        "대각",
+        "대각선"
+      ],
+      "title": "평행사변형의 각 — 이웃한 두 내각의 비로 대각 구하기",
+      "skill": "이웃한 두 내각의 합이 180°임을 쓰고 비로 나눈 뒤 대각으로 옮기기",
+      "variant_axis": {
+        "구하는 것": "∠C / ∠D",
+        "비": "정수 답이 되는 34쌍"
+      },
+      "discriminates": "∠A + ∠B = 180°(동측내각)를 세우고 대각이 같음을 쓰는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "C",
+              "D"
+            ]
+          }
+        },
+        {
+          "name": "pr",
+          "values": {
+            "in": [
+              "1-2",
+              "2-1",
+              "1-3",
+              "3-1",
+              "2-3",
+              "3-2",
+              "1-4",
+              "4-1",
+              "4-5",
+              "5-4",
+              "1-5",
+              "5-1",
+              "2-7",
+              "7-2",
+              "7-3",
+              "3-7",
+              "1-8",
+              "8-1",
+              "5-7",
+              "7-5",
+              "1-9",
+              "9-1",
+              "7-11",
+              "11-7",
+              "4-11",
+              "11-4",
+              "13-17",
+              "17-13",
+              "7-23",
+              "23-7",
+              "1-11",
+              "11-1",
+              "5-13",
+              "13-5"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "w",
+          "rows": {
+            "C": {
+              "XQ": "C",
+              "isC": 1,
+              "XA": "C",
+              "XF": "B",
+              "XT": "D",
+              "SAME": "A",
+              "LAW": "대각 ∠C = ∠A"
+            },
+            "D": {
+              "XQ": "D",
+              "isC": 0,
+              "XA": "D",
+              "XF": "A",
+              "XT": "C",
+              "SAME": "B",
+              "LAW": "대각 ∠D = ∠B"
+            }
+          }
+        },
+        {
+          "key": "pr",
+          "rows": {
+            "1-2": {
+              "p": 1,
+              "q": 2,
+              "av": 60,
+              "bv": 120
+            },
+            "2-1": {
+              "p": 2,
+              "q": 1,
+              "av": 120,
+              "bv": 60
+            },
+            "1-3": {
+              "p": 1,
+              "q": 3,
+              "av": 45,
+              "bv": 135
+            },
+            "3-1": {
+              "p": 3,
+              "q": 1,
+              "av": 135,
+              "bv": 45
+            },
+            "2-3": {
+              "p": 2,
+              "q": 3,
+              "av": 72,
+              "bv": 108
+            },
+            "3-2": {
+              "p": 3,
+              "q": 2,
+              "av": 108,
+              "bv": 72
+            },
+            "1-4": {
+              "p": 1,
+              "q": 4,
+              "av": 36,
+              "bv": 144
+            },
+            "4-1": {
+              "p": 4,
+              "q": 1,
+              "av": 144,
+              "bv": 36
+            },
+            "4-5": {
+              "p": 4,
+              "q": 5,
+              "av": 80,
+              "bv": 100
+            },
+            "5-4": {
+              "p": 5,
+              "q": 4,
+              "av": 100,
+              "bv": 80
+            },
+            "1-5": {
+              "p": 1,
+              "q": 5,
+              "av": 30,
+              "bv": 150
+            },
+            "5-1": {
+              "p": 5,
+              "q": 1,
+              "av": 150,
+              "bv": 30
+            },
+            "2-7": {
+              "p": 2,
+              "q": 7,
+              "av": 40,
+              "bv": 140
+            },
+            "7-2": {
+              "p": 7,
+              "q": 2,
+              "av": 140,
+              "bv": 40
+            },
+            "7-3": {
+              "p": 7,
+              "q": 3,
+              "av": 126,
+              "bv": 54
+            },
+            "3-7": {
+              "p": 3,
+              "q": 7,
+              "av": 54,
+              "bv": 126
+            },
+            "1-8": {
+              "p": 1,
+              "q": 8,
+              "av": 20,
+              "bv": 160
+            },
+            "8-1": {
+              "p": 8,
+              "q": 1,
+              "av": 160,
+              "bv": 20
+            },
+            "5-7": {
+              "p": 5,
+              "q": 7,
+              "av": 75,
+              "bv": 105
+            },
+            "7-5": {
+              "p": 7,
+              "q": 5,
+              "av": 105,
+              "bv": 75
+            },
+            "1-9": {
+              "p": 1,
+              "q": 9,
+              "av": 18,
+              "bv": 162
+            },
+            "9-1": {
+              "p": 9,
+              "q": 1,
+              "av": 162,
+              "bv": 18
+            },
+            "7-11": {
+              "p": 7,
+              "q": 11,
+              "av": 70,
+              "bv": 110
+            },
+            "11-7": {
+              "p": 11,
+              "q": 7,
+              "av": 110,
+              "bv": 70
+            },
+            "4-11": {
+              "p": 4,
+              "q": 11,
+              "av": 48,
+              "bv": 132
+            },
+            "11-4": {
+              "p": 11,
+              "q": 4,
+              "av": 132,
+              "bv": 48
+            },
+            "13-17": {
+              "p": 13,
+              "q": 17,
+              "av": 78,
+              "bv": 102
+            },
+            "17-13": {
+              "p": 17,
+              "q": 13,
+              "av": 102,
+              "bv": 78
+            },
+            "7-23": {
+              "p": 7,
+              "q": 23,
+              "av": 42,
+              "bv": 138
+            },
+            "23-7": {
+              "p": 23,
+              "q": 7,
+              "av": 138,
+              "bv": 42
+            },
+            "1-11": {
+              "p": 1,
+              "q": 11,
+              "av": 15,
+              "bv": 165
+            },
+            "11-1": {
+              "p": 11,
+              "q": 1,
+              "av": 165,
+              "bv": 15
+            },
+            "5-13": {
+              "p": 5,
+              "q": 13,
+              "av": 50,
+              "bv": 130
+            },
+            "13-5": {
+              "p": 13,
+              "q": 5,
+              "av": 130,
+              "bv": 50
+            }
+          }
+        }
+      ],
+      "derive": {
+        "ans_v": "av*isC + bv*(1 - isC)",
+        "ax": "3*cos(pi*bv/180)",
+        "ay": "3*sin(pi*bv/180)"
+      },
+      "constraints": [
+        "av != bv"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "av",
+        "bv",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "av + bv == 180",
+        "av*q == bv*p",
+        "(isC == 1 and ans == av) or (isC == 0 and ans == bv)"
+      ],
+      "question": "다음 그림의 평행사변형 ABCD에서 [[angle(A)]] : [[angle(B)]] = {p} : {q}일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                5,
+                0
+              ],
+              "D": [
+                "{ax + 5}",
+                "{ay}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "B",
+                  "to": "D",
+                  "k": "arc:a"
+                },
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "k": "arc:b"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "평행사변형에서 AD ∥ BC이므로 ∠A와 ∠B는 동측내각 — 합이 180°다. 이 180°를 {p} : {q}{ro(q)} 나누면 ∠A, ∠B가 나오고, 평행사변형은 두 쌍의 대각의 크기가 같으므로 ∠C = ∠A, ∠D = ∠B다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                5,
+                0
+              ],
+              "D": [
+                "{ax + 5}",
+                "{ay}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "B",
+                  "to": "D",
+                  "k": "arc:a"
+                },
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "k": "arc:b"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": "A",
+                "text": "{av}°",
+                "dx": 22,
+                "dy": 18,
+                "accent": true,
+                "k": "lbl:a"
+              },
+              {
+                "at": "B",
+                "text": "{bv}°",
+                "dx": 26,
+                "dy": -12,
+                "accent": true,
+                "k": "lbl:b"
+              },
+              {
+                "at": "{XA}",
+                "text": "{ans_v}°",
+                "dx": "{-24*isC + 26*(1 - isC)}",
+                "dy": "{-12*isC + 18*(1 - isC)}",
+                "accent": true,
+                "k": "lbl:ans"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:a",
+              "arc:b",
+              "lbl:a",
+              "lbl:b"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:ask",
+              "lbl:ans"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "AD ∥ BC이므로 ∠A + ∠B = 180° (동측내각)",
+        "∠A : ∠B = {p} : {q}이므로 ∠A = 180° × [[frac({p}, {p + q})]] = {av}°, ∠B = 180° − {av}° = {bv}°",
+        "평행사변형의 대각의 크기는 같으므로 ∠{XQ} = ∠{SAME} = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠A + ∠B = 180°",
+                "hint": "동측내각"
+              },
+              {
+                "text": "∠A = {av}°, ∠B = {bv}°",
+                "hint": "{p} : {q}{ro(q)} 나누기"
+              },
+              {
+                "text": "∠{XQ} = ∠{SAME} = {ans_v}°",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ]
+      ],
+      "sol_check": "네 내각 {av}° + {bv}° + {av}° + {bv}° = 360°로 사각형의 내각의 합과 맞는다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "AD ∥ BC이므로 ∠A + ∠B = 180°이고 ∠A : ∠B = {p} : {q}이므로 ∠A = {av}°, ∠B = {bv}°이다. 평행사변형의 대각의 크기는 같으므로 ∠{XQ} = ∠{SAME} = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "동측내각",
+          "points": 3,
+          "criterion": "AD ∥ BC에서 ∠A + ∠B = 180°임을 밝히고 비로 나누었다.",
+          "partial": "180°의 근거 없이 나누기만 했으면 1점."
+        },
+        {
+          "element": "대각",
+          "points": 2,
+          "criterion": "대각의 크기가 같음을 써서 ∠{XQ} = ∠{SAME}{ro(SAME)} 옮겼다.",
+          "partial": "이웃한 각으로 잘못 옮겼으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans_v}°를 구했다.",
+          "partial": ""
+        }
+      ],
+      "id": "m2-2-parallelogram-t1",
+      "pitfalls": [
+        {
+          "text": "∠A + ∠B를 180°가 아니라 360°로 두고 나눔",
+          "on": "동측내각",
+          "effect": "불인정"
+        },
+        {
+          "text": "대각이 아니라 이웃한 각과 같다고 보아 ∠C = ∠B로 답함",
+          "on": "대각",
+          "effect": "불인정"
+        },
+        {
+          "text": "비 {p} : {q}의 순서를 바꿔 ∠A = {bv}°로 둠",
+          "on": "동측내각",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 60,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "평행사변형의 성질: 두 쌍의 대변·대각이 각각 같고 두 대각선은 서로 다른 것을 이등분한다",
+        "평행선의 엇각·동측내각"
+      ],
+      "ops": [
+        "각도",
+        "사칙"
+      ],
+      "tags": [
+        "평행사변형",
+        "대변",
+        "대각",
+        "대각선"
+      ],
+      "title": "평행사변형의 둘레와 변 — 대변의 길이가 같다",
+      "skill": "AB = DC, BC = AD를 써서 둘레 = 2(AB + BC)로 두고 묻는 것 구하기",
+      "variant_axis": {
+        "구하는 것": "둘레 / BC / AB",
+        "AB": "3~12",
+        "BC": "4~15"
+      },
+      "discriminates": "두 쌍의 대변이 같음을 근거로 둘레를 2(AB + BC)로 세우는가",
+      "qtype": "short",
+      "difficulty": 1,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "perim",
+              "bc",
+              "ab"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              3,
+              12
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              4,
+              15
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "perim": {
+            "Q": "□ABCD의 둘레의 길이",
+            "isP": 1,
+            "uAB": 0,
+            "uBC": 0,
+            "XAB": "",
+            "XBC": "",
+            "G1T": "[[seg(AB)]] = ",
+            "G2T": "[[seg(BC)]] = ",
+            "G2U": " cm",
+            "F1": "둘레 = 2 × (",
+            "F2": " + ",
+            "F3": ")",
+            "LAW": "2 × (AB + BC)"
+          },
+          "bc": {
+            "Q": "[[seg(BC)]]의 길이",
+            "isP": 0,
+            "uAB": 0,
+            "uBC": 1,
+            "XAB": "",
+            "XBC": "x",
+            "G1T": "[[seg(AB)]] = ",
+            "G2T": "둘레의 길이가 ",
+            "G2U": " cm",
+            "F1": "BC = ",
+            "F2": " ÷ 2 − ",
+            "F3": "",
+            "LAW": "둘레 ÷ 2 − AB"
+          },
+          "ab": {
+            "Q": "[[seg(AB)]]의 길이",
+            "isP": 0,
+            "uAB": 1,
+            "uBC": 0,
+            "XAB": "x",
+            "XBC": "",
+            "G1T": "[[seg(BC)]] = ",
+            "G2T": "둘레의 길이가 ",
+            "G2U": " cm",
+            "F1": "AB = ",
+            "F2": " ÷ 2 − ",
+            "F3": "",
+            "LAW": "둘레 ÷ 2 − BC"
+          }
+        }
+      },
+      "derive": {
+        "P": "2*(a + b)",
+        "la": "a*(1 - uAB)",
+        "lb": "b*(1 - uBC)",
+        "g1": "a*(1 - uAB) + b*uAB",
+        "g2": "b*isP + 2*(a + b)*(1 - isP)",
+        "v1": "a*isP + 2*(a + b)*(1 - isP)",
+        "v2": "b*isP + a*uBC + b*uAB",
+        "ans_v": "2*(a + b)*isP + b*uBC + a*uAB",
+        "ax": "a*cos(pi*65/180)",
+        "ay": "a*sin(pi*65/180)"
+      },
+      "constraints": [
+        "a != b",
+        "2*a != b",
+        "a != 2*b"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "P",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "P == 2*(a + b)",
+        "(isP == 1 and ans == P) or (uBC == 1 and ans == b) or (uAB == 1 and ans == a)"
+      ],
+      "question": "다음 그림의 평행사변형 ABCD에서 {G1T}{g1} cm이고 {G2T}{g2}{G2U}일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{b}",
+                0
+              ],
+              "D": [
+                "{ax + b}",
+                "{ay}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{la}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{lb}"
+              },
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{XAB}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{XBC}"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "평행사변형은 두 쌍의 대변의 길이가 각각 같다: DC = AB, AD = BC. 그래서 둘레는 AB + BC + CD + DA = 2 × (AB + BC)다. 둘레와 한 변을 알면 둘레 ÷ 2에서 그 변을 빼서 다른 변을 얻는다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{b}",
+                0
+              ],
+              "D": [
+                "{ax + b}",
+                "{ay}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{a} cm"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{b} cm"
+              },
+              {
+                "a": "C",
+                "b": "D",
+                "label": "{a} cm"
+              },
+              {
+                "a": "D",
+                "b": "A",
+                "label": "{b} cm"
+              }
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "C",
+                    "D"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "C"
+                  ],
+                  [
+                    "D",
+                    "A"
+                  ]
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:A-B",
+              "eq:C-D",
+              "seglbl:A-B",
+              "seglbl:C-D"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:B-C",
+              "eq:D-A",
+              "seglbl:B-C",
+              "seglbl:D-A"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "평행사변형의 대변의 길이는 같으므로 DC = AB, AD = BC",
+        "둘레 = AB + BC + CD + DA = 2 × (AB + BC)",
+        "{F1}{v1}{F2}{v2}{F3} = {ans_v}",
+        "따라서 {Q}{eun(Q)} {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "DC = AB, AD = BC",
+                "hint": "대변"
+              },
+              {
+                "text": "둘레 = 2 × (AB + BC)",
+                "hint": "네 변의 합"
+              },
+              {
+                "text": "{F1}{v1}{F2}{v2}{F3} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "AB = {a} cm, BC = {b} cm이면 둘레는 2 × ({a} + {b}) = {P}(cm)로 세 값이 서로 맞는다. 답은 {ans_v} cm다.",
+      "model_answer": "평행사변형의 대변의 길이는 같으므로 DC = AB, AD = BC이고 둘레는 2 × (AB + BC)이다. {F1}{v1}{F2}{v2}{F3} = {ans_v}이므로 {Q}{eun(Q)} {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "대변 상등",
+          "points": 3,
+          "criterion": "DC = AB, AD = BC임을 밝혔다.",
+          "partial": "한 쌍만 썼으면 1점."
+        },
+        {
+          "element": "둘레 식",
+          "points": 2,
+          "criterion": "둘레 = 2 × (AB + BC)로 두고 {F1}{v1}{F2}{v2}{F3} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "둘레를 AB + BC로 두었으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-parallelogram-t2",
+      "pitfalls": [
+        {
+          "text": "둘레를 AB + BC({a + b})로 두어 2배를 빠뜨림",
+          "on": "둘레 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "둘레에서 한 변을 뺀 뒤 2로 나누지 않음",
+          "on": "둘레 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "대변이 같다는 근거 없이 계산만 함",
+          "on": "대변 상등",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 70,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "평행사변형의 성질: 두 쌍의 대변·대각이 각각 같고 두 대각선은 서로 다른 것을 이등분한다",
+        "평행선의 엇각·동측내각"
+      ],
+      "ops": [
+        "각도",
+        "사칙"
+      ],
+      "tags": [
+        "평행사변형",
+        "대변",
+        "대각",
+        "대각선"
+      ],
+      "title": "평행사변형의 대각선 — 교점에서 나뉜 길이",
+      "skill": "두 대각선이 서로 다른 것을 이등분함을 써서 OC = OA, OD = OB로 옮기기",
+      "variant_axis": {
+        "구하는 것": "△OCD 둘레 / AC / BD / 대각선의 합",
+        "OA·OB·AB": "3~12"
+      },
+      "discriminates": "대각선의 교점 O가 각 대각선의 중점임을 쓰는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "ocd",
+              "ac",
+              "bd",
+              "sum"
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              3,
+              9
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "int": [
+              3,
+              9
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "int": [
+              4,
+              12
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "ocd": {
+            "Q": "△OCD의 둘레의 길이",
+            "isO": 1,
+            "isAC": 0,
+            "isBD": 0,
+            "isS": 0,
+            "F1": "OC + OD + CD = ",
+            "F2": " + ",
+            "F3": " + ",
+            "LAW": "OC = OA, OD = OB, CD = AB"
+          },
+          "ac": {
+            "Q": "[[seg(AC)]]의 길이",
+            "isO": 0,
+            "isAC": 1,
+            "isBD": 0,
+            "isS": 0,
+            "F1": "AC = 2 × OA = 2 × ",
+            "F2": "",
+            "F3": "",
+            "LAW": "OA = OC"
+          },
+          "bd": {
+            "Q": "[[seg(BD)]]의 길이",
+            "isO": 0,
+            "isAC": 0,
+            "isBD": 1,
+            "isS": 0,
+            "F1": "BD = 2 × OB = 2 × ",
+            "F2": "",
+            "F3": "",
+            "LAW": "OB = OD"
+          },
+          "sum": {
+            "Q": "두 대각선의 길이의 합",
+            "isO": 0,
+            "isAC": 0,
+            "isBD": 0,
+            "isS": 1,
+            "F1": "AC + BD = 2 × ",
+            "F2": " + 2 × ",
+            "F3": "",
+            "LAW": "각 대각선 = 2 × 절반"
+          }
+        }
+      },
+      "derive": {
+        "ans_v": "(p + q + c)*isO + 2*p*isAC + 2*q*isBD + (2*p + 2*q)*isS",
+        "v1": "p*(isO + isAC + isS) + q*isBD",
+        "v2": "q*(isO + isS)",
+        "v3": "c*isO",
+        "w": "sqrt(abs(2*p*p + 2*q*q - c*c))",
+        "ax": "(w*w + c*c - 4*p*p)/(2*w)",
+        "ay": "sqrt(abs(c*c - ax*ax))"
+      },
+      "constraints": [
+        "p != q",
+        "p + q > c + 1",
+        "p + c > q + 1",
+        "q + c > p + 1",
+        "2*p*p + 2*q*q > c*c + 4",
+        "ans_v != p",
+        "ans_v != q",
+        "ans_v != c"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "c",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "(isO == 1 and ans == p + q + c) or (isAC == 1 and ans == 2*p) or (isBD == 1 and ans == 2*q) or (isS == 1 and ans == 2*p + 2*q)"
+      ],
+      "question": "다음 그림의 평행사변형 ABCD에서 두 대각선의 교점을 O라고 하자. [[seg(OA)]] = {p} cm, [[seg(OB)]] = {q} cm, [[seg(AB)]] = {c} cm일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{w}",
+                0
+              ],
+              "D": [
+                "{ax + w}",
+                "{ay}"
+              ],
+              "O": [
+                "{(ax + w)/2}",
+                "{ay/2}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{c} cm"
+              },
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              {
+                "a": "O",
+                "b": "A",
+                "label": "{p} cm"
+              },
+              {
+                "a": "O",
+                "b": "B",
+                "label": "{q} cm"
+              },
+              [
+                "O",
+                "C"
+              ],
+              [
+                "O",
+                "D"
+              ]
+            ],
+            "labels": [
+              {
+                "at": "O",
+                "text": "O",
+                "dx": 12,
+                "dy": -8,
+                "k": "lbl:O"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "평행사변형의 두 대각선은 서로 다른 것을 이등분한다. 그러므로 교점 O는 AC와 BD 각각의 중점이고 OC = OA = {p} cm, OD = OB = {q} cm다. 또 대변의 길이가 같으므로 CD = AB = {c} cm — △OCD의 세 변은 △OAB의 세 변과 같다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{w}",
+                0
+              ],
+              "D": [
+                "{ax + w}",
+                "{ay}"
+              ],
+              "O": [
+                "{(ax + w)/2}",
+                "{ay/2}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              {
+                "a": "D",
+                "b": "C",
+                "label": "{c} cm"
+              },
+              [
+                "D",
+                "A"
+              ],
+              [
+                "O",
+                "A"
+              ],
+              [
+                "O",
+                "B"
+              ],
+              {
+                "a": "C",
+                "b": "O",
+                "label": "{p} cm"
+              },
+              {
+                "a": "D",
+                "b": "O",
+                "label": "{q} cm"
+              }
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "O",
+                    "A"
+                  ],
+                  [
+                    "O",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "O",
+                    "B"
+                  ],
+                  [
+                    "O",
+                    "D"
+                  ]
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": "O",
+                "text": "O",
+                "dx": 12,
+                "dy": -8,
+                "k": "lbl:O"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:O-A",
+              "eq:O-C",
+              "seglbl:C-O"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:O-B",
+              "eq:O-D",
+              "seglbl:D-O"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seglbl:D-C",
+              "seg:C-D"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "두 대각선은 서로 다른 것을 이등분하므로 OC = OA = {p} cm, OD = OB = {q} cm",
+        "대변의 길이는 같으므로 CD = AB = {c} cm",
+        "{F1}{v1}{F2}{v2}{F3}{v3} = {ans_v}",
+        "따라서 {Q}{eun(Q)} {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "OC = {p}, OD = {q}",
+                "hint": "대각선이 서로를 이등분"
+              },
+              {
+                "text": "CD = AB = {c}",
+                "hint": "대변"
+              },
+              {
+                "text": "{Q}: {ans_v} cm",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "AC = 2 × {p} = {2*p}(cm), BD = 2 × {q} = {2*q}(cm)이고 △OCD의 둘레는 {p} + {q} + {c} = {p + q + c}(cm)로 △OAB의 둘레와 같다. 답은 {ans_v} cm다.",
+      "model_answer": "평행사변형의 두 대각선은 서로 다른 것을 이등분하므로 OC = OA = {p} cm, OD = OB = {q} cm이고, 대변의 길이가 같으므로 CD = AB = {c} cm이다. 따라서 {Q}{eun(Q)} {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "대각선의 이등분",
+          "points": 3,
+          "criterion": "O가 두 대각선의 중점이므로 OC = OA, OD = OB임을 밝혔다.",
+          "partial": "한 대각선만 썼으면 1점."
+        },
+        {
+          "element": "길이 계산",
+          "points": 2,
+          "criterion": "{F1}{v1}{F2}{v2}{F3}{v3} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "대변 CD = AB를 빠뜨렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-parallelogram-t3",
+      "pitfalls": [
+        {
+          "text": "OC를 OB({q})로, OD를 OA({p})로 바꿔 짝지음",
+          "on": "대각선의 이등분",
+          "effect": "불인정"
+        },
+        {
+          "text": "대각선의 길이를 절반 OA({p})로 답함(2배를 빠뜨림)",
+          "on": "길이 계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "CD = AB({c})를 쓰지 않고 △OCD의 둘레에서 한 변을 빠뜨림",
+          "on": "길이 계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 100,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "평행사변형의 성질: 두 쌍의 대변·대각이 각각 같고 두 대각선은 서로 다른 것을 이등분한다",
+        "평행선의 엇각·동측내각"
+      ],
+      "ops": [
+        "각도",
+        "사칙"
+      ],
+      "tags": [
+        "평행사변형",
+        "대변",
+        "대각",
+        "대각선"
+      ],
+      "title": "평행사변형의 각의 이등분선 — 엇각으로 생기는 이등변삼각형",
+      "skill": "이등분선과 평행선의 엇각으로 이등변삼각형(BE = AB)을 찾아 길이 구하기",
+      "variant_axis": {
+        "구하는 것": "EC / BF / EF(겹친 부분)",
+        "AB": "3~8",
+        "AD": "5~14"
+      },
+      "discriminates": "엇각과 이등분된 각이 같아 △ABE가 이등변삼각형(BE = AB)이 됨을 읽는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "ec",
+              "bf",
+              "ef"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              3,
+              8
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              5,
+              14
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "ec": {
+            "Q": "[[seg(EC)]]의 길이",
+            "PT": "점 E는 [[angle(A)]]의 이등분선과 변 BC의 교점이다",
+            "isEF": 0,
+            "HID": "F",
+            "S1A": "A",
+            "S1B": "E",
+            "S2A": "A",
+            "S2B": "E",
+            "Q1A": "A",
+            "Q1B": "B",
+            "Q2A": "B",
+            "Q2B": "E",
+            "LP": "E",
+            "LDX": -20,
+            "A1": "A",
+            "A1F": "B",
+            "A1T": "E",
+            "A2": "A",
+            "A2F": "E",
+            "A2T": "D",
+            "A3": "A",
+            "A3F": "B",
+            "A3T": "E",
+            "A4": "A",
+            "A4F": "E",
+            "A4T": "D",
+            "PAR": "AD ∥ BC이므로 ∠DAE = ∠AEB (엇각)",
+            "BIS": "AE가 ∠A를 이등분하므로 ∠BAE = ∠DAE = ∠AEB, 즉 △ABE는 BE = AB인 이등변삼각형: BE = AB =",
+            "F1": "EC = BC − BE = ",
+            "F2": " − ",
+            "LAW": "BE = AB"
+          },
+          "bf": {
+            "Q": "[[seg(BF)]]의 길이",
+            "PT": "점 F는 [[angle(D)]]의 이등분선과 변 BC의 교점이다",
+            "isEF": 0,
+            "HID": "E",
+            "S1A": "D",
+            "S1B": "F",
+            "S2A": "D",
+            "S2B": "F",
+            "Q1A": "C",
+            "Q1B": "D",
+            "Q2A": "C",
+            "Q2B": "F",
+            "LP": "F",
+            "LDX": 20,
+            "A1": "D",
+            "A1F": "A",
+            "A1T": "F",
+            "A2": "D",
+            "A2F": "F",
+            "A2T": "C",
+            "A3": "D",
+            "A3F": "A",
+            "A3T": "F",
+            "A4": "D",
+            "A4F": "F",
+            "A4T": "C",
+            "PAR": "AD ∥ BC이므로 ∠ADF = ∠DFC (엇각)",
+            "BIS": "DF가 ∠D를 이등분하므로 ∠CDF = ∠ADF = ∠DFC, 즉 △DFC는 CF = CD인 이등변삼각형: CF = CD = AB =",
+            "F1": "BF = BC − CF = ",
+            "F2": " − ",
+            "LAW": "CF = CD = AB"
+          },
+          "ef": {
+            "Q": "[[seg(EF)]]의 길이",
+            "PT": "두 점 E, F는 각각 [[angle(A)]], [[angle(D)]]의 이등분선과 변 BC의 교점이다",
+            "isEF": 1,
+            "HID": "Z",
+            "S1A": "A",
+            "S1B": "E",
+            "S2A": "D",
+            "S2B": "F",
+            "Q1A": "A",
+            "Q1B": "B",
+            "Q2A": "B",
+            "Q2B": "E",
+            "LP": "E",
+            "LDX": -20,
+            "A1": "A",
+            "A1F": "B",
+            "A1T": "E",
+            "A2": "A",
+            "A2F": "E",
+            "A2T": "D",
+            "A3": "D",
+            "A3F": "A",
+            "A3T": "F",
+            "A4": "D",
+            "A4F": "F",
+            "A4T": "C",
+            "PAR": "AD ∥ BC이므로 ∠DAE = ∠AEB, ∠ADF = ∠DFC (엇각)",
+            "BIS": "두 이등분선에서 △ABE, △DFC가 각각 이등변삼각형이므로 BE = AB, CF = CD = AB =",
+            "F1": "EF = BE + CF − BC = 2 × ",
+            "F2": " − ",
+            "LAW": "두 선분이 겹친 길이"
+          }
+        }
+      },
+      "derive": {
+        "ans_v": "(b - a)*(1 - isEF) + (2*a - b)*isEF",
+        "v1": "b*(1 - isEF) + a*isEF",
+        "v2": "a*(1 - isEF) + b*isEF",
+        "ay": "a*sin(pi*60/180)"
+      },
+      "constraints": [
+        "b > a",
+        "isEF == 0 or b < 2*a",
+        "ans_v != a",
+        "ans_v != b",
+        "ans_v >= 1"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "(isEF == 0 and ans == b - a) or (isEF == 1 and ans == 2*a - b)"
+      ],
+      "question": "다음 그림의 평행사변형 ABCD에서 {PT}. [[seg(AB)]] = {a} cm, [[seg(AD)]] = {b} cm일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{a/2}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{b}",
+                0
+              ],
+              "D": [
+                "{a/2 + b}",
+                "{ay}"
+              ],
+              "E": [
+                "{a}",
+                0
+              ],
+              "F": [
+                "{b - a}",
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{a} cm"
+              },
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              {
+                "a": "D",
+                "b": "A",
+                "label": "{b} cm"
+              },
+              [
+                "{S1A}",
+                "{S1B}"
+              ],
+              [
+                "{S2A}",
+                "{S2B}"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{A1}",
+                  "from": "{A1F}",
+                  "to": "{A1T}",
+                  "label": "•",
+                  "k": "arc:1"
+                },
+                {
+                  "at": "{A2}",
+                  "from": "{A2F}",
+                  "to": "{A2T}",
+                  "label": "•",
+                  "k": "arc:2"
+                },
+                {
+                  "at": "{A3}",
+                  "from": "{A3F}",
+                  "to": "{A3T}",
+                  "label": "•",
+                  "k": "arc:3"
+                },
+                {
+                  "at": "{A4}",
+                  "from": "{A4F}",
+                  "to": "{A4T}",
+                  "label": "•",
+                  "k": "arc:4"
+                }
+              ]
+            },
+            "nodot": [
+              "{HID}"
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "각의 이등분선이 평행사변형의 변과 만나면 이등변삼각형이 생긴다. AD ∥ BC이므로 이등분선이 만드는 각은 엇각으로 옮겨져 이등변삼각형의 두 밑각이 되고, 그 삼각형의 두 변이 같아진다: BE = AB(또는 CF = CD = AB). 그 다음 BC = {b} cm에서 빼거나 겹친 길이를 센다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{a/2}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{b}",
+                0
+              ],
+              "D": [
+                "{a/2 + b}",
+                "{ay}"
+              ],
+              "E": [
+                "{a}",
+                0
+              ],
+              "F": [
+                "{b - a}",
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{a} cm"
+              },
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              {
+                "a": "D",
+                "b": "A",
+                "label": "{b} cm"
+              },
+              [
+                "{S1A}",
+                "{S1B}"
+              ],
+              [
+                "{S2A}",
+                "{S2B}"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{A1}",
+                  "from": "{A1F}",
+                  "to": "{A1T}",
+                  "label": "•",
+                  "k": "arc:1"
+                },
+                {
+                  "at": "{A2}",
+                  "from": "{A2F}",
+                  "to": "{A2T}",
+                  "label": "•",
+                  "k": "arc:2"
+                },
+                {
+                  "at": "{A3}",
+                  "from": "{A3F}",
+                  "to": "{A3T}",
+                  "label": "•",
+                  "k": "arc:3"
+                },
+                {
+                  "at": "{A4}",
+                  "from": "{A4F}",
+                  "to": "{A4T}",
+                  "label": "•",
+                  "k": "arc:4"
+                }
+              ],
+              "eq": [
+                [
+                  [
+                    "{Q1A}",
+                    "{Q1B}"
+                  ],
+                  [
+                    "{Q2A}",
+                    "{Q2B}"
+                  ]
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": "{LP}",
+                "text": "{a} cm",
+                "dx": "{LDX}",
+                "dy": 16,
+                "accent": true,
+                "k": "lbl:be"
+              }
+            ],
+            "nodot": [
+              "{HID}"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:1",
+              "arc:2",
+              "arc:3",
+              "arc:4"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:A-B",
+              "eq:B-E",
+              "eq:C-D",
+              "eq:C-F",
+              "lbl:be"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "{PAR}",
+        "{BIS} {a} cm",
+        "{F1}{v1}{F2}{v2} = {ans_v}",
+        "따라서 {Q}{eun(Q)} {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "엇각 = 이등분된 각",
+                "hint": "AD ∥ BC"
+              },
+              {
+                "text": "BE = AB = {a} (또는 CF = CD = {a})",
+                "hint": "이등변삼각형"
+              },
+              {
+                "text": "{F1}{v1}{F2}{v2} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "BE = {a} cm, BC = {b} cm이므로 EC = {b - a} cm, 마찬가지로 CF = {a} cm, BF = {b - a} cm이며, 두 이등분선을 모두 그리면 BE + CF = {2*a} cm가 BC = {b} cm와 비교된다. 답은 {ans_v} cm다.",
+      "model_answer": "{PAR}. {BIS} {a} cm이다. {F1}{v1}{F2}{v2} = {ans_v}이므로 {Q}{eun(Q)} {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "엇각·이등변삼각형",
+          "points": 3,
+          "criterion": "엇각과 이등분된 각이 같아 이등변삼각형이 생김(BE = AB 또는 CF = CD)을 밝혔다.",
+          "partial": "이등변삼각형이라고만 쓰고 근거(엇각)가 없으면 1점."
+        },
+        {
+          "element": "길이 계산",
+          "points": 2,
+          "criterion": "{F1}{v1}{F2}{v2} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "BE = AB까지만 옳으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} {ans_v} cm를 답했다.",
+          "partial": "다른 토막의 길이를 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-parallelogram-t4",
+      "pitfalls": [
+        {
+          "text": "이등분선이 만드는 이등변삼각형에서 같은 변을 BE = AD({b})로 잘못 잡음",
+          "on": "엇각·이등변삼각형",
+          "effect": "불인정"
+        },
+        {
+          "text": "엇각을 밝히지 않고 BE = AB라고만 씀",
+          "on": "엇각·이등변삼각형",
+          "effect": "부분"
+        },
+        {
+          "text": "BE = {a}를 그대로 답하거나 BC − BE 대신 다른 토막을 답함",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형의 넓이",
+        "평행사변형의 넓이",
+        "평행선 사이의 거리"
+      ],
+      "ops": [
+        "넓이",
+        "방정식"
+      ],
+      "tags": [
+        "평행사변형",
+        "대변",
+        "대각",
+        "대각선"
+      ],
+      "title": "평행사변형 내부의 점 — △PAB + △PCD = ½□ABCD",
+      "skill": "P에서 두 평행한 변까지의 거리의 합이 높이임을 써서 두 삼각형의 넓이의 합이 절반임을 쓰기",
+      "variant_axis": {
+        "구하는 것": "□ABCD / △PCD",
+        "넓이": "4~20",
+        "P의 위치": "3가지"
+      },
+      "discriminates": "마주 보는 두 삼각형의 넓이의 합이 평행사변형의 절반임을 근거(높이의 합)와 함께 쓰는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "quad",
+              "pcd"
+            ]
+          }
+        },
+        {
+          "name": "s1",
+          "values": {
+            "int": [
+              4,
+              20
+            ]
+          }
+        },
+        {
+          "name": "s2",
+          "values": {
+            "int": [
+              4,
+              20
+            ]
+          }
+        },
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              "1",
+              "2",
+              "3"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "w",
+          "rows": {
+            "quad": {
+              "Q": "□ABCD의 넓이",
+              "isQ": 1,
+              "L2P": "",
+              "G1T": "△PAB의 넓이가 ",
+              "G2T": "△PCD의 넓이가 ",
+              "F1": "□ABCD = 2 × (",
+              "F2": " + ",
+              "F3": ")",
+              "LAW": "2 × (△PAB + △PCD)"
+            },
+            "pcd": {
+              "Q": "△PCD의 넓이",
+              "isQ": 0,
+              "L2P": "□ABCD = ",
+              "G1T": "△PAB의 넓이가 ",
+              "G2T": "□ABCD의 넓이가 ",
+              "F1": "△PCD = [[frac(1, 2)]] × ",
+              "F2": " − ",
+              "F3": "",
+              "LAW": "□ABCD ÷ 2 − △PAB"
+            }
+          }
+        },
+        {
+          "key": "s",
+          "rows": {
+            "1": {
+              "px": 2.8,
+              "py": 1.2
+            },
+            "2": {
+              "px": 4.2,
+              "py": 1.9
+            },
+            "3": {
+              "px": 3.4,
+              "py": 2.4
+            }
+          }
+        }
+      ],
+      "derive": {
+        "S": "2*(s1 + s2)",
+        "g1": "s1",
+        "g2": "s2*isQ + 2*(s1 + s2)*(1 - isQ)",
+        "ans_v": "2*(s1 + s2)*isQ + s2*(1 - isQ)",
+        "ux": "1.5/sqrt(1.5*1.5 + 3.2*3.2)",
+        "uy": "3.2/sqrt(1.5*1.5 + 3.2*3.2)",
+        "t1": "px*ux + py*uy",
+        "h1x": "t1*ux",
+        "h1y": "t1*uy",
+        "t2": "(px - 6)*ux + py*uy",
+        "h2x": "6 + t2*ux",
+        "h2y": "t2*uy"
+      },
+      "constraints": [
+        "s1 != s2",
+        "ans_v != s1",
+        "ans_v != s2"
+      ],
+      "cost_values": [
+        "s1",
+        "s2",
+        "S",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "S == 2*(s1 + s2)",
+        "(isQ == 1 and ans == S) or (isQ == 0 and ans == s2)"
+      ],
+      "question": "다음 그림과 같이 평행사변형 ABCD의 내부에 한 점 P를 잡았다. {G1T}{g1} cm², {G2T}{g2} cm²일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                1.5,
+                3.2
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                6,
+                0
+              ],
+              "D": [
+                7.5,
+                3.2
+              ],
+              "P": [
+                "{px}",
+                "{py}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              [
+                "P",
+                "A"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "P",
+                "C"
+              ],
+              [
+                "P",
+                "D"
+              ]
+            ],
+            "labels": [
+              {
+                "at": [
+                  "{(px + 1.5)/3}",
+                  "{(py + 3.2)/3}"
+                ],
+                "text": "{g1} cm²",
+                "dx": 0,
+                "dy": 4,
+                "k": "lbl:g1"
+              },
+              {
+                "at": [
+                  "{isQ*(px + 13.5)/3 + (1 - isQ)*4.5}",
+                  "{isQ*(py + 3.2)/3 + (1 - isQ)*3.9}"
+                ],
+                "text": "{L2P}{g2} cm²",
+                "dx": 0,
+                "dy": 4,
+                "k": "lbl:g2"
+              }
+            ],
+            "shade": [
+              [
+                "P",
+                "A",
+                "B"
+              ],
+              [
+                "P",
+                "C",
+                "D"
+              ]
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm²"
+      ],
+      "sol1": "AB ∥ DC이므로 점 P에서 AB까지의 거리 h₁과 DC까지의 거리 h₂의 합은 두 평행선 사이의 거리, 곧 AB를 밑변으로 한 평행사변형의 높이 h와 같다. △PAB = [[frac(1, 2)]] × AB × h₁, △PCD = [[frac(1, 2)]] × DC × h₂이고 DC = AB이므로 두 넓이의 합은 [[frac(1, 2)]] × AB × h = [[frac(1, 2)]]□ABCD다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                1.5,
+                3.2
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                6,
+                0
+              ],
+              "D": [
+                7.5,
+                3.2
+              ],
+              "P": [
+                "{px}",
+                "{py}"
+              ],
+              "H": [
+                "{h1x}",
+                "{h1y}"
+              ],
+              "K": [
+                "{h2x}",
+                "{h2y}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              [
+                "P",
+                "A"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "P",
+                "C"
+              ],
+              [
+                "P",
+                "D"
+              ],
+              {
+                "a": "P",
+                "b": "H",
+                "dash": true,
+                "label": "h₁"
+              },
+              {
+                "a": "P",
+                "b": "K",
+                "dash": true,
+                "label": "h₂"
+              }
+            ],
+            "marks": {
+              "right": [
+                [
+                  "P",
+                  "H",
+                  "B"
+                ],
+                [
+                  "P",
+                  "K",
+                  "D"
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{(px + 1.5)/3}",
+                  "{(py + 3.2)/3}"
+                ],
+                "text": "{g1} cm²",
+                "dx": 0,
+                "dy": 4,
+                "k": "lbl:g1"
+              },
+              {
+                "at": [
+                  "{isQ*(px + 13.5)/3 + (1 - isQ)*4.5}",
+                  "{isQ*(py + 3.2)/3 + (1 - isQ)*3.9}"
+                ],
+                "text": "{L2P}{g2} cm²",
+                "dx": 0,
+                "dy": 4,
+                "k": "lbl:g2"
+              }
+            ],
+            "nodot": [
+              "H",
+              "K"
+            ],
+            "shade": [
+              [
+                "P",
+                "A",
+                "B"
+              ],
+              [
+                "P",
+                "C",
+                "D"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "shade:0",
+              "shade:1"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:P-H",
+              "seg:P-K",
+              "seglbl:P-H",
+              "seglbl:P-K"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "P에서 AB, DC에 내린 수선의 길이를 h₁, h₂라 하면 h₁ + h₂ = (평행사변형의 높이 h)",
+        "△PAB + △PCD = [[frac(1, 2)]] × AB × h₁ + [[frac(1, 2)]] × AB × h₂ = [[frac(1, 2)]] × AB × h = [[frac(1, 2)]]□ABCD",
+        "{F1}{g1}{F2}{g2}{F3} = {ans_v}",
+        "따라서 {Q}{eun(Q)} {ans_v} cm²"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "h₁ + h₂ = h",
+                "hint": "평행선 사이의 거리"
+              },
+              {
+                "text": "△PAB + △PCD = [[frac(1, 2)]]□ABCD",
+                "hint": "밑변 AB = DC"
+              },
+              {
+                "text": "{F1}{g1}{F2}{g2}{F3} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "△PAB + △PCD = {s1} + {s2} = {s1 + s2}(cm²)는 □ABCD = {S} cm²의 절반이고, 나머지 △PBC + △PDA도 {s1 + s2} cm²다. 답은 {ans_v} cm²다.",
+      "model_answer": "AB ∥ DC이므로 P에서 AB, DC까지의 거리의 합은 평행사변형의 높이와 같다. 따라서 △PAB + △PCD = [[frac(1, 2)]]□ABCD이고, {F1}{g1}{F2}{g2}{F3} = {ans_v}이므로 {Q}{eun(Q)} {ans_v} cm²다.",
+      "rubric": [
+        {
+          "element": "절반 관계",
+          "points": 3,
+          "criterion": "높이의 합을 근거로 △PAB + △PCD = [[frac(1, 2)]]□ABCD임을 밝혔다.",
+          "partial": "관계만 쓰고 근거가 없으면 1점."
+        },
+        {
+          "element": "넓이 계산",
+          "points": 2,
+          "criterion": "{F1}{g1}{F2}{g2}{F3} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "절반을 빠뜨렸으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} {ans_v} cm²를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-parallelogram-t5",
+      "pitfalls": [
+        {
+          "text": "△PAB + △PCD를 □ABCD의 절반이 아니라 전체로 둠",
+          "on": "절반 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "높이의 합이 평행사변형의 높이와 같다는 근거 없이 공식만 씀",
+          "on": "절반 관계",
+          "effect": "부분"
+        },
+        {
+          "text": "△PCD를 구할 때 □ABCD 전체에서 △PAB를 뺌(절반에서 빼지 않음)",
+          "on": "넓이 계산",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

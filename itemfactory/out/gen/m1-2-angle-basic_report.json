@@ -1,0 +1,93 @@
+{
+ "run_id": "m1-2-angle-basic-20260909-225837",
+ "seed_id": "m1-2-angle-basic",
+ "title": "각의 크기 — 평각의 비례배분·문자 식·맞꼭지각",
+ "accepted": 387,
+ "rejected": 213,
+ "per_template": {
+  "m1-2-angle-basic-t1": {
+   "target": 300,
+   "space": 72,
+   "ok": 72,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림에서 점 O는 직선 AC 위의 점이고 [[angle(AOB)]] : [[angle(BOC)]] = 1 : 2일 때, [[angle(AOB)]]의 크기를 구하시오.",
+     "a": "[[deg(60)]]"
+    },
+    {
+     "idx": 47,
+     "q": "다음 그림에서 점 O는 직선 AC 위의 점이고 [[angle(AOB)]] : [[angle(BOC)]] = 7 : 2일 때, [[angle(BOC)]]의 크기를 구하시오.",
+     "a": "[[deg(40)]]"
+    },
+    {
+     "idx": 22,
+     "q": "다음 그림에서 점 O는 직선 AC 위의 점이고 [[angle(AOB)]] : [[angle(BOC)]] = 4 : 11일 때, [[angle(AOB)]]의 크기를 구하시오.",
+     "a": "[[deg(48)]]"
+    }
+   ]
+  },
+  "m1-2-angle-basic-t2": {
+   "target": 300,
+   "space": 144,
+   "ok": 70,
+   "rej": 74,
+   "by_gate": {
+    "G1:제약 위반 q <= 100": 27,
+    "G1:제약 위반 q >= 5": 25,
+    "G1:제약 위반 x != q": 3,
+    "G1:제약 위반 A != q": 6,
+    "G1:제약 위반 x != p": 8,
+    "G1:제약 위반 p != q": 5
+   },
+   "samples": [
+    {
+     "idx": 89,
+     "q": "다음 그림에서 점 O는 직선 AC 위의 점이고 [[angle(AOB)]] = (x + 25)°, [[angle(BOC)]] = (3x + 15)°일 때, [[angle(AOB)]]의 크기를 구하시오.",
+     "a": "[[deg(60)]]"
+    },
+    {
+     "idx": 68,
+     "q": "다음 그림에서 점 O는 직선 AC 위의 점이고 [[angle(AOB)]] = (x + 15)°, [[angle(BOC)]] = (2x + 75)°일 때, [[angle(AOB)]]의 크기를 구하시오.",
+     "a": "[[deg(45)]]"
+    },
+    {
+     "idx": 136,
+     "q": "다음 그림에서 점 O는 직선 AC 위의 점이고 [[angle(AOB)]] = (x + 25)°, [[angle(BOC)]] = (2x + 5)°일 때, [[angle(AOB)]]의 크기를 구하시오.",
+     "a": "[[deg(75)]]"
+    }
+   ]
+  },
+  "m1-2-angle-basic-t3": {
+   "target": 300,
+   "space": 384,
+   "ok": 245,
+   "rej": 139,
+   "by_gate": {
+    "G1:제약 위반 T >= 30": 14,
+    "G1:제약 위반 T <= 150": 36,
+    "G1:제약 위반 T != d": 60,
+    "G1:제약 위반 x != b": 29
+   },
+   "samples": [
+    {
+     "idx": 239,
+     "q": "다음 그림에서 두 직선 AB, CD가 점 O에서 만나고 [[angle(AOC)]] = (4x + 40)°, [[angle(BOD)]] = (2x + 90)°일 때, [[angle(AOC)]]의 크기를 구하시오.",
+     "a": "[[deg(140)]]"
+    },
+    {
+     "idx": 94,
+     "q": "다음 그림에서 두 직선 AB, CD가 점 O에서 만나고 [[angle(AOC)]] = (4x + 35)°, [[angle(BOD)]] = (2x + 55)°일 때, [[angle(AOC)]]의 크기를 구하시오.",
+     "a": "[[deg(75)]]"
+    },
+    {
+     "idx": 188,
+     "q": "다음 그림에서 두 직선 AB, CD가 점 O에서 만나고 [[angle(AOC)]] = (4x + 25)°, [[angle(BOD)]] = (2x + 65)°일 때, [[angle(AOC)]]의 크기를 구하시오.",
+     "a": "[[deg(105)]]"
+    }
+   ]
+  }
+ }
+}

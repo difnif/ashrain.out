@@ -1,0 +1,489 @@
+{
+  "seed_id": "m1-2-polygon-angles",
+  "category": "도형",
+  "title": "다각형의 내각의 합",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-09"
+  ],
+  "schema_id": "ad8377e7-3850-4d97-981b-818663096f13",
+  "schema_name": "다각형의 내각의 합",
+  "source_item_ids": [],
+  "note": "관계식 S = 180*(n-2), 정n각형 한 내각 = S/n 만 차용.",
+  "geometry": true,
+  "templates": [
+    {
+      "id": "m1-2-polygon-angles-t1",
+      "title": "n각형의 내각의 합",
+      "skill": "내각의 합 180(n−2)",
+      "prereq": [
+        "삼각형 내각의 합 180°",
+        "대각선"
+      ],
+      "process": "절차수행",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "사칙"
+      ],
+      "traps": [],
+      "variant_axis": {
+        "구하는 것": "내각의 합"
+      },
+      "discriminates": "삼각형 (n−2)개로 나누는 구조를 아는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "time_limit": 50,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "다각형",
+        "내각의합"
+      ],
+      "params": [
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              5,
+              12
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "s": "180*(n-2)",
+        "t": "n-2",
+        "dg": "n-3"
+      },
+      "constraints": [
+        "n >= 5"
+      ],
+      "cost_values": [
+        "n",
+        "t",
+        "s"
+      ],
+      "relation": "X - 180*(n-2)",
+      "unknown": "X",
+      "answer_var": "s",
+      "verify": [
+        "ans == 180*(n-2)",
+        "ans > 0"
+      ],
+      "question": "{n}각형의 내각의 크기의 합을 구하시오.",
+      "figure": [
+        {
+          "fn": "polygon",
+          "args": {
+            "n": "{n}"
+          }
+        }
+      ],
+      "answer": "[[deg({s})]]",
+      "answer_alt": [
+        "{s}"
+      ],
+      "sol1": "다각형의 내각의 합은 외우기보다 그림으로 이해하는 편이 안전하다. 한 꼭짓점을 잡고 거기서 대각선을 모두 그으면 {n}각형이 삼각형 여러 개로 잘린다. 잘린 삼각형들의 내각을 전부 모으면 원래 다각형의 내각이 되므로, (삼각형 개수) × 180°가 곧 내각의 합이다.",
+      "sol1_fig": [
+        {
+          "fn": "polygon",
+          "args": {
+            "n": "{n}",
+            "diagonals": "fan"
+          }
+        }
+      ],
+      "sol2": [
+        "한 꼭짓점에서 그을 수 있는 대각선은 {n} − 3 = {dg}(개)다. (자기 자신과 양옆 두 꼭짓점에는 그을 수 없다.)",
+        "대각선 {dg}개로 잘리면 삼각형은 그보다 하나 많은 {n} − 2 = {t}(개)가 된다.",
+        "삼각형 하나의 내각의 합이 180°이므로, 전체 내각의 합은 180° × {t} = {s}°"
+      ],
+      "sol_check": "삼각형이면 삼각형 1개라 180°, 사각형이면 2개라 360°로, 이미 아는 값과 맞는다. {n}각형이면 {s}°다.",
+      "model_answer": "{n}각형의 한 꼭짓점에서 대각선을 모두 그으면 {dg}개의 대각선이 생기고, 다각형은 삼각형 {t}개로 나뉜다. 삼각형 하나의 내각의 합이 180°이므로 {n}각형의 내각의 합은 180° × {t} = {s}°이다.",
+      "rubric": [
+        {
+          "element": "분할 구조 설명",
+          "points": 4,
+          "criterion": "한 꼭짓점에서 대각선을 그어 삼각형 {t}개로 나뉨을 밝혔다(그림 또는 말).",
+          "partial": "공식 180(n−2)만 쓰고 근거가 없으면 2점."
+        },
+        {
+          "element": "계산",
+          "points": 3,
+          "criterion": "180° × {t} = {s}°를 바르게 계산했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {s}°로 단위와 함께 썼다."
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:A",
+              "lbl:A"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:A-C",
+              "seg:A-D",
+              "seg:A-E",
+              "seg:A-F",
+              "seg:A-G",
+              "seg:A-H",
+              "seg:A-I",
+              "seg:A-J",
+              "seg:A-K"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:A-C",
+              "seg:A-D",
+              "seg:A-E",
+              "seg:A-F",
+              "seg:A-G",
+              "seg:A-H",
+              "seg:A-I",
+              "seg:A-J",
+              "seg:A-K"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:A-C",
+              "seg:A-D",
+              "seg:A-E",
+              "seg:A-F",
+              "seg:A-G",
+              "seg:A-H",
+              "seg:A-I",
+              "seg:A-J",
+              "seg:A-K"
+            ],
+            "keep": true
+          }
+        ],
+        []
+      ],
+      "pitfalls": [
+        {
+          "text": "한 꼭짓점에서 대각선을 그어 삼각형 (n − 2)개로 나뉜다는 근거 없이 공식만 씀",
+          "on": "분할",
+          "effect": "부분"
+        },
+        {
+          "text": "삼각형의 개수를 n 또는 n − 1 로 씀",
+          "on": "분할",
+          "effect": "불인정"
+        },
+        {
+          "text": "180° × (n − 2) 의 곱을 잘못 전개함",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "id": "m1-2-polygon-angles-t2",
+      "title": "내각의 합으로 다각형 찾기",
+      "skill": "내각의 합 공식 역산",
+      "prereq": [
+        "내각의 합 공식",
+        "일차방정식"
+      ],
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "traps": [
+        "역연산"
+      ],
+      "variant_axis": {
+        "구하는 것": "n 미지"
+      },
+      "discriminates": "공식을 역방향으로 쓰는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "time_limit": 70,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "다각형",
+        "내각의합",
+        "역산"
+      ],
+      "params": [
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              5,
+              16
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "s": "180*(n-2)",
+        "t": "n-2"
+      },
+      "constraints": [
+        "n >= 5"
+      ],
+      "cost_values": [
+        "n",
+        "t",
+        "s"
+      ],
+      "relation": "180*(X-2) - s",
+      "unknown": "X",
+      "answer_var": "n",
+      "verify": [
+        "180*(ans-2) == s",
+        "ans >= 3"
+      ],
+      "question": "내각의 크기의 합이 [[deg({s})]]인 다각형은 몇 각형인지 구하시오.",
+      "answer": "{n}",
+      "answer_alt": [
+        "{n}각형"
+      ],
+      "sol1": "구하는 것이 변의 개수라도 쓰는 식은 같다. n각형의 내각의 합은 180° × (n − 2)이므로, 이 값이 {s}°가 되게 하는 n을 찾는 일차방정식을 풀면 된다.",
+      "sol2": [
+        "구하는 다각형을 n각형이라 하고 식을 세운다: 180 × (n − 2) = {s}",
+        "양변을 180으로 나눈다: n − 2 = {s} ÷ 180 = {t}",
+        "이항하면 n = {t} + 2 = {n}",
+        "따라서 {n}각형이다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "180 × (n − 2) = {s}",
+              "n − 2 = {t}",
+              "n = {n}"
+            ]
+          }
+        }
+      ],
+      "sol_check": "{n}각형의 내각의 합을 다시 구하면 180° × ({n} − 2) = 180° × {t} = {s}°로 문제의 값과 같다. 답은 {n}각형이다.",
+      "model_answer": "구하는 다각형을 n각형이라 하면 내각의 합은 180 × (n − 2)이다. 이것이 {s}이므로 180 × (n − 2) = {s}, 곧 n − 2 = {t}이고 n = {n}이다. 확인해 보면 180° × {t} = {s}°로 맞으므로 답은 {n}각형이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 4,
+          "criterion": "180 × (n − 2) = {s}{eul(s)} 세웠다."
+        },
+        {
+          "element": "방정식 풀이",
+          "points": 3,
+          "criterion": "양변을 180으로 나누고 이항해 n = {n}{eul(n)} 구했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {n}각형으로 썼다.",
+          "partial": "수 {n}만 쓴 경우 1점."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "180 × (n − 2) 대신 180 × n 으로 식을 세움",
+          "on": "식 세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "양변을 180으로 나눈 뒤 2를 더하지 않거나 뺌",
+          "on": "방정식 풀이",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "id": "m1-2-polygon-angles-t3",
+      "title": "정다각형의 한 내각 고르기",
+      "skill": "정n각형의 한 내각",
+      "prereq": [
+        "내각의 합",
+        "나눗셈",
+        "외각의 합 360°"
+      ],
+      "process": "개념이해",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "사칙"
+      ],
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "variant_axis": {
+        "구하는 것": "한 내각",
+        "제시 형식": "선다형"
+      },
+      "discriminates": "내각의 합과 한 내각을 구분하는가",
+      "qtype": "choice",
+      "difficulty": 3,
+      "time_limit": 70,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "정다각형",
+        "내각",
+        "보기고르기"
+      ],
+      "params": [
+        {
+          "name": "n",
+          "values": {
+            "in": [
+              5,
+              6,
+              8,
+              9,
+              10,
+              12,
+              15,
+              18,
+              20
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "s": "180*(n-2)",
+        "one": "180*(n-2)/n",
+        "ext": "360/n",
+        "t": "n-2"
+      },
+      "constraints": [
+        "(180*(n-2)) % n == 0"
+      ],
+      "cost_values": [
+        "n",
+        "s",
+        "one",
+        "ext"
+      ],
+      "relation": "X*n - 180*(n-2)",
+      "unknown": "X",
+      "answer_var": "one",
+      "verify": [
+        "ans + ext == 180",
+        "ans*n == s"
+      ],
+      "question": "정{n}각형의 한 내각의 크기는?",
+      "figure": [
+        {
+          "fn": "polygon",
+          "args": {
+            "n": "{min(n,12)}"
+          }
+        }
+      ],
+      "answer": "[[deg({one})]]",
+      "distractor_fmt": "[[deg({v})]]",
+      "distractors": [
+        {
+          "expr": "s",
+          "misconception": "MC-POLY-02"
+        },
+        {
+          "expr": "ext",
+          "misconception": "MC-READ-01"
+        },
+        {
+          "expr": "180*n/n",
+          "misconception": "MC-POLY-01"
+        },
+        {
+          "expr": "180*(n-2)/(n-2)",
+          "misconception": "MC-POLY-01"
+        },
+        {
+          "expr": "one - 10",
+          "misconception": "MC-CALC-01"
+        }
+      ],
+      "sol1": "‘정’다각형은 변의 길이와 각의 크기가 모두 같은 도형이다. 그래서 내각의 합을 꼭짓점 수로 똑같이 나누면 한 내각이 된다. 구하는 것이 합({s}°)이 아니라 한 각임을 먼저 확인한다. 외각으로 푸는 더 빠른 길도 있다.",
+      "sol2": [
+        "내각의 합을 구한다: 180° × ({n} − 2) = 180° × {t} = {s}°",
+        "정{n}각형은 내각이 모두 같으므로 꼭짓점 수 {n}{ro(n)} 나눈다: {s}° ÷ {n} = {one}°",
+        "빠른 길 — 정다각형의 외각의 합은 언제나 360°이므로 한 외각은 360° ÷ {n} = {ext}°이고, 한 내각은 180° − {pn(ext)}° = {one}°로 같은 값이 나온다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "내각의 합 = 180° × {t} = {s}°",
+              "한 내각 = {s}° ÷ {n} = {one}°",
+              "(확인) 한 외각 = 360° ÷ {n} = {ext}°,  {one}° + {ext}° = 180°"
+            ]
+          }
+        }
+      ],
+      "sol_check": "한 내각 {one}°와 한 외각 {ext}°를 더하면 180°이고, 한 내각 {one}°에 {n}{eul(n)} 곱하면 {s}°로 내각의 합과 같다. 답은 [[deg({one})]]다.",
+      "model_answer": "정{n}각형의 내각의 합은 180° × ({n} − 2) = {s}°이고, 내각의 크기가 모두 같으므로 한 내각은 {s}° ÷ {n} = {one}°이다. 외각으로 확인하면 한 외각이 360° ÷ {n} = {ext}°이고 {one}° + {pn(ext)}° = 180°로 맞으므로 답은 {one}°다.",
+      "rubric": [
+        {
+          "element": "정다각형의 성질",
+          "points": 2,
+          "criterion": "내각의 크기가 모두 같으므로 합을 꼭짓점 수로 나눈다는 점을 밝혔다."
+        },
+        {
+          "element": "내각의 합 계산",
+          "points": 3,
+          "criterion": "180° × ({n} − 2) = {s}°를 구했다."
+        },
+        {
+          "element": "한 내각 계산",
+          "points": 3,
+          "criterion": "{s}° ÷ {n} = {one}°를 구했다. 외각을 이용한 풀이도 같은 배점."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {one}°로 썼다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "내각의 합을 구하고 n으로 나누지 않음",
+          "on": "한 내각",
+          "effect": "불인정"
+        },
+        {
+          "text": "한 외각 360° ÷ n 을 내각으로 답함",
+          "on": "한 내각",
+          "effect": "불인정"
+        },
+        {
+          "text": "'정다각형이라 내각이 모두 같다'는 근거 없이 나눔",
+          "on": "정다각형",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

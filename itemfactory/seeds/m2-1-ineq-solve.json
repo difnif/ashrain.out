@@ -1,0 +1,1452 @@
+{
+  "seed_id": "m2-1-ineq-solve",
+  "category": "연산",
+  "title": "일차부등식의 풀이 — 기본·괄호·자연수 해의 개수·계수 역산",
+  "unit_id": "m2-1",
+  "concept_ids": [
+    "m2-1-08"
+  ],
+  "schema_id": "e0dabf6c-362c-4f6e-bdce-527bc0f317e4",
+  "schema_name": "일차부등식의 풀이 / 괄호가 있는 일차부등식의 풀이 / 자연수 해 개수",
+  "source_item_ids": [],
+  "note": "경계 x0 를 먼저 뽑고 d = b + (a − c)x0 로 생성해 정수 경계 보장. 부등호·계수 부호 조합은 표(os). 해는 'x > 3' 문자열 답 — recheck.check_ineq 가 양변을 대입해 검산.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "prereq": [
+        "일차방정식의 풀이",
+        "부등식의 성질"
+      ],
+      "ops": [
+        "부등식",
+        "사칙"
+      ],
+      "traps": [
+        "부호",
+        "역연산"
+      ],
+      "time_limit": 70,
+      "points": 4,
+      "tags": [
+        "일차부등식",
+        "부등식의 풀이"
+      ],
+      "title": "ax + b ▷ cx + d 꼴의 일차부등식 풀기",
+      "skill": "이항해 x항과 상수항을 모으고, x의 계수로 나눌 때 음수이면 부등호의 방향을 바꾸기",
+      "variant_axis": {
+        "부등호": "> ≥ < ≤",
+        "계수 부호": "x의 계수가 양수/음수가 됨",
+        "해의 형태": "정수 경계"
+      },
+      "discriminates": "음수로 나눌 때 부등호의 방향을 바꾸는가, 이항할 때 부호를 바꾸는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "os",
+          "values": {
+            "in": [
+              "gtp",
+              "gtn",
+              "gep",
+              "gen",
+              "ltp",
+              "ltn",
+              "lep",
+              "len"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              2,
+              6
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -8,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4,
+              5,
+              6,
+              8
+            ]
+          }
+        },
+        {
+          "name": "x0",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "os",
+        "rows": {
+          "gtp": {
+            "OP": ">",
+            "FOP": ">",
+            "sg": 1,
+            "ps": 1,
+            "fd": 1,
+            "strict": 1,
+            "flip": 0,
+            "FLIP": "",
+            "INC": "포함하지 않는다",
+            "DIR": "오른쪽"
+          },
+          "gtn": {
+            "OP": ">",
+            "FOP": "<",
+            "sg": 1,
+            "ps": -1,
+            "fd": -1,
+            "strict": 1,
+            "flip": 1,
+            "FLIP": " — 음수로 나누므로 부등호의 방향이 바뀐다",
+            "INC": "포함하지 않는다",
+            "DIR": "왼쪽"
+          },
+          "gep": {
+            "OP": "≥",
+            "FOP": "≥",
+            "sg": 1,
+            "ps": 1,
+            "fd": 1,
+            "strict": 0,
+            "flip": 0,
+            "FLIP": "",
+            "INC": "포함한다",
+            "DIR": "오른쪽"
+          },
+          "gen": {
+            "OP": "≥",
+            "FOP": "≤",
+            "sg": 1,
+            "ps": -1,
+            "fd": -1,
+            "strict": 0,
+            "flip": 1,
+            "FLIP": " — 음수로 나누므로 부등호의 방향이 바뀐다",
+            "INC": "포함한다",
+            "DIR": "왼쪽"
+          },
+          "ltp": {
+            "OP": "<",
+            "FOP": "<",
+            "sg": -1,
+            "ps": 1,
+            "fd": -1,
+            "strict": 1,
+            "flip": 0,
+            "FLIP": "",
+            "INC": "포함하지 않는다",
+            "DIR": "왼쪽"
+          },
+          "ltn": {
+            "OP": "<",
+            "FOP": ">",
+            "sg": -1,
+            "ps": -1,
+            "fd": 1,
+            "strict": 1,
+            "flip": 1,
+            "FLIP": " — 음수로 나누므로 부등호의 방향이 바뀐다",
+            "INC": "포함하지 않는다",
+            "DIR": "오른쪽"
+          },
+          "lep": {
+            "OP": "≤",
+            "FOP": "≤",
+            "sg": -1,
+            "ps": 1,
+            "fd": -1,
+            "strict": 0,
+            "flip": 0,
+            "FLIP": "",
+            "INC": "포함한다",
+            "DIR": "왼쪽"
+          },
+          "len": {
+            "OP": "≤",
+            "FOP": "≥",
+            "sg": -1,
+            "ps": -1,
+            "fd": 1,
+            "strict": 0,
+            "flip": 1,
+            "FLIP": " — 음수로 나누므로 부등호의 방향이 바뀐다",
+            "INC": "포함한다",
+            "DIR": "오른쪽"
+          }
+        }
+      },
+      "derive": {
+        "c": "a - ps*k",
+        "d": "b + ps*k*x0",
+        "m": "ps*k",
+        "r": "ps*k*x0"
+      },
+      "constraints": [
+        "c >= 1",
+        "d != 0",
+        "x0 != 0",
+        "c != a",
+        "abs(d) <= 30",
+        "ps < 0 or k >= 2"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "m",
+        "r",
+        "x0"
+      ],
+      "verify": [
+        "a*x0 + b == c*x0 + d",
+        "sg*(a - c)*fd > 0",
+        "m == a - c",
+        "r == d - b"
+      ],
+      "question": "일차부등식 {a}x {sgn(b)} {OP} {co(c)}x {sgn(d)}{eul(d)} 푸시오.",
+      "answer": "x {FOP} {x0}",
+      "answer_alt": [],
+      "sol1": "일차방정식을 풀 때처럼 x가 있는 항은 좌변으로, 상수항은 우변으로 이항한다(넘기면 부호가 바뀐다). 마지막에 x의 계수로 양변을 나누는데, 그 계수가 음수이면 부등호의 방향이 바뀐다 — 부등식에서 방정식과 다른 점은 이것 하나뿐이다. 해는 수직선에 경계점과 방향으로 나타낸다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{a}x {sgn(b)} {OP} {co(c)}x {sgn(d)}",
+              "{a}x − {co(c)}x {OP} {d} − {pn(b)}",
+              "{co(m)}x {OP} {r}",
+              "x {FOP} {x0}{FLIP}"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol2": [
+        "x가 있는 항은 좌변으로, 상수항은 우변으로 이항한다: {a}x − {co(c)}x {OP} {d} − {pn(b)}",
+        "동류항을 정리하면 {co(m)}x {OP} {r}",
+        "양변을 x의 계수 {m}{ro(m)} 나누면 x {FOP} {x0}{FLIP}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{a}x − {co(c)}x {OP} {d} − {pn(b)}",
+                "hint": "이항 — 부호가 바뀐다"
+              },
+              {
+                "text": "{co(m)}x {OP} {r}",
+                "hint": "동류항 정리"
+              },
+              {
+                "text": "x {FOP} {x0}",
+                "hint": "양변 ÷ {pn(m)}{FLIP}",
+                "marks": [
+                  {
+                    "on": "{x0}",
+                    "note": "{r} ÷ {pn(m)} = {x0}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "경계 x = {x0}{eul(x0)} 원래 부등식에 넣으면 양변이 {a*x0 + b}{ro(a*x0 + b)} 같아진다(경계는 {INC}). 경계보다 {DIR}의 수 x = {x0 + fd}{eul(x0 + fd)} 넣으면 좌변 {a*(x0 + fd) + b}, 우변 {c*(x0 + fd) + d}{ro(c*(x0 + fd) + d)} 부등식이 성립하므로 해의 방향이 맞다. 답은 x {FOP} {x0}이다.",
+      "sol3_fig": [
+        {
+          "fn": "numline",
+          "args": {
+            "min": "{x0 - 4}",
+            "max": "{x0 + 4}",
+            "points": [
+              {
+                "x": "{x0}",
+                "label": "{x0}"
+              }
+            ],
+            "segments": [
+              {
+                "start": "{min(x0, x0 + 5.4*fd)}",
+                "end": "{max(x0, x0 + 5.4*fd)}",
+                "inclusive": "{strict == 0}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:{x0}",
+              "lbl:{x0}"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "seg:0",
+            "keep": true
+          }
+        ]
+      ],
+      "model_answer": "{a}x {sgn(b)} {OP} {co(c)}x {sgn(d)}에서 x항과 상수항을 이항하면 {a}x − {co(c)}x {OP} {d} − {pn(b)}, 곧 {co(m)}x {OP} {r}이다. 양변을 {m}{ro(m)} 나누면{FLIP} x {FOP} {x0}이다.",
+      "rubric": [
+        {
+          "element": "이항·정리",
+          "points": 2,
+          "criterion": "x항과 상수항을 이항해 {co(m)}x {OP} {r}{ro(r)} 정리했다.",
+          "partial": "이항의 부호 실수가 있으면 1점."
+        },
+        {
+          "element": "계수로 나누기",
+          "points": 3,
+          "criterion": "양변을 {m}{ro(m)} 나누어 x {FOP} {x0}{eul(x0)} 얻었다(음수이면 방향을 바꾸었다).",
+          "partial": "음수로 나누며 방향을 바꾸지 않았으면 인정하지 않는다."
+        },
+        {
+          "element": "해 나타내기",
+          "points": 2,
+          "criterion": "해를 x {FOP} {x0}{ro(x0)} 쓰고(또는 수직선에 나타내고) 경계값이 {INC}{eun(INC)} 것을 바르게 표시했다.",
+          "partial": "경계 포함 여부(등호)가 틀렸으면 1점."
+        }
+      ],
+      "id": "m2-1-ineq-solve-t1",
+      "pitfalls": [
+        {
+          "text": "상수항 {b}{eul(b)} 이항하며 부호를 바꾸지 않아 {a}x − {co(c)}x {OP} {d} + {pn(b)}처럼 정리함",
+          "on": "이항",
+          "effect": "불인정"
+        },
+        {
+          "text": "양변을 x의 계수로 나눌 때 음수이면 부등호의 방향을 바꿔야 하는데 그대로 둠(양수인데 바꾸는 반대 실수 포함)",
+          "on": "계수",
+          "effect": "불인정"
+        },
+        {
+          "text": "해 x {FOP} {x0}의 경계 {x0}{eul(x0)} 포함/불포함(등호)을 반대로 표시함",
+          "on": "해 나타",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "prereq": [
+        "일차방정식의 풀이",
+        "부등식의 성질"
+      ],
+      "ops": [
+        "부등식",
+        "사칙"
+      ],
+      "traps": [
+        "부호",
+        "역연산"
+      ],
+      "time_limit": 70,
+      "points": 4,
+      "tags": [
+        "일차부등식",
+        "부등식의 풀이"
+      ],
+      "title": "괄호가 있는 일차부등식 풀기",
+      "skill": "분배법칙으로 괄호를 먼저 풀고, 이항·정리·계수로 나누기",
+      "variant_axis": {
+        "부등호": "> ≥ < ≤",
+        "구조": "a(x − p) 꼴 괄호",
+        "해의 형태": "정수 경계"
+      },
+      "discriminates": "괄호를 풀 때 뒤 항에도 곱하는가, 음수로 나눌 때 방향을 바꾸는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "os",
+          "values": {
+            "in": [
+              "gtp",
+              "gtn",
+              "gep",
+              "gen",
+              "ltp",
+              "ltn",
+              "lep",
+              "len"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              2,
+              6
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              1,
+              6
+            ]
+          }
+        },
+        {
+          "name": "x0",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "os",
+        "rows": {
+          "gtp": {
+            "OP": ">",
+            "FOP": ">",
+            "sg": 1,
+            "ps": 1,
+            "fd": 1,
+            "strict": 1,
+            "flip": 0,
+            "FLIP": "",
+            "INC": "포함하지 않는다",
+            "DIR": "오른쪽"
+          },
+          "gtn": {
+            "OP": ">",
+            "FOP": "<",
+            "sg": 1,
+            "ps": -1,
+            "fd": -1,
+            "strict": 1,
+            "flip": 1,
+            "FLIP": " — 음수로 나누므로 부등호의 방향이 바뀐다",
+            "INC": "포함하지 않는다",
+            "DIR": "왼쪽"
+          },
+          "gep": {
+            "OP": "≥",
+            "FOP": "≥",
+            "sg": 1,
+            "ps": 1,
+            "fd": 1,
+            "strict": 0,
+            "flip": 0,
+            "FLIP": "",
+            "INC": "포함한다",
+            "DIR": "오른쪽"
+          },
+          "gen": {
+            "OP": "≥",
+            "FOP": "≤",
+            "sg": 1,
+            "ps": -1,
+            "fd": -1,
+            "strict": 0,
+            "flip": 1,
+            "FLIP": " — 음수로 나누므로 부등호의 방향이 바뀐다",
+            "INC": "포함한다",
+            "DIR": "왼쪽"
+          },
+          "ltp": {
+            "OP": "<",
+            "FOP": "<",
+            "sg": -1,
+            "ps": 1,
+            "fd": -1,
+            "strict": 1,
+            "flip": 0,
+            "FLIP": "",
+            "INC": "포함하지 않는다",
+            "DIR": "왼쪽"
+          },
+          "ltn": {
+            "OP": "<",
+            "FOP": ">",
+            "sg": -1,
+            "ps": -1,
+            "fd": 1,
+            "strict": 1,
+            "flip": 1,
+            "FLIP": " — 음수로 나누므로 부등호의 방향이 바뀐다",
+            "INC": "포함하지 않는다",
+            "DIR": "오른쪽"
+          },
+          "lep": {
+            "OP": "≤",
+            "FOP": "≤",
+            "sg": -1,
+            "ps": 1,
+            "fd": -1,
+            "strict": 0,
+            "flip": 0,
+            "FLIP": "",
+            "INC": "포함한다",
+            "DIR": "왼쪽"
+          },
+          "len": {
+            "OP": "≤",
+            "FOP": "≥",
+            "sg": -1,
+            "ps": -1,
+            "fd": 1,
+            "strict": 0,
+            "flip": 1,
+            "FLIP": " — 음수로 나누므로 부등호의 방향이 바뀐다",
+            "INC": "포함한다",
+            "DIR": "오른쪽"
+          }
+        }
+      },
+      "derive": {
+        "c": "a - ps*k",
+        "b": "-a*p",
+        "d": "-a*p + ps*k*x0",
+        "m": "ps*k",
+        "r": "d + a*p"
+      },
+      "constraints": [
+        "c >= 1",
+        "d != 0",
+        "x0 != 0",
+        "c != a",
+        "abs(d) <= 40",
+        "x0 != p",
+        "ps < 0 or k >= 2"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "c",
+        "d",
+        "m",
+        "r",
+        "x0"
+      ],
+      "verify": [
+        "a*(x0 - p) == c*x0 + d",
+        "sg*(a - c)*fd > 0",
+        "m == a - c"
+      ],
+      "question": "일차부등식 {a}(x − {p}) {OP} {co(c)}x {sgn(d)}{eul(d)} 푸시오.",
+      "answer": "x {FOP} {x0}",
+      "answer_alt": [],
+      "sol1": "괄호가 있으면 먼저 분배법칙으로 푼다 — {a}(x − {p})는 {a}x − {a*p}이고, 뒤의 {p}에도 {a}{eul(a)} 곱해야 한다. 그다음은 보통의 일차부등식과 같다: 이항해 정리하고 x의 계수로 나눈다(음수면 방향이 바뀐다).",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{a}(x − {p}) {OP} {co(c)}x {sgn(d)}",
+              "{a}x − {a*p} {OP} {co(c)}x {sgn(d)}",
+              "{co(m)}x {OP} {r}",
+              "x {FOP} {x0}{FLIP}"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol2": [
+        "괄호를 풀면 {a}x − {a*p} {OP} {co(c)}x {sgn(d)}",
+        "이항하여 정리하면 {a}x − {co(c)}x {OP} {d} + {a*p}, 곧 {co(m)}x {OP} {r}",
+        "양변을 {m}{ro(m)} 나누면 x {FOP} {x0}{FLIP}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{a}x − {a*p} {OP} {co(c)}x {sgn(d)}",
+                "hint": "분배법칙 — {p}에도 {a}{eul(a)} 곱한다",
+                "marks": [
+                  {
+                    "on": "{a*p}",
+                    "note": "{a}×{p}"
+                  }
+                ]
+              },
+              {
+                "text": "{co(m)}x {OP} {r}",
+                "hint": "이항 후 정리"
+              },
+              {
+                "text": "x {FOP} {x0}",
+                "hint": "양변 ÷ {pn(m)}{FLIP}",
+                "marks": [
+                  {
+                    "on": "{x0}",
+                    "note": "{r} ÷ {pn(m)} = {x0}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:0",
+              "mark:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "경계 x = {x0}{eul(x0)} 넣으면 좌변 {a}({x0} − {p}) = {a*(x0 - p)}, 우변 {c*x0 + d}{ro(c*x0 + d)} 같다(경계는 {INC}). 경계보다 {DIR}의 x = {x0 + fd}{eul(x0 + fd)} 넣으면 좌변 {a*(x0 + fd - p)}, 우변 {c*(x0 + fd) + d}{ro(c*(x0 + fd) + d)} 부등식이 성립한다. 답은 x {FOP} {x0}이다.",
+      "sol3_fig": [
+        {
+          "fn": "numline",
+          "args": {
+            "min": "{x0 - 4}",
+            "max": "{x0 + 4}",
+            "points": [
+              {
+                "x": "{x0}",
+                "label": "{x0}"
+              }
+            ],
+            "segments": [
+              {
+                "start": "{min(x0, x0 + 5.4*fd)}",
+                "end": "{max(x0, x0 + 5.4*fd)}",
+                "inclusive": "{strict == 0}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:{x0}",
+              "lbl:{x0}"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "seg:0",
+            "keep": true
+          }
+        ]
+      ],
+      "model_answer": "괄호를 풀면 {a}x − {a*p} {OP} {co(c)}x {sgn(d)}이고, 이항하여 정리하면 {co(m)}x {OP} {r}이다. 양변을 {m}{ro(m)} 나누면{FLIP} x {FOP} {x0}이다.",
+      "rubric": [
+        {
+          "element": "괄호 풀기",
+          "points": 2,
+          "criterion": "분배법칙으로 {a}(x − {p}) = {a}x − {a*p}{ro(a*p)} 바르게 풀었다.",
+          "partial": "뒤 항에 곱하지 않았으면 인정하지 않는다."
+        },
+        {
+          "element": "이항·계수로 나누기",
+          "points": 3,
+          "criterion": "이항해 {co(m)}x {OP} {r}{ro(r)} 정리하고 양변을 {m}{ro(m)} 나누어 x {FOP} {x0}{eul(x0)} 얻었다(음수이면 방향을 바꾸었다).",
+          "partial": "정리까지 옳고 나눌 때 방향이 틀렸으면 1점."
+        },
+        {
+          "element": "해 나타내기",
+          "points": 2,
+          "criterion": "해를 x {FOP} {x0}{ro(x0)} 쓰고 경계값 포함 여부를 바르게 표시했다.",
+          "partial": "등호 포함 여부가 틀렸으면 1점."
+        }
+      ],
+      "id": "m2-1-ineq-solve-t2",
+      "pitfalls": [
+        {
+          "text": "괄호를 풀 때 {a}{eul(a)} 뒤의 {p}에 곱하지 않아 {a}x − {p}{ro(p)} 씀",
+          "on": "괄호",
+          "effect": "불인정"
+        },
+        {
+          "text": "음수로 나눌 때 부등호의 방향을 바꾸지 않음",
+          "on": "이항·계수",
+          "effect": "불인정"
+        },
+        {
+          "text": "경계 {x0}의 등호 포함 여부를 반대로 표시함",
+          "on": "해 나타",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "무맥락",
+      "prereq": [
+        "일차방정식의 풀이",
+        "부등식의 성질"
+      ],
+      "ops": [
+        "부등식",
+        "사칙"
+      ],
+      "traps": [
+        "부호",
+        "역연산"
+      ],
+      "time_limit": 70,
+      "points": 4,
+      "tags": [
+        "일차부등식",
+        "부등식의 풀이"
+      ],
+      "title": "일차부등식을 만족하는 자연수 x의 개수",
+      "skill": "부등식을 풀어 x의 범위를 구한 뒤 그 안의 자연수를 세기",
+      "variant_axis": {
+        "부등호": "≤ / <",
+        "구하는 것": "자연수 해의 개수"
+      },
+      "discriminates": "해의 경계(분수)를 구하고 등호 포함 여부에 따라 자연수를 바르게 세는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              "le",
+              "lt"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              2,
+              5
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              1,
+              9
+            ]
+          }
+        },
+        {
+          "name": "N",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              0,
+              4
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "q",
+        "rows": {
+          "le": {
+            "OP": "≤",
+            "strict": 0,
+            "K": "포함하므로",
+            "TAIL": "이하"
+          },
+          "lt": {
+            "OP": "<",
+            "strict": 1,
+            "K": "포함하지 않으므로",
+            "TAIL": "미만"
+          }
+        }
+      },
+      "derive": {
+        "c": "a*N + r - b",
+        "s": "a*N + r",
+        "bd": "(a*N + r)/a"
+      },
+      "constraints": [
+        "r < a",
+        "c >= 1",
+        "strict == 0 or r >= 1",
+        "a != 3 or r == 0",
+        "N != a",
+        "N != b",
+        "N != c"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "s",
+        "N",
+        "bd"
+      ],
+      "verify": [
+        "a*N - b <= c",
+        "a*(N + 1) - b > c",
+        "(strict == 0) or (a*N - b < c)"
+      ],
+      "question": "일차부등식 {a}x − {b} {OP} {c}{eul(c)} 만족하는 자연수 x의 개수를 구하시오.",
+      "answer": "{N}",
+      "answer_alt": [
+        "{N}개"
+      ],
+      "sol1": "먼저 부등식을 풀어 x의 범위를 구한다: {b}{eul(b)} 이항하면 {a}x {OP} {s}, 양변을 {a}{ro(a)} 나누면 x {OP} {dec(bd)}. 이 범위 안의 자연수를 세는데, 경계가 자연수이면 등호 포함 여부가 개수를 바꾼다. 수직선에 경계를 찍고 그 왼쪽의 자연수를 세어 본다.",
+      "sol1_fig": [
+        {
+          "fn": "numline",
+          "args": {
+            "min": 0,
+            "max": "{N + 2}",
+            "points": [
+              {
+                "x": "{bd}",
+                "label": "{dec(bd)}"
+              }
+            ],
+            "segments": [
+              {
+                "start": 0,
+                "end": "{bd}",
+                "inclusive": "{strict == 0}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:{dec(bd)}",
+              "lbl:{dec(bd)}"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "seg:0",
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "{b}{eul(b)} 우변으로 이항하면 {a}x {OP} {c} + {b}, 곧 {a}x {OP} {s}",
+        "양변을 {a}{ro(a)} 나누면 x {OP} {dec(bd)}",
+        "경계 {dec(bd)}{eul(dec(bd))} {K} 이 범위의 자연수는 1, 2, …, {N}이다.",
+        "따라서 자연수 x의 개수는 {N}개이다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{a}x {OP} {s}",
+                "hint": "{b}{eul(b)} 이항"
+              },
+              {
+                "text": "x {OP} {dec(bd)}",
+                "hint": "양변 ÷ {a}",
+                "marks": [
+                  {
+                    "on": "{dec(bd)}",
+                    "note": "{s} ÷ {a} = {dec(bd)}"
+                  }
+                ]
+              },
+              {
+                "text": "x = 1, 2, …, {N}  → {N}개",
+                "hint": "경계 {dec(bd)}{eun(dec(bd))} {TAIL}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol3": "x = {N}{eul(N)} 넣으면 {a} × {N} − {b} = {a*N - b}{ro(a*N - b)} {c} {TAIL}이고, x = {N + 1}{eul(N + 1)} 넣으면 {a*(N + 1) - b}{ro(a*(N + 1) - b)} {c}{eul(c)} 넘으므로 자연수 해는 1부터 {N}까지, 모두 {N}개다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = {N}: {a} × {N} − {b} = {a*N - b}  ✓",
+              "x = {N + 1}: {a} × {N + 1} − {b} = {a*(N + 1) - b}  ✗"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "{a}x − {b} {OP} {c}에서 {a}x {OP} {s}, x {OP} {dec(bd)}이다. 이 범위의 자연수는 1, 2, …, {N}이므로 자연수 x의 개수는 {N}개다.",
+      "rubric": [
+        {
+          "element": "부등식 풀기",
+          "points": 3,
+          "criterion": "이항·나눗셈으로 x {OP} {dec(bd)}{eul(dec(bd))} 구했다.",
+          "partial": "이항까지 옳고 나눗셈이 틀렸으면 1점."
+        },
+        {
+          "element": "자연수 세기",
+          "points": 2,
+          "criterion": "경계 {dec(bd)}의 포함 여부를 판단해 1부터 {N}까지임을 밝혔다.",
+          "partial": "경계 처리(등호)가 틀려 하나 많거나 적으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "개수 {N}개를 답했다.",
+          "partial": "가장 큰 자연수 {N}{eul(N)} 개수로 혼동했어도 값이 같으므로 근거를 확인해 1점."
+        }
+      ],
+      "id": "m2-1-ineq-solve-t3",
+      "pitfalls": [
+        {
+          "text": "{b}{eul(b)} 이항하며 부호를 바꾸지 않아 {a}x {OP} {c - b}{ro(c - b)} 정리함",
+          "on": "부등식 풀",
+          "effect": "불인정"
+        },
+        {
+          "text": "경계 {dec(bd)} {TAIL}인 자연수를 셀 때 등호 처리를 잘못해 하나 많거나 적게 셈",
+          "on": "자연수",
+          "effect": "부분"
+        },
+        {
+          "text": "0을 자연수에 넣어 {N + 1}개로 답함",
+          "on": "자연수",
+          "effect": "부분"
+        },
+        {
+          "text": "x의 범위 x {OP} {dec(bd)}만 쓰고 개수를 답하지 않음",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "무맥락",
+      "prereq": [
+        "일차방정식의 풀이",
+        "부등식의 성질"
+      ],
+      "ops": [
+        "부등식",
+        "사칙"
+      ],
+      "traps": [
+        "부호",
+        "역연산"
+      ],
+      "time_limit": 70,
+      "points": 4,
+      "tags": [
+        "일차부등식",
+        "부등식의 풀이"
+      ],
+      "title": "해가 주어진 일차부등식에서 x의 계수 구하기",
+      "skill": "해의 부등호 방향이 원래와 반대이면 x의 계수가 음수임을 알아내고, 경계값으로 계수를 구하기",
+      "variant_axis": {
+        "구하는 것": "x의 계수 a",
+        "조건": "해 x < k (방향이 바뀜)"
+      },
+      "discriminates": "'방향이 바뀌었으므로 a < 0'을 근거로 밝히고 (c − b)/a = k 를 푸는가",
+      "qtype": "short",
+      "difficulty": 4,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              -6,
+              -2
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "c": "b + a*k",
+        "cb": "a*k"
+      },
+      "constraints": [
+        "c != 0",
+        "c != b",
+        "abs(c) <= 40",
+        "a != k",
+        "a != b",
+        "a != c",
+        "k != 1"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "k",
+        "cb"
+      ],
+      "relation": "(c - b)/X - k",
+      "unknown": "X",
+      "answer_var": "a",
+      "verify": [
+        "(c - b)/ans == k",
+        "ans < 0"
+      ],
+      "question": "x에 대한 일차부등식 ax {sgn(b)} > {c}의 해가 x < {k}일 때, 상수 a의 값을 구하시오.",
+      "answer": "{a}",
+      "answer_alt": [],
+      "sol1": "{b}{eul(b)} 이항하면 ax > {cb}. 그런데 해가 x < {k}{ro(k)} 부등호의 방향이 원래(>)와 반대다 — 양변을 a로 나눌 때 방향이 바뀌었다는 뜻이므로 a < 0이다. a < 0이면 x < {cb}/a이고, 이것이 x < {k}{wa(k)} 같으므로 {cb}/a = {k}에서 a를 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "ax {sgn(b)} > {c}",
+              "ax > {cb}",
+              "해가 x < {k}  ⇒  방향이 바뀜  ⇒  a < 0",
+              "x < {cb}/a  이므로  {cb}/a = {k}"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol2": [
+        "{b}{eul(b)} 우변으로 이항하면 ax > {c} − {pn(b)}, 곧 ax > {cb}",
+        "해 x < {k}의 부등호 방향이 원래와 반대이므로 양변을 나눈 수 a는 음수이다: a < 0",
+        "a < 0이므로 ax > {cb}의 양변을 a로 나누면 x < {cb}/a",
+        "이것이 x < {k}{wa(k)} 같아야 하므로 {cb}/a = {k}, 따라서 a = {cb} ÷ {pn(k)} = {a}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "ax > {cb}",
+                "hint": "{b}{eul(b)} 이항"
+              },
+              {
+                "text": "a < 0",
+                "hint": "해의 방향이 반대 → 음수로 나눴다"
+              },
+              {
+                "text": "x < {cb}/a  ⇒  {cb}/a = {k}",
+                "hint": "양변 ÷ a (방향 바뀜)"
+              },
+              {
+                "text": "a = {a}",
+                "marks": [
+                  {
+                    "on": "{a}",
+                    "note": "{cb} ÷ {pn(k)} = {a}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "mark:3-0"
+          }
+        ]
+      ],
+      "sol3": "a = {a}{eul(a)} 넣으면 {a}x {sgn(b)} > {c}, {a}x > {cb}, 양변을 음수 {a}{ro(a)} 나누면 방향이 바뀌어 x < {k}{ro(k)} 주어진 해와 같다. a를 양수로 두면 해가 x > {k}{ika(k)} 되어 조건에 맞지 않는다. 답은 {a}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{a}x > {cb}",
+              "x < {k}  (÷ {a}, 방향 바뀜)"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "ax {sgn(b)} > {c}에서 ax > {cb}이다. 해가 x < {k}{ro(k)} 부등호의 방향이 바뀌었으므로 a < 0이고, 양변을 a로 나누면 x < {cb}/a이다. 따라서 {cb}/a = {k}에서 a = {a}이다.",
+      "rubric": [
+        {
+          "element": "계수의 부호 판단",
+          "points": 3,
+          "criterion": "해의 부등호 방향이 반대이므로 a < 0임을 근거와 함께 밝혔다.",
+          "partial": "a < 0이라고만 쓰고 근거(방향이 바뀜)가 없으면 1점."
+        },
+        {
+          "element": "해 구하기",
+          "points": 2,
+          "criterion": "x < {cb}/a 로 정리하고 {cb}/a = {k}{eul(k)} 세웠다.",
+          "partial": "ax > {cb}까지만 옳으면 1점."
+        },
+        {
+          "element": "a 구하기",
+          "points": 2,
+          "criterion": "a = {a}{eul(a)} 구하고 해가 x < {k}{ika(k)} 됨을 확인했다.",
+          "partial": "부호를 놓쳐 {-a}{ro(-a)} 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-1-ineq-solve-t4",
+      "pitfalls": [
+        {
+          "text": "해의 부등호 방향이 반대인 것을 보지 못하고 a > 0으로 두어 a = {-a}{ro(-a)} 답함",
+          "on": "부호",
+          "effect": "불인정"
+        },
+        {
+          "text": "a < 0이라고만 쓰고 '해의 방향이 바뀌었으므로'라는 근거를 밝히지 않음",
+          "on": "부호",
+          "effect": "부분"
+        },
+        {
+          "text": "{b}{eul(b)} 이항하며 부호를 바꾸지 않아 ax > {c + b}{ro(c + b)} 정리함",
+          "on": "해 구",
+          "effect": "불인정"
+        },
+        {
+          "text": "{cb}/a = {k}에서 a = {k} ÷ {pn(cb)}처럼 거꾸로 나눔",
+          "on": "a 구",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

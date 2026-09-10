@@ -1,0 +1,47 @@
+# 생성 문항 → Supabase test_items 반영 (수동 실행)
+#   Actions 탭 → "push-items" → Run workflow → status(draft/active) 고르고 실행.
+#   시드에서 풀을 다시 만들어(2분) --push 로 업서트한다. 풀 JSON 은 저장소에 없다(.gitignore).
+#   필요한 비밀: Settings → Secrets and variables → Actions → SUPABASE_URL, SUPABASE_SERVICE_KEY
+#   (service_role 키 — 절대 클라이언트에 넣지 말 것). 마이그레이션 supabase/2026-09_item_gen_v2.sql 이 먼저 적용돼 있어야 한다.
+name: push-items
+on:
+  workflow_dispatch:
+    inputs:
+      status:
+        description: "업서트할 status (draft = 검수 전, live = 서비스 노출)"
+        default: draft
+        type: choice
+        options: [draft, live]
+      seeds:
+        description: "시드 glob (기본 전체)"
+        default: "seeds/*.json"
+        type: string
+concurrency: { group: push-items, cancel-in-progress: false }
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults: { run: { working-directory: itemfactory } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install sympy supabase
+      - name: build (dry run) + 독립 검산·감사
+        run: |
+          python -m genkit.build ${{ inputs.seeds }} --n 300 --outdir out/gen --quiet
+          python tools/recheck.py out/gen
+          python tools/audit.py out/gen
+      - name: push to Supabase (${{ inputs.status }})
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python -m genkit.build ${{ inputs.seeds }} --n 300 --outdir out/gen --quiet --push --status ${{ inputs.status }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gen-reports
+          path: |
+            itemfactory/out/gen/*_report.json
+            itemfactory/out/gen/_summary.json
+          retention-days: 14

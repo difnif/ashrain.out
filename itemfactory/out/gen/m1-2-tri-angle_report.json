@@ -1,0 +1,100 @@
+{
+ "run_id": "m1-2-tri-angle-20260909-225900",
+ "seed_id": "m1-2-tri-angle",
+ "title": "삼각형의 내각과 외각",
+ "accepted": 360,
+ "rejected": 106,
+ "per_template": {
+  "m1-2-tri-angle-t1": {
+   "target": 300,
+   "space": 224,
+   "ok": 164,
+   "rej": 60,
+   "by_gate": {
+    "G1:제약 위반 a + b >= 55": 1,
+    "G1:제약 위반 a + b <= 150": 33,
+    "G1:제약 위반 a != b": 10,
+    "G1:제약 위반 c != a": 6,
+    "G1:파생값 cx 계산 실패 (Cannot convert complex to float)": 2,
+    "G1:제약 위반 c != b": 7,
+    "G1:파생값 cy 계산 실패 (Cannot convert complex to float)": 1
+   },
+   "samples": [
+    {
+     "idx": 54,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(A) = deg(40)]], [[angle(B) = deg(85)]]일 때, [[deg(x)]]의 크기를 구하시오.",
+     "a": "55"
+    },
+    {
+     "idx": 108,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(A) = deg(60)]], [[angle(B) = deg(75)]]일 때, [[deg(x)]]의 크기를 구하시오.",
+     "a": "45"
+    },
+    {
+     "idx": 23,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(A) = deg(30)]], [[angle(B) = deg(70)]]일 때, [[deg(x)]]의 크기를 구하시오.",
+     "a": "80"
+    }
+   ]
+  },
+  "m1-2-tri-angle-t2": {
+   "target": 300,
+   "space": 110,
+   "ok": 99,
+   "rej": 11,
+   "by_gate": {
+    "G1:제약 위반 a + b >= 60": 1,
+    "G1:제약 위반 a != b": 9,
+    "G1:제약 위반 a + b <= 145": 1
+   },
+   "samples": [
+    {
+     "idx": 69,
+     "q": "다음 그림의 [[tri(ABC)]]에서 변 BC를 점 C 너머로 연장하였다. [[angle(A) = deg(55)]]이고 점 C에서의 외각의 크기가 [[deg(100)]]일 때, [[deg(x)]]의 크기를 구하시오.",
+     "a": "45"
+    },
+    {
+     "idx": 28,
+     "q": "다음 그림의 [[tri(ABC)]]에서 변 BC를 점 C 너머로 연장하였다. [[angle(A) = deg(35)]]이고 점 C에서의 외각의 크기가 [[deg(95)]]일 때, [[deg(x)]]의 크기를 구하시오.",
+     "a": "60"
+    },
+    {
+     "idx": 97,
+     "q": "다음 그림의 [[tri(ABC)]]에서 변 BC를 점 C 너머로 연장하였다. [[angle(A) = deg(65)]]이고 점 C에서의 외각의 크기가 [[deg(140)]]일 때, [[deg(x)]]의 크기를 구하시오.",
+     "a": "75"
+    }
+   ]
+  },
+  "m1-2-tri-angle-t3": {
+   "target": 300,
+   "space": 132,
+   "ok": 97,
+   "rej": 35,
+   "by_gate": {
+    "G1:제약 위반 a + b >= 60": 3,
+    "G1:제약 위반 a + b != 90": 8,
+    "G1:제약 위반 c != a": 4,
+    "G1:제약 위반 a != b": 9,
+    "G1:제약 위반 c != b": 5,
+    "G1:제약 위반 a + b <= 140": 6
+   },
+   "samples": [
+    {
+     "idx": 83,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(A) = deg(60)]], [[angle(B) = deg(55)]]일 때, [[deg(x)]]의 크기는?",
+     "a": "[[deg(65)]]"
+    },
+    {
+     "idx": 34,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(A) = deg(40)]], [[angle(B) = deg(30)]]일 때, [[deg(x)]]의 크기는?",
+     "a": "[[deg(110)]]"
+    },
+    {
+     "idx": 117,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(A) = deg(75)]], [[angle(B) = deg(60)]]일 때, [[deg(x)]]의 크기는?",
+     "a": "[[deg(45)]]"
+    }
+   ]
+  }
+ }
+}

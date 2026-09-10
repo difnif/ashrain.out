@@ -1,0 +1,137 @@
+{
+ "run_id": "m2-2-isosceles-20260909-230000",
+ "seed_id": "m2-2-isosceles",
+ "title": "이등변삼각형의 성질 — 꼭지각·밑각, 연쇄 각, 수선과 넓이, 접기, 외각 이등분선",
+ "accepted": 377,
+ "rejected": 39,
+ "per_template": {
+  "m2-2-isosceles-t1": {
+   "target": 300,
+   "space": 100,
+   "ok": 100,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 ABC에서 [[angle(A)]] = [[deg(30)]]일 때, [[angle(B)]]의 크기를 구하시오.",
+     "a": "[[deg(75)]]"
+    },
+    {
+     "idx": 63,
+     "q": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 ABC에서 [[angle(B)]] = [[deg(62)]]일 때, [[angle(A)]]의 크기를 구하시오.",
+     "a": "[[deg(56)]]"
+    },
+    {
+     "idx": 26,
+     "q": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 ABC에서 [[angle(A)]] = [[deg(84)]]일 때, [[angle(B)]]의 크기를 구하시오.",
+     "a": "[[deg(48)]]"
+    }
+   ]
+  },
+  "m2-2-isosceles-t2": {
+   "target": 300,
+   "space": 57,
+   "ok": 56,
+   "rej": 1,
+   "by_gate": {
+    "G1:제약 위반 ans_v != gv": 1
+   },
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림에서 △ABC는 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형이고, 점 D는 [[seg(BC)]] = [[seg(BD)]]가 되도록 변 AC 위에 잡은 점이다. [[angle(C)]] = [[deg(62)]]일 때, [[angle(ABD)]]의 크기를 구하시오.",
+     "a": "[[deg(6)]]"
+    },
+    {
+     "idx": 35,
+     "q": "다음 그림에서 △ABC는 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형이고, 점 D는 [[seg(BC)]] = [[seg(BD)]]가 되도록 변 AC 위에 잡은 점이다. [[angle(A)]] = [[deg(24)]]일 때, [[angle(ABD)]]의 크기를 구하시오.",
+     "a": "[[deg(54)]]"
+    },
+    {
+     "idx": 13,
+     "q": "다음 그림에서 △ABC는 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형이고, 점 D는 [[seg(BC)]] = [[seg(BD)]]가 되도록 변 AC 위에 잡은 점이다. [[angle(C)]] = [[deg(75)]]일 때, [[angle(ABD)]]의 크기를 구하시오.",
+     "a": "[[deg(45)]]"
+    }
+   ]
+  },
+  "m2-2-isosceles-t3": {
+   "target": 300,
+   "space": 189,
+   "ok": 152,
+   "rej": 37,
+   "by_gate": {
+    "G3:R-05 정답이 문면에 그대로 노출됨": 6,
+    "G1:제약 위반 k != h": 15,
+    "G1:제약 위반 isS == 0 or (k*h) % 2 == 0": 16
+   },
+   "samples": [
+    {
+     "idx": 118,
+     "q": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 ABC에서 꼭짓점 A에서 밑변 BC에 내린 수선의 발을 D라고 하자. [[seg(BC)]] = 18 cm, [[seg(AD)]] = 5 cm일 때, △ABC의 넓이를 구하시오.",
+     "a": "45"
+    },
+    {
+     "idx": 47,
+     "q": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 ABC에서 꼭짓점 A에서 밑변 BC에 내린 수선의 발을 D라고 하자. [[seg(BC)]] = 16 cm, [[seg(AD)]] = 6 cm일 때, △ABD의 넓이를 구하시오.",
+     "a": "24"
+    },
+    {
+     "idx": 94,
+     "q": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 ABC에서 꼭짓점 A에서 밑변 BC에 내린 수선의 발을 D라고 하자. [[seg(BC)]] = 12 cm, [[seg(AD)]] = 8 cm일 때, △ABC의 넓이를 구하시오.",
+     "a": "48"
+    }
+   ]
+  },
+  "m2-2-isosceles-t4": {
+   "target": 300,
+   "space": 32,
+   "ok": 31,
+   "rej": 1,
+   "by_gate": {
+    "G1:제약 위반 ans_v != t": 1
+   },
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 모양의 종이 ABC를, 점 A가 점 B에 겹치도록 선분 DE를 접는 선으로 하여 접었다. [[angle(EBC)]] = [[deg(9)]]일 때, [[angle(C)]]의 크기를 구하시오.",
+     "a": "[[deg(63)]]"
+    },
+    {
+     "idx": 21,
+     "q": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 모양의 종이 ABC를, 점 A가 점 B에 겹치도록 선분 DE를 접는 선으로 하여 접었다. [[angle(EBC)]] = [[deg(24)]]일 때, [[angle(A)]]의 크기를 구하시오.",
+     "a": "[[deg(44)]]"
+    },
+    {
+     "idx": 10,
+     "q": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 모양의 종이 ABC를, 점 A가 점 B에 겹치도록 선분 DE를 접는 선으로 하여 접었다. [[angle(EBC)]] = [[deg(39)]]일 때, [[angle(C)]]의 크기를 구하시오.",
+     "a": "[[deg(73)]]"
+    }
+   ]
+  },
+  "m2-2-isosceles-t5": {
+   "target": 300,
+   "space": 38,
+   "ok": 38,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림에서 △ABC는 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형이고, 점 D는 [[angle(B)]]의 이등분선과 [[angle(C)]]의 외각 [[angle(ACE)]]의 이등분선의 교점이다. [[angle(A)]] = [[deg(28)]]일 때, [[angle(BDC)]]의 크기를 구하시오.",
+     "a": "[[deg(14)]]"
+    },
+    {
+     "idx": 23,
+     "q": "다음 그림에서 △ABC는 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형이고, 점 D는 [[angle(B)]]의 이등분선과 [[angle(C)]]의 외각 [[angle(ACE)]]의 이등분선의 교점이다. [[angle(BDC)]] = [[deg(22)]]일 때, [[angle(A)]]의 크기를 구하시오.",
+     "a": "[[deg(44)]]"
+    },
+    {
+     "idx": 8,
+     "q": "다음 그림에서 △ABC는 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형이고, 점 D는 [[angle(B)]]의 이등분선과 [[angle(C)]]의 외각 [[angle(ACE)]]의 이등분선의 교점이다. [[angle(A)]] = [[deg(60)]]일 때, [[angle(BDC)]]의 크기를 구하시오.",
+     "a": "[[deg(30)]]"
+    }
+   ]
+  }
+ }
+}

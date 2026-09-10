@@ -1,0 +1,660 @@
+{
+  "seed_id": "m1-2-sector-arc",
+  "category": "도형",
+  "title": "부채꼴의 호의 길이와 넓이",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-11"
+  ],
+  "schema_id": "6be7490d-38a9-4dfe-ac25-deca271dce6c",
+  "schema_name": "부채꼴의 호의 길이",
+  "source_item_ids": [
+    "21c7a0d4-0699-48e3-b75f-0e36125620b2",
+    "70908203-afe1-4195-87e1-e8686f76f2a7"
+  ],
+  "note": "관계식 l = 2*pi*r*theta/360 · S = pi*r*r*theta/360 과 변주축(구하는 것 순환)만 차용.",
+  "geometry": true,
+  "templates": [
+    {
+      "id": "m1-2-sector-arc-t1",
+      "title": "반지름·중심각으로 호의 길이 구하기",
+      "skill": "부채꼴 호의 길이 공식",
+      "prereq": [
+        "원주 = 2πr",
+        "비례식",
+        "약분"
+      ],
+      "process": "절차수행",
+      "context": "기하맥락",
+      "ops": [
+        "비례",
+        "넓이"
+      ],
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "variant_axis": {
+        "구하는 것 순환": "l 미지",
+        "수치 범위": "pi 포함 해"
+      },
+      "discriminates": "중심각을 360에 대한 비율로 다루는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "time_limit": 60,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "부채꼴",
+        "호의길이"
+      ],
+      "params": [
+        {
+          "name": "th",
+          "values": {
+            "in": [
+              30,
+              40,
+              45,
+              60,
+              72,
+              90,
+              120,
+              135,
+              144,
+              150,
+              180,
+              216,
+              240,
+              270,
+              300
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              10
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "M": "360/gcd(2*th,360)",
+        "r": "k*360/gcd(2*th,360)",
+        "kl": "2*(k*360/gcd(2*th,360))*th/360",
+        "ks": "(k*360/gcd(2*th,360))*(k*360/gcd(2*th,360))*th/360",
+        "kc": "2*(k*360/gcd(2*th,360))",
+        "frac_n": "th/gcd(th,360)",
+        "frac_d": "360/gcd(th,360)"
+      },
+      "constraints": [
+        "r <= 36",
+        "kl >= 2",
+        "kl != r"
+      ],
+      "cost_values": [
+        "r",
+        "th",
+        "kl"
+      ],
+      "relation": "X/(2*r) - th/360",
+      "unknown": "X",
+      "answer_var": "kl",
+      "verify": [
+        "2*ks == kl*r",
+        "kl > 0"
+      ],
+      "question": "중심각의 크기가 [[deg({th})]]이고 반지름의 길이가 {r} cm인 부채꼴의 호의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "sector",
+          "args": {
+            "r": "{r}",
+            "angle": "{th}"
+          }
+        }
+      ],
+      "answer": "[[{kl} * pi]]",
+      "answer_alt": [
+        "[[{kl} * pi]] cm"
+      ],
+      "sol1": "부채꼴은 원을 중심각만큼 잘라낸 조각이다. 원 한 바퀴가 360°이므로, 중심각 {th}°인 부채꼴은 원 전체의 {th}/360 = {frac_n}/{frac_d} 만큼이다. 호의 길이도 원의 둘레(원주)에서 딱 그 비율만큼 잘린다.",
+      "sol1_fig": [
+        {
+          "fn": "bar",
+          "args": {
+            "parts": [
+              {
+                "label": "{th}°",
+                "value": "{th}",
+                "fill": true
+              },
+              {
+                "label": "나머지 {360-th}°",
+                "value": "{360-th}"
+              }
+            ],
+            "total": "원 한 바퀴 360°"
+          }
+        }
+      ],
+      "sol2": [
+        "먼저 원 전체의 둘레를 구한다. 원주 = 2 × π × (반지름)이므로 [[2 * pi * {r}]] = [[{kc} * pi]] (cm)",
+        "부채꼴이 차지하는 비율은 {th}/360 = {frac_n}/{frac_d} 이다.",
+        "호의 길이 = (원주) × (비율) = [[{kc} * pi]] × {frac_n}/{frac_d}",
+        "약분해서 계산하면 [[{kl} * pi]] (cm)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "원주 = 2 × π × {r} = {kc}π",
+              "비율 = {th}/360 = {frac_n}/{frac_d}",
+              "호의 길이 = {kc}π × {frac_n}/{frac_d} = {kl}π"
+            ]
+          }
+        }
+      ],
+      "sol_check": "호의 길이 {kl}π는 원주 {kc}π의 {frac_n}/{frac_d}이고, 원주보다 작으므로 크기가 어긋나지 않는다. 답은 [[{kl} * pi]] cm다.",
+      "model_answer": "부채꼴은 원의 {th}/360 = {frac_n}/{frac_d} 만큼이다. 원 전체의 둘레는 2 × π × {r} = {kc}π (cm)이므로, 호의 길이는 {kc}π × {frac_n}/{frac_d} = {kl}π (cm)이다. 따라서 답은 {kl}π cm다.",
+      "rubric": [
+        {
+          "element": "부채꼴과 원의 관계 파악",
+          "points": 3,
+          "criterion": "중심각 {th}°가 원 전체의 {th}/360임을 밝혔다."
+        },
+        {
+          "element": "원주 계산",
+          "points": 2,
+          "criterion": "원주를 2 × π × {r} = {kc}π로 바르게 구했다."
+        },
+        {
+          "element": "호의 길이 계산",
+          "points": 3,
+          "criterion": "원주에 비율을 곱해 {kl}π를 구했다.",
+          "partial": "식은 옳고 약분 실수만 있으면 2점."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {kl}π cm로 단위와 함께 썼다. π를 지우고 수만 쓴 경우 1점."
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "part:0-0",
+              "part-lbl:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "total:0"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "line:2",
+            "keep": true
+          }
+        ]
+      ],
+      "pitfalls": [
+        {
+          "text": "중심각의 비율 (중심각)/360 을 곱하지 않고 원주 전체를 답함",
+          "on": "부채꼴과 원",
+          "effect": "불인정"
+        },
+        {
+          "text": "원주 2πr 대신 넓이 공식 πr² 을 씀",
+          "on": "원주",
+          "effect": "불인정"
+        },
+        {
+          "text": "비율을 약분하지 않고 곱하다 계산이 어긋남",
+          "on": "호의 길이",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "id": "m1-2-sector-arc-t2",
+      "title": "중심각·호의 길이로 반지름 구하기",
+      "skill": "부채꼴 호의 길이 공식 역산",
+      "prereq": [
+        "원주 = 2πr",
+        "일차방정식",
+        "양변 나누기"
+      ],
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "비례",
+        "방정식"
+      ],
+      "traps": [
+        "역연산"
+      ],
+      "variant_axis": {
+        "구하는 것 순환": "r 미지",
+        "제시 형식": "서술형"
+      },
+      "discriminates": "공식을 미지수 위치를 바꿔 쓸 수 있는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "time_limit": 80,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "부채꼴",
+        "호의길이",
+        "역산"
+      ],
+      "params": [
+        {
+          "name": "th",
+          "values": {
+            "in": [
+              30,
+              40,
+              45,
+              60,
+              72,
+              90,
+              120,
+              135,
+              144,
+              150,
+              180,
+              216,
+              240,
+              270,
+              300
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              10
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "M": "360/gcd(2*th,360)",
+        "r": "k*360/gcd(2*th,360)",
+        "kl": "2*(k*360/gcd(2*th,360))*th/360",
+        "ks": "(k*360/gcd(2*th,360))*(k*360/gcd(2*th,360))*th/360",
+        "kc": "2*(k*360/gcd(2*th,360))",
+        "frac_n": "th/gcd(th,360)",
+        "frac_d": "360/gcd(th,360)"
+      },
+      "constraints": [
+        "r <= 36",
+        "kl >= 2",
+        "kl != r"
+      ],
+      "cost_values": [
+        "r",
+        "th",
+        "kl"
+      ],
+      "answer_var": "r",
+      "verify": [
+        "2*ans*th == 360*kl",
+        "ans > 0"
+      ],
+      "question": "중심각의 크기가 [[deg({th})]]이고 호의 길이가 [[{kl} * pi]] cm인 부채꼴의 반지름의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "sector",
+          "args": {
+            "r": "r",
+            "angle": "{th}"
+          }
+        }
+      ],
+      "answer": "{r}",
+      "answer_alt": [
+        "{r} cm"
+      ],
+      "sol1": "구하는 것이 반지름이라도 쓰는 공식은 같다. (호의 길이) = (원주) × (중심각)/360이고, 원주 안에 반지름이 들어 있으므로 반지름을 r로 두고 방정식을 세우면 된다. 여기서 중심각 {th}°는 원 전체의 {frac_n}/{frac_d} 이다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "호의 길이 = 2 × π × r × {th}/360",
+              "{kl}π = 2 × π × r × {frac_n}/{frac_d}"
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "반지름을 r cm라 하면 호의 길이는 2 × π × r × {frac_n}/{frac_d} 이다.",
+        "이 값이 {kl}π와 같으므로 방정식을 세운다: 2 × π × r × {frac_n}/{frac_d} = {kl}π",
+        "양변에 π가 공통으로 있으므로 π를 지운다: 2 × r × {frac_n}/{frac_d} = {kl}",
+        "왼쪽의 계수를 정리하면 r × {2*frac_n}/{frac_d} = {kl}",
+        "양변에 {frac_d}/{2*frac_n}{eul(2*frac_n)} 곱하면 r = {kl} × {frac_d} ÷ {2*frac_n} = {r} (cm)"
+      ],
+      "sol_check": "반지름 {r} cm로 호의 길이를 되짚으면 2 × π × {r} × {frac_n}/{frac_d} = {kl}π (cm)로 문제의 값과 같다. 따라서 답은 {r} cm다.",
+      "model_answer": "반지름을 r cm라 하면 호의 길이는 2 × π × r × {th}/360이다. 이것이 {kl}π이므로 2 × π × r × {frac_n}/{frac_d} = {kl}π이고, 양변의 π를 지우면 r × {2*frac_n}/{frac_d} = {kl}이다. 따라서 r = {kl} × {frac_d} ÷ {2*frac_n} = {r}이고, 되짚어 보면 2 × π × {r} × {frac_n}/{frac_d} = {kl}π로 맞으므로 답은 {r} cm다.",
+      "rubric": [
+        {
+          "element": "공식 세우기",
+          "points": 4,
+          "criterion": "반지름을 미지수로 두고 (호의 길이) = 2πr × {th}/360 꼴의 방정식을 세웠다.",
+          "partial": "공식을 썼지만 중심각 비율을 빠뜨렸으면 2점."
+        },
+        {
+          "element": "π 소거와 정리",
+          "points": 3,
+          "criterion": "양변의 π를 지우고 r에 대해 정리했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {r} cm로 단위와 함께 썼다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "구한 반지름으로 호의 길이가 {kl}π가 됨을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "pitfalls": [
+        {
+          "text": "호의 길이 공식 2πr × (중심각)/360 을 세우지 않고 값만 나눔",
+          "on": "공식",
+          "effect": "불인정"
+        },
+        {
+          "text": "π를 양변에서 지우지 않아 r에 π가 남음",
+          "on": "π 소거",
+          "effect": "부분"
+        },
+        {
+          "text": "비율의 역수를 곱해야 하는데 그대로 곱함 (역산 방향)",
+          "on": "π 소거",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "id": "m1-2-sector-arc-t3",
+      "title": "부채꼴의 넓이 고르기",
+      "skill": "부채꼴 넓이 공식",
+      "prereq": [
+        "원의 넓이 = πr²",
+        "비례식"
+      ],
+      "process": "개념이해",
+      "context": "기하맥락",
+      "ops": [
+        "넓이",
+        "지수",
+        "비례"
+      ],
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "variant_axis": {
+        "구하는 것 순환": "S 미지",
+        "제시 형식": "선다형"
+      },
+      "discriminates": "호의 길이(1차)와 넓이(2차)를 구분하는가",
+      "qtype": "choice",
+      "difficulty": 3,
+      "time_limit": 80,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "부채꼴",
+        "넓이",
+        "보기고르기"
+      ],
+      "params": [
+        {
+          "name": "th",
+          "values": {
+            "in": [
+              20,
+              24,
+              30,
+              36,
+              40,
+              45,
+              60,
+              72,
+              80,
+              90,
+              100,
+              108,
+              120,
+              135,
+              144,
+              150,
+              180,
+              200,
+              216,
+              240,
+              270,
+              288,
+              300
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              8
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "M": "360/gcd(th,360)",
+        "r": "k*360/gcd(th,360)",
+        "kl": "2*(k*360/gcd(th,360))*th/360",
+        "ks": "(k*360/gcd(th,360))*(k*360/gcd(th,360))*th/360",
+        "frac_n": "th/gcd(th,360)",
+        "frac_d": "360/gcd(th,360)"
+      },
+      "constraints": [
+        "r <= 30",
+        "ks >= 3",
+        "ks != kl",
+        "ks != r",
+        "ks != th"
+      ],
+      "cost_values": [
+        "r",
+        "th",
+        "ks",
+        "r*r"
+      ],
+      "relation": "X*360 - r*r*th",
+      "unknown": "X",
+      "answer_var": "ks",
+      "verify": [
+        "2*ks == kl*r"
+      ],
+      "question": "중심각의 크기가 [[deg({th})]]이고 반지름의 길이가 {r} cm인 부채꼴의 넓이는?",
+      "figure": [
+        {
+          "fn": "sector",
+          "args": {
+            "r": "{r}",
+            "angle": "{th}"
+          }
+        }
+      ],
+      "answer": "[[{ks} * pi]]",
+      "distractor_fmt": "[[{v} * pi]]",
+      "distractors": [
+        {
+          "expr": "kl",
+          "misconception": "MC-SECT-02"
+        },
+        {
+          "expr": "r*r",
+          "misconception": "MC-SECT-01"
+        },
+        {
+          "expr": "2*ks",
+          "misconception": "MC-GEO-03"
+        },
+        {
+          "expr": "ks/2",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "r*r*th/180",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "ks + r",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "ks*2 - kl",
+          "misconception": "MC-SECT-02"
+        },
+        {
+          "expr": "r*r/2",
+          "misconception": "MC-SECT-01"
+        }
+      ],
+      "sol1": "넓이도 호의 길이와 똑같이 '원 전체 × 비율'로 구한다. 다만 기준이 원주가 아니라 원의 넓이 πr²이라는 점이 다르다. 반지름을 제곱한다는 것과, 호의 길이(길이)와 넓이(넓이)를 섞지 않는 것이 핵심이다.",
+      "sol1_fig": [
+        {
+          "fn": "bar",
+          "args": {
+            "parts": [
+              {
+                "label": "{th}°",
+                "value": "{th}",
+                "fill": true
+              },
+              {
+                "label": "나머지",
+                "value": "{360-th}"
+              }
+            ],
+            "total": "원의 넓이 [[{r*r} * pi]] cm²"
+          }
+        }
+      ],
+      "sol2": [
+        "원 전체의 넓이를 구한다: [[pi * pow({r},2)]] = [[{r*r} * pi]] (cm²)",
+        "부채꼴이 차지하는 비율은 {th}/360 = {frac_n}/{frac_d} 이다.",
+        "넓이 = [[{r*r} * pi]] × {frac_n}/{frac_d} = [[{ks} * pi]] (cm²)",
+        "참고로 같은 부채꼴의 호의 길이는 [[{kl} * pi]] cm로 값이 다르다 — 길이와 넓이는 단위부터 다르므로 바꿔 쓰면 안 된다."
+      ],
+      "sol_check": "부채꼴의 넓이 {ks}π는 원 전체 넓이 {r*r}π의 {frac_n}/{frac_d} 이므로 크기가 어긋나지 않는다. 답은 [[{ks} * pi]] cm²다.",
+      "model_answer": "원 전체의 넓이는 π × {r}² = {r*r}π (cm²)이고 부채꼴은 그 {th}/360 = {frac_n}/{frac_d} 만큼이다. 따라서 넓이는 {r*r}π × {frac_n}/{frac_d} = {ks}π (cm²)이다. 호의 길이 {kl}π cm와는 단위가 다른 값이므로 혼동하지 않는다. 답은 {ks}π cm²다.",
+      "rubric": [
+        {
+          "element": "원의 넓이 계산",
+          "points": 3,
+          "criterion": "π × {r}² = {r*r}π로 반지름을 제곱해 구했다.",
+          "partial": "제곱을 빠뜨렸으면 0점."
+        },
+        {
+          "element": "비율 적용",
+          "points": 3,
+          "criterion": "{th}/360 비율을 곱해 {ks}π를 구했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {ks}π cm²로 단위와 함께 썼다."
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "part:0-0",
+              "part-lbl:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "total:0"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "pitfalls": [
+        {
+          "text": "넓이 πr² 대신 호의 길이 공식 2πr 을 씀",
+          "on": "원의 넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "중심각의 비율을 곱하지 않음",
+          "on": "비율",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

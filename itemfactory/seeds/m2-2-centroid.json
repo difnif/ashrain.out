@@ -1,0 +1,1881 @@
+{
+  "seed_id": "m2-2-centroid",
+  "category": "도형",
+  "title": "삼각형의 무게중심 — 중선의 2 : 1, 넓이의 ⅓·⅙, 직각삼각형, 평행사변형 속의 무게중심",
+  "unit_id": "m2-2",
+  "concept_ids": [
+    "m2-2-08"
+  ],
+  "schema_id": "d4f5573d-5dd7-4b79-93e8-b1b71d11cdcd",
+  "schema_name": "삼각형 무게중심 중선 분할비 / 무게중심과 넓이 / 평행사변형 무게중심 응용",
+  "source_item_ids": [],
+  "note": "출판사 평가자료 유형(TYPES.md 7.4)을 참고해 새로 씀. 무게중심 좌표는 세 꼭짓점의 평균으로 정확히 놓고, 길이는 '한 칸' k 의 배수로 만든다. 직각삼각형(t3)은 3-4-5 모양을 k·3/5 배로 그려 AC = 3k 가 정확히 맞는다.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 60,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "무게중심: 세 중선의 교점, 각 중선을 꼭짓점으로부터 2 : 1로 나눈다",
+        "중선은 삼각형의 넓이를 이등분한다"
+      ],
+      "ops": [
+        "비례",
+        "넓이"
+      ],
+      "tags": [
+        "무게중심",
+        "중선"
+      ],
+      "title": "무게중심 — 중선을 2 : 1로 나눈다",
+      "skill": "AG : GD = 2 : 1을 써서 AD, AG, GD 사이를 오가기",
+      "variant_axis": {
+        "주어진 것 → 구하는 것": "AD → AG / AD → GD / AG → GD / AG → AD / GD → AG / GD → AD",
+        "GD": "2~9"
+      },
+      "discriminates": "2 : 1의 방향(꼭짓점 쪽이 2)을 지키고 전체 AD가 3등분임을 쓰는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "AD-AG",
+              "AD-GD",
+              "AG-GD",
+              "AG-AD",
+              "GD-AG",
+              "GD-AD"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "wv",
+        "rows": {
+          "AD-AG": {
+            "XS": "AG",
+            "GT": "[[seg(AD)]] = ",
+            "i": 1,
+            "j": 1,
+            "XAG": "x",
+            "XGD": "",
+            "F1": "AG = [[frac(2, 3)]]AD = [[frac(2, 3)]] × ",
+            "LAW": "AG : AD = 2 : 3"
+          },
+          "AD-GD": {
+            "XS": "GD",
+            "GT": "[[seg(AD)]] = ",
+            "i": 1,
+            "j": 0,
+            "XAG": "",
+            "XGD": "x",
+            "F1": "GD = [[frac(1, 3)]]AD = [[frac(1, 3)]] × ",
+            "LAW": "GD : AD = 1 : 3"
+          },
+          "AG-GD": {
+            "XS": "GD",
+            "GT": "[[seg(AG)]] = ",
+            "i": 2,
+            "j": 0,
+            "XAG": "",
+            "XGD": "x",
+            "F1": "GD = [[frac(1, 2)]]AG = [[frac(1, 2)]] × ",
+            "LAW": "AG : GD = 2 : 1"
+          },
+          "AG-AD": {
+            "XS": "AD",
+            "GT": "[[seg(AG)]] = ",
+            "i": 2,
+            "j": 2,
+            "XAG": "",
+            "XGD": "",
+            "F1": "AD = [[frac(3, 2)]]AG = [[frac(3, 2)]] × ",
+            "LAW": "AG : AD = 2 : 3"
+          },
+          "GD-AG": {
+            "XS": "AG",
+            "GT": "[[seg(GD)]] = ",
+            "i": 3,
+            "j": 1,
+            "XAG": "x",
+            "XGD": "",
+            "F1": "AG = 2GD = 2 × ",
+            "LAW": "AG : GD = 2 : 1"
+          },
+          "GD-AD": {
+            "XS": "AD",
+            "GT": "[[seg(GD)]] = ",
+            "i": 3,
+            "j": 2,
+            "XAG": "",
+            "XGD": "",
+            "F1": "AD = 3GD = 3 × ",
+            "LAW": "GD : AD = 1 : 3"
+          }
+        }
+      },
+      "derive": {
+        "ag": "2*k",
+        "gd": "k",
+        "ad": "3*k",
+        "gv": "3*k*(i == 1) + 2*k*(i == 2) + k*(i == 3)",
+        "ans_v": "2*k*(j == 1) + k*(j == 0) + 3*k*(j == 2)",
+        "lag": "2*k*(i == 2)",
+        "lgd": "k*(i == 3)"
+      },
+      "constraints": [],
+      "cost_values": [
+        "gv",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "ag == 2*gd",
+        "ad == ag + gd",
+        "ans == ans_v"
+      ],
+      "question": "다음 그림에서 점 G는 △ABC의 무게중심이고 점 D는 변 BC의 중점이다. {GT}{gv} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                1.2,
+                5
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                6,
+                0
+              ],
+              "D": [
+                3,
+                0
+              ],
+              "E": [
+                3.6,
+                2.5
+              ],
+              "F": [
+                0.6,
+                2.5
+              ],
+              "G": [
+                2.4,
+                "{5/3}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              {
+                "a": "A",
+                "b": "G",
+                "label": "{lag}"
+              },
+              {
+                "a": "G",
+                "b": "D",
+                "label": "{lgd}"
+              },
+              {
+                "a": "A",
+                "b": "G",
+                "label": "{XAG}"
+              },
+              {
+                "a": "G",
+                "b": "D",
+                "label": "{XGD}"
+              },
+              [
+                "B",
+                "E"
+              ],
+              [
+                "C",
+                "F"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "B",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "C"
+                  ]
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "무게중심 G는 세 중선의 교점이고, 각 중선을 꼭짓점 쪽부터 2 : 1로 나눈다: AG : GD = 2 : 1. 즉 중선 AD를 3등분했을 때 AG는 2칸, GD는 1칸이다. 주어진 길이가 몇 칸인지 보고 한 칸의 길이 {k} cm를 구하면 나머지가 나온다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                1.2,
+                5
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                6,
+                0
+              ],
+              "D": [
+                3,
+                0
+              ],
+              "E": [
+                3.6,
+                2.5
+              ],
+              "F": [
+                0.6,
+                2.5
+              ],
+              "G": [
+                2.4,
+                "{5/3}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              {
+                "a": "A",
+                "b": "G",
+                "label": "{ag}"
+              },
+              {
+                "a": "G",
+                "b": "D",
+                "label": "{gd}"
+              },
+              [
+                "B",
+                "E"
+              ],
+              [
+                "C",
+                "F"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "B",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "C"
+                  ]
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": "G",
+                "text": "2 : 1",
+                "dx": 26,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:ratio"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:B-E",
+              "seg:C-F"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:A-G",
+              "seg:G-D",
+              "lbl:ratio"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seglbl:A-G",
+              "seglbl:G-D"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "점 G가 무게중심이므로 AG : GD = 2 : 1, 곧 AG = [[frac(2, 3)]]AD, GD = [[frac(1, 3)]]AD",
+        "{F1}{gv} = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AG : GD = 2 : 1",
+                "hint": "무게중심"
+              },
+              {
+                "text": "{F1}{gv} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        []
+      ],
+      "sol_check": "AG = {ag} cm, GD = {gd} cm, AD = {ad} cm로 AG : GD = 2 : 1이고 AG + GD = AD다. 답은 {ans_v} cm다.",
+      "model_answer": "점 G는 무게중심이므로 AG : GD = 2 : 1이다. {F1}{gv} = {ans_v}이므로 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "무게중심의 성질",
+          "points": 3,
+          "criterion": "AG : GD = 2 : 1(꼭짓점 쪽이 2)임을 밝혔다.",
+          "partial": "비의 방향을 바꿨으면 인정하지 않는다."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{F1}{gv} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "AD를 2등분으로 보았으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-centroid-t1",
+      "pitfalls": [
+        {
+          "text": "AG : GD = 1 : 2로 방향을 바꿈",
+          "on": "무게중심의 성질",
+          "effect": "불인정"
+        },
+        {
+          "text": "무게중심이 중선을 이등분한다고 보아 AG = GD로 둠",
+          "on": "계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "AD를 2등분이 아닌 3등분으로 보았으나 칸 수를 잘못 셈(AG = ⅓AD)",
+          "on": "계산",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "무게중심: 세 중선의 교점, 각 중선을 꼭짓점으로부터 2 : 1로 나눈다",
+        "중선은 삼각형의 넓이를 이등분한다"
+      ],
+      "ops": [
+        "비례",
+        "넓이"
+      ],
+      "tags": [
+        "무게중심",
+        "중선"
+      ],
+      "title": "무게중심과 넓이 — △GBC = ⅓△ABC, △GBD = ⅙△ABC",
+      "skill": "중선이 넓이를 이등분하고 AG : GD = 2 : 1이므로 세 중선이 삼각형을 넓이가 같은 6개로 나눔을 쓰기",
+      "variant_axis": {
+        "구하는 것": "△GBC / △GBD / △ABC(⅙에서) / △ABC(⅓에서)",
+        "넓이": "6의 배수 12~60"
+      },
+      "discriminates": "G와 세 꼭짓점을 이은 세 삼각형의 넓이가 같고(⅓), 중선이 다시 이등분(⅙)함을 근거와 함께 쓰는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "gbc",
+              "gbd",
+              "abc6",
+              "abc3"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              2,
+              10
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "wv",
+        "rows": {
+          "gbc": {
+            "Q": "△GBC의 넓이",
+            "GT": "△ABC의 넓이가 ",
+            "i": 0,
+            "j": 1,
+            "S1": "G",
+            "S2": "B",
+            "S3": "C",
+            "F1": "△GBC = [[frac(1, 3)]]△ABC = [[frac(1, 3)]] × ",
+            "LAW": "세 중선이 넓이를 3등분"
+          },
+          "gbd": {
+            "Q": "△GBD의 넓이",
+            "GT": "△ABC의 넓이가 ",
+            "i": 0,
+            "j": 2,
+            "S1": "G",
+            "S2": "B",
+            "S3": "D",
+            "F1": "△GBD = [[frac(1, 6)]]△ABC = [[frac(1, 6)]] × ",
+            "LAW": "6등분 중 하나"
+          },
+          "abc6": {
+            "Q": "△ABC의 넓이",
+            "GT": "△GBD의 넓이가 ",
+            "i": 2,
+            "j": 0,
+            "S1": "G",
+            "S2": "B",
+            "S3": "D",
+            "F1": "△ABC = 6△GBD = 6 × ",
+            "LAW": "△GBD = ⅙△ABC"
+          },
+          "abc3": {
+            "Q": "△ABC의 넓이",
+            "GT": "△GBC의 넓이가 ",
+            "i": 1,
+            "j": 0,
+            "S1": "G",
+            "S2": "B",
+            "S3": "C",
+            "F1": "△ABC = 3△GBC = 3 × ",
+            "LAW": "△GBC = ⅓△ABC"
+          }
+        }
+      },
+      "derive": {
+        "S": "6*k",
+        "gbc": "2*k",
+        "gbd": "k",
+        "gv": "6*k*(i == 0) + 2*k*(i == 1) + k*(i == 2)",
+        "ans_v": "6*k*(j == 0) + 2*k*(j == 1) + k*(j == 2)"
+      },
+      "constraints": [],
+      "cost_values": [
+        "gv",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "S == 3*gbc",
+        "S == 6*gbd",
+        "ans == ans_v"
+      ],
+      "question": "다음 그림에서 점 G는 △ABC의 무게중심이고 세 점 D, E, F는 각각 변 BC, CA, AB의 중점이다. {GT}{gv} cm²일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                1.2,
+                5
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                6,
+                0
+              ],
+              "D": [
+                3,
+                0
+              ],
+              "E": [
+                3.6,
+                2.5
+              ],
+              "F": [
+                0.6,
+                2.5
+              ],
+              "G": [
+                2.4,
+                "{5/3}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "A",
+                "D"
+              ],
+              [
+                "B",
+                "E"
+              ],
+              [
+                "C",
+                "F"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "B",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "C",
+                    "E"
+                  ],
+                  [
+                    "E",
+                    "A"
+                  ]
+                ],
+                [
+                  [
+                    "A",
+                    "F"
+                  ],
+                  [
+                    "F",
+                    "B"
+                  ]
+                ]
+              ]
+            },
+            "shade": [
+              [
+                "{S1}",
+                "{S2}",
+                "{S3}"
+              ]
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm²"
+      ],
+      "sol1": "중선 AD는 밑변을 이등분하므로 △ABD = △ADC = [[frac(1, 2)]]△ABC다. 또 AG : GD = 2 : 1이므로 △GBD = [[frac(1, 3)]]△ABD = [[frac(1, 6)]]△ABC, △GBC = 2△GBD = [[frac(1, 3)]]△ABC — 세 중선은 삼각형을 넓이가 같은 6조각으로 나눈다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                1.2,
+                5
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                6,
+                0
+              ],
+              "D": [
+                3,
+                0
+              ],
+              "E": [
+                3.6,
+                2.5
+              ],
+              "F": [
+                0.6,
+                2.5
+              ],
+              "G": [
+                2.4,
+                "{5/3}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "A",
+                "D"
+              ],
+              [
+                "B",
+                "E"
+              ],
+              [
+                "C",
+                "F"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "B",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "C",
+                    "E"
+                  ],
+                  [
+                    "E",
+                    "A"
+                  ]
+                ],
+                [
+                  [
+                    "A",
+                    "F"
+                  ],
+                  [
+                    "F",
+                    "B"
+                  ]
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{(2.4 + 0 + 3)/3}",
+                  "{(5/3)/3}"
+                ],
+                "text": "{k}",
+                "dx": 0,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:1"
+              },
+              {
+                "at": [
+                  "{(2.4 + 3 + 6)/3}",
+                  "{(5/3)/3}"
+                ],
+                "text": "{k}",
+                "dx": 0,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:2"
+              },
+              {
+                "at": [
+                  "{(2.4 + 6 + 3.6)/3}",
+                  "{(5/3 + 2.5)/3}"
+                ],
+                "text": "{k}",
+                "dx": 0,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:3"
+              },
+              {
+                "at": [
+                  "{(2.4 + 3.6 + 1.2)/3}",
+                  "{(5/3 + 2.5 + 5)/3}"
+                ],
+                "text": "{k}",
+                "dx": 0,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:4"
+              },
+              {
+                "at": [
+                  "{(2.4 + 1.2 + 0.6)/3}",
+                  "{(5/3 + 5 + 2.5)/3}"
+                ],
+                "text": "{k}",
+                "dx": 0,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:5"
+              },
+              {
+                "at": [
+                  "{(2.4 + 0.6 + 0)/3}",
+                  "{(5/3 + 2.5)/3}"
+                ],
+                "text": "{k}",
+                "dx": 0,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:6"
+              }
+            ],
+            "shade": [
+              [
+                "G",
+                "B",
+                "D"
+              ],
+              [
+                "G",
+                "D",
+                "C"
+              ],
+              [
+                "G",
+                "C",
+                "E"
+              ],
+              [
+                "G",
+                "E",
+                "A"
+              ],
+              [
+                "G",
+                "A",
+                "F"
+              ],
+              [
+                "G",
+                "F",
+                "B"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "seg:A-D",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "shade:0",
+              "shade:1",
+              "lbl:1",
+              "lbl:2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "shade:2",
+              "shade:3",
+              "shade:4",
+              "shade:5",
+              "lbl:3",
+              "lbl:4",
+              "lbl:5",
+              "lbl:6"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "중선 AD가 넓이를 이등분: △ABD = [[frac(1, 2)]]△ABC",
+        "AG : GD = 2 : 1이므로 △GBD = [[frac(1, 3)]]△ABD = [[frac(1, 6)]]△ABC, 같은 이유로 △GBC = △GBD + △GDC = [[frac(1, 3)]]△ABC",
+        "{F1}{gv} = {ans_v}",
+        "따라서 {Q}{eun(Q)} {ans_v} cm²"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "△ABD = [[frac(1, 2)]]△ABC",
+                "hint": "중선"
+              },
+              {
+                "text": "△GBD = [[frac(1, 6)]]△ABC, △GBC = [[frac(1, 3)]]△ABC",
+                "hint": "AG : GD = 2 : 1"
+              },
+              {
+                "text": "{F1}{gv} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "△ABC = {S} cm²이면 6조각이 각각 {k} cm², △GBC = {gbc} cm², △GBD = {gbd} cm²로 서로 맞는다. 답은 {ans_v} cm²다.",
+      "model_answer": "중선은 넓이를 이등분하고 AG : GD = 2 : 1이므로 △GBD = [[frac(1, 6)]]△ABC, △GBC = [[frac(1, 3)]]△ABC이다. {F1}{gv} = {ans_v}이므로 {Q}{eun(Q)} {ans_v} cm²다.",
+      "rubric": [
+        {
+          "element": "넓이 관계",
+          "points": 3,
+          "criterion": "중선의 이등분과 2 : 1을 근거로 △GBD = ⅙△ABC(△GBC = ⅓△ABC)임을 밝혔다.",
+          "partial": "관계만 쓰고 근거가 없으면 1점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{F1}{gv} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "⅓과 ⅙을 바꿨으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} {ans_v} cm²를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-centroid-t2",
+      "pitfalls": [
+        {
+          "text": "△GBC를 ⅙△ABC로, △GBD를 ⅓△ABC로 바꿔 씀",
+          "on": "계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "△GBC = ½△ABC로 둠(중선의 이등분과 혼동)",
+          "on": "넓이 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "넓이 관계를 근거 없이 결과만 씀",
+          "on": "넓이 관계",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "직각삼각형의 외심은 빗변의 중점(BD = AD = CD)",
+        "무게중심은 중선을 2 : 1로 나눈다"
+      ],
+      "ops": [
+        "비례",
+        "넓이"
+      ],
+      "tags": [
+        "무게중심",
+        "중선"
+      ],
+      "title": "직각삼각형의 무게중심 — 빗변의 중점과 BG",
+      "skill": "빗변의 중점 D는 외심이므로 BD = ½AC이고, 무게중심에서 BG = ⅔BD임을 이어 쓰기",
+      "variant_axis": {
+        "구하는 것": "BG / AC",
+        "AC": "3의 배수 6~27"
+      },
+      "discriminates": "직각삼각형의 외심(빗변의 중점)과 무게중심의 성질 두 가지를 이어 쓰는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "bg",
+              "ac"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "wv",
+        "rows": {
+          "bg": {
+            "XS": "BG",
+            "isB": 1,
+            "XBG": "x",
+            "XAC": "",
+            "GT": "[[seg(AC)]] = ",
+            "F1": "BG = [[frac(2, 3)]]BD = [[frac(2, 3)]] × [[frac(1, 2)]] × ",
+            "LAW": "BG = ⅔BD, BD = ½AC"
+          },
+          "ac": {
+            "XS": "AC",
+            "isB": 0,
+            "XBG": "",
+            "XAC": "x",
+            "GT": "[[seg(BG)]] = ",
+            "F1": "AC = 2BD = 2 × [[frac(3, 2)]] × ",
+            "LAW": "BD = 3/2 BG, AC = 2BD"
+          }
+        }
+      },
+      "derive": {
+        "ac": "3*k",
+        "bd": "3*k/2",
+        "bg": "k",
+        "ans_v": "k*isB + 3*k*(1 - isB)",
+        "gv": "3*k*isB + k*(1 - isB)",
+        "lac": "3*k*isB",
+        "lbg": "k*(1 - isB)"
+      },
+      "constraints": [],
+      "cost_values": [
+        "gv",
+        "bd",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "2*bd == ac",
+        "3*bg == 2*bd",
+        "(isB == 1 and ans == bg) or (isB == 0 and ans == ac)"
+      ],
+      "question": "다음 그림과 같이 [[angle(B)]] = [[deg(90)]]인 직각삼각형 ABC에서 점 D는 빗변 AC의 중점이고 점 G는 △ABC의 무게중심이다. {GT}{gv} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{1.8*k}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{2.4*k}",
+                0
+              ],
+              "D": [
+                "{1.2*k}",
+                "{0.9*k}"
+              ],
+              "G": [
+                "{0.8*k}",
+                "{0.6*k}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "A",
+                "D"
+              ],
+              {
+                "a": "D",
+                "b": "C",
+                "label": "{lac}"
+              },
+              [
+                "B",
+                "D"
+              ],
+              {
+                "a": "B",
+                "b": "G",
+                "label": "{lbg}"
+              },
+              {
+                "a": "D",
+                "b": "C",
+                "label": "{XAC}"
+              },
+              {
+                "a": "B",
+                "b": "G",
+                "label": "{XBG}"
+              }
+            ],
+            "marks": {
+              "right": [
+                [
+                  "A",
+                  "B",
+                  "C"
+                ]
+              ],
+              "eq": [
+                [
+                  [
+                    "A",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "C"
+                  ]
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "직각삼각형의 외심은 빗변의 중점이므로 D에서 세 꼭짓점까지의 거리가 같다: BD = AD = CD = [[frac(1, 2)]]AC. 한편 BD는 중선이고 G는 무게중심이므로 BG : GD = 2 : 1, BG = [[frac(2, 3)]]BD. 두 성질을 이으면 BG = [[frac(2, 3)]] × [[frac(1, 2)]]AC = [[frac(1, 3)]]AC다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{1.8*k}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{2.4*k}",
+                0
+              ],
+              "D": [
+                "{1.2*k}",
+                "{0.9*k}"
+              ],
+              "G": [
+                "{0.8*k}",
+                "{0.6*k}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "A",
+                "D"
+              ],
+              {
+                "a": "D",
+                "b": "C",
+                "label": "{ac}"
+              },
+              [
+                "B",
+                "D"
+              ],
+              {
+                "a": "B",
+                "b": "G",
+                "label": "{bg}"
+              },
+              {
+                "a": "G",
+                "b": "D",
+                "label": "{bd - bg}"
+              }
+            ],
+            "marks": {
+              "right": [
+                [
+                  "A",
+                  "B",
+                  "C"
+                ]
+              ],
+              "eq": [
+                [
+                  [
+                    "A",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "C"
+                  ],
+                  [
+                    "D",
+                    "B"
+                  ]
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": "D",
+                "text": "BD = {bd}",
+                "dx": 34,
+                "dy": 14,
+                "accent": true,
+                "k": "lbl:bd"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "right:B",
+              "eq:A-D",
+              "eq:D-C",
+              "eq:D-B",
+              "lbl:bd"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:B-G",
+              "seglbl:B-G",
+              "seglbl:G-D"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "∠B = 90°이므로 빗변의 중점 D는 외심: BD = AD = CD = [[frac(1, 2)]]AC",
+        "G는 무게중심이므로 BG : GD = 2 : 1, BG = [[frac(2, 3)]]BD",
+        "{F1}{gv} = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "BD = [[frac(1, 2)]]AC",
+                "hint": "빗변의 중점 = 외심"
+              },
+              {
+                "text": "BG = [[frac(2, 3)]]BD",
+                "hint": "무게중심 2 : 1"
+              },
+              {
+                "text": "{F1}{gv} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "AC = {ac} cm이면 BD = {bd} cm, BG = [[frac(2, 3)]] × {bd} = {bg}(cm)로 BG = [[frac(1, 3)]]AC다. 답은 {ans_v} cm다.",
+      "model_answer": "직각삼각형의 빗변의 중점 D는 외심이므로 BD = [[frac(1, 2)]]AC이고, G는 무게중심이므로 BG = [[frac(2, 3)]]BD이다. {F1}{gv} = {ans_v}이므로 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "외심의 성질",
+          "points": 3,
+          "criterion": "빗변의 중점 D가 외심이므로 BD = ½AC임을 밝혔다.",
+          "partial": "BD = ½AC만 쓰고 근거가 없으면 1점."
+        },
+        {
+          "element": "무게중심",
+          "points": 2,
+          "criterion": "BG = ⅔BD를 써서 {F1}{gv} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "2 : 1의 방향을 바꿨으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-centroid-t3",
+      "pitfalls": [
+        {
+          "text": "BD = ½AC(외심)를 쓰지 않고 BD를 다른 길이로 둠",
+          "on": "외심의 성질",
+          "effect": "불인정"
+        },
+        {
+          "text": "BG = ⅓BD처럼 2 : 1의 방향을 바꿈",
+          "on": "무게중심",
+          "effect": "불인정"
+        },
+        {
+          "text": "BG = ½AC로 두어 무게중심의 비를 빠뜨림",
+          "on": "무게중심",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 110,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "평행사변형의 대각선은 서로 다른 것을 이등분",
+        "무게중심은 중선을 2 : 1로 나눈다"
+      ],
+      "ops": [
+        "비례",
+        "넓이"
+      ],
+      "tags": [
+        "무게중심",
+        "중선"
+      ],
+      "title": "평행사변형 속의 무게중심 — 대각선의 교점과 변의 중점",
+      "skill": "△ACD에서 O(AC의 중점)와 M(CD의 중점)이 만드는 두 중선의 교점 E가 무게중심임을 읽기",
+      "variant_axis": {
+        "구하는 것": "OE / BD",
+        "BD": "6의 배수 12~54"
+      },
+      "discriminates": "E가 △ACD의 무게중심이므로 DE : EO = 2 : 1, OE = ⅓OD = ⅙BD임을 세우는가",
+      "qtype": "short",
+      "difficulty": 4,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "oe",
+              "bd"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "wv",
+        "rows": {
+          "oe": {
+            "XS": "OE",
+            "isO": 1,
+            "XOE": "x",
+            "XBD": "",
+            "GT": "[[seg(BD)]] = ",
+            "F1": "OE = [[frac(1, 3)]]OD = [[frac(1, 3)]] × [[frac(1, 2)]] × ",
+            "LAW": "OE = ⅓OD, OD = ½BD"
+          },
+          "bd": {
+            "XS": "BD",
+            "isO": 0,
+            "XOE": "",
+            "XBD": "x",
+            "GT": "[[seg(OE)]] = ",
+            "F1": "BD = 2OD = 2 × 3 × ",
+            "LAW": "OD = 3OE, BD = 2OD"
+          }
+        }
+      },
+      "derive": {
+        "bd": "6*k",
+        "od": "3*k",
+        "oe": "k",
+        "ans_v": "k*isO + 6*k*(1 - isO)",
+        "gv": "6*k*isO + k*(1 - isO)",
+        "lbd": "6*k*isO",
+        "loe": "k*(1 - isO)"
+      },
+      "constraints": [],
+      "cost_values": [
+        "gv",
+        "od",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "2*od == bd",
+        "3*oe == od",
+        "(isO == 1 and ans == oe) or (isO == 0 and ans == bd)"
+      ],
+      "question": "다음 그림의 평행사변형 ABCD에서 점 O는 두 대각선의 교점, 점 M은 변 CD의 중점이고 점 E는 [[seg(AM)]]과 [[seg(BD)]]의 교점이다. {GT}{gv} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                1.5,
+                3.5
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                6,
+                0
+              ],
+              "D": [
+                7.5,
+                3.5
+              ],
+              "O": [
+                3.75,
+                1.75
+              ],
+              "M": [
+                6.75,
+                1.75
+              ],
+              "E": [
+                5,
+                "{7/3}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              {
+                "a": "B",
+                "b": "O",
+                "label": "{lbd}"
+              },
+              [
+                "O",
+                "D"
+              ],
+              [
+                "A",
+                "M"
+              ],
+              {
+                "a": "O",
+                "b": "E",
+                "label": "{loe}"
+              },
+              {
+                "a": "B",
+                "b": "O",
+                "label": "{XBD}"
+              },
+              {
+                "a": "O",
+                "b": "E",
+                "label": "{XOE}"
+              }
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "C",
+                    "M"
+                  ],
+                  [
+                    "M",
+                    "D"
+                  ]
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "△ACD를 보자. 평행사변형의 대각선은 서로를 이등분하므로 O는 AC의 중점 — DO는 △ACD의 중선이다. M은 CD의 중점이므로 AM도 중선이고, 두 중선의 교점 E는 △ACD의 무게중심이다. 따라서 DE : EO = 2 : 1, 즉 OE = [[frac(1, 3)]]OD이고 OD = [[frac(1, 2)]]BD다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                1.5,
+                3.5
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                6,
+                0
+              ],
+              "D": [
+                7.5,
+                3.5
+              ],
+              "O": [
+                3.75,
+                1.75
+              ],
+              "M": [
+                6.75,
+                1.75
+              ],
+              "E": [
+                5,
+                "{7/3}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              {
+                "a": "B",
+                "b": "O",
+                "label": "{bd}"
+              },
+              [
+                "A",
+                "M"
+              ],
+              {
+                "a": "O",
+                "b": "E",
+                "label": "{oe}"
+              },
+              {
+                "a": "E",
+                "b": "D",
+                "label": "{2*k}"
+              }
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "C",
+                    "M"
+                  ],
+                  [
+                    "M",
+                    "D"
+                  ]
+                ],
+                [
+                  [
+                    "A",
+                    "O"
+                  ],
+                  [
+                    "O",
+                    "C"
+                  ]
+                ]
+              ]
+            },
+            "shade": [
+              [
+                "A",
+                "C",
+                "D"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "shade:0",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:A-M",
+              "eq:C-M",
+              "eq:M-D",
+              "eq:A-O",
+              "eq:O-C"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seglbl:O-E",
+              "seglbl:E-D"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "O는 AC의 중점(대각선의 이등분), M은 CD의 중점 → DO, AM은 △ACD의 두 중선",
+        "두 중선의 교점 E는 △ACD의 무게중심: DE : EO = 2 : 1, OE = [[frac(1, 3)]]OD",
+        "OD = [[frac(1, 2)]]BD이므로 {F1}{gv} = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "DO, AM은 △ACD의 중선",
+                "hint": "O, M은 중점"
+              },
+              {
+                "text": "E = 무게중심, OE = [[frac(1, 3)]]OD",
+                "hint": "DE : EO = 2 : 1"
+              },
+              {
+                "text": "{F1}{gv} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "BD = {bd} cm이면 OD = {od} cm, OE = {oe} cm, DE = {2*k} cm로 DE : EO = 2 : 1이 맞는다. 답은 {ans_v} cm다.",
+      "model_answer": "O는 AC의 중점이고 M은 CD의 중점이므로 DO와 AM은 △ACD의 중선이고 그 교점 E는 △ACD의 무게중심이다. 따라서 OE = [[frac(1, 3)]]OD = [[frac(1, 6)]]BD이고 {F1}{gv} = {ans_v}이므로 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "무게중심 읽기",
+          "points": 3,
+          "criterion": "DO, AM이 △ACD의 중선이고 E가 무게중심임을 밝혔다.",
+          "partial": "중선 하나만 밝혔으면 1점."
+        },
+        {
+          "element": "길이 계산",
+          "points": 2,
+          "criterion": "OE = ⅓OD, OD = ½BD를 이어 {F1}{gv} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "2 : 1의 방향을 바꿨으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-centroid-t4",
+      "pitfalls": [
+        {
+          "text": "E를 △ACD의 무게중심으로 보지 못하고 OE = ½OD로 둠",
+          "on": "무게중심 읽기",
+          "effect": "불인정"
+        },
+        {
+          "text": "DE : EO = 1 : 2로 방향을 바꿈",
+          "on": "길이 계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "OD = ½BD를 쓰지 않고 OD = BD로 둠",
+          "on": "길이 계산",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,496 @@
+{
+  "seed_id": "m1-2-parallel-angles",
+  "category": "도형",
+  "title": "평행선과 꺾인 선 — 보조선으로 엇각 만들기",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-04"
+  ],
+  "schema_id": null,
+  "schema_name": "평행선의 성질(엇각·동위각) 응용",
+  "source_item_ids": [],
+  "note": "꺾인 점을 지나는 평행선(보조선)을 그어 두 개의 엇각으로 나누는 유형. 도형은 scene으로 좌표를 직접 계산해 각이 실제와 일치한다.",
+  "geometry": true,
+  "templates": [
+    {
+      "id": "m1-2-parallel-angles-t1",
+      "title": "꺾인 점의 각 구하기 (보조선 1개)",
+      "skill": "보조 평행선을 그어 엇각 두 개의 합으로 나누기",
+      "prereq": [
+        "평행선의 엇각",
+        "평행선의 동위각",
+        "각의 덧셈"
+      ],
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "사칙"
+      ],
+      "traps": [
+        "조건누락"
+      ],
+      "variant_axis": {
+        "보조선": "꺾인 점 1개",
+        "구하는 것": "꺾인 각 x"
+      },
+      "discriminates": "보조선을 그을 생각을 하는가, 엇각 짝을 바르게 찾는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "time_limit": 120,
+      "points": 5,
+      "pool_target": 300,
+      "tags": [
+        "평행선",
+        "엇각",
+        "보조선"
+      ],
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              30,
+              35,
+              40,
+              45,
+              50,
+              55,
+              60,
+              65,
+              70
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              30,
+              35,
+              40,
+              45,
+              50,
+              55,
+              60,
+              65,
+              70
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "x": "a + c",
+        "ax": "2.75 - 1.5*cos(pi*a/180)/sin(pi*a/180)",
+        "cx": "2.75 - 1.5*cos(pi*c/180)/sin(pi*c/180)"
+      },
+      "constraints": [
+        "a != c",
+        "x <= 130",
+        "x != a",
+        "x != c"
+      ],
+      "cost_values": [
+        "a",
+        "c",
+        "x"
+      ],
+      "relation": "X - a - c",
+      "unknown": "X",
+      "answer_var": "x",
+      "verify": [
+        "ans == a + c",
+        "ans < 180"
+      ],
+      "question": "다음 그림에서 [[par(l, m)]]이고 [[angle(QAB) = deg({a})]], [[angle(SCB) = deg({c})]]일 때, [[angle(ABC)]]의 크기 [[deg(x)]]를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "P": [
+                -0.2,
+                3
+              ],
+              "Q": [
+                5.7,
+                3
+              ],
+              "R": [
+                -0.2,
+                0
+              ],
+              "S": [
+                5.7,
+                0
+              ],
+              "A": [
+                "{ax}",
+                3
+              ],
+              "B": [
+                2.75,
+                1.5
+              ],
+              "C": [
+                "{cx}",
+                0
+              ]
+            },
+            "nodot": [
+              "P",
+              "Q",
+              "R",
+              "S"
+            ],
+            "segs": [
+              [
+                "P",
+                "Q"
+              ],
+              [
+                "R",
+                "S"
+              ],
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "Q",
+                  "to": "B",
+                  "label": "{a}°"
+                },
+                {
+                  "at": "C",
+                  "from": "S",
+                  "to": "B",
+                  "label": "{c}°"
+                },
+                {
+                  "at": "B",
+                  "from": "A",
+                  "to": "C",
+                  "label": "x"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  5.7,
+                  3
+                ],
+                "text": "l",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  5.7,
+                  0
+                ],
+                "text": "m",
+                "dx": 10,
+                "dy": 4
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{x}",
+      "answer_alt": [
+        "[[deg({x})]]"
+      ],
+      "sol1": "꺾인 점 B에서 두 각 {a}°, {c}°가 서로 다른 평행선 쪽에 붙어 있어 그대로는 관계를 찾기 어렵다. 이럴 때는 꺾인 점 B를 지나면서 l, m과 평행한 보조선을 하나 긋는다. 그러면 x가 위쪽 각과 아래쪽 각 둘로 나뉘고, 각각이 {a}°, {c}°와 엇각이 되어 크기가 같아진다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "P": [
+                -0.2,
+                3
+              ],
+              "Q": [
+                5.7,
+                3
+              ],
+              "R": [
+                -0.2,
+                0
+              ],
+              "S": [
+                5.7,
+                0
+              ],
+              "U": [
+                -0.2,
+                1.5
+              ],
+              "V": [
+                5.7,
+                1.5
+              ],
+              "A": [
+                "{ax}",
+                3
+              ],
+              "B": [
+                2.75,
+                1.5
+              ],
+              "C": [
+                "{cx}",
+                0
+              ]
+            },
+            "nodot": [
+              "P",
+              "Q",
+              "R",
+              "S",
+              "U",
+              "V"
+            ],
+            "segs": [
+              [
+                "P",
+                "Q"
+              ],
+              [
+                "R",
+                "S"
+              ],
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              {
+                "a": "U",
+                "b": "V",
+                "dash": true
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "Q",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:A"
+                },
+                {
+                  "at": "C",
+                  "from": "S",
+                  "to": "B",
+                  "label": "{c}°",
+                  "k": "arc:C"
+                },
+                {
+                  "at": "B",
+                  "from": "A",
+                  "to": "U",
+                  "label": "{a}°",
+                  "k": "arc:B1"
+                },
+                {
+                  "at": "B",
+                  "from": "U",
+                  "to": "C",
+                  "label": "{c}°",
+                  "k": "arc:B2"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  5.7,
+                  3
+                ],
+                "text": "l",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  5.7,
+                  0
+                ],
+                "text": "m",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  5.7,
+                  1.5
+                ],
+                "text": "n (보조선)",
+                "dx": 30,
+                "dy": 4,
+                "k": "lbl:n",
+                "accent": true
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:A",
+              "arc:A:lbl",
+              "arc:C",
+              "arc:C:lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:U-V",
+              "lbl:n"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:A",
+              "arc:A:lbl",
+              "arc:B1",
+              "arc:B1:lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:C",
+              "arc:C:lbl",
+              "arc:B2",
+              "arc:B2:lbl"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "점 B를 지나고 l, m에 평행한 보조선 n을 긋는다. 보조선이 x를 [[angle(ABU)]]와 [[angle(UBC)]]로 나눈다.",
+        "l과 n이 평행하고 AB가 두 직선을 가로지르므로, [[angle(QAB)]]와 [[angle(ABU)]]는 엇각이다. 따라서 [[angle(ABU) = deg({a})]]",
+        "m과 n이 평행하고 BC가 두 직선을 가로지르므로, [[angle(SCB)]]와 [[angle(UBC)]]는 엇각이다. 따라서 [[angle(UBC) = deg({c})]]",
+        "x는 두 각의 합이므로 x = {a}° + {c}° = {x}°"
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:U-V",
+              "lbl:n"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:A",
+              "arc:A:lbl",
+              "arc:B1",
+              "arc:B1:lbl",
+              "seg:A-B"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:C",
+              "arc:C:lbl",
+              "arc:B2",
+              "arc:B2:lbl",
+              "seg:B-C"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:B1",
+              "arc:B1:lbl",
+              "arc:B2",
+              "arc:B2:lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol_check": "구한 x = {x}°는 두 각 {a}°, {c}°의 합이고 180°보다 작다. 보조선 n 위에서 [[angle(ABU)]] + [[angle(UBC)]] = {x}°로 그림과도 맞는다. 답은 [[deg({x})]]다.",
+      "model_answer": "점 B를 지나고 l, m에 평행한 직선 n을 그으면, 엇각의 성질에 의해 [[angle(ABU) = angle(QAB) = deg({a})]], [[angle(UBC) = angle(SCB) = deg({c})]]이다. 따라서 x = {a}° + {c}° = {x}°이다.",
+      "rubric": [
+        {
+          "element": "보조선 긋기",
+          "points": 4,
+          "criterion": "꺾인 점 B를 지나는 평행한 보조선을 그었다(그림 또는 말)."
+        },
+        {
+          "element": "엇각 찾기",
+          "points": 4,
+          "criterion": "보조선으로 나뉜 두 각이 각각 {a}°, {c}°와 엇각임을 밝혔다.",
+          "partial": "한쪽만 찾았으면 2점. 동위각으로 설명해도 같은 배점."
+        },
+        {
+          "element": "계산·답",
+          "points": 2,
+          "criterion": "x = {a}° + {c}° = {x}°로 답을 썼다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "보조선을 긋고도 'l, m과 평행하게'라는 말을 쓰지 않음 — 엇각의 근거가 끊긴다",
+          "on": "보조선",
+          "effect": "부분"
+        },
+        {
+          "text": "엇각을 동위각이나 맞꼭지각과 혼동해 짝지음",
+          "on": "엇각",
+          "effect": "부분"
+        },
+        {
+          "text": "x = a + c 라는 결과를 먼저 쓰고 이유를 뒤에 끼워 넣음 (선후 뒤바뀜)",
+          "on": "엇각",
+          "effect": "부분"
+        },
+        {
+          "text": "두 각을 더하지 않고 빼거나 180°에서 뺌",
+          "on": "계산",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

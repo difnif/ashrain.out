@@ -1,0 +1,3158 @@
+{
+  "seed_id": "m2-2-incenter",
+  "category": "도형",
+  "title": "삼각형의 내심 — ∠BIC, 세 각의 합 90°, 넓이와 반지름, 직각삼각형의 내접원, 접선의 길이",
+  "unit_id": "m2-2",
+  "concept_ids": [
+    "m2-2-02"
+  ],
+  "schema_id": "d1ef1b08-72be-4657-a5b1-2fa5f50c6b28",
+  "schema_name": "삼각형의 내접원과 선분의 길이 / 내심 각 / 내접원의 반지름",
+  "source_item_ids": [],
+  "note": "출판사 평가자료 유형(TYPES.md 5.4)을 참고해 새로 씀. 내심 좌표는 변의 길이 가중 평균(aA + bB + cC)/(a + b + c)으로 정확히 계산하고 내접원 반지름 = 내심의 y좌표. 접점 D·F는 내심의 수선의 발(정사영). t4는 피타고라스 수로 세 변을 만들어 r이 정수.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "내심: 세 내각의 이등분선의 교점",
+        "내심에서 세 변까지의 거리는 같다(내접원의 반지름)",
+        "삼각형의 내각의 합 180°"
+      ],
+      "ops": [
+        "각도"
+      ],
+      "tags": [
+        "내심",
+        "내접원"
+      ],
+      "title": "내심 — ∠BIC = 90° + ∠A ÷ 2",
+      "skill": "IB, IC가 각의 이등분선임을 써서 △IBC의 내각의 합으로 ∠BIC를 ∠A로 나타내기 (세 꼭짓점에 돌려 적용)",
+      "variant_axis": {
+        "주어진 것": "꼭짓점각 / 내심각",
+        "꼭짓점": "A·B·C",
+        "각": "30°~100° (짝수)"
+      },
+      "discriminates": "내심의 성질(각의 이등분선)에서 두 밑각의 절반의 합 = (180° − 꼭짓점각) ÷ 2를 세우는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "A>BIC",
+              "BIC>A",
+              "B>AIC",
+              "AIC>B",
+              "C>AIB",
+              "AIB>C"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              30,
+              32,
+              34,
+              36,
+              38,
+              40,
+              42,
+              44,
+              46,
+              48,
+              50,
+              52,
+              54,
+              56,
+              58,
+              60,
+              62,
+              64,
+              66,
+              68,
+              70,
+              72,
+              74,
+              76,
+              78,
+              80,
+              82,
+              84,
+              86,
+              88,
+              90,
+              92,
+              94,
+              96,
+              98,
+              100
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "A>BIC": {
+            "P": "A",
+            "Q1": "B",
+            "Q2": "C",
+            "IQ": "BIC",
+            "vA": 1,
+            "vB": 0,
+            "vC": 0,
+            "s": 0,
+            "LDX": 0,
+            "LDY": 22,
+            "GQ": "A",
+            "XQ": "BIC",
+            "isB": 1,
+            "GA": "A",
+            "GF": "B",
+            "GT": "C",
+            "XA": "I",
+            "XF": "B",
+            "XT": "C",
+            "F1": "∠BIC = 90° + [[frac(1, 2)]] × ",
+            "F2": "°",
+            "LAW": "90° + ∠A의 절반"
+          },
+          "BIC>A": {
+            "P": "A",
+            "Q1": "B",
+            "Q2": "C",
+            "IQ": "BIC",
+            "vA": 1,
+            "vB": 0,
+            "vC": 0,
+            "s": 10,
+            "LDX": 0,
+            "LDY": 30,
+            "GQ": "BIC",
+            "XQ": "A",
+            "isB": 0,
+            "GA": "I",
+            "GF": "B",
+            "GT": "C",
+            "XA": "A",
+            "XF": "B",
+            "XT": "C",
+            "F1": "∠A = 2 × (",
+            "F2": "° − 90°)",
+            "LAW": "(∠BIC − 90°)의 2배"
+          },
+          "B>AIC": {
+            "P": "B",
+            "Q1": "A",
+            "Q2": "C",
+            "IQ": "AIC",
+            "vA": 0,
+            "vB": 1,
+            "vC": 0,
+            "s": -10,
+            "LDX": 24,
+            "LDY": -2,
+            "GQ": "B",
+            "XQ": "AIC",
+            "isB": 1,
+            "GA": "B",
+            "GF": "A",
+            "GT": "C",
+            "XA": "I",
+            "XF": "A",
+            "XT": "C",
+            "F1": "∠AIC = 90° + [[frac(1, 2)]] × ",
+            "F2": "°",
+            "LAW": "90° + ∠B의 절반"
+          },
+          "AIC>B": {
+            "P": "B",
+            "Q1": "A",
+            "Q2": "C",
+            "IQ": "AIC",
+            "vA": 0,
+            "vB": 1,
+            "vC": 0,
+            "s": 0,
+            "LDX": 28,
+            "LDY": -8,
+            "GQ": "AIC",
+            "XQ": "B",
+            "isB": 0,
+            "GA": "I",
+            "GF": "A",
+            "GT": "C",
+            "XA": "B",
+            "XF": "A",
+            "XT": "C",
+            "F1": "∠B = 2 × (",
+            "F2": "° − 90°)",
+            "LAW": "(∠AIC − 90°)의 2배"
+          },
+          "C>AIB": {
+            "P": "C",
+            "Q1": "A",
+            "Q2": "B",
+            "IQ": "AIB",
+            "vA": 0,
+            "vB": 0,
+            "vC": 1,
+            "s": 10,
+            "LDX": -24,
+            "LDY": -2,
+            "GQ": "C",
+            "XQ": "AIB",
+            "isB": 1,
+            "GA": "C",
+            "GF": "A",
+            "GT": "B",
+            "XA": "I",
+            "XF": "A",
+            "XT": "B",
+            "F1": "∠AIB = 90° + [[frac(1, 2)]] × ",
+            "F2": "°",
+            "LAW": "90° + ∠C의 절반"
+          },
+          "AIB>C": {
+            "P": "C",
+            "Q1": "A",
+            "Q2": "B",
+            "IQ": "AIB",
+            "vA": 0,
+            "vB": 0,
+            "vC": 1,
+            "s": -10,
+            "LDX": -28,
+            "LDY": -8,
+            "GQ": "AIB",
+            "XQ": "C",
+            "isB": 0,
+            "GA": "I",
+            "GF": "A",
+            "GT": "B",
+            "XA": "C",
+            "XF": "A",
+            "XT": "B",
+            "F1": "∠C = 2 × (",
+            "F2": "° − 90°)",
+            "LAW": "(∠AIB − 90°)의 2배"
+          }
+        }
+      },
+      "derive": {
+        "Ad": "a*vA + ((180 - a)/2 + s)*vB + ((180 - a)/2 - s)*vC",
+        "Bd": "a*vB + ((180 - a)/2 + s)*vC + ((180 - a)/2 - s)*vA",
+        "Cd": "180 - Ad - Bd",
+        "sb": "4*sin(pi*Bd/180)/sin(pi*Ad/180)",
+        "sc": "4*sin(pi*Cd/180)/sin(pi*Ad/180)",
+        "ax": "sc*cos(pi*Bd/180)",
+        "ay": "sc*sin(pi*Bd/180)",
+        "pp": "4 + sb + sc",
+        "ix": "(4*ax + 4*sc)/pp",
+        "iy": "4*ay/pp",
+        "rr": "iy",
+        "bic": "90 + a/2",
+        "half": "90 - a/2",
+        "gv": "a*isB + (90 + a/2)*(1 - isB)",
+        "ans_v": "(90 + a/2)*isB + a*(1 - isB)"
+      },
+      "constraints": [
+        "ans_v != gv"
+      ],
+      "cost_values": [
+        "a",
+        "bic",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "2*bic == 180 + a",
+        "(isB == 1 and ans == bic) or (isB == 0 and ans == a)"
+      ],
+      "question": "다음 그림에서 점 I는 △ABC의 내심이다. [[angle({GQ})]] = [[deg({gv})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "I": [
+                "{ix}",
+                "{iy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "I",
+                "{Q1}"
+              ],
+              [
+                "I",
+                "{Q2}"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "I",
+                "r": "{rr}"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "점 I는 내심이므로 I{Q1}, I{Q2}{eun(Q2)} 각각 ∠{Q1}, ∠{Q2}의 이등분선이다: ∠I{Q1}{Q2} = [[frac(1, 2)]]∠{Q1}, ∠I{Q2}{Q1} = [[frac(1, 2)]]∠{Q2}. △I{Q1}{Q2}의 내각의 합에서 ∠{IQ} = 180° − [[frac(1, 2)]](∠{Q1} + ∠{Q2})이고, ∠{Q1} + ∠{Q2} = 180° − ∠{P}이므로 ∠{IQ} = 90° + [[frac(1, 2)]]∠{P}다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "I": [
+                "{ix}",
+                "{iy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "I",
+                "{Q1}"
+              ],
+              [
+                "I",
+                "{Q2}"
+              ],
+              {
+                "a": "I",
+                "b": "{P}",
+                "dash": true
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                },
+                {
+                  "at": "{Q1}",
+                  "from": "I",
+                  "to": "{Q2}",
+                  "label": "•",
+                  "k": "arc:b1"
+                },
+                {
+                  "at": "{Q1}",
+                  "from": "{P}",
+                  "to": "I",
+                  "label": "•",
+                  "k": "arc:b2"
+                },
+                {
+                  "at": "{Q2}",
+                  "from": "{P}",
+                  "to": "I",
+                  "label": "×",
+                  "k": "arc:c1"
+                },
+                {
+                  "at": "{Q2}",
+                  "from": "I",
+                  "to": "{Q1}",
+                  "label": "×",
+                  "k": "arc:c2"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "I",
+                "r": "{rr}"
+              }
+            ],
+            "labels": [
+              {
+                "at": "{XA}",
+                "text": "{ans_v}°",
+                "dx": "{LDX}",
+                "dy": "{LDY}",
+                "accent": true,
+                "k": "lbl:ans"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:b1",
+              "arc:b2",
+              "arc:c1",
+              "arc:c2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:given",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "lbl:ans",
+              "arc:ask"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "점 I는 내심이므로 ∠I{Q1}{Q2} = [[frac(1, 2)]]∠{Q1}, ∠I{Q2}{Q1} = [[frac(1, 2)]]∠{Q2}",
+        "△I{Q1}{Q2}에서 ∠{IQ} = 180° − [[frac(1, 2)]](∠{Q1} + ∠{Q2}) = 180° − [[frac(1, 2)]](180° − ∠{P}) = 90° + [[frac(1, 2)]]∠{P}",
+        "{F1}{gv}{F2} = {ans_v}°",
+        "따라서 ∠{XQ} = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠I{Q1}{Q2} = [[frac(1, 2)]]∠{Q1}, ∠I{Q2}{Q1} = [[frac(1, 2)]]∠{Q2}",
+                "hint": "내심 = 각의 이등분선의 교점"
+              },
+              {
+                "text": "∠{IQ} = 90° + [[frac(1, 2)]]∠{P}",
+                "hint": "△I{Q1}{Q2}의 내각의 합"
+              },
+              {
+                "text": "{F1}{gv}{F2} = {ans_v}°",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "∠{Q1} + ∠{Q2} = 180° − {a}° = {180 - a}°이고 그 절반 {half}°를 180°에서 빼면 {bic}°다. ∠{P} = {a}°와 ∠{IQ} = {bic}°의 조합이 조건과 맞는다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "점 I는 내심이므로 ∠I{Q1}{Q2} = [[frac(1, 2)]]∠{Q1}, ∠I{Q2}{Q1} = [[frac(1, 2)]]∠{Q2}이다. △I{Q1}{Q2}에서 ∠{IQ} = 180° − [[frac(1, 2)]](∠{Q1} + ∠{Q2}) = 180° − [[frac(1, 2)]](180° − ∠{P}) = 90° + [[frac(1, 2)]]∠{P}이므로 {F1}{gv}{F2} = {ans_v}°이다. 따라서 ∠{XQ} = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "각의 이등분선",
+          "points": 3,
+          "criterion": "내심의 성질에서 ∠I{Q1}{Q2} = [[frac(1, 2)]]∠{Q1}, ∠I{Q2}{Q1} = [[frac(1, 2)]]∠{Q2}임을 밝혔다.",
+          "partial": "한쪽만 썼으면 1점."
+        },
+        {
+          "element": "∠{IQ} 식",
+          "points": 2,
+          "criterion": "∠{IQ} = 90° + [[frac(1, 2)]]∠{P}(또는 같은 뜻의 식)를 세웠다.",
+          "partial": "∠{IQ} = 2∠{P} 등 외심의 성질과 혼동했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans_v}°를 구했다.",
+          "partial": ""
+        }
+      ],
+      "id": "m2-2-incenter-t1",
+      "pitfalls": [
+        {
+          "text": "내심을 외심으로 혼동해 ∠{IQ} = 2∠{P}로 계산함",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "∠I{Q1}{Q2} + ∠I{Q2}{Q1}을 (180° − ∠{P}) ÷ 2가 아니라 180° − ∠{P}로 두어 90°를 빼먹음",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "I{Q1}, I{Q2}가 각의 이등분선임을 밝히지 않음",
+          "on": "각의 이등분선",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "내심: 세 내각의 이등분선의 교점",
+        "내심에서 세 변까지의 거리는 같다(내접원의 반지름)",
+        "삼각형의 내각의 합 180°"
+      ],
+      "ops": [
+        "각도"
+      ],
+      "tags": [
+        "내심",
+        "내접원"
+      ],
+      "title": "내심 — ∠IAB + ∠IBC + ∠ICA = 90°",
+      "skill": "세 내각의 절반의 합이 90°임을 써서 나머지 각 구하기",
+      "variant_axis": {
+        "구하는 것": "∠IAB / ∠IBC / ∠ICA",
+        "각": "10°~55°"
+      },
+      "discriminates": "내심이 각의 이등분선의 교점이므로 세 각이 각각 내각의 절반이고 그 합이 90°임을 세우는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "IAB",
+              "IBC",
+              "ICA"
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              10,
+              55
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "int": [
+              10,
+              55
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "IAB": {
+            "XQ": "IAB",
+            "G1": "IBC",
+            "G2": "ICA",
+            "uA": 1,
+            "uB": 0,
+            "uC": 0,
+            "XA": "A",
+            "XF": "I",
+            "XT": "B",
+            "G1A": "B",
+            "G1F": "I",
+            "G1T": "C",
+            "G2A": "C",
+            "G2F": "I",
+            "G2T": "A"
+          },
+          "IBC": {
+            "XQ": "IBC",
+            "G1": "IAB",
+            "G2": "ICA",
+            "uA": 0,
+            "uB": 1,
+            "uC": 0,
+            "XA": "B",
+            "XF": "I",
+            "XT": "C",
+            "G1A": "A",
+            "G1F": "I",
+            "G1T": "B",
+            "G2A": "C",
+            "G2F": "I",
+            "G2T": "A"
+          },
+          "ICA": {
+            "XQ": "ICA",
+            "G1": "IAB",
+            "G2": "IBC",
+            "uA": 0,
+            "uB": 0,
+            "uC": 1,
+            "XA": "C",
+            "XF": "I",
+            "XT": "A",
+            "G1A": "A",
+            "G1F": "I",
+            "G1T": "B",
+            "G2A": "B",
+            "G2F": "I",
+            "G2T": "C"
+          }
+        }
+      },
+      "derive": {
+        "Ad": "2*p",
+        "Bd": "2*q",
+        "Cd": "180 - Ad - Bd",
+        "sb": "4*sin(pi*Bd/180)/sin(pi*Ad/180)",
+        "sc": "4*sin(pi*Cd/180)/sin(pi*Ad/180)",
+        "ax": "sc*cos(pi*Bd/180)",
+        "ay": "sc*sin(pi*Bd/180)",
+        "pp": "4 + sb + sc",
+        "ix": "(4*ax + 4*sc)/pp",
+        "iy": "4*ay/pp",
+        "rr": "iy",
+        "z": "90 - p - q",
+        "g1": "p*(1 - uA) + q*uA",
+        "g2": "z*(1 - uC) + q*uC",
+        "ans_v": "p*uA + q*uB + z*uC"
+      },
+      "constraints": [
+        "z >= 10",
+        "ans_v != g1",
+        "ans_v != g2",
+        "g1 != g2"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "z",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "p + q + z == 90",
+        "g1 + g2 + ans == 90"
+      ],
+      "question": "다음 그림에서 점 I는 △ABC의 내심이다. [[angle({G1})]] = [[deg({g1})]], [[angle({G2})]] = [[deg({g2})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "I": [
+                "{ix}",
+                "{iy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "I",
+                "A"
+              ],
+              [
+                "I",
+                "B"
+              ],
+              [
+                "I",
+                "C"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{G1A}",
+                  "from": "{G1F}",
+                  "to": "{G1T}",
+                  "label": "{g1}°",
+                  "k": "arc:g1"
+                },
+                {
+                  "at": "{G2A}",
+                  "from": "{G2F}",
+                  "to": "{G2T}",
+                  "label": "{g2}°",
+                  "k": "arc:g2"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "I",
+                "r": "{rr}"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "내심 I는 세 내각의 이등분선의 교점이다. 그래서 ∠IAB = ∠IAC = [[frac(1, 2)]]∠A, ∠IBA = ∠IBC = [[frac(1, 2)]]∠B, ∠ICB = ∠ICA = [[frac(1, 2)]]∠C이고, ∠IAB + ∠IBC + ∠ICA = [[frac(1, 2)]](∠A + ∠B + ∠C) = [[frac(1, 2)]] × 180° = 90°다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "I": [
+                "{ix}",
+                "{iy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "I",
+                "A"
+              ],
+              [
+                "I",
+                "B"
+              ],
+              [
+                "I",
+                "C"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{G1A}",
+                  "from": "{G1F}",
+                  "to": "{G1T}",
+                  "label": "{g1}°",
+                  "k": "arc:g1"
+                },
+                {
+                  "at": "{G2A}",
+                  "from": "{G2F}",
+                  "to": "{G2T}",
+                  "label": "{g2}°",
+                  "k": "arc:g2"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                },
+                {
+                  "at": "A",
+                  "from": "C",
+                  "to": "I",
+                  "label": "{p}°",
+                  "k": "arc:a2"
+                },
+                {
+                  "at": "B",
+                  "from": "A",
+                  "to": "I",
+                  "label": "{q}°",
+                  "k": "arc:b2"
+                },
+                {
+                  "at": "C",
+                  "from": "B",
+                  "to": "I",
+                  "label": "{z}°",
+                  "k": "arc:c2"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "I",
+                "r": "{rr}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:g1",
+              "arc:g2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:a2",
+              "arc:b2",
+              "arc:c2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:ask"
+          }
+        ]
+      ],
+      "sol2": [
+        "점 I는 내심이므로 ∠IAB = [[frac(1, 2)]]∠A, ∠IBC = [[frac(1, 2)]]∠B, ∠ICA = [[frac(1, 2)]]∠C",
+        "∠IAB + ∠IBC + ∠ICA = [[frac(1, 2)]](∠A + ∠B + ∠C) = [[frac(1, 2)]] × 180° = 90°",
+        "∠{XQ} = 90° − {g1}° − {g2}° = {ans_v}°",
+        "따라서 ∠{XQ} = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠IAB = [[frac(1, 2)]]∠A, ∠IBC = [[frac(1, 2)]]∠B, ∠ICA = [[frac(1, 2)]]∠C",
+                "hint": "내심 = 각의 이등분선의 교점"
+              },
+              {
+                "text": "∠IAB + ∠IBC + ∠ICA = 90°",
+                "hint": "내각의 합의 절반"
+              },
+              {
+                "text": "∠{XQ} = 90° − {g1}° − {g2}° = {ans_v}°"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "세 각 {g1}° + {g2}° + {ans_v}° = 90°이고, △ABC의 세 내각은 각각 그 2배인 {2*p}°, {2*q}°, {2*z}°로 합이 180°다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "점 I는 내심이므로 ∠IAB = [[frac(1, 2)]]∠A, ∠IBC = [[frac(1, 2)]]∠B, ∠ICA = [[frac(1, 2)]]∠C이고, 세 각의 합은 [[frac(1, 2)]] × 180° = 90°이다. 따라서 ∠{XQ} = 90° − {g1}° − {g2}° = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "각의 이등분선",
+          "points": 3,
+          "criterion": "내심의 성질에서 세 각이 각각 내각의 절반임을 밝혔다.",
+          "partial": "한 각만 밝혔으면 1점."
+        },
+        {
+          "element": "합이 90°",
+          "points": 2,
+          "criterion": "세 각의 합이 [[frac(1, 2)]] × 180° = 90°임을 세웠다.",
+          "partial": "합을 180°로 두었으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans_v}°를 구했다.",
+          "partial": ""
+        }
+      ],
+      "id": "m2-2-incenter-t2",
+      "pitfalls": [
+        {
+          "text": "세 각의 합을 90°가 아니라 180°로 두어 {90 + ans_v}°로 답함",
+          "on": "합이 90°",
+          "effect": "불인정"
+        },
+        {
+          "text": "내심을 외심으로 혼동해 OA = OB = OC(이등변삼각형)로 풀이함",
+          "on": "각의 이등분선",
+          "effect": "불인정"
+        },
+        {
+          "text": "각의 절반이라는 근거 없이 결과만 씀",
+          "on": "각의 이등분선",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "내심에서 세 변까지의 거리는 같다(내접원의 반지름)",
+        "삼각형의 넓이"
+      ],
+      "ops": [
+        "넓이",
+        "방정식"
+      ],
+      "tags": [
+        "내심",
+        "내접원"
+      ],
+      "title": "내접원의 반지름과 넓이 — △ABC = ½ × r × (둘레)",
+      "skill": "내심에서 세 변까지의 거리가 r로 같음을 써서 넓이를 r × 둘레 ÷ 2로 나타내기",
+      "variant_axis": {
+        "구하는 것": "넓이 / 반지름 / 둘레",
+        "r": "2~6",
+        "둘레": "20~60"
+      },
+      "discriminates": "△ABC를 △IAB, △IBC, △ICA로 쪼개어 높이가 모두 r임을 쓰는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "area",
+              "r",
+              "perim"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              6
+            ]
+          }
+        },
+        {
+          "name": "P",
+          "values": {
+            "in": [
+              20,
+              22,
+              24,
+              26,
+              28,
+              30,
+              32,
+              34,
+              36,
+              38,
+              40,
+              42,
+              44,
+              46,
+              48,
+              50,
+              52,
+              54,
+              56,
+              58,
+              60
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "area": {
+            "Q": "△ABC의 넓이",
+            "U": " cm²",
+            "UA": "cm²",
+            "isA": 1,
+            "isR": 0,
+            "isP": 0,
+            "G1T": "내접원의 반지름의 길이가 ",
+            "G1U": " cm",
+            "G2T": "△ABC의 둘레의 길이가 ",
+            "G2U": " cm",
+            "F1": "△ABC = [[frac(1, 2)]] × r × (둘레) = [[frac(1, 2)]] × ",
+            "F2": " × ",
+            "LAW": "[[frac(1, 2)]] × r × 둘레"
+          },
+          "r": {
+            "Q": "내접원의 반지름의 길이",
+            "U": " cm",
+            "UA": "cm",
+            "isA": 0,
+            "isR": 1,
+            "isP": 0,
+            "G1T": "△ABC의 넓이가 ",
+            "G1U": " cm²",
+            "G2T": "△ABC의 둘레의 길이가 ",
+            "G2U": " cm",
+            "F1": "r = 2 × (넓이) ÷ (둘레) = 2 × ",
+            "F2": " ÷ ",
+            "LAW": "넓이 = [[frac(1, 2)]] × r × 둘레"
+          },
+          "perim": {
+            "Q": "△ABC의 둘레의 길이",
+            "U": " cm",
+            "UA": "cm",
+            "isA": 0,
+            "isR": 0,
+            "isP": 1,
+            "G1T": "△ABC의 넓이가 ",
+            "G1U": " cm²",
+            "G2T": "내접원의 반지름의 길이가 ",
+            "G2U": " cm",
+            "F1": "(둘레) = 2 × (넓이) ÷ r = 2 × ",
+            "F2": " ÷ ",
+            "LAW": "넓이 = [[frac(1, 2)]] × r × 둘레"
+          }
+        }
+      },
+      "derive": {
+        "Ad": "52",
+        "Bd": "60",
+        "Cd": "180 - Ad - Bd",
+        "sb": "4*sin(pi*Bd/180)/sin(pi*Ad/180)",
+        "sc": "4*sin(pi*Cd/180)/sin(pi*Ad/180)",
+        "ax": "sc*cos(pi*Bd/180)",
+        "ay": "sc*sin(pi*Bd/180)",
+        "pp": "4 + sb + sc",
+        "ix": "(4*ax + 4*sc)/pp",
+        "iy": "4*ay/pp",
+        "rr": "iy",
+        "S": "r*P/2",
+        "g1": "r*isA + r*P/2*(1 - isA)",
+        "g2": "P*(isA + isR) + r*isP",
+        "ans_v": "r*P/2*isA + r*isR + P*isP",
+        "t1": "(ix*ax + iy*ay)/sc",
+        "dx": "t1*ax/sc",
+        "dy": "t1*ay/sc",
+        "t2": "((ix - ax)*(4 - ax) + (iy - ay)*(0 - ay))/sb",
+        "fx": "ax + t2*(4 - ax)/sb",
+        "fy": "ay - t2*ay/sb"
+      },
+      "constraints": [
+        "S != P",
+        "S != r",
+        "P != 2*r"
+      ],
+      "cost_values": [
+        "r",
+        "P",
+        "S",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "2*S == r*P",
+        "(isA == 1 and ans == S) or (isR == 1 and ans == r) or (isP == 1 and ans == P)"
+      ],
+      "question": "다음 그림에서 점 I는 △ABC의 내심이다. {G1T}{g1}{G1U}이고 {G2T}{g2}{G2U}일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "I": [
+                "{ix}",
+                "{iy}"
+              ],
+              "E": [
+                "{ix}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              {
+                "a": "I",
+                "b": "E",
+                "dash": true,
+                "label": "r"
+              }
+            ],
+            "circles": [
+              {
+                "c": "I",
+                "r": "{rr}"
+              }
+            ],
+            "nodot": [
+              "E"
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v}{U}"
+      ],
+      "sol1": "내심 I에서 세 변 AB, BC, CA에 내린 수선의 길이는 모두 내접원의 반지름 r로 같다. 그래서 △ABC를 I와 세 꼭짓점을 이어 △IAB, △IBC, △ICA로 나누면 세 삼각형의 높이가 모두 r이고, 넓이의 합은 [[frac(1, 2)]] × r × (AB + BC + CA) = [[frac(1, 2)]] × r × (둘레)다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "I": [
+                "{ix}",
+                "{iy}"
+              ],
+              "E": [
+                "{ix}",
+                0
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "F": [
+                "{fx}",
+                "{fy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              {
+                "a": "I",
+                "b": "A",
+                "dash": true
+              },
+              {
+                "a": "I",
+                "b": "B",
+                "dash": true
+              },
+              {
+                "a": "I",
+                "b": "C",
+                "dash": true
+              },
+              {
+                "a": "I",
+                "b": "D",
+                "label": "r"
+              },
+              {
+                "a": "I",
+                "b": "E",
+                "label": "r"
+              },
+              {
+                "a": "I",
+                "b": "F",
+                "label": "r"
+              }
+            ],
+            "marks": {
+              "right": [
+                [
+                  "I",
+                  "D",
+                  "B"
+                ],
+                [
+                  "I",
+                  "E",
+                  "C"
+                ],
+                [
+                  "I",
+                  "F",
+                  "A"
+                ]
+              ]
+            },
+            "circles": [
+              {
+                "c": "I",
+                "r": "{rr}"
+              }
+            ],
+            "nodot": [
+              "D",
+              "E",
+              "F"
+            ],
+            "shade": [
+              [
+                "I",
+                "A",
+                "B"
+              ],
+              [
+                "I",
+                "B",
+                "C"
+              ],
+              [
+                "I",
+                "C",
+                "A"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:I-D",
+              "seg:I-E",
+              "seg:I-F",
+              "seglbl:I-D",
+              "seglbl:I-E",
+              "seglbl:I-F"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "shade:0",
+              "shade:1",
+              "shade:2",
+              "seg:I-A",
+              "seg:I-B",
+              "seg:I-C"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "내심에서 세 변까지의 거리는 내접원의 반지름 r로 같으므로 △IAB, △IBC, △ICA의 높이는 모두 r",
+        "△ABC = △IAB + △IBC + △ICA = [[frac(1, 2)]] × r × (AB + BC + CA) = [[frac(1, 2)]] × r × (둘레)",
+        "{F1}{g1}{F2}{g2} = {ans_v}",
+        "따라서 {Q}{eun(Q)} {ans_v}{U}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "높이가 모두 r인 세 삼각형",
+                "hint": "내심 → 세 변까지의 거리 r"
+              },
+              {
+                "text": "△ABC = [[frac(1, 2)]] × r × (둘레)",
+                "hint": "{LAW}"
+              },
+              {
+                "text": "{F1}{g1}{F2}{g2} = {ans_v}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "r = {r} cm, 둘레 {P} cm이면 넓이는 [[frac(1, 2)]] × {r} × {P} = {S}(cm²)로 세 값이 서로 맞는다. 답은 {ans_v}{U}다.",
+      "model_answer": "내심 I에서 세 변까지의 거리는 내접원의 반지름 r로 같으므로 △ABC = △IAB + △IBC + △ICA = [[frac(1, 2)]] × r × (둘레)이다. {F1}{g1}{F2}{g2} = {ans_v}이므로 {Q}{eun(Q)} {ans_v}{U}다.",
+      "rubric": [
+        {
+          "element": "세 삼각형으로 나누기",
+          "points": 3,
+          "criterion": "△ABC를 세 삼각형으로 나누고 높이가 모두 r임을 밝혔다.",
+          "partial": "공식 [[frac(1, 2)]] × r × (둘레)만 쓰고 근거가 없으면 1점."
+        },
+        {
+          "element": "식 세우기·계산",
+          "points": 2,
+          "criterion": "{F1}{g1}{F2}{g2} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "[[frac(1, 2)]]을 빠뜨렸으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans_v}{U}{eul(UA)} 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-incenter-t3",
+      "pitfalls": [
+        {
+          "text": "넓이 = r × (둘레)로 두어 [[frac(1, 2)]]을 빠뜨림(값이 2배 또는 절반으로 어긋남)",
+          "on": "식 세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "세 삼각형의 높이가 모두 r임을 밝히지 않고 공식만 씀",
+          "on": "세 삼각형",
+          "effect": "부분"
+        },
+        {
+          "text": "둘레 대신 한 변의 길이를 곱함",
+          "on": "식 세우기",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 110,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "내심에서 세 변까지의 거리는 같다",
+        "원 밖의 한 점에서 그은 두 접선의 길이는 같다",
+        "정사각형의 성질"
+      ],
+      "ops": [
+        "방정식"
+      ],
+      "tags": [
+        "내심",
+        "내접원"
+      ],
+      "title": "직각삼각형의 내접원 — r = (a + b − c) ÷ 2, 접선의 길이",
+      "skill": "내심에서 두 변에 내린 수선이 정사각형을 만들어 CE = CF = r임을 쓰고, 접선의 길이로 빗변을 나누기",
+      "variant_axis": {
+        "구하는 것": "r / AD / BD",
+        "세 변": "피타고라스 수 6종 × 1~4배"
+      },
+      "discriminates": "∠C = 90°에서 □IECF가 정사각형임을 읽고, 두 접선의 길이가 같음을 써서 AB = (b − r) + (a − r)를 세우는가",
+      "qtype": "short",
+      "difficulty": 4,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "r",
+              "ad",
+              "bd"
+            ]
+          }
+        },
+        {
+          "name": "t",
+          "values": {
+            "in": [
+              "345",
+              "51213",
+              "81517",
+              "72425",
+              "435",
+              "12513"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "w",
+          "rows": {
+            "r": {
+              "Q": "내접원의 반지름의 길이",
+              "isR": 1,
+              "isD": 0,
+              "isE": 0,
+              "F1": "r = (BC + CA − AB) ÷ 2 = ",
+              "F2": " ÷ ",
+              "LAW": "r = (a + b − c) ÷ 2"
+            },
+            "ad": {
+              "Q": "[[seg(AD)]]의 길이",
+              "isR": 0,
+              "isD": 1,
+              "isE": 0,
+              "F1": "AD = AF = ",
+              "F2": " − ",
+              "LAW": "AF = CA − CF = CA − r"
+            },
+            "bd": {
+              "Q": "[[seg(BD)]]의 길이",
+              "isR": 0,
+              "isD": 0,
+              "isE": 1,
+              "F1": "BD = BE = ",
+              "F2": " − ",
+              "LAW": "BE = BC − CE = BC − r"
+            }
+          }
+        },
+        {
+          "key": "t",
+          "rows": {
+            "345": {
+              "a0": 3,
+              "b0": 4,
+              "c0": 5
+            },
+            "51213": {
+              "a0": 5,
+              "b0": 12,
+              "c0": 13
+            },
+            "81517": {
+              "a0": 8,
+              "b0": 15,
+              "c0": 17
+            },
+            "72425": {
+              "a0": 7,
+              "b0": 24,
+              "c0": 25
+            },
+            "435": {
+              "a0": 4,
+              "b0": 3,
+              "c0": 5
+            },
+            "12513": {
+              "a0": 12,
+              "b0": 5,
+              "c0": 13
+            }
+          }
+        }
+      ],
+      "derive": {
+        "a": "k*a0",
+        "b": "k*b0",
+        "c": "k*c0",
+        "r": "(a + b - c)/2",
+        "ad": "b - r",
+        "bd": "a - r",
+        "ans_v": "r*isR + (b - r)*isD + (a - r)*isE",
+        "v1": "(a + b - c)*isR + b*isD + a*isE",
+        "v2": "2*isR + r*(1 - isR)",
+        "dt": "(r*a - (r - b)*b)/c",
+        "dx": "dt*a/c",
+        "dy": "b - dt*b/c"
+      },
+      "constraints": [
+        "ans_v != a",
+        "ans_v != b",
+        "ans_v != c"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "r",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "a*a + b*b == c*c",
+        "ad + bd == c",
+        "(isR == 1 and ans == r) or (isD == 1 and ans == ad) or (isE == 1 and ans == bd)"
+      ],
+      "question": "다음 그림에서 원 I는 [[angle(C)]] = [[deg(90)]]인 직각삼각형 ABC의 내접원이고, 점 D는 내접원과 [[seg(AB)]]의 접점이다. [[seg(BC)]] = {a} cm, [[seg(CA)]] = {b} cm, [[seg(AB)]] = {c} cm일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{b}"
+              ],
+              "B": [
+                "{a}",
+                0
+              ],
+              "C": [
+                0,
+                0
+              ],
+              "I": [
+                "{r}",
+                "{r}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{r}",
+                0
+              ],
+              "F": [
+                0,
+                "{r}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "B",
+                "b": "A",
+                "label": "{c} cm"
+              },
+              {
+                "a": "C",
+                "b": "B",
+                "label": "{a} cm"
+              },
+              {
+                "a": "A",
+                "b": "C",
+                "label": "{b} cm"
+              },
+              {
+                "a": "I",
+                "b": "E",
+                "dash": true
+              },
+              {
+                "a": "I",
+                "b": "F",
+                "dash": true
+              }
+            ],
+            "marks": {
+              "right": [
+                [
+                  "A",
+                  "C",
+                  "B"
+                ]
+              ]
+            },
+            "circles": [
+              {
+                "c": "I",
+                "r": "{r}"
+              }
+            ],
+            "nodot": [
+              "E",
+              "F"
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "내접원이 BC, CA와 만나는 점을 E, F라 하면 IE ⊥ BC, IF ⊥ CA이고 IE = IF = r다. ∠C = 90°이므로 □IECF는 네 각이 직각이고 이웃한 두 변이 r로 같은 정사각형 — 따라서 CE = CF = r. 원 밖의 한 점에서 그은 두 접선의 길이는 같으므로 AD = AF = {b} − r, BD = BE = {a} − r이고, 이 둘을 더한 것이 AB = {c}다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{b}"
+              ],
+              "B": [
+                "{a}",
+                0
+              ],
+              "C": [
+                0,
+                0
+              ],
+              "I": [
+                "{r}",
+                "{r}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{r}",
+                0
+              ],
+              "F": [
+                0,
+                "{r}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "B",
+                "b": "A",
+                "label": "{c} cm"
+              },
+              {
+                "a": "C",
+                "b": "B",
+                "label": "{a} cm"
+              },
+              {
+                "a": "A",
+                "b": "C",
+                "label": "{b} cm"
+              },
+              {
+                "a": "I",
+                "b": "E",
+                "dash": true
+              },
+              {
+                "a": "I",
+                "b": "F",
+                "dash": true
+              },
+              [
+                "I",
+                "D"
+              ]
+            ],
+            "marks": {
+              "right": [
+                [
+                  "A",
+                  "C",
+                  "B"
+                ],
+                [
+                  "I",
+                  "E",
+                  "B"
+                ],
+                [
+                  "I",
+                  "F",
+                  "A"
+                ]
+              ],
+              "eq": [
+                [
+                  [
+                    "C",
+                    "E"
+                  ],
+                  [
+                    "C",
+                    "F"
+                  ],
+                  [
+                    "I",
+                    "E"
+                  ],
+                  [
+                    "I",
+                    "F"
+                  ]
+                ],
+                [
+                  [
+                    "A",
+                    "D"
+                  ],
+                  [
+                    "A",
+                    "F"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "D"
+                  ],
+                  [
+                    "B",
+                    "E"
+                  ]
+                ]
+              ]
+            },
+            "circles": [
+              {
+                "c": "I",
+                "r": "{r}"
+              }
+            ],
+            "labels": [
+              {
+                "at": "C",
+                "text": "r",
+                "dx": 12,
+                "dy": -12,
+                "accent": true,
+                "k": "lbl:r"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:C-E",
+              "eq:C-F",
+              "eq:I-E",
+              "eq:I-F",
+              "lbl:r"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:A-D",
+              "eq:A-F"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:B-D",
+              "eq:B-E"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "IE ⊥ BC, IF ⊥ CA, IE = IF = r이고 ∠C = 90°이므로 □IECF는 정사각형: CE = CF = r",
+        "두 접선의 길이는 같으므로 AD = AF = {b} − r, BD = BE = {a} − r",
+        "AB = AD + BD: ({b} − r) + ({a} − r) = {c} → 2r = {a + b - c}, r = {r}",
+        "{F1}{v1}{F2}{v2} = {ans_v}",
+        "따라서 {Q}{eun(Q)} {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "CE = CF = r",
+                "hint": "□IECF는 정사각형"
+              },
+              {
+                "text": "AD = {b} − r, BD = {a} − r",
+                "hint": "접선의 길이"
+              },
+              {
+                "text": "({b} − r) + ({a} − r) = {c} → r = {r}",
+                "hint": "AB = AD + BD"
+              },
+              {
+                "text": "{F1}{v1}{F2}{v2} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "hint:3"
+          }
+        ],
+        []
+      ],
+      "sol_check": "r = {r}이면 AD = {ad}, BD = {bd}{ro(bd)} AD + BD = {c} = AB가 맞고, CE = CF = {r}{ro(r)} BC = BE + EC = {bd} + {r} = {a}, CA = {ad} + {r} = {b}도 맞는다. 답은 {ans_v} cm다.",
+      "model_answer": "내접원과 BC, CA의 접점을 E, F라 하면 ∠C = 90°이고 IE = IF = r이므로 □IECF는 정사각형이고 CE = CF = r이다. 두 접선의 길이는 같으므로 AD = AF = {b} − r, BD = BE = {a} − r이고, AB = AD + BD에서 ({b} − r) + ({a} − r) = {c}, r = {r}이다. 따라서 {Q}{eun(Q)} {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "정사각형·접선",
+          "points": 3,
+          "criterion": "CE = CF = r(정사각형)과 AD = AF, BD = BE(접선의 길이)를 밝혔다.",
+          "partial": "둘 중 하나만 밝혔으면 1점."
+        },
+        {
+          "element": "방정식",
+          "points": 2,
+          "criterion": "({b} − r) + ({a} − r) = {c}{eul(c)} 세워 r = {r}{eul(r)} 구했다.",
+          "partial": "식은 세웠으나 계산이 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} {ans_v} cm를 답했다.",
+          "partial": "r만 구하고 묻는 길이로 옮기지 않았으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-incenter-t4",
+      "pitfalls": [
+        {
+          "text": "□IECF가 정사각형임(CE = CF = r)을 쓰지 않고 r를 다른 길이로 둠",
+          "on": "정사각형",
+          "effect": "불인정"
+        },
+        {
+          "text": "AD = {b} − r 대신 AD = {a} − r처럼 접선을 다른 꼭짓점의 변에 짝지음",
+          "on": "방정식",
+          "effect": "불인정"
+        },
+        {
+          "text": "r = {r}까지 구하고 묻는 길이({Q})로 옮기지 않음",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 120,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원 밖의 한 점에서 그은 두 접선의 길이는 같다",
+        "연립방정식"
+      ],
+      "ops": [
+        "방정식"
+      ],
+      "tags": [
+        "내심",
+        "내접원"
+      ],
+      "title": "내접원의 접선의 길이 — 세 변에서 접점까지의 길이",
+      "skill": "두 접선의 길이가 같음을 써서 x + y = c, y + z = a, z + x = b를 세우고 풀기",
+      "variant_axis": {
+        "구하는 것": "AD / BE / CF",
+        "접선 길이": "2~7"
+      },
+      "discriminates": "세 쌍의 접선 길이를 미지수로 두고 연립하여 푸는가(세 식의 합 = 둘레)",
+      "qtype": "short",
+      "difficulty": 4,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "AD",
+              "BE",
+              "CF"
+            ]
+          }
+        },
+        {
+          "name": "ta",
+          "values": {
+            "int": [
+              2,
+              7
+            ]
+          }
+        },
+        {
+          "name": "tb",
+          "values": {
+            "int": [
+              2,
+              7
+            ]
+          }
+        },
+        {
+          "name": "tc",
+          "values": {
+            "int": [
+              2,
+              7
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "AD": {
+            "XS": "AD",
+            "isA": 1,
+            "isB": 0,
+            "isC": 0,
+            "F1": "x = ",
+            "F2": " − ",
+            "SUB": "a"
+          },
+          "BE": {
+            "XS": "BE",
+            "isA": 0,
+            "isB": 1,
+            "isC": 0,
+            "F1": "y = ",
+            "F2": " − ",
+            "SUB": "b"
+          },
+          "CF": {
+            "XS": "CF",
+            "isA": 0,
+            "isB": 0,
+            "isC": 1,
+            "F1": "z = ",
+            "F2": " − ",
+            "SUB": "c"
+          }
+        }
+      },
+      "derive": {
+        "a": "tb + tc",
+        "b": "ta + tc",
+        "c": "ta + tb",
+        "P": "a + b + c",
+        "hp": "P/2",
+        "ax": "(a*a + c*c - b*b)/(2*a)",
+        "ay": "sqrt(abs(c*c - ax*ax))",
+        "ix": "(a*ax + c*a)/P",
+        "iy": "a*ay/P",
+        "rr": "iy",
+        "t1": "(ix*ax + iy*ay)/c",
+        "dx": "t1*ax/c",
+        "dy": "t1*ay/c",
+        "t2": "((ix - ax)*(a - ax) + (iy - ay)*(0 - ay))/b",
+        "fx": "ax + t2*(a - ax)/b",
+        "fy": "ay - t2*ay/b",
+        "ans_v": "ta*isA + tb*isB + tc*isC",
+        "v2": "a*isA + b*isB + c*isC",
+        "qab": "0.25 + 0.25*sign(tb - ta) + 0.25*abs(sign(tb - ta))",
+        "qbc": "0.25 + 0.25*sign(tc - tb) + 0.25*abs(sign(tc - tb))",
+        "qca": "0.25 + 0.25*sign(ta - tc) + 0.25*abs(sign(ta - tc))"
+      },
+      "constraints": [
+        "ta != tb or tb != tc"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "hp",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "a + b + c == 2*hp",
+        "(isA == 1 and ans == hp - a) or (isB == 1 and ans == hp - b) or (isC == 1 and ans == hp - c)"
+      ],
+      "question": "다음 그림에서 원 I는 △ABC의 내접원이고, 세 점 D, E, F는 각각 내접원과 세 변 AB, BC, CA의 접점이다. [[seg(AB)]] = {c} cm, [[seg(BC)]] = {a} cm, [[seg(CA)]] = {b} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{a}",
+                0
+              ],
+              "I": [
+                "{ix}",
+                "{iy}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{ix}",
+                0
+              ],
+              "F": [
+                "{fx}",
+                "{fy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ]
+            ],
+            "circles": [
+              {
+                "c": "I",
+                "r": "{rr}"
+              }
+            ],
+            "labels": [
+              {
+                "at": [
+                  "{ax*(1 - qab)}",
+                  "{ay*(1 - qab)}"
+                ],
+                "text": "{c} cm",
+                "dx": "{-20*ay/c}",
+                "dy": "{-20*ax/c}",
+                "k": "lbl:ab"
+              },
+              {
+                "at": [
+                  "{a*qbc}",
+                  0
+                ],
+                "text": "{a} cm",
+                "dx": 0,
+                "dy": 20,
+                "k": "lbl:bc"
+              },
+              {
+                "at": [
+                  "{a + qca*(ax - a)}",
+                  "{qca*ay}"
+                ],
+                "text": "{b} cm",
+                "dx": "{20*ay/b}",
+                "dy": "{-20*(a - ax)/b}",
+                "k": "lbl:ca"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "원 밖의 한 점에서 그 원에 그은 두 접선의 길이는 같다. 그러므로 AD = AF, BD = BE, CE = CF다. 각각을 x, y, z로 두면 세 변이 AB = x + y, BC = y + z, CA = z + x로 나타나고, 세 식을 더하면 2(x + y + z)가 둘레와 같다 — 둘레의 절반에서 한 변을 빼면 그 변과 마주 보는 꼭짓점의 접선의 길이가 나온다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{a}",
+                0
+              ],
+              "I": [
+                "{ix}",
+                "{iy}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{ix}",
+                0
+              ],
+              "F": [
+                "{fx}",
+                "{fy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "I",
+                "D"
+              ],
+              [
+                "I",
+                "E"
+              ],
+              [
+                "I",
+                "F"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "D"
+                  ],
+                  [
+                    "A",
+                    "F"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "D"
+                  ],
+                  [
+                    "B",
+                    "E"
+                  ]
+                ],
+                [
+                  [
+                    "C",
+                    "E"
+                  ],
+                  [
+                    "C",
+                    "F"
+                  ]
+                ]
+              ]
+            },
+            "circles": [
+              {
+                "c": "I",
+                "r": "{rr}"
+              }
+            ],
+            "labels": [
+              {
+                "at": [
+                  "{ax*(1 - qab)}",
+                  "{ay*(1 - qab)}"
+                ],
+                "text": "{c} cm",
+                "dx": "{-20*ay/c}",
+                "dy": "{-20*ax/c}",
+                "k": "lbl:ab"
+              },
+              {
+                "at": [
+                  "{a*qbc}",
+                  0
+                ],
+                "text": "{a} cm",
+                "dx": 0,
+                "dy": 20,
+                "k": "lbl:bc"
+              },
+              {
+                "at": [
+                  "{a + qca*(ax - a)}",
+                  "{qca*ay}"
+                ],
+                "text": "{b} cm",
+                "dx": "{20*ay/b}",
+                "dy": "{-20*(a - ax)/b}",
+                "k": "lbl:ca"
+              },
+              {
+                "at": "D",
+                "text": "x",
+                "dx": -12,
+                "dy": -8,
+                "accent": true,
+                "k": "lbl:x"
+              },
+              {
+                "at": "E",
+                "text": "y",
+                "dx": -10,
+                "dy": 14,
+                "accent": true,
+                "k": "lbl:y"
+              },
+              {
+                "at": "F",
+                "text": "z",
+                "dx": 12,
+                "dy": 10,
+                "accent": true,
+                "k": "lbl:z"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:A-D",
+              "eq:A-F",
+              "lbl:x"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:B-D",
+              "eq:B-E",
+              "lbl:y"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:C-E",
+              "eq:C-F",
+              "lbl:z"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "AD = AF = x, BD = BE = y, CE = CF = z라 하자 (두 접선의 길이는 같다)",
+        "AB = x + y = {c}, BC = y + z = {a}, CA = z + x = {b}",
+        "세 식을 더하면 2(x + y + z) = {P}, x + y + z = {hp}",
+        "{F1}{hp}{F2}{v2} = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AD = AF = x, BD = BE = y, CE = CF = z",
+                "hint": "접선의 길이"
+              },
+              {
+                "text": "x + y = {c}, y + z = {a}, z + x = {b}",
+                "hint": "세 변"
+              },
+              {
+                "text": "x + y + z = {P} ÷ 2 = {hp}",
+                "hint": "세 식의 합 ÷ 2"
+              },
+              {
+                "text": "{F1}{hp}{F2}{v2} = {ans_v}",
+                "hint": "합에서 마주 보는 변을 뺀다"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "hint:3"
+          }
+        ],
+        []
+      ],
+      "sol_check": "x = {ta}, y = {tb}, z = {tc}이면 x + y = {c}, y + z = {a}, z + x = {b}{ro(b)} 세 변이 모두 맞는다. 답은 {ans_v} cm다.",
+      "model_answer": "AD = AF = x, BD = BE = y, CE = CF = z라 하면 x + y = {c}, y + z = {a}, z + x = {b}이다. 세 식을 더하면 x + y + z = {hp}이므로 {F1}{hp}{F2}{v2} = {ans_v}이다. 따라서 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "접선의 길이",
+          "points": 3,
+          "criterion": "AD = AF, BD = BE, CE = CF를 밝히고 미지수로 두었다.",
+          "partial": "한 쌍만 밝혔으면 1점."
+        },
+        {
+          "element": "연립방정식",
+          "points": 2,
+          "criterion": "x + y = {c}, y + z = {a}, z + x = {b}{eul(b)} 세워 풀었다.",
+          "partial": "식은 세웠으나 풀이가 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "다른 접선의 길이를 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-incenter-t5",
+      "pitfalls": [
+        {
+          "text": "접선의 길이가 같다는 성질을 쓰지 않고 AD = AB ÷ 2처럼 절반으로 둠",
+          "on": "접선의 길이",
+          "effect": "불인정"
+        },
+        {
+          "text": "x + y + z = {hp}에서 마주 보는 변이 아니라 인접한 변을 뺌",
+          "on": "연립방정식",
+          "effect": "불인정"
+        },
+        {
+          "text": "세 식의 합 {P}를 2로 나누지 않음",
+          "on": "연립방정식",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원 밖의 한 점에서 그은 두 접선의 길이는 같다"
+      ],
+      "ops": [
+        "사칙"
+      ],
+      "tags": [
+        "내심",
+        "내접원"
+      ],
+      "title": "접선의 길이가 주어질 때 — 변의 길이·둘레",
+      "skill": "AF = AD, BD = BE, CE = CF로 각 변을 두 접선의 길이의 합으로 나타내기",
+      "variant_axis": {
+        "구하는 것": "둘레 / AB / BC / CA",
+        "접선 길이": "2~7"
+      },
+      "discriminates": "한 변이 양 끝 꼭짓점의 접선의 길이의 합임을 읽는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "perim",
+              "AB",
+              "BC",
+              "CA"
+            ]
+          }
+        },
+        {
+          "name": "ta",
+          "values": {
+            "int": [
+              2,
+              7
+            ]
+          }
+        },
+        {
+          "name": "tb",
+          "values": {
+            "int": [
+              2,
+              7
+            ]
+          }
+        },
+        {
+          "name": "tc",
+          "values": {
+            "int": [
+              2,
+              7
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "perim": {
+            "Q": "△ABC의 둘레의 길이",
+            "isP": 1,
+            "i1": 0,
+            "i2": 0,
+            "i3": 0,
+            "F1": "둘레 = 2 × (",
+            "F2": ")",
+            "LAW": "2(x + y + z)"
+          },
+          "AB": {
+            "Q": "[[seg(AB)]]의 길이",
+            "isP": 0,
+            "i1": 1,
+            "i2": 0,
+            "i3": 0,
+            "F1": "AB = AD + DB = ",
+            "F2": "",
+            "LAW": "DB = BE"
+          },
+          "BC": {
+            "Q": "[[seg(BC)]]의 길이",
+            "isP": 0,
+            "i1": 0,
+            "i2": 1,
+            "i3": 0,
+            "F1": "BC = BE + EC = ",
+            "F2": "",
+            "LAW": "EC = CF"
+          },
+          "CA": {
+            "Q": "[[seg(CA)]]의 길이",
+            "isP": 0,
+            "i1": 0,
+            "i2": 0,
+            "i3": 1,
+            "F1": "CA = CF + FA = ",
+            "F2": "",
+            "LAW": "FA = AD"
+          }
+        }
+      },
+      "derive": {
+        "a": "tb + tc",
+        "b": "ta + tc",
+        "c": "ta + tb",
+        "P": "a + b + c",
+        "hp": "P/2",
+        "ax": "(a*a + c*c - b*b)/(2*a)",
+        "ay": "sqrt(abs(c*c - ax*ax))",
+        "ix": "(a*ax + c*a)/P",
+        "iy": "a*ay/P",
+        "rr": "iy",
+        "t1": "(ix*ax + iy*ay)/c",
+        "dx": "t1*ax/c",
+        "dy": "t1*ay/c",
+        "t2": "((ix - ax)*(a - ax) + (iy - ay)*(0 - ay))/b",
+        "fx": "ax + t2*(a - ax)/b",
+        "fy": "ay - t2*ay/b",
+        "ans_v": "P*isP + c*i1 + a*i2 + b*i3",
+        "s1": "ta + tb + tc",
+        "v1": "s1*isP + ta*i1 + tb*i2 + tc*i3",
+        "v2": "0*isP + tb*i1 + tc*i2 + ta*i3",
+        "MID": "isP*0"
+      },
+      "constraints": [
+        "ta != tb or tb != tc",
+        "ans_v != 2*ta",
+        "ans_v != 2*tb",
+        "ans_v != 2*tc"
+      ],
+      "cost_values": [
+        "ta",
+        "tb",
+        "tc",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "P == 2*(ta + tb + tc)",
+        "(isP == 1 and ans == P) or (i1 == 1 and ans == c) or (i2 == 1 and ans == a) or (i3 == 1 and ans == b)"
+      ],
+      "question": "다음 그림에서 원 I는 △ABC의 내접원이고, 세 점 D, E, F는 각각 내접원과 세 변 AB, BC, CA의 접점이다. [[seg(AD)]] = {ta} cm, [[seg(BE)]] = {tb} cm, [[seg(CF)]] = {tc} cm일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{a}",
+                0
+              ],
+              "I": [
+                "{ix}",
+                "{iy}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{ix}",
+                0
+              ],
+              "F": [
+                "{fx}",
+                "{fy}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "D",
+                "label": "{ta} cm"
+              },
+              [
+                "D",
+                "B"
+              ],
+              {
+                "a": "B",
+                "b": "E",
+                "label": "{tb} cm"
+              },
+              [
+                "E",
+                "C"
+              ],
+              {
+                "a": "C",
+                "b": "F",
+                "label": "{tc} cm"
+              },
+              [
+                "F",
+                "A"
+              ]
+            ],
+            "circles": [
+              {
+                "c": "I",
+                "r": "{rr}"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "원 밖의 한 점에서 그은 두 접선의 길이는 같으므로 AF = AD = {ta}, BD = BE = {tb}, CE = CF = {tc}다. 각 변은 접점에서 두 토막으로 나뉘고, 두 토막은 양 끝 꼭짓점의 접선의 길이다: AB = AD + DB, BC = BE + EC, CA = CF + FA.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ax}",
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{a}",
+                0
+              ],
+              "I": [
+                "{ix}",
+                "{iy}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{ix}",
+                0
+              ],
+              "F": [
+                "{fx}",
+                "{fy}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "D",
+                "label": "{ta} cm"
+              },
+              [
+                "D",
+                "B"
+              ],
+              {
+                "a": "B",
+                "b": "E",
+                "label": "{tb} cm"
+              },
+              [
+                "E",
+                "C"
+              ],
+              {
+                "a": "C",
+                "b": "F",
+                "label": "{tc} cm"
+              },
+              [
+                "F",
+                "A"
+              ],
+              [
+                "I",
+                "D"
+              ],
+              [
+                "I",
+                "E"
+              ],
+              [
+                "I",
+                "F"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "D"
+                  ],
+                  [
+                    "A",
+                    "F"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "D"
+                  ],
+                  [
+                    "B",
+                    "E"
+                  ]
+                ],
+                [
+                  [
+                    "C",
+                    "E"
+                  ],
+                  [
+                    "C",
+                    "F"
+                  ]
+                ]
+              ]
+            },
+            "circles": [
+              {
+                "c": "I",
+                "r": "{rr}"
+              }
+            ],
+            "labels": [
+              {
+                "at": "F",
+                "text": "{ta}",
+                "dx": 14,
+                "dy": -10,
+                "accent": true,
+                "k": "lbl:fa"
+              },
+              {
+                "at": "D",
+                "text": "{tb}",
+                "dx": -12,
+                "dy": 10,
+                "accent": true,
+                "k": "lbl:db"
+              },
+              {
+                "at": "E",
+                "text": "{tc}",
+                "dx": 12,
+                "dy": 14,
+                "accent": true,
+                "k": "lbl:ec"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:A-D",
+              "eq:A-F",
+              "lbl:fa"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:B-D",
+              "eq:B-E",
+              "lbl:db"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:C-E",
+              "eq:C-F",
+              "lbl:ec"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "두 접선의 길이는 같으므로 AF = AD = {ta}, BD = BE = {tb}, CE = CF = {tc}",
+        "AB = AD + DB = {ta} + {tb} = {c}, BC = BE + EC = {tb} + {tc} = {a}, CA = CF + FA = {tc} + {ta} = {b}",
+        "둘레 = {c} + {a} + {b} = {P} = 2 × ({ta} + {tb} + {tc})",
+        "따라서 {Q}{eun(Q)} {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AF = {ta}, BD = {tb}, CE = {tc}",
+                "hint": "접선의 길이"
+              },
+              {
+                "text": "AB = {c}, BC = {a}, CA = {b}",
+                "hint": "두 토막의 합"
+              },
+              {
+                "text": "둘레 = {P}",
+                "hint": "2 × ({ta} + {tb} + {tc})"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "세 변 {c} + {a} + {b} = {P}이고, 이는 접선의 길이의 합 {ta} + {tb} + {tc} = {s1}의 2배다. 답은 {ans_v} cm다.",
+      "model_answer": "두 접선의 길이는 같으므로 AF = AD = {ta} cm, BD = BE = {tb} cm, CE = CF = {tc} cm이다. 따라서 AB = {c} cm, BC = {a} cm, CA = {b} cm이고 둘레는 {P} cm이다. 그러므로 {Q}{eun(Q)} {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "접선의 길이",
+          "points": 3,
+          "criterion": "AF = AD, BD = BE, CE = CF를 밝혔다.",
+          "partial": "한 쌍만 밝혔으면 1점."
+        },
+        {
+          "element": "변의 길이",
+          "points": 2,
+          "criterion": "각 변을 두 접선의 길이의 합으로 구했다.",
+          "partial": "한 변만 옳으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} {ans_v} cm를 답했다.",
+          "partial": "다른 변이나 둘레의 절반을 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-incenter-t6",
+      "pitfalls": [
+        {
+          "text": "AB = AD + BE가 아니라 AD + CF처럼 다른 꼭짓점의 접선 길이를 더함",
+          "on": "변의 길이",
+          "effect": "불인정"
+        },
+        {
+          "text": "둘레를 접선의 길이의 합 {s1}으로 답함(2배를 빠뜨림)",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "접선의 길이가 같다는 근거 없이 길이를 옮김",
+          "on": "접선의 길이",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+ "run_id": "m2-2-special-quad-20260909-230026",
+ "seed_id": "m2-2-special-quad",
+ "title": "여러 가지 사각형 — 직사각형·마름모의 대각선, 정사각형 대각선 위의 점, 등변사다리꼴, 마름모의 넓이",
+ "accepted": 475,
+ "rejected": 45,
+ "per_template": {
+  "m2-2-special-quad-t1": {
+   "target": 300,
+   "space": 75,
+   "ok": 75,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림의 직사각형 ABCD에서 두 대각선의 교점을 O라고 하자. [[angle(OBC)]] = [[deg(18)]]일 때, [[angle(AOB)]]의 크기를 구하시오.",
+     "a": "[[deg(36)]]"
+    },
+    {
+     "idx": 46,
+     "q": "다음 그림의 직사각형 ABCD에서 두 대각선의 교점을 O라고 하자. [[angle(OBC)]] = [[deg(39)]]일 때, [[angle(OAB)]]의 크기를 구하시오.",
+     "a": "[[deg(51)]]"
+    },
+    {
+     "idx": 17,
+     "q": "다음 그림의 직사각형 ABCD에서 두 대각선의 교점을 O라고 하자. [[angle(OBC)]] = [[deg(35)]]일 때, [[angle(AOB)]]의 크기를 구하시오.",
+     "a": "[[deg(70)]]"
+    }
+   ]
+  },
+  "m2-2-special-quad-t2": {
+   "target": 300,
+   "space": 123,
+   "ok": 119,
+   "rej": 4,
+   "by_gate": {
+    "G1:제약 위반 t != 45": 2,
+    "G1:제약 위반 ans_v != t": 2
+   },
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림의 마름모 ABCD에서 두 대각선의 교점을 O라고 하자. [[angle(OBC)]] = [[deg(20)]]일 때, [[angle(OCB)]]의 크기를 구하시오.",
+     "a": "[[deg(70)]]"
+    },
+    {
+     "idx": 76,
+     "q": "다음 그림의 마름모 ABCD에서 두 대각선의 교점을 O라고 하자. [[angle(OBC)]] = [[deg(55)]]일 때, [[angle(ABC)]]의 크기를 구하시오.",
+     "a": "[[deg(110)]]"
+    },
+    {
+     "idx": 29,
+     "q": "다음 그림의 마름모 ABCD에서 두 대각선의 교점을 O라고 하자. [[angle(OBC)]] = [[deg(49)]]일 때, [[angle(OCB)]]의 크기를 구하시오.",
+     "a": "[[deg(41)]]"
+    }
+   ]
+  },
+  "m2-2-special-quad-t3": {
+   "target": 300,
+   "space": 62,
+   "ok": 62,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림과 같이 정사각형 ABCD의 대각선 BD 위에 한 점 E를 잡았다. [[angle(DAE)]] = [[deg(10)]]일 때, [[angle(BEC)]]의 크기를 구하시오.",
+     "a": "[[deg(55)]]"
+    },
+    {
+     "idx": 39,
+     "q": "다음 그림과 같이 정사각형 ABCD의 대각선 BD 위에 한 점 E를 잡았다. [[angle(DAE)]] = [[deg(18)]]일 때, [[angle(BCE)]]의 크기를 구하시오.",
+     "a": "[[deg(72)]]"
+    },
+    {
+     "idx": 16,
+     "q": "다음 그림과 같이 정사각형 ABCD의 대각선 BD 위에 한 점 E를 잡았다. [[angle(DAE)]] = [[deg(26)]]일 때, [[angle(BEC)]]의 크기를 구하시오.",
+     "a": "[[deg(71)]]"
+    }
+   ]
+  },
+  "m2-2-special-quad-t4": {
+   "target": 300,
+   "space": 162,
+   "ok": 135,
+   "rej": 27,
+   "by_gate": {
+    "G1:제약 위반 2*a != d": 9,
+    "G1:제약 위반 a != d": 18
+   },
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림과 같이 [[seg(AD)]] ∥ [[seg(BC)]]인 등변사다리꼴 ABCD에서 [[angle(B)]] = [[deg(60)]], [[seg(AB)]] = 3 cm, [[seg(AD)]] = 2 cm일 때, [[seg(BC)]]의 길이를 구하시오.",
+     "a": "5"
+    },
+    {
+     "idx": 101,
+     "q": "다음 그림과 같이 [[seg(AD)]] ∥ [[seg(BC)]]인 등변사다리꼴 ABCD에서 [[angle(B)]] = [[deg(60)]], [[seg(AB)]] = 8 cm, [[seg(BC)]] = 12 cm일 때, [[seg(AD)]]의 길이를 구하시오.",
+     "a": "4"
+    },
+    {
+     "idx": 40,
+     "q": "다음 그림과 같이 [[seg(AD)]] ∥ [[seg(BC)]]인 등변사다리꼴 ABCD에서 [[angle(B)]] = [[deg(60)]], [[seg(AB)]] = 7 cm, [[seg(AD)]] = 6 cm일 때, [[seg(BC)]]의 길이를 구하시오.",
+     "a": "13"
+    }
+   ]
+  },
+  "m2-2-special-quad-t5": {
+   "target": 300,
+   "space": 98,
+   "ok": 84,
+   "rej": 14,
+   "by_gate": {
+    "G1:제약 위반 p != q": 14
+   },
+   "samples": [
+    {
+     "idx": 61,
+     "q": "다음 그림의 마름모 ABCD에서 [[seg(AC)]] = 6 cm이고 넓이가 42 cm²일 때, [[seg(BD)]]의 길이를 구하시오.",
+     "a": "14"
+    },
+    {
+     "idx": 85,
+     "q": "다음 그림의 마름모 ABCD에서 [[seg(AC)]] = 14 cm이고 넓이가 42 cm²일 때, [[seg(BD)]]의 길이를 구하시오.",
+     "a": "6"
+    },
+    {
+     "idx": 11,
+     "q": "다음 그림의 마름모 ABCD에서 [[seg(AC)]] = 6 cm이고 [[seg(BD)]] = 12 cm일 때, 마름모 ABCD의 넓이를 구하시오.",
+     "a": "36"
+    }
+   ]
+  }
+ }
+}

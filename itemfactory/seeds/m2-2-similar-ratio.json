@@ -1,0 +1,1245 @@
+{
+  "seed_id": "m2-2-similar-ratio",
+  "category": "도형",
+  "title": "닮음비 — 대응변의 길이, 둘레·넓이의 비, 축척",
+  "unit_id": "m2-2",
+  "concept_ids": [
+    "m2-2-05",
+    "m2-2-09"
+  ],
+  "schema_id": "16e84f37-4911-475f-b6e5-6870ab0ab2c6",
+  "schema_name": "평면도형 닮음비 응용 / 닮음비와 둘레·넓이의 비 / 축도",
+  "source_item_ids": [],
+  "note": "출판사 평가자료 유형(TYPES.md 7.1)을 참고해 새로 씀. 두 삼각형은 닮음비 u : w 그대로 등축으로 그린다(∠B = ∠E = 70°). 축척(t3)은 그림 없음.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 70,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "닮은 도형에서 대응변의 길이의 비는 모두 같다(닮음비)",
+        "비례식"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "닮음",
+        "닮음비",
+        "대응변"
+      ],
+      "title": "닮은 두 삼각형 — 닮음비로 대응변의 길이 구하기",
+      "skill": "대응하는 한 쌍의 변에서 닮음비를 읽고 다른 대응변에 같은 비를 적용하기",
+      "variant_axis": {
+        "구하는 것": "EF / BC",
+        "닮음비": "12쌍",
+        "단위 길이": "2~6 · 3~8"
+      },
+      "discriminates": "대응변을 바르게 짝짓고(AB ↔ DE, BC ↔ EF) 닮음비를 같은 방향으로 쓰는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "EF",
+              "BC"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "1-2",
+              "2-3",
+              "3-4",
+              "2-5",
+              "3-5",
+              "4-5",
+              "1-3",
+              "3-7",
+              "4-7",
+              "5-7",
+              "5-6",
+              "5-8"
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              2,
+              6
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              3,
+              8
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "wv",
+          "rows": {
+            "EF": {
+              "XS": "EF",
+              "uE": 1,
+              "uC": 0,
+              "XEF": "x",
+              "XBC": "",
+              "G3T": "[[seg(BC)]] = ",
+              "F1": "EF = ",
+              "LAW": "BC : EF = u : w"
+            },
+            "BC": {
+              "XS": "BC",
+              "uE": 0,
+              "uC": 1,
+              "XEF": "",
+              "XBC": "x",
+              "G3T": "[[seg(EF)]] = ",
+              "F1": "BC = ",
+              "LAW": "BC : EF = u : w"
+            }
+          }
+        },
+        {
+          "key": "r",
+          "rows": {
+            "1-2": {
+              "u": 1,
+              "w": 2
+            },
+            "2-3": {
+              "u": 2,
+              "w": 3
+            },
+            "3-4": {
+              "u": 3,
+              "w": 4
+            },
+            "2-5": {
+              "u": 2,
+              "w": 5
+            },
+            "3-5": {
+              "u": 3,
+              "w": 5
+            },
+            "4-5": {
+              "u": 4,
+              "w": 5
+            },
+            "1-3": {
+              "u": 1,
+              "w": 3
+            },
+            "3-7": {
+              "u": 3,
+              "w": 7
+            },
+            "4-7": {
+              "u": 4,
+              "w": 7
+            },
+            "5-7": {
+              "u": 5,
+              "w": 7
+            },
+            "5-6": {
+              "u": 5,
+              "w": 6
+            },
+            "5-8": {
+              "u": 5,
+              "w": 8
+            }
+          }
+        }
+      ],
+      "derive": {
+        "ab": "u*m",
+        "de": "w*m",
+        "bc": "u*n",
+        "ef": "w*n",
+        "ans_v": "w*n*uE + u*n*uC",
+        "g3": "u*n*uE + w*n*uC",
+        "lbc": "u*n*uE",
+        "lef": "w*n*uC",
+        "v1": "u*n*uE + w*n*uC"
+      },
+      "constraints": [
+        "m != n",
+        "ab != bc",
+        "ans_v != ab",
+        "ans_v != de",
+        "ans_v != g3",
+        "de <= 30",
+        "ef <= 40"
+      ],
+      "cost_values": [
+        "ab",
+        "de",
+        "g3",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "ab*ef == de*bc",
+        "(uE == 1 and ans == ef) or (uC == 1 and ans == bc)"
+      ],
+      "question": "다음 그림에서 △ABC ∽ △DEF이다. [[seg(AB)]] = {ab} cm, [[seg(DE)]] = {de} cm, {G3T}{g3} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ab*cos(pi*70/180)}",
+                "{ab*sin(pi*70/180)}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{bc}",
+                0
+              ],
+              "D": [
+                "{bc + 2 + de*cos(pi*70/180)}",
+                "{de*sin(pi*70/180)}"
+              ],
+              "E": [
+                "{bc + 2}",
+                0
+              ],
+              "F": [
+                "{bc + 2 + ef}",
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{ab}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{lbc}"
+              },
+              [
+                "C",
+                "A"
+              ],
+              {
+                "a": "D",
+                "b": "E",
+                "label": "{de}"
+              },
+              {
+                "a": "E",
+                "b": "F",
+                "label": "{lef}"
+              },
+              [
+                "F",
+                "D"
+              ],
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{XBC}"
+              },
+              {
+                "a": "E",
+                "b": "F",
+                "label": "{XEF}"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "△ABC ∽ △DEF에서 대응변은 AB ↔ DE, BC ↔ EF, CA ↔ FD다. 닮음비는 대응변의 길이의 비이므로 AB : DE = {ab} : {de} = {u} : {w}이고, 같은 비가 BC : EF에도 성립한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ab*cos(pi*70/180)}",
+                "{ab*sin(pi*70/180)}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{bc}",
+                0
+              ],
+              "D": [
+                "{bc + 2 + de*cos(pi*70/180)}",
+                "{de*sin(pi*70/180)}"
+              ],
+              "E": [
+                "{bc + 2}",
+                0
+              ],
+              "F": [
+                "{bc + 2 + ef}",
+                0
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{ab}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{bc}"
+              },
+              [
+                "C",
+                "A"
+              ],
+              {
+                "a": "D",
+                "b": "E",
+                "label": "{de}"
+              },
+              {
+                "a": "E",
+                "b": "F",
+                "label": "{ef}"
+              },
+              [
+                "F",
+                "D"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ]
+                ],
+                [
+                  [
+                    "D",
+                    "E"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "label": "•",
+                  "k": "arc:b"
+                },
+                {
+                  "at": "E",
+                  "from": "F",
+                  "to": "D",
+                  "label": "•",
+                  "k": "arc:e"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seglbl:A-B",
+              "seglbl:D-E",
+              "seg:A-B",
+              "seg:D-E"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:B-C",
+              "seg:E-F",
+              "seglbl:B-C",
+              "seglbl:E-F"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "닮음비: AB : DE = {ab} : {de} = {u} : {w}",
+        "대응변 BC : EF도 {u} : {w}이므로 {u} : {w} = BC : EF",
+        "{F1}{v1} × [[frac({w*uE + u*uC}, {u*uE + w*uC})]] = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AB : DE = {ab} : {de} = {u} : {w}",
+                "hint": "닮음비"
+              },
+              {
+                "text": "BC : EF = {u} : {w}",
+                "hint": "대응변"
+              },
+              {
+                "text": "{XS} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "BC : EF = {bc} : {ef} = {u} : {w}{ro(w)} AB : DE와 같은 비다. 답은 {ans_v} cm다.",
+      "model_answer": "△ABC ∽ △DEF이므로 닮음비는 AB : DE = {ab} : {de} = {u} : {w}이다. 대응변 BC : EF = {u} : {w}에서 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "닮음비",
+          "points": 3,
+          "criterion": "대응변 AB : DE에서 닮음비 {u} : {w}{eul(w)} 구했다.",
+          "partial": "대응변을 잘못 짝지었으면 인정하지 않는다."
+        },
+        {
+          "element": "비례식",
+          "points": 2,
+          "criterion": "BC : EF = {u} : {w}{eul(w)} 세워 풀었다.",
+          "partial": "비의 방향을 바꿨으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-similar-ratio-t1",
+      "pitfalls": [
+        {
+          "text": "대응변을 잘못 짝지어 AB : EF 처럼 다른 변끼리 비를 세움",
+          "on": "닮음비",
+          "effect": "불인정"
+        },
+        {
+          "text": "닮음비 {u} : {w}를 거꾸로 적용해 구하는 변을 반대로 늘이거나 줄임",
+          "on": "비례식",
+          "effect": "불인정"
+        },
+        {
+          "text": "비례식은 옳게 세우고 계산을 틀림",
+          "on": "비례식",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "닮음비가 m : n이면 둘레의 비는 m : n, 넓이의 비는 m² : n²"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "닮음",
+        "닮음비",
+        "대응변"
+      ],
+      "title": "닮음비와 둘레·넓이의 비",
+      "skill": "닮음비가 u : w이면 둘레의 비는 u : w, 넓이의 비는 u² : w²임을 쓰기",
+      "variant_axis": {
+        "구하는 것": "큰/작은 도형의 둘레 / 넓이",
+        "닮음비": "12쌍"
+      },
+      "discriminates": "넓이의 비를 닮음비의 제곱으로 쓰는가(둘레는 1제곱)",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "pb",
+              "ps",
+              "ab",
+              "as"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "1-2",
+              "2-3",
+              "3-4",
+              "2-5",
+              "3-5",
+              "4-5",
+              "1-3",
+              "3-7",
+              "4-7",
+              "5-7",
+              "5-6",
+              "5-8"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              4,
+              12
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "wv",
+          "rows": {
+            "pb": {
+              "Q": "△DEF의 둘레의 길이",
+              "GT": "△ABC의 둘레의 길이가 ",
+              "U": " cm",
+              "UA": "cm",
+              "iP": 1,
+              "big": 1,
+              "F1": "(△DEF의 둘레) = ",
+              "LAW": "둘레의 비 = 닮음비"
+            },
+            "ps": {
+              "Q": "△ABC의 둘레의 길이",
+              "GT": "△DEF의 둘레의 길이가 ",
+              "U": " cm",
+              "UA": "cm",
+              "iP": 1,
+              "big": 0,
+              "F1": "(△ABC의 둘레) = ",
+              "LAW": "둘레의 비 = 닮음비"
+            },
+            "ab": {
+              "Q": "△DEF의 넓이",
+              "GT": "△ABC의 넓이가 ",
+              "U": " cm²",
+              "UA": "cm²",
+              "iP": 0,
+              "big": 1,
+              "F1": "(△DEF의 넓이) = ",
+              "LAW": "넓이의 비 = 닮음비의 제곱"
+            },
+            "as": {
+              "Q": "△ABC의 넓이",
+              "GT": "△DEF의 넓이가 ",
+              "U": " cm²",
+              "UA": "cm²",
+              "iP": 0,
+              "big": 0,
+              "F1": "(△ABC의 넓이) = ",
+              "LAW": "넓이의 비 = 닮음비의 제곱"
+            }
+          }
+        },
+        {
+          "key": "r",
+          "rows": {
+            "1-2": {
+              "u": 1,
+              "w": 2
+            },
+            "2-3": {
+              "u": 2,
+              "w": 3
+            },
+            "3-4": {
+              "u": 3,
+              "w": 4
+            },
+            "2-5": {
+              "u": 2,
+              "w": 5
+            },
+            "3-5": {
+              "u": 3,
+              "w": 5
+            },
+            "4-5": {
+              "u": 4,
+              "w": 5
+            },
+            "1-3": {
+              "u": 1,
+              "w": 3
+            },
+            "3-7": {
+              "u": 3,
+              "w": 7
+            },
+            "4-7": {
+              "u": 4,
+              "w": 7
+            },
+            "5-7": {
+              "u": 5,
+              "w": 7
+            },
+            "5-6": {
+              "u": 5,
+              "w": 6
+            },
+            "5-8": {
+              "u": 5,
+              "w": 8
+            }
+          }
+        }
+      ],
+      "derive": {
+        "ab": "u*3",
+        "de": "w*3",
+        "bc": "u*4",
+        "ef": "w*4",
+        "ps": "u*k",
+        "pb": "w*k",
+        "ss": "u*u*k",
+        "sb": "w*w*k",
+        "gv": "iP*(u*k*big + w*k*(1 - big)) + (1 - iP)*(u*u*k*big + w*w*k*(1 - big))",
+        "ans_v": "iP*(w*k*big + u*k*(1 - big)) + (1 - iP)*(w*w*k*big + u*u*k*(1 - big))",
+        "fn": "iP*(w*big + u*(1 - big)) + (1 - iP)*(w*w*big + u*u*(1 - big))",
+        "fd": "iP*(u*big + w*(1 - big)) + (1 - iP)*(u*u*big + w*w*(1 - big))"
+      },
+      "constraints": [
+        "ans_v != gv",
+        "de <= 24",
+        "ef <= 32"
+      ],
+      "cost_values": [
+        "u",
+        "w",
+        "gv",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "ps*w == pb*u",
+        "ss*w*w == sb*u*u",
+        "ans > 0"
+      ],
+      "question": "다음 그림에서 △ABC ∽ △DEF이고 닮음비가 {u} : {w}이다. {GT}{gv}{U}일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ab*cos(pi*70/180)}",
+                "{ab*sin(pi*70/180)}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{bc}",
+                0
+              ],
+              "D": [
+                "{bc + 2 + de*cos(pi*70/180)}",
+                "{de*sin(pi*70/180)}"
+              ],
+              "E": [
+                "{bc + 2}",
+                0
+              ],
+              "F": [
+                "{bc + 2 + ef}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "F",
+                "D"
+              ]
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v}{U}"
+      ],
+      "sol1": "닮음비가 {u} : {w}이면 대응하는 모든 길이가 {u} : {w}이므로 둘레(길이의 합)의 비도 {u} : {w}다. 넓이는 가로·세로 두 방향으로 {w}/{u}배가 되므로 넓이의 비는 {u}² : {w}² = {u*u} : {w*w}다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{ab*cos(pi*70/180)}",
+                "{ab*sin(pi*70/180)}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{bc}",
+                0
+              ],
+              "D": [
+                "{bc + 2 + de*cos(pi*70/180)}",
+                "{de*sin(pi*70/180)}"
+              ],
+              "E": [
+                "{bc + 2}",
+                0
+              ],
+              "F": [
+                "{bc + 2 + ef}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "F",
+                "D"
+              ]
+            ],
+            "labels": [
+              {
+                "at": [
+                  "{bc/2}",
+                  -0.9
+                ],
+                "text": "{u}",
+                "dx": 0,
+                "dy": 6,
+                "accent": true,
+                "k": "lbl:u"
+              },
+              {
+                "at": [
+                  "{bc + 2 + ef/2}",
+                  -0.9
+                ],
+                "text": "{w}",
+                "dx": 0,
+                "dy": 6,
+                "accent": true,
+                "k": "lbl:w"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "lbl:u",
+              "lbl:w"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:A-B",
+              "seg:B-C",
+              "seg:C-A",
+              "seg:D-E",
+              "seg:E-F",
+              "seg:F-D"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "닮음비가 {u} : {w}이므로 둘레의 비는 {u} : {w}, 넓이의 비는 {u}² : {w}² = {u*u} : {w*w}",
+        "{Q}{eul(Q)} x라 하면 비례식에서 {F1}{gv} × [[frac({fn}, {fd})]] = {ans_v}",
+        "따라서 {Q}{eun(Q)} {ans_v}{U}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "둘레의 비 {u} : {w}, 넓이의 비 {u*u} : {w*w}",
+                "hint": "닮음비 {u} : {w}"
+              },
+              {
+                "text": "{F1}{gv} × [[frac({fn}, {fd})]] = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        []
+      ],
+      "sol_check": "둘레 {ps} : {pb} = {u} : {w}, 넓이 {ss} : {sb} = {u*u} : {w*w}{ro(w*w)} 닮음비와 그 제곱의 비가 맞는다. 답은 {ans_v}{U}다.",
+      "model_answer": "닮음비가 {u} : {w}이므로 둘레의 비는 {u} : {w}, 넓이의 비는 {u*u} : {w*w}이다. {F1}{gv} × [[frac({fn}, {fd})]] = {ans_v}이므로 {Q}{eun(Q)} {ans_v}{U}다.",
+      "rubric": [
+        {
+          "element": "비의 관계",
+          "points": 3,
+          "criterion": "둘레의 비는 닮음비, 넓이의 비는 닮음비의 제곱임을 썼다.",
+          "partial": "넓이의 비를 닮음비 그대로 두었으면 인정하지 않는다."
+        },
+        {
+          "element": "비례식",
+          "points": 2,
+          "criterion": "{F1}{gv} × [[frac({fn}, {fd})]] = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "비의 방향을 바꿨으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans_v}{U}{eul(UA)} 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-similar-ratio-t2",
+      "pitfalls": [
+        {
+          "text": "넓이의 비를 닮음비의 제곱이 아니라 닮음비 그대로 {u} : {w}로 둠",
+          "on": "비의 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "둘레의 비를 닮음비의 제곱 {u*u} : {w*w}으로 둠",
+          "on": "비의 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "비례식에서 큰 도형과 작은 도형을 바꿔 계산함",
+          "on": "비례식",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "생활맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "축척 = (축도에서의 길이) : (실제 길이)",
+        "단위 환산 1 m = 100 cm"
+      ],
+      "ops": [
+        "비례",
+        "단위"
+      ],
+      "tags": [
+        "닮음",
+        "닮음비",
+        "대응변"
+      ],
+      "title": "축도와 축척 — 지도의 거리와 실제 거리",
+      "skill": "축척 1/N은 닮음비 1 : N이므로 실제 거리 = 지도 거리 × N, 단위(cm → m)를 바꾸기",
+      "variant_axis": {
+        "구하는 것": "실제 거리 / 지도 거리",
+        "축척": "6종",
+        "거리": "2~9 cm"
+      },
+      "discriminates": "축척을 닮음비로 읽고 cm와 m의 단위 환산(100 cm = 1 m)을 바르게 하는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "figure": [],
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "real",
+              "map"
+            ]
+          }
+        },
+        {
+          "name": "sc",
+          "values": {
+            "in": [
+              "1000",
+              "2000",
+              "5000",
+              "10000",
+              "25000",
+              "50000"
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "wv",
+          "rows": {
+            "real": {
+              "Q": "두 지점 사이의 실제 거리는 몇 m인지",
+              "isR": 1,
+              "GT": "지도에서 두 지점 사이의 거리가 ",
+              "GU": " cm",
+              "U": " m",
+              "UA": "m",
+              "F1": "(실제 거리) = ",
+              "F2": " × ",
+              "F3": " cm = ",
+              "LAW": "지도 거리 × 축척의 분모"
+            },
+            "map": {
+              "Q": "지도에서 두 지점 사이의 거리는 몇 cm인지",
+              "isR": 0,
+              "GT": "두 지점 사이의 실제 거리가 ",
+              "GU": " m",
+              "U": " cm",
+              "UA": "cm",
+              "F1": "(지도 거리) = ",
+              "F2": " m ÷ ",
+              "F3": " = ",
+              "LAW": "실제 거리 ÷ 축척의 분모"
+            }
+          }
+        },
+        {
+          "key": "sc",
+          "rows": {
+            "1000": {
+              "N": 1000,
+              "NT": "1000"
+            },
+            "2000": {
+              "N": 2000,
+              "NT": "2000"
+            },
+            "5000": {
+              "N": 5000,
+              "NT": "5000"
+            },
+            "10000": {
+              "N": 10000,
+              "NT": "10000"
+            },
+            "25000": {
+              "N": 25000,
+              "NT": "25000"
+            },
+            "50000": {
+              "N": 50000,
+              "NT": "50000"
+            }
+          }
+        }
+      ],
+      "derive": {
+        "realcm": "d*N",
+        "realm": "d*N/100",
+        "ans_v": "d*N/100*isR + d*(1 - isR)",
+        "gv": "d*isR + d*N/100*(1 - isR)"
+      },
+      "constraints": [
+        "realm == floor(realm)"
+      ],
+      "cost_values": [
+        "N",
+        "d",
+        "realcm",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "realcm == 100*realm",
+        "(isR == 1 and ans == realm) or (isR == 0 and ans == d)"
+      ],
+      "question": "축척이 [[frac(1, {NT})]]인 지도가 있다. {GT}{gv}{GU}일 때, {Q} 구하시오.",
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v}{U}"
+      ],
+      "sol1": "축척 [[frac(1, {NT})]]은 (지도 위의 길이) : (실제 길이) = 1 : {NT}라는 닮음비다. 지도 위 1 cm가 실제 {NT} cm이므로 실제 거리는 지도 거리의 {NT}배이고, cm로 나온 값은 100으로 나누어 m로 바꾼다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "축척 1 : {NT} — 지도 1 cm = 실제 {NT} cm",
+              "{d} cm ↔ {realcm} cm = {realm} m"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "sol2": [
+        "축척이 [[frac(1, {NT})]]이므로 (지도 거리) : (실제 거리) = 1 : {NT}",
+        "지도 거리 {d} cm에 대한 실제 거리는 {d} × {NT} = {realcm}(cm)",
+        "{realcm} cm = {realm} m (100 cm = 1 m)",
+        "따라서 {Q} 물으면 {ans_v}{U}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "1 : {NT}",
+                "hint": "축척 = 닮음비"
+              },
+              {
+                "text": "{d} × {NT} = {realcm} cm",
+                "hint": "{LAW}"
+              },
+              {
+                "text": "{realcm} cm = {realm} m",
+                "hint": "÷ 100"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "{realm} m = {realcm} cm를 {NT}{ro(NT)} 나누면 {d} cm로 지도 거리와 맞는다. 답은 {ans_v}{U}다.",
+      "model_answer": "축척이 [[frac(1, {NT})]]이므로 실제 거리는 지도 거리의 {NT}배이다. {d} cm × {NT} = {realcm} cm = {realm} m이므로 {Q} 물으면 {ans_v}{U}다.",
+      "rubric": [
+        {
+          "element": "축척 = 닮음비",
+          "points": 3,
+          "criterion": "축척 1/{NT}에서 실제 거리가 지도 거리의 {NT}배(또는 그 역)임을 밝혔다.",
+          "partial": "비의 방향을 바꿨으면 인정하지 않는다."
+        },
+        {
+          "element": "길이의 환산",
+          "points": 2,
+          "criterion": "cm를 m로(또는 m를 cm로) 바르게 바꾸었다.",
+          "partial": "환산을 빠뜨렸으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans_v}{U}{eul(UA)} 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-similar-ratio-t3",
+      "pitfalls": [
+        {
+          "text": "실제 거리를 {NT}로 곱하지 않고 나눔(축척의 방향 반대)",
+          "on": "축척 = 닮음비",
+          "effect": "불인정"
+        },
+        {
+          "text": "cm를 m로 바꾸지 않고 {realcm}{ro(realcm)} 답함",
+          "on": "환산",
+          "effect": "불인정"
+        },
+        {
+          "text": "100이 아니라 1000으로 나누어 단위를 바꿈",
+          "on": "환산",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

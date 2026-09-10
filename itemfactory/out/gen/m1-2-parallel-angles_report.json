@@ -1,0 +1,36 @@
+{
+ "run_id": "m1-2-parallel-angles-20260909-225857",
+ "seed_id": "m1-2-parallel-angles",
+ "title": "평행선과 꺾인 선 — 보조선으로 엇각 만들기",
+ "accepted": 70,
+ "rejected": 11,
+ "per_template": {
+  "m1-2-parallel-angles-t1": {
+   "target": 300,
+   "space": 81,
+   "ok": 70,
+   "rej": 11,
+   "by_gate": {
+    "G1:제약 위반 a != c": 9,
+    "G1:제약 위반 x <= 130": 2
+   },
+   "samples": [
+    {
+     "idx": 19,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QAB) = deg(40)]], [[angle(SCB) = deg(35)]]일 때, [[angle(ABC)]]의 크기 [[deg(x)]]를 구하시오.",
+     "a": "75"
+    },
+    {
+     "idx": 69,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QAB) = deg(65)]], [[angle(SCB) = deg(60)]]일 때, [[angle(ABC)]]의 크기 [[deg(x)]]를 구하시오.",
+     "a": "125"
+    },
+    {
+     "idx": 38,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QAB) = deg(50)]], [[angle(SCB) = deg(40)]]일 때, [[angle(ABC)]]의 크기 [[deg(x)]]를 구하시오.",
+     "a": "90"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,228 @@
+# itemfactory/tools/mkseed_m1_stat.py — 대푯값(평균) 시드 생성기 (v1.0 · 2026-09-09)
+#
+#   python itemfactory/tools/mkseed_m1_stat.py  → seeds/m1-2-mean.json (3틀)
+#
+# 통계 도식(막대 강조)은 미구현이므로 표(table)와 판서(steps)로 푼다. 자료맥락 = 요즘 상황(걸음 수·앱 사용 시간·게임 점수·독서 시간).
+from __future__ import annotations
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from seedlib import dump, hl, reveal, steps, table, with_pitfalls  # noqa: E402
+
+SCHEMA_MEAN = "28ce8c1a-09b9-4253-be93-5448f91cd4f2"    # 평균을 이용한 변량 구하기
+
+BASE = {"process": "문제해결", "context": "자료맥락", "prereq": ["평균 = (변량의 총합) ÷ (변량의 개수)", "일차방정식"], "ops": ["통계", "방정식"],
+        "traps": ["평균오용", "구하는대상혼동"], "time_limit": 100, "points": 5, "tags": ["평균", "대푯값"]}
+
+
+def tpl(seed_id, no, **kw):
+    t = dict(BASE)
+    t.update(kw)
+    t["id"] = f"{seed_id}-t{no}"
+    return t
+
+
+CTX1 = {
+    "1": {"S": "어느 학생이 5일 동안 하루에 걸은 걸음 수를 조사하여 나타낸 것이다", "U": "천 걸음", "B": 6, "H": ["1일", "2일", "3일", "4일", "5일"]},
+    "2": {"S": "어느 학생의 5일 동안의 하루 스마트폰 사용 시간을 조사하여 나타낸 것이다", "U": "분", "B": 60, "H": ["1일", "2일", "3일", "4일", "5일"]},
+    "3": {"S": "어느 동아리 회원 5명의 보드게임 점수를 조사하여 나타낸 것이다", "U": "점", "B": 70, "H": ["A", "B", "C", "D", "E"]},
+    "4": {"S": "어느 학생의 5주 동안의 주별 독서 시간을 조사하여 나타낸 것이다", "U": "시간", "B": 4, "H": ["1주", "2주", "3주", "4주", "5주"]},
+}
+
+
+def mean_t1():
+    return tpl("m1-2-mean", 1,
+        title="평균이 주어진 자료에서 빠진 변량 구하기",
+        skill="(평균) × (개수) = (총합) 을 세우고 빠진 변량을 미지수로 두어 방정식 풀기",
+        variant_axis={"구하는 것": "빠진 변량", "자료": "5개", "맥락": "걸음 수·앱 사용 시간·게임 점수·독서 시간"},
+        discriminates="평균의 뜻(총합 ÷ 개수)을 식으로 옮기고 개수 5를 곱하는가",
+        qtype="short", difficulty=2, pool_target=300,
+        params=[{"name": "c", "values": {"in": list(CTX1)}}, {"name": "d1", "values": {"int": [0, 8]}}, {"name": "d2", "values": {"int": [0, 8]}}, {"name": "d3", "values": {"int": [0, 8]}}, {"name": "d4", "values": {"int": [0, 8]}}, {"name": "dm", "values": {"int": [1, 7]}}],
+        table={"key": "c", "rows": CTX1},
+        derive={"v1": "B + d1", "v2": "B + d2", "v3": "B + d3", "v4": "B + d4", "m": "B + dm", "x": "B + 5*dm - d1 - d2 - d3 - d4", "S4": "4*B + d1 + d2 + d3 + d4", "T": "5*(B + dm)"},
+        constraints=["x >= B", "x <= B + 9", "x != m", "x != v1", "x != v2", "x != v3", "x != v4", "d1 != d2", "d3 != d4", "d1 != d3"],
+        cost_values=["v1", "v2", "v3", "v4", "m", "T", "S4", "x"],
+        relation="(v1 + v2 + X + v3 + v4)/5 - m", unknown="X", answer_var="x",
+        verify=["v1 + v2 + ans + v3 + v4 == 5*m"],
+        question="다음은 {S}. 자료의 평균이 {m}{U}일 때, x의 값을 구하시오.  [ {v1}, {v2}, x, {v3}, {v4} ]  (단위: {U})",
+        figure="{TBL}",
+        answer="{x}", answer_alt=[],
+        sol1="평균은 (변량의 총합) ÷ (변량의 개수)다. 변량이 5개이고 평균이 {m}이므로 총합은 {m} × 5 = {T}여야 한다. 알고 있는 네 변량의 합을 빼면 x가 나온다 — 평균에 개수를 곱해 총합으로 되돌리는 것이 핵심이다.",
+        sol1_fig="{TBL}",
+        sol2=[
+            "변량이 5개이고 평균이 {m}이므로 (총합) = (평균) × (개수) = {m} × 5 = {T}",
+            "총합을 식으로 쓰면 {v1} + {v2} + x + {v3} + {v4} = {T}",
+            "알고 있는 네 변량의 합은 {v1} + {v2} + {v3} + {v4} = {S4}이므로 {S4} + x = {T}",
+            "따라서 x = {T} − {S4} = {x}",
+        ],
+        sol2_fig=steps([
+            {"text": "총합 = {m} × 5 = {T}", "hint": "평균 × 개수", "marks": [{"on": "{T}", "note": "{m}×5"}]},
+            {"text": "{v1} + {v2} + x + {v3} + {v4} = {T}"},
+            {"text": "{S4} + x = {T}", "hint": "네 변량의 합 {S4}"},
+            {"text": "x = {x}", "marks": [{"on": "{x}", "note": "{T} − {S4}"}]},
+        ]),
+        sol2_anim=[[reveal(0), hl("hint:0", "mark:0-0")], [reveal(1)], [reveal(2), hl("hint:2")], [reveal(3), hl("mark:3-0")]],
+        sol3="x = {x}{eul(x)} 넣어 평균을 다시 구하면 ({v1} + {v2} + {x} + {v3} + {v4}) ÷ 5 = {T} ÷ 5 = {m}{ro(m)} 문제의 평균과 같다. 답은 {x}이다.",
+        sol3_fig=steps(["({v1} + {v2} + {x} + {v3} + {v4}) ÷ 5", "= {T} ÷ 5 = {m}"]),
+        sol3_anim=[[reveal(0)], [reveal(1)]],
+        model_answer="평균이 {m}이고 변량이 5개이므로 총합은 {m} × 5 = {T}이다. {v1} + {v2} + x + {v3} + {v4} = {T}에서 {S4} + x = {T}이므로 x = {x}이다. 실제로 x = {x}일 때 평균은 {T} ÷ 5 = {m}{ro(m)} 조건에 맞는다.",
+        rubric=[
+            {"element": "식 세우기", "points": 3, "criterion": "평균의 뜻으로 (총합) = {m} × 5 = {T}{eul(T)} 구하고 {v1} + {v2} + x + {v3} + {v4} = {T}{eul(T)} 세웠다.", "partial": "총합을 평균으로 놓는 등 개수를 곱하지 않았으면 1점."},
+            {"element": "해 구하기", "points": 3, "criterion": "네 변량의 합 {S4}{eul(S4)} 구해 x = {T} − {S4} = {x}{eul(x)} 얻었다.", "partial": "덧셈 실수면 1점."},
+            {"element": "답 구하기", "points": 2, "criterion": "x = {x}{eul(x)} 답하고 평균이 {m}{ika(m)} 됨을 확인했다.", "partial": "확인 없이 답만 옳으면 1점."},
+        ],
+        rubric_total=8,
+    )
+
+
+CTX2 = {
+    "1": {"S": "어느 반의 수학 시험에서", "G1": "남학생", "G2": "여학생", "U": "점", "W": "점수"},
+    "2": {"S": "어느 동아리의 하루 걷기 기록에서", "G1": "1학년 회원", "G2": "2학년 회원", "U": "천 걸음", "W": "걸음 수"},
+    "3": {"S": "어느 e스포츠 대회에서", "G1": "A 팀 선수", "G2": "B 팀 선수", "U": "점", "W": "점수"},
+}
+CTX2_B = {"1": 70, "2": 8, "3": 60}
+
+
+def mean_t2():
+    return tpl("m1-2-mean", 2,
+        title="두 집단의 평균으로 전체 평균 구하기",
+        skill="(전체 평균) = (두 집단의 총합의 합) ÷ (전체 인원) — 인원이 다르면 평균끼리 평균 내면 안 된다",
+        variant_axis={"구하는 것": "전체 평균", "자료": "두 집단", "맥락": "반·동아리·팀"},
+        discriminates="각 집단의 총합을 (평균 × 인원)으로 구해 더하는가, 평균끼리 단순 평균 내지 않는가",
+        qtype="short", difficulty=3, pool_target=300,
+        params=[{"name": "c", "values": {"in": list(CTX2)}}, {"name": "p", "values": {"int": [1, 4]}}, {"name": "q", "values": {"int": [1, 4]}}, {"name": "k", "values": {"int": [2, 6]}}, {"name": "j", "values": {"in": [-3, -2, -1, 1, 2, 3]}}, {"name": "dm", "values": {"int": [0, 12]}}],
+        table=[{"key": "c", "rows": CTX2}, {"key": "c", "rows": {kk: {"B0": v} for kk, v in CTX2_B.items()}}],
+        derive={"n1": "k*p", "n2": "k*q", "m1": "B0 + dm", "m2": "B0 + dm + (p + q)*j", "M": "B0 + dm + q*j", "T1": "k*p*(B0 + dm)", "T2": "k*q*(B0 + dm + (p + q)*j)", "N": "k*(p + q)"},
+        constraints=["p != q", "m2 >= 1", "m2 <= B0 + 30", "M != m1", "M != m2", "M != n1", "M != n2", "m1 != n1", "m2 != n2", "N <= 30"],
+        cost_values=["n1", "n2", "m1", "m2", "T1", "T2", "N", "M"],
+        relation="X*N - (n1*m1 + n2*m2)", unknown="X", answer_var="M",
+        verify=["ans*(n1 + n2) == n1*m1 + n2*m2"],
+        question="{S} {G1} {n1}명의 {W}의 평균은 {m1}{U}, {G2} {n2}명의 {W}의 평균은 {m2}{U}이다. 전체 {N}명의 {W}의 평균을 구하시오.",
+        answer="{M}", answer_alt=["{M}{U}"],
+        sol1="전체 평균은 (전체 총합) ÷ (전체 인원)이다. 두 집단의 인원이 다르므로 평균 {m1}{wa(m1)} {m2}{eul(m2)} 그냥 평균 내면 안 되고, 각 집단의 총합을 (평균) × (인원)으로 되살려 더한 뒤 전체 인원 {N}명으로 나눈다. 표로 정리하면 빠뜨리지 않는다.",
+        sol1_fig=table(["", "인원", "평균", "총합"], [["{G1}", "{n1}명", "{m1}", "{m1} × {n1} = {T1}"], ["{G2}", "{n2}명", "{m2}", "{m2} × {n2} = {T2}"], ["전체", "{N}명", "?", "{T1} + {T2} = {T1 + T2}"]]),
+        sol2=[
+            "{G1}의 {W}의 총합: {m1} × {n1} = {T1}",
+            "{G2}의 {W}의 총합: {m2} × {n2} = {T2}",
+            "전체 총합: {T1} + {T2} = {T1 + T2}, 전체 인원: {n1} + {n2} = {N}(명)",
+            "전체 평균: {T1 + T2} ÷ {N} = {M}",
+        ],
+        sol2_fig=steps([
+            {"text": "{G1}: {m1} × {n1} = {T1}", "hint": "총합 = 평균 × 인원"},
+            {"text": "{G2}: {m2} × {n2} = {T2}"},
+            {"text": "전체: ({T1} + {T2}) ÷ ({n1} + {n2}) = {T1 + T2} ÷ {N} = {M}", "hint": "전체 총합 ÷ 전체 인원", "marks": [{"on": "{M}", "note": "{T1 + T2}÷{N}"}]},
+        ]),
+        sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1)], [reveal(2), hl("hint:2", "mark:2-0")], []],
+        sol3="두 평균을 그냥 평균 내면 ({m1} + {m2}) ÷ 2 = {dec((m1 + m2)/2)}{ika(dec((m1 + m2)/2))} 되어 답과 다르다 — 인원이 {n1}명, {n2}명으로 다르기 때문이다. 전체 평균 {M}{eun(M)} 두 평균 사이({m1}{wa(m1)} {m2} 사이)에 있고 인원이 많은 쪽에 더 가깝다. 답은 {M}{U}{ida(U)}.",
+        sol3_fig=steps(["평균끼리의 평균: ({m1} + {m2}) ÷ 2 = {dec((m1 + m2)/2)}  ← 틀린 방법", "전체 평균: {M}  (인원이 많은 쪽 평균에 더 가깝다)"]),
+        sol3_anim=[[reveal(0)], [reveal(1)]],
+        model_answer="{G1}의 총합은 {m1} × {n1} = {T1}, {G2}의 총합은 {m2} × {n2} = {T2}이므로 전체 총합은 {T1 + T2}이고 전체 인원은 {N}명이다. 따라서 전체 평균은 {T1 + T2} ÷ {N} = {M}({U})이다.",
+        rubric=[
+            {"element": "식 세우기", "points": 3, "criterion": "각 집단의 총합을 (평균) × (인원)으로 구하고 전체 평균 = (총합의 합) ÷ {N}{eul(N)} 세웠다.", "partial": "두 평균을 그냥 평균 내면 인정하지 않고, 총합은 구했으나 전체 인원으로 나누지 않았으면 1점."},
+            {"element": "해 구하기", "points": 3, "criterion": "{T1} + {T2} = {T1 + T2}{eul(T1 + T2)} {N}{ro(N)} 나누어 {M}{eul(M)} 구했다.", "partial": "곱셈·덧셈 실수면 1점."},
+            {"element": "답 구하기", "points": 2, "criterion": "전체 평균 {M}{U}{eul(U)} 답했다.", "partial": "단위 없이 수만 썼어도 2점, 다른 값을 답했으면 인정하지 않는다."},
+        ],
+        rubric_total=8,
+    )
+
+
+CTX3 = {
+    "1": {"S": "어느 학생의 지금까지 {n}회의 수학 쪽지 시험 점수의 평균은 {m}점이다. 다음 시험에서", "W": "점수", "U": "점", "NEXT": "다음 시험의 점수", "B": 60, "R": 30},
+    "2": {"S": "어느 학생이 지금까지 {n}일 동안 하루에 푼 문제 수의 평균은 {m}문제이다. 다음 날", "W": "문제 수", "U": "문제", "NEXT": "다음 날 푼 문제 수", "B": 10, "R": 20},
+    "3": {"S": "어느 동아리가 지금까지 {n}주 동안 주별로 올린 영상 조회 수의 평균은 {m}회이다. 다음 주에", "W": "조회 수", "U": "회", "NEXT": "다음 주의 조회 수", "B": 100, "R": 200},
+}
+
+
+def mean_t3():
+    return tpl("m1-2-mean", 3,
+        title="새 변량이 추가될 때 평균이 정해지는 조건 — 필요한 값 구하기",
+        skill="(지금까지의 총합) + (새 변량) = (새 평균) × (개수 + 1) 을 세우기",
+        variant_axis={"구하는 것": "새 변량", "조건": "새 평균", "맥락": "쪽지 시험·문제 수·조회 수"},
+        discriminates="개수가 n + 1로 늘어난다는 것과 총합 = 평균 × 개수를 함께 쓰는가",
+        qtype="short", difficulty=3, pool_target=300,
+        params=[{"name": "c", "values": {"in": list(CTX3)}}, {"name": "n", "values": {"int": [3, 9]}}, {"name": "dm0", "values": {"int": [0, 9]}}, {"name": "dM", "values": {"in": [-3, -2, -1, 1, 2, 3]}}],
+        table={"key": "c", "rows": {k: {kk: vv for kk, vv in v.items() if kk != "S"} for k, v in CTX3.items()}},
+        derive={"m": "B + dm0*R/10", "M": "B + dm0*R/10 + dM", "T0": "n*(B + dm0*R/10)", "T1": "(n + 1)*(B + dm0*R/10 + dM)", "a": "B + dm0*R/10 + (n + 1)*dM"},
+        constraints=["a >= 1", "a != m", "a != M", "a != n", "M >= 1", "m == floor(m)"],
+        cost_values=["n", "m", "M", "T0", "T1", "a"],
+        relation="(n*m + X)/(n + 1) - M", unknown="X", answer_var="a",
+        verify=["n*m + ans == (n + 1)*M"],
+        question="{Q}",
+        answer="{a}", answer_alt=["{a}{U}"],
+        sol1="평균이 {M}{U}{ika(U)} 되려면 개수가 {n} + 1 = {n+1}(개)로 늘어난 뒤의 총합이 {M} × {n+1} = {T1}이어야 한다. 지금까지의 총합은 (평균) × (개수) = {m} × {n} = {T0}이므로, 새 변량은 {T1} − {T0}이다. 개수가 하나 늘어난다는 것을 잊기 쉽다.",
+        sol1_fig=table(["", "개수", "평균", "총합"], [["지금까지", "{n}", "{m}", "{m} × {n} = {T0}"], ["새 값을 넣은 뒤", "{n+1}", "{M}", "{M} × {n+1} = {T1}"]]),
+        sol2=[
+            "지금까지의 총합: {m} × {n} = {T0}",
+            "{NEXT}{eul(NEXT)} x라 하면 개수는 {n+1}개가 되고, 평균이 {M}이어야 하므로 ({T0} + x) ÷ {n+1} = {M}",
+            "양변에 {n+1}{eul(n+1)} 곱하면 {T0} + x = {T1}",
+            "따라서 x = {T1} − {T0} = {a}",
+        ],
+        sol2_fig=steps([
+            {"text": "지금까지 총합 = {m} × {n} = {T0}", "hint": "평균 × 개수"},
+            {"text": "({T0} + x) ÷ {n+1} = {M}", "hint": "개수는 {n} + 1"},
+            {"text": "{T0} + x = {T1}", "marks": [{"on": "{T1}", "note": "{M}×{n+1}"}]},
+            {"text": "x = {a}", "marks": [{"on": "{a}", "note": "{T1} − {T0}"}]},
+        ]),
+        sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")], [reveal(2), hl("mark:2-0")], [reveal(3), hl("mark:3-0")]],
+        sol3="새 변량이 {a}이면 총합은 {T0} + {a} = {T1}, 개수는 {n+1}이므로 평균은 {T1} ÷ {n+1} = {M}{ro(M)} 조건과 같다. 답은 {a}{U}{ida(U)}.",
+        sol3_fig=steps(["({T0} + {a}) ÷ {n+1} = {T1} ÷ {n+1} = {M}"]),
+        sol3_anim=[[reveal(0)]],
+        model_answer="지금까지의 총합은 {m} × {n} = {T0}이다. {NEXT}{eul(NEXT)} x라 하면 ({T0} + x) ÷ {n+1} = {M}이어야 하므로 {T0} + x = {T1}, x = {a}이다. 따라서 {NEXT}{eun(NEXT)} {a}{U}이어야 한다.",
+        rubric=[
+            {"element": "식 세우기", "points": 3, "criterion": "지금까지의 총합 {m} × {n} = {T0}{eul(T0)} 구하고, 개수가 {n+1}임을 반영해 ({T0} + x) ÷ {n+1} = {M}{eul(M)} 세웠다.", "partial": "개수를 {n}{ro(n)} 두었으면 1점."},
+            {"element": "해 구하기", "points": 3, "criterion": "{T0} + x = {T1}에서 x = {a}{eul(a)} 구했다.", "partial": "곱셈까지 옳고 뺄셈이 틀렸으면 1점."},
+            {"element": "답 구하기", "points": 2, "criterion": "{NEXT}{eul(NEXT)} {a}{U}{ro(U)} 답하고 평균이 {M}{ika(M)} 됨을 확인했다.", "partial": "확인 없이 답만 옳으면 1점."},
+        ],
+        rubric_total=8,
+    )
+
+
+def _fix_t3(t):
+    """맥락 문장에 수치(n, m)가 들어가므로 표에 두지 못한다 — 문항 텍스트를 맥락별 틀로 나눠 세 틀(t3~t5)로 만든다."""
+    out = []
+    for i, (kk, v) in enumerate(CTX3.items(), 3):
+        tt = dict(t)
+        tt["id"] = f"m1-2-mean-t{i}"
+        tt["params"] = [p for p in t["params"] if p["name"] != "c"]
+        tt["table"] = None
+        tt["question"] = v["S"] + " {W}{ika(W)} 몇 {U}이면 평균이 {M}{U}{ika(U)} 되는지 구하시오."
+        tt["derive"] = {"B": str(v["B"]), "R": str(v["R"]), **t["derive"]}
+        tt["NEXT_"] = v["NEXT"]
+        # 표 대신 상수로 박는다
+        from seedlib import sub_all
+        tt = sub_all(tt, {"{U}{ida(U)}": v["U"] + ("이다" if (ord(v["U"][-1]) - 0xAC00) % 28 else "다"), "{NEXT}{eul(NEXT)}": v["NEXT"] + ("을" if (ord(v["NEXT"][-1]) - 0xAC00) % 28 else "를"),
+                          "{NEXT}{eun(NEXT)}": v["NEXT"] + ("은" if (ord(v["NEXT"][-1]) - 0xAC00) % 28 else "는"),
+                          "{NEXT}": v["NEXT"], "{W}{ika(W)}": v["W"] + ("이" if (ord(v["W"][-1]) - 0xAC00) % 28 else "가"), "{W}": v["W"],
+                          "{U}{ika(U)}": v["U"] + ("이" if (ord(v["U"][-1]) - 0xAC00) % 28 else "가"), "{U}{ro(U)}": v["U"] + ("으로" if (ord(v["U"][-1]) - 0xAC00) % 28 and v["U"][-1] not in "ㄹ" else "로"), "{U}": v["U"]})
+        tt.pop("NEXT_", None)
+        tt.pop("table", None)
+        tt["variant_axis"] = {**t["variant_axis"], "맥락": {"1": "쪽지 시험 점수", "2": "푼 문제 수", "3": "영상 조회 수"}[kk]}
+        out.append(tt)
+    return out
+
+
+def _fix_t1(t):
+    """표 figure 를 파라미터 표에서 가져온다 — H(머리글)는 문자열 목록, 값은 수치."""
+    fig = [{"fn": "table", "args": {"head": "{H}", "rows": [["{v1}", "{v2}", "x", "{v3}", "{v4}"]], "caption": "(단위: {U})"}}]
+    t["figure"] = fig
+    t["sol1_fig"] = fig
+    return t
+
+
+MEAN_SEED = {
+    "seed_id": "m1-2-mean", "category": "활용",
+    "title": "평균 — 빠진 변량·두 집단의 전체 평균·새 변량 추가",
+    "unit_id": "m1-2", "concept_ids": ["m1-2-17"],
+    "schema_id": SCHEMA_MEAN, "schema_name": "평균을 이용한 변량 구하기 / 평균 계산",
+    "source_item_ids": [],
+    "note": "관계식 (총합) = (평균) × (개수) 만 차용. 두 집단 틀은 n1 = kp, n2 = kq, m2 − m1 = (p + q)j 로 생성해 전체 평균이 정수(m1 + qj). 통계 도식(막대 강조)은 미구현이라 표·판서로. 맥락은 걸음 수·앱 사용 시간·보드게임·독서·e스포츠·영상 조회 수.",
+    "geometry": False,
+    "templates": [_fix_t1(mean_t1()), mean_t2()] + _fix_t3(mean_t3()),
+}
+
+
+if __name__ == "__main__":
+    with_pitfalls(MEAN_SEED)
+    dump(MEAN_SEED)

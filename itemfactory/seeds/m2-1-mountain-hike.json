@@ -1,0 +1,796 @@
+{
+  "seed_id": "m2-1-mountain-hike",
+  "category": "활용",
+  "title": "등산 — 다른 길로 오르고 내리기 (연립방정식)",
+  "unit_id": "m2-1",
+  "concept_ids": [
+    "m2-1-14"
+  ],
+  "schema_id": null,
+  "schema_name": "구간별 속력이 다른 이동 — 거리 조건 + 시간 조건",
+  "source_item_ids": [],
+  "note": "관계식 x + y = D, x/a + y/b = T 만 차용. 정수해가 나오도록 x = a·p, y = b·q 로 생성한다. 그림은 mountain(우상향 초록 직선).",
+  "geometry": false,
+  "templates": [
+    {
+      "prereq": [
+        "거리=속력×시간",
+        "연립방정식의 풀이(가감법)"
+      ],
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "방정식",
+        "사칙"
+      ],
+      "traps": [
+        "부호",
+        "조건누락"
+      ],
+      "time_limit": 150,
+      "points": 5,
+      "id": "m2-1-mountain-up",
+      "title": "등산 — 올라간 거리 구하기",
+      "skill": "거리 조건과 시간 조건 두 개로 연립방정식 세우기",
+      "variant_axis": {
+        "구하는 것": "올라간 거리",
+        "시나리오": "다른 길로 오르고 내리기"
+      },
+      "discriminates": "총 시간을 구간별 시간의 합으로 쪼개고, 총 거리 조건을 함께 쓰는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "tags": [
+        "거속시",
+        "등산",
+        "연립방정식"
+      ],
+      "params": [
+        {
+          "name": "ab",
+          "values": {
+            "in": [
+              23,
+              25,
+              34,
+              35,
+              45,
+              46,
+              56
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              2,
+              4
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "int": [
+              2,
+              4
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "a": "floor(ab/10)",
+        "b": "ab % 10",
+        "L": "lcm(floor(ab/10), ab % 10)",
+        "x": "floor(ab/10)*p",
+        "y": "(ab % 10)*q",
+        "D": "floor(ab/10)*p + (ab % 10)*q",
+        "T": "p + q"
+      },
+      "constraints": [
+        "x != y",
+        "D <= 40",
+        "T <= 8",
+        "x != a",
+        "y != b",
+        "x != T",
+        "y != T",
+        "x != D",
+        "y != D"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "x",
+        "y",
+        "D",
+        "T",
+        "L",
+        "T*L",
+        "D*L/b"
+      ],
+      "relation": "X/a + (D - X)/b - T",
+      "unknown": "X",
+      "answer_var": "x",
+      "verify": [
+        "x/a + y/b == T",
+        "x + y == D",
+        "ans == x"
+      ],
+      "question": "등산을 하는데 올라갈 때는 시속 {a} km로, 내려올 때는 다른 길을 시속 {b} km로 걸어서 모두 {D} km를 {T}시간 만에 다녀왔다. 올라간 거리는 몇 km인지 구하시오.",
+      "figure": [
+        {
+          "fn": "mountain",
+          "args": {
+            "base": "출발",
+            "peak": "정상",
+            "up": {
+              "label": "오를 때 시속 {a} km",
+              "sub": ""
+            },
+            "down": {
+              "label": "내려올 때 시속 {b} km",
+              "sub": ""
+            },
+            "total": "모두 {D} km · {T}시간"
+          }
+        }
+      ],
+      "answer": "{x}",
+      "answer_alt": [
+        "{x} km"
+      ],
+      "sol1": "오르는 길과 내려오는 길이 다르므로 두 거리를 따로 x km, y km로 둔다. 조건은 두 가지다 — 거리: x + y = {D}, 시간: 오를 때 x/{a}시간과 내려올 때 y/{b}시간의 합이 {T}시간. 산을 우상향 직선 하나로 그리고 오를 때 조건은 왼쪽에, 내려올 때 조건은 반대편에 화살표와 함께 적어 두면 두 식이 그림에서 그대로 읽힌다.",
+      "sol1_fig": [
+        {
+          "fn": "mountain",
+          "args": {
+            "base": "출발",
+            "peak": "정상",
+            "up": {
+              "label": "오를 때 시속 {a} km",
+              "sub": "x km"
+            },
+            "down": {
+              "label": "내려올 때 시속 {b} km",
+              "sub": "y km"
+            },
+            "total": "모두 {D} km · {T}시간"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "base-lbl",
+              "peak-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "up",
+              "up-lbl",
+              "up-sub"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "down",
+              "down-lbl",
+              "down-sub"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "total-lbl"
+          }
+        ]
+      ],
+      "sol2": [
+        "올라간 거리를 x km, 내려온 거리를 y km라 하자.",
+        "거리 조건: 두 길을 합쳐 {D} km이므로 x + y = {D}",
+        "시간 조건: 오를 때 x/{a}시간, 내려올 때 y/{b}시간이므로 x/{a} + y/{b} = {T}. 분모의 최소공배수 {L}{eul(L)} 양변에 곱하면 {co(L/a)}x + {co(L/b)}y = {T*L}",
+        "x + y = {D}의 양변에 {L/b}{eul(L/b)} 곱해 {co(L/b)}x + {co(L/b)}y = {D*L/b}{eul(D*L/b)} 만들고, 시간 식에서 빼면 y가 사라진다: {co(L/a - L/b)}x = {T*L - D*L/b}",
+        "따라서 x = {x}이고, 이를 x + y = {D}에 넣으면 y = {D} − {x} = {y}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "x + y = {D}",
+                "hint": "거리 조건"
+              },
+              {
+                "text": "x/{a} + y/{b} = {T}",
+                "hint": "시간 조건"
+              },
+              {
+                "text": "{co(L/a)}x + {co(L/b)}y = {T*L}",
+                "hint": "양변 × {L}",
+                "marks": [
+                  {
+                    "on": "{co(L/a)}x",
+                    "note": "{L}÷{a}"
+                  },
+                  {
+                    "on": "{co(L/b)}y",
+                    "note": "{L}÷{b}"
+                  }
+                ]
+              },
+              {
+                "text": "{co(L/b)}x + {co(L/b)}y = {D*L/b}",
+                "hint": "거리 식 × {L/b} — y의 계수를 맞춘다"
+              },
+              {
+                "text": "{co(L/a - L/b)}x = {T*L - D*L/b}",
+                "hint": "빼면 y가 사라진다"
+              },
+              {
+                "text": "y = {D} − {x} = {y}",
+                "hint": "x = {x}를 거리 식에 넣는다"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [],
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          },
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0",
+              "mark:2-1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "hint:3"
+          },
+          {
+            "act": "reveal",
+            "k": "line:4"
+          },
+          {
+            "act": "hl",
+            "k": "hint:4"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:5"
+          },
+          {
+            "act": "hl",
+            "k": "hint:5"
+          }
+        ]
+      ],
+      "sol3": "올라간 {x} km를 시속 {a} km로 가면 {x} ÷ {a} = {p}시간, 내려온 {y} km를 시속 {b} km로 가면 {y} ÷ {b} = {q}시간이다. 시간의 합 {p} + {q} = {T}시간, 거리의 합 {x} + {y} = {D} km로 두 조건이 모두 맞는다. 답은 {x} km다.",
+      "sol3_fig": [
+        {
+          "fn": "mountain",
+          "args": {
+            "base": "출발",
+            "peak": "정상",
+            "up": {
+              "label": "시속 {a} km · {p}시간",
+              "sub": "{x} km"
+            },
+            "down": {
+              "label": "시속 {b} km · {q}시간",
+              "sub": "{y} km"
+            },
+            "total": "모두 {D} km · {T}시간"
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "up",
+              "up-lbl",
+              "up-sub"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "down",
+              "down-lbl",
+              "down-sub"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "total-lbl"
+          }
+        ]
+      ],
+      "model_answer": "올라간 거리를 x km, 내려온 거리를 y km라 하면 x + y = {D}이고, 걸린 시간에서 x/{a} + y/{b} = {T}이다. 둘째 식의 양변에 {L}{eul(L)} 곱하면 {co(L/a)}x + {co(L/b)}y = {T*L}이고, 첫째 식의 양변에 {L/b}{eul(L/b)} 곱해 빼면 {co(L/a - L/b)}x = {T*L - D*L/b}에서 x = {x}, y = {y}이다. 실제로 {x} ÷ {a} + {y} ÷ {b} = {p} + {q} = {T}시간이므로 올라간 거리는 {x} km다.",
+      "rubric": [
+        {
+          "element": "조건 두 개 읽기",
+          "points": 2,
+          "criterion": "거리 조건(합이 {D} km)과 시간 조건(합이 {T}시간)을 구분해 썼다.",
+          "partial": "하나만 썼으면 1점."
+        },
+        {
+          "element": "연립방정식 세우기",
+          "points": 3,
+          "criterion": "x + y = {D}{wa(D)} x/{a} + y/{b} = {T}{eul(T)} 세웠다.",
+          "partial": "한 식만 세웠으면 1점."
+        },
+        {
+          "element": "풀이·답",
+          "points": 3,
+          "criterion": "분모를 없애고 가감법으로 x = {x}, y = {y}{eul(y)} 구하고 답을 {x} km로 썼다.",
+          "partial": "분모를 없애는 단계까지 옳으면 1점."
+        }
+      ],
+      "rubric_total": 8,
+      "pitfalls": [
+        {
+          "text": "올라간 거리와 내려온 거리를 같은 x로 둠 (길이 다르다는 조건 무시)",
+          "on": "조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "시간 조건을 거리로, 거리 조건을 시간으로 바꿔 씀",
+          "on": "연립",
+          "effect": "불인정"
+        },
+        {
+          "text": "분모를 없앨 때 우변의 시간에는 곱하지 않음",
+          "on": "풀이",
+          "effect": "부분"
+        },
+        {
+          "text": "구한 x, y 중 묻지 않은 쪽을 답으로 씀 (구하는 대상 혼동)",
+          "on": "풀이",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "prereq": [
+        "거리=속력×시간",
+        "연립방정식의 풀이(가감법)"
+      ],
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "방정식",
+        "사칙"
+      ],
+      "traps": [
+        "부호",
+        "조건누락"
+      ],
+      "time_limit": 150,
+      "points": 5,
+      "id": "m2-1-mountain-down",
+      "title": "등산 — 내려온 거리 구하기",
+      "skill": "거리 조건과 시간 조건 두 개로 연립방정식 세우기",
+      "variant_axis": {
+        "구하는 것": "내려온 거리",
+        "시나리오": "다른 길로 오르고 내리기"
+      },
+      "discriminates": "총 시간을 구간별 시간의 합으로 쪼개고, 총 거리 조건을 함께 쓰는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "tags": [
+        "거속시",
+        "등산",
+        "연립방정식"
+      ],
+      "params": [
+        {
+          "name": "ab",
+          "values": {
+            "in": [
+              23,
+              25,
+              34,
+              35,
+              45,
+              46,
+              56
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              2,
+              4
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "int": [
+              2,
+              4
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "a": "floor(ab/10)",
+        "b": "ab % 10",
+        "L": "lcm(floor(ab/10), ab % 10)",
+        "x": "floor(ab/10)*p",
+        "y": "(ab % 10)*q",
+        "D": "floor(ab/10)*p + (ab % 10)*q",
+        "T": "p + q"
+      },
+      "constraints": [
+        "x != y",
+        "D <= 40",
+        "T <= 8",
+        "x != a",
+        "y != b",
+        "x != T",
+        "y != T",
+        "x != D",
+        "y != D"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "x",
+        "y",
+        "D",
+        "T",
+        "L",
+        "T*L",
+        "D*L/b"
+      ],
+      "relation": "(D - X)/a + X/b - T",
+      "unknown": "X",
+      "answer_var": "y",
+      "verify": [
+        "x/a + y/b == T",
+        "x + y == D",
+        "ans == y"
+      ],
+      "question": "등산을 하는데 올라갈 때는 시속 {a} km로, 내려올 때는 다른 길을 시속 {b} km로 걸어서 모두 {D} km를 {T}시간 만에 다녀왔다. 내려온 거리는 몇 km인지 구하시오.",
+      "figure": [
+        {
+          "fn": "mountain",
+          "args": {
+            "base": "출발",
+            "peak": "정상",
+            "up": {
+              "label": "오를 때 시속 {a} km",
+              "sub": ""
+            },
+            "down": {
+              "label": "내려올 때 시속 {b} km",
+              "sub": ""
+            },
+            "total": "모두 {D} km · {T}시간"
+          }
+        }
+      ],
+      "answer": "{y}",
+      "answer_alt": [
+        "{y} km"
+      ],
+      "sol1": "오르는 길과 내려오는 길이 다르므로 두 거리를 따로 x km, y km로 둔다. 조건은 두 가지다 — 거리: x + y = {D}, 시간: 오를 때 x/{a}시간과 내려올 때 y/{b}시간의 합이 {T}시간. 산을 우상향 직선 하나로 그리고 오를 때 조건은 왼쪽에, 내려올 때 조건은 반대편에 화살표와 함께 적어 두면 두 식이 그림에서 그대로 읽힌다.",
+      "sol1_fig": [
+        {
+          "fn": "mountain",
+          "args": {
+            "base": "출발",
+            "peak": "정상",
+            "up": {
+              "label": "오를 때 시속 {a} km",
+              "sub": "x km"
+            },
+            "down": {
+              "label": "내려올 때 시속 {b} km",
+              "sub": "y km"
+            },
+            "total": "모두 {D} km · {T}시간"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "base-lbl",
+              "peak-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "up",
+              "up-lbl",
+              "up-sub"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "down",
+              "down-lbl",
+              "down-sub"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "total-lbl"
+          }
+        ]
+      ],
+      "sol2": [
+        "올라간 거리를 x km, 내려온 거리를 y km라 하자.",
+        "거리 조건: 두 길을 합쳐 {D} km이므로 x + y = {D}",
+        "시간 조건: 오를 때 x/{a}시간, 내려올 때 y/{b}시간이므로 x/{a} + y/{b} = {T}. 분모의 최소공배수 {L}{eul(L)} 양변에 곱하면 {co(L/a)}x + {co(L/b)}y = {T*L}",
+        "x + y = {D}의 양변에 {L/b}{eul(L/b)} 곱해 {co(L/b)}x + {co(L/b)}y = {D*L/b}{eul(D*L/b)} 만들고, 시간 식에서 빼면 y가 사라진다: {co(L/a - L/b)}x = {T*L - D*L/b}",
+        "따라서 x = {x}이고, 이를 x + y = {D}에 넣으면 y = {D} − {x} = {y}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "x + y = {D}",
+                "hint": "거리 조건"
+              },
+              {
+                "text": "x/{a} + y/{b} = {T}",
+                "hint": "시간 조건"
+              },
+              {
+                "text": "{co(L/a)}x + {co(L/b)}y = {T*L}",
+                "hint": "양변 × {L}",
+                "marks": [
+                  {
+                    "on": "{co(L/a)}x",
+                    "note": "{L}÷{a}"
+                  },
+                  {
+                    "on": "{co(L/b)}y",
+                    "note": "{L}÷{b}"
+                  }
+                ]
+              },
+              {
+                "text": "{co(L/b)}x + {co(L/b)}y = {D*L/b}",
+                "hint": "거리 식 × {L/b} — y의 계수를 맞춘다"
+              },
+              {
+                "text": "{co(L/a - L/b)}x = {T*L - D*L/b}",
+                "hint": "빼면 y가 사라진다"
+              },
+              {
+                "text": "y = {D} − {x} = {y}",
+                "hint": "x = {x}를 거리 식에 넣는다"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [],
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          },
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0",
+              "mark:2-1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "hint:3"
+          },
+          {
+            "act": "reveal",
+            "k": "line:4"
+          },
+          {
+            "act": "hl",
+            "k": "hint:4"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:5"
+          },
+          {
+            "act": "hl",
+            "k": "hint:5"
+          }
+        ]
+      ],
+      "sol3": "올라간 {x} km를 시속 {a} km로 가면 {x} ÷ {a} = {p}시간, 내려온 {y} km를 시속 {b} km로 가면 {y} ÷ {b} = {q}시간이다. 시간의 합 {p} + {q} = {T}시간, 거리의 합 {x} + {y} = {D} km로 두 조건이 모두 맞는다. 답은 {y} km다.",
+      "sol3_fig": [
+        {
+          "fn": "mountain",
+          "args": {
+            "base": "출발",
+            "peak": "정상",
+            "up": {
+              "label": "시속 {a} km · {p}시간",
+              "sub": "{x} km"
+            },
+            "down": {
+              "label": "시속 {b} km · {q}시간",
+              "sub": "{y} km"
+            },
+            "total": "모두 {D} km · {T}시간"
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "up",
+              "up-lbl",
+              "up-sub"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "down",
+              "down-lbl",
+              "down-sub"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "total-lbl"
+          }
+        ]
+      ],
+      "model_answer": "올라간 거리를 x km, 내려온 거리를 y km라 하면 x + y = {D}이고, 걸린 시간에서 x/{a} + y/{b} = {T}이다. 둘째 식의 양변에 {L}{eul(L)} 곱하면 {co(L/a)}x + {co(L/b)}y = {T*L}이고, 첫째 식의 양변에 {L/b}{eul(L/b)} 곱해 빼면 {co(L/a - L/b)}x = {T*L - D*L/b}에서 x = {x}, y = {y}이다. 실제로 {x} ÷ {a} + {y} ÷ {b} = {p} + {q} = {T}시간이므로 내려온 거리는 {y} km다.",
+      "rubric": [
+        {
+          "element": "조건 두 개 읽기",
+          "points": 2,
+          "criterion": "거리 조건(합이 {D} km)과 시간 조건(합이 {T}시간)을 구분해 썼다.",
+          "partial": "하나만 썼으면 1점."
+        },
+        {
+          "element": "연립방정식 세우기",
+          "points": 3,
+          "criterion": "x + y = {D}{wa(D)} x/{a} + y/{b} = {T}{eul(T)} 세웠다.",
+          "partial": "한 식만 세웠으면 1점."
+        },
+        {
+          "element": "풀이·답",
+          "points": 3,
+          "criterion": "분모를 없애고 가감법으로 x = {x}, y = {y}{eul(y)} 구하고 답을 {y} km로 썼다.",
+          "partial": "분모를 없애는 단계까지 옳으면 1점."
+        }
+      ],
+      "rubric_total": 8,
+      "pitfalls": [
+        {
+          "text": "올라간 거리와 내려온 거리를 같은 x로 둠 (길이 다르다는 조건 무시)",
+          "on": "조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "시간 조건을 거리로, 거리 조건을 시간으로 바꿔 씀",
+          "on": "연립",
+          "effect": "불인정"
+        },
+        {
+          "text": "분모를 없앨 때 우변의 시간에는 곱하지 않음",
+          "on": "풀이",
+          "effect": "부분"
+        },
+        {
+          "text": "구한 x, y 중 묻지 않은 쪽을 답으로 씀 (구하는 대상 혼동)",
+          "on": "풀이",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,694 @@
+{
+  "seed_id": "m1-1-speed-trip",
+  "category": "활용",
+  "title": "거리·속력·시간 — 왕복과 두 구간 이동",
+  "unit_id": "m1-1",
+  "concept_ids": [
+    "m1-1-28"
+  ],
+  "schema_id": null,
+  "schema_name": "속력 차이에 따른 시간 차 문제 / 구간별 속력 변화",
+  "source_item_ids": [],
+  "note": "관계식 (거리) = (속력) × (시간), (시간) = (거리) ÷ (속력) 만 차용. 정수해가 나오도록 거리를 속력의 공배수로 생성한다.",
+  "geometry": false,
+  "templates": [
+    {
+      "id": "m1-1-speed-trip-t1",
+      "title": "왕복 — 갈 때·올 때 속력이 다를 때 거리 구하기",
+      "skill": "시간 = 거리 ÷ 속력 을 두 번 써서 더하기",
+      "prereq": [
+        "거리=속력×시간",
+        "분수의 덧셈",
+        "일차방정식"
+      ],
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "방정식",
+        "사칙"
+      ],
+      "traps": [
+        "단위",
+        "조건누락"
+      ],
+      "variant_axis": {
+        "구하는 것": "거리",
+        "시나리오": "왕복·속력 다름"
+      },
+      "discriminates": "'총 걸린 시간'을 갈 때와 올 때의 시간의 합으로 쪼개는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "time_limit": 120,
+      "points": 5,
+      "pool_target": 300,
+      "tags": [
+        "거속시",
+        "왕복"
+      ],
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              3,
+              4,
+              5,
+              6,
+              8,
+              10,
+              12,
+              15
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "L": "lcm(a,b)",
+        "d": "k*lcm(a,b)",
+        "t1": "k*lcm(a,b)/a",
+        "t2": "k*lcm(a,b)/b",
+        "T": "k*lcm(a,b)/a + k*lcm(a,b)/b"
+      },
+      "constraints": [
+        "a < b",
+        "d <= 45",
+        "T <= 15",
+        "T >= 2",
+        "d != a",
+        "d != b",
+        "d != T"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "d",
+        "t1",
+        "t2",
+        "T"
+      ],
+      "relation": "X/a + X/b - T",
+      "unknown": "X",
+      "answer_var": "d",
+      "verify": [
+        "d*(a+b) == T*a*b",
+        "t1 + t2 == T"
+      ],
+      "question": "집에서 도서관까지 갈 때는 시속 {a} km로 걷고, 올 때는 같은 길을 시속 {b} km로 달려서 돌아왔더니 모두 {T}시간이 걸렸다. 집에서 도서관까지의 거리는 몇 km인지 구하시오.",
+      "figure": [
+        {
+          "fn": "journey",
+          "args": {
+            "stops": [
+              "집",
+              "도서관"
+            ],
+            "legs": [
+              {
+                "label": "갈 때 시속 {a} km"
+              },
+              {
+                "label": "올 때 시속 {b} km",
+                "back": true
+              }
+            ],
+            "total": "모두 {T}시간"
+          }
+        }
+      ],
+      "answer": "{d}",
+      "answer_alt": [
+        "{d} km"
+      ],
+      "sol1": "'모두 {T}시간'은 갈 때 걸린 시간과 올 때 걸린 시간을 더한 것이다. 거리는 갈 때나 올 때나 같으므로 그 거리를 x km로 두면, 갈 때 시간은 x ÷ {a}, 올 때 시간은 x ÷ {b}이고 이 둘의 합이 {T}이다. 속력이 다르면 시간이 다르다는 것, 그리고 거리는 같다는 것 — 이 두 가지가 식의 뼈대다.",
+      "sol1_fig": [
+        {
+          "fn": "journey",
+          "args": {
+            "stops": [
+              "집",
+              "도서관"
+            ],
+            "legs": [
+              {
+                "label": "시속 {a} km",
+                "sub": "x ÷ {a} 시간"
+              },
+              {
+                "label": "시속 {b} km",
+                "sub": "x ÷ {b} 시간",
+                "back": true
+              }
+            ],
+            "total": "x ÷ {a} + x ÷ {b} = {T}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "stop-lbl:0",
+              "stop-lbl:1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "move",
+            "k": "mover",
+            "dur": 2400
+          },
+          {
+            "act": "hl",
+            "k": "leg:0",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "leg:1",
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "집에서 도서관까지의 거리를 x km라 하자.",
+        "갈 때 걸린 시간은 (거리) ÷ (속력) = x ÷ {a} = x/{a} (시간)",
+        "올 때 걸린 시간은 x ÷ {b} = x/{b} (시간)",
+        "두 시간의 합이 {T}시간이므로 x/{a} + x/{b} = {T}",
+        "분모 {a}, {b}의 최소공배수 {L}{eul(L)} 양변에 곱해 분수를 없앤다: {co(L/a)}x + {co(L/b)}x = {T*L}",
+        "동류항을 모으면 {co(L/a + L/b)}x = {T*L}",
+        "양변을 {L/a + L/b}{ro(L/a + L/b)} 나누면 x = {d}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x/{a} + x/{b} = {T}",
+              {
+                "text": "{co(L/a)}x + {co(L/b)}x = {T*L}",
+                "hint": "양변에 {L} 곱 — 분모가 사라진다",
+                "marks": [
+                  {
+                    "on": "{co(L/a)}x",
+                    "note": "{L}÷{a}"
+                  },
+                  {
+                    "on": "{co(L/b)}x",
+                    "note": "{L}÷{b}"
+                  }
+                ]
+              },
+              {
+                "text": "{co(L/a + L/b)}x = {T*L}",
+                "hint": "동류항 정리"
+              },
+              {
+                "text": "x = {d}",
+                "marks": [
+                  {
+                    "on": "{d}",
+                    "note": "{T*L}÷{L/a + L/b}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [],
+        [],
+        [],
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0",
+              "mark:1-1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "mark:3-0"
+          }
+        ]
+      ],
+      "sol3": "거리 {d} km로 되짚어 본다. 갈 때 {d} ÷ {a} = {t1}시간, 올 때 {d} ÷ {b} = {t2}시간이므로 합은 {t1} + {t2} = {T}시간으로 문제의 조건과 같다. 또 빠른 쪽(시속 {b} km)이 더 짧게 걸린 것도 상식에 맞는다. 답은 {d} km다.",
+      "sol3_fig": [
+        {
+          "fn": "journey",
+          "args": {
+            "stops": [
+              "집",
+              "도서관"
+            ],
+            "legs": [
+              {
+                "label": "시속 {a} km",
+                "sub": "{t1}시간"
+              },
+              {
+                "label": "시속 {b} km",
+                "sub": "{t2}시간",
+                "back": true
+              }
+            ],
+            "total": "{d} km · 모두 {T}시간"
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "move",
+            "k": "mover",
+            "dur": 2200
+          },
+          {
+            "act": "hl",
+            "k": [
+              "leg:0",
+              "leg:1"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "model_answer": "집에서 도서관까지의 거리를 x km라 하면, 갈 때 걸린 시간은 x/{a}시간, 올 때 걸린 시간은 x/{b}시간이고 두 시간의 합이 {T}시간이므로 x/{a} + x/{b} = {T}이다. 양변에 {L}{eul(L)} 곱하면 {co(L/a)}x + {co(L/b)}x = {T*L}, 곧 {co(L/a + L/b)}x = {T*L}이므로 x = {d}이다. 실제로 갈 때 {t1}시간, 올 때 {t2}시간으로 합이 {T}시간이 되므로 답은 {d} km다.",
+      "rubric": [
+        {
+          "element": "시간 쪼개기",
+          "points": 3,
+          "criterion": "총 시간이 갈 때 시간과 올 때 시간의 합임을 밝혔다."
+        },
+        {
+          "element": "식 세우기",
+          "points": 4,
+          "criterion": "거리를 x로 놓고 x/{a} + x/{b} = {T}{eul(T)} 세웠다.",
+          "partial": "한쪽 시간만 식으로 썼으면 2점."
+        },
+        {
+          "element": "방정식 풀이",
+          "points": 3,
+          "criterion": "분모를 없애고 동류항을 정리해 x = {d}{eul(d)} 구했다.",
+          "partial": "최소공배수를 곱하는 단계까지 옳으면 2점."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {d} km로 단위와 함께 썼다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "갈 때·올 때 시간의 합이 {T}시간이 됨을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "속력이 다른데 왕복 시간을 절반씩 나눠 계산함",
+          "on": "시간 쪼개기",
+          "effect": "불인정"
+        },
+        {
+          "text": "거리를 x로 두었다는 말 없이 식만 씀 (미지수 정의 누락)",
+          "on": "식 세우기",
+          "effect": "부분"
+        },
+        {
+          "text": "시간 = 거리 ÷ 속력 을 속력 ÷ 거리 로 뒤집어 씀",
+          "on": "식 세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "분모를 없앨 때 우변의 시간에는 곱하지 않음",
+          "on": "방정식 풀이",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "id": "m1-1-speed-trip-t2",
+      "title": "두 구간 — 걷다가 뛴 거리 구하기",
+      "skill": "구간마다 시간을 따로 세워 더하기",
+      "prereq": [
+        "거리=속력×시간",
+        "일차방정식",
+        "괄호 전개"
+      ],
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "방정식",
+        "사칙"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "variant_axis": {
+        "구하는 것": "구간 거리",
+        "시나리오": "두 구간·속력 변화"
+      },
+      "discriminates": "'나머지 거리'를 (전체 − x)로 표현하는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "time_limit": 130,
+      "points": 5,
+      "pool_target": 300,
+      "tags": [
+        "거속시",
+        "두구간"
+      ],
+      "params": [
+        {
+          "name": "v1",
+          "values": {
+            "in": [
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "v2",
+          "values": {
+            "in": [
+              6,
+              8,
+              10,
+              12
+            ]
+          }
+        },
+        {
+          "name": "t1",
+          "values": {
+            "in": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "t2",
+          "values": {
+            "in": [
+              1,
+              2
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "x": "v1*t1",
+        "y": "v2*t2",
+        "D": "v1*t1 + v2*t2",
+        "T": "t1 + t2"
+      },
+      "constraints": [
+        "x != y",
+        "D <= 40",
+        "x != v1",
+        "x != v2",
+        "x != D",
+        "x != T"
+      ],
+      "cost_values": [
+        "v1",
+        "v2",
+        "x",
+        "y",
+        "D",
+        "T"
+      ],
+      "relation": "X/v1 + (D - X)/v2 - T",
+      "unknown": "X",
+      "answer_var": "x",
+      "verify": [
+        "x/v1 + (D-x)/v2 == T",
+        "x + y == D"
+      ],
+      "question": "집에서 {D} km 떨어진 공원까지 가는데, 처음에는 시속 {v1} km로 걷다가 도중에 시속 {v2} km로 달려서 모두 {T}시간 만에 도착했다. 걸어간 거리는 몇 km인지 구하시오.",
+      "figure": [
+        {
+          "fn": "journey",
+          "args": {
+            "stops": [
+              "집",
+              "바꾼 곳",
+              "공원"
+            ],
+            "legs": [
+              {
+                "label": "걷기 시속 {v1} km"
+              },
+              {
+                "label": "달리기 시속 {v2} km"
+              }
+            ],
+            "total": "{D} km · 모두 {T}시간"
+          }
+        }
+      ],
+      "answer": "{x}",
+      "answer_alt": [
+        "{x} km"
+      ],
+      "sol1": "길이 두 구간으로 나뉜다. 걸어간 거리를 x km로 두면 달린 거리는 나머지 ({D} − x) km다. 구간마다 (시간) = (거리) ÷ (속력)으로 시간을 따로 구해 더한 것이 {T}시간이다. '전체에서 x를 뺀 것이 나머지'라는 표현이 이 유형의 핵심이다.",
+      "sol1_fig": [
+        {
+          "fn": "journey",
+          "args": {
+            "stops": [
+              "집",
+              "바꾼 곳",
+              "공원"
+            ],
+            "legs": [
+              {
+                "label": "x km",
+                "sub": "x ÷ {v1} 시간"
+              },
+              {
+                "label": "({D} − x) km",
+                "sub": "({D} − x) ÷ {v2} 시간"
+              }
+            ],
+            "total": "{D} km · 모두 {T}시간"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "stop-lbl:0",
+              "stop-lbl:2"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "move",
+            "k": "mover",
+            "dur": 2400
+          },
+          {
+            "act": "hl",
+            "k": "leg:0",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "leg:1",
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "걸어간 거리를 x km라 하면 달린 거리는 ({D} − x) km다.",
+        "걸은 시간: x ÷ {v1} = x/{v1} (시간)",
+        "달린 시간: ({D} − x) ÷ {v2} = ({D} − x)/{v2} (시간)",
+        "두 시간의 합이 {T}시간이므로 x/{v1} + ({D} − x)/{v2} = {T}",
+        "분모의 최소공배수 {lcm(v1,v2)}{eul(lcm(v1,v2))} 양변에 곱한다: {co(lcm(v1,v2)/v1)}x + {co(lcm(v1,v2)/v2)}({D} − x) = {T*lcm(v1,v2)}",
+        "괄호를 풀면 {co(lcm(v1,v2)/v1)}x + {lcm(v1,v2)/v2*D} − {co(lcm(v1,v2)/v2)}x = {T*lcm(v1,v2)}",
+        "정리하면 {co(lcm(v1,v2)/v1 - lcm(v1,v2)/v2)}x = {T*lcm(v1,v2) - lcm(v1,v2)/v2*D}, 곧 x = {x}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x/{v1} + ({D} − x)/{v2} = {T}",
+              {
+                "text": "{co(lcm(v1,v2)/v1)}x + {co(lcm(v1,v2)/v2)}({D} − x) = {T*lcm(v1,v2)}",
+                "hint": "양변에 {lcm(v1,v2)} 곱"
+              },
+              {
+                "text": "{co(lcm(v1,v2)/v1)}x + {lcm(v1,v2)/v2*D} − {co(lcm(v1,v2)/v2)}x = {T*lcm(v1,v2)}",
+                "hint": "괄호 전개 — 뒤의 x는 부호가 −"
+              },
+              {
+                "text": "{co(lcm(v1,v2)/v1 - lcm(v1,v2)/v2)}x = {T*lcm(v1,v2) - lcm(v1,v2)/v2*D}",
+                "hint": "동류항 정리·이항"
+              },
+              "따라서 x = {x}"
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [],
+        [],
+        [],
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "hint:3"
+          },
+          {
+            "act": "reveal",
+            "k": "line:4"
+          }
+        ]
+      ],
+      "sol3": "걸어간 거리 {x} km, 달린 거리 {D} − {x} = {y} km로 되짚어 본다. 걸은 시간은 {x} ÷ {v1} = {t1}시간, 달린 시간은 {y} ÷ {v2} = {t2}시간이므로 합이 {T}시간이다. 두 거리의 합도 {D} km로 맞다. 답은 {x} km다.",
+      "model_answer": "걸어간 거리를 x km라 하면 달린 거리는 ({D} − x) km이므로, 걸은 시간 x/{v1}시간과 달린 시간 ({D} − x)/{v2}시간의 합이 {T}시간이다. 즉 x/{v1} + ({D} − x)/{v2} = {T}이고, 양변에 {lcm(v1,v2)}{eul(lcm(v1,v2))} 곱해 정리하면 x = {x}이다. 실제로 걸은 시간 {t1}시간과 달린 시간 {t2}시간의 합이 {T}시간이므로 답은 {x} km다.",
+      "rubric": [
+        {
+          "element": "구간 나누기",
+          "points": 3,
+          "criterion": "걸은 거리를 x, 달린 거리를 ({D} − x)로 나타냈다."
+        },
+        {
+          "element": "식 세우기",
+          "points": 4,
+          "criterion": "구간별 시간의 합으로 x/{v1} + ({D} − x)/{v2} = {T}{eul(T)} 세웠다.",
+          "partial": "나머지 거리를 잘못 놓았으면 2점."
+        },
+        {
+          "element": "방정식 풀이",
+          "points": 3,
+          "criterion": "분모를 없애고 괄호를 풀어 x = {x}{eul(x)} 구했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {x} km로 단위와 함께 썼다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "두 구간의 시간 합이 {T}시간임을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "걸은 거리를 x로 두고도 달린 거리를 (전체 − x)가 아니라 x나 전체로 씀",
+          "on": "구간 나누기",
+          "effect": "불인정"
+        },
+        {
+          "text": "'두 구간의 시간의 합이 전체 시간'이라는 조건을 밝히지 않음",
+          "on": "식 세우기",
+          "effect": "부분"
+        },
+        {
+          "text": "괄호 (전체 − x)를 풀 때 x의 부호를 바꾸지 않음",
+          "on": "방정식 풀이",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

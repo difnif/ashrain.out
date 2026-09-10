@@ -1,0 +1,2125 @@
+{
+  "seed_id": "m2-2-tri-similar",
+  "category": "도형",
+  "title": "삼각형의 닮음 조건 — SAS 닮음, AA 닮음, 직각삼각형의 수선, 평행한 두 선분(맞꼭지각)",
+  "unit_id": "m2-2",
+  "concept_ids": [
+    "m2-2-06"
+  ],
+  "schema_id": "ef59d268-eaa0-454b-a77d-569e509ede99",
+  "schema_name": "삼각형 SAS 닮음 조건 응용 / AA 닮음 / 직각삼각형의 닮음 / 평행선과 닮음",
+  "source_item_ids": [],
+  "note": "출판사 평가자료 유형(TYPES.md 7.2)을 참고해 새로 씀. 모든 길이는 닮음비 u : w 와 배율 m, n, t 의 곱 — 대응변이 항상 정수. 좌표는 길이 그대로(등축)이므로 그림의 각 조건(∠ABC = ∠ADE, AH ⊥ BC 등)이 실제로 성립한다.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 110,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형의 닮음 조건 SSS·SAS·AA",
+        "닮은 도형의 대응변의 비"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "닮음조건",
+        "SAS닮음",
+        "AA닮음",
+        "직각삼각형의 닮음"
+      ],
+      "title": "SAS 닮음 — 공통인 각을 낀 두 변의 비가 같은 두 삼각형",
+      "skill": "∠A가 공통이고 AD : AC = AE : AB이면 △ADE ∽ △ACB임을 밝히고 대응변 DE ↔ CB에 닮음비 적용하기",
+      "variant_axis": {
+        "구하는 것": "BC / DE",
+        "닮음비": "12쌍",
+        "변의 배율": "m, n = 1~3 · t = 2~5"
+      },
+      "discriminates": "대응 순서(A↔A, D↔C, E↔B)를 바르게 잡아 DE와 BC(엇갈린 대응)를 짝짓는가",
+      "qtype": "short",
+      "difficulty": 4,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "BC",
+              "DE"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "1-2",
+              "2-3",
+              "3-4",
+              "2-5",
+              "3-5",
+              "4-5",
+              "1-3",
+              "3-7",
+              "4-7",
+              "5-7",
+              "5-6",
+              "5-8"
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              2,
+              5
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              2,
+              5
+            ]
+          }
+        },
+        {
+          "name": "t",
+          "values": {
+            "int": [
+              2,
+              6
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "wv",
+          "rows": {
+            "BC": {
+              "XS": "BC",
+              "uB": 1,
+              "XBC": "x",
+              "XDE": "",
+              "G5T": "[[seg(DE)]] = ",
+              "F1": "BC = ",
+              "LAW": "DE : BC = u : w"
+            },
+            "DE": {
+              "XS": "DE",
+              "uB": 0,
+              "XBC": "",
+              "XDE": "x",
+              "G5T": "[[seg(BC)]] = ",
+              "F1": "DE = ",
+              "LAW": "DE : BC = u : w"
+            }
+          }
+        },
+        {
+          "key": "r",
+          "rows": {
+            "1-2": {
+              "u": 1,
+              "w": 2
+            },
+            "2-3": {
+              "u": 2,
+              "w": 3
+            },
+            "3-4": {
+              "u": 3,
+              "w": 4
+            },
+            "2-5": {
+              "u": 2,
+              "w": 5
+            },
+            "3-5": {
+              "u": 3,
+              "w": 5
+            },
+            "4-5": {
+              "u": 4,
+              "w": 5
+            },
+            "1-3": {
+              "u": 1,
+              "w": 3
+            },
+            "3-7": {
+              "u": 3,
+              "w": 7
+            },
+            "4-7": {
+              "u": 4,
+              "w": 7
+            },
+            "5-7": {
+              "u": 5,
+              "w": 7
+            },
+            "5-6": {
+              "u": 5,
+              "w": 6
+            },
+            "5-8": {
+              "u": 5,
+              "w": 8
+            }
+          }
+        }
+      ],
+      "derive": {
+        "ad": "u*m",
+        "ae": "u*n",
+        "ac": "w*m",
+        "ab": "w*n",
+        "db": "w*n - u*m",
+        "ec": "w*m - u*n",
+        "de": "u*t",
+        "bc": "w*t",
+        "ans_v": "w*t*uB + u*t*(1 - uB)",
+        "g5": "u*t*uB + w*t*(1 - uB)",
+        "lbc": "w*t*(1 - uB)",
+        "lde": "u*t*uB",
+        "v1": "u*t*uB + w*t*(1 - uB)",
+        "cth": "(m*m + n*n - t*t)/(2*m*n)",
+        "s2": "sqrt(abs((1 - cth)/2))",
+        "c2": "sqrt(abs((1 + cth)/2))",
+        "L": "max(ab, ac, bc)",
+        "mn": "min(ad, db, ae, ec, de)",
+        "cB": "(n*n + t*t - m*m)/(2*n*t)",
+        "cC": "(m*m + t*t - n*n)/(2*m*t)"
+      },
+      "constraints": [
+        "m != n",
+        "t > abs(m - n)",
+        "t < m + n",
+        "2*cth > -1",
+        "100*cth < 76",
+        "100*cB <= 88",
+        "100*cC <= 88",
+        "10*mn >= L",
+        "ab <= 28",
+        "ac <= 28",
+        "ans_v != ad",
+        "ans_v != ae",
+        "ans_v != db",
+        "ans_v != ec",
+        "ans_v != g5"
+      ],
+      "cost_values": [
+        "ad",
+        "db",
+        "ae",
+        "ec",
+        "g5",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "ad*ab == ae*ac",
+        "de*w == bc*u",
+        "(uB == 1 and ans == bc) or (uB == 0 and ans == de)"
+      ],
+      "question": "다음 그림의 △ABC에서 두 점 D, E는 각각 변 AB, AC 위의 점이고 [[seg(AD)]] = {ad} cm, [[seg(DB)]] = {db} cm, [[seg(AE)]] = {ae} cm, [[seg(EC)]] = {ec} cm, {G5T}{g5} cm이다. [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                "{-ab*s2}",
+                "{-ab*c2}"
+              ],
+              "C": [
+                "{ac*s2}",
+                "{-ac*c2}"
+              ],
+              "D": [
+                "{-ad*s2}",
+                "{-ad*c2}"
+              ],
+              "E": [
+                "{ae*s2}",
+                "{-ae*c2}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "D",
+                "b": "A",
+                "label": "{ad}"
+              },
+              {
+                "a": "B",
+                "b": "D",
+                "label": "{db}"
+              },
+              {
+                "a": "A",
+                "b": "E",
+                "label": "{ae}"
+              },
+              {
+                "a": "E",
+                "b": "C",
+                "label": "{ec}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{lbc}"
+              },
+              {
+                "a": "D",
+                "b": "E",
+                "label": "{lde}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{XBC}"
+              },
+              {
+                "a": "D",
+                "b": "E",
+                "label": "{XDE}"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "△ADE와 △ACB를 비교한다(순서에 주의 — D는 C에, E는 B에 대응). ∠A는 공통이고 AD : AC = {ad} : {ac} = {u} : {w}, AE : AB = {ae} : {ab} = {u} : {w}{ro(w)} 끼인각을 낀 두 변의 비가 같으므로 SAS 닮음이다. 닮음비 {u} : {w}{ika(w)} DE : CB에도 적용된다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                "{-ab*s2}",
+                "{-ab*c2}"
+              ],
+              "C": [
+                "{ac*s2}",
+                "{-ac*c2}"
+              ],
+              "D": [
+                "{-ad*s2}",
+                "{-ad*c2}"
+              ],
+              "E": [
+                "{ae*s2}",
+                "{-ae*c2}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "D",
+                "b": "A",
+                "label": "{ad}"
+              },
+              {
+                "a": "B",
+                "b": "D",
+                "label": "{db}"
+              },
+              {
+                "a": "A",
+                "b": "E",
+                "label": "{ae}"
+              },
+              {
+                "a": "E",
+                "b": "C",
+                "label": "{ec}"
+              },
+              {
+                "a": "B",
+                "b": "C",
+                "label": "{bc}"
+              },
+              {
+                "a": "D",
+                "b": "E",
+                "label": "{de}"
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "B",
+                  "to": "C",
+                  "label": "•",
+                  "k": "arc:a"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{-ab*s2/2}",
+                  "{-ab*c2/2}"
+                ],
+                "text": "AB = {ab}",
+                "dx": -30,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:ab"
+              },
+              {
+                "at": [
+                  "{ac*s2/2}",
+                  "{-ac*c2/2}"
+                ],
+                "text": "AC = {ac}",
+                "dx": 30,
+                "dy": 4,
+                "accent": true,
+                "k": "lbl:ac"
+              }
+            ],
+            "shade": [
+              [
+                "A",
+                "D",
+                "E"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "arc:a",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "shade:0",
+              "lbl:ab",
+              "lbl:ac"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:D-E",
+              "seg:B-C",
+              "seglbl:D-E",
+              "seglbl:B-C"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "AB = {ad} + {db} = {ab}, AC = {ae} + {ec} = {ac}",
+        "△ADE와 △ACB에서 ∠A는 공통, AD : AC = {ad} : {ac} = {u} : {w}, AE : AB = {ae} : {ab} = {u} : {w}",
+        "따라서 △ADE ∽ △ACB (SAS 닮음), 닮음비 {u} : {w}",
+        "DE : CB = {u} : {w}이므로 {F1}{v1} × [[frac({w*uB + u*(1 - uB)}, {u*uB + w*(1 - uB)})]] = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "AD : AC = {u} : {w}, AE : AB = {u} : {w}",
+                "hint": "끼인각 ∠A 공통"
+              },
+              {
+                "text": "△ADE ∽ △ACB",
+                "hint": "SAS 닮음 (D ↔ C, E ↔ B)"
+              },
+              {
+                "text": "DE : CB = {u} : {w} → {XS} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [],
+        []
+      ],
+      "sol_check": "AD × AB = {ad} × {ab} = {ad*ab}, AE × AC = {ae} × {ac} = {ae*ac}{ro(ae*ac)} 같고, DE : BC = {de} : {bc} = {u} : {w}다. 답은 {ans_v} cm다.",
+      "model_answer": "△ADE와 △ACB에서 ∠A는 공통이고 AD : AC = {ad} : {ac} = {u} : {w}, AE : AB = {ae} : {ab} = {u} : {w}이므로 △ADE ∽ △ACB(SAS 닮음)이다. 닮음비가 {u} : {w}이므로 DE : CB = {u} : {w}에서 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "닮음 밝히기",
+          "points": 3,
+          "criterion": "∠A 공통과 두 변의 비 {u} : {w}에서 △ADE ∽ △ACB(SAS)임을 대응 순서와 함께 밝혔다.",
+          "partial": "닮음이라고만 쓰고 조건을 밝히지 않았으면 1점."
+        },
+        {
+          "element": "대응변의 비",
+          "points": 2,
+          "criterion": "DE : CB = {u} : {w}{eul(w)} 세워 {XS}{eul(XS)} 구했다.",
+          "partial": "DE를 BC와 평행한 것처럼 AD : AB로 잘못 짝지었으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-tri-similar-t1",
+      "pitfalls": [
+        {
+          "text": "DE ∥ BC인 것처럼 보고 AD : AB = DE : BC로 잘못 세움(대응은 D ↔ C, E ↔ B)",
+          "on": "대응변의 비",
+          "effect": "불인정"
+        },
+        {
+          "text": "닮음 조건(끼인각 공통 + 두 변의 비)을 밝히지 않고 비례식만 씀",
+          "on": "닮음 밝히기",
+          "effect": "부분"
+        },
+        {
+          "text": "AD : DB = {ad} : {db}처럼 부분끼리의 비를 닮음비로 씀",
+          "on": "대응변의 비",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 110,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형의 닮음 조건 SSS·SAS·AA",
+        "닮은 도형의 대응변의 비"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "닮음조건",
+        "SAS닮음",
+        "AA닮음",
+        "직각삼각형의 닮음"
+      ],
+      "title": "AA 닮음 — 같은 각이 표시된 두 삼각형",
+      "skill": "∠A 공통, ∠ABC = ∠ADE에서 △ABC ∽ △ADE를 밝히고 대응변의 비로 길이 구하기",
+      "variant_axis": {
+        "구하는 것": "CD / EB",
+        "닮음비": "12쌍",
+        "배율": "m, n = 1~3"
+      },
+      "discriminates": "같은 각끼리 대응시켜(B ↔ D, C ↔ E) AB : AD = AC : AE로 세우는가",
+      "qtype": "short",
+      "difficulty": 4,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "CD",
+              "EB"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "1-2",
+              "2-3",
+              "3-4",
+              "2-5",
+              "3-5",
+              "4-5",
+              "1-3",
+              "3-7",
+              "4-7",
+              "5-7",
+              "5-6",
+              "5-8"
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "wv",
+          "rows": {
+            "CD": {
+              "XS": "CD",
+              "uD": 1,
+              "XDC": "x",
+              "XEB": "",
+              "G3T": "[[seg(AB)]] = ",
+              "g3n": 1,
+              "F1": "CD = AC − AD = ",
+              "F2": " − ",
+              "LAW": "AB : AD = AC : AE"
+            },
+            "EB": {
+              "XS": "EB",
+              "uD": 0,
+              "XDC": "",
+              "XEB": "x",
+              "G3T": "[[seg(AC)]] = ",
+              "g3n": 0,
+              "F1": "EB = AB − AE = ",
+              "F2": " − ",
+              "LAW": "AB : AD = AC : AE"
+            }
+          }
+        },
+        {
+          "key": "r",
+          "rows": {
+            "1-2": {
+              "u": 1,
+              "w": 2
+            },
+            "2-3": {
+              "u": 2,
+              "w": 3
+            },
+            "3-4": {
+              "u": 3,
+              "w": 4
+            },
+            "2-5": {
+              "u": 2,
+              "w": 5
+            },
+            "3-5": {
+              "u": 3,
+              "w": 5
+            },
+            "4-5": {
+              "u": 4,
+              "w": 5
+            },
+            "1-3": {
+              "u": 1,
+              "w": 3
+            },
+            "3-7": {
+              "u": 3,
+              "w": 7
+            },
+            "4-7": {
+              "u": 4,
+              "w": 7
+            },
+            "5-7": {
+              "u": 5,
+              "w": 7
+            },
+            "5-6": {
+              "u": 5,
+              "w": 6
+            },
+            "5-8": {
+              "u": 5,
+              "w": 8
+            }
+          }
+        }
+      ],
+      "derive": {
+        "ad": "u*m",
+        "ab": "w*m",
+        "ae": "u*n",
+        "ac": "w*n",
+        "dc": "w*n - u*m",
+        "eb": "w*m - u*n",
+        "ans_v": "(w*n - u*m)*uD + (w*m - u*n)*(1 - uD)",
+        "g3": "w*m*g3n + w*n*(1 - g3n)",
+        "ldc": "(w*n - u*m)*(1 - uD)",
+        "leb": "(w*m - u*n)*uD",
+        "v1": "w*n*uD + w*m*(1 - uD)",
+        "v2": "u*m*uD + u*n*(1 - uD)",
+        "L": "max(ab, ac)",
+        "mn": "min(ad, ae, dc, eb)"
+      },
+      "constraints": [
+        "dc >= 1",
+        "eb >= 1",
+        "2*m >= n",
+        "2*n >= m",
+        "10*mn >= L",
+        "ab <= 24",
+        "ac <= 24",
+        "ans_v != ad",
+        "ans_v != ae",
+        "ans_v != g3"
+      ],
+      "cost_values": [
+        "ad",
+        "ae",
+        "g3",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "ad*ac == ae*ab",
+        "(uD == 1 and ans == dc) or (uD == 0 and ans == eb)"
+      ],
+      "question": "다음 그림의 △ABC에서 두 점 D, E는 각각 변 AC, AB 위의 점이고 [[angle(ABC)]] = [[angle(ADE)]]이다. [[seg(AD)]] = {ad} cm, [[seg(AE)]] = {ae} cm, {G3T}{g3} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                "{-ab*sin(pi*36/180)}",
+                "{-ab*cos(pi*36/180)}"
+              ],
+              "C": [
+                "{ac*sin(pi*34/180)}",
+                "{-ac*cos(pi*34/180)}"
+              ],
+              "E": [
+                "{-ae*sin(pi*36/180)}",
+                "{-ae*cos(pi*36/180)}"
+              ],
+              "D": [
+                "{ad*sin(pi*34/180)}",
+                "{-ad*cos(pi*34/180)}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "E",
+                "label": "{ae}"
+              },
+              {
+                "a": "E",
+                "b": "B",
+                "label": "{leb}"
+              },
+              {
+                "a": "D",
+                "b": "A",
+                "label": "{ad}"
+              },
+              {
+                "a": "C",
+                "b": "D",
+                "label": "{ldc}"
+              },
+              [
+                "B",
+                "C"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              {
+                "a": "E",
+                "b": "B",
+                "label": "{XEB}"
+              },
+              {
+                "a": "C",
+                "b": "D",
+                "label": "{XDC}"
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "label": "•",
+                  "k": "arc:b"
+                },
+                {
+                  "at": "D",
+                  "from": "E",
+                  "to": "A",
+                  "label": "•",
+                  "k": "arc:d"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "△ABC와 △ADE에서 ∠A는 공통이고 ∠ABC = ∠ADE이므로 두 쌍의 각이 같다 — AA 닮음이다. 같은 각끼리 대응하므로 B ↔ D, C ↔ E이고, 대응변의 비 AB : AD = AC : AE = BC : DE가 같다. 여기서 모르는 변을 구한 뒤 부분 길이(CD 또는 EB)로 옮긴다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                "{-ab*sin(pi*36/180)}",
+                "{-ab*cos(pi*36/180)}"
+              ],
+              "C": [
+                "{ac*sin(pi*34/180)}",
+                "{-ac*cos(pi*34/180)}"
+              ],
+              "E": [
+                "{-ae*sin(pi*36/180)}",
+                "{-ae*cos(pi*36/180)}"
+              ],
+              "D": [
+                "{ad*sin(pi*34/180)}",
+                "{-ad*cos(pi*34/180)}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "A",
+                "b": "E",
+                "label": "{ae}"
+              },
+              {
+                "a": "E",
+                "b": "B",
+                "label": "{eb}"
+              },
+              {
+                "a": "D",
+                "b": "A",
+                "label": "{ad}"
+              },
+              {
+                "a": "C",
+                "b": "D",
+                "label": "{dc}"
+              },
+              [
+                "B",
+                "C"
+              ],
+              [
+                "D",
+                "E"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "label": "•",
+                  "k": "arc:b"
+                },
+                {
+                  "at": "D",
+                  "from": "E",
+                  "to": "A",
+                  "label": "•",
+                  "k": "arc:d"
+                },
+                {
+                  "at": "A",
+                  "from": "B",
+                  "to": "C",
+                  "label": "∘",
+                  "k": "arc:a"
+                }
+              ]
+            },
+            "shade": [
+              [
+                "A",
+                "D",
+                "E"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:a",
+              "arc:b",
+              "arc:d"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "shade:0",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seglbl:E-B",
+              "seglbl:C-D"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "△ABC와 △ADE에서 ∠A는 공통, ∠ABC = ∠ADE → △ABC ∽ △ADE (AA 닮음), 대응은 B ↔ D, C ↔ E",
+        "AB : AD = AC : AE이므로 {ab} : {ad} = {ac} : {ae} (닮음비 {w} : {u})",
+        "{F1}{v1}{F2}{v2} = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "△ABC ∽ △ADE",
+                "hint": "AA 닮음 (B ↔ D, C ↔ E)"
+              },
+              {
+                "text": "AB : AD = AC : AE = {w} : {u}",
+                "hint": "대응변의 비"
+              },
+              {
+                "text": "{F1}{v1}{F2}{v2} = {ans_v}",
+                "hint": "부분 길이"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "AB × AE = {ab} × {ae} = {ab*ae}, AD × AC = {ad} × {ac} = {ad*ac}{ro(ad*ac)} 같아 비례식이 성립한다. CD = {dc}, EB = {eb}다. 답은 {ans_v} cm다.",
+      "model_answer": "△ABC와 △ADE에서 ∠A는 공통이고 ∠ABC = ∠ADE이므로 △ABC ∽ △ADE(AA 닮음)이다. AB : AD = AC : AE에서 {ab} : {ad} = {ac} : {ae}이고 {F1}{v1}{F2}{v2} = {ans_v}이다. 따라서 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "닮음 밝히기",
+          "points": 3,
+          "criterion": "∠A 공통, ∠ABC = ∠ADE에서 △ABC ∽ △ADE(AA)임을 대응 순서와 함께 밝혔다.",
+          "partial": "닮음이라고만 쓰고 조건을 밝히지 않았으면 1점."
+        },
+        {
+          "element": "비례식",
+          "points": 2,
+          "criterion": "AB : AD = AC : AE를 세워 모르는 변을 구했다.",
+          "partial": "대응변을 잘못 짝지었으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "전체 변의 길이를 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-tri-similar-t2",
+      "pitfalls": [
+        {
+          "text": "같은 각끼리 대응시키지 않고 AB : AE = AC : AD로 세움",
+          "on": "비례식",
+          "effect": "불인정"
+        },
+        {
+          "text": "전체 변({g3})을 구하고 부분 길이로 옮기지 않음",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "AA 닮음의 두 각(∠A 공통, ∠ABC = ∠ADE)을 밝히지 않음",
+          "on": "닮음 밝히기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 110,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형의 닮음 조건 AA",
+        "직각삼각형에서 직각을 낀 두 각의 합은 90°"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "닮음조건",
+        "SAS닮음",
+        "AA닮음",
+        "직각삼각형의 닮음"
+      ],
+      "title": "직각삼각형의 닮음 — 빗변에 내린 수선 AH² = BH × CH",
+      "skill": "∠A = 90°, AH ⊥ BC에서 △ABH ∽ △CAH임을 밝히고 AH : CH = BH : AH를 세우기",
+      "variant_axis": {
+        "구하는 것": "AH / BH",
+        "비": "12쌍 × k = 1~4"
+      },
+      "discriminates": "두 작은 직각삼각형이 닮음(AA)임을 밝히고 AH가 두 삼각형에서 서로 다른 변에 대응함을 읽는가",
+      "qtype": "short",
+      "difficulty": 4,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "AH",
+              "BH"
+            ]
+          }
+        },
+        {
+          "name": "pr",
+          "values": {
+            "in": [
+              "1-2",
+              "2-3",
+              "1-3",
+              "3-4",
+              "2-5",
+              "3-5",
+              "2-1",
+              "3-2",
+              "4-3",
+              "3-1",
+              "5-2",
+              "5-3"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "wv",
+          "rows": {
+            "AH": {
+              "XS": "AH",
+              "uA": 1,
+              "uB": 0,
+              "XAH": "x",
+              "XBH": "",
+              "G1T": "[[seg(BH)]] = ",
+              "G2T": "[[seg(CH)]] = ",
+              "F1": "AH² = BH × CH = ",
+              "F2": " × ",
+              "F3": " = ",
+              "LAW": "AH² = BH × CH"
+            },
+            "BH": {
+              "XS": "BH",
+              "uA": 0,
+              "uB": 1,
+              "XAH": "",
+              "XBH": "x",
+              "G1T": "[[seg(AH)]] = ",
+              "G2T": "[[seg(CH)]] = ",
+              "F1": "BH = AH² ÷ CH = ",
+              "F2": "² ÷ ",
+              "F3": " = ",
+              "LAW": "BH = AH² ÷ CH"
+            }
+          }
+        },
+        {
+          "key": "pr",
+          "rows": {
+            "1-2": {
+              "mm": 1,
+              "nn": 2
+            },
+            "2-3": {
+              "mm": 2,
+              "nn": 3
+            },
+            "1-3": {
+              "mm": 1,
+              "nn": 3
+            },
+            "3-4": {
+              "mm": 3,
+              "nn": 4
+            },
+            "2-5": {
+              "mm": 2,
+              "nn": 5
+            },
+            "3-5": {
+              "mm": 3,
+              "nn": 5
+            },
+            "2-1": {
+              "mm": 2,
+              "nn": 1
+            },
+            "3-2": {
+              "mm": 3,
+              "nn": 2
+            },
+            "4-3": {
+              "mm": 4,
+              "nn": 3
+            },
+            "3-1": {
+              "mm": 3,
+              "nn": 1
+            },
+            "5-2": {
+              "mm": 5,
+              "nn": 2
+            },
+            "5-3": {
+              "mm": 5,
+              "nn": 3
+            }
+          }
+        }
+      ],
+      "derive": {
+        "bh": "k*mm*mm",
+        "ch": "k*nn*nn",
+        "ah": "k*mm*nn",
+        "ans_v": "ah*uA + bh*uB",
+        "g1": "bh*uA + ah*uB",
+        "lbh": "bh*uA",
+        "lah": "ah*uB",
+        "v1": "bh*uA + ah*uB",
+        "v2": "ch",
+        "v3": "ah*ah*uA + bh*uB"
+      },
+      "constraints": [
+        "bh <= 36",
+        "ch <= 36",
+        "bh >= 2",
+        "ch >= 2",
+        "25*bh >= 3*(bh + ch)",
+        "25*ch >= 3*(bh + ch)",
+        "ans_v != ch",
+        "ans_v != g1"
+      ],
+      "cost_values": [
+        "bh",
+        "ch",
+        "ah",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "ah*ah == bh*ch",
+        "(uA == 1 and ans == ah) or (uB == 1 and ans == bh)"
+      ],
+      "question": "다음 그림과 같이 [[angle(A)]] = [[deg(90)]]인 직각삼각형 ABC에서 점 H는 꼭짓점 A에서 빗변 BC에 내린 수선의 발이다. {G1T}{g1} cm, {G2T}{ch} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{ah}"
+              ],
+              "B": [
+                "{-bh}",
+                0
+              ],
+              "C": [
+                "{ch}",
+                0
+              ],
+              "H": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              {
+                "a": "B",
+                "b": "H",
+                "label": "{lbh}"
+              },
+              {
+                "a": "H",
+                "b": "C",
+                "label": "{ch}"
+              },
+              [
+                "C",
+                "A"
+              ],
+              {
+                "a": "H",
+                "b": "A",
+                "label": "{lah}"
+              },
+              {
+                "a": "B",
+                "b": "H",
+                "label": "{XBH}"
+              },
+              {
+                "a": "H",
+                "b": "A",
+                "label": "{XAH}"
+              }
+            ],
+            "marks": {
+              "right": [
+                [
+                  "B",
+                  "A",
+                  "C"
+                ],
+                [
+                  "A",
+                  "H",
+                  "C"
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "△ABH와 △CAH는 모두 H에서 직각이고, ∠BAH = 90° − ∠B = ∠C이므로 AA 닮음이다(A ↔ C, B ↔ A, H ↔ H). 대응변의 비 BH : AH = AH : CH에서 AH² = BH × CH가 나온다 — 수선 AH가 한 삼각형에서는 긴 변, 다른 삼각형에서는 짧은 변으로 대응하는 것이 핵심이다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{ah}"
+              ],
+              "B": [
+                "{-bh}",
+                0
+              ],
+              "C": [
+                "{ch}",
+                0
+              ],
+              "H": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              {
+                "a": "B",
+                "b": "H",
+                "label": "{bh}"
+              },
+              {
+                "a": "H",
+                "b": "C",
+                "label": "{ch}"
+              },
+              [
+                "C",
+                "A"
+              ],
+              {
+                "a": "H",
+                "b": "A",
+                "label": "{ah}"
+              }
+            ],
+            "marks": {
+              "right": [
+                [
+                  "B",
+                  "A",
+                  "C"
+                ],
+                [
+                  "A",
+                  "H",
+                  "C"
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "B",
+                  "from": "H",
+                  "to": "A",
+                  "label": "•",
+                  "k": "arc:b"
+                },
+                {
+                  "at": "A",
+                  "from": "C",
+                  "to": "H",
+                  "label": "•",
+                  "k": "arc:a1"
+                },
+                {
+                  "at": "C",
+                  "from": "A",
+                  "to": "H",
+                  "label": "×",
+                  "k": "arc:c"
+                },
+                {
+                  "at": "A",
+                  "from": "H",
+                  "to": "B",
+                  "label": "×",
+                  "k": "arc:a2"
+                }
+              ]
+            },
+            "shade": [
+              [
+                "A",
+                "B",
+                "H"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "right:A",
+              "right:H"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:b",
+              "arc:a1",
+              "arc:c",
+              "arc:a2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "shade:0",
+              "seglbl:H-A"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "△ABH와 △CAH에서 ∠AHB = ∠CHA = 90°, ∠BAH = ∠ACH (= 90° − ∠B) → △ABH ∽ △CAH (AA 닮음)",
+        "대응변의 비: BH : AH = AH : CH, 즉 AH² = BH × CH",
+        "{F1}{v1}{F2}{v2}{F3}{v3}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "△ABH ∽ △CAH",
+                "hint": "AA 닮음 (직각 + ∠BAH = ∠C)"
+              },
+              {
+                "text": "BH : AH = AH : CH → AH² = BH × CH",
+                "hint": "대응변"
+              },
+              {
+                "text": "{F1}{v1}{F2}{v2}{F3}{v3} → {XS} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "AH² = {ah}² = {ah*ah}이고 BH × CH = {bh} × {ch} = {bh*ch}{ro(bh*ch)} 같다. 답은 {ans_v} cm다.",
+      "model_answer": "△ABH와 △CAH에서 ∠AHB = ∠CHA = 90°이고 ∠BAH = ∠ACH이므로 △ABH ∽ △CAH(AA 닮음)이다. BH : AH = AH : CH에서 AH² = BH × CH이고 {F1}{v1}{F2}{v2}{F3}{v3}이다. 따라서 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "닮음 밝히기",
+          "points": 3,
+          "criterion": "△ABH ∽ △CAH(AA)임을 두 각의 상등과 함께 밝혔다.",
+          "partial": "닮음이라고만 썼으면 1점."
+        },
+        {
+          "element": "비례식",
+          "points": 2,
+          "criterion": "BH : AH = AH : CH(AH² = BH × CH)를 세워 계산했다.",
+          "partial": "AH를 같은 위치의 변으로 잘못 대응시켰으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "제곱한 값을 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-tri-similar-t3",
+      "pitfalls": [
+        {
+          "text": "AH² = BH × CH 대신 AH = BH × CH 또는 AH² = BH + CH로 씀",
+          "on": "비례식",
+          "effect": "불인정"
+        },
+        {
+          "text": "AH를 두 삼각형에서 같은 위치의 변으로 대응시켜 AH : BH = AH : CH로 세움",
+          "on": "비례식",
+          "effect": "불인정"
+        },
+        {
+          "text": "닮음의 근거(직각과 ∠BAH = ∠C)를 밝히지 않음",
+          "on": "닮음 밝히기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 100,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형의 닮음 조건 AA",
+        "평행선의 엇각",
+        "맞꼭지각"
+      ],
+      "ops": [
+        "비례"
+      ],
+      "tags": [
+        "닮음조건",
+        "SAS닮음",
+        "AA닮음",
+        "직각삼각형의 닮음"
+      ],
+      "title": "맞꼭지각과 엇각 — 평행한 두 선분이 만드는 닮은 삼각형",
+      "skill": "AB ∥ CD에서 △OAB ∽ △ODC(AA)임을 밝히고 OA : OD = OB : OC = AB : DC로 길이 구하기",
+      "variant_axis": {
+        "구하는 것": "DC / OB / OD",
+        "닮음비": "12쌍"
+      },
+      "discriminates": "맞꼭지각과 엇각으로 AA 닮음을 밝히고 대응(A ↔ D, B ↔ C)을 바르게 잡는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "wv",
+          "values": {
+            "in": [
+              "DC",
+              "OB",
+              "OD"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "1-2",
+              "2-3",
+              "3-4",
+              "2-5",
+              "3-5",
+              "4-5",
+              "1-3",
+              "3-7",
+              "4-7",
+              "5-7",
+              "5-6",
+              "5-8"
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "t",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "wv",
+          "rows": {
+            "DC": {
+              "XS": "DC",
+              "i1": 1,
+              "i2": 0,
+              "i3": 0,
+              "XDC": "x",
+              "XOB": "",
+              "XOD": "",
+              "G2T": "[[seg(OD)]] = ",
+              "G3T": "[[seg(AB)]] = ",
+              "F1": "DC = ",
+              "LAW": "AB : DC = u : w"
+            },
+            "OB": {
+              "XS": "OB",
+              "i1": 0,
+              "i2": 1,
+              "i3": 0,
+              "XDC": "",
+              "XOB": "x",
+              "XOD": "",
+              "G2T": "[[seg(OD)]] = ",
+              "G3T": "[[seg(OC)]] = ",
+              "F1": "OB = ",
+              "LAW": "OB : OC = u : w"
+            },
+            "OD": {
+              "XS": "OD",
+              "i1": 0,
+              "i2": 0,
+              "i3": 1,
+              "XDC": "",
+              "XOB": "",
+              "XOD": "x",
+              "G2T": "[[seg(AB)]] = ",
+              "G3T": "[[seg(DC)]] = ",
+              "F1": "OD = ",
+              "LAW": "OA : OD = u : w"
+            }
+          }
+        },
+        {
+          "key": "r",
+          "rows": {
+            "1-2": {
+              "u": 1,
+              "w": 2
+            },
+            "2-3": {
+              "u": 2,
+              "w": 3
+            },
+            "3-4": {
+              "u": 3,
+              "w": 4
+            },
+            "2-5": {
+              "u": 2,
+              "w": 5
+            },
+            "3-5": {
+              "u": 3,
+              "w": 5
+            },
+            "4-5": {
+              "u": 4,
+              "w": 5
+            },
+            "1-3": {
+              "u": 1,
+              "w": 3
+            },
+            "3-7": {
+              "u": 3,
+              "w": 7
+            },
+            "4-7": {
+              "u": 4,
+              "w": 7
+            },
+            "5-7": {
+              "u": 5,
+              "w": 7
+            },
+            "5-6": {
+              "u": 5,
+              "w": 6
+            },
+            "5-8": {
+              "u": 5,
+              "w": 8
+            }
+          }
+        }
+      ],
+      "derive": {
+        "oa": "u*m",
+        "od": "w*m",
+        "ob": "u*n",
+        "oc": "w*n",
+        "ab": "u*t",
+        "dc": "w*t",
+        "ans_v": "w*t*i1 + u*n*i2 + w*m*i3",
+        "g2": "w*m*(i1 + i2) + u*t*i3",
+        "g3": "u*t*i1 + w*n*i2 + w*t*i3",
+        "lod": "w*m*(i1 + i2)",
+        "loc": "w*n*i2",
+        "lab": "u*t*(i1 + i3)",
+        "ldc": "w*t*i3",
+        "v1": "u*t*i1 + w*n*i2 + u*m*i3",
+        "cth": "(m*m + n*n - t*t)/(2*m*n)",
+        "s2": "sqrt(abs((1 - cth)/2))",
+        "c2": "sqrt(abs((1 + cth)/2))"
+      },
+      "constraints": [
+        "m != n or t != m",
+        "t > abs(m - n)",
+        "t < m + n",
+        "10*cth <= 7",
+        "10*cth >= -7",
+        "od <= 21",
+        "oc <= 21",
+        "dc <= 21",
+        "ans_v != oa",
+        "ans_v != g2",
+        "ans_v != g3"
+      ],
+      "cost_values": [
+        "oa",
+        "g2",
+        "g3",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "oa*dc == od*ab",
+        "ob*od == oa*oc",
+        "(i1 == 1 and ans == dc) or (i2 == 1 and ans == ob) or (i3 == 1 and ans == od)"
+      ],
+      "question": "다음 그림에서 [[seg(AB)]] ∥ [[seg(CD)]]이고 두 선분 AD, BC의 교점을 O라고 하자. [[seg(OA)]] = {oa} cm, {G2T}{g2} cm, {G3T}{g3} cm일 때, [[seg({XS})]]의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "O": [
+                0,
+                0
+              ],
+              "A": [
+                "{-oa*s2}",
+                "{oa*c2}"
+              ],
+              "B": [
+                "{ob*s2}",
+                "{ob*c2}"
+              ],
+              "D": [
+                "{od*s2}",
+                "{-od*c2}"
+              ],
+              "C": [
+                "{-oc*s2}",
+                "{-oc*c2}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "O",
+                "b": "A",
+                "label": "{oa}"
+              },
+              {
+                "a": "D",
+                "b": "O",
+                "label": "{lod}"
+              },
+              {
+                "a": "O",
+                "b": "C",
+                "label": "{loc}"
+              },
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{lab}"
+              },
+              {
+                "a": "C",
+                "b": "D",
+                "label": "{ldc}"
+              },
+              {
+                "a": "B",
+                "b": "O",
+                "label": "{XOB}"
+              },
+              {
+                "a": "D",
+                "b": "O",
+                "label": "{XOD}"
+              },
+              {
+                "a": "C",
+                "b": "D",
+                "label": "{XDC}"
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "O",
+                  "from": "A",
+                  "to": "B",
+                  "k": "arc:o1"
+                },
+                {
+                  "at": "O",
+                  "from": "C",
+                  "to": "D",
+                  "k": "arc:o2"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v} cm"
+      ],
+      "sol1": "AB ∥ CD이므로 엇각 ∠OAB = ∠ODC, ∠OBA = ∠OCD이고(맞꼭지각 ∠AOB = ∠DOC도 같다), △OAB와 △ODC는 AA 닮음이다. 대응은 A ↔ D, B ↔ C이므로 OA : OD = OB : OC = AB : DC — 알려진 한 쌍의 대응변에서 닮음비를 읽고 묻는 변에 적용한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "O": [
+                0,
+                0
+              ],
+              "A": [
+                "{-oa*s2}",
+                "{oa*c2}"
+              ],
+              "B": [
+                "{ob*s2}",
+                "{ob*c2}"
+              ],
+              "D": [
+                "{od*s2}",
+                "{-od*c2}"
+              ],
+              "C": [
+                "{-oc*s2}",
+                "{-oc*c2}"
+              ]
+            },
+            "segs": [
+              {
+                "a": "O",
+                "b": "A",
+                "label": "{oa}"
+              },
+              {
+                "a": "B",
+                "b": "O",
+                "label": "{ob}"
+              },
+              {
+                "a": "D",
+                "b": "O",
+                "label": "{od}"
+              },
+              {
+                "a": "O",
+                "b": "C",
+                "label": "{oc}"
+              },
+              {
+                "a": "A",
+                "b": "B",
+                "label": "{ab}"
+              },
+              {
+                "a": "C",
+                "b": "D",
+                "label": "{dc}"
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "O",
+                  "from": "A",
+                  "to": "B",
+                  "k": "arc:o1"
+                },
+                {
+                  "at": "O",
+                  "from": "C",
+                  "to": "D",
+                  "k": "arc:o2"
+                },
+                {
+                  "at": "A",
+                  "from": "O",
+                  "to": "B",
+                  "label": "•",
+                  "k": "arc:a"
+                },
+                {
+                  "at": "D",
+                  "from": "C",
+                  "to": "O",
+                  "label": "•",
+                  "k": "arc:d"
+                }
+              ]
+            },
+            "shade": [
+              [
+                "O",
+                "A",
+                "B"
+              ]
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:o1",
+              "arc:o2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:a",
+              "arc:d"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "shade:0",
+              "seg:C-D"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "AB ∥ CD이므로 ∠OAB = ∠ODC (엇각), ∠AOB = ∠DOC (맞꼭지각) → △OAB ∽ △ODC (AA 닮음)",
+        "대응은 A ↔ D, B ↔ C: OA : OD = OB : OC = AB : DC, 닮음비 {u} : {w}",
+        "{F1}{v1} × [[frac({w*(i1 + i3) + u*i2}, {u*(i1 + i3) + w*i2})]] = {ans_v}",
+        "따라서 {XS} = {ans_v} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "△OAB ∽ △ODC",
+                "hint": "엇각 + 맞꼭지각 (AA)"
+              },
+              {
+                "text": "OA : OD = OB : OC = AB : DC = {u} : {w}",
+                "hint": "대응 A ↔ D, B ↔ C"
+              },
+              {
+                "text": "{XS} = {ans_v}",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "OA : OD = {oa} : {od}, OB : OC = {ob} : {oc}, AB : DC = {ab} : {dc}{ika(dc)} 모두 {u} : {w}{ro(w)} 같다. 답은 {ans_v} cm다.",
+      "model_answer": "AB ∥ CD이므로 엇각과 맞꼭지각에 의해 △OAB ∽ △ODC(AA 닮음)이고, 대응변의 비 OA : OD = OB : OC = AB : DC = {u} : {w}이다. 따라서 {XS} = {ans_v} cm다.",
+      "rubric": [
+        {
+          "element": "닮음 밝히기",
+          "points": 3,
+          "criterion": "엇각(또는 맞꼭지각)으로 △OAB ∽ △ODC(AA)임을 대응 순서와 함께 밝혔다.",
+          "partial": "닮음이라고만 썼으면 1점."
+        },
+        {
+          "element": "비례식",
+          "points": 2,
+          "criterion": "닮음비 {u} : {w}{eul(w)} 읽어 {XS}의 비례식을 세웠다.",
+          "partial": "대응을 A ↔ C처럼 잘못 잡았으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{XS} = {ans_v} cm를 답했다.",
+          "partial": "단위가 없으면 1점."
+        }
+      ],
+      "id": "m2-2-tri-similar-t4",
+      "pitfalls": [
+        {
+          "text": "대응을 A ↔ C, B ↔ D로 잘못 잡아 OA : OC = OB : OD로 세움",
+          "on": "비례식",
+          "effect": "불인정"
+        },
+        {
+          "text": "엇각·맞꼭지각으로 닮음을 밝히지 않고 비례식만 씀",
+          "on": "닮음 밝히기",
+          "effect": "부분"
+        },
+        {
+          "text": "닮음비 {u} : {w}를 거꾸로 적용함",
+          "on": "비례식",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

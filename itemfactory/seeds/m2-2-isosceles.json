@@ -1,0 +1,2299 @@
+{
+  "seed_id": "m2-2-isosceles",
+  "category": "도형",
+  "title": "이등변삼각형의 성질 — 꼭지각·밑각, 연쇄 각, 수선과 넓이, 접기, 외각 이등분선",
+  "unit_id": "m2-2",
+  "concept_ids": [
+    "m2-2-01"
+  ],
+  "schema_id": "d9d13b27-3a9a-4e78-ad94-8674c540c5a6",
+  "schema_name": "이등변삼각형 두 밑각 크기 / 성질의 활용(연쇄·접기·외각 이등분선)",
+  "source_item_ids": [],
+  "note": "출판사 평가자료 유형(TYPES.md 5.1)을 참고해 새로 씀. 좌표는 AB = AC = 1(또는 BC = 1)로 두고 각에서 직접 계산 — 접기(t4)의 E는 EA = EB, 외각 이등분선(t5)의 D는 두 이등분선의 교점을 tan 으로 푼 값. t2는 (주어진 각 × 구하는 각) 합성 키.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 60,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형의 내각의 합 180°",
+        "이등변삼각형의 두 밑각은 같다"
+      ],
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "tags": [
+        "이등변삼각형",
+        "밑각",
+        "꼭지각"
+      ],
+      "title": "이등변삼각형 — 꼭지각 ↔ 밑각",
+      "skill": "두 밑각이 같음을 쓰고 내각의 합 180°로 나머지 각 구하기",
+      "variant_axis": {
+        "주어진 것": "꼭지각 / 밑각",
+        "꼭지각": "30°~130° (짝수)"
+      },
+      "discriminates": "AB = AC에서 ∠B = ∠C를 끌어내고, 180°에서 빼는 것을 2로 나누거나 2배하는가",
+      "qtype": "short",
+      "difficulty": 1,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "apex",
+              "base"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              30,
+              32,
+              34,
+              36,
+              38,
+              40,
+              42,
+              44,
+              46,
+              48,
+              50,
+              52,
+              54,
+              56,
+              58,
+              62,
+              64,
+              66,
+              68,
+              70,
+              72,
+              74,
+              76,
+              78,
+              80,
+              82,
+              84,
+              86,
+              88,
+              90,
+              92,
+              94,
+              96,
+              98,
+              100,
+              102,
+              104,
+              106,
+              108,
+              110,
+              112,
+              114,
+              116,
+              118,
+              120,
+              122,
+              124,
+              126,
+              128,
+              130
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "apex": {
+            "GQ": "A",
+            "XQ": "B",
+            "isA": 1,
+            "GA": "A",
+            "GF": "B",
+            "GT": "C",
+            "XA": "B",
+            "XF": "A",
+            "XT": "C",
+            "READ": "꼭지각 ∠A가 주어졌으니 두 밑각 ∠B, ∠C가 같다는 것을 쓴다",
+            "F1": "∠B = (180° − ",
+            "F2": "°) ÷ 2",
+            "LAW": "(180° − 꼭지각) ÷ 2"
+          },
+          "base": {
+            "GQ": "B",
+            "XQ": "A",
+            "isA": 0,
+            "GA": "B",
+            "GF": "A",
+            "GT": "C",
+            "XA": "A",
+            "XF": "B",
+            "XT": "C",
+            "READ": "밑각 ∠B가 주어졌으니 ∠C = ∠B이고, 꼭지각은 180°에서 두 밑각을 뺀 것이다",
+            "F1": "∠A = 180° − 2 × ",
+            "F2": "°",
+            "LAW": "180° − 2 × 밑각"
+          }
+        }
+      },
+      "derive": {
+        "w": "4*sin(pi*a/360)",
+        "h": "4*cos(pi*a/360)",
+        "b": "(180 - a)/2",
+        "gv": "a*isA + (180 - a)/2*(1 - isA)",
+        "ans_v": "(180 - a)/2*isA + a*(1 - isA)"
+      },
+      "constraints": [
+        "ans_v != gv"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "gv",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "a + 2*b == 180",
+        "(isA == 1 and ans == b) or (isA == 0 and ans == a)"
+      ],
+      "question": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 ABC에서 [[angle({GQ})]] = [[deg({gv})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{h}"
+              ],
+              "B": [
+                "{-w}",
+                0
+              ],
+              "C": [
+                "{w}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "A",
+                    "C"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "AB = AC이므로 △ABC는 이등변삼각형이고, 이등변삼각형의 두 밑각의 크기는 같다: ∠B = ∠C. {READ}. 삼각형의 세 내각의 합은 180°다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{h}"
+              ],
+              "B": [
+                "{-w}",
+                0
+              ],
+              "C": [
+                "{w}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "A",
+                    "C"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": "B",
+                "text": "{b}°",
+                "dx": 14,
+                "dy": -12,
+                "accent": true,
+                "k": "lbl:b"
+              },
+              {
+                "at": "C",
+                "text": "{b}°",
+                "dx": -14,
+                "dy": -12,
+                "accent": true,
+                "k": "lbl:c"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:A-B",
+              "eq:A-C"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:given",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "lbl:b",
+              "lbl:c"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "AB = AC이므로 ∠B = ∠C (이등변삼각형의 두 밑각)",
+        "∠A + ∠B + ∠C = 180°이므로 {F1}{gv}{F2} = {ans_v}°",
+        "따라서 ∠{XQ} = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠B = ∠C",
+                "hint": "AB = AC"
+              },
+              {
+                "text": "{F1}{gv}{F2} = {ans_v}°",
+                "hint": "{LAW}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        []
+      ],
+      "sol_check": "세 각 {a}° + {b}° + {b}° = 180°로 합이 맞는다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "AB = AC이므로 ∠B = ∠C이다. 삼각형의 내각의 합이 180°이므로 {F1}{gv}{F2} = {ans_v}°이다. 따라서 ∠{XQ} = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "밑각 상등",
+          "points": 3,
+          "criterion": "AB = AC이므로 ∠B = ∠C임을 밝혔다.",
+          "partial": "근거 없이 두 각이 같다고만 썼으면 1점."
+        },
+        {
+          "element": "내각의 합",
+          "points": 2,
+          "criterion": "세 내각의 합 180°를 써서 {F1}{gv}{F2}{ro(F2)} 나타냈다.",
+          "partial": "180°를 썼으나 식이 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans_v}°를 구했다.",
+          "partial": "다른 각을 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-isosceles-t1",
+      "pitfalls": [
+        {
+          "text": "밑각을 구할 때 180° − {gv}°를 2로 나누지 않음 (또는 꼭지각을 구할 때 밑각을 2배하지 않음)",
+          "on": "내각의 합",
+          "effect": "불인정"
+        },
+        {
+          "text": "꼭지각과 밑각을 바꿔 답함",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "AB = AC에서 ∠A = ∠B로 잘못 대응시킴",
+          "on": "밑각",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형의 내각의 합 180°",
+        "이등변삼각형의 두 밑각은 같다"
+      ],
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "tags": [
+        "이등변삼각형",
+        "밑각",
+        "꼭지각"
+      ],
+      "title": "이등변삼각형 두 개 — AB = AC, BC = BD 연쇄 각",
+      "skill": "이등변삼각형이 두 개 겹친 그림에서 밑각을 차례로 옮겨 각을 구하기",
+      "variant_axis": {
+        "주어진 것": "∠C / ∠A",
+        "구하는 것": "∠ABD / ∠DBC",
+        "∠C": "62°~80°"
+      },
+      "discriminates": "△BCD도 이등변삼각형(BC = BD)임을 읽어 ∠BDC = ∠C를 쓰는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              "base-ABD",
+              "apex-ABD",
+              "base-DBC"
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              62,
+              80
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "r",
+        "rows": {
+          "base-ABD": {
+            "GQ": "C",
+            "XQ": "ABD",
+            "isC": 1,
+            "isABD": 1,
+            "GA": "C",
+            "GF": "B",
+            "GT": "A",
+            "XA": "B",
+            "XF": "A",
+            "XT": "D"
+          },
+          "apex-ABD": {
+            "GQ": "A",
+            "XQ": "ABD",
+            "isC": 0,
+            "isABD": 1,
+            "GA": "A",
+            "GF": "B",
+            "GT": "C",
+            "XA": "B",
+            "XF": "A",
+            "XT": "D"
+          },
+          "base-DBC": {
+            "GQ": "C",
+            "XQ": "DBC",
+            "isC": 1,
+            "isABD": 0,
+            "GA": "C",
+            "GF": "B",
+            "GT": "A",
+            "XA": "B",
+            "XF": "D",
+            "XT": "C"
+          }
+        }
+      },
+      "derive": {
+        "a": "180 - 2*b",
+        "dbc": "180 - 2*b",
+        "abd": "3*b - 180",
+        "gv": "b*isC + (180 - 2*b)*(1 - isC)",
+        "ans_v": "(3*b - 180)*isABD + (180 - 2*b)*(1 - isABD)",
+        "ay": "2*tan(pi*b/180)",
+        "dx": "4 - 8*cos(pi*b/180)*cos(pi*b/180)",
+        "dy": "8*tan(pi*b/180)*cos(pi*b/180)*cos(pi*b/180)"
+      },
+      "constraints": [
+        "ans_v != gv",
+        "ans_v >= 4"
+      ],
+      "cost_values": [
+        "b",
+        "a",
+        "dbc",
+        "abd",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "abd + dbc == b",
+        "a + 2*b == 180",
+        "(isABD == 1 and ans == abd) or (isABD == 0 and ans == dbc)"
+      ],
+      "question": "다음 그림에서 △ABC는 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형이고, 점 D는 [[seg(BC)]] = [[seg(BD)]]가 되도록 변 AC 위에 잡은 점이다. [[angle({GQ})]] = [[deg({gv})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                2,
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "B",
+                "D"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "A",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "C"
+                  ],
+                  [
+                    "B",
+                    "D"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "이등변삼각형이 두 개다. △ABC(AB = AC)에서 ∠ABC = ∠ACB이고, △BCD(BC = BD)에서 ∠BDC = ∠BCD다. 주어진 각에서 ∠C = {b}°를 정하면 △BCD의 두 밑각이 {b}°로 정해지고, ∠DBC는 180°에서 그 둘을 뺀 값, ∠ABD는 ∠ABC에서 ∠DBC를 뺀 값이다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                2,
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "B",
+                "D"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "A",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "C"
+                  ],
+                  [
+                    "B",
+                    "D"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": "D",
+                "text": "{b}°",
+                "dx": -16,
+                "dy": 16,
+                "accent": true,
+                "k": "lbl:d"
+              },
+              {
+                "at": "B",
+                "text": "{b}°",
+                "dx": 22,
+                "dy": -10,
+                "accent": true,
+                "k": "lbl:b"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:A-B",
+              "eq:A-C",
+              "arc:given"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "lbl:b",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:B-C",
+              "eq:B-D",
+              "lbl:d"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:ask"
+          }
+        ]
+      ],
+      "sol2": [
+        "AB = AC이므로 ∠ABC = ∠ACB = {b}° (∠A = 180° − 2 × {b}° = {a}°)",
+        "BC = BD이므로 △BCD는 이등변삼각형이고 ∠BDC = ∠BCD = {b}°",
+        "△BCD에서 ∠DBC = 180° − {b}° − {b}° = {dbc}°",
+        "∠ABD = ∠ABC − ∠DBC = {b}° − {dbc}° = {abd}°",
+        "따라서 ∠{XQ} = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠ABC = ∠ACB = {b}°",
+                "hint": "AB = AC"
+              },
+              {
+                "text": "∠BDC = ∠BCD = {b}°",
+                "hint": "BC = BD"
+              },
+              {
+                "text": "∠DBC = 180° − 2 × {b}° = {dbc}°",
+                "hint": "△BCD의 내각의 합"
+              },
+              {
+                "text": "∠ABD = {b}° − {dbc}° = {abd}°",
+                "hint": "∠ABC − ∠DBC"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "hint:3"
+          }
+        ],
+        []
+      ],
+      "sol_check": "△ABD에서 ∠A + ∠ABD + ∠ADB = {a}° + {abd}° + {180 - b}° = 180°(∠ADB는 ∠BDC = {b}°의 보각)로 맞는다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "AB = AC이므로 ∠ABC = ∠ACB = {b}°이다. BC = BD이므로 △BCD는 이등변삼각형이고 ∠BDC = ∠BCD = {b}°, ∠DBC = 180° − 2 × {b}° = {dbc}°이다. ∠ABD = ∠ABC − ∠DBC = {b}° − {dbc}° = {abd}°이므로 ∠{XQ} = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "두 이등변삼각형의 밑각",
+          "points": 3,
+          "criterion": "∠ABC = ∠ACB = {b}°와 ∠BDC = ∠BCD = {b}°를 각각의 이등변삼각형에서 밝혔다.",
+          "partial": "한 삼각형의 밑각만 옳게 썼으면 1점."
+        },
+        {
+          "element": "각의 계산",
+          "points": 2,
+          "criterion": "∠DBC = 180° − 2 × {b}° = {dbc}°, ∠ABD = {b}° − {dbc}° = {abd}°를 계산했다.",
+          "partial": "∠DBC까지만 옳으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans_v}°를 구했다.",
+          "partial": "다른 각을 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-isosceles-t2",
+      "pitfalls": [
+        {
+          "text": "BC = BD를 보고도 △BCD의 밑각을 ∠BDC = ∠DBC로 잘못 잡음",
+          "on": "밑각",
+          "effect": "불인정"
+        },
+        {
+          "text": "∠DBC({dbc}°)를 ∠ABD로 답함",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "∠ABC({b}°)에서 ∠DBC를 빼지 않고 더함",
+          "on": "각의 계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 70,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형의 넓이",
+        "이등변삼각형의 꼭지각의 이등분선은 밑변을 수직이등분한다"
+      ],
+      "ops": [
+        "넓이",
+        "사칙"
+      ],
+      "tags": [
+        "이등변삼각형",
+        "밑각",
+        "꼭지각"
+      ],
+      "title": "꼭지각의 이등분선(수선) — 밑변의 수직이등분과 넓이",
+      "skill": "이등변삼각형의 꼭짓점에서 밑변에 내린 수선은 밑변을 이등분함을 써서 길이·넓이 구하기",
+      "variant_axis": {
+        "구하는 것": "△ABD 넓이 / △ABC 넓이 / BD",
+        "BC": "6~18",
+        "AD": "4~12"
+      },
+      "discriminates": "AD ⊥ BC이면 BD = CD = BC/2임을 쓰는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "abd",
+              "abc",
+              "bd"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              3,
+              9
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              4,
+              12
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "abd": {
+            "Q": "△ABD의 넓이",
+            "isS": 1,
+            "isT": 0,
+            "isB": 0,
+            "U": " cm²",
+            "UA": "cm²",
+            "FORM1": "△ABD = [[frac(1, 2)]] × ",
+            "FORM2": " × ",
+            "STEP1": "△ABD의 넓이 = [[frac(1, 2)]] × BD × AD = [[frac(1, 2)]] × ",
+            "STEP2": " × ",
+            "STEP3": " = ",
+            "STEP4": "(cm²)"
+          },
+          "abc": {
+            "Q": "△ABC의 넓이",
+            "isS": 0,
+            "isT": 1,
+            "isB": 0,
+            "U": " cm²",
+            "UA": "cm²",
+            "FORM1": "△ABC = [[frac(1, 2)]] × ",
+            "FORM2": " × ",
+            "STEP1": "△ABC의 넓이 = [[frac(1, 2)]] × BC × AD = [[frac(1, 2)]] × ",
+            "STEP2": " × ",
+            "STEP3": " = ",
+            "STEP4": "(cm²)"
+          },
+          "bd": {
+            "Q": "[[seg(BD)]]의 길이",
+            "isS": 0,
+            "isT": 0,
+            "isB": 1,
+            "U": " cm",
+            "UA": "cm",
+            "FORM1": "BD = ",
+            "FORM2": " ÷ ",
+            "STEP1": "BD = BC ÷ 2 = ",
+            "STEP2": " ÷ ",
+            "STEP3": " = ",
+            "STEP4": "(cm)"
+          }
+        }
+      },
+      "derive": {
+        "S": "k*h/2",
+        "T": "k*h",
+        "ans_v": "k*h/2*isS + k*h*isT + k*isB",
+        "v1": "k*isS + 2*k*(1 - isS)",
+        "v2": "h*(1 - isB) + 2*isB",
+        "v3": "k*h/2*isS + k*h*isT + k*isB"
+      },
+      "constraints": [
+        "isS == 0 or (k*h) % 2 == 0",
+        "k != h"
+      ],
+      "cost_values": [
+        "k",
+        "h",
+        "S",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "T == 2*S",
+        "(isS == 1 and ans == S) or (isT == 1 and ans == T) or (isB == 1 and ans == k)"
+      ],
+      "question": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 ABC에서 꼭짓점 A에서 밑변 BC에 내린 수선의 발을 D라고 하자. [[seg(BC)]] = {2*k} cm, [[seg(AD)]] = {h} cm일 때, {Q}{eul(Q)} 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{h}"
+              ],
+              "B": [
+                "{-k}",
+                0
+              ],
+              "C": [
+                "{k}",
+                0
+              ],
+              "D": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "D",
+                "A"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "A",
+                    "C"
+                  ]
+                ]
+              ],
+              "right": [
+                [
+                  "A",
+                  "D",
+                  "C"
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{-k/2}",
+                  0
+                ],
+                "text": "{2*k} cm",
+                "dx": 0,
+                "dy": 15,
+                "k": "lbl:bc"
+              },
+              {
+                "at": [
+                  0,
+                  "{h/2}"
+                ],
+                "text": "{h} cm",
+                "dx": 24,
+                "dy": 4,
+                "k": "lbl:ad"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{ans_v}",
+      "answer_alt": [
+        "{ans_v}{U}"
+      ],
+      "sol1": "이등변삼각형의 꼭짓점 A에서 밑변에 내린 수선 AD는 꼭지각의 이등분선이자 밑변의 수직이등분선이다. 그러므로 BD = CD = BC ÷ 2 = {k} cm이고, AD = {h} cm는 △ABD·△ABC 모두의 높이가 된다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{h}"
+              ],
+              "B": [
+                "{-k}",
+                0
+              ],
+              "C": [
+                "{k}",
+                0
+              ],
+              "D": [
+                0,
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "D",
+                "A"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "A",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "B",
+                    "D"
+                  ],
+                  [
+                    "D",
+                    "C"
+                  ]
+                ]
+              ],
+              "right": [
+                [
+                  "A",
+                  "D",
+                  "C"
+                ]
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{-k/2}",
+                  0
+                ],
+                "text": "{2*k} cm",
+                "dx": 0,
+                "dy": 15,
+                "k": "lbl:bc"
+              },
+              {
+                "at": [
+                  0,
+                  "{h/2}"
+                ],
+                "text": "{h} cm",
+                "dx": 24,
+                "dy": 4,
+                "k": "lbl:ad"
+              },
+              {
+                "at": "D",
+                "text": "{k} cm",
+                "dx": 26,
+                "dy": 14,
+                "accent": true,
+                "k": "lbl:bd"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "right:D",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:B-D",
+              "eq:D-C",
+              "lbl:bd"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "lbl:ad"
+          }
+        ]
+      ],
+      "sol2": [
+        "AB = AC이고 AD ⊥ BC이므로 AD는 BC를 수직이등분한다: BD = CD = [[frac(1, 2)]] × {2*k} = {k}(cm)",
+        "{STEP1}{v1}{STEP2}{v2}{STEP3}{v3}{STEP4}",
+        "따라서 {Q}{eun(Q)} {ans_v}{U}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "BD = CD = {k} cm",
+                "hint": "수선 = 수직이등분선"
+              },
+              {
+                "text": "{FORM1}{v1}{FORM2}{v2} = {ans_v}",
+                "hint": "높이 AD = {h}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        []
+      ],
+      "sol_check": "△ABD와 △ACD는 합동(RHS)이므로 넓이가 같고, 둘을 합친 △ABC의 넓이 [[frac(1, 2)]] × {2*k} × {h} = {k*h}(cm²)은 △ABD의 넓이 {k*h/2} cm²의 2배다. 답은 {ans_v}{U}다.",
+      "model_answer": "AB = AC인 이등변삼각형에서 꼭짓점 A에서 밑변에 내린 수선은 밑변을 수직이등분하므로 BD = CD = {k} cm이다. {STEP1}{v1}{STEP2}{v2}{STEP3}{v3}{STEP4} 따라서 {Q}{eun(Q)} {ans_v}{U}다.",
+      "rubric": [
+        {
+          "element": "수직이등분",
+          "points": 3,
+          "criterion": "AD가 BC를 수직이등분하므로 BD = CD = {k} cm임을 밝혔다.",
+          "partial": "BD = {k} cm라고만 쓰고 근거가 없으면 1점."
+        },
+        {
+          "element": "넓이·길이 계산",
+          "points": 2,
+          "criterion": "{FORM1}{v1}{FORM2}{v2} = {ans_v}{eul(ans_v)} 계산했다.",
+          "partial": "식은 옳고 계산이 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{Q} {ans_v}{U}{eul(UA)} 답했다.",
+          "partial": "단위가 없거나 다른 값을 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-isosceles-t3",
+      "pitfalls": [
+        {
+          "text": "BD를 BC({2*k} cm) 그대로 두어 넓이를 2배로 구함",
+          "on": "수직이등분",
+          "effect": "불인정"
+        },
+        {
+          "text": "넓이에서 [[frac(1, 2)]]을 빠뜨림",
+          "on": "넓이",
+          "effect": "부분"
+        },
+        {
+          "text": "단위(cm, cm²)를 빠뜨리거나 바꿔 씀",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 110,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형의 내각의 합 180°",
+        "이등변삼각형의 두 밑각은 같다",
+        "선분의 수직이등분선 위의 점"
+      ],
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "tags": [
+        "이등변삼각형",
+        "밑각",
+        "꼭지각"
+      ],
+      "title": "접은 이등변삼각형 종이 — 겹친 점이 만드는 이등변삼각형",
+      "skill": "접는 선은 수직이등분선(EA = EB)이므로 ∠EBA = ∠A임을 읽고 방정식 세우기",
+      "variant_axis": {
+        "구하는 것": "∠C / ∠A",
+        "∠EBC": "12°~54° (3의 배수)"
+      },
+      "discriminates": "접어서 겹친 두 점의 거리가 같다(EA = EB)는 것을 읽고, 꼭지각을 미지수로 두어 방정식을 세우는가",
+      "qtype": "short",
+      "difficulty": 4,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "C",
+              "A"
+            ]
+          }
+        },
+        {
+          "name": "t3",
+          "values": {
+            "int": [
+              3,
+              18
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "C": {
+            "XQ": "C",
+            "isC": 1,
+            "XA": "C",
+            "XF": "A",
+            "XT": "B"
+          },
+          "A": {
+            "XQ": "A",
+            "isC": 0,
+            "XA": "A",
+            "XF": "B",
+            "XT": "C"
+          }
+        }
+      },
+      "derive": {
+        "t": "3*t3",
+        "a": "60 - 2*t3",
+        "b": "60 + t3",
+        "ans_v": "(60 + t3)*isC + (60 - 2*t3)*(1 - isC)",
+        "ay": "2*tan(pi*(60 + t3)/180)",
+        "ex": "2 + 1/cos(pi*(60 - 2*t3)/180)",
+        "ey": "2*tan(pi*(60 + t3)/180)*(1 - 0.5/cos(pi*(60 - 2*t3)/180))"
+      },
+      "constraints": [
+        "ans_v != t"
+      ],
+      "cost_values": [
+        "t",
+        "a",
+        "b",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "a + 2*b == 180",
+        "b - a == t",
+        "(isC == 1 and ans == b) or (isC == 0 and ans == a)"
+      ],
+      "question": "다음 그림과 같이 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형 모양의 종이 ABC를, 점 A가 점 B에 겹치도록 선분 DE를 접는 선으로 하여 접었다. [[angle(EBC)]] = [[deg({t})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                2,
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "D": [
+                1,
+                "{ay/2}"
+              ],
+              "E": [
+                "{ex}",
+                "{ey}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              {
+                "a": "D",
+                "b": "E",
+                "dash": true
+              },
+              [
+                "B",
+                "E"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "A",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "E",
+                    "A"
+                  ],
+                  [
+                    "E",
+                    "B"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "B",
+                  "from": "E",
+                  "to": "C",
+                  "label": "{t}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "점 A가 점 B에 겹치도록 접었으므로 접는 선 DE는 AB의 수직이등분선이고, 그 위의 점 E는 두 점 A, B에서 같은 거리에 있다: EA = EB. 그러면 △EAB도 이등변삼각형이라 ∠EBA = ∠A다. 한편 AB = AC이므로 ∠ABC = ∠C이고, ∠EBC = ∠ABC − ∠EBA다. 꼭지각 ∠A를 x로 두면 모든 각이 x로 표현된다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                2,
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "D": [
+                1,
+                "{ay/2}"
+              ],
+              "E": [
+                "{ex}",
+                "{ey}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ],
+              {
+                "a": "D",
+                "b": "E",
+                "dash": true
+              },
+              [
+                "B",
+                "E"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "A",
+                    "C"
+                  ]
+                ],
+                [
+                  [
+                    "E",
+                    "A"
+                  ],
+                  [
+                    "E",
+                    "B"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "B",
+                  "from": "E",
+                  "to": "C",
+                  "label": "{t}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": "B",
+                "text": "{a}°",
+                "dx": 30,
+                "dy": -22,
+                "accent": true,
+                "k": "lbl:eba"
+              },
+              {
+                "at": "C",
+                "text": "{b}°",
+                "dx": -24,
+                "dy": -10,
+                "accent": true,
+                "k": "lbl:c"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "seg:D-E",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:E-A",
+              "eq:E-B"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "lbl:eba",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "lbl:c",
+              "arc:given"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "접는 선 DE는 AB의 수직이등분선이므로 EA = EB, 따라서 ∠EBA = ∠A",
+        "∠A = x라 하면 AB = AC이므로 ∠ABC = ∠C = (180° − x) ÷ 2 = 90° − [[frac(1, 2)]]x",
+        "∠EBC = ∠ABC − ∠EBA = (90° − [[frac(1, 2)]]x) − x = 90° − [[frac(3, 2)]]x",
+        "90° − [[frac(3, 2)]]x = {t}°이므로 [[frac(3, 2)]]x = {90 - t}°, x = {a}°",
+        "∠A = {a}°, ∠C = 90° − [[frac(1, 2)]] × {a}° = {b}°이므로 ∠{XQ} = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠EBA = ∠A = x",
+                "hint": "EA = EB"
+              },
+              {
+                "text": "∠ABC = ∠C = 90° − [[frac(1, 2)]]x",
+                "hint": "AB = AC"
+              },
+              {
+                "text": "∠EBC = 90° − [[frac(3, 2)]]x = {t}°",
+                "hint": "∠ABC − ∠EBA"
+              },
+              {
+                "text": "x = {a}°, ∠C = {b}°",
+                "hint": "[[frac(3, 2)]]x = {90 - t}°"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "hint:3"
+          }
+        ],
+        []
+      ],
+      "sol_check": "∠A = {a}°, ∠B = ∠C = {b}°로 내각의 합이 180°이고, ∠EBA = {a}°, ∠EBC = {b}° − {a}° = {t}°로 조건에 맞는다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "접는 선 DE는 AB의 수직이등분선이므로 EA = EB이고 ∠EBA = ∠A이다. ∠A = x라 하면 ∠ABC = ∠C = 90° − [[frac(1, 2)]]x이고 ∠EBC = (90° − [[frac(1, 2)]]x) − x = 90° − [[frac(3, 2)]]x이다. 90° − [[frac(3, 2)]]x = {t}°에서 x = {a}°이므로 ∠A = {a}°, ∠C = {b}°이다. 따라서 ∠{XQ} = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "접은 조건 읽기",
+          "points": 3,
+          "criterion": "EA = EB에서 ∠EBA = ∠A임을 밝혔다.",
+          "partial": "EA = EB만 쓰고 각으로 옮기지 못했으면 1점."
+        },
+        {
+          "element": "식 세우기",
+          "points": 2,
+          "criterion": "∠A = x로 두고 90° − [[frac(3, 2)]]x = {t}° 꼴의 방정식을 세웠다.",
+          "partial": "∠ABC = 90° − [[frac(1, 2)]]x까지만 세웠으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans_v}°를 구했다.",
+          "partial": "x의 값만 구하고 묻는 각으로 옮기지 않았으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-isosceles-t4",
+      "pitfalls": [
+        {
+          "text": "접힌 조건에서 EA = EB가 아니라 EB = BC 등 다른 변이 같다고 봄",
+          "on": "접은 조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "∠EBC를 ∠ABC − ∠EBA가 아니라 ∠EBA 자체({a}°)로 둠",
+          "on": "식 세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "x = {a}°를 구한 뒤 묻는 각으로 옮기지 않고 x를 답함",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 120,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "삼각형의 외각의 성질",
+        "이등변삼각형의 두 밑각은 같다",
+        "각의 이등분선"
+      ],
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "tags": [
+        "이등변삼각형",
+        "밑각",
+        "꼭지각"
+      ],
+      "title": "밑각의 이등분선과 외각의 이등분선이 만나는 각 — ∠D = ∠A ÷ 2",
+      "skill": "외각의 성질(한 외각 = 이웃하지 않는 두 내각의 합)을 두 번 써서 ∠D를 ∠A로 나타내기",
+      "variant_axis": {
+        "구하는 것": "∠D / ∠A",
+        "∠A": "28°~100° (4의 배수)"
+      },
+      "discriminates": "△DBC에서 외각 ∠DCE = ∠DBC + ∠D를 세우고, 이등분된 각을 밑각의 절반으로 옮기는가",
+      "qtype": "short",
+      "difficulty": 4,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "D",
+              "A"
+            ]
+          }
+        },
+        {
+          "name": "a4",
+          "values": {
+            "int": [
+              7,
+              25
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "D": {
+            "GQ": "A",
+            "XQ": "BDC",
+            "isD": 1,
+            "GA": "A",
+            "GF": "B",
+            "GT": "C",
+            "XA": "D",
+            "XF": "B",
+            "XT": "C"
+          },
+          "A": {
+            "GQ": "BDC",
+            "XQ": "A",
+            "isD": 0,
+            "GA": "D",
+            "GF": "B",
+            "GT": "C",
+            "XA": "A",
+            "XF": "B",
+            "XT": "C"
+          }
+        }
+      },
+      "derive": {
+        "a": "4*a4",
+        "b": "90 - 2*a4",
+        "hb": "45 - a4",
+        "ext": "90 + 2*a4",
+        "hext": "45 + a4",
+        "d": "2*a4",
+        "gv": "4*a4*isD + 2*a4*(1 - isD)",
+        "ans_v": "2*a4*isD + 4*a4*(1 - isD)",
+        "ay": "2*tan(pi*(90 - 2*a4)/180)",
+        "tq": "tan(pi*(45 - a4)/180)",
+        "xd": "4/(1 - tq*tq)",
+        "yd": "4*tq/(1 - tq*tq)"
+      },
+      "constraints": [
+        "ans_v != gv"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "hb",
+        "ext",
+        "hext",
+        "d",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "a + 2*b == 180",
+        "2*hb == b",
+        "ext + b == 180",
+        "2*hext == ext",
+        "hext == hb + d",
+        "(isD == 1 and ans == d) or (isD == 0 and ans == a)"
+      ],
+      "question": "다음 그림에서 △ABC는 [[seg(AB)]] = [[seg(AC)]]인 이등변삼각형이고, 점 D는 [[angle(B)]]의 이등분선과 [[angle(C)]]의 외각 [[angle(ACE)]]의 이등분선의 교점이다. [[angle({GQ})]] = [[deg({gv})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                2,
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "D": [
+                "{xd}",
+                "{yd}"
+              ],
+              "E": [
+                "{xd + 1}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              [
+                "B",
+                "E"
+              ],
+              [
+                "B",
+                "D"
+              ],
+              [
+                "C",
+                "D"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "A",
+                    "C"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                },
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "D",
+                  "label": "•",
+                  "k": "arc:b1"
+                },
+                {
+                  "at": "B",
+                  "from": "D",
+                  "to": "A",
+                  "label": "•",
+                  "k": "arc:b2"
+                },
+                {
+                  "at": "C",
+                  "from": "D",
+                  "to": "E",
+                  "label": "×",
+                  "k": "arc:c1"
+                },
+                {
+                  "at": "C",
+                  "from": "A",
+                  "to": "D",
+                  "label": "×",
+                  "k": "arc:c2"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "밑각 ∠B = ∠C = {b}°이고 ∠C의 외각 ∠ACE = 180° − {b}° = {ext}°다. 이등분되었으니 ∠DBC = {hb}°, ∠DCE = {hext}°. △DBC에서 ∠DCE는 꼭짓점 C의 외각이므로 ∠DCE = ∠DBC + ∠BDC — 이 관계에서 ∠D가 나온다. 일반적으로 ∠D = ∠A ÷ 2다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                2,
+                "{ay}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                4,
+                0
+              ],
+              "D": [
+                "{xd}",
+                "{yd}"
+              ],
+              "E": [
+                "{xd + 1}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              [
+                "B",
+                "E"
+              ],
+              [
+                "B",
+                "D"
+              ],
+              [
+                "C",
+                "D"
+              ]
+            ],
+            "marks": {
+              "eq": [
+                [
+                  [
+                    "A",
+                    "B"
+                  ],
+                  [
+                    "A",
+                    "C"
+                  ]
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                },
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "D",
+                  "label": "•",
+                  "k": "arc:b1"
+                },
+                {
+                  "at": "B",
+                  "from": "D",
+                  "to": "A",
+                  "label": "•",
+                  "k": "arc:b2"
+                },
+                {
+                  "at": "C",
+                  "from": "D",
+                  "to": "E",
+                  "label": "×",
+                  "k": "arc:c1"
+                },
+                {
+                  "at": "C",
+                  "from": "A",
+                  "to": "D",
+                  "label": "×",
+                  "k": "arc:c2"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": "B",
+                "text": "{hb}°",
+                "dx": 34,
+                "dy": -8,
+                "accent": true,
+                "k": "lbl:hb"
+              },
+              {
+                "at": "C",
+                "text": "{hext}°",
+                "dx": 28,
+                "dy": -12,
+                "accent": true,
+                "k": "lbl:hext"
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "eq:A-B",
+              "eq:A-C"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:b1",
+              "arc:b2",
+              "lbl:hb"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:c1",
+              "arc:c2",
+              "lbl:hext"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:ask"
+          }
+        ]
+      ],
+      "sol2": [
+        "AB = AC이므로 ∠ABC = ∠ACB = (180° − {a}°) ÷ 2 = {b}°",
+        "∠ACE = 180° − ∠ACB = {ext}°이고, BD, CD가 각을 이등분하므로 ∠DBC = {hb}°, ∠DCE = {hext}°",
+        "△DBC에서 외각 ∠DCE = ∠DBC + ∠BDC이므로 ∠BDC = {hext}° − {hb}° = {d}°",
+        "따라서 ∠{XQ} = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠ABC = ∠ACB = {b}°",
+                "hint": "(180° − ∠A) ÷ 2"
+              },
+              {
+                "text": "∠DBC = {hb}°, ∠DCE = {hext}°",
+                "hint": "이등분: 절반씩"
+              },
+              {
+                "text": "∠BDC = {hext}° − {hb}° = {d}°",
+                "hint": "외각 = 두 내각의 합",
+                "marks": [
+                  {
+                    "on": "{d}°",
+                    "note": "= ∠A ÷ 2"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ],
+        []
+      ],
+      "sol_check": "∠BDC = {d}°는 ∠A = {a}°의 절반이다. 실제로 ∠ACE = ∠A + ∠B이고 절반씩 취하면 ∠DCE = [[frac(1, 2)]]∠A + ∠DBC이므로 ∠D = ∠DCE − ∠DBC = [[frac(1, 2)]]∠A가 되어 어떤 이등변삼각형에서도 성립한다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "AB = AC이므로 ∠ABC = ∠ACB = {b}°이고, ∠ACE = 180° − {b}° = {ext}°이다. BD, CD가 각각 ∠B, ∠ACE를 이등분하므로 ∠DBC = {hb}°, ∠DCE = {hext}°이다. △DBC에서 외각의 성질에 의해 ∠DCE = ∠DBC + ∠BDC이므로 ∠BDC = {hext}° − {hb}° = {d}°이다. 따라서 ∠{XQ} = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "밑각·외각 구하기",
+          "points": 3,
+          "criterion": "밑각 {b}°와 외각 ∠ACE = {ext}°를 구하고 이등분한 {hb}°, {hext}°를 썼다.",
+          "partial": "밑각까지만 옳으면 1점."
+        },
+        {
+          "element": "외각의 성질",
+          "points": 2,
+          "criterion": "△DBC에서 ∠DCE = ∠DBC + ∠BDC를 세웠다.",
+          "partial": "내각의 합으로 돌아가 풀었더라도 옳으면 인정한다. 식이 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans_v}°를 구했다.",
+          "partial": "∠A와 ∠D를 바꿔 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m2-2-isosceles-t5",
+      "pitfalls": [
+        {
+          "text": "∠C의 외각을 180° − {b}°가 아니라 ∠C 자체({b}°)로 두고 이등분함",
+          "on": "밑각·외각",
+          "effect": "불인정"
+        },
+        {
+          "text": "△DBC의 외각 관계를 ∠DCE = ∠DBC − ∠BDC로 거꾸로 세움",
+          "on": "외각",
+          "effect": "불인정"
+        },
+        {
+          "text": "∠D = ∠A ÷ 2 결과만 쓰고 외각의 성질을 밝히지 않음",
+          "on": "외각",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

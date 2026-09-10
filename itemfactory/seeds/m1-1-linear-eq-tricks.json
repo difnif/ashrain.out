@@ -1,0 +1,630 @@
+{
+  "seed_id": "m1-1-linear-eq-tricks",
+  "category": "연산",
+  "title": "일차방정식 — 계산 요령",
+  "unit_id": "m1-1",
+  "concept_ids": [
+    "m1-1-26"
+  ],
+  "schema_id": "0d73bdb4-6576-4aa6-9bec-f10e0dbfdb7c",
+  "schema_name": "계수가 소수 또는 분수인 일차방정식의 풀이",
+  "source_item_ids": [],
+  "note": "정석(전개→이항)과 요령(곱셈 방치→먼저 나누기 / 최소공배수 곱 / 소인수 암산 약분)을 나란히 보여 준다. 암산은 식 위에 작게 다른 색으로.",
+  "geometry": false,
+  "templates": [
+    {
+      "id": "m1-1-linear-eq-tricks-t1",
+      "title": "계수가 분수인 일차방정식 — 최소공배수 곱하기",
+      "skill": "양변에 분모의 최소공배수를 곱해 정수 계수로 바꾸기",
+      "prereq": [
+        "최소공배수",
+        "분배법칙",
+        "이항"
+      ],
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "방정식",
+        "사칙"
+      ],
+      "traps": [
+        "부호",
+        "조건누락"
+      ],
+      "variant_axis": {
+        "계수 형태": "분수",
+        "요령": "최소공배수 곱"
+      },
+      "discriminates": "모든 항에 빠짐없이 곱하는가 (우변 상수에도)",
+      "qtype": "short",
+      "difficulty": 3,
+      "time_limit": 120,
+      "points": 5,
+      "pool_target": 300,
+      "tags": [
+        "일차방정식",
+        "분수계수",
+        "계산요령"
+      ],
+      "params": [
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              2,
+              3,
+              4,
+              6
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "in": [
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              1,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "x0": "m*p - a",
+        "b": "m*p - a - n*q",
+        "c": "p + q",
+        "L": "lcm(m,n)",
+        "A": "lcm(m,n)/m",
+        "B": "lcm(m,n)/n",
+        "R": "(p+q)*lcm(m,n)",
+        "K": "lcm(m,n)/m + lcm(m,n)/n",
+        "S": "(p+q)*lcm(m,n) - (lcm(m,n)/m)*a + (lcm(m,n)/n)*(m*p - a - n*q)",
+        "g": "gcd(lcm(m,n)/m + lcm(m,n)/n, (p+q)*lcm(m,n) - (lcm(m,n)/m)*a + (lcm(m,n)/n)*(m*p - a - n*q))"
+      },
+      "constraints": [
+        "m != n",
+        "b >= 1",
+        "x0 >= 2",
+        "x0 <= 30",
+        "b != a",
+        "S > 0",
+        "x0 != a",
+        "x0 != b",
+        "x0 != c"
+      ],
+      "cost_values": [
+        "m",
+        "n",
+        "a",
+        "b",
+        "c",
+        "x0",
+        "L",
+        "S"
+      ],
+      "relation": "(X + a)/m + (X - b)/n - c",
+      "unknown": "X",
+      "answer_var": "x0",
+      "verify": [
+        "(x0 + a) % m == 0",
+        "(x0 - b) % n == 0",
+        "K*x0 == S"
+      ],
+      "question": "일차방정식 [[frac(x + {a}, {m}) + frac(x - {b}, {n}) = {c}]]을 푸시오.",
+      "answer": "{x0}",
+      "answer_alt": [
+        "x = {x0}"
+      ],
+      "sol1": "분모가 있는 방정식은 분모부터 없앤다. 분모 {m}{wa(m)} {n}의 최소공배수 {L}{eul(L)} 양변의 모든 항에 곱하면 정수 계수 방정식이 된다. 여기서 실수가 가장 잦은 곳은 우변의 상수 {c}에도 {L}{eul(L)} 곱해야 한다는 점이다. 곱할 때는 {L} ÷ {m} = {A}, {L} ÷ {n} = {B}처럼 '몇 배가 되는지'를 먼저 암산해 두면 분배가 한 번에 끝난다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "(x + {a})/{m} + (x − {b})/{n} = {c}",
+                "marks": [
+                  {
+                    "on": "(x + {a})/{m}",
+                    "note": "×{L} → ×{A}"
+                  },
+                  {
+                    "on": "(x − {b})/{n}",
+                    "note": "×{L} → ×{B}"
+                  },
+                  {
+                    "on": "= {c}",
+                    "note": "×{L}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "mark:0-0",
+              "mark:0-1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "mark:0-2",
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "양변에 최소공배수 {L}{eul(L)} 곱한다. 각 항이 몇 배가 되는지 먼저 본다: 첫 항은 {L} ÷ {m} = {A}배, 둘째 항은 {L} ÷ {n} = {B}배, 우변은 {L}배.",
+        "그러면 {co(A)}(x + {a}) + {co(B)}(x − {b}) = {R}",
+        "괄호를 푼다: {co(A)}x + {A*a} + {co(B)}x − {B*b} = {R}",
+        "x가 있는 항끼리, 수끼리 모은다: ({A} + {B})x = {R} − {A*a} + {B*b}",
+        "계산하면 {co(K)}x = {S}",
+        "양변을 {K}{ro(K)} 나눈다. {S} = {K} × {x0}이므로 x = {x0}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(A)}(x + {a}) + {co(B)}(x − {b}) = {R}",
+                "hint": "양변 × {L}"
+              },
+              {
+                "text": "{co(A)}x + {A*a} + {co(B)}x − {B*b} = {R}",
+                "hint": "괄호 전개 — 둘째 괄호 안 부호 주의"
+              },
+              {
+                "text": "{co(K)}x = {R} − {A*a} + {B*b}",
+                "marks": [
+                  {
+                    "on": "− {A*a} + {B*b}",
+                    "note": "이항하면 부호가 바뀐다"
+                  }
+                ]
+              },
+              {
+                "text": "{co(K)}x = {S}",
+                "marks": [
+                  {
+                    "on": "{S}",
+                    "note": "= {K} × {x0}"
+                  }
+                ]
+              },
+              "x = {x0}"
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [],
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "mark:3-0"
+          },
+          {
+            "act": "reveal",
+            "k": "line:4"
+          }
+        ]
+      ],
+      "sol3": "x = {x0}{eul(x0)} 원래 식에 넣어 본다. ({x0} + {a})/{m} = {p}, ({x0} − {b})/{n} = {q}이고 {p} + {q} = {c}{ro(c)} 우변과 같다. 답은 x = {x0}이다.",
+      "model_answer": "양변에 분모의 최소공배수 {L}{eul(L)} 곱하면 {co(A)}(x + {a}) + {co(B)}(x − {b}) = {R}이다. 괄호를 풀고 정리하면 {co(K)}x = {S}이고, {S} = {K} × {x0}이므로 x = {x0}이다. 원래 식에 넣으면 {p} + {q} = {c}{ro(c)} 성립하므로 답은 x = {x0}이다.",
+      "rubric": [
+        {
+          "element": "분모 없애기",
+          "points": 4,
+          "criterion": "양변의 모든 항에 최소공배수 {L}{eul(L)} 곱했다.",
+          "partial": "우변 상수에 곱하지 않았으면 1점."
+        },
+        {
+          "element": "전개·이항",
+          "points": 3,
+          "criterion": "괄호를 풀고 동류항을 모아 {co(K)}x = {S}{eul(S)} 얻었다.",
+          "partial": "부호 실수 하나면 2점."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "x = {x0}{eul(x0)} 썼다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "원래 식에 대입해 성립함을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "양변에 최소공배수를 곱하면서 우변의 상수항에는 곱하지 않음",
+          "on": "분모",
+          "effect": "부분"
+        },
+        {
+          "text": "분자가 두 항인 분수에 곱할 때 괄호 없이 앞 항(x)에만 곱함",
+          "on": "분모",
+          "effect": "부분"
+        },
+        {
+          "text": "이항하면서 부호를 바꾸지 않음",
+          "on": "전개",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "id": "m1-1-linear-eq-tricks-t2",
+      "title": "곱셈을 미뤄 두기 — 전개하지 말고 먼저 나누기",
+      "skill": "공통 인수로 양변을 먼저 나누어 계산을 줄이기",
+      "prereq": [
+        "등식의 성질",
+        "소인수분해",
+        "약분"
+      ],
+      "process": "추론",
+      "context": "무맥락",
+      "ops": [
+        "방정식",
+        "인수분해"
+      ],
+      "traps": [
+        "역연산"
+      ],
+      "variant_axis": {
+        "계수 형태": "괄호 앞 계수",
+        "요령": "곱셈 방치·먼저 나누기"
+      },
+      "discriminates": "전개하기 전에 양변의 공통 인수를 알아보는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "일차방정식",
+        "계산요령",
+        "약분"
+      ],
+      "params": [
+        {
+          "name": "A",
+          "values": {
+            "in": [
+              6,
+              8,
+              12,
+              14,
+              15,
+              18,
+              21,
+              24
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "x0": "b + c",
+        "R": "A*c",
+        "E": "A*b",
+        "R2": "A*c + A*b"
+      },
+      "constraints": [
+        "b != c",
+        "x0 <= 15",
+        "R <= 300",
+        "x0 != A",
+        "x0 != R",
+        "c != A"
+      ],
+      "cost_values": [
+        "A",
+        "b",
+        "c",
+        "R",
+        "x0"
+      ],
+      "relation": "A*(X - b) - R",
+      "unknown": "X",
+      "answer_var": "x0",
+      "verify": [
+        "A*(x0 - b) == R"
+      ],
+      "question": "일차방정식 {A}(x − {b}) = {R}{eul(R)} 푸시오.",
+      "answer": "{x0}",
+      "answer_alt": [
+        "x = {x0}"
+      ],
+      "sol1": "정석은 괄호를 풀어 {A}x − {E} = {R}{ro(R)} 만든 뒤 이항하는 것이다. 하지만 우변 {R}{ika(R)} {A}{ro(A)} 나누어떨어진다는 것({R} = {A} × {c})을 먼저 알아보면, 괄호를 풀 필요 없이 양변을 {A}{ro(A)} 나누어 x − {b} = {c}{ro(c)} 바로 갈 수 있다. 곱셈을 미뤄 두었다가 마지막에 약분하는 이 요령은 수가 커질수록 계산 실수를 크게 줄인다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{A}(x − {b}) = {R}",
+                "marks": [
+                  {
+                    "on": "{R}",
+                    "note": "= {A} × {c}"
+                  }
+                ]
+              },
+              {
+                "text": "x − {b} = {c}",
+                "hint": "양변을 {A}{ro(A)} 나눈다 — 괄호는 그대로"
+              },
+              "x = {x0}"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "mark:0-0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol2": [
+        "요령 — 우변 {R}{eul(R)} {A}{ro(A)} 나누면 {c}이므로({R} = {A} × {c}), 양변을 {A}{ro(A)} 나눈다: x − {b} = {c}",
+        "이항하면 x = {c} + {b} = {x0}",
+        "정석으로 풀어도 같다. 괄호를 풀면 {A}x − {E} = {R}",
+        "이항하면 {A}x = {R} + {E} = {R2}",
+        "양변을 {A}{ro(A)} 나누면 x = {R2} ÷ {A} = {x0} — 요령보다 큰 수를 다루게 된다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{A}(x − {b}) = {R}",
+                "marks": [
+                  {
+                    "on": "{R}",
+                    "note": "= {A} × {c}"
+                  }
+                ]
+              },
+              {
+                "text": "x − {b} = {c}",
+                "hint": "요령: 양변 ÷ {A}"
+              },
+              "x = {x0}",
+              {
+                "text": "{A}x − {E} = {R}",
+                "hint": "정석: 괄호를 풀면"
+              },
+              {
+                "text": "{A}x = {R2}",
+                "marks": [
+                  {
+                    "on": "{R2}",
+                    "note": "= {A} × {x0}"
+                  }
+                ]
+              },
+              "x = {x0}"
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "mark:0-0"
+          },
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "hint:3"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:4"
+          },
+          {
+            "act": "hl",
+            "k": "mark:4-0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:5"
+          }
+        ]
+      ],
+      "sol3": "x = {x0}{eul(x0)} 넣으면 {A} × ({x0} − {b}) = {A} × {c} = {R}{ro(R)} 우변과 같다. 답은 x = {x0}이다.",
+      "model_answer": "우변 {R}{eun(R)} {A} × {c}이므로 양변을 {A}{ro(A)} 나누면 x − {b} = {c}이고, x = {x0}이다. 괄호를 풀어 {A}x − {E} = {R}, {A}x = {R2}{ro(R2)} 풀어도 같은 값이 나온다. 대입하면 {A} × {c} = {R}{ro(R)} 성립하므로 답은 x = {x0}이다.",
+      "rubric": [
+        {
+          "element": "풀이 방법 선택",
+          "points": 3,
+          "criterion": "양변을 {A}{ro(A)} 나누거나 괄호를 전개하는 방법 중 하나를 바르게 시작했다.",
+          "partial": "먼저 나누는 요령을 쓰면 계산이 간단함을 언급하면 만점."
+        },
+        {
+          "element": "계산",
+          "points": 3,
+          "criterion": "x = {x0}{eul(x0)} 바르게 구했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "x = {x0}{eul(x0)} 썼다."
+        },
+        {
+          "element": "검토",
+          "points": 1,
+          "criterion": "대입해 성립함을 확인했다.",
+          "partial": "검토를 쓰지 않아도 답이 맞으면 감점하지 않는다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "괄호를 전개할 때 뒤 항에는 곱하지 않음 (Ax − b 꼴)",
+          "on": "계산",
+          "effect": "부분"
+        },
+        {
+          "text": "양변을 나눌 때 한쪽 변만 나눔",
+          "on": "풀이 방법",
+          "effect": "부분"
+        },
+        {
+          "text": "x − b = (몫) 에서 b를 넘길 때 부호를 바꾸지 않음",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

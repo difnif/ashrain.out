@@ -1,0 +1,499 @@
+{
+  "seed_id": "m1-2-cylinder-volume",
+  "category": "도형",
+  "title": "원기둥의 부피",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-14"
+  ],
+  "schema_id": "c6cbe332-f658-45e1-8afc-5580bb5e6a19",
+  "schema_name": "원기둥의 부피",
+  "source_item_ids": [
+    "1a12aed1-f539-4fbb-a90e-876ba58a70ad"
+  ],
+  "note": "관계식 V = pi*r*r*h 와 변주축(구하는 것)만 차용. π는 기호로 보존.",
+  "geometry": true,
+  "templates": [
+    {
+      "id": "m1-2-cylinder-volume-t1",
+      "title": "반지름·높이로 부피 구하기",
+      "skill": "원기둥 부피 = 밑넓이 × 높이",
+      "prereq": [
+        "원의 넓이 = πr²",
+        "거듭제곱"
+      ],
+      "process": "절차수행",
+      "context": "기하맥락",
+      "ops": [
+        "부피",
+        "지수",
+        "넓이"
+      ],
+      "traps": [
+        "제곱누락"
+      ],
+      "variant_axis": {
+        "구하는 것": "V 미지",
+        "수치 범위": "π 포함 표현"
+      },
+      "discriminates": "밑넓이(πr²)에 높이를 곱하는 구조를 아는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "time_limit": 60,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "원기둥",
+        "부피"
+      ],
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              2,
+              20
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "kv": "r*r*h",
+        "ks": "r*r",
+        "d": "2*r"
+      },
+      "constraints": [
+        "h != r",
+        "kv <= 1200"
+      ],
+      "cost_values": [
+        "r",
+        "h",
+        "ks",
+        "kv"
+      ],
+      "relation": "X - r*r*h",
+      "unknown": "X",
+      "answer_var": "kv",
+      "verify": [
+        "kv == ks*h",
+        "kv > 0"
+      ],
+      "question": "다음 그림과 같이 밑면의 반지름의 길이가 {r} cm, 높이가 {h} cm인 원기둥의 부피를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "answer": "[[{kv} * pi]]",
+      "answer_alt": [
+        "[[{kv} * pi]] cm³"
+      ],
+      "sol1": "기둥 모양은 밑면을 높이만큼 그대로 쌓아 올린 것이므로, 부피는 (밑넓이) × (높이)다. 원기둥의 밑면은 반지름 {r} cm인 원이므로 밑넓이는 πr²에 r = {r}{eul(r)} 넣은 값이다. 여기서 반지름을 제곱한다는 것을 놓치지 않는 것이 중요하다 — {r}만 쓰면 넓이가 아니라 길이가 된다.",
+      "sol2": [
+        "밑넓이를 구한다: [[pi * pow({r},2)]] = π × {r} × {r} = [[{ks} * pi]] (cm²)",
+        "부피 = 밑넓이 × 높이이므로 [[{ks} * pi]] × {h}",
+        "계산하면 [[{kv} * pi]] (cm³)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "밑넓이 = π × {r}² = {ks}π (cm²)",
+              "부피 = 밑넓이 × 높이 = {ks}π × {h}",
+              "부피 = {kv}π (cm³)"
+            ]
+          }
+        }
+      ],
+      "sol_check": "만약 반지름을 제곱하지 않았다면 {r*h}π가 나오고, 지름 {d} cm를 반지름 자리에 넣었다면 {d*d*h}π가 나온다. 둘 다 이 문제의 답이 아니다. 답은 [[{kv} * pi]] cm³다.",
+      "model_answer": "원기둥의 부피는 (밑넓이) × (높이)이다. 밑면은 반지름 {r} cm인 원이므로 밑넓이는 π × {r}² = {ks}π (cm²)이고, 여기에 높이 {h} cm를 곱하면 부피는 {ks}π × {h} = {kv}π (cm³)이다. 따라서 답은 {kv}π cm³다.",
+      "rubric": [
+        {
+          "element": "부피 공식",
+          "points": 3,
+          "criterion": "부피 = (밑넓이) × (높이)임을 밝혔다."
+        },
+        {
+          "element": "밑넓이 계산",
+          "points": 3,
+          "criterion": "π × {r}² = {ks}π로 반지름을 제곱해 구했다.",
+          "partial": "제곱을 빠뜨렸으면 0점."
+        },
+        {
+          "element": "부피 계산",
+          "points": 2,
+          "criterion": "{ks}π × {h} = {kv}π를 바르게 계산했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {kv}π cm³로 단위와 함께 썼다."
+        }
+      ],
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "top",
+              "r-lbl",
+              "radius"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "height",
+              "h-lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "pitfalls": [
+        {
+          "text": "(부피) = (밑넓이) × (높이) 임을 밝히지 않고 숫자만 곱함",
+          "on": "부피 공식",
+          "effect": "부분"
+        },
+        {
+          "text": "반지름을 제곱하지 않음 (π × r × h)",
+          "on": "밑넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "지름을 반지름으로 씀",
+          "on": "밑넓이",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "id": "m1-2-cylinder-volume-t2",
+      "title": "부피와 높이로 반지름 구하기",
+      "skill": "원기둥 부피 공식 역산",
+      "prereq": [
+        "원의 넓이",
+        "제곱해서 되는 수 찾기",
+        "나눗셈"
+      ],
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "부피",
+        "지수",
+        "방정식"
+      ],
+      "traps": [
+        "역연산",
+        "제곱누락"
+      ],
+      "variant_axis": {
+        "구하는 것": "r 미지",
+        "수치 범위": "정수 해"
+      },
+      "discriminates": "r²를 거쳐 r로 돌아올 수 있는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "time_limit": 80,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "원기둥",
+        "부피",
+        "역산"
+      ],
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              10
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              2,
+              18
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "kv": "r*r*h",
+        "ks": "r*r"
+      },
+      "constraints": [
+        "h != r",
+        "kv <= 900"
+      ],
+      "cost_values": [
+        "r",
+        "h",
+        "ks",
+        "kv"
+      ],
+      "answer_var": "r",
+      "verify": [
+        "ans*ans*h == kv",
+        "ans > 0"
+      ],
+      "question": "높이가 {h} cm인 원기둥의 부피가 [[{kv} * pi]] cm³이다. 이 원기둥의 밑면의 반지름의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "r",
+            "height": "{h}"
+          }
+        }
+      ],
+      "answer": "{r}",
+      "answer_alt": [
+        "{r} cm"
+      ],
+      "sol1": "부피 = 밑넓이 × 높이이므로, 부피를 높이로 나누면 밑넓이가 나온다. 밑넓이는 πr²이므로 여기서 r²을 얻고, 마지막으로 제곱해서 그 수가 되는 양수를 찾으면 r이다. 길이는 음수가 될 수 없으므로 양수만 답이 된다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "부피 = 밑넓이 × 높이",
+              "{kv}π = (π × r²) × {h}"
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "반지름을 r cm라 하면 밑넓이는 [[pi * pow(r,2)]] (cm²)이고 부피는 [[pi * pow(r,2)]] × {h} 이다.",
+        "이 값이 {kv}π와 같으므로 [[pi * pow(r,2)]] × {h} = [[{kv} * pi]]",
+        "양변을 {h}{ro(h)} 나눈다: [[pi * pow(r,2)]] = [[{ks} * pi]]",
+        "양변에서 π를 지우면 r × r = {ks}",
+        "제곱해서 {ks}{ika(ks)} 되는 양수는 {r}이므로 r = {r} (cm)"
+      ],
+      "sol_check": "반지름 {r} cm, 높이 {h} cm로 부피를 다시 구하면 π × {r}² × {h} = {kv}π (cm³)로 문제의 값과 같다. 답은 {r} cm다.",
+      "model_answer": "부피는 (밑넓이) × (높이)이므로 밑넓이는 {kv}π ÷ {h} = {ks}π (cm²)이다. 밑넓이가 πr²이므로 r² = {ks}이고, 길이는 양수이므로 r = {r} (cm)이다. 되짚어 보면 π × {r}² × {h} = {kv}π로 맞으므로 답은 {r} cm다.",
+      "rubric": [
+        {
+          "element": "역산 방향 잡기",
+          "points": 3,
+          "criterion": "부피를 높이로 나누면 밑넓이가 나옴을 밝혔다."
+        },
+        {
+          "element": "밑넓이에서 r² 얻기",
+          "points": 3,
+          "criterion": "πr² = {ks}π에서 r² = {ks}{eul(ks)} 얻었다."
+        },
+        {
+          "element": "r 구하기",
+          "points": 2,
+          "criterion": "제곱해서 {ks}{ika(ks)} 되는 양수 {r}{eul(r)} 구했다.",
+          "partial": "음수도 답으로 쓴 경우 1점."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {r} cm로 단위와 함께 썼다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "부피를 높이로 나누는 대신 곱함 (역산 방향)",
+          "on": "역산",
+          "effect": "불인정"
+        },
+        {
+          "text": "π를 양변에서 지우지 않아 r에 π가 남음",
+          "on": "r² 얻기",
+          "effect": "부분"
+        },
+        {
+          "text": "r² = k 에서 r을 k ÷ 2 로 씀 (제곱근 대신 반으로 나눔)",
+          "on": "r 구하기",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "id": "m1-2-cylinder-volume-t3",
+      "title": "원기둥의 부피 고르기 (오개념 대조)",
+      "skill": "원기둥 부피 공식",
+      "prereq": [
+        "원의 넓이"
+      ],
+      "process": "개념이해",
+      "context": "기하맥락",
+      "ops": [
+        "부피",
+        "지수"
+      ],
+      "traps": [
+        "제곱누락"
+      ],
+      "variant_axis": {
+        "구하는 것": "V 미지",
+        "제시 방식": "직접 제시"
+      },
+      "discriminates": "반지름 제곱을 빠뜨리는가, 지름을 반지름으로 쓰는가",
+      "qtype": "choice",
+      "difficulty": 2,
+      "time_limit": 70,
+      "points": 4,
+      "pool_target": 300,
+      "tags": [
+        "원기둥",
+        "부피",
+        "보기고르기"
+      ],
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              10
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              3,
+              16
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "kv": "r*r*h",
+        "ks": "r*r",
+        "d": "2*r"
+      },
+      "constraints": [
+        "h != r",
+        "h != 2*r",
+        "kv <= 800",
+        "r >= 3"
+      ],
+      "cost_values": [
+        "r",
+        "h",
+        "ks",
+        "kv"
+      ],
+      "relation": "X - r*r*h",
+      "unknown": "X",
+      "answer_var": "kv",
+      "verify": [
+        "kv == ks*h"
+      ],
+      "question": "밑면의 반지름의 길이가 {r} cm, 높이가 {h} cm인 원기둥의 부피는?",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "answer": "[[{kv} * pi]]",
+      "distractor_fmt": "[[{v} * pi]]",
+      "distractors": [
+        {
+          "expr": "r*h",
+          "misconception": "MC-CYL-01"
+        },
+        {
+          "expr": "d*d*h",
+          "misconception": "MC-CYL-02"
+        },
+        {
+          "expr": "r*r",
+          "misconception": "MC-GEO-04"
+        },
+        {
+          "expr": "2*r*h",
+          "misconception": "MC-CYL-01"
+        },
+        {
+          "expr": "r*r*h/3",
+          "misconception": "MC-GEO-04"
+        }
+      ],
+      "sol1": "부피 = (밑넓이) × (높이) = π × {r}² × {h}이다. 보기에는 흔한 실수 값이 함께 들어 있다. 반지름을 제곱하지 않으면 {r*h}π, 지름 {d} cm를 반지름 자리에 넣으면 {d*d*h}π, 높이를 빼먹고 밑넓이만 쓰면 {ks}π, 뿔의 공식(÷3)을 쓰면 다른 값이 된다.",
+      "sol2": [
+        "밑넓이: π × {r} × {r} = [[{ks} * pi]] (cm²)",
+        "부피: [[{ks} * pi]] × {h} = [[{kv} * pi]] (cm³)",
+        "보기 대조 — 제곱을 빠뜨리면 {r*h}π, 지름을 넣으면 {d*d*h}π, 밑넓이만 쓰면 {ks}π가 되어 모두 틀린다."
+      ],
+      "sol_check": "부피의 단위는 cm³이고, 밑넓이 {ks} cm²에 높이 {h} cm를 곱한 결과이므로 차원이 맞는다. 답은 [[{kv} * pi]] cm³다.",
+      "model_answer": "원기둥의 부피는 (밑넓이) × (높이)이고 밑넓이는 π × {r}² = {ks}π (cm²)이므로 부피는 {ks}π × {h} = {kv}π (cm³)이다. 반지름을 제곱하지 않거나 지름을 그대로 넣으면 안 된다. 답은 {kv}π cm³다.",
+      "rubric": [
+        {
+          "element": "공식 적용",
+          "points": 4,
+          "criterion": "부피 = π × (반지름)² × (높이)를 바르게 썼다.",
+          "partial": "제곱을 빠뜨렸으면 0점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{ks}π × {h} = {kv}π를 바르게 계산했다."
+        },
+        {
+          "element": "답 제시",
+          "points": 2,
+          "criterion": "답을 {kv}π cm³로 썼다."
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "반지름을 제곱하지 않은 값을 고름",
+          "on": "공식",
+          "effect": "불인정"
+        },
+        {
+          "text": "겉넓이나 옆넓이 공식과 혼동함",
+          "on": "공식",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

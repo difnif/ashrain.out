@@ -1,0 +1,1212 @@
+{
+  "seed_id": "m1-2-cylinder-surface",
+  "category": "도형",
+  "title": "원기둥·직육면체의 겉넓이 — 구하기·역산·선다형",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-14"
+  ],
+  "schema_id": "a8fcf405-db82-4444-ad44-929cb75bc107",
+  "schema_name": "원기둥의 겉넓이",
+  "source_item_ids": [],
+  "note": "관계식 S = 2πr² + 2πrh 와 변주축(구하는 것)만 차용. π는 기호로 보존. 직육면체 틀은 같은 개념(m1-2-14 기둥의 겉넓이)의 각기둥 판.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원의 넓이 πr²",
+        "원주 2πr",
+        "기둥의 전개도"
+      ],
+      "ops": [
+        "넓이",
+        "지수"
+      ],
+      "tags": [
+        "원기둥",
+        "겉넓이"
+      ],
+      "title": "반지름·높이로 원기둥의 겉넓이 구하기",
+      "skill": "전개도에서 겉넓이 = (밑넓이) × 2 + (옆넓이), 옆넓이의 가로 = 밑면의 원주 2πr",
+      "variant_axis": {
+        "구하는 것": "겉넓이",
+        "제시 방식": "반지름·높이"
+      },
+      "discriminates": "옆면(직사각형)의 가로가 원주 2πr임을 알고, 밑면을 두 개 세는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              3,
+              20
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "kb": "r*r",
+        "kl": "2*r*h",
+        "ks": "2*r*r + 2*r*h",
+        "kc": "2*r"
+      },
+      "constraints": [
+        "h != r",
+        "ks <= 800",
+        "ks != kb",
+        "ks != kl"
+      ],
+      "cost_values": [
+        "r",
+        "h",
+        "kb",
+        "kl",
+        "ks"
+      ],
+      "relation": "X - 2*r*r - 2*r*h",
+      "unknown": "X",
+      "answer_var": "ks",
+      "verify": [
+        "ks == 2*kb + kl",
+        "ks > 0"
+      ],
+      "question": "다음 그림과 같이 밑면의 반지름의 길이가 {r} cm, 높이가 {h} cm인 원기둥의 겉넓이를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "answer": "[[{ks} * pi]]",
+      "answer_alt": [
+        "[[{ks} * pi]] cm²"
+      ],
+      "sol1": "원기둥을 펼치면 밑면인 원 2개와 옆면인 직사각형 1개가 나온다. 밑면은 반지름 {r} cm인 원이고, 옆면 직사각형의 세로는 높이 {h} cm, 가로는 밑면의 원주 2π × {r} = {kc}π (cm)이다 — 옆면을 말아 붙이면 밑면 둘레와 딱 맞아야 하기 때문이다. 겉넓이는 (밑넓이) × 2 + (옆넓이)다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "top",
+              "base",
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "height",
+              "h-lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "밑넓이: π × {r}² = {kb}π (cm²), 밑면이 2개이므로 {kb}π × 2 = {2*kb}π (cm²)",
+        "옆넓이: (가로) × (세로) = (원주) × (높이) = {kc}π × {h} = {kl}π (cm²)",
+        "겉넓이 = (밑넓이) × 2 + (옆넓이) = {2*kb}π + {kl}π = {ks}π (cm²)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "밑넓이 × 2 = π × {r}² × 2 = {2*kb}π",
+                "hint": "밑면은 두 개",
+                "marks": [
+                  {
+                    "on": "{2*kb}π",
+                    "note": "{kb}×2"
+                  }
+                ]
+              },
+              {
+                "text": "옆넓이 = 2π × {r} × {h} = {kl}π",
+                "hint": "가로 = 원주 2πr",
+                "marks": [
+                  {
+                    "on": "{kl}π",
+                    "note": "{kc}×{h}"
+                  }
+                ]
+              },
+              {
+                "text": "겉넓이 = {2*kb}π + {kl}π = {ks}π (cm²)"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:0",
+              "mark:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol_check": "밑면을 하나만 세면 {kb + kl}π, 옆면의 가로를 반지름 {r}{ro(r)} 잘못 잡으면 {kb*2 + r*h}π가 나온다 — 둘 다 답이 아니다. 답은 [[{ks} * pi]] cm²다.",
+      "model_answer": "원기둥의 겉넓이는 (밑넓이) × 2 + (옆넓이)이다. 밑넓이는 π × {r}² = {kb}π (cm²)이고 밑면이 2개이므로 {2*kb}π (cm²), 옆면은 가로가 밑면의 원주 2π × {r} = {kc}π (cm), 세로가 {h} cm인 직사각형이므로 옆넓이는 {kc}π × {h} = {kl}π (cm²)이다. 따라서 겉넓이는 {2*kb}π + {kl}π = {ks}π (cm²)다.",
+      "rubric": [
+        {
+          "element": "밑넓이",
+          "points": 2,
+          "criterion": "밑넓이 π × {r}² = {kb}π를 구하고 밑면이 2개임을 반영했다.",
+          "partial": "밑넓이는 옳으나 하나만 셌으면 1점."
+        },
+        {
+          "element": "옆넓이",
+          "points": 3,
+          "criterion": "옆면의 가로가 원주 2π × {r}임을 밝히고 옆넓이 {kl}π를 구했다.",
+          "partial": "옆면이 직사각형임은 밝혔으나 가로를 원주로 잡지 못했으면 1점."
+        },
+        {
+          "element": "겉넓이",
+          "points": 2,
+          "criterion": "(밑넓이) × 2 + (옆넓이) = {ks}π (cm²)로 답했다.",
+          "partial": "합하는 식은 옳으나 계산이 틀렸으면 1점."
+        }
+      ],
+      "id": "m1-2-cylinder-surface-t1",
+      "pitfalls": [
+        {
+          "text": "겉넓이 = (밑넓이) × 2 + (옆넓이) 라는 구성을 밝히지 않고 숫자만 더함",
+          "on": "겉넓이",
+          "effect": "부분"
+        },
+        {
+          "text": "밑면을 하나만 셈 (밑넓이 {kb}π를 한 번만 더함)",
+          "on": "밑넓이",
+          "effect": "부분"
+        },
+        {
+          "text": "옆면 직사각형의 가로를 원주 2π × {r}가 아니라 반지름·지름으로 잡음",
+          "on": "옆넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "부피 공식 πr²h 와 혼동함",
+          "on": "겉넓이",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원의 넓이 πr²",
+        "원주 2πr",
+        "기둥의 전개도"
+      ],
+      "ops": [
+        "넓이",
+        "방정식"
+      ],
+      "tags": [
+        "원기둥",
+        "겉넓이"
+      ],
+      "title": "겉넓이와 반지름으로 높이 구하기",
+      "skill": "겉넓이 = 2πr² + 2πrh 를 세우고 h에 대한 방정식으로 풀기",
+      "variant_axis": {
+        "구하는 것": "높이",
+        "제시 방식": "겉넓이·반지름"
+      },
+      "discriminates": "겉넓이 식을 바르게 세우고 π를 지운 뒤 h를 역산하는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              3,
+              20
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "kb": "r*r",
+        "kl": "2*r*h",
+        "ks": "2*r*r + 2*r*h",
+        "kc": "2*r"
+      },
+      "constraints": [
+        "h != r",
+        "ks <= 800",
+        "ks != h",
+        "kb != h"
+      ],
+      "cost_values": [
+        "r",
+        "h",
+        "kb",
+        "kl",
+        "ks"
+      ],
+      "relation": "2*r*r + 2*r*X - ks",
+      "unknown": "X",
+      "answer_var": "h",
+      "verify": [
+        "2*r*r + 2*r*ans == ks",
+        "ans > 0"
+      ],
+      "question": "다음 그림과 같이 밑면의 반지름의 길이가 {r} cm인 원기둥의 겉넓이가 [[{ks} * pi]] cm²일 때, 이 원기둥의 높이를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r}",
+            "height": "h"
+          }
+        }
+      ],
+      "answer": "{h}",
+      "answer_alt": [
+        "{h} cm"
+      ],
+      "sol1": "높이를 h cm로 두고 겉넓이를 h의 식으로 나타낸다. 밑넓이는 π × {r}² = {kb}π (cm²)로 2개, 옆면은 가로 2π × {r} = {kc}π (cm), 세로 h cm인 직사각형이므로 옆넓이는 {kc}πh (cm²)이다. 겉넓이가 {ks}π이므로 {2*kb}π + {kc}πh = {ks}π라는 방정식이 나온다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r}",
+            "height": "h"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "top",
+              "base",
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "height",
+              "h-lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "높이를 h cm라 하면 (밑넓이) × 2 = π × {r}² × 2 = {2*kb}π (cm²), 옆넓이 = 2π × {r} × h = {kc}πh (cm²)",
+        "겉넓이가 {ks}π cm²이므로 {2*kb}π + {kc}πh = {ks}π",
+        "양변을 π로 나누면 {2*kb} + {kc}h = {ks}",
+        "{2*kb}{eul(2*kb)} 이항하면 {kc}h = {kl}, 따라서 h = {kl} ÷ {kc} = {h}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{2*kb}π + {kc}πh = {ks}π",
+                "hint": "밑넓이 × 2 + 옆넓이 = 겉넓이"
+              },
+              {
+                "text": "{2*kb} + {kc}h = {ks}",
+                "hint": "양변 ÷ π"
+              },
+              {
+                "text": "{kc}h = {kl}",
+                "hint": "{2*kb}{eul(2*kb)} 이항"
+              },
+              {
+                "text": "h = {h}",
+                "marks": [
+                  {
+                    "on": "{h}",
+                    "note": "{kl}÷{kc}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          },
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "mark:3-0"
+          }
+        ]
+      ],
+      "sol_check": "높이 {h} cm로 겉넓이를 다시 구하면 {2*kb}π + 2π × {r} × {h} = {2*kb}π + {kl}π = {ks}π (cm²)로 문제의 값과 같다. 답은 {h} cm다.",
+      "model_answer": "높이를 h cm라 하면 겉넓이는 (밑넓이) × 2 + (옆넓이) = π × {r}² × 2 + 2π × {r} × h = {2*kb}π + {kc}πh (cm²)이다. 이 값이 {ks}π이므로 {2*kb} + {kc}h = {ks}, {kc}h = {kl}에서 h = {h}이다. 따라서 높이는 {h} cm다.",
+      "rubric": [
+        {
+          "element": "겉넓이 식 세우기",
+          "points": 3,
+          "criterion": "높이를 h로 놓고 겉넓이를 {2*kb}π + {kc}πh (= {ks}π)로 나타냈다.",
+          "partial": "밑넓이·옆넓이 중 하나만 옳으면 1점."
+        },
+        {
+          "element": "방정식 풀이",
+          "points": 2,
+          "criterion": "π를 지우고 이항하여 {kc}h = {kl}{eul(kl)} 얻었다.",
+          "partial": "π를 지우는 단계까지 옳으면 1점."
+        },
+        {
+          "element": "높이 구하기",
+          "points": 2,
+          "criterion": "h = {h}{eul(h)} 구하고 겉넓이가 맞는지 확인했다.",
+          "partial": "확인 없이 답만 옳으면 1점."
+        }
+      ],
+      "id": "m1-2-cylinder-surface-t2",
+      "pitfalls": [
+        {
+          "text": "겉넓이 식에서 밑면을 하나만 넣음 ({kb}π + {kc}πh)",
+          "on": "겉넓이 식",
+          "effect": "부분"
+        },
+        {
+          "text": "π를 양변에서 지우지 않아 h에 π가 남음",
+          "on": "방정식",
+          "effect": "부분"
+        },
+        {
+          "text": "{2*kb}{eul(2*kb)} 이항할 때 부호를 바꾸지 않음",
+          "on": "방정식",
+          "effect": "부분"
+        },
+        {
+          "text": "부피 공식으로 잘못 세움 (π × {r}² × h = {ks}π)",
+          "on": "겉넓이 식",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원의 넓이 πr²",
+        "원주 2πr",
+        "기둥의 전개도"
+      ],
+      "ops": [
+        "넓이",
+        "방정식"
+      ],
+      "tags": [
+        "원기둥",
+        "겉넓이"
+      ],
+      "title": "옆넓이와 높이로 반지름 구하기",
+      "skill": "옆넓이 = (원주) × (높이) = 2πrh 에서 r을 역산하기",
+      "variant_axis": {
+        "구하는 것": "반지름",
+        "제시 방식": "옆넓이·높이"
+      },
+      "discriminates": "옆면 직사각형의 가로가 원주 2πr임을 써서 r을 구하는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              3,
+              20
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "kl": "2*r*h",
+        "kc": "2*r",
+        "kh": "2*h"
+      },
+      "constraints": [
+        "h != r",
+        "kl != h",
+        "kl <= 480"
+      ],
+      "cost_values": [
+        "r",
+        "h",
+        "kl",
+        "kh"
+      ],
+      "relation": "2*X*h - kl",
+      "unknown": "X",
+      "answer_var": "r",
+      "verify": [
+        "2*ans*h == kl",
+        "ans > 0"
+      ],
+      "question": "다음 그림과 같이 높이가 {h} cm인 원기둥의 옆넓이가 [[{kl} * pi]] cm²일 때, 이 원기둥의 밑면의 반지름의 길이를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "r",
+            "height": "{h}"
+          }
+        }
+      ],
+      "answer": "{r}",
+      "answer_alt": [
+        "{r} cm"
+      ],
+      "sol1": "옆면을 펼치면 세로가 높이 {h} cm이고 가로가 밑면의 원주인 직사각형이다. 반지름을 r cm로 두면 원주는 2πr (cm)이므로 옆넓이는 2πr × {h} = {kh}πr (cm²)이다. 이것이 {kl}π와 같다는 방정식에서 r을 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "r",
+            "height": "{h}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "height",
+              "h-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "top",
+              "base",
+              "radius",
+              "r-lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "밑면의 반지름을 r cm라 하면 밑면의 원주는 2πr (cm)이다.",
+        "옆넓이 = (원주) × (높이) = 2πr × {h} = {kh}πr (cm²)",
+        "옆넓이가 {kl}π cm²이므로 {kh}πr = {kl}π, 양변을 π로 나누면 {kh}r = {kl}",
+        "양변을 {kh}{ro(kh)} 나누면 r = {r}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "2πr × {h} = {kl}π",
+                "hint": "옆넓이 = 원주 × 높이"
+              },
+              {
+                "text": "{kh}r = {kl}",
+                "hint": "양변 ÷ π"
+              },
+              {
+                "text": "r = {r}",
+                "marks": [
+                  {
+                    "on": "{r}",
+                    "note": "{kl}÷{kh}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [],
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol_check": "반지름 {r} cm이면 원주는 2π × {r} = {kc}π (cm), 옆넓이는 {kc}π × {h} = {kl}π (cm²)로 문제의 값과 같다. 답은 {r} cm다.",
+      "model_answer": "밑면의 반지름을 r cm라 하면 옆넓이는 (원주) × (높이) = 2πr × {h} = {kh}πr (cm²)이다. 이 값이 {kl}π이므로 {kh}r = {kl}에서 r = {r}이다. 따라서 밑면의 반지름의 길이는 {r} cm다.",
+      "rubric": [
+        {
+          "element": "옆넓이 식 세우기",
+          "points": 3,
+          "criterion": "옆면의 가로가 원주 2πr임을 밝히고 옆넓이를 2πr × {h}{ro(h)} 나타냈다.",
+          "partial": "옆면이 직사각형임은 밝혔으나 가로를 원주로 잡지 못했으면 1점."
+        },
+        {
+          "element": "방정식 풀이",
+          "points": 2,
+          "criterion": "{kh}πr = {kl}π에서 π를 지우고 r = {r}{eul(r)} 구했다.",
+          "partial": "π를 지우는 단계까지 옳으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "반지름 {r} cm로 옆넓이가 {kl}π가 됨을 확인하고 답을 썼다.",
+          "partial": "확인 없이 답만 옳으면 1점."
+        }
+      ],
+      "id": "m1-2-cylinder-surface-t3",
+      "pitfalls": [
+        {
+          "text": "옆넓이를 2πr × h 가 아니라 πr × h 나 r × h 로 세움",
+          "on": "옆넓이 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "π를 양변에서 지우지 않아 r에 π가 남음",
+          "on": "방정식",
+          "effect": "부분"
+        },
+        {
+          "text": "옆넓이를 겉넓이로 오해해 밑넓이까지 빼거나 더함",
+          "on": "옆넓이 식",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원의 넓이 πr²",
+        "원주 2πr",
+        "기둥의 전개도"
+      ],
+      "ops": [
+        "넓이",
+        "사칙"
+      ],
+      "tags": [
+        "직육면체",
+        "겉넓이"
+      ],
+      "title": "직육면체의 겉넓이 구하기",
+      "skill": "겉넓이 = 2 × (ab + bc + ca) — 마주 보는 면이 같음을 이용해 세 종류의 면을 두 번씩 세기",
+      "variant_axis": {
+        "구하는 것": "겉넓이",
+        "입체": "직육면체"
+      },
+      "discriminates": "여섯 면을 세 쌍으로 묶어 빠짐없이 세는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "c",
+          "values": {
+            "int": [
+              2,
+              8
+            ]
+          }
+        },
+        {
+          "name": "db",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        },
+        {
+          "name": "da",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "b": "c + db",
+        "a": "c + db + da",
+        "ab": "(c + db + da)*(c + db)",
+        "bc": "(c + db)*c",
+        "ca": "c*(c + db + da)",
+        "S": "2*((c + db + da)*(c + db) + (c + db)*c + c*(c + db + da))"
+      },
+      "constraints": [
+        "S <= 600"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "ab",
+        "bc",
+        "ca",
+        "S"
+      ],
+      "relation": "X - 2*(a*b + b*c + c*a)",
+      "unknown": "X",
+      "answer_var": "S",
+      "verify": [
+        "ans == 2*(ab + bc + ca)"
+      ],
+      "question": "가로의 길이가 {a} cm, 세로의 길이가 {b} cm, 높이가 {c} cm인 직육면체의 겉넓이를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "rectangular_prism"
+          }
+        }
+      ],
+      "answer": "{S}",
+      "answer_alt": [
+        "{S} cm²"
+      ],
+      "sol1": "직육면체의 여섯 면은 마주 보는 면끼리 합동이므로 세 종류의 직사각형이 두 개씩 있다. 가로 × 세로({a} × {b}), 세로 × 높이({b} × {c}), 높이 × 가로({c} × {a}) 세 넓이를 더한 뒤 2배 하면 겉넓이다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "앞·뒤: {a} × {c} 두 개",
+              "옆: {b} × {c} 두 개",
+              "위·아래: {a} × {b} 두 개"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol2": [
+        "세 종류의 면의 넓이: {a} × {b} = {ab}, {b} × {c} = {bc}, {c} × {a} = {ca} (cm²)",
+        "세 넓이의 합은 {ab} + {bc} + {ca} = {ab + bc + ca} (cm²)",
+        "마주 보는 면이 각각 하나씩 더 있으므로 겉넓이 = 2 × {ab + bc + ca} = {S} (cm²)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{a} × {b} + {b} × {c} + {c} × {a} = {ab + bc + ca}",
+                "hint": "세 종류의 면"
+              },
+              {
+                "text": "겉넓이 = 2 × {ab + bc + ca} = {S} (cm²)",
+                "hint": "마주 보는 면은 두 개씩"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ]
+      ],
+      "sol_check": "여섯 면을 하나씩 더해 보면 {ab} + {ab} + {bc} + {bc} + {ca} + {ca} = {S} (cm²)로 같다. 세 넓이의 합 {ab + bc + ca}만 답하면 절반이다. 답은 {S} cm²다.",
+      "model_answer": "직육면체의 겉넓이는 2 × (가로 × 세로 + 세로 × 높이 + 높이 × 가로)이다. {a} × {b} = {ab}, {b} × {c} = {bc}, {c} × {a} = {ca}이므로 세 넓이의 합은 {ab + bc + ca} (cm²)이고, 겉넓이는 2 × {ab + bc + ca} = {S} (cm²)다.",
+      "rubric": [
+        {
+          "element": "면 구성",
+          "points": 2,
+          "criterion": "여섯 면이 세 종류의 직사각형 두 개씩임을 밝혔다.",
+          "partial": "세 종류를 나열했으나 두 개씩임을 밝히지 않았으면 1점."
+        },
+        {
+          "element": "넓이 계산",
+          "points": 3,
+          "criterion": "{a} × {b}, {b} × {c}, {c} × {a}{eul(a)} 각각 구하고 합 {ab + bc + ca}{eul(ab + bc + ca)} 얻었다.",
+          "partial": "세 넓이 중 하나가 틀렸으면 1점."
+        },
+        {
+          "element": "겉넓이",
+          "points": 2,
+          "criterion": "2배 하여 {S} cm²로 답했다.",
+          "partial": "세 넓이의 합만 답했으면 1점."
+        }
+      ],
+      "id": "m1-2-cylinder-surface-t4",
+      "pitfalls": [
+        {
+          "text": "세 종류의 면 넓이를 더하고 2배 하지 않음 ({ab + bc + ca}으로 답함)",
+          "on": "겉넓이",
+          "effect": "부분"
+        },
+        {
+          "text": "면의 넓이를 세 변의 길이의 곱(부피 {a} × {b} × {c})으로 계산함",
+          "on": "넓이 계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "여섯 면 중 같은 면을 두 번 세고 다른 면을 빠뜨림",
+          "on": "면 구성",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 60,
+      "traps": [
+        "제곱누락",
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원의 넓이 πr²",
+        "원주 2πr",
+        "기둥의 전개도"
+      ],
+      "ops": [
+        "넓이",
+        "지수"
+      ],
+      "tags": [
+        "원기둥",
+        "겉넓이"
+      ],
+      "title": "원기둥의 겉넓이 고르기 (5지선다)",
+      "skill": "겉넓이 = 2πr² + 2πrh 를 정확히 세우기",
+      "variant_axis": {
+        "구하는 것": "겉넓이",
+        "제시 방식": "반지름·높이",
+        "출제 형식": "선다형"
+      },
+      "discriminates": "밑면 2개·옆면 가로 = 원주를 모두 반영한 값을 고르는가",
+      "qtype": "choice",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              10
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              3,
+              15
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "kb": "r*r",
+        "kl": "2*r*h",
+        "ks": "2*r*r + 2*r*h",
+        "kc": "2*r"
+      },
+      "constraints": [
+        "h != r",
+        "ks <= 600"
+      ],
+      "cost_values": [
+        "r",
+        "h",
+        "kb",
+        "kl",
+        "ks"
+      ],
+      "relation": "X - 2*r*r - 2*r*h",
+      "unknown": "X",
+      "answer_var": "ks",
+      "verify": [
+        "ks == 2*kb + kl"
+      ],
+      "question": "밑면의 반지름의 길이가 {r} cm, 높이가 {h} cm인 원기둥의 겉넓이는?",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "answer": "[[{ks} * pi]]",
+      "answer_alt": [
+        "[[{ks} * pi]] cm²"
+      ],
+      "distractor_fmt": "[[{v} * pi]]",
+      "distractors": [
+        {
+          "expr": "r*r + 2*r*h",
+          "misconception": "MC-CYL-03"
+        },
+        {
+          "expr": "2*r*r + r*h",
+          "misconception": "MC-CYL-04"
+        },
+        {
+          "expr": "r*r*h",
+          "misconception": "MC-GEO-04"
+        },
+        {
+          "expr": "2*r + 2*r*h",
+          "misconception": "MC-CYL-01"
+        },
+        {
+          "expr": "8*r*r + 4*r*h",
+          "misconception": "MC-CYL-02"
+        },
+        {
+          "expr": "2*r*r + 2*h",
+          "misconception": "MC-CYL-04"
+        },
+        {
+          "expr": "4*r*r + 2*r*h",
+          "misconception": "MC-CALC-01"
+        },
+        {
+          "expr": "2*r*r + 4*r*h",
+          "misconception": "MC-CALC-01"
+        }
+      ],
+      "sol1": "원기둥의 겉넓이는 (밑넓이) × 2 + (옆넓이)다. 밑면은 반지름 {r} cm인 원 2개, 옆면은 가로가 원주 2π × {r} = {kc}π (cm), 세로가 {h} cm인 직사각형이다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "top",
+              "base",
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "height",
+              "h-lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "(밑넓이) × 2 = π × {r}² × 2 = {2*kb}π (cm²)",
+        "옆넓이 = 2π × {r} × {h} = {kl}π (cm²)",
+        "겉넓이 = {2*kb}π + {kl}π = {ks}π (cm²)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "밑넓이 × 2 = {2*kb}π",
+                "hint": "밑면은 두 개"
+              },
+              {
+                "text": "옆넓이 = {kc}π × {h} = {kl}π",
+                "hint": "가로 = 원주"
+              },
+              {
+                "text": "겉넓이 = {ks}π (cm²)"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol_check": "밑면을 하나만 세면 {kb + kl}π, 옆면의 가로를 반지름으로 잡으면 {2*kb + r*h}π가 되어 보기의 다른 값이 나온다. 답은 [[{ks} * pi]] cm²다.",
+      "model_answer": "겉넓이 = (밑넓이) × 2 + (옆넓이) = π × {r}² × 2 + 2π × {r} × {h} = {2*kb}π + {kl}π = {ks}π (cm²)이다.",
+      "rubric": [
+        {
+          "element": "밑넓이",
+          "points": 2,
+          "criterion": "밑넓이 {kb}π를 구하고 밑면이 2개임을 반영했다.",
+          "partial": "밑넓이는 옳으나 하나만 셌으면 1점."
+        },
+        {
+          "element": "옆넓이",
+          "points": 3,
+          "criterion": "옆면의 가로가 원주 2π × {r}임을 밝히고 옆넓이 {kl}π를 구했다.",
+          "partial": "가로를 원주로 잡지 못했으면 1점."
+        },
+        {
+          "element": "겉넓이",
+          "points": 2,
+          "criterion": "{2*kb}π + {kl}π = {ks}π를 골랐다.",
+          "partial": "식은 옳으나 계산이 틀렸으면 1점."
+        }
+      ],
+      "id": "m1-2-cylinder-surface-t5",
+      "pitfalls": [
+        {
+          "text": "밑면을 하나만 센 값({kb + kl}π)을 고름",
+          "on": "밑넓이",
+          "effect": "부분"
+        },
+        {
+          "text": "옆면의 가로를 반지름으로 잡은 값을 고름",
+          "on": "옆넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "부피 {kb*h}π를 고름",
+          "on": "겉넓이",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

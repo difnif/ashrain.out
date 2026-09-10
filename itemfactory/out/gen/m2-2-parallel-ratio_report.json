@@ -1,0 +1,161 @@
+{
+ "run_id": "m2-2-parallel-ratio-20260909-230002",
+ "seed_id": "m2-2-parallel-ratio",
+ "title": "평행선과 선분의 길이의 비 — BC ∥ DE, 세 평행선, 중점연결정리(삼각형·둘레·사각형)",
+ "accepted": 772,
+ "rejected": 1331,
+ "per_template": {
+  "m2-2-parallel-ratio-t1": {
+   "target": 300,
+   "space": 972,
+   "ok": 120,
+   "rej": 852,
+   "by_gate": {
+    "G1:제약 위반 m != n or n != t": 108,
+    "G1:제약 위반 t > abs(m - n)": 288,
+    "G1:제약 위반 ans_v != db": 15,
+    "G1:제약 위반 t < m + n": 144,
+    "G1:제약 위반 100*cC <= 88": 36,
+    "G1:제약 위반 ab <= 21": 6,
+    "G1:제약 위반 ac <= 21": 6,
+    "G1:제약 위반 100*cth < 76": 108,
+    "G1:제약 위반 100*cB <= 88": 36,
+    "G1:제약 위반 ans_v != g3": 6,
+    "G1:제약 위반 ans_v != ad": 41,
+    "G1:제약 위반 10*mn >= L": 6,
+    "G1:제약 위반 bc <= 21": 3,
+    "DUP:문면+보기 동일(도형만 다름) — 수치를 문면에도 넣을 것": 49
+   },
+   "samples": [
+    {
+     "idx": 178,
+     "q": "다음 그림의 △ABC에서 [[seg(BC)]] ∥ [[seg(DE)]]이고 [[seg(AD)]] = 2 cm, [[seg(DB)]] = 4 cm, [[seg(AE)]] = 3 cm일 때, [[seg(EC)]]의 길이를 구하시오.",
+     "a": "6"
+    },
+    {
+     "idx": 779,
+     "q": "다음 그림의 △ABC에서 [[seg(BC)]] ∥ [[seg(DE)]]이고 [[seg(AD)]] = 9 cm, [[seg(DB)]] = 6 cm, [[seg(DE)]] = 9 cm일 때, [[seg(BC)]]의 길이를 구하시오.",
+     "a": "15"
+    },
+    {
+     "idx": 37,
+     "q": "다음 그림의 △ABC에서 [[seg(BC)]] ∥ [[seg(DE)]]이고 [[seg(AD)]] = 4 cm, [[seg(DB)]] = 2 cm, [[seg(AE)]] = 2 cm일 때, [[seg(EC)]]의 길이를 구하시오.",
+     "a": "1"
+    }
+   ]
+  },
+  "m2-2-parallel-ratio-t2": {
+   "target": 300,
+   "space": 216,
+   "ok": 94,
+   "rej": 122,
+   "by_gate": {
+    "G1:제약 위반 m != n": 72,
+    "G1:제약 위반 ab + bc <= 21": 44,
+    "G1:제약 위반 ans_v != ab": 3,
+    "G1:제약 위반 ans_v != bc": 3
+   },
+   "samples": [
+    {
+     "idx": 133,
+     "q": "다음 그림에서 세 직선 l, m, n이 평행하고(l ∥ m ∥ n) [[seg(AB)]] = 9 cm, [[seg(BC)]] = 12 cm, [[seg(EF)]] = 8 cm일 때, [[seg(DE)]]의 길이를 구하시오.",
+     "a": "6"
+    },
+    {
+     "idx": 50,
+     "q": "다음 그림에서 세 직선 l, m, n이 평행하고(l ∥ m ∥ n) [[seg(AB)]] = 8 cm, [[seg(BC)]] = 10 cm, [[seg(DE)]] = 12 cm일 때, [[seg(EF)]]의 길이를 구하시오.",
+     "a": "15"
+    },
+    {
+     "idx": 100,
+     "q": "다음 그림에서 세 직선 l, m, n이 평행하고(l ∥ m ∥ n) [[seg(AB)]] = 5 cm, [[seg(BC)]] = 8 cm, [[seg(DE)]] = 10 cm일 때, [[seg(EF)]]의 길이를 구하시오.",
+     "a": "16"
+    }
+   ]
+  },
+  "m2-2-parallel-ratio-t3": {
+   "target": 300,
+   "space": 38,
+   "ok": 38,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림의 △ABC에서 두 점 D, E는 각각 변 AB, AC의 중점이다. [[seg(BC)]] = 4 cm일 때, [[seg(DE)]]의 길이를 구하시오.",
+     "a": "2"
+    },
+    {
+     "idx": 23,
+     "q": "다음 그림의 △ABC에서 두 점 D, E는 각각 변 AB, AC의 중점이다. [[seg(DE)]] = 6 cm일 때, [[seg(BC)]]의 길이를 구하시오.",
+     "a": "12"
+    },
+    {
+     "idx": 8,
+     "q": "다음 그림의 △ABC에서 두 점 D, E는 각각 변 AB, AC의 중점이다. [[seg(BC)]] = 20 cm일 때, [[seg(DE)]]의 길이를 구하시오.",
+     "a": "10"
+    }
+   ]
+  },
+  "m2-2-parallel-ratio-t4": {
+   "target": 300,
+   "space": 2048,
+   "ok": 300,
+   "rej": 335,
+   "by_gate": {
+    "G1:제약 위반 a2 != b2": 80,
+    "G1:제약 위반 a2 != c2": 67,
+    "G1:제약 위반 b2 != c2": 69,
+    "G1:제약 위반 b2 + c2 > a2": 32,
+    "G1:제약 위반 a2 + b2 > c2": 29,
+    "G1:제약 위반 ans_v != b": 11,
+    "G1:제약 위반 a2 + c2 > b2": 31,
+    "G1:제약 위반 ans_v != a": 8,
+    "G1:제약 위반 ans_v != c": 8
+   },
+   "samples": [
+    {
+     "idx": 486,
+     "q": "다음 그림의 △ABC에서 세 점 D, E, F는 각각 변 AB, BC, CA의 중점이다. [[seg(AB)]] = 18 cm, [[seg(BC)]] = 20 cm, [[seg(CA)]] = 14 cm일 때, △DEF의 둘레의 길이를 구하시오.",
+     "a": "26"
+    },
+    {
+     "idx": 972,
+     "q": "다음 그림의 △ABC에서 세 점 D, E, F는 각각 변 AB, BC, CA의 중점이다. [[seg(AB)]] = 14 cm, [[seg(BC)]] = 20 cm, [[seg(CA)]] = 8 cm일 때, [[seg(EF)]]의 길이를 구하시오.",
+     "a": "7"
+    },
+    {
+     "idx": 677,
+     "q": "다음 그림의 △ABC에서 세 점 D, E, F는 각각 변 AB, BC, CA의 중점이다. [[seg(AB)]] = 16 cm, [[seg(BC)]] = 10 cm, [[seg(CA)]] = 14 cm일 때, [[seg(EF)]]의 길이를 구하시오.",
+     "a": "8"
+    }
+   ]
+  },
+  "m2-2-parallel-ratio-t5": {
+   "target": 300,
+   "space": 242,
+   "ok": 220,
+   "rej": 22,
+   "by_gate": {
+    "G1:제약 위반 p != q": 22
+   },
+   "samples": [
+    {
+     "idx": 151,
+     "q": "다음 그림의 □ABCD에서 네 점 E, F, G, H는 각각 변 AB, BC, CD, DA의 중점이다. [[seg(AC)]] = 6 cm이고 □EFGH의 둘레의 길이가 18 cm일 때, [[seg(BD)]]의 길이를 구하시오.",
+     "a": "12"
+    },
+    {
+     "idx": 211,
+     "q": "다음 그림의 □ABCD에서 네 점 E, F, G, H는 각각 변 AB, BC, CD, DA의 중점이다. [[seg(AC)]] = 12 cm이고 □EFGH의 둘레의 길이가 18 cm일 때, [[seg(BD)]]의 길이를 구하시오.",
+     "a": "6"
+    },
+    {
+     "idx": 29,
+     "q": "다음 그림의 □ABCD에서 네 점 E, F, G, H는 각각 변 AB, BC, CD, DA의 중점이다. [[seg(AC)]] = 6 cm이고 [[seg(BD)]] = 11 cm일 때, □EFGH의 둘레의 길이를 구하시오.",
+     "a": "17"
+    }
+   ]
+  }
+ }
+}
