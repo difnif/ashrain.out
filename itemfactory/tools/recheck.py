@@ -464,7 +464,86 @@ def recompute(it):
         sg = _segs(q); return sg["AC"] / 3 if _asked_seg(q) == "BG" else 3 * sg["BG"]
     if tid.startswith("m2-2-centroid-t4"):
         sg = _segs(q); return sg["BD"] / 6 if _asked_seg(q) == "OE" else 6 * sg["OE"]
+    # ── m1-2 통계 2 (09-11): 도수분포표 — 도수는 발문 '차례로 …' 에서, 계급 경계는 표(figure) 에서 되읽는다
+    if tid.startswith("m1-2-freq-table-t1"):
+        N = Fraction(re.search(r"(\d+)명의", q).group(1)); fs = _freq_list(q)
+        return N - sum(fs)
+    if tid.startswith("m1-2-freq-table-t2"):
+        N = Fraction(re.search(r"(\d+)명의", q).group(1)); rows = _ft_rows(it)
+        m = re.search(r"(\d+(?:\.\d+)?) ?(?:분|km|점|회|쪽) (이상|미만)인 학생", q); b, d = Fraction(m.group(1)), m.group(2)
+        cnt = sum(f for lo, hi, f in rows if (lo >= b if d == "이상" else hi <= b))
+        return 100 * cnt / N
+    if tid.startswith("m1-2-freq-table-t3"):
+        rows = _ft_rows(it); lo, hi, _ = max(rows, key=lambda r: r[2]); return (lo + hi) / 2
+    if tid.startswith("m1-2-freq-table-t4"):
+        N = Fraction(re.search(r"(\d+)명의", q).group(1)); fs = _freq_list(q)
+        p = Fraction(re.search(r"전체의 (\d+) %", q).group(1)); A = N * p / 100
+        return N - sum(fs) - A
+    if tid.startswith("m1-2-freq-table-t5"):
+        rows = _ft_rows(it); k = int(re.search(r"(\d+)번째", q).group(1)); acc = 0
+        for lo, hi, f in reversed(rows):
+            acc += f
+            if k <= acc:
+                return (lo + hi) / 2
+        return None
+    # ── 상대도수 (09-11) — 소수는 발문에서 그대로 읽는다
+    if tid.startswith("m1-2-relative-freq-t1"):
+        N = Fraction(re.search(r"(\d+)명의", q).group(1)); fs = _freq_list(q); rows = _ft_rows(it)
+        lo = Fraction(re.search(r"(\d+(?:\.\d+)?) ?(?:분|km|점|회|쪽) 이상", q).group(1))
+        fj = next(f for l, h, f in rows if l == lo)
+        return fj / N
+    if tid.startswith("m1-2-relative-freq-t2"):
+        f = Fraction(re.search(r"도수는 (\d+)명이고", q).group(1)); r = Fraction(re.search(r"상대도수는 (\d*\.?\d+)", q).group(1))
+        return f / r
+    if tid.startswith("m1-2-relative-freq-t3") or tid.startswith("m1-2-relative-freq-t4"):
+        fs = [Fraction(x) for x in re.findall(r"(\d+)명", q)]
+        rs = re.search(r"상대도수는 차례로 (.+?)일 때", q).group(1).split(", ")
+        N = fs[0] / Fraction(rs[0])
+        return N * Fraction(rs[1]) if tid.startswith("m1-2-relative-freq-t3") else fs[1] / N
+    if tid.startswith("m1-2-relative-freq-t5"):
+        na, nb, fa, fb = [Fraction(x) for x in re.findall(r"(\d+)명", q)][:4]
+        return (fa / na) / (fb / nb)
+    # ── 중앙값·최빈값 (09-11) — 대괄호 안의 자료를 되읽는다 (x 는 미지수)
+    if tid.startswith("m1-2-median-mode"):
+        data = _bracket_data(q); known = sorted(v for v in data if v is not None)
+        if tid.startswith("m1-2-median-mode-t1"):
+            vals = sorted(data); med = vals[3]; mode = Counter(vals).most_common(1)[0][0]; return med + mode
+        if tid.startswith("m1-2-median-mode-t2"):
+            vals = sorted(data); return (vals[2] + vals[3]) / 2
+        if tid.startswith("m1-2-median-mode-t3"):
+            v = Counter(known).most_common(1)[0][0]; return 6 * v - sum(known)
+        if tid.startswith("m1-2-median-mode-t4"):
+            m = Fraction(re.search(r"중앙값이 (\d*\.?\d+)", q).group(1)); x = 2 * m - known[2]
+            vals = sorted(known + [x]); return x if (vals[2] + vals[3]) / 2 == m and known[2] < x < known[3] else None
+        if tid.startswith("m1-2-median-mode-t5"):
+            m = Fraction(re.search(r"평균이 (\d*\.?\d+)", q).group(1)); x = 7 * m - sum(known)
+            vals = sorted(known + [x]); return vals[3]
     return "skip"
+
+
+def _bracket_data(q):
+    """'[ 12, 15, x, 9 ]' → [12, 15, None, 9]."""
+    m = re.search(r"\[ (.+?) \]", q)
+    return [None if t.strip() == "x" else Fraction(t.strip()) for t in m.group(1).split(",")] if m else []
+
+
+def _freq_list(q):
+    """'각 계급의 도수가 차례로 3명, 5명, A명, 4명, 2명일 때' → 발문에 적힌 도수(문자는 건너뜀)."""
+    m = re.search(r"차례로 (.+?)(?:일 때|이고)", q)
+    return [Fraction(x) for x in re.findall(r"(\d+)명", m.group(1))] if m else []
+
+
+def _ft_rows(it):
+    """도수분포표 figure → [(lo, hi, 도수)] — 합계 행·문자 도수 행은 뺀다."""
+    out = []
+    for f in it.get("figure") or []:
+        if f.get("fn") != "table":
+            continue
+        for r in f["args"]["rows"]:
+            m = re.match(r"(\d+(?:\.\d+)?) 이상 ~ (\d+(?:\.\d+)?) 미만", str(r[0]))
+            if m and re.fullmatch(r"\d+", str(r[1])):
+                out.append((Fraction(m.group(1)), Fraction(m.group(2)), Fraction(str(r[1]))))
+    return out
 
 
 def _segs(q):

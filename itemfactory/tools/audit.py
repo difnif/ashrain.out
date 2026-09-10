@@ -107,7 +107,7 @@ for f in sorted(OUT.glob("*_pool.json")):
 
         # 6. 답이 문면에 그대로 노출되는지 (거저 주는 문항)
         ans = re.sub(r"^\[\[|\]\]$", "", str(it["answer"]))
-        if it["qtype"] == "short" and re.fullmatch(r"-?\d+", ans) and re.search(rf"(?<![\d\-\u2212]){re.escape(ans)}(?!\d)", it["question"]):
+        if it["qtype"] == "short" and re.fullmatch(r"-?\d+", ans) and re.search(rf"(?<![\d\-\u2212.]){re.escape(ans)}(?!\d|\.\d)", it["question"]):
             bad("F1-답이문면에노출", it, f"answer={ans}")
 
 dup_db = {k: v for k, v in dbkeys.items() if len(v) > 1}
