@@ -518,6 +518,43 @@ def recompute(it):
         if tid.startswith("m1-2-median-mode-t5"):
             m = Fraction(re.search(r"평균이 (\d*\.?\d+)", q).group(1)); x = 7 * m - sum(known)
             vals = sorted(known + [x]); return vals[3]
+    # ── 다면체 세기 (09-11) — 이름(칠각기둥)·종류를 되읽어 F·E·V 를 다시 센다
+    if tid.startswith("m1-2-polyhedron"):
+        kind = "각뿔대" if "각뿔대" in q else ("각뿔" if "각뿔" in q else "각기둥")
+        nb, ap = (1, 1) if kind == "각뿔" else (2, 0)
+        FEV = lambda nn: {"면": nb + nn, "모서리": nn * nb + nn, "꼭짓점": nn * nb + ap, "밑면인 다각형의 변": nn}   # noqa: E731
+        ask = re.search(r"의 (면|모서리|꼭짓점|밑면인 다각형의 변)의 개수를 구하시오", q)
+        kn = lambda: _kor_polygon(re.sub(r"각(?:기둥|뿔대|뿔)", "각형", q))   # noqa: E731 — '칠각기둥' → '칠각형' 으로 되읽기
+        if tid.startswith("m1-2-polyhedron-t1"):
+            return Fraction(FEV(kn())[ask.group(1)])
+        if tid.startswith("m1-2-polyhedron-t2"):
+            g = re.search(r"(면|모서리|꼭짓점)의 개수가 (\d+)인", q); key, gv = g.group(1), int(g.group(2))
+            nn = next((k for k in range(3, 16) if FEV(k)[key] == gv), None)
+            return Fraction(FEV(nn)[ask.group(1)]) if nn else None
+        if tid.startswith("m1-2-polyhedron-t3"):
+            d = FEV(kn()); v, e, f = d["꼭짓점"], d["모서리"], d["면"]
+            ex = re.search(r"때, (.+?)의 값을", q).group(1).replace("−", "-")
+            return Fraction(eval(ex, {"__builtins__": {}}, {"v": v, "e": e, "f": f}))   # noqa: S307 — v·e·f·부호만 있는 식
+        if tid.startswith("m1-2-polyhedron-t4"):
+            T = int(re.search(r"v \+ e \+ f = (\d+)", q).group(1))
+            nn = next((k for k in range(3, 16) if sum(FEV(k)[x] for x in ("면", "모서리", "꼭짓점")) == T), None)
+            return Fraction(FEV(nn)[ask.group(1)]) if nn else None
+        if tid.startswith("m1-2-polyhedron-t5"):
+            g = re.search(r"모서리의 개수는 (꼭짓점|면)의 개수보다 (\d+)만큼", q); key, dd = g.group(1), int(g.group(2))
+            nn = next((k for k in range(3, 16) if FEV(k)["모서리"] - FEV(k)[key] == dd), None)
+            return Fraction(FEV(nn)[ask.group(1)]) if nn else None
+    # ── 각기둥·각뿔 (09-11)
+    if tid.startswith("m1-2-prism-pyramid-t1") or tid.startswith("m1-2-prism-pyramid-t2"):
+        c, a, b, h = [Fraction(x) for x in re.findall(r"(\d+) cm", q)][:4]
+        return a * b + (a + b + c) * h if tid.startswith("m1-2-prism-pyramid-t1") else a * b * h / 2
+    if tid.startswith("m1-2-prism-pyramid-t3"):
+        A = Fraction(re.search(r"밑넓이가 (\d+)", q).group(1)); V = Fraction(re.search(r"부피가 (\d+)", q).group(1)); return V / A
+    if tid.startswith("m1-2-prism-pyramid-t4"):
+        a, sl = [Fraction(x) for x in re.findall(r"(\d+) cm", q)][:2]; return a * a + 2 * a * sl
+    if tid.startswith("m1-2-prism-pyramid-t5"):
+        A, a, H, h = [Fraction(x) for x in re.findall(r"(\d+) cm", q)][:4]; return A * A * H / 3 - a * a * h / 3
+    if tid.startswith("m1-2-prism-pyramid-t6"):
+        a, h, p, qq = [Fraction(x) for x in re.findall(r"(\d+) cm", q)][:4]; return a * a * h / (3 * p * qq)
     return "skip"
 
 

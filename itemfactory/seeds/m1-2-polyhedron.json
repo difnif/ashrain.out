@@ -1,0 +1,1855 @@
+{
+  "seed_id": "m1-2-polyhedron",
+  "category": "도형",
+  "title": "다면체 — 각기둥·각뿔·각뿔대의 면·모서리·꼭짓점",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-12"
+  ],
+  "schema_id": "0cf606df-5557-4250-982f-90e722513204",
+  "schema_name": "다면체의 면·모서리·꼭짓점 개수 활용 / 다면체 모서리 개수 비교",
+  "source_item_ids": [],
+  "note": "출판사 7.1 유형(n각기둥·뿔·뿔대 면·모서리·꼭짓점 / 역산 / v+e+f / 차) 차용. F = nb + n, E = n·nb + n, V = n·nb + ap 를 표 행(nb·ap)으로 파생. 그림 없는 기하 틀(D3 경고 예상). 정다면체 조건은 개념 판별형이라 제외.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "prereq": [
+        "각기둥·각뿔·각뿔대의 밑면·옆면",
+        "면·모서리·꼭짓점"
+      ],
+      "ops": [
+        "사칙"
+      ],
+      "tags": [
+        "다면체",
+        "각기둥",
+        "각뿔",
+        "각뿔대"
+      ],
+      "title": "n각기둥·n각뿔·n각뿔대의 면·모서리·꼭짓점의 개수",
+      "skill": "밑면의 변의 개수 n으로 면·모서리·꼭짓점의 개수를 세기 — 밑면 몇 개, 옆면 몇 개인지 그려서 센다",
+      "variant_axis": {
+        "구하는 것": "면·모서리·꼭짓점",
+        "입체": "각기둥·각뿔·각뿔대",
+        "n": "3~12"
+      },
+      "discriminates": "각기둥(밑면 2개)·각뿔(꼭대기 1개)·각뿔대(밑면 2개)의 구조 차이를 세기에 반영하는가",
+      "qtype": "short",
+      "difficulty": 1,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              3,
+              15
+            ]
+          }
+        },
+        {
+          "name": "kd",
+          "values": {
+            "in": [
+              "p",
+              "y",
+              "t"
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "f",
+              "e",
+              "v"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "n",
+          "rows": {
+            "3": {
+              "KPRE": "삼"
+            },
+            "4": {
+              "KPRE": "사"
+            },
+            "5": {
+              "KPRE": "오"
+            },
+            "6": {
+              "KPRE": "육"
+            },
+            "7": {
+              "KPRE": "칠"
+            },
+            "8": {
+              "KPRE": "팔"
+            },
+            "9": {
+              "KPRE": "구"
+            },
+            "10": {
+              "KPRE": "십"
+            },
+            "11": {
+              "KPRE": "십일"
+            },
+            "12": {
+              "KPRE": "십이"
+            },
+            "13": {
+              "KPRE": "십삼"
+            },
+            "14": {
+              "KPRE": "십사"
+            },
+            "15": {
+              "KPRE": "십오"
+            }
+          }
+        },
+        {
+          "key": "kd",
+          "rows": {
+            "p": {
+              "KIND": "각기둥",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "밑면 2개와 옆면(직사각형)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면"
+            },
+            "y": {
+              "KIND": "각뿔",
+              "nb": 1,
+              "ap": 1,
+              "APX": " + 꼭대기 1개",
+              "FTXT": "밑면 1개와 옆면(삼각형)",
+              "ETXT": "밑면의 모서리와 옆모서리",
+              "VTXT": "밑면의 꼭짓점과 꼭대기 1개",
+              "BTXT": "밑면"
+            },
+            "t": {
+              "KIND": "각뿔대",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "두 밑면과 옆면(사다리꼴)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면"
+            }
+          }
+        },
+        {
+          "key": "ask",
+          "rows": {
+            "f": {
+              "ASK": "면",
+              "aF": 1,
+              "aE": 0,
+              "aV": 0
+            },
+            "e": {
+              "ASK": "모서리",
+              "aF": 0,
+              "aE": 1,
+              "aV": 0
+            },
+            "v": {
+              "ASK": "꼭짓점",
+              "aF": 0,
+              "aE": 0,
+              "aV": 1
+            }
+          }
+        }
+      ],
+      "derive": {
+        "F": "nb + n",
+        "E": "n*nb + n",
+        "V": "n*nb + ap",
+        "ans": "aF*(nb + n) + aE*(n*nb + n) + aV*(n*nb + ap)"
+      },
+      "constraints": [],
+      "cost_values": [
+        "n",
+        "F",
+        "E",
+        "V"
+      ],
+      "relation": "X - aF*F - aE*E - aV*V",
+      "unknown": "X",
+      "answer_var": "ans",
+      "verify": [
+        "ans == aF*F + aE*E + aV*V",
+        "ans >= 4"
+      ],
+      "question": "{KPRE}{KIND}의 {ASK}의 개수를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans}개"
+      ],
+      "sol1": "{KPRE}{KIND}{eun(KIND)} 밑면이 {KPRE}각형인 {KIND}이다. 면은 {FTXT} {n}개, 모서리는 {ETXT}, 꼭짓점은 {VTXT}{ro(VTXT)} 이루어진다. 세는 방법은 공식 암기가 아니라 '밑면 몇 개, 옆면 몇 개'를 그려 보는 것이다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{KPRE}{KIND} = 밑면이 {KPRE}각형인 {KIND}",
+              "{FTXT}"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "sol2": [
+        "면의 개수: 밑면 {nb}개 + 옆면 {n}개 = {F}",
+        "모서리의 개수: 밑면의 모서리 {nb*n}개 + 옆모서리 {n}개 = {E}",
+        "꼭짓점의 개수: 밑면의 꼭짓점 {nb*n}개{APX} = {V}",
+        "따라서 {ASK}의 개수는 {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "면: 밑면 {nb}개 + 옆면 {n}개 = {F}",
+                "hint": "{FTXT}"
+              },
+              {
+                "text": "모서리: 밑면의 모서리 {nb*n}개 + 옆모서리 {n}개 = {E}",
+                "hint": "{ETXT}"
+              },
+              {
+                "text": "꼭짓점: 밑면의 꼭짓점 {nb*n}개{APX} = {V}",
+                "hint": "{VTXT}"
+              },
+              {
+                "text": "{ASK}의 개수 = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "mark:3-0"
+          }
+        ]
+      ],
+      "sol_check": "오일러 공식 (꼭짓점) − (모서리) + (면) = {V} − {E} + {F} = 2가 성립하므로 세 개수가 맞다. 답: {ans}",
+      "model_answer": "{KPRE}{KIND}{eun(KIND)} 밑면이 {KPRE}각형인 {KIND}이므로 면은 밑면 {nb}개와 옆면 {n}개로 {F}개, 모서리는 밑면의 모서리 {nb*n}개와 옆모서리 {n}개로 {E}개, 꼭짓점은 밑면의 꼭짓점 {nb*n}개{APX}{ro(APX)} {V}개이다. 따라서 {ASK}의 개수는 {ans}이다.",
+      "rubric": [
+        {
+          "element": "구조 읽기",
+          "points": 2,
+          "criterion": "{KPRE}{KIND}{ika(KIND)} 밑면이 {KPRE}각형인 {KIND}임을 밝히고 {BTXT}{wa(BTXT)} 옆면 {n}개로 이루어짐을 적었다.",
+          "partial": "밑면의 변의 개수 {n}만 적었으면 1점."
+        },
+        {
+          "element": "개수 세기",
+          "points": 3,
+          "criterion": "{ASK}의 개수를 밑면·옆면(꼭대기) 구조로 세어 {ans}{eul(ans)} 구했다.",
+          "partial": "구조는 맞으나 곱셈·덧셈이 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans}개로 답했다.",
+          "partial": "다른 요소(면·모서리·꼭짓점)의 개수를 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m1-2-polyhedron-t1",
+      "pitfalls": [
+        {
+          "text": "{KIND}의 밑면 수를 잘못 잡음(각뿔의 밑면을 2개로, 각기둥의 밑면을 1개로)",
+          "on": "구조",
+          "effect": "불인정"
+        },
+        {
+          "text": "옆모서리 {n}개를 빠뜨려 모서리를 밑면의 모서리만으로 셈",
+          "on": "개수",
+          "effect": "부분"
+        },
+        {
+          "text": "각뿔의 꼭대기 꼭짓점을 빠뜨리거나 각기둥처럼 꼭짓점을 2배로 셈",
+          "on": "개수",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "prereq": [
+        "각기둥·각뿔·각뿔대의 밑면·옆면",
+        "면·모서리·꼭짓점"
+      ],
+      "ops": [
+        "사칙"
+      ],
+      "tags": [
+        "다면체",
+        "각기둥",
+        "각뿔",
+        "각뿔대"
+      ],
+      "title": "면(모서리·꼭짓점)의 개수로 n을 찾아 다른 개수 구하기",
+      "skill": "주어진 개수를 n의 식으로 놓아 n을 구한 뒤 구하는 개수를 센다",
+      "variant_axis": {
+        "주어진 것": "면·모서리·꼭짓점",
+        "구하는 것": "변·면·모서리·꼭짓점",
+        "입체": "각기둥·각뿔·각뿔대"
+      },
+      "discriminates": "주어진 개수를 n의 식(n + 2, 3n, 2n …)으로 되돌려 n을 구하는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              3,
+              15
+            ]
+          }
+        },
+        {
+          "name": "kd",
+          "values": {
+            "in": [
+              "p",
+              "y",
+              "t"
+            ]
+          }
+        },
+        {
+          "name": "giv",
+          "values": {
+            "in": [
+              "f",
+              "e",
+              "v"
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "f",
+              "e",
+              "v",
+              "n"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "n",
+          "rows": {
+            "3": {
+              "KPRE": "삼"
+            },
+            "4": {
+              "KPRE": "사"
+            },
+            "5": {
+              "KPRE": "오"
+            },
+            "6": {
+              "KPRE": "육"
+            },
+            "7": {
+              "KPRE": "칠"
+            },
+            "8": {
+              "KPRE": "팔"
+            },
+            "9": {
+              "KPRE": "구"
+            },
+            "10": {
+              "KPRE": "십"
+            },
+            "11": {
+              "KPRE": "십일"
+            },
+            "12": {
+              "KPRE": "십이"
+            },
+            "13": {
+              "KPRE": "십삼"
+            },
+            "14": {
+              "KPRE": "십사"
+            },
+            "15": {
+              "KPRE": "십오"
+            }
+          }
+        },
+        {
+          "key": "kd",
+          "rows": {
+            "p": {
+              "KIND": "각기둥",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "밑면 2개와 옆면(직사각형)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면"
+            },
+            "y": {
+              "KIND": "각뿔",
+              "nb": 1,
+              "ap": 1,
+              "APX": " + 꼭대기 1개",
+              "FTXT": "밑면 1개와 옆면(삼각형)",
+              "ETXT": "밑면의 모서리와 옆모서리",
+              "VTXT": "밑면의 꼭짓점과 꼭대기 1개",
+              "BTXT": "밑면"
+            },
+            "t": {
+              "KIND": "각뿔대",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "두 밑면과 옆면(사다리꼴)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면"
+            }
+          }
+        },
+        {
+          "key": "giv",
+          "rows": {
+            "f": {
+              "GIV": "면",
+              "gF": 1,
+              "gE": 0,
+              "gV": 0
+            },
+            "e": {
+              "GIV": "모서리",
+              "gF": 0,
+              "gE": 1,
+              "gV": 0
+            },
+            "v": {
+              "GIV": "꼭짓점",
+              "gF": 0,
+              "gE": 0,
+              "gV": 1
+            }
+          }
+        },
+        {
+          "key": "ask",
+          "rows": {
+            "f": {
+              "ASK": "면",
+              "aF": 1,
+              "aE": 0,
+              "aV": 0
+            },
+            "e": {
+              "ASK": "모서리",
+              "aF": 0,
+              "aE": 1,
+              "aV": 0
+            },
+            "v": {
+              "ASK": "꼭짓점",
+              "aF": 0,
+              "aE": 0,
+              "aV": 1
+            },
+            "n": {
+              "ASK": "밑면인 다각형의 변",
+              "aF": 0,
+              "aE": 0,
+              "aV": 0
+            }
+          }
+        }
+      ],
+      "derive": {
+        "F": "nb + n",
+        "E": "n*nb + n",
+        "V": "n*nb + ap",
+        "gv": "gF*(nb + n) + gE*(n*nb + n) + gV*(n*nb + ap)",
+        "ans": "aF*(nb + n) + aE*(n*nb + n) + aV*(n*nb + ap) + (1 - aF - aE - aV)*n"
+      },
+      "constraints": [
+        "gv != ans",
+        "aF*gF + aE*gE + aV*gV == 0"
+      ],
+      "cost_values": [
+        "n",
+        "gv",
+        "ans"
+      ],
+      "relation": "X - ans",
+      "unknown": "X",
+      "answer_var": "ans",
+      "verify": [
+        "gv == gF*F + gE*E + gV*V",
+        "ans != gv"
+      ],
+      "question": "{GIV}의 개수가 {gv}인 {KIND}의 {ASK}의 개수를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans}개"
+      ],
+      "sol1": "밑면이 n각형인 {KIND}의 면·모서리·꼭짓점의 개수는 각각 n의 식으로 쓸 수 있다({FTXT} n개 → 면 n + {nb}, 모서리 {co(nb)}n + n, 꼭짓점 {co(nb)}n + {ap}). 주어진 {GIV}의 개수 {gv}{eul(gv)} 그 식과 같다고 놓아 n을 먼저 구한 뒤, 구하는 개수를 센다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "밑면이 n각형인 {KIND}",
+              "면 = n + {nb},  모서리 = {co(nb)}n + n,  꼭짓점 = {co(nb)}n + {ap}"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "sol2": [
+        "밑면을 n각형이라 하면 {GIV}의 개수는 n의 식이고, 이것이 {gv}이므로 n = {n} — 밑면은 {KPRE}각형",
+        "즉 이 입체는 {KPRE}{KIND}이다",
+        "면: 밑면 {nb}개 + 옆면 {n}개 = {F}, 모서리: {nb*n} + {n} = {E}, 꼭짓점: {nb*n}{APX} = {V}",
+        "따라서 {ASK}의 개수는 {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{GIV}의 개수 = {gv} → n = {n}",
+                "hint": "n의 식으로 되돌리기",
+                "marks": [
+                  {
+                    "on": "{n}",
+                    "note": "밑면 {KPRE}각형"
+                  }
+                ]
+              },
+              {
+                "text": "{KPRE}{KIND}"
+              },
+              {
+                "text": "면 {F} · 모서리 {E} · 꼭짓점 {V}",
+                "hint": "{FTXT}"
+              },
+              {
+                "text": "{ASK}의 개수 = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:0",
+              "mark:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "mark:3-0"
+          }
+        ]
+      ],
+      "sol_check": "{KPRE}{KIND}의 {GIV}의 개수를 다시 세면 {gv}{ro(gv)} 문제의 조건과 같다. 답: {ans}",
+      "model_answer": "밑면을 n각형이라 하면 {KIND}의 {GIV}의 개수는 n의 식으로 나타나고, 이것이 {gv}이므로 n = {n}, 즉 {KPRE}{KIND}이다. {KPRE}{KIND}의 면은 {F}개, 모서리는 {E}개, 꼭짓점은 {V}개이므로 {ASK}의 개수는 {ans}이다.",
+      "rubric": [
+        {
+          "element": "n 구하기",
+          "points": 3,
+          "criterion": "{GIV}의 개수를 n의 식으로 놓아 n = {n}({KPRE}{KIND})임을 구했다.",
+          "partial": "식은 세웠으나 n을 잘못 구했으면 1점."
+        },
+        {
+          "element": "개수 세기",
+          "points": 2,
+          "criterion": "{KPRE}{KIND}의 {ASK}의 개수를 구조대로 세어 {ans}{eul(ans)} 구했다.",
+          "partial": "구조는 맞으나 계산이 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans}{ro(ans)} 답했다.",
+          "partial": "n의 값이나 다른 개수를 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m1-2-polyhedron-t2",
+      "pitfalls": [
+        {
+          "text": "{GIV}의 개수를 n의 식으로 되돌리지 않고 {gv}{eul(gv)} 밑면의 변의 개수로 씀",
+          "on": "n 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "n의 식을 다른 요소의 식({KIND}의 면·모서리·꼭짓점 중 다른 것)으로 잘못 세움",
+          "on": "n 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "n = {n}{eun(n)} 맞으나 {ASK}의 개수를 셀 때 밑면·옆면 구조를 틀림",
+          "on": "개수",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "prereq": [
+        "각기둥·각뿔·각뿔대의 밑면·옆면",
+        "면·모서리·꼭짓점"
+      ],
+      "ops": [
+        "사칙"
+      ],
+      "tags": [
+        "다면체",
+        "각기둥",
+        "각뿔",
+        "각뿔대"
+      ],
+      "title": "v, e, f 의 식의 값 — 세 개수를 모두 센 뒤 계산",
+      "skill": "꼭짓점 v·모서리 e·면 f를 각각 센 뒤 주어진 식에 대입한다 (v − e + f = 2는 언제나 성립)",
+      "variant_axis": {
+        "구하는 것": "v, e, f의 식",
+        "입체": "각기둥·각뿔·각뿔대",
+        "n": "3~12"
+      },
+      "discriminates": "세 개수를 모두 정확히 세고 식의 순서·부호대로 계산하는가",
+      "qtype": "short",
+      "difficulty": 2,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              3,
+              15
+            ]
+          }
+        },
+        {
+          "name": "kd",
+          "values": {
+            "in": [
+              "p",
+              "y",
+              "t"
+            ]
+          }
+        },
+        {
+          "name": "cb",
+          "values": {
+            "in": [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "n",
+          "rows": {
+            "3": {
+              "KPRE": "삼"
+            },
+            "4": {
+              "KPRE": "사"
+            },
+            "5": {
+              "KPRE": "오"
+            },
+            "6": {
+              "KPRE": "육"
+            },
+            "7": {
+              "KPRE": "칠"
+            },
+            "8": {
+              "KPRE": "팔"
+            },
+            "9": {
+              "KPRE": "구"
+            },
+            "10": {
+              "KPRE": "십"
+            },
+            "11": {
+              "KPRE": "십일"
+            },
+            "12": {
+              "KPRE": "십이"
+            },
+            "13": {
+              "KPRE": "십삼"
+            },
+            "14": {
+              "KPRE": "십사"
+            },
+            "15": {
+              "KPRE": "십오"
+            }
+          }
+        },
+        {
+          "key": "kd",
+          "rows": {
+            "p": {
+              "KIND": "각기둥",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "밑면 2개와 옆면(직사각형)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면"
+            },
+            "y": {
+              "KIND": "각뿔",
+              "nb": 1,
+              "ap": 1,
+              "APX": " + 꼭대기 1개",
+              "FTXT": "밑면 1개와 옆면(삼각형)",
+              "ETXT": "밑면의 모서리와 옆모서리",
+              "VTXT": "밑면의 꼭짓점과 꼭대기 1개",
+              "BTXT": "밑면"
+            },
+            "t": {
+              "KIND": "각뿔대",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "두 밑면과 옆면(사다리꼴)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면"
+            }
+          }
+        },
+        {
+          "key": "cb",
+          "rows": {
+            "1": {
+              "EXPR": "v + e + f",
+              "cv": 1,
+              "ce": 1,
+              "cf": 1
+            },
+            "2": {
+              "EXPR": "v − e + f",
+              "cv": 1,
+              "ce": -1,
+              "cf": 1
+            },
+            "3": {
+              "EXPR": "e − v",
+              "cv": -1,
+              "ce": 1,
+              "cf": 0
+            },
+            "4": {
+              "EXPR": "e − f",
+              "cv": 0,
+              "ce": 1,
+              "cf": -1
+            },
+            "5": {
+              "EXPR": "v + f",
+              "cv": 1,
+              "ce": 0,
+              "cf": 1
+            },
+            "6": {
+              "EXPR": "e + f",
+              "cv": 0,
+              "ce": 1,
+              "cf": 1
+            }
+          }
+        }
+      ],
+      "derive": {
+        "F": "nb + n",
+        "E": "n*nb + n",
+        "V": "n*nb + ap",
+        "ans": "cv*(n*nb + ap) + ce*(n*nb + n) + cf*(nb + n)"
+      },
+      "constraints": [
+        "ans > 0"
+      ],
+      "cost_values": [
+        "n",
+        "F",
+        "E",
+        "V",
+        "ans"
+      ],
+      "relation": "X - cv*V - ce*E - cf*F",
+      "unknown": "X",
+      "answer_var": "ans",
+      "verify": [
+        "ans == cv*V + ce*E + cf*F"
+      ],
+      "question": "{KPRE}{KIND}의 꼭짓점의 개수를 v, 모서리의 개수를 e, 면의 개수를 f라 할 때, {EXPR}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "{KPRE}{KIND}{eun(KIND)} 밑면이 {KPRE}각형인 {KIND}이다. v, e, f를 하나씩 센다 — 면은 {FTXT} {n}개, 모서리는 {ETXT}, 꼭짓점은 {VTXT}. 세 값을 구한 뒤 {EXPR}에 넣는다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{KPRE}{KIND} = 밑면이 {KPRE}각형인 {KIND}",
+              "v, e, f 를 각각 센 뒤 {EXPR}"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "sol2": [
+        "꼭짓점: 밑면의 꼭짓점 {nb*n}개{APX} → v = {V}",
+        "모서리: 밑면의 모서리 {nb*n}개 + 옆모서리 {n}개 → e = {E}",
+        "면: 밑면 {nb}개 + 옆면 {n}개 → f = {F}",
+        "따라서 {EXPR} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "v = {V}",
+                "hint": "{VTXT}"
+              },
+              {
+                "text": "e = {E}",
+                "hint": "{ETXT}"
+              },
+              {
+                "text": "f = {F}",
+                "hint": "{FTXT}"
+              },
+              {
+                "text": "{EXPR} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "대입"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "mark:3-0"
+          }
+        ]
+      ],
+      "sol_check": "v − e + f = {V} − {E} + {F} = 2(오일러 공식)이므로 세 개수가 맞게 세어졌다. 답: {ans}",
+      "model_answer": "{KPRE}{KIND}{eun(KIND)} 밑면이 {KPRE}각형인 {KIND}이므로 v = {V}, e = {E}, f = {F}이다. 따라서 {EXPR} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "개수 세기",
+          "points": 4,
+          "criterion": "v = {V}, e = {E}, f = {F}{eul(F)} 구조대로 세어 구했다.",
+          "partial": "셋 중 하나가 틀렸으면 2점, 둘 이상 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "식의 값",
+          "points": 3,
+          "criterion": "{EXPR} = {ans}{eul(ans)} 부호·순서대로 계산했다.",
+          "partial": "세 값은 맞으나 계산이 틀렸으면 1점."
+        }
+      ],
+      "id": "m1-2-polyhedron-t3",
+      "pitfalls": [
+        {
+          "text": "세 개수(꼭짓점 {V}·모서리 {E}·면 {F}) 중 하나를 잘못 셈",
+          "on": "개수",
+          "effect": "부분"
+        },
+        {
+          "text": "식 {EXPR}의 순서나 부호를 바꿔 계산함",
+          "on": "식의 값",
+          "effect": "부분"
+        },
+        {
+          "text": "v, e, f의 뜻(꼭짓점·모서리·면)을 서로 바꿔 대입함",
+          "on": "식의 값",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "prereq": [
+        "각기둥·각뿔·각뿔대의 밑면·옆면",
+        "면·모서리·꼭짓점"
+      ],
+      "ops": [
+        "사칙"
+      ],
+      "tags": [
+        "다면체",
+        "각기둥",
+        "각뿔",
+        "각뿔대"
+      ],
+      "title": "v + e + f 의 값으로 n을 찾아 개수 구하기",
+      "skill": "v + e + f 를 n의 식으로 나타내 방정식을 풀고 n을 구한다",
+      "variant_axis": {
+        "주어진 것": "v + e + f",
+        "구하는 것": "변·면·모서리·꼭짓점",
+        "입체": "각기둥·각뿔·각뿔대"
+      },
+      "discriminates": "세 개수의 합을 n의 일차식으로 세우고 n을 푸는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              3,
+              15
+            ]
+          }
+        },
+        {
+          "name": "kd",
+          "values": {
+            "in": [
+              "p",
+              "y",
+              "t"
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "n",
+              "f",
+              "e",
+              "v"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "n",
+          "rows": {
+            "3": {
+              "KPRE": "삼"
+            },
+            "4": {
+              "KPRE": "사"
+            },
+            "5": {
+              "KPRE": "오"
+            },
+            "6": {
+              "KPRE": "육"
+            },
+            "7": {
+              "KPRE": "칠"
+            },
+            "8": {
+              "KPRE": "팔"
+            },
+            "9": {
+              "KPRE": "구"
+            },
+            "10": {
+              "KPRE": "십"
+            },
+            "11": {
+              "KPRE": "십일"
+            },
+            "12": {
+              "KPRE": "십이"
+            },
+            "13": {
+              "KPRE": "십삼"
+            },
+            "14": {
+              "KPRE": "십사"
+            },
+            "15": {
+              "KPRE": "십오"
+            }
+          }
+        },
+        {
+          "key": "kd",
+          "rows": {
+            "p": {
+              "KIND": "각기둥",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "밑면 2개와 옆면(직사각형)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면"
+            },
+            "y": {
+              "KIND": "각뿔",
+              "nb": 1,
+              "ap": 1,
+              "APX": " + 꼭대기 1개",
+              "FTXT": "밑면 1개와 옆면(삼각형)",
+              "ETXT": "밑면의 모서리와 옆모서리",
+              "VTXT": "밑면의 꼭짓점과 꼭대기 1개",
+              "BTXT": "밑면"
+            },
+            "t": {
+              "KIND": "각뿔대",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "두 밑면과 옆면(사다리꼴)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면"
+            }
+          }
+        },
+        {
+          "key": "ask",
+          "rows": {
+            "n": {
+              "ASK": "밑면인 다각형의 변",
+              "aF": 0,
+              "aE": 0,
+              "aV": 0
+            },
+            "f": {
+              "ASK": "면",
+              "aF": 1,
+              "aE": 0,
+              "aV": 0
+            },
+            "e": {
+              "ASK": "모서리",
+              "aF": 0,
+              "aE": 1,
+              "aV": 0
+            },
+            "v": {
+              "ASK": "꼭짓점",
+              "aF": 0,
+              "aE": 0,
+              "aV": 1
+            }
+          }
+        }
+      ],
+      "derive": {
+        "F": "nb + n",
+        "E": "n*nb + n",
+        "V": "n*nb + ap",
+        "T": "(n*nb + ap) + (n*nb + n) + (nb + n)",
+        "cn": "2*nb + 2",
+        "c0": "ap + nb",
+        "ans": "aF*(nb + n) + aE*(n*nb + n) + aV*(n*nb + ap) + (1 - aF - aE - aV)*n"
+      },
+      "constraints": [
+        "ans != T"
+      ],
+      "cost_values": [
+        "n",
+        "T",
+        "ans"
+      ],
+      "relation": "X - ans",
+      "unknown": "X",
+      "answer_var": "ans",
+      "verify": [
+        "T == V + E + F",
+        "T == cn*n + c0"
+      ],
+      "question": "어떤 {KIND}의 꼭짓점의 개수를 v, 모서리의 개수를 e, 면의 개수를 f라 하면 v + e + f = {T}이다. 이 {KIND}의 {ASK}의 개수를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans}개"
+      ],
+      "sol1": "밑면을 n각형이라 하면 {KIND}의 꼭짓점은 {co(nb)}n + {ap}, 모서리는 {co(nb)}n + n, 면은 n + {nb}이다. 세 식을 더한 {cn}n + {c0}{ika(c0)} {T}{wa(T)} 같다고 놓으면 n이 나온다. n을 구한 뒤 구하는 개수를 센다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "v = {co(nb)}n + {ap},  e = {co(nb)}n + n,  f = n + {nb}",
+              "v + e + f = {cn}n + {c0}"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "sol2": [
+        "밑면을 n각형이라 하면 v = {co(nb)}n + {ap}, e = {co(nb)}n + n = {nb + 1}n, f = n + {nb}",
+        "v + e + f = {cn}n + {c0} = {T}에서 {cn}n = {T - c0}, n = {n}",
+        "즉 이 입체는 {KPRE}{KIND}이고, 면 {F}개 · 모서리 {E}개 · 꼭짓점 {V}개",
+        "따라서 {ASK}의 개수는 {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "v + e + f = {cn}n + {c0}",
+                "hint": "세 식의 합"
+              },
+              {
+                "text": "{cn}n + {c0} = {T} → n = {n}",
+                "marks": [
+                  {
+                    "on": "{n}",
+                    "note": "{T - c0} ÷ {cn}"
+                  }
+                ]
+              },
+              {
+                "text": "{KPRE}{KIND}: 면 {F} · 모서리 {E} · 꼭짓점 {V}"
+              },
+              {
+                "text": "{ASK}의 개수 = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "mark:3-0"
+          }
+        ]
+      ],
+      "sol_check": "{KPRE}{KIND}에서 v + e + f = {V} + {E} + {F} = {T}{ro(T)} 조건과 같다. 답: {ans}",
+      "model_answer": "밑면을 n각형이라 하면 v = {co(nb)}n + {ap}, e = {nb + 1}n, f = n + {nb}이므로 v + e + f = {cn}n + {c0}이다. {cn}n + {c0} = {T}에서 n = {n}이므로 이 입체는 {KPRE}{KIND}이고, {ASK}의 개수는 {ans}이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "v, e, f를 n의 식으로 나타내 v + e + f = {cn}n + {c0}{eul(c0)} 세웠다.",
+          "partial": "셋 중 하나의 식이 틀렸으면 1점."
+        },
+        {
+          "element": "n 구하기",
+          "points": 2,
+          "criterion": "{cn}n + {c0} = {T}에서 n = {n}{eul(n)} 구했다.",
+          "partial": "방정식은 맞으나 계산이 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{KPRE}{KIND}의 {ASK}의 개수 {ans}{eul(ans)} 답했다.",
+          "partial": "n의 값을 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m1-2-polyhedron-t4",
+      "pitfalls": [
+        {
+          "text": "v, e, f 중 하나를 n의 식으로 잘못 나타냄(예: 각뿔의 꼭짓점을 2n으로)",
+          "on": "식",
+          "effect": "부분"
+        },
+        {
+          "text": "{cn}n + {c0} = {T}에서 {c0}{eul(c0)} 이항하지 않고 n을 구함",
+          "on": "n 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "n = {n}{eul(n)} 그대로 답함({ASK}의 개수와 혼동)",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 80,
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "prereq": [
+        "각기둥·각뿔·각뿔대의 밑면·옆면",
+        "면·모서리·꼭짓점"
+      ],
+      "ops": [
+        "사칙"
+      ],
+      "tags": [
+        "다면체",
+        "각기둥",
+        "각뿔",
+        "각뿔대"
+      ],
+      "title": "두 개수의 차로 n을 찾아 개수 구하기",
+      "skill": "(모서리) − (꼭짓점), (모서리) − (면)을 n의 식으로 나타내 n을 구한다",
+      "variant_axis": {
+        "주어진 것": "e − v · e − f",
+        "구하는 것": "변·면·모서리·꼭짓점",
+        "입체": "각기둥·각뿔·각뿔대"
+      },
+      "discriminates": "두 개수의 차를 n의 식으로 세우고 n을 푸는가",
+      "qtype": "short",
+      "difficulty": 3,
+      "pool_target": 300,
+      "params": [
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              3,
+              15
+            ]
+          }
+        },
+        {
+          "name": "kd",
+          "values": {
+            "in": [
+              "p-ev",
+              "p-ef",
+              "y-ev",
+              "y-ef",
+              "t-ev",
+              "t-ef"
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "n",
+              "f",
+              "e",
+              "v"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "n",
+          "rows": {
+            "3": {
+              "KPRE": "삼"
+            },
+            "4": {
+              "KPRE": "사"
+            },
+            "5": {
+              "KPRE": "오"
+            },
+            "6": {
+              "KPRE": "육"
+            },
+            "7": {
+              "KPRE": "칠"
+            },
+            "8": {
+              "KPRE": "팔"
+            },
+            "9": {
+              "KPRE": "구"
+            },
+            "10": {
+              "KPRE": "십"
+            },
+            "11": {
+              "KPRE": "십일"
+            },
+            "12": {
+              "KPRE": "십이"
+            },
+            "13": {
+              "KPRE": "십삼"
+            },
+            "14": {
+              "KPRE": "십사"
+            },
+            "15": {
+              "KPRE": "십오"
+            }
+          }
+        },
+        {
+          "key": "kd",
+          "rows": {
+            "p-ev": {
+              "KIND": "각기둥",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "밑면 2개와 옆면(직사각형)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면",
+              "D1": "모서리",
+              "D2": "꼭짓점",
+              "d2V": 1,
+              "d2F": 0,
+              "DTXT": "n"
+            },
+            "p-ef": {
+              "KIND": "각기둥",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "밑면 2개와 옆면(직사각형)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면",
+              "D1": "모서리",
+              "D2": "면",
+              "d2V": 0,
+              "d2F": 1,
+              "DTXT": "2n − 2"
+            },
+            "y-ev": {
+              "KIND": "각뿔",
+              "nb": 1,
+              "ap": 1,
+              "APX": " + 꼭대기 1개",
+              "FTXT": "밑면 1개와 옆면(삼각형)",
+              "ETXT": "밑면의 모서리와 옆모서리",
+              "VTXT": "밑면의 꼭짓점과 꼭대기 1개",
+              "BTXT": "밑면",
+              "D1": "모서리",
+              "D2": "꼭짓점",
+              "d2V": 1,
+              "d2F": 0,
+              "DTXT": "n − 1"
+            },
+            "y-ef": {
+              "KIND": "각뿔",
+              "nb": 1,
+              "ap": 1,
+              "APX": " + 꼭대기 1개",
+              "FTXT": "밑면 1개와 옆면(삼각형)",
+              "ETXT": "밑면의 모서리와 옆모서리",
+              "VTXT": "밑면의 꼭짓점과 꼭대기 1개",
+              "BTXT": "밑면",
+              "D1": "모서리",
+              "D2": "면",
+              "d2V": 0,
+              "d2F": 1,
+              "DTXT": "n − 1"
+            },
+            "t-ev": {
+              "KIND": "각뿔대",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "두 밑면과 옆면(사다리꼴)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면",
+              "D1": "모서리",
+              "D2": "꼭짓점",
+              "d2V": 1,
+              "d2F": 0,
+              "DTXT": "n"
+            },
+            "t-ef": {
+              "KIND": "각뿔대",
+              "nb": 2,
+              "ap": 0,
+              "APX": "",
+              "FTXT": "두 밑면과 옆면(사다리꼴)",
+              "ETXT": "두 밑면의 모서리와 옆모서리",
+              "VTXT": "두 밑면의 꼭짓점",
+              "BTXT": "두 밑면",
+              "D1": "모서리",
+              "D2": "면",
+              "d2V": 0,
+              "d2F": 1,
+              "DTXT": "2n − 2"
+            }
+          }
+        },
+        {
+          "key": "ask",
+          "rows": {
+            "n": {
+              "ASK": "밑면인 다각형의 변",
+              "aF": 0,
+              "aE": 0,
+              "aV": 0
+            },
+            "f": {
+              "ASK": "면",
+              "aF": 1,
+              "aE": 0,
+              "aV": 0
+            },
+            "e": {
+              "ASK": "모서리",
+              "aF": 0,
+              "aE": 1,
+              "aV": 0
+            },
+            "v": {
+              "ASK": "꼭짓점",
+              "aF": 0,
+              "aE": 0,
+              "aV": 1
+            }
+          }
+        }
+      ],
+      "derive": {
+        "F": "nb + n",
+        "E": "n*nb + n",
+        "V": "n*nb + ap",
+        "dd": "(n*nb + n) - d2V*(n*nb + ap) - d2F*(nb + n)",
+        "cn": "(nb + 1) - d2V*nb - d2F",
+        "c0": "-d2V*ap - d2F*nb",
+        "ans": "aF*(nb + n) + aE*(n*nb + n) + aV*(n*nb + ap) + (1 - aF - aE - aV)*n"
+      },
+      "constraints": [
+        "dd >= 2",
+        "ans != dd",
+        "cn >= 1"
+      ],
+      "cost_values": [
+        "n",
+        "dd",
+        "ans"
+      ],
+      "relation": "X - ans",
+      "unknown": "X",
+      "answer_var": "ans",
+      "verify": [
+        "dd == E - d2V*V - d2F*F",
+        "dd == cn*n + c0"
+      ],
+      "question": "어떤 {KIND}의 {D1}의 개수는 {D2}의 개수보다 {dd}만큼 많다. 이 {KIND}의 {ASK}의 개수를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans}개"
+      ],
+      "sol1": "밑면을 n각형이라 하면 {KIND}의 모서리는 {co(nb)}n + n = {nb + 1}n, 꼭짓점은 {co(nb)}n + {ap}, 면은 n + {nb}이다. ({D1}) − ({D2})를 n의 식으로 쓰면 {DTXT}이고, 이것이 {dd}{wa(dd)} 같다고 놓으면 n이 나온다.",
+      "sol1_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "e = {nb + 1}n,  v = {co(nb)}n + {ap},  f = n + {nb}",
+              "({D1}) − ({D2}) = {DTXT}"
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "sol2": [
+        "밑면을 n각형이라 하면 {D1}의 개수는 {nb + 1}n, {D2}의 개수는 n의 식으로 나타난다",
+        "({D1}) − ({D2}) = {DTXT} = {dd}에서 n = {n}",
+        "즉 이 입체는 {KPRE}{KIND}이고, 면 {F}개 · 모서리 {E}개 · 꼭짓점 {V}개",
+        "따라서 {ASK}의 개수는 {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "({D1}) − ({D2}) = {DTXT}",
+                "hint": "n의 식으로"
+              },
+              {
+                "text": "{DTXT} = {dd} → n = {n}",
+                "marks": [
+                  {
+                    "on": "{n}",
+                    "note": "밑면 {KPRE}각형"
+                  }
+                ]
+              },
+              {
+                "text": "{KPRE}{KIND}: 면 {F} · 모서리 {E} · 꼭짓점 {V}"
+              },
+              {
+                "text": "{ASK}의 개수 = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "mark:3-0"
+          }
+        ]
+      ],
+      "sol_check": "{KPRE}{KIND}에서 ({D1}) − ({D2}) = {dd}{ro(dd)} 조건과 같다. 답: {ans}",
+      "model_answer": "밑면을 n각형이라 하면 {KIND}의 {D1}의 개수는 {nb + 1}n이고, ({D1}) − ({D2}) = {DTXT}이다. 이것이 {dd}이므로 n = {n}, 즉 {KPRE}{KIND}이다. 따라서 {ASK}의 개수는 {ans}이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "{D1}·{D2}의 개수를 n의 식으로 나타내 차가 {DTXT}임을 세웠다.",
+          "partial": "둘 중 한 식이 틀렸으면 1점."
+        },
+        {
+          "element": "n 구하기",
+          "points": 2,
+          "criterion": "{DTXT} = {dd}에서 n = {n}{eul(n)} 구했다.",
+          "partial": "방정식은 맞으나 계산이 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{KPRE}{KIND}의 {ASK}의 개수 {ans}{eul(ans)} 답했다.",
+          "partial": "n의 값을 답했으면 인정하지 않는다."
+        }
+      ],
+      "id": "m1-2-polyhedron-t5",
+      "pitfalls": [
+        {
+          "text": "{D1}·{D2}의 개수를 n의 식으로 나타내지 않고 표를 뒤져 답함(근거 없음)",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "({D1}) − ({D2})를 반대로 빼서 {DTXT}의 부호가 뒤집힘",
+          "on": "식",
+          "effect": "부분"
+        },
+        {
+          "text": "n = {n}{eul(n)} 그대로 답함({ASK}의 개수와 혼동)",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}
