@@ -55,6 +55,12 @@ python -m genkit.build seeds/*.json --n 120 --push --status draft
 
 `--push` 전에 `supabase/2026-09_item_gen_v2.sql` 이 적용돼 있어야 한다.
 
+**보통은 ⑦ 을 손으로 하지 않는다** — 시드를 GitHub `main` 에 push 하면 Actions 워크플로 `push-items`
+(`.github/workflows/push-items.yml`)가 그 push 에서 바뀐 시드만 빌드 → recheck → audit → `tools/dbpush.py` 로
+새 문항만 draft 로 올린다(엔진 `genkit/`·`mathir.py`·`pitfalls.py` 가 바뀌면 전체 재빌드, 있는 문항은 건너뜀).
+틀을 고쳐 옛 draft 문항을 정리해야 하면 Actions 탭 → Run workflow 에서 `replace_templates` 에 그 틀(`m1-2-mean-t2`,
+`m2-2-centroid-*`)을 적는다 — draft 만 지우고 live 는 건드리지 않는다.
+
 ---
 
 ## 2. 리포트 읽는 법

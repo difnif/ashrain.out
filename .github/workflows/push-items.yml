@@ -1,10 +1,27 @@
-# 생성 문항 → Supabase test_items 반영 (수동 실행)
-#   Actions 탭 → "push-items" → Run workflow → status(draft/active) 고르고 실행.
-#   시드에서 풀을 다시 만들어(2분) --push 로 업서트한다. 풀 JSON 은 저장소에 없다(.gitignore).
-#   필요한 비밀: Settings → Secrets and variables → Actions → SUPABASE_URL, SUPABASE_SERVICE_KEY
+# 생성 문항 → Supabase test_items 반영 (HANDOFF-시드변형-v1 §8, 09-11)
+#
+# 두 가지로 돈다.
+#   ① 자동 — main 에 시드·엔진이 바뀐 push 가 오면 실행. status 는 draft 고정, 옛 문항은 지우지 않고 **추가만**.
+#      그 push 에서 추가·수정된 시드만 빌드한다(엔진 genkit/·mathir.py·pitfalls.py 가 바뀌었으면 전체).
+#      시드 삭제·이름 변경만 있으면 아무것도 올리지 않는다(정리는 ②의 replace_templates 로).
+#   ② 수동 — Actions 탭 → "push-items" → Run workflow. status(draft/live)·시드 glob·교체할 틀을 고른다.
+#      replace_templates 에 적은 틀은 **draft 행만** 먼저 지운 뒤 올린다(live 는 절대 지우지 않는다).
+#      예: "m1-2-mean-t2 m2-2-centroid-*" (공백·쉼표 구분, 끝의 * = 그 시드의 틀 전부).
+# 순서: 빌드(드라이런) → 독립 검산(recheck) → 감사(audit) → tools/dbpush.py (있는 item_key 는 건너뛰고 새 행만).
+#   검산·감사가 하나라도 실패하면 DB 에 쓰지 않는다. 풀 JSON 은 저장소에 없다(.gitignore) — 매번 시드에서 다시 만든다.
+#   dbpush 가 "content 중복"으로 행을 건너뛰면(틀의 파라미터 공간이 바뀌어 색인이 밀린 것) 올릴 건 다 올린 뒤
+#   실패로 표시한다 → Run workflow 의 replace_templates 로 그 틀의 옛 draft 를 정리하고 다시 실행.
+# 비밀: Settings → Secrets and variables → Actions → SUPABASE_URL, SUPABASE_SERVICE_KEY
 #   (service_role 키 — 절대 클라이언트에 넣지 말 것). 마이그레이션 supabase/2026-09_item_gen_v2.sql 이 먼저 적용돼 있어야 한다.
 name: push-items
 on:
+  push:
+    branches: [main]
+    paths:
+      - "itemfactory/seeds/**"
+      - "itemfactory/genkit/**"
+      - "itemfactory/tools/pitfalls.py"
+      - "itemfactory/mathir.py"
   workflow_dispatch:
     inputs:
       status:
@@ -16,29 +33,52 @@ on:
         description: "시드 glob (기본 전체)"
         default: "seeds/*.json"
         type: string
+      replace_templates:
+        description: "먼저 draft 행을 지울 틀 — 공백·쉼표 구분, 끝 * 허용 (예: m1-2-mean-t2 m2-2-centroid-*). 비우면 추가만"
+        default: ""
+        type: string
 concurrency: { group: push-items, cancel-in-progress: false }
 jobs:
   push:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     defaults: { run: { working-directory: itemfactory } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }          # push 전후 diff 로 바뀐 시드를 고르려면 이력이 필요 (.git 6 MB)
+      - uses: actions/setup-python@v6
         with: { python-version: "3.12" }
       - run: pip install sympy supabase
+      - name: 빌드 대상 고르기
+        id: sel
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          INPUT_SEEDS: ${{ inputs.seeds }}
+          INPUT_STATUS: ${{ inputs.status }}
+          INPUT_REPLACE: ${{ inputs.replace_templates }}
+        run: python tools/ci_select.py
       - name: build (dry run) + 독립 검산·감사
+        if: steps.sel.outputs.seeds != ''
+        env: { SEEDS: "${{ steps.sel.outputs.seeds }}" }
         run: |
-          python -m genkit.build ${{ inputs.seeds }} --n 300 --outdir out/gen --quiet
+          python -m genkit.build $SEEDS --n 300 --outdir out/gen --quiet
           python tools/recheck.py out/gen
           python tools/audit.py out/gen
-      - name: push to Supabase (${{ inputs.status }})
+      - name: push to Supabase (${{ steps.sel.outputs.status }})
+        if: steps.sel.outputs.seeds != ''
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: python -m genkit.build ${{ inputs.seeds }} --n 300 --outdir out/gen --quiet --push --status ${{ inputs.status }}
-      - uses: actions/upload-artifact@v4
-        if: always()
+          STATUS: ${{ steps.sel.outputs.status }}
+          REPLACE: ${{ steps.sel.outputs.replace }}
+        run: python tools/dbpush.py out/gen --status "$STATUS" --replace-templates "$REPLACE"
+      - name: 건너뜀 (빌드할 시드 없음)
+        if: steps.sel.outputs.seeds == ''
+        env: { MODE: "${{ steps.sel.outputs.mode }}" }
+        run: echo "이 push 에는 빌드할 시드가 없다 ($MODE) — DB 를 건드리지 않았다" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v5
+        if: always() && steps.sel.outputs.seeds != ''
         with:
           name: gen-reports
           path: |

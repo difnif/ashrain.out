@@ -62,7 +62,10 @@ alter table public.test_items
 create unique index if not exists test_items_type_content_uq
   on public.test_items (test_type, content_key);      -- 원래 이름 그대로 복구
 
-create unique index if not exists test_items_item_key_uq on public.test_items (item_key) where item_key is not null;
+-- item_key 유니크 인덱스는 전체 인덱스여야 한다 — 부분 인덱스(where item_key is not null)로 두면
+-- PostgREST upsert 의 ON CONFLICT (item_key) 가 42P10 으로 실패한다(09-10 실제 발생, Park 이 SQL Editor 에서 교체).
+-- null(수제 문항)은 유니크 제약에서 서로 다른 값으로 취급되므로 전체 인덱스여도 수제 문항은 막히지 않는다.
+create unique index if not exists test_items_item_key_uq on public.test_items (item_key);
 create index if not exists ti_math_key on public.test_items (math_key);
 create index if not exists ti_template on public.test_items (template_id);
 create index if not exists ti_flag     on public.test_items (flag) where flag is not null;
