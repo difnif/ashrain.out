@@ -1,4 +1,4 @@
-# genkit/expr.py — 시드 명세의 식 평가와 수치 표시 (v1.0)
+# genkit/expr.py — 시드 명세의 식 평가와 수치 표시 (v1.1 · 09-13: 문자열 속 분수는 마커로)
 #
 # 시드는 파이썬 코드가 아니라 JSON이다. 그 안의 식은 여기서만 평가되고,
 # 허용 심볼 밖의 것은 예외로 떨어진다(임의 코드 실행 차단).
@@ -144,7 +144,8 @@ def fill_num(text, env: dict):
         return v
     if "{" not in text:
         return text
-    return _SUB_RE.sub(lambda mm: show(evaluate(mm.group(1), env), marker=False), text)
+    # 문자열 일부에 끼어드는 값 — 정수·소수는 그대로, 분수는 [[frac]] 마커 (판서 줄·라벨의 renderHtml 이 마커만 세로 분수로 그린다)
+    return _SUB_RE.sub(lambda mm: show(evaluate(mm.group(1), env), marker=True), text)
 
 
 
@@ -185,7 +186,7 @@ def co(v):
         return ""
     if f == -1:
         return "-"
-    return show(f, marker=False)
+    return show(f, marker=True)          # 분수 계수는 마커 — '[[frac(4,3)]]x'
 
 
 def dec(v):
@@ -207,10 +208,10 @@ def dv(a, b):
         fa, fb = Fraction(a), Fraction(b)
     except (TypeError, ValueError):
         return f"{a} ÷ {b}"
-    q = show(fa / fb, marker=False) if fb else "?"
+    q = show(fa / fb, marker=True) if fb else "?"
     if fb == 1:
         return q
-    return f"{show(fa, marker=False)} ÷ {show(fb, marker=False)} = {q}"
+    return f"{show(fa, marker=True)} ÷ {show(fb, marker=True)} = {q}"
 
 
 def pn(v):
@@ -219,7 +220,7 @@ def pn(v):
         f = Fraction(v)
     except (TypeError, ValueError):
         return str(v)
-    t = show(f, marker=False)
+    t = show(f, marker=True)             # 분수는 마커 — '([[-frac(2,3)]])'
     return f"({t})" if f < 0 else t
 
 
@@ -229,7 +230,7 @@ def sgn(v):
         f = Fraction(v)
     except (TypeError, ValueError):
         return str(v)
-    return ("\u2212 " if f < 0 else "+ ") + show(abs(f), marker=False)
+    return ("\u2212 " if f < 0 else "+ ") + show(abs(f), marker=True)
 
 
 # ---------------------------------------------------------------- 파라미터 공간

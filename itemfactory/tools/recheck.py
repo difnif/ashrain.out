@@ -847,6 +847,46 @@ def recompute(it):
         if tid.startswith("m1-2-sphere-apply-t4"):
             r = Fraction(re.search(r"반지름의 길이가 (\d+) cm인 반구", q).group(1)); R = Fraction(re.search(r"밑면의 반지름의 길이가 (\d+) cm", q).group(1))
             return Fraction(2, 3) * r ** 3 / (R * R)
+    # ── 세션 5 (09-13): m2-1 수와 식 — 순환소수·단항식·다항식 (mkseed_m2_number.py)
+    if tid.startswith("m2-1-repeating-decimal"):
+        if tid.startswith(("m2-1-repeating-decimal-t1", "m2-1-repeating-decimal-t2")):
+            m = re.search(r"\[\[frac\((\d+),(\d+)\)\]\]", q); P, Q = int(m.group(1)), int(m.group(2)); nn = int(re.search(r"소수점 아래 (\d+)번째", q).group(1))
+            return Fraction((10 ** nn * P // Q) % 10)
+        if tid.startswith("m2-1-repeating-decimal-t3"):
+            rep = re.search(r"\[\[recdec\(0, (\d+)\)\]\]", q).group(1); v = Fraction(int(rep), 10 ** len(rep) - 1)
+            return v.denominator + v.numerator if "a + b" in q else v.denominator - v.numerator
+        if tid.startswith("m2-1-repeating-decimal-t4"):
+            m = re.search(r"\[\[recdec\((\d+), (\d+), (\d+)\)\]\]", q); i, pre, cyc = m.group(1), m.group(2), m.group(3)
+            v = int(i) + Fraction(int(pre), 10 ** len(pre)) + Fraction(int(cyc), (10 ** len(cyc) - 1) * 10 ** len(pre))
+            return v.denominator + v.numerator if "a + b" in q else v.denominator - v.numerator
+        if tid.startswith(("m2-1-repeating-decimal-t5", "m2-1-repeating-decimal-t6")):
+            m = re.search(r"\[\[frac\((\d+),(\d+)\)\]\]", q); return Fraction(_strip25(Fraction(int(m.group(1)), int(m.group(2))).denominator))
+        if tid.startswith("m2-1-repeating-decimal-t7"):
+            B = int(re.search(r"x가 (\d+) 이하", q).group(1)); N = int(re.search(r"\[\[frac\(x, (\d+)\)\]\]", q).group(1)); return Fraction(B // _strip25(N))
+        if tid.startswith("m2-1-repeating-decimal-t8"):
+            A = int(re.search(r"\[\[frac\((\d+), ", q).group(1)); return Fraction(sum(1 for x in range(1, 10) if A % _strip25(x) == 0))
+    if tid.startswith("m2-1-monomial-t1"):
+        m = re.match(r"\((-?\d*)x([⁰¹²³⁴⁵⁶⁷⁸⁹]*)y\)([⁰¹²³⁴⁵⁶⁷⁸⁹]*) × \((-?\d*)xy([⁰¹²³⁴⁵⁶⁷⁸⁹]*)\)", q)
+        p, mm, k, qq, nn = _coef(m.group(1)), _sup(m.group(2)), _sup(m.group(3)), _coef(m.group(4)), _sup(m.group(5))
+        return p ** k * qq + (mm * k + 1) + (k + nn)
+    if tid.startswith("m2-1-monomial-t2"):
+        m = re.match(r"\((-?\d*)x([⁰¹²³⁴⁵⁶⁷⁸⁹]*)y([⁰¹²³⁴⁵⁶⁷⁸⁹]*)\)([⁰¹²³⁴⁵⁶⁷⁸⁹]*) ÷ \((-?\d*)x([⁰¹²³⁴⁵⁶⁷⁸⁹]*)y([⁰¹²³⁴⁵⁶⁷⁸⁹]*)\)", q)
+        p, mm, nn, k, qq, ss, tt = _coef(m.group(1)), _sup(m.group(2)), _sup(m.group(3)), _sup(m.group(4)), _coef(m.group(5)), _sup(m.group(6)), _sup(m.group(7))
+        return p ** k / qq + (mm * k - ss) + (nn * k - tt)
+    if tid.startswith(("m2-1-polynomial-t1", "m2-1-polynomial-t3")):
+        import sympy as sp
+        body = re.match(r"(.+?)[을를] (?:전개하여 )?간단히 하였을 때", q).group(1); e = sp.Poly(sp.expand(_sy(body)), sp.Symbol("x"))
+        c = {2: Fraction(str(e.coeff_monomial(sp.Symbol("x") ** 2))), 1: Fraction(str(e.coeff_monomial(sp.Symbol("x")))), 0: Fraction(str(e.coeff_monomial(1)))}
+        return c[2] + c[1] if "합을" in q else (c[2] if "x²의 계수를" in q else (c[1] if "x의 계수를" in q else c[0]))
+    if tid.startswith("m2-1-polynomial-t2"):
+        import sympy as sp
+        body = re.match(r"(.+?)를 간단히 하였을 때", q).group(1); e = sp.expand(_sy(body)); x, y = sp.Symbol("x"), sp.Symbol("y")
+        cx, cy = Fraction(str(e.coeff(x))), Fraction(str(e.coeff(y)))
+        return cx + cy if "합을" in q else (cx if "x의 계수를" in q else cy)
+    if tid.startswith("m2-1-polynomial-t6"):
+        import sympy as sp
+        m = re.match(r"x = (-?\d+), y = (-?\d+)일 때, \((\[\[.+?\]\])\) ÷ (\S+)의 값", q); x, y = sp.Symbol("x"), sp.Symbol("y")
+        v = sp.cancel(_sy(m.group(3)) / _sy(m.group(4))).subs({x: int(m.group(1)), y: int(m.group(2))}); return Fraction(str(v))
     return "skip"
 
 
@@ -874,6 +914,53 @@ def check_linexpr(it):
         else:
             m = re.match(r"(.+?)[을를] 간단히 하시오", q); want = _lin(m.group(1))
         return _lin(it["answer"]) == want
+    except Exception:                                   # noqa: BLE001
+        return False
+
+
+def _strip25(n):
+    n = int(n)
+    while n % 2 == 0:
+        n //= 2
+    while n % 5 == 0:
+        n //= 5
+    return n
+
+
+_SUP_STAR = {ord(a): f"**{d} " for a, d in zip("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789")}
+
+
+def _sy(text):
+    """평문·마커 식 → sympy 식. 위첨자·pow·frac·−·×·÷ 를 파이썬 문법으로 바꾸고 암시적 곱(3x, xy, 2(…))을 허용한다."""
+    import sympy as sp
+    from sympy.parsing.sympy_parser import implicit_multiplication_application, parse_expr, standard_transformations
+    t = re.sub(r"\[\[|\]\]", "", text).replace("−", "-").replace("×", "*").replace("÷", "/").translate(_SUP_STAR)
+    t = re.sub(r"pow\(([a-z]),\s*(\d+)\)", r"\1**\2 ", t)
+    t = re.sub(r"frac\(([^()]*?),\s*([^()]*?)\)", r"((\1)/(\2))", t)
+    t = t.replace("□", "BOX")
+    return parse_expr(t, transformations=standard_transformations + (implicit_multiplication_application,), local_dict={"x": sp.Symbol("x"), "y": sp.Symbol("y")})
+
+
+def check_polyexpr(it):
+    """식이 답인 m2-1 틀(단항식 □·잘못 계산, 다항식 잘못 계산·도형의 변): 발문을 sympy 로 되읽어 답과 대조. True/False, 해당 없으면 None."""
+    tid, q = it["template_id"], it["question"]
+    if not tid.startswith(("m2-1-monomial-t3", "m2-1-monomial-t4", "m2-1-monomial-t5", "m2-1-polynomial-t4", "m2-1-polynomial-t5")):
+        return None
+    import sympy as sp
+    try:
+        if tid.startswith("m2-1-monomial-t3"):
+            m = re.match(r"□ × \((.+?)\) = (\[\[.+?\]\])일 때", q); want = _sy(m.group(2)) / _sy(m.group(1))
+        elif tid.startswith("m2-1-monomial-t4"):
+            m = re.match(r"(\[\[.+?\]\]) ÷ □ = (.+?)일 때", q); want = _sy(m.group(1)) / _sy(m.group(2))
+        elif tid.startswith("m2-1-monomial-t5"):
+            m = re.match(r"어떤 단항식을 (.+?)[으]?로 나누어야 할 것을 잘못하여 곱했더니 (\[\[.+?\]\])이 되었다", q); want = _sy(m.group(2)) / _sy(m.group(1)) ** 2
+        elif tid.startswith("m2-1-polynomial-t4"):
+            m = re.match(r"어떤 다항식(?:에서|에) (.+?)[을를] (더해야|빼야) 할 것을 잘못하여 (.+?)[을를] (뺐더니|더했더니) (.+?)[이가] 되었다", q)
+            A, B = _sy(m.group(1)), _sy(m.group(5)); i = 1 if m.group(2) == "더해야" else -1; want = B + 2 * i * A
+        else:
+            m = re.match(r"넓이가 (\[\[.+?\]\])인 (직사각형|삼각형|평행사변형)의 .+?가 (\S+)일 때", q)
+            want = (2 if m.group(2) == "삼각형" else 1) * _sy(m.group(1)) / _sy(m.group(3))
+        return sp.simplify(sp.cancel(want - _sy(it["answer"]))) == 0
     except Exception:                                   # noqa: BLE001
         return False
 
@@ -1185,6 +1272,8 @@ for f in sorted(OUT.glob("*_pool.json")):
             pos = check_judge(it)
         if pos is None:
             pos = check_linexpr(it)
+        if pos is None:
+            pos = check_polyexpr(it)
         if pos is not None:
             if not pos:
                 bad("R1-독립 검산 불일치", it, f"문자열 답 재계산 ≠ 답 {it['answer']}")

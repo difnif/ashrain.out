@@ -115,6 +115,9 @@ export function lab(v) {
   if (!s) return "";
   const m = s.match(/^\[\[([\s\S]*)\]\]$/);
   if (m) { try { const [n] = parse(m[1].trim()); return disp(n); } catch { return m[1].trim(); } }
+  if (s.includes("[[")) {                              // 09-13: 문자열 속 마커도 표시형으로 — 'BD = [[frac(15,2)]]' → 'BD = 15/2'
+    return s.replace(/\[\[([\s\S]*?)\]\]/g, (m0, body) => { try { const [n] = parse(body.trim()); return disp(n); } catch { return body.trim(); } });
+  }
   if (/^[A-Za-z0-9_^{}().,+\-*/ ]+$/.test(s) && /[(^_]/.test(s)) {
     try { const [n] = parse(s); return disp(n); } catch { /* 그대로 */ }
   }
