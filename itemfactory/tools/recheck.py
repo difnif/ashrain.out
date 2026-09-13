@@ -1424,6 +1424,8 @@ def recompute(it):
         return _h21(tid, q)
     if tid.startswith("h2-1-trig"):
         return _h21t(tid, q)
+    if tid.startswith("h2-1-seq"):
+        return _h21s(tid, q)
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])
@@ -1958,6 +1960,58 @@ def _h21t(tid, q):
     if tid == "h2-1-trig-t7":
         m = re.match(r"삼각형 ABC에서 sin A : sin B : sin C = (\d+) : (\d+) : (\d+)일 때, 각 C의 크기", q); x, y, z = int(m.group(1)), int(m.group(2)), int(m.group(3))
         cv = (x * x + y * y - z * z) / (2 * x * y); return _ratf(math.degrees(math.acos(cv)))
+    return None
+
+
+_SUBD = str.maketrans("₀₁₂₃₄₅₆₇₈₉", "0123456789")
+
+
+def _sumk(expr, n):
+    """∑ 안의 식(문자 k) 을 k = 1..n 에서 더한다 — pow/frac/sqrt 마커 문법을 파이썬 식으로."""
+    e = expr.replace("−", "-").replace("×", "*")
+    e = re.sub(r"pow\(([^,]+), ([^)]+)\)", r"((\1)**(\2))", e)
+    e = re.sub(r"frac\(", "_frac(", e); e = re.sub(r"sqrt\(", "_sqrt(", e)
+    e = re.sub(r"(\d)(k|\()", r"\1*\2", e); e = re.sub(r"(k|\))\(", r"\1*(", e); e = re.sub(r"\)k", ")*k", e)
+    total, fl = Fraction(0), False
+    for k in range(1, n + 1):
+        v = eval(e, {"__builtins__": {}}, {"k": Fraction(k), "_frac": lambda a, b: a / b, "_sqrt": lambda x: _rootf(x, 2)})  # noqa: S307
+        if isinstance(v, Fraction): total += v
+        else: total = float(total) + v; fl = True
+    return _ratf(float(total)) if fl else total
+
+
+def _h21s(tid, q):
+    """h2-1 수열 — 발문에서 다시 푼다."""
+    if tid == "h2-1-seq-t1":
+        m = re.match(r"등차수열 \{aₙ\}에 대하여 a([₀-₉]+) = (-?\d+), a([₀-₉]+) = (-?\d+)일 때, a([₀-₉]+)의 값", q); p, u, qn, v, r = int(m.group(1).translate(_SUBD)), Fraction(m.group(2)), int(m.group(3).translate(_SUBD)), Fraction(m.group(4)), int(m.group(5).translate(_SUBD))
+        d = (v - u) / (qn - p); return u + (r - p) * d
+    if tid == "h2-1-seq-t2":
+        m = re.match(r"첫째항이 (-?\d+), 공차가 (-?\d+)인 등차수열 \{aₙ\}의 첫째항부터 제(\d+)항까지의 합", q); a, d, n = [Fraction(m.group(i)) for i in (1, 2, 3)]; return n * (2 * a + (n - 1) * d) / 2
+    if tid == "h2-1-seq-t3":
+        m = re.match(r"등비수열 \{aₙ\}에 대하여 a([₀-₉]+) = (-?\d+), a([₀-₉]+) = (-?\d+)일 때, a([₀-₉]+)의 값", q); p, u, qn, v, s_ = int(m.group(1).translate(_SUBD)), Fraction(m.group(2)), int(m.group(3).translate(_SUBD)), Fraction(m.group(4)), int(m.group(5).translate(_SUBD))
+        rs = [r for r in (2, 3, -2, -3, Fraction(1, 2), Fraction(-1, 2)) if u * r ** (qn - p) == v]
+        return u * rs[0] ** (s_ - p) if len(rs) == 1 else None
+    if tid == "h2-1-seq-t4":
+        m = re.match(r"첫째항이 (-?\d+), 공비가 (\[\[.+?\]\]|-?\d+)인 등비수열의 첫째항부터 제(\d+)항까지의 합", q); a = Fraction(m.group(1)); r = _mk(m.group(2)); n = int(m.group(3)); return a * (r ** n - 1) / (r - 1)
+    if tid == "h2-1-seq-t5" or tid == "h2-1-seq-t7":
+        m = re.match(r"\[\[sum\(k, 1, (\d+), (.+)\)\]\]의 값", q); return _sumk(m.group(2), int(m.group(1)))
+    if tid == "h2-1-seq-t6":
+        m = re.match(r"수열 \{aₙ\}의 첫째항부터 제n항까지의 합 Sₙ이 Sₙ = (-?\d*)n² ([+−]) (\d*)n ([+−]) (\d+)일 때, a([₀-₉]+)의 값", q); A = _coef(m.group(1)); B = _sv(m.group(2), m.group(3) or "1"); C = _sv(m.group(4), m.group(5)); n = int(m.group(6).translate(_SUBD))
+        S = lambda k: A * k * k + B * k + C  # noqa: E731
+        return S(1) if n == 1 else S(n) - S(n - 1)
+    if tid == "h2-1-seq-t8":
+        m = re.match(r"수열 \{aₙ\}이 (.+?) \(n = 1, 2, 3, ⋯\)로 정의될 때, a([₀-₉]+)의 값", q); desc = m.group(1); M = int(m.group(2).translate(_SUBD))
+        mf = re.fullmatch(r"a₁ = (-?\d+), a₂ = (-?\d+), aₙ₊₂ = aₙ₊₁ \+ aₙ", desc)
+        if mf:
+            seq = [Fraction(mf.group(1)), Fraction(mf.group(2))]
+            while len(seq) < M: seq.append(seq[-1] + seq[-2])
+            return seq[-1]
+        mr = re.fullmatch(r"a₁ = (-?\d+), aₙ₊₁ = (.+)", desc); a = Fraction(mr.group(1)); rule = mr.group(2).replace("−", "-").replace("ⁿ", "**n").replace("²", "**2")
+        rule = re.sub(r"(\d)aₙ", r"\1*a", rule).replace("aₙ", "a"); rule = re.sub(r"(\d)n", r"\1*n", rule)
+        cur = a
+        for n in range(1, M):
+            cur = Fraction(eval(rule, {"__builtins__": {}}, {"a": cur, "n": Fraction(n)}))  # noqa: S307
+        return cur
     return None
 
 
