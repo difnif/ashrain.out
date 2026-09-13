@@ -1,0 +1,1415 @@
+{
+  "seed_id": "h1-1-ineq",
+  "category": "연산",
+  "title": "부등식 — 연립일차 정수 개수·절댓값 정수 개수·이차부등식의 해·해→계수·연립이차 정수 개수·항상 성립 범위",
+  "unit_id": "h1-1",
+  "concept_ids": [
+    "h1-1-11",
+    "h1-1-12",
+    "h1-1-13"
+  ],
+  "schema_id": null,
+  "schema_name": "연립일차부등식·절댓값 부등식·이차부등식",
+  "source_item_ids": [],
+  "note": "범위 답은 문자열(answer_var 없음). 이차부등식의 해는 행(< / ≥)별 문자열을 파생 없이 조립한다.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차부등식",
+        "이차식의 인수분해"
+      ],
+      "ops": [
+        "부등식"
+      ],
+      "traps": [
+        "부등호 방향",
+        "경계 포함"
+      ],
+      "tags": [
+        "연립부등식",
+        "절댓값",
+        "이차부등식"
+      ],
+      "id": "h1-1-ineq-t1",
+      "title": "연립일차부등식의 정수인 해의 개수",
+      "skill": "두 부등식을 각각 풀어 공통 범위를 구하고 그 안의 정수를 세기",
+      "variant_axis": {
+        "범위": "p < x ≤ q (p, q 정수)"
+      },
+      "discriminates": "각각 푼 뒤 공통 부분을 잡고, 경계 포함 여부(<, ≤)에 따라 정수를 세는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              -6,
+              6
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              2,
+              7
+            ]
+          }
+        },
+        {
+          "name": "k1",
+          "values": {
+            "int": [
+              2,
+              4
+            ]
+          }
+        },
+        {
+          "name": "k2",
+          "values": {
+            "int": [
+              2,
+              4
+            ]
+          }
+        },
+        {
+          "name": "c1",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "c2",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "question": "연립부등식 {k1}x {sgn(c1)} > {r1}, {k2}x {sgn(c2)} ≤ {r2}{eul(r2)} 만족시키는 정수 x의 개수를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "qv": "p + n",
+        "r1": "k1*p + c1",
+        "r2": "k2*(p + n) + c2",
+        "ans": "n"
+      },
+      "constraints": [
+        "ans not in (p, qv, r1, r2)"
+      ],
+      "cost_values": [
+        "p",
+        "qv",
+        "k1",
+        "k2",
+        "r1",
+        "r2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "r1 == k1*p + c1",
+        "r2 == k2*qv + c2"
+      ],
+      "sol1": "첫 번째 부등식 {k1}x {sgn(c1)} > {r1}에서 {k1}x > {r1 - c1}, x > {p}. 두 번째 부등식 {k2}x {sgn(c2)} ≤ {r2}에서 {k2}x ≤ {r2 - c2}, x ≤ {qv}. 두 범위의 공통 부분은 {p} < x ≤ {qv}이고, 그 안의 정수는 {p + 1}부터 {qv}까지이다.",
+      "sol2": [
+        "{k1}x > {r1 - c1} → x > {p}",
+        "{k2}x ≤ {r2 - c2} → x ≤ {qv}",
+        "{p} < x ≤ {qv} → 정수 {p + 1}, …, {qv}의 {ans}개"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{k1}x > {r1 - c1} → x > {p}",
+                "hint": "첫 번째"
+              },
+              {
+                "text": "{k2}x ≤ {r2 - c2} → x ≤ {qv}",
+                "hint": "두 번째"
+              },
+              {
+                "text": "{p} < x ≤ {qv} → 정수 {p + 1}, …, {qv}의 {ans}개",
+                "marks": [
+                  {
+                    "on": "{ans}개",
+                    "note": "{qv} − {p}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "x = {p}{eun(p)} 첫 번째 부등식의 등호가 없어 제외되고, x = {qv}{eun(qv)} 두 번째의 등호가 있어 포함된다. 따라서 정수 해는 {ans}개이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{p} 제외 · {qv} 포함",
+              "개수 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "첫 번째 부등식에서 x > {p}, 두 번째에서 x ≤ {qv}이므로 {p} < x ≤ {qv}이다. 따라서 정수 x는 {p + 1}, …, {qv}의 {ans}개이다.",
+      "rubric": [
+        {
+          "element": "각각 풀기",
+          "points": 3,
+          "criterion": "x > {p}, x ≤ {qv}{eul(qv)} 얻었다.",
+          "partial": "부등호 방향이 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "공통 범위·개수",
+          "points": 2,
+          "criterion": "{p} < x ≤ {qv}에서 정수 {ans}개를 셌다.",
+          "partial": "경계 포함을 틀려 1개 차이면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "경계 x = p를 포함해 셈",
+          "on": "공통 범위·개수",
+          "effect": "부분"
+        },
+        {
+          "text": "이항 시 부호 실수",
+          "on": "각각 풀기",
+          "effect": "부분"
+        },
+        {
+          "text": "두 범위의 합집합을 취함",
+          "on": "공통 범위·개수",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차부등식",
+        "이차식의 인수분해"
+      ],
+      "ops": [
+        "부등식"
+      ],
+      "traps": [
+        "부등호 방향",
+        "경계 포함"
+      ],
+      "tags": [
+        "연립부등식",
+        "절댓값",
+        "이차부등식"
+      ],
+      "id": "h1-1-ineq-t2",
+      "title": "절댓값 기호를 포함한 일차부등식 — 정수 해의 개수",
+      "skill": "|ax − b| < c ⇔ −c < ax − b < c로 벗겨 범위를 구하고 정수를 세기",
+      "variant_axis": {
+        "a": "2, 3",
+        "b, c": "정수"
+      },
+      "discriminates": "절댓값을 두 부등식으로 벗기고 나눗셈 후 경계가 정수가 아닐 때 정수를 정확히 세는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "int": [
+              3,
+              12
+            ]
+          }
+        }
+      ],
+      "question": "부등식 [[abs({a}x {sgn(-b)})]] < {c}{eul(c)} 만족시키는 정수 x의 개수를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "lo": "(b - c)/a",
+        "hi": "(b + c)/a",
+        "ans": "ceiling((b + c)/a) - floor((b - c)/a) - 1",
+        "L": "b - c",
+        "U": "b + c"
+      },
+      "constraints": [
+        "ans >= 2",
+        "ans not in (a, b, c)"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "L",
+        "U",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans >= 1"
+      ],
+      "sol1": "|X| < c ⇔ −c < X < c이다. 따라서 −{c} < {a}x {sgn(-b)} < {c}, 각 변에 {b}{eul(b)} 더하면 {L} < {a}x < {U}, {a}{ro(a)} 나누면 {dec(lo)} < x < {dec(hi)}이다. 이 범위의 정수를 센다.",
+      "sol2": [
+        "−{c} < {a}x {sgn(-b)} < {c}",
+        "{L} < {a}x < {U} → {dec(lo)} < x < {dec(hi)}",
+        "정수 x의 개수 {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "−{c} < {a}x {sgn(-b)} < {c}",
+                "hint": "절댓값 벗기기"
+              },
+              {
+                "text": "{L} < {a}x < {U} → {dec(lo)} < x < {dec(hi)}",
+                "hint": "이항 후 {a}{ro(a)} 나눔"
+              },
+              {
+                "text": "정수 x의 개수 {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "개수"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "경계 {dec(lo)}, {dec(hi)}{eun(dec(hi))} 포함되지 않으므로 그 사이의 정수만 센다(경계가 정수이면 제외). 따라서 {ans}개이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{dec(lo)} < x < {dec(hi)}",
+              "정수 {ans}개"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "−{c} < {a}x {sgn(-b)} < {c}에서 {L} < {a}x < {U}, 즉 {dec(lo)} < x < {dec(hi)}이므로 정수 x는 {ans}개이다.",
+      "rubric": [
+        {
+          "element": "절댓값 벗기기",
+          "points": 3,
+          "criterion": "−{c} < {a}x {sgn(-b)} < {c}{ro(c)} 바꾸어 {dec(lo)} < x < {dec(hi)}{eul(dec(hi))} 얻었다.",
+          "partial": "한쪽 부등식만 썼으면 1점."
+        },
+        {
+          "element": "개수",
+          "points": 2,
+          "criterion": "정수 {ans}개를 셌다.",
+          "partial": "경계를 포함해 셌으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "|X| < c를 X < c로만 둠",
+          "on": "절댓값 벗기기",
+          "effect": "불인정"
+        },
+        {
+          "text": "경계가 정수가 아닐 때 개수 실수",
+          "on": "개수",
+          "effect": "부분"
+        },
+        {
+          "text": "나눗셈 실수",
+          "on": "절댓값 벗기기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차부등식",
+        "이차식의 인수분해"
+      ],
+      "ops": [
+        "부등식"
+      ],
+      "traps": [
+        "부등호 방향",
+        "경계 포함"
+      ],
+      "tags": [
+        "연립부등식",
+        "절댓값",
+        "이차부등식"
+      ],
+      "id": "h1-1-ineq-t3",
+      "title": "이차부등식의 해 — x² + bx + c < 0, ≥ 0",
+      "skill": "좌변을 인수분해해 두 근 사이(또는 바깥)로 해를 쓰기",
+      "variant_axis": {
+        "두 근": "−7~7",
+        "부등호": "< / ≥"
+      },
+      "discriminates": "x²의 계수가 양수일 때 < 0은 두 근 사이, ≥ 0은 두 근의 바깥(등호 포함)임을 구별하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "lt",
+              "ge"
+            ]
+          }
+        }
+      ],
+      "question": "이차부등식 x² {sgt(b)}x {sgn(c)} {OP} 0의 해를 구하시오.",
+      "answer": "{PRE}{p}{MID}{q}{POST}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "lt": {
+            "OP": "<",
+            "KIND": "두 근 사이",
+            "PRE": "",
+            "MID": " < x < ",
+            "POST": ""
+          },
+          "ge": {
+            "OP": "≥",
+            "KIND": "두 근의 바깥(등호 포함)",
+            "PRE": "x ≤ ",
+            "MID": " 또는 x ≥ ",
+            "POST": ""
+          }
+        }
+      },
+      "derive": {
+        "b": "-(p + q)",
+        "c": "p*q",
+        "np": "-p",
+        "nq": "-q"
+      },
+      "constraints": [
+        "p < q",
+        "b != 0"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "b",
+        "c"
+      ],
+      "verify": [
+        "b == -(p + q)",
+        "c == p*q"
+      ],
+      "sol1": "좌변을 인수분해하면 (x {sgn(np)})(x {sgn(nq)})이고 두 근은 {p}, {q}이다. x²의 계수가 양수이므로 그래프는 아래로 볼록: 부등식 {OP} 0의 해는 {KIND}이다.",
+      "sol2": [
+        "(x {sgn(np)})(x {sgn(nq)}) {OP} 0",
+        "두 근 {p}, {q}, 아래로 볼록",
+        "해: {PRE}{p}{MID}{q}{POST}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "(x {sgn(np)})(x {sgn(nq)}) {OP} 0",
+                "hint": "인수분해"
+              },
+              {
+                "text": "두 근 {p}, {q}, 아래로 볼록",
+                "hint": "그래프의 모양"
+              },
+              {
+                "text": "해: {PRE}{p}{MID}{q}{POST}",
+                "marks": [
+                  {
+                    "on": "{PRE}{p}{MID}{q}{POST}",
+                    "note": "{KIND}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "두 근 사이의 값을 넣으면 좌변이 음수, 바깥 값을 넣으면 양수가 됨을 확인한다. 따라서 해는 {PRE}{p}{MID}{q}{POST}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "두 근 사이 음수 · 바깥 양수",
+              "해 {PRE}{p}{MID}{q}{POST}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "x² {sgt(b)}x {sgn(c)} = (x {sgn(np)})(x {sgn(nq)})이므로 부등식 {OP} 0의 해는 {PRE}{p}{MID}{q}{POST}이다.",
+      "rubric": [
+        {
+          "element": "인수분해",
+          "points": 2,
+          "criterion": "(x {sgn(np)})(x {sgn(nq)}){ro(nq)} 인수분해했다.",
+          "partial": "부호 실수면 1점."
+        },
+        {
+          "element": "해",
+          "points": 3,
+          "criterion": "{PRE}{p}{MID}{q}{POST}{eul(q)} 답했다.",
+          "partial": "안팎을 바꾸었거나 등호 포함을 틀렸으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "< 0의 해를 바깥으로 씀",
+          "on": "해",
+          "effect": "불인정"
+        },
+        {
+          "text": "≥ 0에서 등호를 빠뜨림",
+          "on": "해",
+          "effect": "부분"
+        },
+        {
+          "text": "근의 부호 실수",
+          "on": "인수분해",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차부등식",
+        "이차식의 인수분해"
+      ],
+      "ops": [
+        "부등식"
+      ],
+      "traps": [
+        "부등호 방향",
+        "경계 포함"
+      ],
+      "tags": [
+        "연립부등식",
+        "절댓값",
+        "이차부등식"
+      ],
+      "id": "h1-1-ineq-t4",
+      "title": "이차부등식의 해가 주어질 때 계수 구하기",
+      "skill": "해가 p ≤ x ≤ q이면 (x − p)(x − q) ≤ 0을 전개해 계수 비교하기",
+      "variant_axis": {
+        "해의 범위": "−6~6"
+      },
+      "discriminates": "해에서 두 근을 읽어 (x − p)(x − q) ≤ 0을 만들고 전개해 a, b를 읽는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "question": "이차부등식 x² + ax + b ≤ 0의 해가 {p} ≤ x ≤ {q}일 때, 상수 a, b에 대하여 a + b의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "a": "-(p + q)",
+        "b": "p*q",
+        "ans": "-(p + q) + p*q",
+        "np": "-p",
+        "nq": "-q"
+      },
+      "constraints": [
+        "p < q",
+        "a != 0",
+        "ans != 0",
+        "ans not in (p, q)"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "a",
+        "b",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a == -(p + q)",
+        "b == p*q"
+      ],
+      "sol1": "해가 {p} ≤ x ≤ {q}인 이차부등식은 두 근이 {p}, {q}이고 x²의 계수가 양수인 (x {sgn(np)})(x {sgn(nq)}) ≤ 0이다. 전개하면 x² {sgt(a)}x {sgn(b)} ≤ 0이므로 계수를 비교한다.",
+      "sol2": [
+        "(x {sgn(np)})(x {sgn(nq)}) ≤ 0",
+        "x² {sgt(a)}x {sgn(b)} ≤ 0",
+        "a = {a}, b = {b} → a + b = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "(x {sgn(np)})(x {sgn(nq)}) ≤ 0",
+                "hint": "해 → 부등식"
+              },
+              {
+                "text": "x² {sgt(a)}x {sgn(b)} ≤ 0",
+                "hint": "전개"
+              },
+              {
+                "text": "a = {a}, b = {b} → a + b = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "a + b"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "a = −(두 근의 합) = −({p} {sgn(q)}) = {a}, b = (두 근의 곱) = {p} × {pn(q)} = {b}{ro(b)} 근과 계수의 관계와 맞는다. 따라서 a + b = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "a = −(합), b = 곱",
+              "a + b = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "해가 {p} ≤ x ≤ {q}이므로 (x {sgn(np)})(x {sgn(nq)}) ≤ 0, 즉 x² {sgt(a)}x {sgn(b)} ≤ 0이다. 따라서 a = {a}, b = {b}이고 a + b = {ans}이다.",
+      "rubric": [
+        {
+          "element": "부등식 세우기",
+          "points": 3,
+          "criterion": "(x {sgn(np)})(x {sgn(nq)}) ≤ 0을 세워 전개했다.",
+          "partial": "근의 부호를 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "계수·합",
+          "points": 2,
+          "criterion": "a = {a}, b = {b}에서 a + b = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "a = 두 근의 합(부호 반대)",
+          "on": "계수·합",
+          "effect": "부분"
+        },
+        {
+          "text": "(x + p)(x + q)로 근의 부호를 틀림",
+          "on": "부등식 세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "전개 실수",
+          "on": "부등식 세우기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차부등식",
+        "이차식의 인수분해"
+      ],
+      "ops": [
+        "부등식"
+      ],
+      "traps": [
+        "부등호 방향",
+        "경계 포함"
+      ],
+      "tags": [
+        "연립부등식",
+        "절댓값",
+        "이차부등식"
+      ],
+      "id": "h1-1-ineq-t5",
+      "title": "연립이차부등식 — 정수 x의 개수",
+      "skill": "이차부등식과 일차부등식을 각각 풀어 공통 범위의 정수를 세기",
+      "variant_axis": {
+        "이차부등식의 두 근": "−6~6",
+        "일차 조건": "x ≥ c"
+      },
+      "discriminates": "이차부등식의 해(두 근 사이)와 일차 조건의 공통 부분을 잡아 정수를 세는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        }
+      ],
+      "question": "연립부등식 x² {sgt(b)}x {sgn(cc)} < 0, x ≥ {c}{eul(c)} 만족시키는 정수 x의 개수를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "b": "-(p + q)",
+        "cc": "p*q",
+        "lo": "max(p + 1, c)",
+        "ans": "q - max(p + 1, c)",
+        "np": "-p",
+        "nq": "-q"
+      },
+      "constraints": [
+        "p < q",
+        "b != 0",
+        "c > p",
+        "c < q",
+        "ans >= 1",
+        "ans not in (p, q, c)"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "c",
+        "lo",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == q - lo"
+      ],
+      "sol1": "이차부등식 x² {sgt(b)}x {sgn(cc)} < 0은 (x {sgn(np)})(x {sgn(nq)}) < 0이므로 해가 {p} < x < {q}이다. 여기에 x ≥ {c}{eul(c)} 함께 만족시키는 범위는 {lo} ≤ x < {q}이고, 그 안의 정수를 센다.",
+      "sol2": [
+        "(x {sgn(np)})(x {sgn(nq)}) < 0 → {p} < x < {q}",
+        "공통 범위: {lo} ≤ x < {q}",
+        "정수 {lo}, …, {q - 1}의 {ans}개"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "(x {sgn(np)})(x {sgn(nq)}) < 0 → {p} < x < {q}",
+                "hint": "이차부등식"
+              },
+              {
+                "text": "공통 범위: {lo} ≤ x < {q}",
+                "hint": "x ≥ {c}{wa(c)} 겹치는 부분"
+              },
+              {
+                "text": "정수 {lo}, …, {q - 1}의 {ans}개",
+                "marks": [
+                  {
+                    "on": "{ans}개",
+                    "note": "개수"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "x = {q}{eun(q)} 이차부등식의 등호가 없어 제외된다. 따라서 정수 해는 {ans}개이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{q} 제외",
+              "개수 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "x² {sgt(b)}x {sgn(cc)} < 0의 해는 {p} < x < {q}이고 x ≥ {c}와의 공통 범위는 {lo} ≤ x < {q}이다. 따라서 정수 x는 {ans}개이다.",
+      "rubric": [
+        {
+          "element": "이차부등식",
+          "points": 3,
+          "criterion": "{p} < x < {q}{eul(q)} 구했다.",
+          "partial": "안팎을 바꾸었으면 인정하지 않는다."
+        },
+        {
+          "element": "공통 범위·개수",
+          "points": 2,
+          "criterion": "{lo} ≤ x < {q}에서 {ans}개를 셌다.",
+          "partial": "경계 처리 실수로 1개 차이면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "x = q를 포함해 셈",
+          "on": "공통 범위·개수",
+          "effect": "부분"
+        },
+        {
+          "text": "이차부등식의 해를 바깥으로 씀",
+          "on": "이차부등식",
+          "effect": "불인정"
+        },
+        {
+          "text": "일차 조건을 무시함",
+          "on": "공통 범위·개수",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차부등식",
+        "이차식의 인수분해"
+      ],
+      "ops": [
+        "부등식"
+      ],
+      "traps": [
+        "부등호 방향",
+        "경계 포함"
+      ],
+      "tags": [
+        "연립부등식",
+        "절댓값",
+        "이차부등식"
+      ],
+      "id": "h1-1-ineq-t6",
+      "title": "모든 실수 x에 대하여 이차부등식이 성립할 조건 — k의 범위",
+      "skill": "x² + kx + c > 0이 항상 성립하려면 D = k² − 4c < 0임을 쓰기",
+      "variant_axis": {
+        "c": "완전제곱수 4~49"
+      },
+      "discriminates": "항상 성립 ⇔ 그래프가 x축 위 ⇔ D < 0임을 알고 k의 범위를 푸는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "s",
+          "values": {
+            "int": [
+              2,
+              7
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "question": "모든 실수 x에 대하여 부등식 x² + (k {sgn(-b)})x + {c} > 0이 성립할 때, 실수 k의 값의 범위를 구하시오.",
+      "answer": "{lo2} < k < {hi2}",
+      "answer_alt": [],
+      "derive": {
+        "c": "s*s",
+        "lo": "-2*s",
+        "hi": "2*s",
+        "lo2": "-2*s + b",
+        "hi2": "2*s + b"
+      },
+      "constraints": [
+        "lo2 != 0"
+      ],
+      "cost_values": [
+        "s",
+        "c",
+        "b",
+        "lo2",
+        "hi2"
+      ],
+      "verify": [
+        "c == s*s"
+      ],
+      "sol1": "x²의 계수가 양수이므로 부등식이 모든 실수에서 성립하려면 그래프가 x축과 만나지 않아야 한다: 판별식 D = (k {sgn(-b)})² − {4*s*s} < 0. 즉 (k {sgn(-b)})² < {4*s*s}이므로 {lo} < k {sgn(-b)} < {hi}이다.",
+      "sol2": [
+        "항상 성립 ⇔ D < 0",
+        "(k {sgn(-b)})² − {4*s*s} < 0 → {lo} < k {sgn(-b)} < {hi}",
+        "{lo2} < k < {hi2}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "항상 성립 ⇔ D < 0",
+                "hint": "그래프가 x축 위"
+              },
+              {
+                "text": "(k {sgn(-b)})² − {4*s*s} < 0 → {lo} < k {sgn(-b)} < {hi}",
+                "hint": "판별식"
+              },
+              {
+                "text": "{lo2} < k < {hi2}",
+                "marks": [
+                  {
+                    "on": "{lo2} < k < {hi2}",
+                    "note": "k의 범위"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "k = {lo2} 또는 {hi2}이면 D = 0이 되어 x축에 접하므로 어떤 x에서 = 0이 되어 > 0이 깨진다. 따라서 {lo2} < k < {hi2}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "경계에서 D = 0 (접함)",
+              "{lo2} < k < {hi2}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "모든 실수 x에 대하여 성립하려면 D = (k {sgn(-b)})² − {4*s*s} < 0이어야 하므로 {lo} < k {sgn(-b)} < {hi}, 즉 {lo2} < k < {hi2}이다.",
+      "rubric": [
+        {
+          "element": "조건 세우기",
+          "points": 3,
+          "criterion": "D = (k {sgn(-b)})² − {4*s*s} < 0을 세웠다.",
+          "partial": "D > 0으로 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "범위",
+          "points": 2,
+          "criterion": "{lo2} < k < {hi2}{eul(hi2)} 구했다.",
+          "partial": "경계 포함(≤)으로 썼으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "D ≤ 0으로 등호를 포함함",
+          "on": "범위",
+          "effect": "부분"
+        },
+        {
+          "text": "D > 0으로 둠",
+          "on": "조건 세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "k² < 4c에서 한쪽 범위만 씀",
+          "on": "범위",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

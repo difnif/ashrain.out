@@ -1,0 +1,1108 @@
+{
+  "seed_id": "h1-1-matrix",
+  "category": "연산",
+  "title": "행렬 — 상등·덧셈과 실수배·곱셈·거듭제곱",
+  "unit_id": "h1-1",
+  "concept_ids": [
+    "h1-1-17",
+    "h1-1-18"
+  ],
+  "schema_id": null,
+  "schema_name": "행렬의 뜻과 연산",
+  "source_item_ids": [],
+  "note": "행렬 마커 [[mat(2, 2, a, b, c, d)]]. 성분은 파라미터, 결과는 파생.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "행렬의 뜻",
+        "연립일차방정식"
+      ],
+      "ops": [
+        "행렬"
+      ],
+      "traps": [
+        "곱셈 순서",
+        "성분 위치"
+      ],
+      "tags": [
+        "행렬의 연산"
+      ],
+      "id": "h1-1-matrix-t1",
+      "title": "두 행렬이 서로 같을 조건 — 성분 비교",
+      "skill": "같은 위치의 성분끼리 같다고 놓아 연립방정식 풀기",
+      "variant_axis": {
+        "x, y": "±1~±6"
+      },
+      "discriminates": "같은 위치의 성분끼리 비교해 연립하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "x",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "y",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "xy",
+              "sum"
+            ]
+          }
+        }
+      ],
+      "question": "두 행렬 A = [[mat(2, 2, x + y, {c}, 3, x − y)]], B = [[mat(2, 2, {s}, {c}, 3, {d})]]에 대하여 A = B일 때, {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "xy": {
+            "ASK": "xy",
+            "w": 1
+          },
+          "sum": {
+            "ASK": "x + y",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "s": "x + y",
+        "d": "x - y",
+        "ans": "w*x*y + (1 - w)*(x + y)"
+      },
+      "constraints": [
+        "x != y",
+        "ans != 0",
+        "ans not in (x, y, c, s, d)"
+      ],
+      "cost_values": [
+        "x",
+        "y",
+        "s",
+        "d",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "s == x + y",
+        "d == x - y"
+      ],
+      "sol1": "두 행렬이 같으려면 같은 위치의 성분이 모두 같아야 한다. (1, 1) 성분에서 x + y = {s}, (2, 2) 성분에서 x − y = {d}이고, 나머지 성분은 이미 같다. 두 식을 연립해 x, y를 구한다.",
+      "sol2": [
+        "x + y = {s}, x − y = {d}",
+        "더하면 2x = {2*x} → x = {x}, y = {y}",
+        "{ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "x + y = {s}, x − y = {d}",
+                "hint": "같은 위치의 성분"
+              },
+              {
+                "text": "더하면 2x = {2*x} → x = {x}, y = {y}",
+                "hint": "연립"
+              },
+              {
+                "text": "{ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "x = {x}, y = {y}{eul(y)} A에 넣으면 (1, 1) 성분 {s}, (2, 2) 성분 {d}{ro(d)} B와 모든 성분이 같다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "A의 성분 = B의 성분 ✓",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "A = B이므로 x + y = {s}, x − y = {d}이고 연립하면 x = {x}, y = {y}이다. 따라서 {ASK} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "성분 비교",
+          "points": 3,
+          "criterion": "x + y = {s}, x − y = {d}{eul(d)} 세웠다.",
+          "partial": "다른 위치의 성분을 비교했으면 인정하지 않는다."
+        },
+        {
+          "element": "연립·답",
+          "points": 2,
+          "criterion": "x = {x}, y = {y}에서 {ASK} = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "다른 위치의 성분을 비교",
+          "on": "성분 비교",
+          "effect": "불인정"
+        },
+        {
+          "text": "연립 계산 실수",
+          "on": "연립·답",
+          "effect": "부분"
+        },
+        {
+          "text": "xy와 x + y를 바꿔 답함",
+          "on": "연립·답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "행렬의 뜻",
+        "연립일차방정식"
+      ],
+      "ops": [
+        "행렬"
+      ],
+      "traps": [
+        "곱셈 순서",
+        "성분 위치"
+      ],
+      "tags": [
+        "행렬의 연산"
+      ],
+      "id": "h1-1-matrix-t2",
+      "title": "행렬의 덧셈·뺄셈·실수배 — kA + lB의 성분",
+      "skill": "같은 위치의 성분끼리 실수배하고 더하기",
+      "variant_axis": {
+        "k, l": "±1~±3",
+        "성분": "−5~5"
+      },
+      "discriminates": "실수배를 모든 성분에 곱하고 같은 위치끼리 더하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "l",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "a1",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        },
+        {
+          "name": "a2",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        },
+        {
+          "name": "a3",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        },
+        {
+          "name": "a4",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        },
+        {
+          "name": "b1",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        },
+        {
+          "name": "b2",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        },
+        {
+          "name": "b3",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        },
+        {
+          "name": "b4",
+          "values": {
+            "int": [
+              -5,
+              5
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "all",
+              "12"
+            ]
+          }
+        }
+      ],
+      "question": "두 행렬 A = [[mat(2, 2, {a1}, {a2}, {a3}, {a4})]], B = [[mat(2, 2, {b1}, {b2}, {b3}, {b4})]]에 대하여 행렬 {co(k)}A {sgt(l)}B의 {ASK}{eul(ASK)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "ask",
+        "rows": {
+          "all": {
+            "ASK": "모든 성분의 합",
+            "w": 1
+          },
+          "12": {
+            "ASK": "(1, 2) 성분",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "c1": "k*a1 + l*b1",
+        "c2": "k*a2 + l*b2",
+        "c3": "k*a3 + l*b3",
+        "c4": "k*a4 + l*b4",
+        "ans": "w*(k*(a1 + a2 + a3 + a4) + l*(b1 + b2 + b3 + b4)) + (1 - w)*(k*a2 + l*b2)"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (k, l, a1, a2, a3, a4, b1, b2, b3, b4)"
+      ],
+      "cost_values": [
+        "k",
+        "l",
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "c2 == k*a2 + l*b2"
+      ],
+      "sol1": "실수배는 모든 성분에 그 수를 곱하고, 덧셈·뺄셈은 같은 위치의 성분끼리 한다. 각 성분은 {k} × (A의 성분) {sgn(l)} × (B의 성분)이다.",
+      "sol2": [
+        "{co(k)}A = [[mat(2, 2, {k*a1}, {k*a2}, {k*a3}, {k*a4})]], {co(l)}B = [[mat(2, 2, {l*b1}, {l*b2}, {l*b3}, {l*b4})]]",
+        "{co(k)}A {sgt(l)}B = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]",
+        "{ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(k)}A = [[mat(2, 2, {k*a1}, {k*a2}, {k*a3}, {k*a4})]], {co(l)}B = [[mat(2, 2, {l*b1}, {l*b2}, {l*b3}, {l*b4})]]",
+                "hint": "실수배"
+              },
+              {
+                "text": "{co(k)}A {sgt(l)}B = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]",
+                "hint": "같은 위치끼리 더함"
+              },
+              {
+                "text": "{ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "(1, 2) 성분은 첫째 행·둘째 열의 성분으로 {k} × {pn(a2)} {sgn(l)} × {pn(b2)} = {c2}이다. 네 성분의 합은 {c1} {sgn(c2)} {sgn(c3)} {sgn(c4)} = {c1 + c2 + c3 + c4}이다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "[[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{co(k)}A {sgt(l)}B = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]이므로 {ASK}{eun(ASK)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "연산",
+          "points": 3,
+          "criterion": "{co(k)}A {sgt(l)}B = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]{eul(c4)} 구했다.",
+          "partial": "한 성분만 틀렸으면 2점."
+        },
+        {
+          "element": "값 구하기",
+          "points": 2,
+          "criterion": "{ASK} {ans}{eul(ans)} 답했다.",
+          "partial": "(1, 2)와 (2, 1) 성분을 혼동했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "실수배를 한 성분에만 적용",
+          "on": "연산",
+          "effect": "불인정"
+        },
+        {
+          "text": "(1, 2)와 (2, 1) 성분 혼동",
+          "on": "값 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "부호 실수",
+          "on": "연산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "행렬의 뜻",
+        "연립일차방정식"
+      ],
+      "ops": [
+        "행렬"
+      ],
+      "traps": [
+        "곱셈 순서",
+        "성분 위치"
+      ],
+      "tags": [
+        "행렬의 연산"
+      ],
+      "id": "h1-1-matrix-t3",
+      "title": "행렬의 곱셈 — AB의 성분",
+      "skill": "(i, j) 성분은 A의 i행과 B의 j열의 성분을 차례로 곱해 더한 것임을 쓰기",
+      "variant_axis": {
+        "성분": "−4~4",
+        "구하는 것": "(1, 1) / (2, 1) 성분 / 모든 성분의 합"
+      },
+      "discriminates": "행과 열을 바르게 짝지어 곱하고 AB ≠ BA임을 아는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a1",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        },
+        {
+          "name": "a2",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        },
+        {
+          "name": "a3",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        },
+        {
+          "name": "a4",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b1",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b2",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b3",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b4",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "11",
+              "21",
+              "all"
+            ]
+          }
+        }
+      ],
+      "question": "두 행렬 A = [[mat(2, 2, {a1}, {a2}, {a3}, {a4})]], B = [[mat(2, 2, {b1}, {b2}, {b3}, {b4})]]에 대하여 행렬 AB의 {ASK}{eul(ASK)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "ask",
+        "rows": {
+          "11": {
+            "ASK": "(1, 1) 성분",
+            "w1": 1,
+            "w2": 0,
+            "w3": 0
+          },
+          "21": {
+            "ASK": "(2, 1) 성분",
+            "w1": 0,
+            "w2": 1,
+            "w3": 0
+          },
+          "all": {
+            "ASK": "모든 성분의 합",
+            "w1": 0,
+            "w2": 0,
+            "w3": 1
+          }
+        }
+      },
+      "derive": {
+        "c1": "a1*b1 + a2*b3",
+        "c2": "a1*b2 + a2*b4",
+        "c3": "a3*b1 + a4*b3",
+        "c4": "a3*b2 + a4*b4",
+        "ans": "w1*(a1*b1 + a2*b3) + w2*(a3*b1 + a4*b3) + w3*(a1*b1 + a2*b3 + a1*b2 + a2*b4 + a3*b1 + a4*b3 + a3*b2 + a4*b4)"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (a1, a2, a3, a4, b1, b2, b3, b4)",
+        "a1*a2*a3*a4*b1*b2*b3*b4 != 0"
+      ],
+      "cost_values": [
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "c1 == a1*b1 + a2*b3"
+      ],
+      "sol1": "AB의 (i, j) 성분은 A의 i행 성분과 B의 j열 성분을 차례로 곱해 더한 값이다. 예를 들어 (1, 1) 성분은 {a1} × {pn(b1)} + {pn(a2)} × {pn(b3)} = {c1}, (2, 1) 성분은 {a3} × {pn(b1)} + {pn(a4)} × {pn(b3)} = {c3}이다.",
+      "sol2": [
+        "(1, 1): {a1} × {pn(b1)} + {pn(a2)} × {pn(b3)} = {c1}, (1, 2): {a1} × {pn(b2)} + {pn(a2)} × {pn(b4)} = {c2}",
+        "(2, 1): {a3} × {pn(b1)} + {pn(a4)} × {pn(b3)} = {c3}, (2, 2): {a3} × {pn(b2)} + {pn(a4)} × {pn(b4)} = {c4}",
+        "AB = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]] → {ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "(1, 1): {a1} × {pn(b1)} + {pn(a2)} × {pn(b3)} = {c1}, (1, 2): {a1} × {pn(b2)} + {pn(a2)} × {pn(b4)} = {c2}",
+                "hint": "1행 × 각 열"
+              },
+              {
+                "text": "(2, 1): {a3} × {pn(b1)} + {pn(a4)} × {pn(b3)} = {c3}, (2, 2): {a3} × {pn(b2)} + {pn(a4)} × {pn(b4)} = {c4}",
+                "hint": "2행 × 각 열"
+              },
+              {
+                "text": "AB = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]] → {ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "행렬의 곱은 순서를 바꾸면(BA) 일반적으로 다른 값이 나오므로 A의 행·B의 열 순서를 지켜야 한다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "AB = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "AB = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]이므로 {ASK}{eun(ASK)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "곱셈",
+          "points": 3,
+          "criterion": "AB = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]{eul(c4)} 구했다.",
+          "partial": "행과 열을 바꿔 곱했으면 인정하지 않는다."
+        },
+        {
+          "element": "값 구하기",
+          "points": 2,
+          "criterion": "{ASK} {ans}{eul(ans)} 답했다.",
+          "partial": "성분 위치를 혼동했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "같은 위치 성분끼리 곱함",
+          "on": "곱셈",
+          "effect": "불인정"
+        },
+        {
+          "text": "BA를 계산함",
+          "on": "곱셈",
+          "effect": "불인정"
+        },
+        {
+          "text": "성분 위치 혼동",
+          "on": "값 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "행렬의 뜻",
+        "연립일차방정식"
+      ],
+      "ops": [
+        "행렬"
+      ],
+      "traps": [
+        "곱셈 순서",
+        "성분 위치"
+      ],
+      "tags": [
+        "행렬의 연산"
+      ],
+      "id": "h1-1-matrix-t4",
+      "title": "행렬의 거듭제곱 — A²의 성분과 A² = kA + lE",
+      "skill": "A² = AA를 직접 계산해 성분을 구하기",
+      "variant_axis": {
+        "성분": "−3~3"
+      },
+      "discriminates": "A²을 성분의 제곱이 아닌 행렬의 곱으로 계산하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a1",
+          "values": {
+            "int": [
+              -3,
+              3
+            ]
+          }
+        },
+        {
+          "name": "a2",
+          "values": {
+            "int": [
+              -3,
+              3
+            ]
+          }
+        },
+        {
+          "name": "a3",
+          "values": {
+            "int": [
+              -3,
+              3
+            ]
+          }
+        },
+        {
+          "name": "a4",
+          "values": {
+            "int": [
+              -3,
+              3
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "11",
+              "all"
+            ]
+          }
+        }
+      ],
+      "question": "행렬 A = [[mat(2, 2, {a1}, {a2}, {a3}, {a4})]]에 대하여 행렬 A²의 {ASK}{eul(ASK)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "ask",
+        "rows": {
+          "11": {
+            "ASK": "(1, 1) 성분",
+            "w": 1
+          },
+          "all": {
+            "ASK": "모든 성분의 합",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "c1": "a1*a1 + a2*a3",
+        "c2": "a1*a2 + a2*a4",
+        "c3": "a3*a1 + a4*a3",
+        "c4": "a3*a2 + a4*a4",
+        "ans": "w*(a1*a1 + a2*a3) + (1 - w)*(a1*a1 + a2*a3 + a1*a2 + a2*a4 + a3*a1 + a4*a3 + a3*a2 + a4*a4)"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (a1, a2, a3, a4)",
+        "a2*a3 != 0",
+        "ans != a1*a1"
+      ],
+      "cost_values": [
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "c1 == a1*a1 + a2*a3"
+      ],
+      "sol1": "A² = A × A이다. 성분을 각각 제곱하는 것이 아니라 행렬의 곱셈 규칙(행 × 열)을 따른다: (1, 1) 성분은 {a1} × {pn(a1)} + {pn(a2)} × {pn(a3)} = {c1}.",
+      "sol2": [
+        "A² = AA: (1, 1) {c1}, (1, 2) {c2}",
+        "(2, 1) {c3}, (2, 2) {c4}",
+        "A² = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]] → {ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "A² = AA: (1, 1) {c1}, (1, 2) {c2}",
+                "hint": "1행 × 각 열"
+              },
+              {
+                "text": "(2, 1) {c3}, (2, 2) {c4}",
+                "hint": "2행 × 각 열"
+              },
+              {
+                "text": "A² = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]] → {ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "성분을 제곱한 [[mat(2, 2, {a1*a1}, {a2*a2}, {a3*a3}, {a4*a4})]]{eun(a4*a4)} A²이 아니다((1, 1) 성분에는 (1, 2) 성분과 (2, 1) 성분의 곱 {a2*a3}{ika(a2*a3)} 더해진다). 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "A² = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "A² = AA = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]이므로 {ASK}{eun(ASK)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "곱셈",
+          "points": 3,
+          "criterion": "A² = [[mat(2, 2, {c1}, {c2}, {c3}, {c4})]]{eul(c4)} 구했다.",
+          "partial": "성분을 각각 제곱했으면 인정하지 않는다."
+        },
+        {
+          "element": "값 구하기",
+          "points": 2,
+          "criterion": "{ASK} {ans}{eul(ans)} 답했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "성분을 각각 제곱함",
+          "on": "곱셈",
+          "effect": "불인정"
+        },
+        {
+          "text": "행·열 짝짓기 실수",
+          "on": "곱셈",
+          "effect": "부분"
+        },
+        {
+          "text": "합 계산 실수",
+          "on": "값 구하기",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

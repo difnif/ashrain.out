@@ -1,0 +1,1235 @@
+{
+  "seed_id": "h1-1-poly-eq",
+  "category": "연산",
+  "title": "여러 가지 방정식 — 삼차 근과 계수·복이차·연립이차(일차+이차)·(α+1)(β+1)(γ+1)·합과 제곱합",
+  "unit_id": "h1-1",
+  "concept_ids": [
+    "h1-1-09",
+    "h1-1-10"
+  ],
+  "schema_id": null,
+  "schema_name": "삼차·사차방정식과 연립이차방정식",
+  "source_item_ids": [],
+  "note": "삼차식은 세 정수 근에서 계수를 파생. 연립이차는 x1, a 로 두 해를 만든다(x2 = −a − x1).",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "인수분해",
+        "근과 계수의 관계"
+      ],
+      "ops": [
+        "방정식"
+      ],
+      "traps": [
+        "근 누락",
+        "부호"
+      ],
+      "tags": [
+        "삼차방정식",
+        "연립이차방정식"
+      ],
+      "id": "h1-1-poly-eq-t1",
+      "title": "삼차방정식의 근과 계수의 관계 — α² + β² + γ²",
+      "skill": "세 근의 합·두 근끼리의 곱의 합·세 근의 곱을 계수로 읽고 대칭식으로 변형하기",
+      "variant_axis": {
+        "세 근": "−4~4 (서로 다름)",
+        "구하는 것": "제곱의 합 / 역수의 합"
+      },
+      "discriminates": "x³ + ax² + bx + c = 0에서 α + β + γ = −a, αβ + βγ + γα = b, αβγ = −c의 부호를 지키는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "sq",
+              "inv"
+            ]
+          }
+        }
+      ],
+      "question": "삼차방정식 x³ {sgt(a)}x² {sgt(b)}x {sgn(c)} = 0의 세 근을 α, β, γ라 할 때, {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "sq": {
+            "ASK": "α² + β² + γ²",
+            "FORM": "(α + β + γ)² − 2(αβ + βγ + γα)",
+            "w": 1
+          },
+          "inv": {
+            "ASK": "1/α + 1/β + 1/γ",
+            "FORM": "(αβ + βγ + γα)/(αβγ)",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "a": "-(p + q + r)",
+        "b": "p*q + q*r + r*p",
+        "c": "-p*q*r",
+        "s1": "p + q + r",
+        "s2": "p*q + q*r + r*p",
+        "s3": "p*q*r",
+        "ans": "w*(p*p + q*q + r*r) + (1 - w)*(p*q + q*r + r*p)/(p*q*r)"
+      },
+      "constraints": [
+        "p < q",
+        "q < r",
+        "a != 0",
+        "b != 0",
+        "ans != 0",
+        "ans not in (a, b, c)",
+        "w == 1 or s2 % s3 == 0"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "r",
+        "a",
+        "b",
+        "c",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "s1 == -a",
+        "s2 == b",
+        "s3 == -c"
+      ],
+      "sol1": "삼차방정식 x³ + ax² + bx + c = 0의 세 근에 대하여 α + β + γ = −a, αβ + βγ + γα = b, αβγ = −c이다. 여기서는 α + β + γ = {s1}, αβ + βγ + γα = {s2}, αβγ = {s3}이고, {ASK} = {FORM}{ro(FORM)} 변형해 대입한다.",
+      "sol2": [
+        "α + β + γ = {s1}, αβ + βγ + γα = {s2}, αβγ = {s3}",
+        "{ASK} = {FORM}",
+        "= {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "α + β + γ = {s1}, αβ + βγ + γα = {s2}, αβγ = {s3}",
+                "hint": "삼차의 근과 계수"
+              },
+              {
+                "text": "{ASK} = {FORM}",
+                "hint": "대칭식 변형"
+              },
+              {
+                "text": "= {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "세 근은 {p}, {q}, {r}이다(인수분해 (x {sgn(-p)})(x {sgn(-q)})(x {sgn(-r)})). 직접 계산해도 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "세 근 {p}, {q}, {r}",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "α + β + γ = {s1}, αβ + βγ + γα = {s2}, αβγ = {s3}이므로 {ASK} = {FORM} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "근과 계수",
+          "points": 2,
+          "criterion": "세 관계식의 값 {s1}, {s2}, {s3}{eul(s3)} 바르게 읽었다.",
+          "partial": "부호가 하나라도 틀렸으면 1점."
+        },
+        {
+          "element": "변형·계산",
+          "points": 3,
+          "criterion": "{ASK} = {FORM}{ro(ans)} 변형해 {ans}{eul(ans)} 구했다.",
+          "partial": "변형 공식이 틀렸으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "α + β + γ = a로 부호를 틀림",
+          "on": "근과 계수",
+          "effect": "불인정"
+        },
+        {
+          "text": "αβγ = c로 부호를 틀림",
+          "on": "근과 계수",
+          "effect": "부분"
+        },
+        {
+          "text": "α² + β² + γ² = (α + β + γ)²으로 둠",
+          "on": "변형·계산",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "인수분해",
+        "근과 계수의 관계"
+      ],
+      "ops": [
+        "방정식"
+      ],
+      "traps": [
+        "근 누락",
+        "부호"
+      ],
+      "tags": [
+        "삼차방정식",
+        "연립이차방정식"
+      ],
+      "id": "h1-1-poly-eq-t2",
+      "title": "복이차방정식 x⁴ + ax² + b = 0 — 실근의 합·제곱의 합",
+      "skill": "x² = t로 치환해 t의 이차방정식을 풀고 x로 되돌리기",
+      "variant_axis": {
+        "t의 두 근": "p², q² (1~5)",
+        "구하는 것": "양의 근의 합 / 모든 근의 제곱의 합"
+      },
+      "discriminates": "x² = t 치환 후 t = p², q²에서 x = ±p, ±q의 네 근을 모두 찾는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              1,
+              7
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "int": [
+              1,
+              7
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "pos",
+              "sq"
+            ]
+          }
+        }
+      ],
+      "question": "사차방정식 x⁴ {sgt(a)}x² {sgn(b)} = 0의 {ASK}{eul(ASK)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "pos": {
+            "ASK": "모든 양의 근의 합",
+            "w": 1
+          },
+          "sq": {
+            "ASK": "모든 근의 제곱의 합",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "a": "-(p*p + q*q)",
+        "b": "p*p*q*q",
+        "p2": "p*p",
+        "q2": "q*q",
+        "ans": "w*(p + q) + (1 - w)*2*(p*p + q*q)"
+      },
+      "constraints": [
+        "p < q",
+        "ans not in (a, b, p2, q2)",
+        "ans != 0"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "a",
+        "b",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a == -(p2 + q2)",
+        "b == p2*q2"
+      ],
+      "sol1": "x² = t로 놓으면 t² {sgt(a)}t {sgn(b)} = 0이고 인수분해하면 (t − {p2})(t − {q2}) = 0이다. t = x² ≥ 0이므로 x² = {p2} 또는 x² = {q2}, 즉 x = ±{p} 또는 x = ±{q}의 네 근을 얻는다.",
+      "sol2": [
+        "x² = t: t² {sgt(a)}t {sgn(b)} = (t − {p2})(t − {q2}) = 0",
+        "x² = {p2}, {q2} → x = ±{p}, ±{q}",
+        "{ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "x² = t: t² {sgt(a)}t {sgn(b)} = (t − {p2})(t − {q2}) = 0",
+                "hint": "치환"
+              },
+              {
+                "text": "x² = {p2}, {q2} → x = ±{p}, ±{q}",
+                "hint": "되돌리기(± 모두)"
+              },
+              {
+                "text": "{ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "네 근 {p}, −{p}, {q}, −{q}의 합은 0, 양의 근의 합은 {p + q}, 제곱의 합은 2({p2} + {q2}) = {2*(p2 + q2)}이다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "근: ±{p}, ±{q}",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "x² = t로 놓으면 (t − {p2})(t − {q2}) = 0이므로 x² = {p2} 또는 x² = {q2}, 즉 x = ±{p}, ±{q}이다. 따라서 {ASK}{eun(ASK)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "치환·인수분해",
+          "points": 2,
+          "criterion": "x² = t로 놓아 (t − {p2})(t − {q2}) = 0을 얻었다.",
+          "partial": "인수분해 실수면 1점."
+        },
+        {
+          "element": "근·답",
+          "points": 3,
+          "criterion": "네 근 ±{p}, ±{q}{eul(q)} 모두 구해 {ASK} {ans}{eul(ans)} 답했다.",
+          "partial": "음의 근을 빠뜨렸으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "x = ±√t에서 음의 근을 빠뜨림",
+          "on": "근·답",
+          "effect": "부분"
+        },
+        {
+          "text": "t의 근을 x의 근으로 답함",
+          "on": "근·답",
+          "effect": "불인정"
+        },
+        {
+          "text": "인수분해 실수",
+          "on": "치환·인수분해",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "인수분해",
+        "근과 계수의 관계"
+      ],
+      "ops": [
+        "방정식"
+      ],
+      "traps": [
+        "근 누락",
+        "부호"
+      ],
+      "tags": [
+        "삼차방정식",
+        "연립이차방정식"
+      ],
+      "id": "h1-1-poly-eq-t3",
+      "title": "연립이차방정식(일차 + 이차) — 해에서 x + y의 최댓값",
+      "skill": "일차식을 한 문자에 대해 정리해 이차식에 대입하고 두 해를 모두 구하기",
+      "variant_axis": {
+        "일차식": "y = x + a",
+        "이차식": "x² + y² = b"
+      },
+      "discriminates": "대입해 얻은 이차방정식의 두 근을 모두 구해 두 해 (x, y)를 완성하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "x1",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "question": "연립방정식 y = x {sgn(a)}, x² + y² = {b}의 해를 (x, y)라 할 때, x + y의 값 중 가장 큰 것을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "y1": "x1 + a",
+        "x2": "-a - x1",
+        "y2": "-x1",
+        "b": "x1*x1 + (x1 + a)**2",
+        "s1": "2*x1 + a",
+        "s2": "-a - 2*x1",
+        "ans": "max(2*x1 + a, -a - 2*x1)",
+        "a2b": "a*a - b"
+      },
+      "constraints": [
+        "x1 != x2",
+        "ans != 0",
+        "ans not in (a, b)",
+        "b <= 100"
+      ],
+      "cost_values": [
+        "x1",
+        "a",
+        "b",
+        "s1",
+        "s2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "x2*x2 + y2*y2 == b",
+        "y2 == x2 + a"
+      ],
+      "sol1": "일차식 y = x {sgn(a)}{eul(a)} 이차식에 대입하면 x² + (x {sgn(a)})² = {b}, 정리하면 2x² {sgt(2*a)}x {sgn(a2b)} = 0이다. 이 이차방정식의 두 근 x = {x1}, {x2}에 대해 y를 구하면 두 해가 나온다.",
+      "sol2": [
+        "대입: x² + (x {sgn(a)})² = {b} → 2x² {sgt(2*a)}x {sgn(a2b)} = 0",
+        "x = {x1} 또는 x = {x2} → 해 ({x1}, {y1}), ({x2}, {y2})",
+        "x + y = {s1} 또는 {s2} → 가장 큰 값 {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "대입: x² + (x {sgn(a)})² = {b} → 2x² {sgt(2*a)}x {sgn(a2b)} = 0",
+                "hint": "일차식을 대입"
+              },
+              {
+                "text": "x = {x1} 또는 x = {x2} → 해 ({x1}, {y1}), ({x2}, {y2})",
+                "hint": "y = x {sgn(a)}"
+              },
+              {
+                "text": "x + y = {s1} 또는 {s2} → 가장 큰 값 {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "x + y의 최댓값"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "({x1}, {y1}): {x1}² + {pn(y1)}² = {b} ✓, ({x2}, {y2}): {pn(x2)}² + {pn(y2)}² = {b} ✓. 두 해 모두 원래 식을 만족한다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "두 해 검산 ✓",
+              "x + y 최댓값 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "y = x {sgn(a)}{eul(a)} 대입하면 2x² {sgt(2*a)}x {sgn(a2b)} = 0에서 x = {x1} 또는 {x2}이고, 해는 ({x1}, {y1}), ({x2}, {y2})이다. 따라서 x + y의 최댓값은 {ans}이다.",
+      "rubric": [
+        {
+          "element": "대입·풀이",
+          "points": 3,
+          "criterion": "대입해 x = {x1}, {x2}{eul(x2)} 구했다.",
+          "partial": "한 근만 구했으면 1점."
+        },
+        {
+          "element": "해·답",
+          "points": 2,
+          "criterion": "두 해를 완성해 x + y의 최댓값 {ans}{eul(ans)} 답했다.",
+          "partial": "y를 구하지 않았으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "한 해만 구하고 멈춤",
+          "on": "대입·풀이",
+          "effect": "부분"
+        },
+        {
+          "text": "대입 후 전개 실수",
+          "on": "대입·풀이",
+          "effect": "부분"
+        },
+        {
+          "text": "x의 최댓값을 답함",
+          "on": "해·답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "인수분해",
+        "근과 계수의 관계"
+      ],
+      "ops": [
+        "방정식"
+      ],
+      "traps": [
+        "근 누락",
+        "부호"
+      ],
+      "tags": [
+        "삼차방정식",
+        "연립이차방정식"
+      ],
+      "id": "h1-1-poly-eq-t4",
+      "title": "삼차방정식의 세 근으로 (α + 1)(β + 1)(γ + 1) 구하기",
+      "skill": "f(x) = (x − α)(x − β)(x − γ)에서 x = −1을 대입해 곱을 한 번에 구하기",
+      "variant_axis": {
+        "계수": "±1~±6"
+      },
+      "discriminates": "세 근을 구하지 않고 f(−1) = (−1 − α)(−1 − β)(−1 − γ) = −(α + 1)(β + 1)(γ + 1)임을 쓰는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "question": "삼차방정식 x³ {sgt(a)}x² {sgt(b)}x {sgn(c)} = 0의 세 근을 α, β, γ라 할 때, (α + 1)(β + 1)(γ + 1)의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "fm1": "-1 + a - b + c",
+        "ans": "1 - a + b - c"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (a, b, c)"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "fm1",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == -fm1"
+      ],
+      "sol1": "f(x) = x³ {sgt(a)}x² {sgt(b)}x {sgn(c)}{eun(c)} 세 근으로 f(x) = (x − α)(x − β)(x − γ)로 인수분해된다. x = −1을 넣으면 f(−1) = (−1 − α)(−1 − β)(−1 − γ) = −(α + 1)(β + 1)(γ + 1)이므로 구하는 값은 −f(−1)이다.",
+      "sol2": [
+        "f(x) = (x − α)(x − β)(x − γ)",
+        "f(−1) = (−1 − α)(−1 − β)(−1 − γ) = −(α + 1)(β + 1)(γ + 1)",
+        "f(−1) = −1 {sgn(a)} {sgn(-b)} {sgn(c)} = {fm1} → (α + 1)(β + 1)(γ + 1) = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "f(x) = (x − α)(x − β)(x − γ)",
+                "hint": "인수분해 꼴"
+              },
+              {
+                "text": "f(−1) = (−1 − α)(−1 − β)(−1 − γ) = −(α + 1)(β + 1)(γ + 1)",
+                "hint": "x = −1 대입"
+              },
+              {
+                "text": "f(−1) = −1 {sgn(a)} {sgn(-b)} {sgn(c)} = {fm1} → (α + 1)(β + 1)(γ + 1) = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "답"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "전개해서 확인하면 (α + 1)(β + 1)(γ + 1) = αβγ + (αβ + βγ + γα) + (α + β + γ) + 1 = {pn(-c)} + {pn(b)} + {pn(-a)} + 1 = {ans}{ro(ans)} 같다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "αβγ + Σαβ + Σα + 1 = {ans}",
+              "답 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "f(x) = (x − α)(x − β)(x − γ)에 x = −1을 대입하면 f(−1) = −(α + 1)(β + 1)(γ + 1)이고 f(−1) = {fm1}이므로 (α + 1)(β + 1)(γ + 1) = {ans}이다.",
+      "rubric": [
+        {
+          "element": "x = −1 대입",
+          "points": 3,
+          "criterion": "f(−1) = −(α + 1)(β + 1)(γ + 1)임을 밝혔다.",
+          "partial": "근과 계수의 관계로 전개해 구했어도 인정한다."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "f(−1) = {fm1}에서 {ans}{eul(ans)} 구했다.",
+          "partial": "부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "f(−1)의 부호를 그대로 답함",
+          "on": "계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "f(1)을 대입함",
+          "on": "x = −1 대입",
+          "effect": "불인정"
+        },
+        {
+          "text": "(−1)³·(−1)² 부호 실수",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "인수분해",
+        "근과 계수의 관계"
+      ],
+      "ops": [
+        "방정식"
+      ],
+      "traps": [
+        "근 누락",
+        "부호"
+      ],
+      "tags": [
+        "삼차방정식",
+        "연립이차방정식"
+      ],
+      "id": "h1-1-poly-eq-t5",
+      "title": "연립방정식 x + y = s, x² + y² = t — xy와 (x − y)²",
+      "skill": "x² + y² = (x + y)² − 2xy로 xy를 구하고 (x − y)² = (x + y)² − 4xy로 이어가기",
+      "variant_axis": {
+        "합": "±2~±9",
+        "곱": "±1~±12"
+      },
+      "discriminates": "근을 직접 구하지 않고 대칭식으로 xy를 끌어내는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -12,
+              -11,
+              -10,
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "xy",
+              "dsq"
+            ]
+          }
+        }
+      ],
+      "question": "연립방정식 x + y = {s}, x² + y² = {t}의 해 (x, y)에 대하여 {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "xy": {
+            "ASK": "xy",
+            "w": 1
+          },
+          "dsq": {
+            "ASK": "(x − y)²",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "t": "s*s - 2*p",
+        "d2": "s*s - 4*p",
+        "ans": "w*p + (1 - w)*(s*s - 4*p)"
+      },
+      "constraints": [
+        "d2 >= 0",
+        "ans != 0",
+        "ans not in (s, t)"
+      ],
+      "cost_values": [
+        "s",
+        "p",
+        "t",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "t == s*s - 2*p",
+        "d2 == s*s - 4*p"
+      ],
+      "sol1": "x² + y² = (x + y)² − 2xy이므로 {t} = {s}² − 2xy에서 xy = {p}이다. (x − y)² = (x + y)² − 4xy = {s*s} − 4 × {pn(p)} = {d2}{ro(d2)} 이어진다.",
+      "sol2": [
+        "x² + y² = (x + y)² − 2xy → {t} = {s*s} − 2xy",
+        "xy = {p}",
+        "(x − y)² = {s*s} − 4 × {pn(p)} = {d2} → {ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "x² + y² = (x + y)² − 2xy → {t} = {s*s} − 2xy",
+                "hint": "대칭식"
+              },
+              {
+                "text": "xy = {p}",
+                "hint": "곱"
+              },
+              {
+                "text": "(x − y)² = {s*s} − 4 × {pn(p)} = {d2} → {ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "x, y는 t² − ({s})t + {pn(p)} = 0의 두 근이고 판별식 {d2} ≥ 0이므로 실수해가 있다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "판별식 {d2} ≥ 0 ✓",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "x² + y² = (x + y)² − 2xy이므로 {t} = {s*s} − 2xy에서 xy = {p}이고, (x − y)² = (x + y)² − 4xy = {d2}이다. 따라서 {ASK} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "대칭식",
+          "points": 3,
+          "criterion": "x² + y² = (x + y)² − 2xy로 xy = {p}{eul(p)} 구했다.",
+          "partial": "부호 실수면 1점."
+        },
+        {
+          "element": "값 구하기",
+          "points": 2,
+          "criterion": "{ASK} = {ans}{eul(ans)} 구했다.",
+          "partial": "(x − y)²에서 2xy로 썼으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "x² + y² = (x + y)²으로 둠",
+          "on": "대칭식",
+          "effect": "불인정"
+        },
+        {
+          "text": "(x − y)² = (x + y)² − 2xy로 둠",
+          "on": "값 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "이항 부호 실수",
+          "on": "대칭식",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}
