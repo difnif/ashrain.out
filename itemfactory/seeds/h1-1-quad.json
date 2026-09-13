@@ -1,0 +1,1407 @@
+{
+  "seed_id": "h1-1-quad",
+  "category": "연산",
+  "title": "이차방정식 — 판별식 범위·근과 계수 대칭식·두 근으로 방정식·무리근 계수·근의 차·허근 계수",
+  "unit_id": "h1-1",
+  "concept_ids": [
+    "h1-1-05",
+    "h1-1-06"
+  ],
+  "schema_id": null,
+  "schema_name": "이차방정식의 판별식과 근과 계수의 관계",
+  "source_item_ids": [],
+  "note": "합 s·곱 p 를 파라미터로 두어 계수를 파생. 범위 답은 'lo < k < hi' 문자열(answer_var 없음).",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "근의 공식",
+        "이차방정식의 풀이"
+      ],
+      "ops": [
+        "이차방정식"
+      ],
+      "traps": [
+        "판별식 부호",
+        "대칭식 변형"
+      ],
+      "tags": [
+        "판별식",
+        "근과 계수의 관계"
+      ],
+      "id": "h1-1-quad-t1",
+      "title": "판별식 — 허근을 가질 때 상수 k의 범위",
+      "skill": "x² + kx + c = 0이 허근을 가지려면 D = k² − 4c < 0임을 써서 k의 범위 구하기",
+      "variant_axis": {
+        "c": "완전제곱수 1~36"
+      },
+      "discriminates": "D < 0을 세우고 k² < 4c를 −2√c < k < 2√c로 푸는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "s",
+          "values": {
+            "int": [
+              2,
+              7
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "question": "x에 대한 이차방정식 x² + (k {sgn(-b)})x + {c} = 0이 서로 다른 두 허근을 가질 때, 실수 k의 값의 범위를 구하시오.",
+      "answer": "{lo2} < k < {hi2}",
+      "answer_alt": [],
+      "derive": {
+        "c": "s*s",
+        "hi": "2*s",
+        "lo": "-2*s",
+        "lo2": "-2*s + b",
+        "hi2": "2*s + b"
+      },
+      "constraints": [
+        "lo2 != 0"
+      ],
+      "cost_values": [
+        "s",
+        "c",
+        "b",
+        "lo2",
+        "hi2"
+      ],
+      "verify": [
+        "hi == 2*s",
+        "c == s*s"
+      ],
+      "sol1": "계수가 실수인 이차방정식이 허근을 가질 조건은 판별식 D < 0이다. D = (k {sgn(-b)})² − {4*c} < 0, 즉 (k {sgn(-b)})² < {4*c}이므로 {lo} < k {sgn(-b)} < {hi}이고 여기에 {b}{eul(b)} 더해 k의 범위를 얻는다.",
+      "sol2": [
+        "D = (k {sgn(-b)})² − 4 × {c} = (k {sgn(-b)})² − {4*c} < 0",
+        "(k {sgn(-b)})² < {4*c} → {lo} < k {sgn(-b)} < {hi}",
+        "{lo2} < k < {hi2}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "D = (k {sgn(-b)})² − 4 × {c} = (k {sgn(-b)})² − {4*c} < 0",
+                "hint": "허근 ⇔ D < 0"
+              },
+              {
+                "text": "(k {sgn(-b)})² < {4*c} → {lo} < k {sgn(-b)} < {hi}",
+                "hint": "제곱근 풀이: −2√c < ○ < 2√c"
+              },
+              {
+                "text": "{lo2} < k < {hi2}",
+                "marks": [
+                  {
+                    "on": "{lo2} < k < {hi2}",
+                    "note": "k의 범위"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "경계 k = {lo2}, {hi2}에서는 D = 0(중근)이 되고, 그 사이에서 D < 0이다. 따라서 {lo2} < k < {hi2}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "k = {lo2}, {hi2} → D = 0 (경계)",
+              "{lo2} < k < {hi2}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "허근을 가지려면 D = (k {sgn(-b)})² − {4*c} < 0이어야 하므로 {lo} < k {sgn(-b)} < {hi}, 즉 {lo2} < k < {hi2}이다.",
+      "rubric": [
+        {
+          "element": "판별식 조건",
+          "points": 3,
+          "criterion": "D = (k {sgn(-b)})² − {4*c} < 0을 세웠다.",
+          "partial": "D > 0으로 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "범위",
+          "points": 2,
+          "criterion": "{lo2} < k < {hi2}{eul(hi2)} 구했다.",
+          "partial": "한쪽 경계만 썼으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "D > 0으로 조건을 세움",
+          "on": "판별식 조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "k² < 4c에서 k < 2√c만 씀",
+          "on": "범위",
+          "effect": "부분"
+        },
+        {
+          "text": "이항 부호 실수",
+          "on": "범위",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "근의 공식",
+        "이차방정식의 풀이"
+      ],
+      "ops": [
+        "이차방정식"
+      ],
+      "traps": [
+        "판별식 부호",
+        "대칭식 변형"
+      ],
+      "tags": [
+        "판별식",
+        "근과 계수의 관계"
+      ],
+      "id": "h1-1-quad-t2",
+      "title": "근과 계수의 관계 — 두 근의 대칭식 α² + β², (α − β)², 1/α + 1/β",
+      "skill": "α + β = −b/a, αβ = c/a를 구한 뒤 대칭식을 합·곱으로 변형하기",
+      "variant_axis": {
+        "이차방정식": "x² + bx + c",
+        "대칭식": "3가지"
+      },
+      "discriminates": "근을 직접 구하지 않고 합·곱으로 변형하며, α² + β² = (α + β)² − 2αβ 등의 부호를 지키는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "sq",
+              "dsq",
+              "inv"
+            ]
+          }
+        }
+      ],
+      "question": "이차방정식 x² {sgt(b)}x {sgn(c)} = 0의 두 근을 α, β라 할 때, {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "sq": {
+            "ASK": "α² + β²",
+            "FORM": "(α + β)² − 2αβ",
+            "w1": 1,
+            "w2": 0,
+            "w3": 0
+          },
+          "dsq": {
+            "ASK": "(α − β)²",
+            "FORM": "(α + β)² − 4αβ",
+            "w1": 0,
+            "w2": 1,
+            "w3": 0
+          },
+          "inv": {
+            "ASK": "1/α + 1/β",
+            "FORM": "(α + β)/(αβ)",
+            "w1": 0,
+            "w2": 0,
+            "w3": 1
+          }
+        }
+      },
+      "derive": {
+        "b": "-s",
+        "c": "p",
+        "v1": "s*s - 2*p",
+        "v2": "s*s - 4*p",
+        "v3": "s/p",
+        "ans": "w1*(s*s - 2*p) + w2*(s*s - 4*p) + w3*s/p"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (s, p, b)",
+        "w3 == 0 or s % p == 0"
+      ],
+      "cost_values": [
+        "s",
+        "p",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "v1 == s*s - 2*p",
+        "v2 == s*s - 4*p"
+      ],
+      "sol1": "근과 계수의 관계에서 α + β = {s}, αβ = {p}이다. 근을 직접 구하지 않고 {ASK} = {FORM}{ro(FORM)} 변형해 합과 곱을 대입한다.",
+      "sol2": [
+        "α + β = {s}, αβ = {p}",
+        "{ASK} = {FORM}",
+        "= {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "α + β = {s}, αβ = {p}",
+                "hint": "근과 계수의 관계"
+              },
+              {
+                "text": "{ASK} = {FORM}",
+                "hint": "대칭식의 변형"
+              },
+              {
+                "text": "= {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "α² + β² = {v1}, (α − β)² = {v2}, 1/α + 1/β = (α + β)/(αβ)로 세 대칭식이 모두 합 {s}, 곱 {p}만으로 정해진다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "합 {s}, 곱 {p}",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "α + β = {s}, αβ = {p}이므로 {ASK} = {FORM} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "근과 계수",
+          "points": 2,
+          "criterion": "α + β = {s}, αβ = {p}{eul(p)} 구했다.",
+          "partial": "부호가 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "변형·계산",
+          "points": 3,
+          "criterion": "{ASK} = {FORM}{ro(ans)} 변형해 {ans}{eul(ans)} 구했다.",
+          "partial": "변형 공식의 부호가 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "α + β = b(부호 반대)로 둠",
+          "on": "근과 계수",
+          "effect": "불인정"
+        },
+        {
+          "text": "α² + β² = (α + β)²으로 둠",
+          "on": "변형·계산",
+          "effect": "불인정"
+        },
+        {
+          "text": "(α − β)²에서 4αβ 대신 2αβ",
+          "on": "변형·계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "근의 공식",
+        "이차방정식의 풀이"
+      ],
+      "ops": [
+        "이차방정식"
+      ],
+      "traps": [
+        "판별식 부호",
+        "대칭식 변형"
+      ],
+      "tags": [
+        "판별식",
+        "근과 계수의 관계"
+      ],
+      "id": "h1-1-quad-t3",
+      "title": "두 근이 α + 1, β + 1인 이차방정식 만들기",
+      "skill": "새 두 근의 합과 곱을 구해 x² − (합)x + (곱) = 0 세우기",
+      "variant_axis": {
+        "원래 방정식": "x² + bx + c",
+        "이동": "+1 / −1 / 2배"
+      },
+      "discriminates": "새 근의 합·곱을 원래 합·곱으로 나타내고 x² − (합)x + (곱)의 부호를 지키는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "p1",
+              "m1",
+              "d2"
+            ]
+          }
+        }
+      ],
+      "question": "이차방정식 x² {sgt(b)}x {sgn(c)} = 0의 두 근을 α, β라 할 때, 두 근이 {NEW}인 이차방정식이 x² + mx + n = 0이다. 상수 m, n에 대하여 m + n의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "p1": {
+            "NEW": "α + 1, β + 1",
+            "SUMF": "(α + β) + 2",
+            "PRODF": "αβ + (α + β) + 1",
+            "ws": 1,
+            "wp": 1,
+            "kk": 1,
+            "cc": 1
+          },
+          "m1": {
+            "NEW": "α − 1, β − 1",
+            "SUMF": "(α + β) − 2",
+            "PRODF": "αβ − (α + β) + 1",
+            "ws": 1,
+            "wp": -1,
+            "kk": 1,
+            "cc": -1
+          },
+          "d2": {
+            "NEW": "2α, 2β",
+            "SUMF": "2(α + β)",
+            "PRODF": "4αβ",
+            "ws": 2,
+            "wp": 0,
+            "kk": 4,
+            "cc": 0
+          }
+        }
+      },
+      "derive": {
+        "b": "-s",
+        "c": "p",
+        "ns": "ws*s + 2*cc",
+        "npd": "kk*p + wp*s + cc*cc",
+        "ans": "-(ws*s + 2*cc) + (kk*p + wp*s + cc*cc)"
+      },
+      "constraints": [
+        "ns != 0",
+        "npd != 0",
+        "ans != 0",
+        "ans not in (s, p, b)"
+      ],
+      "cost_values": [
+        "s",
+        "p",
+        "ns",
+        "npd",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == -ns + npd"
+      ],
+      "sol1": "α + β = {s}, αβ = {p}이다. 새 두 근의 합은 {SUMF} = {ns}, 곱은 {PRODF} = {npd}이므로 구하는 방정식은 x² − (합)x + (곱) = 0, 즉 x² {sgt(-ns)}x {sgn(npd)} = 0이다. 따라서 m = {-ns}, n = {npd}.",
+      "sol2": [
+        "α + β = {s}, αβ = {p}",
+        "새 근의 합 {SUMF} = {ns}, 곱 {PRODF} = {npd}",
+        "x² {sgt(-ns)}x {sgn(npd)} = 0 → m = {-ns}, n = {npd}, m + n = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "α + β = {s}, αβ = {p}",
+                "hint": "근과 계수의 관계"
+              },
+              {
+                "text": "새 근의 합 {SUMF} = {ns}, 곱 {PRODF} = {npd}",
+                "hint": "새 근의 합·곱"
+              },
+              {
+                "text": "x² {sgt(-ns)}x {sgn(npd)} = 0 → m = {-ns}, n = {npd}, m + n = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "m + n"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "m은 새 근의 합의 부호를 바꾼 값 {-ns}, n은 새 근의 곱 {npd}이다. 합의 부호를 그대로 쓰면 틀린다. 따라서 m + n = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "m = −(합) = {-ns}, n = 곱 = {npd}",
+              "m + n = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "α + β = {s}, αβ = {p}이므로 새 두 근의 합은 {ns}, 곱은 {npd}이다. 구하는 방정식은 x² {sgt(-ns)}x {sgn(npd)} = 0이므로 m + n = {ans}이다.",
+      "rubric": [
+        {
+          "element": "새 근의 합·곱",
+          "points": 3,
+          "criterion": "합 {ns}, 곱 {npd}{eul(npd)} 구했다.",
+          "partial": "곱의 전개에서 (α + β) 항을 빠뜨렸으면 1점."
+        },
+        {
+          "element": "방정식·답",
+          "points": 2,
+          "criterion": "x² {sgt(-ns)}x {sgn(npd)} = 0을 세워 m + n = {ans}{eul(ans)} 구했다.",
+          "partial": "합의 부호를 그대로 썼으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "x² + (합)x + (곱)으로 부호를 틀림",
+          "on": "방정식·답",
+          "effect": "불인정"
+        },
+        {
+          "text": "곱의 전개에서 (α + β) 항 누락",
+          "on": "새 근의 합·곱",
+          "effect": "부분"
+        },
+        {
+          "text": "원래 합의 부호 실수",
+          "on": "새 근의 합·곱",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "근의 공식",
+        "이차방정식의 풀이"
+      ],
+      "ops": [
+        "이차방정식"
+      ],
+      "traps": [
+        "판별식 부호",
+        "대칭식 변형"
+      ],
+      "tags": [
+        "판별식",
+        "근과 계수의 관계"
+      ],
+      "id": "h1-1-quad-t4",
+      "title": "한 근이 p + √q인 유리계수 이차방정식의 계수",
+      "skill": "켤레근도 근임을 써서 합·곱으로 a, b 구하기",
+      "variant_axis": {
+        "p": "±1~±4",
+        "q": "2·3·5·6·7"
+      },
+      "discriminates": "계수가 유리수이면 켤레근도 근임을 알고 합 2p, 곱 p² − q로 계수를 정하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "qv",
+          "values": {
+            "in": [
+              2,
+              3,
+              5,
+              6,
+              7
+            ]
+          }
+        }
+      ],
+      "question": "x에 대한 이차방정식 x² + ax + b = 0의 한 근이 {p} + [[sqrt({qv})]]일 때, 유리수 a, b에 대하여 a + b의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "s": "2*p",
+        "prod": "p*p - qv",
+        "a": "-2*p",
+        "b": "p*p - qv",
+        "ans": "-2*p + p*p - qv"
+      },
+      "constraints": [
+        "b != 0",
+        "ans != 0",
+        "ans not in (p, qv)"
+      ],
+      "cost_values": [
+        "p",
+        "qv",
+        "s",
+        "prod",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a == -s",
+        "b == prod"
+      ],
+      "sol1": "계수가 유리수인 이차방정식의 한 근이 {p} + [[sqrt({qv})]]이면 다른 한 근은 켤레인 {p} − [[sqrt({qv})]]이다. 두 근의 합은 {s}, 곱은 p² − q = {prod}이므로 근과 계수의 관계에서 a = −(합) = {a}, b = (곱) = {b}이다.",
+      "sol2": [
+        "다른 한 근: {p} − [[sqrt({qv})]] (켤레근)",
+        "합 = {s}, 곱 = ({p} + [[sqrt({qv})]])({p} − [[sqrt({qv})]]) = {prod}",
+        "a = −({s}) = {a}, b = {prod} → a + b = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "다른 한 근: {p} − [[sqrt({qv})]] (켤레근)",
+                "hint": "계수가 유리수"
+              },
+              {
+                "text": "합 = {s}, 곱 = ({p} + [[sqrt({qv})]])({p} − [[sqrt({qv})]]) = {prod}",
+                "hint": "합차 공식"
+              },
+              {
+                "text": "a = −({s}) = {a}, b = {prod} → a + b = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "a + b"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "x = {p} + [[sqrt({qv})]]{eul(qv)} x² {sgt(a)}x {sgn(b)}에 넣으면 0이 된다(직접 전개해 확인). 따라서 a + b = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x² {sgt(a)}x {sgn(b)} = 0에 근 대입 → 0 ✓",
+              "a + b = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "켤레근 {p} − [[sqrt({qv})]]도 근이므로 두 근의 합은 {s}, 곱은 {prod}이다. 따라서 a = {a}, b = {b}이고 a + b = {ans}이다.",
+      "rubric": [
+        {
+          "element": "켤레근",
+          "points": 2,
+          "criterion": "다른 한 근이 {p} − [[sqrt({qv})]]임을 밝혔다.",
+          "partial": "근거 없이 썼으면 1점."
+        },
+        {
+          "element": "계수 구하기",
+          "points": 3,
+          "criterion": "합 {s}, 곱 {prod}에서 a = {a}, b = {b}{ro(b)} 구해 a + b = {ans}{eul(ans)} 답했다.",
+          "partial": "a의 부호가 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "켤레근을 쓰지 않고 한 근만 대입해 못 풂",
+          "on": "켤레근",
+          "effect": "불인정"
+        },
+        {
+          "text": "a = 합(부호 반대)으로 둠",
+          "on": "계수 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "곱의 계산에서 (√q)² 또는 i² 실수",
+          "on": "계수 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "근의 공식",
+        "이차방정식의 풀이"
+      ],
+      "ops": [
+        "이차방정식"
+      ],
+      "traps": [
+        "판별식 부호",
+        "대칭식 변형"
+      ],
+      "tags": [
+        "판별식",
+        "근과 계수의 관계"
+      ],
+      "id": "h1-1-quad-t5",
+      "title": "두 근의 차가 주어진 이차방정식의 상수",
+      "skill": "α − β = d에서 (α − β)² = (α + β)² − 4αβ를 써서 상수 구하기",
+      "variant_axis": {
+        "합": "±2~±9",
+        "차": "1~6"
+      },
+      "discriminates": "두 근의 차를 대칭식 (α + β)² − 4αβ로 바꾸어 상수를 구하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              -12,
+              -11,
+              -10,
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "int": [
+              1,
+              8
+            ]
+          }
+        }
+      ],
+      "question": "이차방정식 x² {sgt(b)}x + k = 0의 두 근의 차가 {d}일 때, 상수 k의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "b": "-s",
+        "p": "(s*s - d*d)/4",
+        "s2": "s*s",
+        "d2": "d*d",
+        "ans": "(s*s - d*d)/4"
+      },
+      "constraints": [
+        "(s*s - d*d) % 4 == 0",
+        "ans != 0",
+        "ans not in (s, d, b)"
+      ],
+      "cost_values": [
+        "s",
+        "d",
+        "s2",
+        "d2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "4*ans == s2 - d2"
+      ],
+      "sol1": "두 근을 α, β라 하면 α + β = {s}, αβ = k이다. 두 근의 차가 {d}이므로 (α − β)² = {d2}이고, (α − β)² = (α + β)² − 4αβ = {s2} − 4k이다. 이 식에서 k를 구한다.",
+      "sol2": [
+        "α + β = {s}, αβ = k",
+        "(α − β)² = (α + β)² − 4αβ → {d2} = {s2} − 4k",
+        "4k = {s2 - d2} → k = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "α + β = {s}, αβ = k",
+                "hint": "근과 계수의 관계"
+              },
+              {
+                "text": "(α − β)² = (α + β)² − 4αβ → {d2} = {s2} − 4k",
+                "hint": "차의 제곱을 합·곱으로"
+              },
+              {
+                "text": "4k = {s2 - d2} → k = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "k"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "k = {ans}이면 두 근은 [[frac(pm({s}, {d}), 2)]] = {(s + d)/2}, {(s - d)/2}{ro((s - d)/2)} 차가 {d}, 합이 {s}이다. 따라서 k = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "두 근 {(s + d)/2}, {(s - d)/2}: 차 {d} ✓",
+              "k = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "α + β = {s}, αβ = k이고 (α − β)² = (α + β)² − 4αβ이므로 {d2} = {s2} − 4k에서 k = {ans}이다.",
+      "rubric": [
+        {
+          "element": "대칭식 변형",
+          "points": 3,
+          "criterion": "(α − β)² = (α + β)² − 4αβ를 써서 {d2} = {s2} − 4k를 세웠다.",
+          "partial": "2αβ로 썼으면 1점."
+        },
+        {
+          "element": "k 구하기",
+          "points": 2,
+          "criterion": "k = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "(α − β)² = (α + β)² − 2αβ로 둠",
+          "on": "대칭식 변형",
+          "effect": "부분"
+        },
+        {
+          "text": "α − β = d를 α + β와 혼동",
+          "on": "대칭식 변형",
+          "effect": "불인정"
+        },
+        {
+          "text": "이항 부호 실수",
+          "on": "k 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "근의 공식",
+        "이차방정식의 풀이"
+      ],
+      "ops": [
+        "이차방정식"
+      ],
+      "traps": [
+        "판별식 부호",
+        "대칭식 변형"
+      ],
+      "tags": [
+        "판별식",
+        "근과 계수의 관계"
+      ],
+      "id": "h1-1-quad-t6",
+      "title": "한 근이 p + qi인 실계수 이차방정식의 계수",
+      "skill": "켤레근도 근임을 써서 합·곱으로 a, b 구하기",
+      "variant_axis": {
+        "p": "±1~±4",
+        "q": "1~5"
+      },
+      "discriminates": "계수가 실수이면 켤레근도 근임을 알고 합 2p, 곱 p² + q²로 계수를 정하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "qv",
+          "values": {
+            "in": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "question": "x에 대한 이차방정식 x² + ax + b = 0의 한 근이 {p} + {qv}i일 때, 실수 a, b에 대하여 a + b의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "s": "2*p",
+        "prod": "p*p + qv*qv",
+        "a": "-2*p",
+        "b": "p*p + qv*qv",
+        "ans": "-2*p + p*p + qv*qv"
+      },
+      "constraints": [
+        "b != 0",
+        "ans != 0",
+        "ans not in (p, qv)"
+      ],
+      "cost_values": [
+        "p",
+        "qv",
+        "s",
+        "prod",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a == -s",
+        "b == prod"
+      ],
+      "sol1": "계수가 실수인 이차방정식의 한 근이 {p} + {qv}i이면 다른 한 근은 켤레인 {p} − {qv}i이다. 두 근의 합은 {s}, 곱은 p² + q² = {prod}이므로 근과 계수의 관계에서 a = −(합) = {a}, b = (곱) = {b}이다.",
+      "sol2": [
+        "다른 한 근: {p} − {qv}i (켤레근)",
+        "합 = {s}, 곱 = ({p} + {qv}i)({p} − {qv}i) = {prod}",
+        "a = −({s}) = {a}, b = {prod} → a + b = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "다른 한 근: {p} − {qv}i (켤레근)",
+                "hint": "계수가 실수"
+              },
+              {
+                "text": "합 = {s}, 곱 = ({p} + {qv}i)({p} − {qv}i) = {prod}",
+                "hint": "합차 공식"
+              },
+              {
+                "text": "a = −({s}) = {a}, b = {prod} → a + b = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "a + b"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "x = {p} + {qv}i{eul(qv)} x² {sgt(a)}x {sgn(b)}에 넣으면 0이 된다(직접 전개해 확인). 따라서 a + b = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x² {sgt(a)}x {sgn(b)} = 0에 근 대입 → 0 ✓",
+              "a + b = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "켤레근 {p} − {qv}i도 근이므로 두 근의 합은 {s}, 곱은 {prod}이다. 따라서 a = {a}, b = {b}이고 a + b = {ans}이다.",
+      "rubric": [
+        {
+          "element": "켤레근",
+          "points": 2,
+          "criterion": "다른 한 근이 {p} − {qv}i임을 밝혔다.",
+          "partial": "근거 없이 썼으면 1점."
+        },
+        {
+          "element": "계수 구하기",
+          "points": 3,
+          "criterion": "합 {s}, 곱 {prod}에서 a = {a}, b = {b}{ro(b)} 구해 a + b = {ans}{eul(ans)} 답했다.",
+          "partial": "a의 부호가 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "켤레근을 쓰지 않고 한 근만 대입해 못 풂",
+          "on": "켤레근",
+          "effect": "불인정"
+        },
+        {
+          "text": "a = 합(부호 반대)으로 둠",
+          "on": "계수 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "곱의 계산에서 (√q)² 또는 i² 실수",
+          "on": "계수 구하기",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

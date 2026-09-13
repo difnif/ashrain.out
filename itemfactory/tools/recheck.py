@@ -1239,6 +1239,69 @@ def recompute(it):
         mk_ = re.fullmatch(r"(\d*)a(?: \+ (\d+))?", first); k = int(mk_.group(1)) if mk_.group(1) else 1; c = int(mk_.group(2)) if mk_.group(2) else 0
         if ask == "평균": return Fraction(k * mean + c)
         return Fraction(k * k * var) if ask == "분산" else _isqrt(k * k * var)
+    if tid.startswith("h1-1-poly"):
+        if tid == "h1-1-poly-t1":
+            m = re.match(r"\(x ([+−]) (\d+)\)\(x² ([+−]) (\d*)x ([+−]) (\d+)\)을 전개했을 때, (x²|x)의 계수", q); a = _sv(m.group(1), m.group(2)); b = _sv(m.group(3), m.group(4) or "1"); c = _sv(m.group(5), m.group(6))
+            return a + b if m.group(7) == "x²" else a * b + c
+        if tid == "h1-1-poly-t2":
+            m = re.match(r"다항식 x³ ([+−]) (\d*)x² ([+−]) (\d*)x ([+−]) (\d+)[을를] x ([+−]) (\d+)(?:으로|로) 나누었을 때", q); a = _sv(m.group(1), m.group(2) or "1"); b = _sv(m.group(3), m.group(4) or "1"); c = _sv(m.group(5), m.group(6)); pv = -_sv(m.group(7), m.group(8))
+            return pv ** 3 + a * pv * pv + b * pv + c
+        if tid == "h1-1-poly-t3":
+            m = re.search(r"= (-?\d*)x² ([+−]) (\d*)x ([+−]) (\d+)[이가] x에 대한 항등식", q); pp = _coef(m.group(1)); qq = _sv(m.group(2), m.group(3) or "1"); r = _sv(m.group(4), m.group(5)); return 4 * pp + 2 * qq + r
+        if tid == "h1-1-poly-t4":
+            m = re.search(r"x − 1로 나눈 나머지가 (-?\d+), x \+ 1로 나눈 나머지가 (-?\d+)일 때, 상수 a, b에 대하여 (a \+ b|ab)", q); r1, r2 = Fraction(m.group(1)), Fraction(m.group(2)); a = (r1 + r2) / 2; b = (r1 - r2) / 2 - 1
+            return a + b if m.group(3) == "a + b" else a * b
+        if tid == "h1-1-poly-t5":
+            m = re.search(r"x³ \+ ax² \+ bx ([+−]) (\d+)[이가] \(x ([+−]) (\d+)\)\(x ([+−]) (\d+)\)로 나누어떨어질 때", q); c = _sv(m.group(1), m.group(2)); p1 = -_sv(m.group(3), m.group(4)); p2 = -_sv(m.group(5), m.group(6))
+            # p1³ + a p1² + b p1 + c = 0, p2³ + a p2² + b p2 + c = 0
+            det = p1 * p1 * p2 - p2 * p2 * p1
+            a = ((-(p1 ** 3) - c) * p2 - (-(p2 ** 3) - c) * p1) / det; b = (p1 * p1 * (-(p2 ** 3) - c) - p2 * p2 * (-(p1 ** 3) - c)) / det
+            return a + b
+        m = re.match(r"삼차방정식 x³ ([+−]) (\d*)x² ([+−]) (\d*)x ([+−]) (\d+) = 0의 (가장 큰 근|세 근의 제곱의 합)", q); a = _sv(m.group(1), m.group(2) or "1"); b = _sv(m.group(3), m.group(4) or "1"); c = _sv(m.group(5), m.group(6))
+        roots = [x for x in range(-12, 13) if x ** 3 + a * x * x + b * x + c == 0]
+        if len(roots) != 3: return None
+        return Fraction(max(roots)) if m.group(7) == "가장 큰 근" else Fraction(sum(x * x for x in roots))
+    if tid.startswith("h1-1-complex"):
+        if tid == "h1-1-complex-t1":
+            m = re.match(r"\((-?\d+) ([+−]) (\d*)i\)\((-?\d+) ([+−]) (\d*)i\) = p \+ qi", q); a, b, c, d = Fraction(m.group(1)), _sv(m.group(2), m.group(3) or "1"), Fraction(m.group(4)), _sv(m.group(5), m.group(6) or "1"); return (a * c - b * d) + (a * d + b * c)
+        if tid == "h1-1-complex-t2":
+            m = re.match(r"\[\[frac\((-?\d+) ([+−]) (\d*)i, (-?\d+) ([+−]) (\d*)i\)\]\] = p \+ qi일 때, 실수 p, q에 대하여 (p \+ q|p|q)의 값", q); a, b, c, d = Fraction(m.group(1)), _sv(m.group(2), m.group(3) or "1"), Fraction(m.group(4)), _sv(m.group(5), m.group(6) or "1")
+            n = c * c + d * d; pv, qv = (a * c + b * d) / n, (b * c - a * d) / n; return {"p": pv, "q": qv, "p + q": pv + qv}[m.group(7)]
+        if tid == "h1-1-complex-t3":
+            m = re.match(r"\(1 \+ i\)\^(\d+)의 값", q)
+            if m: n = int(m.group(1)); return Fraction((-4) ** (n // 4)) if n % 4 == 0 else None
+            n = int(re.search(r"pow\(frac\(1 \+ i, 1 − i\), (\d+)\)", q).group(1)); return Fraction(2 if n % 4 == 0 else -2) if n % 2 == 0 else Fraction(0)
+        if tid == "h1-1-complex-t4":
+            m = re.match(r"복소수 \((-?\d+) ([+−]) (\d*)i\)\((-?\d+) \+ xi\)가 (실수|순허수)", q); a, b, c = Fraction(m.group(1)), _sv(m.group(2), m.group(3) or "1"), Fraction(m.group(4))
+            return -b * c / a if m.group(5) == "실수" else a * c / b
+        m = re.match(r"복소수 z = (-?\d+) ([+−]) (\d*)i에 대하여 (.+?)의 값", q); a, b = Fraction(m.group(1)), _sv(m.group(2), m.group(3) or "1"); ask = m.group(4)
+        sm, pr = 2 * a, a * a + b * b
+        return sm + pr if "+ z[[conj" in ask else (sm if ask.startswith("z + ") else pr)
+    if tid.startswith("h1-1-quad-"):
+        if tid == "h1-1-quad-t2":
+            m = re.match(r"이차방정식 x² ([+−]) (\d*)x ([+−]) (\d+) = 0의 두 근을 α, β라 할 때, (.+?)의 값", q); b = _sv(m.group(1), m.group(2) or "1"); c = _sv(m.group(3), m.group(4)); s_, pv = -b, c; ask = m.group(5)
+            if ask == "α² + β²": return s_ * s_ - 2 * pv
+            if ask == "(α − β)²": return s_ * s_ - 4 * pv
+            return s_ / pv
+        if tid == "h1-1-quad-t3":
+            m = re.match(r"이차방정식 x² ([+−]) (\d*)x ([+−]) (\d+) = 0의 두 근을 α, β라 할 때, 두 근이 (.+?)인 이차방정식", q); b = _sv(m.group(1), m.group(2) or "1"); c = _sv(m.group(3), m.group(4)); s_, pv = -b, c; new = m.group(5)
+            if new.startswith("α + 1"): ns, npd = s_ + 2, pv + s_ + 1
+            elif new.startswith("α − 1"): ns, npd = s_ - 2, pv - s_ + 1
+            else: ns, npd = 2 * s_, 4 * pv
+            return -ns + npd
+        if tid in ("h1-1-quad-t4", "h1-1-quad-t6"):
+            m = re.search(r"한 근이 (-?\d+) \+ (\[\[sqrt\((\d+)\)\]\]|(\d+)i)일 때", q); pp = Fraction(m.group(1))
+            if m.group(3): qv = Fraction(m.group(3)); return -2 * pp + pp * pp - qv
+            qv = Fraction(m.group(4)); return -2 * pp + pp * pp + qv * qv
+        if tid == "h1-1-quad-t5":
+            m = re.match(r"이차방정식 x² ([+−]) (\d*)x \+ k = 0의 두 근의 차가 (\d+)일 때", q); b = _sv(m.group(1), m.group(2) or "1"); d = Fraction(m.group(3)); s_ = -b; return (s_ * s_ - d * d) / 4
+    if tid.startswith("h1-1-quadfn"):
+        if tid == "h1-1-quadfn-t2":
+            m = re.match(r"직선 y = (-?\d*)x \+ k가 이차함수 y = x² ([+−]) (\d*)x ([+−]) (\d+)의 그래프에 접할 때", q); mm = _coef(m.group(1)); a = _sv(m.group(2), m.group(3) or "1"); b = _sv(m.group(4), m.group(5)); return b - (a - mm) ** 2 / 4
+        if tid in ("h1-1-quadfn-t3", "h1-1-quadfn-t4"):
+            m = re.match(r"(-?\d+) ≤ x ≤ (-?\d+)에서 이차함수 y = (-?\d*)x² ([+−]) (\d*)x ([+−]) (\d+)의 (최댓값|최솟값)", q); lo, hi = Fraction(m.group(1)), Fraction(m.group(2)); A = _coef(m.group(3)); b = _sv(m.group(4), m.group(5) or "1"); c = _sv(m.group(6), m.group(7))
+            f = lambda x: A * x * x + b * x + c; vx = -b / (2 * A); cands = [f(lo), f(hi)] + ([f(vx)] if lo <= vx <= hi else [])
+            return max(cands) if m.group(8) == "최댓값" else min(cands)
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])
@@ -1411,6 +1474,26 @@ def check_m3trig(it):
         return abs(want - av) < 1e-6
     except Exception:                                   # noqa: BLE001
         return False
+
+
+def _sv(sign, digits):
+    """'−', '3' → −3 (부호 문자 + 절댓값)"""
+    return Fraction(digits) * (1 if sign == "+" else -1)
+
+
+def check_hs(it):
+    """고등부 문자열 답(범위) 틀. True/False, 해당 없으면 None."""
+    tid, q, a = it["template_id"], it["question"], it["answer"]
+    if tid == "h1-1-quad-t1":
+        m = re.match(r"x에 대한 이차방정식 x² \+ \(k ([+−]) (\d+)\)x \+ (\d+) = 0이 서로 다른 두 허근", q); b = _sv(m.group(1), m.group(2)); c = Fraction(m.group(3)); r = _isqrt(c)
+        if r is None: return False
+        lo, hi = -2 * r - b, 2 * r - b; ma = re.fullmatch(r"(-?\d+) < k < (-?\d+)", a)
+        return bool(ma) and Fraction(ma.group(1)) == lo and Fraction(ma.group(2)) == hi
+    if tid == "h1-1-quadfn-t1":
+        m = re.match(r"이차함수 y = x² ([+−]) (\d*)x ([+−]) (\d+)의 그래프와 직선 y = (-?\d*)x \+ k가 (만나지 않을|서로 다른 두 점에서 만날) 때", q); av = _sv(m.group(1), m.group(2) or "1"); b = _sv(m.group(3), m.group(4)); mm = _coef(m.group(5))
+        T = b - (av - mm) ** 2 / 4; op = "<" if m.group(6) == "만나지 않을" else ">"; ma = re.fullmatch(r"k ([<>]) (-?\d+)", a)
+        return bool(ma) and ma.group(1) == op and Fraction(ma.group(2)) == T
+    return None
 
 
 def _strip25(n):
@@ -1814,6 +1897,8 @@ for f in sorted(OUT.glob("*_pool.json")):
             pos = check_m3str(it)
         if pos is None:
             pos = check_m3trig(it)
+        if pos is None:
+            pos = check_hs(it)
         if pos is not None:
             if not pos:
                 bad("R1-독립 검산 불일치", it, f"문자열 답 재계산 ≠ 답 {it['answer']}")

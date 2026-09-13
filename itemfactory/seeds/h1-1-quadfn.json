@@ -1,0 +1,1059 @@
+{
+  "seed_id": "h1-1-quadfn",
+  "category": "함수",
+  "title": "이차함수와 직선·최대최소 — 교점 개수 범위·접선 상수·범위 안 꼭짓점·범위 밖 꼭짓점",
+  "unit_id": "h1-1",
+  "concept_ids": [
+    "h1-1-07",
+    "h1-1-08"
+  ],
+  "schema_id": null,
+  "schema_name": "이차함수의 그래프와 직선의 위치 관계·최대최소",
+  "source_item_ids": [],
+  "note": "직선과의 위치 관계는 a − m 짝수로 잡아 경계 T 를 정수로. 제한범위 최대최소는 꼭짓점 (p, q) 기준으로 범위를 만든다.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "판별식",
+        "이차함수의 꼭짓점"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "판별식 부호",
+        "범위의 끝값"
+      ],
+      "tags": [
+        "이차함수와 직선",
+        "최대·최소"
+      ],
+      "id": "h1-1-quadfn-t1",
+      "title": "이차함수의 그래프와 직선이 만나지 않을(두 점에서 만날) 조건 — k의 범위",
+      "skill": "y = x² + ax + b와 y = mx + k를 연립한 이차방정식의 판별식 부호로 교점 개수 정하기",
+      "variant_axis": {
+        "이차함수": "x² + ax + b",
+        "직선": "y = mx + k",
+        "조건": "만나지 않음 / 서로 다른 두 점"
+      },
+      "discriminates": "연립해 x² + (a − m)x + (b − k) = 0의 판별식을 세우고 부등호 방향을 조건에 맞추는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "none",
+              "two"
+            ]
+          }
+        }
+      ],
+      "question": "이차함수 y = x² {sgt(a)}x {sgn(b)}의 그래프와 직선 y = {co(m)}x + k가 {COND} 때, 실수 k의 값의 범위를 구하시오.",
+      "answer": "k {OP} {T}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "none": {
+            "COND": "만나지 않을",
+            "OP": "<",
+            "DC": "< 0"
+          },
+          "two": {
+            "COND": "서로 다른 두 점에서 만날",
+            "OP": ">",
+            "DC": "> 0"
+          }
+        }
+      },
+      "derive": {
+        "am": "a - m",
+        "am2": "(a - m)**2",
+        "T": "b - (a - m)**2/4"
+      },
+      "constraints": [
+        "am != 0",
+        "am % 2 == 0",
+        "T != 0"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "m",
+        "am",
+        "T"
+      ],
+      "verify": [
+        "4*T == 4*b - am2"
+      ],
+      "sol1": "두 그래프의 교점의 x좌표는 x² {sgt(a)}x {sgn(b)} = {co(m)}x + k, 즉 x² {sgt(am)}x + ({b} − k) = 0의 실근이다. 교점의 개수는 이 이차방정식의 판별식 D의 부호로 정해진다: {COND} 조건은 D {DC}.",
+      "sol2": [
+        "연립: x² {sgt(am)}x + ({b} − k) = 0",
+        "D = {am2} − 4({b} − k) {DC}",
+        "4k {OP} {4*b - am2} → k {OP} {T}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "연립: x² {sgt(am)}x + ({b} − k) = 0",
+                "hint": "교점 ⇔ 실근"
+              },
+              {
+                "text": "D = {am2} − 4({b} − k) {DC}",
+                "hint": "{COND} ⇔ D {DC}"
+              },
+              {
+                "text": "4k {OP} {4*b - am2} → k {OP} {T}",
+                "marks": [
+                  {
+                    "on": "k {OP} {T}",
+                    "note": "k의 범위"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "k = {T}이면 D = 0으로 접한다(경계). 그보다 k가 크면 직선이 위로 올라가 두 점에서 만나고, 작으면 만나지 않는다. 따라서 k {OP} {T}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "k = {T}: 접함 (경계)",
+              "k {OP} {T}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "연립하면 x² {sgt(am)}x + ({b} − k) = 0이고 {COND} 조건은 D = {am2} − 4({b} − k) {DC}이므로 k {OP} {T}이다.",
+      "rubric": [
+        {
+          "element": "연립·판별식",
+          "points": 3,
+          "criterion": "x² {sgt(am)}x + ({b} − k) = 0의 판별식 조건 D {DC}{eul(DC)} 세웠다.",
+          "partial": "부등호 방향이 반대면 1점."
+        },
+        {
+          "element": "범위",
+          "points": 2,
+          "criterion": "k {OP} {T}{eul(T)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "판별식의 부등호 방향을 반대로 둠",
+          "on": "연립·판별식",
+          "effect": "불인정"
+        },
+        {
+          "text": "연립 없이 이차함수의 판별식만 봄",
+          "on": "연립·판별식",
+          "effect": "불인정"
+        },
+        {
+          "text": "4로 나누는 계산 실수",
+          "on": "범위",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "판별식",
+        "이차함수의 꼭짓점"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "판별식 부호",
+        "범위의 끝값"
+      ],
+      "tags": [
+        "이차함수와 직선",
+        "최대·최소"
+      ],
+      "id": "h1-1-quadfn-t2",
+      "title": "이차함수의 그래프에 접하는 직선 — 상수 k",
+      "skill": "연립한 이차방정식의 판별식 D = 0으로 접할 조건 세우기",
+      "variant_axis": {
+        "이차함수": "x² + ax + b",
+        "직선의 기울기": "±1~±5"
+      },
+      "discriminates": "접한다 ⇔ 연립 방정식이 중근(D = 0)임을 쓰는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "question": "직선 y = {co(m)}x + k가 이차함수 y = x² {sgt(a)}x {sgn(b)}의 그래프에 접할 때, 상수 k의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "am": "a - m",
+        "am2": "(a - m)**2",
+        "ans": "b - (a - m)**2/4"
+      },
+      "constraints": [
+        "am != 0",
+        "am % 2 == 0",
+        "ans != 0",
+        "ans not in (a, b, m)"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "m",
+        "am",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "4*ans == 4*b - am2"
+      ],
+      "sol1": "접한다는 것은 교점이 하나(중근)라는 뜻이다. 연립하면 x² {sgt(am)}x + ({b} − k) = 0이고, 이 방정식의 판별식이 0이어야 한다: D = {am2} − 4({b} − k) = 0.",
+      "sol2": [
+        "연립: x² {sgt(am)}x + ({b} − k) = 0",
+        "D = {am2} − 4({b} − k) = 0",
+        "4k = {4*b - am2} → k = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "연립: x² {sgt(am)}x + ({b} − k) = 0",
+                "hint": "접점 ⇔ 중근"
+              },
+              {
+                "text": "D = {am2} − 4({b} − k) = 0",
+                "hint": "접함 ⇔ D = 0"
+              },
+              {
+                "text": "4k = {4*b - am2} → k = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "k"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "k = {ans}이면 연립 방정식은 (x {sgn(am/2)})² = 0이 되어 x = {-am/2}에서 접한다. 따라서 k = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "접점의 x좌표 {-am/2}",
+              "k = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "연립하면 x² {sgt(am)}x + ({b} − k) = 0이고 접하려면 D = {am2} − 4({b} − k) = 0이어야 하므로 k = {ans}이다.",
+      "rubric": [
+        {
+          "element": "접할 조건",
+          "points": 3,
+          "criterion": "연립한 이차방정식의 D = 0을 세웠다.",
+          "partial": "D > 0 또는 < 0으로 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "k 구하기",
+          "points": 2,
+          "criterion": "k = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "접할 조건을 D > 0으로 둠",
+          "on": "접할 조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "연립 없이 이차함수의 판별식을 씀",
+          "on": "접할 조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "계산 실수",
+          "on": "k 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "판별식",
+        "이차함수의 꼭짓점"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "판별식 부호",
+        "범위의 끝값"
+      ],
+      "tags": [
+        "이차함수와 직선",
+        "최대·최소"
+      ],
+      "id": "h1-1-quadfn-t3",
+      "title": "제한된 범위에서 이차함수의 최댓값·최솟값",
+      "skill": "꼭짓점의 x좌표가 범위 안에 있는지 확인하고 꼭짓점·양 끝값 중에서 최대·최소 고르기",
+      "variant_axis": {
+        "이차함수": "±(x − p)² + q",
+        "범위": "p − 3 ≤ x ≤ p + 1 등"
+      },
+      "discriminates": "꼭짓점이 범위 안이면 꼭짓점의 값이 최대(최소), 반대쪽 극값은 끝값에서 나옴을 아는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "qv",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "l",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "min",
+              "max"
+            ]
+          }
+        },
+        {
+          "name": "sgk",
+          "values": {
+            "in": [
+              1,
+              -1
+            ]
+          }
+        }
+      ],
+      "question": "{lo} ≤ x ≤ {hi}에서 이차함수 y = {co(sgk)}x² {sgt(b)}x {sgn(c)}의 {ASK}{eul(ASK)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "min": {
+            "ASK": "최솟값",
+            "wmin": 1
+          },
+          "max": {
+            "ASK": "최댓값",
+            "wmin": 0
+          }
+        }
+      },
+      "derive": {
+        "lo": "p - l",
+        "hi": "p + r",
+        "b": "-2*sgk*p",
+        "c": "sgk*p*p + qv",
+        "fl": "sgk*l*l + qv",
+        "fr": "sgk*r*r + qv",
+        "far": "max(l, r)",
+        "fend": "sgk*max(l, r)**2 + qv",
+        "np": "-p",
+        "xfar": "(p + r)*(1 + sign(r - l))/2 + (p - l)*(1 - sign(r - l))/2",
+        "ans": "wmin*(qv*(sgk == 1) + fend*(sgk == -1)) + (1 - wmin)*(fend*(sgk == 1) + qv*(sgk == -1))"
+      },
+      "constraints": [
+        "l != r",
+        "c != 0",
+        "ans not in (lo, hi, b, c)",
+        "ans != 0",
+        "ans != qv or (wmin == 1 and sgk == 1) or (wmin == 0 and sgk == -1)"
+      ],
+      "cost_values": [
+        "p",
+        "qv",
+        "lo",
+        "hi",
+        "fl",
+        "fr",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "fend == fl or fend == fr"
+      ],
+      "sol1": "완전제곱식으로 고치면 y = {co(sgk)}(x {sgn(np)})² {sgn(qv)}이고 꼭짓점은 ({p}, {qv})이다. 꼭짓점의 x좌표 {p}{ika(p)} 범위 {lo} ≤ x ≤ {hi} 안에 있으므로 한쪽 극값은 꼭짓점의 값 {qv}, 다른 쪽 극값은 꼭짓점에서 더 먼 끝 x = {xfar}에서의 값 {fend}이다.",
+      "sol2": [
+        "y = {co(sgk)}(x {sgn(np)})² {sgn(qv)} → 꼭짓점 ({p}, {qv}), 범위 안",
+        "양 끝값: f({lo}) = {fl}, f({hi}) = {fr}",
+        "{ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = {co(sgk)}(x {sgn(np)})² {sgn(qv)} → 꼭짓점 ({p}, {qv}), 범위 안",
+                "hint": "완전제곱식"
+              },
+              {
+                "text": "양 끝값: f({lo}) = {fl}, f({hi}) = {fr}",
+                "hint": "끝값 비교"
+              },
+              {
+                "text": "{ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "x² 의 계수가 {sgk}이므로 꼭짓점에서 {ASK}{ika(ASK)} 되는지(아래로 볼록이면 최솟값) 확인하고, 반대쪽은 꼭짓점에서 먼 끝에서 나온다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "꼭짓점 값 {qv}, 끝값 {fl}·{fr}",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "y = {co(sgk)}(x {sgn(np)})² {sgn(qv)}이고 꼭짓점 ({p}, {qv})이 범위 안에 있다. f({lo}) = {fl}, f({hi}) = {fr}이므로 {ASK}{eun(ASK)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "꼭짓점·범위",
+          "points": 3,
+          "criterion": "꼭짓점 ({p}, {qv})이 범위 안에 있음을 확인하고 끝값 {fl}, {fr}{eul(fr)} 구했다.",
+          "partial": "끝값을 하나만 구했으면 1점."
+        },
+        {
+          "element": "값 구하기",
+          "points": 2,
+          "criterion": "{ASK} {ans}{eul(ans)} 답했다.",
+          "partial": "최대·최소를 바꿨으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "범위를 무시하고 꼭짓점 값만 답함",
+          "on": "값 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "끝값 중 가까운 쪽을 택함",
+          "on": "꼭짓점·범위",
+          "effect": "부분"
+        },
+        {
+          "text": "완전제곱식 변형 실수",
+          "on": "꼭짓점·범위",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "판별식",
+        "이차함수의 꼭짓점"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "판별식 부호",
+        "범위의 끝값"
+      ],
+      "tags": [
+        "이차함수와 직선",
+        "최대·최소"
+      ],
+      "id": "h1-1-quadfn-t4",
+      "title": "꼭짓점이 범위 밖에 있을 때의 최댓값·최솟값",
+      "skill": "꼭짓점의 x좌표가 범위 밖이면 함수가 범위에서 단조이므로 양 끝값이 최대·최소임을 쓰기",
+      "variant_axis": {
+        "이차함수": "(x − p)² + q",
+        "범위": "꼭짓점 오른쪽/왼쪽"
+      },
+      "discriminates": "꼭짓점이 범위 밖일 때 꼭짓점 값을 답하지 않고 양 끝값만 비교하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "qv",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "w",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "side",
+          "values": {
+            "in": [
+              1,
+              -1
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "min",
+              "max"
+            ]
+          }
+        }
+      ],
+      "question": "{lo} ≤ x ≤ {hi}에서 이차함수 y = x² {sgt(b)}x {sgn(c)}의 {ASK}{eul(ASK)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "min": {
+            "ASK": "최솟값",
+            "wmin": 1
+          },
+          "max": {
+            "ASK": "최댓값",
+            "wmin": 0
+          }
+        }
+      },
+      "derive": {
+        "lo": "p + side*g - (side == -1)*w",
+        "hi": "p + side*g + (side == 1)*w",
+        "b": "-2*p",
+        "c": "p*p + qv",
+        "np": "-p",
+        "fnear": "g*g + qv",
+        "ffar": "(g + w)**2 + qv",
+        "ans": "wmin*(g*g + qv) + (1 - wmin)*((g + w)**2 + qv)"
+      },
+      "constraints": [
+        "c != 0",
+        "ans not in (lo, hi, qv, b, c)",
+        "ans != 0"
+      ],
+      "cost_values": [
+        "p",
+        "qv",
+        "lo",
+        "hi",
+        "fnear",
+        "ffar",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ffar > fnear"
+      ],
+      "sol1": "완전제곱식으로 고치면 y = (x {sgn(np)})² {sgn(qv)}, 꼭짓점 ({p}, {qv})이다. 꼭짓점의 x좌표 {p}{eun(p)} 범위 {lo} ≤ x ≤ {hi} 밖에 있으므로 이 범위에서 그래프는 한쪽으로만 증가하거나 감소한다. 따라서 최댓값·최솟값은 모두 양 끝 x = {lo}, x = {hi}에서 나온다.",
+      "sol2": [
+        "y = (x {sgn(np)})² {sgn(qv)}, 꼭짓점 ({p}, {qv})은 범위 밖",
+        "f({lo}) = {(lo - p)**2 + qv}, f({hi}) = {(hi - p)**2 + qv}",
+        "{ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = (x {sgn(np)})² {sgn(qv)}, 꼭짓점 ({p}, {qv})은 범위 밖",
+                "hint": "완전제곱식"
+              },
+              {
+                "text": "f({lo}) = {(lo - p)**2 + qv}, f({hi}) = {(hi - p)**2 + qv}",
+                "hint": "양 끝값"
+              },
+              {
+                "text": "{ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "꼭짓점에서 먼 끝일수록 (x {sgn(np)})²이 크므로 값이 크다. 꼭짓점 값 {qv}{eun(qv)} 범위 밖이라 답이 아니다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "꼭짓점 밖 → 끝값만 비교",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "y = (x {sgn(np)})² {sgn(qv)}이고 꼭짓점 ({p}, {qv})이 범위 밖에 있으므로 f({lo}) = {(lo - p)**2 + qv}, f({hi}) = {(hi - p)**2 + qv} 중에서 {ASK}{eun(ASK)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "꼭짓점 위치",
+          "points": 3,
+          "criterion": "꼭짓점이 범위 밖임을 확인하고 양 끝값을 구했다.",
+          "partial": "꼭짓점 값을 최솟값으로 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "값 구하기",
+          "points": 2,
+          "criterion": "{ASK} {ans}{eul(ans)} 답했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "꼭짓점 값 q를 최솟값으로 답함",
+          "on": "꼭짓점 위치",
+          "effect": "불인정"
+        },
+        {
+          "text": "끝값 계산 실수",
+          "on": "값 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "최대·최소를 바꿈",
+          "on": "값 구하기",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}
