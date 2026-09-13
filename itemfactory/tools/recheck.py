@@ -1426,6 +1426,8 @@ def recompute(it):
         return _h21t(tid, q)
     if tid.startswith("h2-1-seq"):
         return _h21s(tid, q)
+    if tid.startswith("h2-2-diffapp") or tid.startswith("h2-2-integ"):
+        return _h22b(tid, q)
     if tid.startswith("h2-2-lim") or tid.startswith("h2-2-diff"):
         return _h22a(tid, q)
     if tid.startswith("m3-1-sqrt-basic"):
@@ -2102,6 +2104,73 @@ def _h22a(tid, q):
         if len(rs) != 2: return None
         M, mn = _spv(f.subs(x, rs[0])), _spv(f.subs(x, rs[1]))
         return {"극댓값": M, "극솟값": mn, "극댓값과 극솟값의 차": M - mn, "극댓값과 극솟값의 합": M + mn}[m.group(2)]
+    return None
+
+
+def _h22b(tid, q):
+    import sympy as sp
+    x, t = sp.symbols("x t")
+    if tid == "h2-2-diffapp-t1":
+        m = re.match(r"닫힌구간 \[(-?\d+), (-?\d+)\]에서 함수 f\(x\) = (.+?)의 (최댓값|최솟값|최댓값과 최솟값의 합)[을를] 구하시오", q); lo, hi = int(m.group(1)), int(m.group(2)); f = _polyq(m.group(3))
+        pts = [lo, hi] + [r for r in sp.solve(sp.diff(f, x), x) if r.is_real and lo < r < hi]; vals = [f.subs(x, p) for p in pts]; M, mn = _spv(max(vals)), _spv(min(vals))
+        return {"최댓값": M, "최솟값": mn, "최댓값과 최솟값의 합": M + mn}[m.group(4)]
+    if tid == "h2-2-diffapp-t2":
+        m = re.match(r"방정식 (.+?) = k가 (서로 다른 세 실근을 갖도록 하는 정수 k의 개수|오직 하나의 실근을 갖도록 하는 정수 k의 최솟값|서로 다른 두 실근을 갖는 모든 k의 값의 합)[을를] 구하시오", q); f = _polyq(m.group(1)); rs = sorted(sp.solve(sp.diff(f, x), x))
+        if len(rs) != 2: return None
+        M, mn = _spv(f.subs(x, rs[0])), _spv(f.subs(x, rs[1]))
+        return {"서로 다른 세 실근을 갖도록 하는 정수 k의 개수": M - mn - 1, "오직 하나의 실근을 갖도록 하는 정수 k의 최솟값": M + 1, "서로 다른 두 실근을 갖는 모든 k의 값의 합": M + mn}[m.group(2)]
+    if tid == "h2-2-diffapp-t3":
+        m = re.match(r"함수 f\(x\) = x³ \+ ax² \+ (\d+)x가 (극값을 갖지 않도록 하는 정수 a의 개수|극값을 갖도록 하는 자연수 a의 최솟값)", q); b = int(m.group(1))
+        if m.group(2).startswith("극값을 갖지"): return Fraction(sum(1 for a in range(-200, 201) if a * a - 3 * b <= 0))
+        return Fraction(next(a for a in range(1, 400) if a * a - 3 * b > 0))
+    if tid == "h2-2-diffapp-t4":
+        m = re.match(r"함수 f\(x\) = x³ \+ ax² \+ bx가 x = (-?\d+)에서 극댓값, x = (-?\d+)에서 극솟값을 가질 때, 상수 a, b에 대하여 (a \+ b|ab|a − b)의 값", q); r1, r2 = int(m.group(1)), int(m.group(2))
+        a = Fraction(-3 * (r1 + r2), 2); b = Fraction(3 * r1 * r2); return {"a + b": a + b, "ab": a * b, "a − b": a - b}[m.group(3)]
+    if tid == "h2-2-diffapp-t5":
+        m = re.match(r"수직선 위를 움직이는 점 P의 시각 t에서의 위치 x가 x = (.+?)일 때, (.+?)[을를] 구하시오", q); xt = _polyq(m.group(1)); ask = m.group(2); v = sp.diff(xt, t); a = sp.diff(v, t)
+        mm = re.fullmatch(r"t = (\d+)에서의 (속도|가속도)", ask)
+        if mm: t0 = int(mm.group(1)); return _spv((v if mm.group(2) == "속도" else a).subs(t, t0))
+        rs = sorted(r for r in sp.solve(v, t) if r.is_real)
+        if ask.startswith("처음으로"): return _spv(next(r for r in rs if r > 0))
+        if ask.startswith("속도가 0"): return _spv(sum(rs))
+        return None
+    if tid == "h2-2-diffapp-t6":
+        m = re.match(r"한 변의 길이가 (\d+)인 정사각형", q)
+        if m: L = int(m.group(1)); return Fraction(2 * (L // 3) ** 3) if L % 3 == 0 else None
+        m = re.match(r"두 양수 x, y에 대하여 x \+ y = (\d+)일 때, x²y의 최댓값", q); s_ = int(m.group(1)); return Fraction(4 * s_ ** 3, 27)
+    if tid == "h2-2-integ-t1":
+        m = re.match(r"함수 f\(x\)의 도함수가 f'\(x\) = (.+?)이고 f\((-?\d+)\) = (-?\d+)일 때, f\((-?\d+)\)의 값", q); fp = _polyq(m.group(1)); p, v, qq = int(m.group(2)), int(m.group(3)), int(m.group(4))
+        F = sp.integrate(fp, x); C = v - F.subs(x, p); return _spv(F.subs(x, qq) + C)
+    if tid == "h2-2-integ-t2":
+        m = re.match(r"\[\[dinteg\((-?\d+), (-?\d+), (.+), x\)\]\]의 값", q); return _spv(sp.integrate(_sym(m.group(3)), (x, int(m.group(1)), int(m.group(2)))))
+    if tid == "h2-2-integ-t3":
+        mo = re.fullmatch(r"\[\[dinteg\((-?\d+), (-?\d+), ([^\[\]]+), x\)\]\]의 값을 구하시오\.", q)
+        if mo: return _spv(sp.integrate(_sym(mo.group(3)), (x, int(mo.group(1)), int(mo.group(2)))))
+        ml = re.match(r"\[\[dinteg\(1, 3, f\(x\), x\)\]\] = (-?\d+), \[\[dinteg\(1, 3, g\(x\), x\)\]\] = (-?\d+)일 때, \[\[dinteg\(1, 3, (-?\d*)f\(x\) ([+−]) (\d*)g\(x\), x\)\]\]", q)
+        if ml: fa, ga = int(ml.group(1)), int(ml.group(2)); c1 = _coef(ml.group(3)); c2 = _sv(ml.group(4), ml.group(5) or "1"); return c1 * fa + c2 * ga
+        mc = re.match(r"\[\[dinteg\((-?\d+), (-?\d+), f\(x\), x\)\]\] = (-?\d+), \[\[dinteg\((-?\d+), (-?\d+), f\(x\), x\)\]\] = (-?\d+)일 때, \[\[dinteg\((-?\d+), (-?\d+), f\(x\), x\)\]\]", q)
+        if mc and mc.group(2) == mc.group(4) and mc.group(1) == mc.group(7) and mc.group(5) == mc.group(8): return Fraction(int(mc.group(3)) + int(mc.group(6)))
+        return None
+    if tid == "h2-2-integ-t4":
+        mk = re.match(r"함수 f\(x\) = (.+?) ([+−]) (\d*)\[\[dinteg\(0, 1, f\(t\), t\)\]\]일 때, f\(1\)의 값", q)
+        if mk:
+            P = _polyq(mk.group(1)); c = _sv(mk.group(2), mk.group(3) or "1"); ip = _spv(sp.integrate(P, (x, 0, 1))); k = ip / (1 - c); return _spv(P.subs(x, 1)) + c * k
+        md = re.match(r"함수 F\(x\) = \[\[dinteg\((-?\d+), x, (.+?), t\)\]\]에 대하여 F'\((-?\d+)\)의 값", q); return _spv(_sym(md.group(2)).subs(t, int(md.group(3))))
+    if tid in ("h2-2-integ-t5", "h2-2-integ-t6"):
+        m = re.match(r"곡선 y = (.+?)[와과] x축으로 둘러싸인 부분의 넓이", q)
+        if m:
+            f = _polyq(m.group(1)); rs = sorted(r for r in sp.solve(f, x) if r.is_real); return _spv(sp.integrate(abs(f), (x, rs[0], rs[-1]))) if len(rs) == 2 else None
+        m = re.match(r"곡선 y = (.+?)[와과] 직선 y = (.+?)(?:으로|로) 둘러싸인 부분의 넓이", q)
+        if m:
+            d = _polyq(m.group(1)) - _polyq(m.group(2)); rs = sorted(r for r in sp.solve(d, x) if r.is_real); return _spv(sp.integrate(abs(d), (x, rs[0], rs[-1]))) if len(rs) == 2 else None
+        m = re.match(r"곡선 y = (.+?), x축 및 직선 x = (\d+)(?:으로|로) 둘러싸인 부분의 넓이", q)
+        if m: f = _polyq(m.group(1)); a = int(m.group(2)); return _spv(sp.integrate(abs(f), (x, 0, a)))
+        m = re.match(r"곡선 y = x³, x축 및 두 직선 x = -(\d+), x = (\d+)(?:으로|로) 둘러싸인", q)
+        if m: a = int(m.group(2)); return _spv(sp.integrate(abs(x ** 3), (x, -a, a)))
+        m = re.match(r"두 곡선 y = (.+?)[와과] y = (.+?)(?:으로|로) 둘러싸인 부분의 넓이", q)
+        if m:
+            d = _polyq(m.group(1)) - _polyq(m.group(2)); rs = sorted(r for r in sp.solve(d, x) if r.is_real); return _spv(sp.integrate(abs(d), (x, rs[0], rs[-1]))) if len(rs) == 2 else None
+        return None
     return None
 
 
