@@ -3,7 +3,11 @@
 // - 채택본·필터는 figure_slots.meta (테마별) / 라벨·점·선·화살표·호는 앱이 그림(mark)
 // - 관리자: ⚙ 편집(레이어 드래그·크기, 재생 노브, JSON) → set_figure RPC 저장
 // 좌표계: 무대 폭 = 1 (x,y,w 모두 폭 기준. 무대 높이 = 2/3)
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, createContext, useContext } from "react";
+
+// 그림 설명 모드: "art"(감지과슈 무대, 기본) | "math"(코드가 그리는 도형·수식 버전). 개념 페이지 상단 토글이 공급.
+export const FigModeContext = createContext("art");
+const MATH_KEYS = ["layers", "tl", "subs", "subLoop", "caption", "play"];
 import { supabase } from "../supabaseClient";
 
 export const STAGE_H = 2 / 3; // 3:2 (본 무대)
@@ -193,35 +197,56 @@ function MarkSvg({ marks, st, theme, fullH = STAGE_H }) {
   return (
     <svg className="sf3-marks" viewBox={`0 0 ${S} ${H}`} preserveAspectRatio="none">
       {marks.map((m) => {
-        const o = st[m.id] ? st[m.id].fade : (m.opacity ?? 1);
+        const ms = st[m.id] || {};
+        const o = ms.fade ?? (m.opacity ?? 1);
         if (o <= 0.01) return null;
         const col = m.color === "accent" ? ACCENT[theme] : m.color || INK[theme];
+        const sw = (m.w || 0.006) * S;
+        const dash = m.dash ? "4 4" : undefined;
         const k = { key: m.id, opacity: o };
+        // 점·라벨은 x,y를 직접 쓰고, 나머지는 기준점 대비 이동량으로 translate
+        const dx = ((ms.x ?? m.x ?? 0.5) - (m.x ?? 0.5)) * S, dy = ((ms.y ?? m.y ?? fullH / 2) - (m.y ?? fullH / 2)) * S;
+        const wrap = (el) => (dx || dy) ? <g key={m.id} transform={`translate(${dx} ${dy})`}>{el}</g> : el;
         if (m.mark === "dot")
-          return <circle {...k} cx={m.x * S} cy={m.y * S} r={(m.w || 0.02) * S / 2} fill={col} />;
-        if (m.mark === "label")
-          return <text {...k} x={m.x * S} y={m.y * S} textAnchor="middle" dominantBaseline="middle"
-            fontSize={(m.size || 0.045) * S} fontWeight={m.weight || 800} fill={col}
-            style={{ fontFamily: "'Pretendard Variable', Pretendard, serif" }}>{m.text}</text>;
+          return <circle {...k} cx={(ms.x ?? m.x) * S} cy={(ms.y ?? m.y) * S} r={(m.w || 0.02) * S / 2} fill={col} />;
+        if (m.mark === "label") {
+          const lines = String(m.text ?? "").split("\n");
+          const fs = (m.size || 0.045) * S;
+          return <text {...k} x={(ms.x ?? m.x) * S} y={(ms.y ?? m.y) * S - (lines.length - 1) * fs * 0.6}
+            textAnchor={m.anchor || "middle"} dominantBaseline="middle" fontSize={fs} fontWeight={m.weight || 800}
+            fontStyle={m.italic ? "italic" : undefined} fill={col}
+            style={{ fontFamily: m.mono ? "ui-monospace, monospace" : "'Pretendard Variable', Pretendard, serif" }}>
+            {lines.map((ln, i) => <tspan key={i} x={(ms.x ?? m.x) * S} dy={i ? fs * 1.2 : 0}>{ln}</tspan>)}
+          </text>;
+        }
         if (m.mark === "line" || m.mark === "arrow") {
-          const el = [<line {...k} x1={m.x1 * S} y1={m.y1 * S} x2={m.x2 * S} y2={m.y2 * S}
-            stroke={col} strokeWidth={(m.w || 0.006) * S} strokeDasharray={m.dash ? "4 4" : undefined}
-            strokeLinecap="round" />];
+          const el = [<line key={m.id + "l"} x1={m.x1 * S} y1={m.y1 * S} x2={m.x2 * S} y2={m.y2 * S}
+            stroke={col} strokeWidth={sw} strokeDasharray={dash} strokeLinecap="round" />];
           if (m.mark === "arrow") {
-            const a = Math.atan2(m.y2 - m.y1, m.x2 - m.x1), L = 0.024 * S;
-            const px = m.x2 * S, py = m.y2 * S;
-            el.push(<path key={m.id + "h"} opacity={o} fill={col}
+            const a = Math.atan2(m.y2 - m.y1, m.x2 - m.x1), L = 0.024 * S, px = m.x2 * S, py = m.y2 * S;
+            el.push(<path key={m.id + "h"} fill={col}
               d={`M ${px} ${py} L ${px - L * Math.cos(a - 0.42)} ${py - L * Math.sin(a - 0.42)} L ${px - L * Math.cos(a + 0.42)} ${py - L * Math.sin(a + 0.42)} Z`} />);
           }
-          return el;
+          return wrap(<g key={m.id} opacity={o}>{el}</g>);
         }
         if (m.mark === "arc") {
           const r = m.r * S, a1 = (m.a1 || 0) * Math.PI / 180, a2 = (m.a2 || 90) * Math.PI / 180;
           const x1 = m.cx * S + r * Math.cos(a1), y1 = m.cy * S + r * Math.sin(a1);
           const x2 = m.cx * S + r * Math.cos(a2), y2 = m.cy * S + r * Math.sin(a2);
           const lg = Math.abs(a2 - a1) > Math.PI ? 1 : 0;
-          return <path {...k} d={`M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`} fill="none"
-            stroke={col} strokeWidth={(m.w || 0.006) * S} strokeDasharray={m.dash ? "4 4" : undefined} strokeLinecap="round" />;
+          return wrap(<path {...k} d={`M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2}`} fill="none"
+            stroke={col} strokeWidth={sw} strokeDasharray={dash} strokeLinecap="round" />);
+        }
+        if (m.mark === "poly") {
+          const d = (m.pts || []).map(([x, y], i) => `${i ? "L" : "M"} ${x * S} ${y * S}`).join(" ") + " Z";
+          const fill = m.fill === "accent" ? ACCENT[theme] : m.fill === "ink" ? INK[theme] : (m.fill || "none");
+          return wrap(<path {...k} d={d} fill={fill} fillOpacity={m.fillOpacity ?? 0.18} stroke={col}
+            strokeWidth={sw} strokeDasharray={dash} strokeLinejoin="round" />);
+        }
+        if (m.mark === "circle") {
+          const fill = m.fill === "accent" ? ACCENT[theme] : m.fill === "ink" ? INK[theme] : (m.fill || "none");
+          return wrap(<circle {...k} cx={m.cx * S} cy={m.cy * S} r={m.r * S} fill={fill} fillOpacity={m.fillOpacity ?? 0.18}
+            stroke={col} strokeWidth={sw} strokeDasharray={dash} />);
         }
         return null;
       })}
@@ -231,11 +256,14 @@ function MarkSvg({ marks, st, theme, fullH = STAGE_H }) {
 
 /* ══════════ 무대 씬 ══════════ */
 export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false, theme = "light" }) {
-  const [sc, setSc] = useState(scene);              // 편집 반영본
+  const mode = useContext(FigModeContext);
+  const isMath = mode === "math" && !!scene?.math;
+  const view = useMemo(() => (isMath ? { ...scene, ...scene.math, id: scene.id, anim: "stage" } : scene), [scene, isMath]);
+  const [sc, setSc] = useState(view);               // 편집 반영본
   useEffect(() => {
-    setSc(scene);
+    setSc(view);
     hist.current = { past: [], future: [], lastTag: "", lastT: 0 }; setHv((v) => v + 1);
-  }, [scene]);
+  }, [view]);
   const [meta, setMeta] = useState(null);           // slot -> meta|null
   const [dims, setDims] = useState({});             // slot -> naturalW/H 비율
   const [time, setTime] = useState(0);
@@ -605,10 +633,11 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
             </div>
           )}
           {isAdmin && <span className="sf3-badge">{badge}</span>}
+          {mode === "math" && !scene?.math && <span className="sf3-badge" style={{ right: "auto", left: 8, color: "rgba(160,150,120,.8)" }}>∑ 수식 버전 준비 중 — 그림 버전으로 표시</span>}
         </div>
       </div>
       {sc.caption ? <p className="sf3-cap">{sc.caption}</p> : null}
-      {edit && <StageEditor sc={sc} setSc={setSc} selId={selId} figure={figure}
+      {edit && <StageEditor sc={sc} setSc={setSc} selId={selId} figure={figure} isMath={isMath}
         conceptId={conceptId} blockId={blockId} onToggle={togglePlay} onRestart={start} isPlaying={playing} theme={theme} meta={meta}
         setSelId={setSelId} subs={subsSorted} subIdx={subIdx} seek={seek} subXform={subXform} setSubXform={setSubXform}
         pushHist={pushHist} undo={undo} redo={redo}
@@ -619,7 +648,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
 }
 
 /* ══════════ 무대 편집 패널 ══════════ */
-function StageEditor({ sc, setSc, selId, setSelId, figure, conceptId, blockId, onToggle, onRestart, isPlaying, theme = "light", meta, refreshMeta, pushHist, undo, redo, canUndo, canRedo, subs = [], subIdx = -1, seek, subXform, setSubXform }) {
+function StageEditor({ sc, setSc, selId, setSelId, figure, conceptId, blockId, onToggle, onRestart, isPlaying, theme = "light", meta, refreshMeta, pushHist, undo, redo, canUndo, canRedo, subs = [], subIdx = -1, seek, subXform, setSubXform, isMath = false }) {
   const [jsonMode, setJsonMode] = useState(false);
   const [txt, setTxt] = useState("");
   const [warn, setWarn] = useState("");
@@ -662,7 +691,12 @@ function StageEditor({ sc, setSc, selId, setSelId, figure, conceptId, blockId, o
   const save = async () => {
     const w = validate(sc); if (w) { setWarn(w); return; }
     setBusy(true); setWarn("");
-    const scenes = (figure.scenes || []).map((s) => (s.id === sc.id ? sc : s));
+    const scenes = (figure.scenes || []).map((s) => {
+      if (s.id !== sc.id) return s;
+      if (!isMath) return sc;
+      const m = {}; for (const k of MATH_KEYS) if (sc[k] !== undefined) m[k] = sc[k];
+      return { ...s, math: m };
+    });
     const { error } = await supabase.rpc("set_figure", {
       p_concept: conceptId, p_block: blockId, p_figure: { ...figure, kind: figure.kind || "animset", scenes },
     });
@@ -691,7 +725,7 @@ function StageEditor({ sc, setSc, selId, setSelId, figure, conceptId, blockId, o
             setSelId && setSelId(selId === "@sub" ? null : "@sub");
           }}>💬</button>
         <button className={"sf3-btn" + (jsonMode ? " on" : "")} onClick={() => { setJsonMode(!jsonMode); setTxt(JSON.stringify(sc, null, 1)); }}>JSON</button>
-        <button className="sf3-btn pri" disabled={busy} onClick={save}>{busy ? "…" : saved ? "저장됨 ✓" : "저장"}</button>
+        <button className="sf3-btn pri" disabled={busy} onClick={save}>{busy ? "…" : saved ? "저장됨 ✓" : isMath ? "수식판 저장" : "저장"}</button>
       </div>
       {selSlot != null && (
         <div className="sf3-row" style={{ alignItems: "center" }}>
