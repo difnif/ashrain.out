@@ -4,6 +4,7 @@ import { supabase } from "../supabaseClient";
 import { qcode } from "../lib/qcode";
 import QuestionChat from "./QuestionChat";
 import { AnimScene } from "./AnimFigure";
+import { FigModeContext } from "./StageFigure";
 
 // 개념 뷰어: concepts.blocks(jsonb) 렌더링 + 채택 QnA 말풍선 + 질문 접수
 // props: conceptId, theme('light'|'dark')
@@ -23,6 +24,10 @@ function tone(t, theme) {
 }
 
 const CSS = `
+.cv-figmode { display: flex; justify-content: flex-end; gap: 4px; margin: 10px 0 2px; }
+.cv-fm { border: 1px solid var(--bd,#DFE3E8); background: var(--card,#fff); color: var(--mut,#8A929C);
+  border-radius: 999px; font-size: 12.5px; font-weight: 800; padding: 6px 12px; cursor: pointer; }
+.cv-fm.on { color: var(--ac,#0DA95F); border-color: var(--ac,#0DA95F); }
 .cv-root { min-height: 100vh; padding: 24px 12px; box-sizing: border-box;
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
 .cv-root * { box-sizing: border-box; }
@@ -399,6 +404,8 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [chatBlock, setChatBlock] = useState(null); // 질문챗이 열린 단락
   const [sibs, setSibs] = useState([]);             // 같은 학기 개념 목록 (이전/다음용)
+  const [figMode, setFigMode] = useState(() => { try { return localStorage.getItem("ashrain.figmode") || "art"; } catch { return "art"; } });
+  const pickMode = (m) => { setFigMode(m); try { localStorage.setItem("ashrain.figmode", m); } catch {} };
   useEffect(() => { window.scrollTo(0, 0); }, [conceptId]);
   useEffect(() => {
     if (!concept?.unit_id) return;
@@ -428,6 +435,7 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
 
   const byBlock = (id) => qna.filter((q) => q.block_id === id);
   return (
+    <FigModeContext.Provider value={figMode}>
     <div className={`cv-root cv-${theme}`}>
       <style>{CSS}</style>
       <div className="cv-wrap">
@@ -444,6 +452,10 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
             <p className="cv-subtitle">{concept.subtitle}</p>
           </div>
         </header>
+        <div className="cv-figmode" role="group" aria-label="그림 설명 방식">
+          <button className={"cv-fm" + (figMode === "art" ? " on" : "")} onClick={() => pickMode("art")}>🎨 그림</button>
+          <button className={"cv-fm" + (figMode === "math" ? " on" : "")} onClick={() => pickMode("math")}>∑ 수식</button>
+        </div>
         <main className="cv-main">
           {concept.blocks.map((b) => <BlockShell key={b.id} b={b} qna={byBlock(b.id)} theme={theme} conceptId={conceptId} isAdmin={isAdmin} onAsk={setChatBlock} />)}
           <a className="cv-span2" href={`#/p/${encodeURIComponent(concept.id)}`}
@@ -484,5 +496,6 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
           answered={byBlock(chatBlock.id)} onClose={() => setChatBlock(null)} />
       )}
     </div>
+    </FigModeContext.Provider>
   );
 }
