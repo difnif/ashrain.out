@@ -1144,6 +1144,41 @@ def recompute(it):
             return a * pp * pp + qq
         m = re.match(r"꼭짓점의 좌표가 \((-?\d+), (-?\d+)\)이고 점 \((-?\d+), (-?\d+)\)을 지나는 이차함수", q); pp, qq, mm, nn = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
         a = (nn - qq) / (mm - pp) ** 2; return a - 2 * a * pp + a * pp * pp + qq
+    if tid.startswith("m3-2-trig-basic"):
+        if tid == "m3-2-trig-basic-t1":
+            sides = {k: Fraction(v) for k, v in re.findall(r"\[\[seg\((AB|BC|AC)\)\]\] = (\d+)", q)}
+            if "AB" not in sides: sides["AB"] = _isqrt(sides["BC"] ** 2 + sides["AC"] ** 2)
+            if "BC" not in sides: sides["BC"] = _isqrt(sides["AB"] ** 2 - sides["AC"] ** 2)
+            if "AC" not in sides: sides["AC"] = _isqrt(sides["AB"] ** 2 - sides["BC"] ** 2)
+            F = re.search(r"일 때, (sin|cos|tan) (A|B)의 값", q); f, v = F.group(1), F.group(2)
+            a, b, c = sides["BC"], sides["AC"], sides["AB"]
+            return {("sin", "A"): a / c, ("cos", "A"): b / c, ("tan", "A"): a / b, ("sin", "B"): b / c, ("cos", "B"): a / c, ("tan", "B"): b / a}[(f, v)]
+        if tid == "m3-2-trig-basic-t2":
+            m = re.search(r"(sin|cos|tan) A = \[\[frac\((\d+), (\d+)\)\]\]일 때, (.+?)의 값", q); f, n1, n2, ask = m.group(1), int(m.group(2)), int(m.group(3)), m.group(4)
+            if f == "sin": a, c = n1, n2; b = _isqrt(c * c - a * a)
+            elif f == "cos": b, c = n1, n2; a = _isqrt(c * c - b * b)
+            else: a, b = n1, n2; c = _isqrt(a * a + b * b)
+            V = {"sin A": Fraction(a) / c, "cos A": Fraction(b) / c, "tan A": Fraction(a) / b}
+            mm = re.fullmatch(r"(sin A|cos A|tan A)(?: ([+×]) (sin A|cos A|tan A))?", ask)
+            if not mm.group(2): return V[mm.group(1)]
+            return V[mm.group(1)] + V[mm.group(3)] if mm.group(2) == "+" else V[mm.group(1)] * V[mm.group(3)]
+        if tid == "m3-2-trig-basic-t3":
+            m = re.match(r"(sin|cos|tan) (\d+)° ([+−×÷]) (sin|cos|tan) (\d+)°의 값", q); fn = {"sin": math.sin, "cos": math.cos, "tan": math.tan}
+            v1, v2 = fn[m.group(1)](math.radians(int(m.group(2)))), fn[m.group(4)](math.radians(int(m.group(5)))); op = m.group(3)
+            r = v1 + v2 if op == "+" else v1 - v2 if op == "−" else v1 * v2 if op == "×" else v1 / v2
+            return Fraction(r).limit_denominator(1000)
+        if tid == "m3-2-trig-basic-t4":
+            m = re.search(r"(sin|cos|tan) (x|\(x [+−] \d+°\)|2x) = (.+?)[을를] 만족하는 x", q); f, arg, vtxt = m.group(1), m.group(2), m.group(3)
+            target = _mval(vtxt); fn = {"sin": math.sin, "cos": math.cos, "tan": math.tan}[f]
+            th = next((t for t in (30, 45, 60) if abs(fn(math.radians(t)) - target) < 1e-6), None)
+            if th is None: return None
+            if arg == "x": return Fraction(th)
+            if arg == "2x": return Fraction(th, 2)
+            ma = re.fullmatch(r"\(x ([+−]) (\d+)°\)", arg); return Fraction(th - int(ma.group(2))) if ma.group(1) == "+" else Fraction(th + int(ma.group(2)))
+        m = re.search(r"\[\[angle\(A\)\]\] = \[\[deg\((\d+)\)\]\]인 직각삼각형 ABC에서 (빗변 AB|이웃변 AC)의 길이가 (\d+)일 때 \[\[seg\((BC|AC)\)\]\]의 길이를 구하시오. \(sin \d+° = ([\d.]+), cos \d+° = ([\d.]+), tan \d+° = ([\d.]+)\)", q)
+        h = Fraction(m.group(3)); S, C, T = Fraction(m.group(5)), Fraction(m.group(6)), Fraction(m.group(7))
+        if m.group(2) == "빗변 AB": return h * S if m.group(4) == "BC" else h * C
+        return h * T
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])
@@ -1273,6 +1308,49 @@ def check_m3str(it):
         S, P = pp + qq, u * v; roots = sorted(int(x) for x in re.findall(r"x = (-?\d+)", a))
         return len(roots) == 2 and roots[0] + roots[1] == S and roots[0] * roots[1] == P
     return None
+
+
+def _mval(text):
+    """마커 문자열('[[3*sqrt(3)]]'·'12'·'[[frac(sqrt(3), 2)]]') → float"""
+    import mathir
+    t = re.sub(r"^\[\[|\]\]$", "", text.strip())
+    node, _ = mathir.parse(t)
+    return float(mathir.ev(node))
+
+
+def _sp(f, th):
+    return {"sin": math.sin, "cos": math.cos, "tan": math.tan}[f](math.radians(th))
+
+
+def check_m3trig(it):
+    """무리수 답 틀(m3-2 삼각비의 활용): 발문에서 되읽어 float 비교. True/False, 해당 없으면 None."""
+    tid, q, a = it["template_id"], it["question"], it["answer"]
+    if not tid.startswith("m3-2-trig-apply"):
+        return None
+    try:
+        av = _mval(a)
+        if tid == "m3-2-trig-apply-t1":
+            m = re.search(r"\[\[angle\(B\)\]\] = \[\[deg\((\d+)\)\]\]인 직각삼각형 ABC에서 \[\[seg\((AB|BC|AC)\)\]\] = (.+?)일 때, \[\[seg\((AB|BC|AC)\)\]\]의 길이", q); th = int(m.group(1)); G, X = m.group(2), m.group(4); gv = _mval(m.group(3))
+            unit = {"BC": math.cos(math.radians(th)), "AC": math.sin(math.radians(th)), "AB": 1.0}
+            want = gv / unit[G] * unit[X]
+        elif tid == "m3-2-trig-apply-t2":
+            m = re.search(r"거리가 (\d+) m이고, .+? 올려다본 각의 크기가 (\d+)°", q)
+            if m: want = int(m.group(1)) * _sp("tan", int(m.group(2)))
+            else:
+                m = re.search(r"길이가 (\d+) m인 사다리 .+? 각의 크기가 (\d+)°", q); want = int(m.group(1)) * _sp("sin", int(m.group(2)))
+        elif tid == "m3-2-trig-apply-t3":
+            m = re.search(r"\[\[seg\(BC\)\]\] = (\d+), \[\[seg\(CA\)\]\] = (\d+), \[\[angle\(C\)\]\] = \[\[deg\((\d+)\)\]\]", q); want = 0.5 * int(m.group(1)) * int(m.group(2)) * _sp("sin", int(m.group(3)))
+        elif tid == "m3-2-trig-apply-t4":
+            m = re.search(r"\[\[seg\(AB\)\]\] = (.+?), \[\[seg\(BC\)\]\] = (\d+), \[\[angle\(B\)\]\] = \[\[deg\((\d+)\)\]\]", q); c, a_, th = _mval(m.group(1)), int(m.group(2)), int(m.group(3))
+            want = math.sqrt(c * c + a_ * a_ - 2 * a_ * c * math.cos(math.radians(th)))
+        else:
+            m = re.search(r"\[\[seg\(AB\)\]\] = (\d+), \[\[seg\(AD\)\]\] = (\d+), \[\[angle\(A\)\]\] = \[\[deg\((\d+)\)\]\]인 평행사변형", q)
+            if m: want = int(m.group(1)) * int(m.group(2)) * _sp("sin", int(m.group(3)))
+            else:
+                m = re.search(r"두 대각선의 길이가 (\d+), (\d+)이고 두 대각선이 이루는 각의 크기가 (\d+)°", q); want = 0.5 * int(m.group(1)) * int(m.group(2)) * _sp("sin", int(m.group(3)))
+        return abs(want - av) < 1e-6
+    except Exception:                                   # noqa: BLE001
+        return False
 
 
 def _strip25(n):
@@ -1674,6 +1752,8 @@ for f in sorted(OUT.glob("*_pool.json")):
             pos = check_ineq2(it)
         if pos is None:
             pos = check_m3str(it)
+        if pos is None:
+            pos = check_m3trig(it)
         if pos is not None:
             if not pos:
                 bad("R1-독립 검산 불일치", it, f"문자열 답 재계산 ≠ 답 {it['answer']}")
