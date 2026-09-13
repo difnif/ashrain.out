@@ -1,4 +1,4 @@
-# genkit/expr.py — 시드 명세의 식 평가와 수치 표시 (v1.2 · 09-13: 문자열 속 분수는 마커로 · sgt 추가)
+# genkit/expr.py — 시드 명세의 식 평가와 수치 표시 (v1.3 · 09-13: 문자열 속 분수는 마커로 · sgt·sub 추가)
 #
 # 시드는 파이썬 코드가 아니라 JSON이다. 그 안의 식은 여기서만 평가되고,
 # 허용 심볼 밖의 것은 예외로 떨어진다(임의 코드 실행 차단).
@@ -23,7 +23,7 @@ _ALLOWED = {
     "sin": sp.sin, "cos": sp.cos, "tan": sp.tan, "log": sp.log,
     "Eq": sp.Eq, "And": sp.And, "Or": sp.Or, "Not": sp.Not,
 }
-_JOSA_NAMES = ("eul", "eun", "ika", "ro", "wa", "ida", "co", "sgn", "pn", "dec", "dv", "sgt")
+_JOSA_NAMES = ("eul", "eun", "ika", "ro", "wa", "ida", "co", "sgn", "pn", "dec", "dv", "sgt", "sub")
 _NAME_RE = re.compile(r"[A-Za-z_][A-Za-z_0-9]*")
 _KEYWORDS = {"in", "not", "and", "or", "if", "else", "True", "False"}   # 문자열 파라미터 판별용 (ans in skew 등)
 _SAFE_CHARS = re.compile(r"^[0-9A-Za-z_+\-*/%().,<>=!&| \t]*$")
@@ -233,6 +233,18 @@ def sgn(v):
     except (TypeError, ValueError):
         return str(v)
     return ("\u2212 " if f < 0 else "+ ") + show(abs(f), marker=True)
+
+
+_SUBS = str.maketrans("0123456789-", "₀₁₂₃₄₅₆₇₈₉₋")
+
+
+def sub(v):
+    """아래 첨자 — `a{sub(n)}` 이 'a₁₀' 으로 나온다 (수열의 항 번호). 수가 아니면 그대로."""
+    try:
+        f = Fraction(v)
+    except (TypeError, ValueError):
+        return str(v)
+    return (str(f.numerator) if f.denominator == 1 else str(f)).translate(_SUBS)
 
 
 def sgt(v):

@@ -1422,6 +1422,8 @@ def recompute(it):
         return _h12b(tid, q)
     if tid.startswith("h2-1-exp") or tid.startswith("h2-1-log"):
         return _h21(tid, q)
+    if tid.startswith("h2-1-trig"):
+        return _h21t(tid, q)
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])
@@ -1898,6 +1900,64 @@ def _h21(tid, q):
         if mc:
             p, r_ = int(mc.group(2) or 0), int(mc.group(4)); return pick([x for x in range(-50, 200) if x - p > 0 and 2 * x - r_ > 0 and x - p <= 2 * x - r_][:1])
         return None
+    return None
+
+
+def _angv(src):
+    """deg(150) / frac(5pi, 6) / pi / 2pi / 0 → 라디안(float)"""
+    src = src.strip()
+    m = re.fullmatch(r"deg\((-?\d+)\)", src)
+    if m: return math.radians(int(m.group(1)))
+    m = re.fullmatch(r"frac\((\d*)pi, (\d+)\)", src)
+    if m: return math.pi * int(m.group(1) or "1") / int(m.group(2))
+    m = re.fullmatch(r"(\d*)pi", src)
+    if m: return math.pi * int(m.group(1) or "1")
+    if src == "0": return 0.0
+    return None
+
+
+def _h21t(tid, q):
+    """h2-1 삼각함수 — 발문에서 다시 푼다."""
+    if tid == "h2-1-trig-t1":
+        m = re.match(r"(\d+)°를 호도법으로", q)
+        if m: f = Fraction(int(m.group(1)), 180); return Fraction(f.numerator + f.denominator)
+        m = re.match(r"\[\[(.+?)\]\][을를] 육십분법으로", q); v = _angv(m.group(1)); return None if v is None else _ratf(math.degrees(v))
+    if tid == "h2-1-trig-t2":
+        m = re.match(r"반지름의 길이가 (\d+), 중심각의 크기가 \[\[(.+?)\]\]인 부채꼴의 (호의 길이|넓이)", q); r = int(m.group(1)); th = _angv(m.group(2)) / math.pi
+        return _ratf(r * th) if m.group(3) == "호의 길이" else _ratf(r * r * th / 2)
+    if tid == "h2-1-trig-t3":
+        expr = q.split("의 값")[0]; parts = re.split(r" ([+−]) ", expr); total = None
+        for i, part in enumerate([parts[0]] + parts[2::2]):
+            mm = re.fullmatch(r"\[\[(sin|cos|tan)\((.+)\)\]\]", part); ang = _angv(mm.group(2)); fv = {"sin": math.sin, "cos": math.cos, "tan": math.tan}[mm.group(1)](ang)
+            v = Fraction(round(fv * 2)) / 2 if abs(fv * 2 - round(fv * 2)) < 1e-9 else None
+            if v is None: return None
+            total = v if i == 0 else (total + v if parts[2 * i - 1] == "+" else total - v)
+        return total
+    if tid == "h2-1-trig-t4":
+        m = re.match(r"sin θ ([+−]) cos θ = (\[\[.+?\]\]|-?\d+)일 때, (sin θ cos θ|sin³θ \+ cos³θ)의 값", q)
+        if m:
+            sv = _mk(m.group(2)); p = (sv * sv - 1) / 2 if m.group(1) == "+" else (1 - sv * sv) / 2
+            return p if m.group(3) == "sin θ cos θ" else sv ** 3 - 3 * sv * p
+        m = re.match(r"θ가 제(\d)사분면의 각이고 (sin|cos) θ = (\[\[.+?\]\]|-?\d+)일 때, (sin|cos|tan) θ의 값", q); Q = int(m.group(1)); gv = _mk(m.group(3)); given, ask = m.group(2), m.group(4)
+        o2 = 1 - gv * gv; r = _isqrt(o2.numerator); rd = _isqrt(o2.denominator)
+        if r is None or rd is None: return None
+        ov = Fraction(r, rd) * (1 if (Q in (1, 2) if given == "cos" else Q in (1, 4)) else -1)   # 나머지 값의 부호: given이 cos이면 sin의 부호(1·2), sin이면 cos의 부호(1·4)
+        sinv, cosv = (gv, ov) if given == "sin" else (ov, gv)
+        return {"sin": sinv, "cos": cosv, "tan": sinv / cosv}[ask]
+    if tid == "h2-1-trig-t5":
+        m = re.match(r"주기가 (.+?)이고 최댓값이 (-?\d+), 최솟값이 (-?\d+)인 함수 y = a (sin|cos) bx \+ c에 대하여 (a \+ b \+ c|abc)의 값", q); per = m.group(1); M, mm = int(m.group(2)), int(m.group(3))
+        pv = _angv(per[2:-2]) if per.startswith("[[") else _angv(per.replace("π", "pi")); b = _ratf(2 * math.pi / pv); a = Fraction(M - mm, 2); c = Fraction(M + mm, 2)
+        return a + b + c if m.group(5) == "a + b + c" else a * b * c
+    if tid == "h2-1-trig-t6":
+        m = re.match(r"삼각형 ABC에서 b = (\d+), c = (\d+), A = \[\[deg\((\d+)\)\]\]일 때, (a의 값|삼각형 ABC의 넓이)", q)
+        if m:
+            b, c, A = int(m.group(1)), int(m.group(2)), int(m.group(3))
+            if m.group(4) == "a의 값": return _isqrt(b * b + c * c - 2 * b * c * Fraction(round(math.cos(math.radians(A)) * 2), 2))
+            return Fraction(b * c, 2) * Fraction(round(math.sin(math.radians(A)) * 2), 2)
+        m = re.match(r"삼각형 ABC에서 a = (\d+), b = (\d+), c = (\d+)일 때, cos A의 값", q); a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3)); return Fraction(b * b + c * c - a * a, 2 * b * c)
+    if tid == "h2-1-trig-t7":
+        m = re.match(r"삼각형 ABC에서 sin A : sin B : sin C = (\d+) : (\d+) : (\d+)일 때, 각 C의 크기", q); x, y, z = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        cv = (x * x + y * y - z * z) / (2 * x * y); return _ratf(math.degrees(math.acos(cv)))
     return None
 
 
