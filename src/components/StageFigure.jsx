@@ -150,6 +150,7 @@ const CSS = `
 .sf3-sub { position: absolute; padding: 5px 13px; border-radius: 12px; font-weight: 400; text-align: center;
   font-family: "EBS Hunminjeongeum Saeron", "Gowun Batang", serif; letter-spacing: .01em;
   line-height: 1.55; pointer-events: none; animation: sf3subin .35s ease; white-space: pre-line; }
+.sf3-stage.math .sf3-sub { font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; font-weight: 700; letter-spacing: 0; }
 .sf3-stage.dark .sf3-sub { background: rgba(8,12,26,.55); color: #F2E8CE; }
 .sf3-stage.light .sf3-sub { background: rgba(255,252,242,.72); color: #4A3B25; }
 @keyframes sf3subin { from { opacity: 0; } to { opacity: 1; } }
@@ -255,9 +256,14 @@ function MarkSvg({ marks, st, theme, fullH = STAGE_H }) {
 }
 
 /* ══════════ 무대 씬 ══════════ */
-export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false, theme = "light" }) {
+export function StageScene(props) {
   const mode = useContext(FigModeContext);
-  const isMath = mode === "math" && !!scene?.math;
+  const isMath = mode === "math" && !!props.scene?.math;
+  // 모드가 바뀌면 씬을 통째로 다시 마운트 — 이전 모드의 DOM·상태가 남지 않게
+  return <StageSceneInner key={isMath ? "math" : "art"} {...props} mode={mode} isMath={isMath} />;
+}
+
+function StageSceneInner({ scene, figure, conceptId, blockId, isAdmin = false, theme = "light", mode, isMath }) {
   const view = useMemo(() => (isMath ? { ...scene, ...scene.math, id: scene.id, anim: "stage" } : scene), [scene, isMath]);
   const [sc, setSc] = useState(view);               // 편집 반영본
   useEffect(() => {
@@ -319,7 +325,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
   const clickGuard = useRef(false); // 레이어 조작 직후의 click이 선택을 풀지 않게
   const playedOnce = useRef(false);
 
-  const imgAll = useMemo(() => (sc.layers || []).filter((l) => !l.mark), [sc]);
+  const imgAll = useMemo(() => (isMath ? [] : (sc.layers || []).filter((l) => !l.mark)), [sc, isMath]);
   const imgRoots = useMemo(() => imgAll.filter((l) => !l.parent), [imgAll]);
   const imgChildren = useMemo(() => imgAll.filter((l) => l.parent), [imgAll]);
   const markLayers = useMemo(() => (sc.layers || []).filter((l) => l.mark && !l.parent), [sc]);
@@ -496,7 +502,7 @@ export function StageScene({ scene, figure, conceptId, blockId, isAdmin = false,
       <style>{CSS}</style>
       <div style={{ position: "relative" }}>
         {isAdmin && <button className="sf3-gear" onClick={() => setEdit((v) => !v)} title="무대 편집">{edit ? "✕" : "⚙️"}</button>}
-        <div ref={stageRef} className={`sf3-stage ${theme}`}
+        <div ref={stageRef} className={`sf3-stage ${theme}${isMath ? " math" : ""}`}
           style={{ aspectRatio: `1 / ${fullH}` }}
           onClick={() => {
             if (!edit) { playedOnce.current = true; togglePlay(); return; }
