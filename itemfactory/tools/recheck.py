@@ -606,7 +606,266 @@ def recompute(it):
             a, b = _segs(q)["AB"], _segs(q)["BC"]; return (a + b) / 2
         if tid.startswith("m1-2-segment-mid-t5"):
             a, mn = _segs(q)["AB"], _segs(q)["MN"]; return 2 * (mn - a / 2)
+    # ── 세션 5 (09-13): m1-1 수와 연산 기본 — 소인수분해·최대공약수/최소공배수·유리수 계산
+    if tid.startswith("m1-1-prime-factor"):
+        if tid.startswith("m1-1-prime-factor-t1"):
+            m = re.match(r"(\d+)[을를] 소인수분해하면 (\d+)ᵃ × (\d+)ᵇ × c .*?일 때, (.+?)의 값", q)
+            N, p, pq = int(m.group(1)), int(m.group(2)), int(m.group(3)); f = _fac(N)
+            a, b = f.get(p, 0), f.get(pq, 0); rest = [x for x in f if x not in (p, pq)]
+            if len(rest) != 1 or f[rest[0]] != 1: return None
+            c = rest[0]; qt = m.group(4)
+            return Fraction({"a + b + c": a + b + c, "a × b × c": a * b * c, "c − a − b": c - a - b}[qt])
+        if tid.startswith("m1-1-prime-factor-t2"):
+            return Fraction(_ndiv(int(re.match(r"(\d+)의 약수", q).group(1))))
+        if tid.startswith("m1-1-prime-factor-t3"):
+            return Fraction(_ndiv(_facval(q.split("의 약수")[0])))
+        if tid.startswith("m1-1-prime-factor-t4"):
+            N = int(re.match(r"(\d+)에 자연수", q).group(1)); x = 1
+            for pp, e in _fac(N).items():
+                if e % 2: x *= pp
+            return Fraction(x)
+        if tid.startswith("m1-1-prime-factor-t5"):
+            expr, D = q.split("의 약수의 개수가 ")[0], int(re.search(r"개수가 (\d+)일", q).group(1)); M = 1
+            for term in expr.split(" × "):
+                if "ᵃ" in term: continue
+                M *= _sup(re.sub(r"^\d+", "", term)) + 1
+            return Fraction(D, M) - 1 if D % M == 0 else None
+        if tid.startswith("m1-1-prime-factor-t6"):
+            N = int(re.match(r"(\d+)의", q).group(1)); f = _fac(N)
+            return Fraction(sum(f)) if "합" in q else Fraction(len(f))
+    if tid.startswith("m1-1-gcd-lcm-basic"):
+        if tid.startswith(("m1-1-gcd-lcm-basic-t1", "m1-1-gcd-lcm-basic-t2", "m1-1-gcd-lcm-basic-t3")):
+            m = re.match(r"두 수 (.+?), (.+?)의 (최대공약수|공약수|최소공배수)", q); A, B = _facval(m.group(1)), _facval(m.group(2))
+            return Fraction({"최대공약수": math.gcd(A, B), "공약수": _ndiv(math.gcd(A, B)), "최소공배수": A * B // math.gcd(A, B)}[m.group(3)])
+        if tid.startswith("m1-1-gcd-lcm-basic-t4"):
+            m = re.match(r"두 수 (.+?), (.+?)의 최대공약수가 (.+?), 최소공배수가 (.+?)일 때", q)
+            FA, FB, FG, FL = [_facmap(m.group(i)) for i in (1, 2, 3, 4)]
+            pa = [pp for pp, e in FA.items() if e == "a"][0]; pb = [pp for pp, e in FB.items() if e == "b"][0]
+            a = FG.get(pa, 0) + FL.get(pa, 0) - FB.get(pa, 0); b = FG.get(pb, 0) + FL.get(pb, 0) - FA.get(pb, 0)
+            return Fraction(a + b)
+        if tid.startswith("m1-1-gcd-lcm-basic-t5"):
+            m = re.match(r"어떤 자연수로 (\d+)[을를] 나누면 (\d+)[이가] 남고, (\d+)[을를] 나누면 (\d+)[이가] 남는다", q)
+            A, r1, B, r2 = [int(m.group(i)) for i in (1, 2, 3, 4)]; g = math.gcd(A - r1, B - r2)
+            return Fraction(g) if g > max(r1, r2) else None
+        if tid.startswith("m1-1-gcd-lcm-basic-t6"):
+            m = re.match(r"(\d+), (\d+), (\d+) 중 어느 수로 나누어도 나머지가 (\d+)인", q); a, b, c, r = [int(m.group(i)) for i in (1, 2, 3, 4)]
+            return Fraction(math.lcm(a, b, c) + r)
+        if tid.startswith("m1-1-gcd-lcm-basic-t7"):
+            fr = re.findall(r"\[\[frac\((\d+),(\d+)\)\]\]", q); (n1, d1), (n2, d2) = [(int(x), int(y)) for x, y in fr[:2]]
+            return Fraction(math.lcm(d1, d2), math.gcd(n1, n2))
+    if tid.startswith("m1-1-rational-ops"):
+        if tid.startswith("m1-1-rational-ops-t1"):
+            m = re.match(r"\((-\d+)\)([²³]) × (\d+) ([+−]) (\d+) ÷ \((-\d+)\)", q)
+            na, k, b, op, c, nd = int(m.group(1)), _sup(m.group(2)), int(m.group(3)), m.group(4), int(m.group(5)), int(m.group(6))
+            t = Fraction(na ** k * b); qq = Fraction(c, nd)
+            return t + qq if op == "+" else t - qq
+        if tid.startswith("m1-1-rational-ops-t2"):
+            m = re.match(r"\(-\[\[frac\((\d+),(\d+)\)\]\]\)² × (\d+) ([+−]) \[\[frac\((\d+),(\d+)\)\]\] ÷ \(-\[\[frac\((\d+),(\d+)\)\]\]\)", q)
+            a, b, e, op, c, d, f, h = [m.group(i) for i in range(1, 9)]
+            t = Fraction(int(a) ** 2, int(b) ** 2) * int(e); qq = Fraction(int(c), int(d)) / (-Fraction(int(f), int(h)))
+            return t + qq if op == "+" else t - qq
+        if tid.startswith("m1-1-rational-ops-t3"):
+            m = re.match(r"어떤 수(?:에서|에|를) (\d+)(?:를|로) (곱해야|나누어야|더해야|빼야) 할 것을 잘못하여 \d+(?:를|로) (나누었더니|곱했더니|뺐더니|더했더니) (\d+)[이가] 되었다", q)
+            a, cr, wr, b = int(m.group(1)), m.group(2), m.group(3), Fraction(m.group(4))
+            x = {"나누었더니": b * a, "곱했더니": b / a, "뺐더니": b + a, "더했더니": b - a}[wr]
+            return {"곱해야": x * a, "나누어야": x / a, "더해야": x + a, "빼야": x - a}[cr]
+        if tid.startswith("m1-1-rational-ops-t4"):
+            m = re.match(r"(-?)\[\[frac\((\d+),(\d+)\)\]\]의 역수를 x, (-?\d+)의 역수를 y라 할 때, (.+?)의 값", q)
+            x = Fraction(int(m.group(3)), int(m.group(2))) * (-1 if m.group(1) else 1); y = Fraction(1, int(m.group(4)))
+            return {"x + y": x + y, "x − y": x - y, "xy": x * y}[m.group(5)]
+        if tid.startswith("m1-1-rational-ops-t5"):
+            m = re.match(r"(-?\d+)보다 (-?\d+)만큼 큰 수를 x, (-?\d+)보다 (-?\d+)만큼 작은 수를 y라 할 때, (.+?)의 값", q)
+            a, b, c, d = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]; x, y = a + b, c - d
+            return {"x + y": x + y, "x − y": x - y, "y − x": y - x}[m.group(5)]
+    # ── 세션 5 (09-13): m1-1 문자와 식·방정식 — 식(문자열) 답은 check_linexpr 가 맡는다
+    if tid.startswith("m1-1-expr-value"):
+        if tid.startswith("m1-1-expr-value-t1"):
+            m = re.match(r"x = (-?\d+)일 때, (-?\d*)x² ([+−]) (\d*)x ([+−]) (\d+)의 값", q)
+            a, p = Fraction(m.group(1)), _coef(m.group(2)); qv = _coef(m.group(4)) * (1 if m.group(3) == "+" else -1); r = int(m.group(6)) * (1 if m.group(5) == "+" else -1)
+            return p * a * a + qv * a + r
+        if tid.startswith("m1-1-expr-value-t2"):
+            m = re.match(r"x = \[\[(-?)frac\((\d+),(\d+)\)\]\]일 때, (\d+)x² ([+−]) \[\[frac\(1,x\)\]\]", q)
+            X = Fraction(int(m.group(2)), int(m.group(3))) * (-1 if m.group(1) else 1); c = int(m.group(4)); o = 1 if m.group(5) == "+" else -1
+            return c * X * X + o / X
+        if tid.startswith("m1-1-expr-value-t3"):
+            tail = q.split("이다. ", 1)[1]
+            X = Fraction(re.search(r"(?:기온이|섭씨온도가|정가가|휘발유가|높이가|택시로|이 버스가) (-?\d+)", tail).group(1))
+            if "소리의 속력" in q: return 331 + Fraction(3, 5) * X
+            if "화씨" in q: return Fraction(9, 5) * X + 32
+            if "판매 가격" in q: return Fraction(4, 5) * X
+            if "휘발유" in q: return 15 * X
+            if "택시" in q: return 4800 + 1000 * X
+            if "고속버스" in q: return 80 * X
+            return 25 - 6 * X
+        if tid.startswith("m1-1-expr-value-t4"):
+            m = re.match(r"a = (-?\d+), b = (-?\d+)일 때, (.+?)의 값", q); a, b = Fraction(m.group(1)), Fraction(m.group(2))
+            e = m.group(3).replace("−", "-").replace("²", "**2").replace("ab", "a*b")
+            e = re.sub(r"(\d)([ab])", r"\1*\2", e)
+            return Fraction(eval(e, {"__builtins__": {}}, {"a": a, "b": b}))   # noqa: S307 — 문면의 a, b, 숫자, 연산자만
+    if tid.startswith("m1-1-linear-expr-t1") or tid.startswith("m1-1-linear-expr-t2"):
+        import mathir
+        m = re.match(r"(.+?)[을를] 간단히 하였을 때, (.+?)[을를] 구하시오", q); expr = m.group(1).replace("−", "-").replace("[[", "").replace("]]", "")
+        f = lambda x: Fraction(mathir.ev(mathir.parse(expr)[0], {"x": x}))   # noqa: E731
+        A, B = f(1) - f(0), f(0); ask = m.group(2)
+        return A + B if "합" in ask else (A if "계수" in ask else B)
+    if tid.startswith("m1-1-eq-solution"):
+        if tid.startswith("m1-1-eq-solution-t1"):
+            m = re.match(r"등식 ax ([+−]) (\d+) = (-?\d*)x ([+−]) (\d*)b가 .*?대하여 (.+?)의 값", q)
+            mv = int(m.group(2)) * (1 if m.group(1) == "+" else -1); a = _coef(m.group(3)); k = _coef(m.group(5)) * (1 if m.group(4) == "+" else -1); b = Fraction(mv) / k
+            return {"a + b": a + b, "a − b": a - b, "ab": a * b}[m.group(6)]
+        if tid.startswith("m1-1-eq-solution-t2"):
+            m = re.match(r"x에 대한 일차방정식 (-?\d*)x ([+−]) a = (-?\d+)의 해가 x = (-?\d+)일 때", q)
+            p, sa, r, k = _coef(m.group(1)), (1 if m.group(2) == "+" else -1), Fraction(m.group(3)), Fraction(m.group(4))
+            return (r - p * k) / sa
+        if tid.startswith("m1-1-eq-solution-t3"):
+            m = re.match(r"x에 대한 일차방정식 ax ([+−]) (\d+) = (-?\d+)의 해가 x = (-?\d+)일 때", q)
+            qv = int(m.group(2)) * (1 if m.group(1) == "+" else -1); r, k = Fraction(m.group(3)), Fraction(m.group(4)); return (r - qv) / k
+        if tid.startswith("m1-1-eq-solution-t4"):
+            m = re.match(r"두 일차방정식 (-?\d*)x ([+−]) (\d+) = (-?\d+), (-?\d*)x − a = (-?\d+)의 해가 서로 같을 때", q)
+            p = _coef(m.group(1)); qv = int(m.group(3)) * (1 if m.group(2) == "+" else -1); r = Fraction(m.group(4)); sv = _coef(m.group(5)); t = Fraction(m.group(6))
+            x0 = (r - qv) / p; return sv * x0 - t
+    if tid.startswith("m1-1-linear-eq-const"):
+        if tid.startswith("m1-1-linear-eq-const-t1"):
+            m = re.match(r"x에 대한 일차방정식 (-?\d*)x ([+−]) (\d+) = (-?\d+)의 해가 일차방정식 (-?\d*)x \+ a = (-?\d+)의 해의 (\d+)배일 때", q)
+            p = _coef(m.group(1)); qv = int(m.group(3)) * (1 if m.group(2) == "+" else -1); r = Fraction(m.group(4)); sv = _coef(m.group(5)); t = Fraction(m.group(6)); mult = int(m.group(7))
+            x1 = (r - qv) / p; x2 = x1 / mult; return t - sv * x2
+        if tid.startswith("m1-1-linear-eq-const-t2"):
+            m = re.match(r"x에 대한 일차방정식 (\d+)x − (\d+) = a의 해가 자연수", q); p, qv = int(m.group(1)), int(m.group(2))
+            return Fraction(sum(1 for a in range(10, 100) if (a + qv) % p == 0 and (a + qv) // p >= 1))
+        if tid.startswith("m1-1-linear-eq-const-t3"):
+            m = re.match(r"x에 대한 방정식 (-?\d*)x ([+−]) (\d+) = \(a ([+−]) (\d+)\)x ([+−]) (\d+)의 해가 없을 때", q)
+            p = _coef(m.group(1)); k = int(m.group(5)) * (1 if m.group(4) == "+" else -1)
+            qv = int(m.group(3)) * (1 if m.group(2) == "+" else -1); rv = int(m.group(7)) * (1 if m.group(6) == "+" else -1)
+            return p - k if qv != rv else None
+        if tid.startswith("m1-1-linear-eq-const-t4"):
+            m = re.match(r"x에 대한 방정식 (-?\d*)x ([+−]) (\d+) = \(a ([+−]) (\d+)\)x ([+−]) (\d*)b의 해가 무수히 많을 때, .*?대하여 (.+?)의 값", q)
+            p = _coef(m.group(1)); qv = int(m.group(3)) * (1 if m.group(2) == "+" else -1); k = int(m.group(5)) * (1 if m.group(4) == "+" else -1)
+            kb = _coef(m.group(7)) * (1 if m.group(6) == "+" else -1); a = p - k; b = Fraction(qv) / kb
+            return {"a + b": a + b, "a − b": a - b, "ab": a * b}[m.group(8)]
+    if tid.startswith("m1-1-eq-apply-2"):
+        if tid.startswith("m1-1-eq-apply-2-t1"):
+            m = re.search(r"원가의 (\d+) %의 이익을 붙여 정가를 정하고, 정가에서 (\d+) %를 할인하여 팔았더니 (\d+)원의 이익", q)
+            p, qv, r = [int(m.group(i)) for i in (1, 2, 3)]; return Fraction(r * 10000, (100 + p) * (100 - qv) - 10000)
+        if tid.startswith("m1-1-eq-apply-2-t2"):
+            m = re.search(r"A가 혼자 하면 (\d+)일, B가 혼자 하면 (\d+)일이 걸린다. 이 일을 A가 혼자 (\d+)일 동안", q)
+            a, b, c = [int(m.group(i)) for i in (1, 2, 3)]; return Fraction(b * (a - c), a)
+        if tid.startswith("m1-1-eq-apply-2-t3"):
+            m = re.search(r"세로의 길이보다 (\d+) cm 더 긴 직사각형의 둘레의 길이가 (\d+) cm일 때, 이 직사각형의 (가로|세로)", q)
+            d, P = int(m.group(1)), int(m.group(2)); x = Fraction(P - 2 * d, 4); return x + d if m.group(3) == "가로" else x
+        if tid.startswith("m1-1-eq-apply-2-t4"):
+            m = re.search(r"윗변의 길이가 (\d+) cm, 높이가 (\d+) cm인 사다리꼴의 넓이가 (\d+) cm²", q)
+            a, h, S = [int(m.group(i)) for i in (1, 2, 3)]; return Fraction(2 * S, h) - a
+    # ── 세션 5 (09-13): m1-1 좌표평면·정비례/반비례
+    if tid.startswith("m1-1-coordinate"):
+        if tid.startswith("m1-1-coordinate-t1"):
+            m = re.match(r"두 순서쌍 \((-?\d*)a ([+−]) (\d+), (-?\d+)\), \((-?\d+), (-?\d*)b ([+−]) (\d+)\)[이가] 서로 같을 때, (.+?)의 값", q)
+            p = _coef(m.group(1)); qv = int(m.group(3)) * (1 if m.group(2) == "+" else -1); r = Fraction(m.group(4)); sv = Fraction(m.group(5))
+            t = _coef(m.group(6)); u = int(m.group(8)) * (1 if m.group(7) == "+" else -1)
+            a, b = (sv - qv) / p, (r - u) / t
+            return {"a + b": a + b, "a − b": a - b, "ab": a * b}[m.group(9)]
+        if tid.startswith("m1-1-coordinate-t2"):
+            m = re.match(r"점 \((-?\d+), (-?\d+)\)[와과] (x축|y축|원점)에 대하여 대칭인 점의 좌표가 \(a, b\)일 때, (.+?)의 값", q)
+            x, y = Fraction(m.group(1)), Fraction(m.group(2)); ax = m.group(3)
+            a, b = (x if ax == "x축" else -x), (y if ax == "y축" else -y)
+            return {"a + b": a + b, "a − b": a - b, "ab": a * b}[m.group(4)]
+        if tid.startswith("m1-1-coordinate-t3"):
+            m = re.match(r"점 \(a, b\)가 제(\d)사분면 위의 점일 때, 점 \((.+?), (.+?)\)[는은] 제n사분면", q)
+            k = int(m.group(1)); sa, sb = {1: (1, 1), 2: (-1, 1), 3: (-1, -1), 4: (1, -1)}[k]
+            def sg(e):
+                e = e.replace("−", "-"); neg = e.startswith("-"); e = e.lstrip("-"); v = 1
+                for ch in e.replace("²", "2"):
+                    pass
+                cnt_a = e.count("a"); cnt_b = e.count("b"); sq_a = "a²" in e; sq_b = "b²" in e
+                v = (1 if sq_a else sa ** cnt_a) * (1 if sq_b else sb ** cnt_b)
+                return -v if neg else v
+            s1, s2 = sg(m.group(2)), sg(m.group(3))
+            return Fraction({(1, 1): 1, (-1, 1): 2, (-1, -1): 3, (1, -1): 4}[(s1, s2)])
+        if tid.startswith("m1-1-coordinate-t4"):
+            pts = [(Fraction(x), Fraction(y)) for x, y in re.findall(r"\((-?\d+), (-?\d+)\)", q)]; A, B, C = pts[:3]
+            return abs((B[0] - A[0]) * (C[1] - A[1]) - (C[0] - A[0]) * (B[1] - A[1])) / 2
+        if tid.startswith("m1-1-coordinate-t5"):
+            m = re.match(r"점 \((-?\d*)a ([+−]) (\d+), (-?\d*)a ([+−]) (\d+)\)[이가] (x축|y축) 위의 점일 때, 이 점의 (x좌표|y좌표)", q)
+            p = _coef(m.group(1)); qv = int(m.group(3)) * (1 if m.group(2) == "+" else -1); r = _coef(m.group(4)); sv = int(m.group(6)) * (1 if m.group(5) == "+" else -1)
+            a = -Fraction(sv) / r if m.group(7) == "x축" else -Fraction(qv) / p
+            return p * a + qv if m.group(8) == "x좌표" else r * a + sv
+    if tid.startswith("m1-1-proportion"):
+        if tid.startswith("m1-1-proportion-t1") or tid.startswith("m1-1-proportion-t2"):
+            m = re.match(r"y가 x에 (정비례|반비례)하고, x = (-?\d+)일 때 y = (-?\d+)이다. x = (-?\d+)일 때", q)
+            x1, y1, x2 = Fraction(m.group(2)), Fraction(m.group(3)), Fraction(m.group(4))
+            return y1 / x1 * x2 if m.group(1) == "정비례" else x1 * y1 / x2
+        if tid.startswith("m1-1-proportion-t3"):
+            m = re.match(r"(정비례|반비례) 관계 .*?그래프가 점 \((-?\d+), (-?\d+)\)", q); p, qv = Fraction(m.group(2)), Fraction(m.group(3))
+            return qv / p if m.group(1) == "정비례" else p * qv
+        if tid.startswith("m1-1-proportion-t4"):
+            m = re.match(r"(정비례|반비례) 관계 .*?두 점 \((-?\d+), (-?\d+)\), \(k, (-?\d+)\)", q); p, qv, r = Fraction(m.group(2)), Fraction(m.group(3)), Fraction(m.group(4))
+            return r / (qv / p) if m.group(1) == "정비례" else (p * qv) / r
+        if tid.startswith("m1-1-proportion-t5"):
+            m = re.match(r"정비례 관계 y = (-?\d*)x의 그래프 위의 점 A의 x좌표가 (-?\d+)이다", q); a = _coef(m.group(1)); p = Fraction(m.group(2))
+            return abs(p) * abs(a * p) / 2
+        if tid.startswith("m1-1-proportion-t6") or tid.startswith("m1-1-proportion-t7"):
+            m = re.match(r"반비례 관계 y = \[\[frac\((-?\d+),x\)\]\]의 그래프 위의 .*?(직사각형 OAPB|삼각형 OAP)의 넓이", q); k = int(m.group(1))
+            return Fraction(abs(k)) / (2 if "삼각형" in m.group(2) else 1)
     return "skip"
+
+
+def _lin(text):
+    """일차식 문자열 → (x의 계수, 상수항) — mathir 로 x = 0, 1 에서 값을 읽는다."""
+    import mathir
+    node = mathir.parse(text.replace("−", "-"))[0]
+    f0 = Fraction(mathir.ev(node, {"x": Fraction(0)})); f1 = Fraction(mathir.ev(node, {"x": Fraction(1)}))
+    return f1 - f0, f0
+
+
+def check_linexpr(it):
+    """식이 답인 틀(m1-1-linear-expr-t3·t4·t5): 발문에서 식을 되읽어 답과 계수를 대조. True/False, 해당 없으면 None."""
+    tid, q = it["template_id"], it["question"]
+    if not tid.startswith(("m1-1-linear-expr-t3", "m1-1-linear-expr-t4", "m1-1-linear-expr-t5")):
+        return None
+    try:
+        if tid.startswith("m1-1-linear-expr-t3"):
+            m = re.match(r"어떤 식(?:에서|에) (.+?)[을를] (더해야|빼야) 할 것을 잘못하여 (.+?)[을를] (뺐더니|더했더니) (.+?)[이가] 되었다", q)
+            A, B = _lin(m.group(1)), _lin(m.group(5)); i = 1 if m.group(2) == "더해야" else -1
+            want = (B[0] + 2 * i * A[0], B[1] + 2 * i * A[1])
+        elif tid.startswith("m1-1-linear-expr-t4"):
+            m = re.match(r"가로의 길이가 \((.+?)\) cm, 세로의 길이가 \((.+?)\) cm인 직사각형", q); W, H = _lin(m.group(1)), _lin(m.group(2))
+            want = (2 * (W[0] + H[0]), 2 * (W[1] + H[1]))
+        else:
+            m = re.match(r"(.+?)[을를] 간단히 하시오", q); want = _lin(m.group(1))
+        return _lin(it["answer"]) == want
+    except Exception:                                   # noqa: BLE001
+        return False
+
+
+def _fac(n):
+    d, m, p = {}, n, 2
+    while p * p <= m:
+        while m % p == 0:
+            m //= p; d[p] = d.get(p, 0) + 1
+        p += 1
+    if m > 1: d[m] = d.get(m, 0) + 1
+    return d
+
+
+def _ndiv(n):
+    out = 1
+    for e in _fac(n).values(): out *= e + 1
+    return out
+
+
+def _facmap(s):
+    """'2ᵃ × 3² × 5' → {2: 'a', 3: 2, 5: 1} (위첨자 되읽기, 미지수 지수는 문자)."""
+    out = {}
+    for term in s.strip().split(" × "):
+        m = re.fullmatch(r"(\d+)([⁰¹²³⁴⁵⁶⁷⁸⁹]*|ᵃ|ᵇ)", term.strip())
+        e = m.group(2)
+        out[int(m.group(1))] = "a" if e == "ᵃ" else ("b" if e == "ᵇ" else _sup(e))
+    return out
+
+
+def _facval(s):
+    v = 1
+    for p, e in _facmap(s).items(): v *= p ** e
+    return v
 
 
 def _bracket_data(q):
@@ -817,8 +1076,9 @@ def check_fig(it):
                 if not (a["min"] <= p["x"] <= a["max"]):
                     bad("F3-numline 점이 범위 밖", it, str(p))
         elif fn == "coordplane":
-            for ln in a.get("lines", []) or []:
-                if "points" in ln:
+            lines = a.get("lines", []) or []
+            for ln in lines:
+                if "points" in ln and len(lines) == 1 and len(ln["points"]) == 2 and ln.get("style") != "dashed":   # 직선 하나에 점들이 놓인 틀만 (다각형·수선은 제외)
                     (x1, y1), (x2, y2) = ln["points"][:2]
                     for p in a.get("points", []) or []:
                         x, y = p["coord"]
@@ -875,6 +1135,8 @@ for f in sorted(OUT.glob("*_pool.json")):
             pos = check_ineq(it)
         if pos is None:
             pos = check_judge(it)
+        if pos is None:
+            pos = check_linexpr(it)
         if pos is not None:
             if not pos:
                 bad("R1-독립 검산 불일치", it, f"문자열 답 재계산 ≠ 답 {it['answer']}")

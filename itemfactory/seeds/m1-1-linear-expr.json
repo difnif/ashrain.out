@@ -1,0 +1,1535 @@
+{
+  "seed_id": "m1-1-linear-expr",
+  "category": "연산",
+  "title": "일차식의 계산 — 괄호 전개·분수 계수·잘못 계산한 식·둘레 식·동류항",
+  "unit_id": "m1-1",
+  "concept_ids": [
+    "m1-1-22",
+    "m1-1-23"
+  ],
+  "schema_id": null,
+  "schema_name": "일차식의 덧셈과 뺄셈",
+  "source_item_ids": [],
+  "note": "구조만 차용. 식이 답인 틀(t3·t4·t5)은 answer 가 문자열이라 verify 는 파생값끼리 대조하고 recheck.py 가 mathir 로 x = 0, 1 에서 답을 되읽어 검산한다.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "사칙",
+        "동류항"
+      ],
+      "traps": [
+        "부호",
+        "계산순서"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차식",
+        "동류항",
+        "분배법칙"
+      ],
+      "tags": [
+        "일차식의 계산",
+        "동류항"
+      ],
+      "title": "괄호가 있는 일차식의 계산 — x의 계수·상수항·그 합",
+      "skill": "분배법칙으로 괄호를 풀고(뺄셈은 괄호 안 모든 항의 부호를 바꿈) 동류항끼리 모으기",
+      "variant_axis": {
+        "구하는 것": "x의 계수 / 상수항 / 합",
+        "계수": "±2~±4"
+      },
+      "discriminates": "괄호 앞의 음수·뺄셈을 괄호 안 모든 항에 적용하는가, 동류항만 모으는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "q1",
+          "values": {
+            "in": [
+              "coef",
+              "const",
+              "sum"
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              4
+            ]
+          }
+        },
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "t",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "q1",
+        "rows": {
+          "coef": {
+            "QT": "x의 계수",
+            "c1": 1,
+            "c0": 0
+          },
+          "const": {
+            "QT": "상수항",
+            "c1": 0,
+            "c0": 1
+          },
+          "sum": {
+            "QT": "x의 계수와 상수항의 합",
+            "c1": 1,
+            "c0": 1
+          }
+        }
+      },
+      "derive": {
+        "A": "p - r*s",
+        "B": "p*q - r*t",
+        "e1": "p*q",
+        "e2": "-r*s",
+        "e3": "-r*t",
+        "ans": "c1*(p - r*s) + c0*(p*q - r*t)"
+      },
+      "constraints": [
+        "A != 0",
+        "B != 0",
+        "ans != 0",
+        "ans != p",
+        "ans != q",
+        "ans != r",
+        "ans != s",
+        "ans != t",
+        "abs(A) != 1 or c1 == 0"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "r",
+        "s",
+        "t",
+        "A",
+        "B",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == c1*(p - r*s) + c0*(p*q - r*t)"
+      ],
+      "question": "{p}(x {sgn(q)}) − {r}({co(s)}x {sgn(t)}){eul(t)} 간단히 하였을 때, {QT}{eul(QT)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "괄호 앞의 수를 괄호 안의 모든 항에 곱해 괄호를 푼다(분배법칙). 특히 '− {r}(…)'는 괄호 안의 각 항에 −{r}{eul(r)} 곱하는 것이므로 두 항의 부호가 모두 바뀐다. 그다음 x가 있는 항끼리, 상수항끼리(동류항) 모아 간단히 한 뒤 {QT}{eul(QT)} 읽는다.",
+      "sol2": [
+        "{p}(x {sgn(q)}) = {co(p)}x {sgn(e1)}",
+        "− {r}({co(s)}x {sgn(t)}) = {sgn(e2)}x {sgn(e3)}",
+        "동류항끼리 모으면 ({p} {sgn(e2)})x + ({e1} {sgn(e3)}) = {co(A)}x {sgn(B)}",
+        "따라서 {QT}{eun(QT)} {ans}이다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{p}(x {sgn(q)}) = {co(p)}x {sgn(e1)}",
+                "hint": "분배법칙"
+              },
+              {
+                "text": "− {r}({co(s)}x {sgn(t)}) = {sgn(e2)}x {sgn(e3)}",
+                "hint": "−{r}{eul(r)} 두 항 모두에",
+                "marks": [
+                  {
+                    "on": "{sgn(e3)}",
+                    "note": "부호 바뀜"
+                  }
+                ]
+              },
+              {
+                "text": "= {co(A)}x {sgn(B)}",
+                "hint": "동류항 정리"
+              },
+              {
+                "text": "{QT} = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol3": "x = 1을 넣어 확인하면 원래 식은 {p} × (1 {sgn(q)}) − {r} × ({s} {sgn(t)}) = {p*(1 + q) - r*(s + t)}, 간단히 한 식은 {A} {sgn(B)} = {A + B}{ro(A + B)} 같다. 따라서 {QT}{eun(QT)} {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = 1: {p} × (1 {sgn(q)}) − {r} × ({s} {sgn(t)}) = {p*(1 + q) - r*(s + t)}",
+              "{co(A)}x {sgn(B)} → {A} {sgn(B)} = {A + B}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "{p}(x {sgn(q)}) − {r}({co(s)}x {sgn(t)}) = {co(p)}x {sgn(e1)} {sgn(e2)}x {sgn(e3)} = {co(A)}x {sgn(B)}이므로 {QT}{eun(QT)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "괄호 풀기",
+          "points": 3,
+          "criterion": "분배법칙으로 두 괄호를 풀어 {co(p)}x {sgn(e1)} {sgn(e2)}x {sgn(e3)}{eul(e3)} 얻었다.",
+          "partial": "− {r}{eul(r)} 뒤 항에 곱하지 않거나 부호를 바꾸지 않았으면 1점."
+        },
+        {
+          "element": "동류항 정리",
+          "points": 2,
+          "criterion": "동류항끼리 모아 {co(A)}x {sgn(B)}{ro(B)} 간단히 했다.",
+          "partial": "x항과 상수항을 섞어 더했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{QT} {ans}{eul(ans)} 답했다.",
+          "partial": "다른 것(계수·상수항)을 답했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-1-linear-expr-t1",
+      "pitfalls": [
+        {
+          "text": "괄호 앞의 수를 괄호 안 뒤 항에는 곱하지 않음",
+          "on": "괄호",
+          "effect": "부분"
+        },
+        {
+          "text": "− r(…) 에서 괄호 안 항의 부호를 바꾸지 않음",
+          "on": "괄호",
+          "effect": "불인정"
+        },
+        {
+          "text": "x항과 상수항을 섞어 더함",
+          "on": "동류항",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "사칙",
+        "동류항"
+      ],
+      "traps": [
+        "부호",
+        "계산순서"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차식",
+        "동류항",
+        "분배법칙"
+      ],
+      "tags": [
+        "일차식의 계산",
+        "동류항"
+      ],
+      "title": "분수 계수가 있는 일차식의 계산 — x의 계수·상수항·그 합",
+      "skill": "분수를 괄호 안의 각 항에 곱해(약분) 정수 계수로 만든 뒤 동류항끼리 모으기",
+      "variant_axis": {
+        "구하는 것": "x의 계수 / 상수항 / 합",
+        "가운데 부호": "+ / −"
+      },
+      "discriminates": "분수를 괄호 안 모든 항에 곱하고 약분하는가, 뺄셈일 때 뒤 괄호의 부호를 모두 바꾸는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "q1",
+          "values": {
+            "in": [
+              "coef",
+              "const",
+              "sum"
+            ]
+          }
+        },
+        {
+          "name": "sg",
+          "values": {
+            "in": [
+              "plus",
+              "minus"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "cc",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "dd",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "e",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              2,
+              3,
+              5
+            ]
+          }
+        },
+        {
+          "name": "gg",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "hh",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "q1",
+          "rows": {
+            "coef": {
+              "QT": "x의 계수",
+              "c1": 1,
+              "c0": 0
+            },
+            "const": {
+              "QT": "상수항",
+              "c1": 0,
+              "c0": 1
+            },
+            "sum": {
+              "QT": "x의 계수와 상수항의 합",
+              "c1": 1,
+              "c0": 1
+            }
+          }
+        },
+        {
+          "key": "sg",
+          "rows": {
+            "plus": {
+              "S2": "+",
+              "s2": 1
+            },
+            "minus": {
+              "S2": "−",
+              "s2": -1
+            }
+          }
+        }
+      ],
+      "derive": {
+        "c": "b*cc",
+        "d": "b*dd",
+        "g": "f*gg",
+        "h": "f*hh",
+        "u1": "a*cc",
+        "u0": "a*dd",
+        "v1": "s2*e*gg",
+        "v0": "s2*e*hh",
+        "A": "a*cc + s2*e*gg",
+        "B": "a*dd + s2*e*hh",
+        "ans": "c1*(a*cc + s2*e*gg) + c0*(a*dd + s2*e*hh)"
+      },
+      "constraints": [
+        "gcd(a, b) == 1",
+        "a < b",
+        "gcd(e, f) == 1",
+        "e < f",
+        "A != 0",
+        "B != 0",
+        "abs(v1) != 1",
+        "ans != 0",
+        "ans != c",
+        "ans != d",
+        "ans != g",
+        "ans != h",
+        "ans != a",
+        "ans != b",
+        "ans != e",
+        "ans != f",
+        "abs(A) != 1 or c1 == 0"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "A",
+        "B",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == c1*A + c0*B",
+        "A == a*c/b + s2*e*g/f",
+        "B == a*d/b + s2*e*h/f"
+      ],
+      "question": "[[frac({a},{b})]]({c}x {sgn(d)}) {S2} [[frac({e},{f})]]({g}x {sgn(h)}){eul(h)} 간단히 하였을 때, {QT}{eul(QT)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "분수 계수도 분배법칙은 같다 — 괄호 안의 각 항에 분수를 곱하고 약분해 정수로 만든다. 뒤 괄호 앞이 '{S2}'이므로 그 괄호의 각 항에는 {S2}[[frac({e},{f})]]{eul(f)} 곱한다. 그런 다음 동류항끼리 모아 {QT}{eul(QT)} 읽는다.",
+      "sol2": [
+        "[[frac({a},{b})]]({c}x {sgn(d)}) = {co(u1)}x {sgn(u0)}",
+        "{S2} [[frac({e},{f})]]({g}x {sgn(h)}) = {sgn(v1)}x {sgn(v0)}",
+        "동류항끼리 모으면 {co(A)}x {sgn(B)}",
+        "따라서 {QT}{eun(QT)} {ans}이다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "[[frac({a},{b})]] × {c}x = {co(u1)}x,  [[frac({a},{b})]] × {pn(d)} = {u0}",
+                "hint": "약분"
+              },
+              {
+                "text": "{S2} [[frac({e},{f})]] × {g}x = {sgn(v1)}x,  {S2} [[frac({e},{f})]] × {pn(h)} = {sgn(v0)}",
+                "hint": "뒤 괄호는 부호까지"
+              },
+              {
+                "text": "= {co(A)}x {sgn(B)}",
+                "hint": "동류항 정리"
+              },
+              {
+                "text": "{QT} = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol3": "x = 0을 넣으면 원래 식은 [[frac({a},{b})]] × {pn(d)} {S2} [[frac({e},{f})]] × {pn(h)} = {B}{ro(B)} 상수항 {B}{wa(B)} 같고, x의 계수도 {u1} {sgn(v1)} = {A}{ro(A)} 맞는다. 따라서 {QT}{eun(QT)} {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = 0: [[frac({a},{b})]] × {pn(d)} {S2} [[frac({e},{f})]] × {pn(h)} = {B}",
+              "x의 계수: {u1} {sgn(v1)} = {A}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "[[frac({a},{b})]]({c}x {sgn(d)}) {S2} [[frac({e},{f})]]({g}x {sgn(h)}) = {co(u1)}x {sgn(u0)} {sgn(v1)}x {sgn(v0)} = {co(A)}x {sgn(B)}이므로 {QT}{eun(QT)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "괄호 풀기",
+          "points": 3,
+          "criterion": "분수를 각 항에 곱해 {co(u1)}x {sgn(u0)} {sgn(v1)}x {sgn(v0)}{eul(v0)} 얻었다.",
+          "partial": "약분 실수 하나면 2점, 뒤 괄호의 부호를 바꾸지 않았으면 1점."
+        },
+        {
+          "element": "동류항 정리",
+          "points": 2,
+          "criterion": "동류항끼리 모아 {co(A)}x {sgn(B)}{ro(B)} 간단히 했다.",
+          "partial": "x항과 상수항을 섞었으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{QT} {ans}{eul(ans)} 답했다.",
+          "partial": "다른 것을 답했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-1-linear-expr-t2",
+      "pitfalls": [
+        {
+          "text": "분수를 괄호 안의 한 항에만 곱함",
+          "on": "괄호",
+          "effect": "부분"
+        },
+        {
+          "text": "약분 실수로 계수가 어긋남",
+          "on": "괄호",
+          "effect": "부분"
+        },
+        {
+          "text": "뺄셈일 때 뒤 괄호의 상수항 부호를 바꾸지 않음",
+          "on": "괄호",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "무맥락",
+      "ops": [
+        "사칙",
+        "동류항"
+      ],
+      "traps": [
+        "부호",
+        "계산순서"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차식",
+        "동류항",
+        "분배법칙"
+      ],
+      "tags": [
+        "일차식의 계산",
+        "동류항"
+      ],
+      "title": "어떤 식에 일차식을 잘못 더하거나 뺀 결과로 바르게 계산한 식 구하기",
+      "skill": "어떤 식을 A로 놓아 잘못된 계산을 식으로 세우고, 역연산으로 A를 구한 뒤 바르게 계산하기",
+      "variant_axis": {
+        "잘못한 연산": "더함→뺌 / 뺌→더함",
+        "계수": "±1~±6"
+      },
+      "discriminates": "어떤 식을 미지의 식으로 두고 역연산하는가, 괄호를 붙여 빼면서 두 항의 부호를 모두 바꾸는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "as",
+              "sa"
+            ]
+          }
+        },
+        {
+          "name": "a1",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "a0",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "name": "b1",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "b0",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "as": {
+            "PRE": "에",
+            "OPC": "더해야",
+            "OPW": "뺐더니",
+            "S1": "−",
+            "S2": "+",
+            "S3": "+",
+            "i": 1,
+            "WR": "뺀",
+            "CR": "더한"
+          },
+          "sa": {
+            "PRE": "에서",
+            "OPC": "빼야",
+            "OPW": "더했더니",
+            "S1": "+",
+            "S2": "−",
+            "S3": "−",
+            "i": -1,
+            "WR": "더한",
+            "CR": "뺀"
+          }
+        }
+      },
+      "derive": {
+        "x1": "b1 + i*a1",
+        "x0": "b0 + i*a0",
+        "r1": "b1 + 2*i*a1",
+        "r0": "b0 + 2*i*a0"
+      },
+      "constraints": [
+        "x1 != 0",
+        "x0 != 0",
+        "r1 != 0",
+        "r0 != 0",
+        "a1 != b1",
+        "abs(r1) <= 12",
+        "abs(r0) <= 20"
+      ],
+      "cost_values": [
+        "a1",
+        "a0",
+        "b1",
+        "b0",
+        "x1",
+        "x0",
+        "r1",
+        "r0"
+      ],
+      "verify": [
+        "r1 == b1 + 2*i*a1",
+        "r0 == b0 + 2*i*a0",
+        "x1 + i*a1 == r1"
+      ],
+      "question": "어떤 식{PRE} {co(a1)}x {sgn(a0)}{eul(a0)} {OPC} 할 것을 잘못하여 {co(a1)}x {sgn(a0)}{eul(a0)} {OPW} {co(b1)}x {sgn(b0)}{ika(b0)} 되었다. 바르게 계산한 식을 구하시오.",
+      "answer": "{co(r1)}x {sgn(r0)}",
+      "answer_alt": [],
+      "sol1": "어떤 식을 A라 하고 잘못 계산한 과정을 그대로 식으로 쓰면 A {S1} ({co(a1)}x {sgn(a0)}) = {co(b1)}x {sgn(b0)}이다. 이 식에서 A를 구한 다음(역연산 — 괄호를 붙여 {S2} 한다), 원래 하려던 바른 계산 A {S3} ({co(a1)}x {sgn(a0)}){eul(a0)} 한다. 잘못 계산한 결과를 답으로 쓰지 않도록 한다.",
+      "sol2": [
+        "어떤 식을 A라 하면 잘못 계산한 식은 A {S1} ({co(a1)}x {sgn(a0)}) = {co(b1)}x {sgn(b0)}",
+        "따라서 A = {co(b1)}x {sgn(b0)} {S2} ({co(a1)}x {sgn(a0)}) = {co(x1)}x {sgn(x0)}",
+        "바르게 계산하면 ({co(x1)}x {sgn(x0)}) {S3} ({co(a1)}x {sgn(a0)}) = {co(r1)}x {sgn(r0)}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "A {S1} ({co(a1)}x {sgn(a0)}) = {co(b1)}x {sgn(b0)}",
+                "hint": "잘못 {WR} 계산"
+              },
+              {
+                "text": "A = {co(b1)}x {sgn(b0)} {S2} ({co(a1)}x {sgn(a0)}) = {co(x1)}x {sgn(x0)}",
+                "hint": "역연산 — 괄호 붙여서",
+                "marks": [
+                  {
+                    "on": "({co(a1)}x {sgn(a0)})",
+                    "note": "부호 주의"
+                  }
+                ]
+              },
+              {
+                "text": "({co(x1)}x {sgn(x0)}) {S3} ({co(a1)}x {sgn(a0)}) = {co(r1)}x {sgn(r0)}",
+                "hint": "바르게 {CR} 계산"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ]
+      ],
+      "sol3": "구한 어떤 식 {co(x1)}x {sgn(x0)}{ro(x0)} 잘못 계산한 대로 하면 ({co(x1)}x {sgn(x0)}) {S1} ({co(a1)}x {sgn(a0)}) = {co(b1)}x {sgn(b0)}{ika(b0)} 되어 조건과 같다. 따라서 바르게 계산한 식은 {co(r1)}x {sgn(r0)}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "({co(x1)}x {sgn(x0)}) {S1} ({co(a1)}x {sgn(a0)}) = {co(b1)}x {sgn(b0)}  (조건 확인)",
+              "바른 계산: {co(r1)}x {sgn(r0)}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "어떤 식을 A라 하면 A {S1} ({co(a1)}x {sgn(a0)}) = {co(b1)}x {sgn(b0)}이므로 A = {co(x1)}x {sgn(x0)}이다. 따라서 바르게 계산한 식은 ({co(x1)}x {sgn(x0)}) {S3} ({co(a1)}x {sgn(a0)}) = {co(r1)}x {sgn(r0)}이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "어떤 식을 A로 놓고 잘못 계산한 식 A {S1} ({co(a1)}x {sgn(a0)}) = {co(b1)}x {sgn(b0)}{eul(b0)} 세웠다.",
+          "partial": "바른 연산으로 식을 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "어떤 식 구하기",
+          "points": 2,
+          "criterion": "역연산으로 A = {co(x1)}x {sgn(x0)}{eul(x0)} 구했다.",
+          "partial": "괄호 없이 계산해 상수항의 부호가 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "바르게 계산한 식 {co(r1)}x {sgn(r0)}{eul(r0)} 답했다.",
+          "partial": "어떤 식 A를 답으로 썼으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-1-linear-expr-t3",
+      "pitfalls": [
+        {
+          "text": "잘못 계산한 결과를 그대로 답함",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "어떤 식을 구할 때 괄호 없이 빼서 상수항 부호가 틀림",
+          "on": "어떤 식",
+          "effect": "부분"
+        },
+        {
+          "text": "어떤 식 A를 구하고 바른 계산을 하지 않음",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "ops": [
+        "사칙",
+        "동류항"
+      ],
+      "traps": [
+        "부호",
+        "계산순서"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차식",
+        "동류항",
+        "분배법칙"
+      ],
+      "tags": [
+        "일차식의 계산",
+        "동류항"
+      ],
+      "title": "직사각형의 둘레의 길이를 x의 식으로 나타내기",
+      "skill": "둘레 = 2 × (가로 + 세로)임을 식으로 세우고 괄호를 풀어 동류항을 정리하기",
+      "variant_axis": {
+        "가로·세로 계수": "1~4",
+        "상수항": "±1~±6"
+      },
+      "discriminates": "둘레를 가로·세로의 합의 2배로 세우는가(넓이·한 번만 더하기와 혼동하지 않는가), 분배법칙을 두 항에 모두 적용하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        },
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "m1": "p + r",
+        "m0": "q + s",
+        "r1": "2*(p + r)",
+        "r0": "2*(q + s)"
+      },
+      "constraints": [
+        "m0 != 0",
+        "not (p == r and q == s)",
+        "p + q >= 1",
+        "r + s >= 1"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "r",
+        "s",
+        "r1",
+        "r0"
+      ],
+      "verify": [
+        "r1 == 2*(p + r)",
+        "r0 == 2*(q + s)"
+      ],
+      "question": "가로의 길이가 ({co(p)}x {sgn(q)}) cm, 세로의 길이가 ({co(r)}x {sgn(s)}) cm인 직사각형의 둘레의 길이를 x를 사용한 식으로 나타내시오.",
+      "answer": "{co(r1)}x {sgn(r0)}",
+      "answer_alt": [
+        "({co(r1)}x {sgn(r0)}) cm"
+      ],
+      "sol1": "직사각형은 가로와 세로가 각각 두 개씩 있으므로 둘레의 길이는 2 × (가로 + 세로)이다. 가로와 세로의 식을 괄호로 묶어 더한 뒤 2를 곱하고, 동류항끼리 정리한다.",
+      "sol2": [
+        "(둘레) = 2 × {{(가로) + (세로)}} = 2 × {{({co(p)}x {sgn(q)}) + ({co(r)}x {sgn(s)})}}",
+        "괄호 안을 정리하면 2 × ({co(m1)}x {sgn(m0)})",
+        "따라서 둘레의 길이는 ({co(r1)}x {sgn(r0)}) cm이다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "2 × {{({co(p)}x {sgn(q)}) + ({co(r)}x {sgn(s)})}}",
+                "hint": "둘레 = 2(가로 + 세로)"
+              },
+              {
+                "text": "= 2 × ({co(m1)}x {sgn(m0)})",
+                "hint": "동류항 정리"
+              },
+              {
+                "text": "= {co(r1)}x {sgn(r0)}",
+                "hint": "분배법칙",
+                "marks": [
+                  {
+                    "on": "{sgn(r0)}",
+                    "note": "상수항에도 2를 곱한다"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "x = 1을 넣으면 가로 {p + q} cm, 세로 {r + s} cm이고 둘레는 2 × ({p + q} + {r + s}) = {2*(p + q + r + s)}, 구한 식에서도 {r1} {sgn(r0)} = {r1 + r0}{ro(r1 + r0)} 같다. 따라서 둘레의 길이는 ({co(r1)}x {sgn(r0)}) cm이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = 1: 2 × ({p + q} + {r + s}) = {2*(p + q + r + s)}",
+              "{r1} {sgn(r0)} = {r1 + r0}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "(둘레) = 2 × {{({co(p)}x {sgn(q)}) + ({co(r)}x {sgn(s)})}} = 2 × ({co(m1)}x {sgn(m0)}) = {co(r1)}x {sgn(r0)}이므로 둘레의 길이는 ({co(r1)}x {sgn(r0)}) cm이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "둘레를 2 × {{(가로) + (세로)}}로 세웠다.",
+          "partial": "가로와 세로를 한 번만 더했으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "동류항을 정리하고 2를 곱해 {co(r1)}x {sgn(r0)}{eul(r0)} 구했다.",
+          "partial": "상수항에 2를 곱하지 않았으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-linear-expr-t4",
+      "pitfalls": [
+        {
+          "text": "둘레를 (가로 + 세로)로만 세워 2를 곱하지 않음",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "2를 x항에만 곱하고 상수항에는 곱하지 않음",
+          "on": "답",
+          "effect": "부분"
+        },
+        {
+          "text": "가로와 세로를 곱해 넓이를 구함",
+          "on": "식",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "사칙",
+        "동류항"
+      ],
+      "traps": [
+        "부호",
+        "계산순서"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차식",
+        "동류항",
+        "분배법칙"
+      ],
+      "tags": [
+        "일차식의 계산",
+        "동류항"
+      ],
+      "title": "동류항이 흩어진 일차식을 간단히 하기",
+      "skill": "x가 있는 항끼리, 상수항끼리 부호까지 붙여 모아 계수를 더하기",
+      "variant_axis": {
+        "계수": "±1~±9",
+        "항의 수": "4"
+      },
+      "discriminates": "항의 부호를 항에 붙여 옮기고 동류항끼리만 더하는가",
+      "difficulty": 1,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "r1": "a + c",
+        "r0": "b + d"
+      },
+      "constraints": [
+        "r1 != 0",
+        "r0 != 0",
+        "abs(r1) <= 12",
+        "abs(r0) <= 15"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "r1",
+        "r0"
+      ],
+      "verify": [
+        "r1 == a + c",
+        "r0 == b + d"
+      ],
+      "question": "{co(a)}x {sgn(b)} {sgn(c)}x {sgn(d)}{eul(d)} 간단히 하시오.",
+      "answer": "{co(r1)}x {sgn(r0)}",
+      "answer_alt": [],
+      "sol1": "문자와 차수가 같은 항이 동류항이다. x가 있는 항 {co(a)}x와 {sgn(c)}x, 상수항 {sgn(b)}{wa(b)} {sgn(d)}{eul(d)} 각각 부호까지 붙여 모으고 계수끼리 더한다.",
+      "sol2": [
+        "동류항끼리 모으면 ({co(a)}x {sgn(c)}x) + ({b} {sgn(d)})",
+        "x의 계수: {a} {sgn(c)} = {r1}, 상수항: {b} {sgn(d)} = {r0}",
+        "따라서 {co(r1)}x {sgn(r0)}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "({co(a)}x {sgn(c)}x) + ({b} {sgn(d)})",
+                "hint": "부호를 항에 붙여서 모은다"
+              },
+              {
+                "text": "= ({a} {sgn(c)})x + ({b} {sgn(d)})",
+                "hint": "계수끼리"
+              },
+              {
+                "text": "= {co(r1)}x {sgn(r0)}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "x = 1을 넣으면 원래 식은 {a} {sgn(b)} {sgn(c)} {sgn(d)} = {a + b + c + d}, 간단히 한 식은 {r1} {sgn(r0)} = {r1 + r0}{ro(r1 + r0)} 같다. 답은 {co(r1)}x {sgn(r0)}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = 1: {a} {sgn(b)} {sgn(c)} {sgn(d)} = {a + b + c + d}",
+              "{r1} {sgn(r0)} = {r1 + r0}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "{co(a)}x {sgn(b)} {sgn(c)}x {sgn(d)} = ({a} {sgn(c)})x + ({b} {sgn(d)}) = {co(r1)}x {sgn(r0)}이다.",
+      "rubric": [
+        {
+          "element": "동류항 모으기",
+          "points": 3,
+          "criterion": "x항끼리, 상수항끼리 부호를 붙여 모았다.",
+          "partial": "부호를 떼고 모았으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{co(r1)}x {sgn(r0)}{eul(r0)} 구했다.",
+          "partial": "계수 덧셈 실수 하나면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-linear-expr-t5",
+      "pitfalls": [
+        {
+          "text": "항의 부호를 떼고 계수만 더함",
+          "on": "동류항",
+          "effect": "불인정"
+        },
+        {
+          "text": "x항과 상수항을 섞어 더함",
+          "on": "동류항",
+          "effect": "불인정"
+        },
+        {
+          "text": "계수 덧셈의 부호 실수",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

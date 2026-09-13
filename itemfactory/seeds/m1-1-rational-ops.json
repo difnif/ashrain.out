@@ -1,0 +1,1497 @@
+{
+  "seed_id": "m1-1-rational-ops",
+  "category": "연산",
+  "title": "유리수의 계산 — 거듭제곱 혼합·분수 혼합·잘못 계산·역수·크고 작은 수",
+  "unit_id": "m1-1",
+  "concept_ids": [
+    "m1-1-15",
+    "m1-1-16",
+    "m1-1-17"
+  ],
+  "schema_id": null,
+  "schema_name": "유리수의 사칙연산과 혼합 계산",
+  "source_item_ids": [],
+  "note": "구조만 차용. 잘못 계산 틀은 조사가 고정되도록 a를 받침 없는 수(2·4·5·9·12·15)로 제한하고 조사는 표 문자열에 둔다.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "사칙",
+        "거듭제곱"
+      ],
+      "traps": [
+        "부호",
+        "계산순서"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "유리수의 사칙연산",
+        "거듭제곱"
+      ],
+      "tags": [
+        "유리수의 계산",
+        "혼합 계산"
+      ],
+      "title": "거듭제곱이 있는 유리수의 혼합 계산 — (−a)ᵏ × b ± c ÷ (−d)",
+      "skill": "거듭제곱 → 곱셈·나눗셈 → 덧셈·뺄셈의 순서로 계산하며 음수의 거듭제곱 부호를 바르게 정하기",
+      "variant_axis": {
+        "지수": "2 / 3",
+        "가운데 부호": "+ / −",
+        "밑": "2~5"
+      },
+      "discriminates": "(−a)²은 양수, (−a)³은 음수임을 알고 계산 순서(거듭제곱 → 곱·나눗셈 → 덧·뺄셈)를 지키는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "sg",
+          "values": {
+            "in": [
+              "plus",
+              "minus"
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              2,
+              5
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              2,
+              6
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "int": [
+              2,
+              6
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              1,
+              6
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "sg",
+          "rows": {
+            "plus": {
+              "S2": "+",
+              "s2": 1
+            },
+            "minus": {
+              "S2": "−",
+              "s2": -1
+            }
+          }
+        },
+        {
+          "key": "k",
+          "rows": {
+            "2": {
+              "SK": "²"
+            },
+            "3": {
+              "SK": "³"
+            }
+          }
+        }
+      ],
+      "derive": {
+        "c": "d*m",
+        "pk": "(-a)**k",
+        "t1": "(-a)**k * b",
+        "q": "-m",
+        "ans": "(-a)**k * b + s2*(-m)",
+        "na": "-a",
+        "nd": "-d"
+      },
+      "constraints": [
+        "abs(t1) <= 200",
+        "ans != 0",
+        "ans != -a",
+        "ans != b",
+        "ans != c",
+        "ans != -d",
+        "c != b"
+      ],
+      "cost_values": [
+        "a",
+        "k",
+        "b",
+        "c",
+        "d",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == (-a)**k * b + s2*(-m)",
+        "c == d*m"
+      ],
+      "question": "{pn(na)}{SK} × {b} {S2} {c} ÷ {pn(nd)}{eul(nd)} 계산하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "혼합 계산은 거듭제곱을 가장 먼저, 그다음 곱셈·나눗셈, 마지막에 덧셈·뺄셈 순서로 한다. {pn(na)}{SK}{eun(SK)} 음수를 {k}번 곱한 것이므로 부호가 {pk}{ro(pk)} 정해지고, {c} ÷ {pn(nd)}{eun(nd)} 부호가 다른 두 수의 나눗셈이라 음수다. 두 결과를 {S2} 기호로 이으면 된다.",
+      "sol2": [
+        "거듭제곱을 먼저 계산하면 {pn(na)}{SK} = {pk}",
+        "곱셈과 나눗셈: {pk} × {b} = {t1}, {c} ÷ {pn(nd)} = {q}",
+        "따라서 (주어진 식) = {t1} {S2} {pn(q)} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{pn(na)}{SK} = {pk}",
+                "hint": "거듭제곱 먼저 · 음수를 {k}번 곱한 부호"
+              },
+              {
+                "text": "{pk} × {b} = {t1},   {c} ÷ {pn(nd)} = {q}",
+                "hint": "곱셈·나눗셈"
+              },
+              {
+                "text": "{t1} {S2} {pn(q)} = {ans}",
+                "hint": "덧셈·뺄셈은 마지막",
+                "marks": [
+                  {
+                    "on": "{pn(q)}",
+                    "note": "음수는 괄호"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "거듭제곱 {pn(na)}{SK} = {pk}{ika(pk)} 맞는지 부호부터 확인하고({k}번 곱하면 부호는 {pk}의 부호), 나눗셈 {c} ÷ {pn(nd)} = {q}도 부호가 음수임을 확인한다. {t1} {S2} {pn(q)} = {ans}이므로 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{pn(na)}{SK} = {pk}  (부호 확인)",
+              "{t1} {S2} {pn(q)} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "{pn(na)}{SK} = {pk}이므로 {pk} × {b} = {t1}이고, {c} ÷ {pn(nd)} = {q}이다. 따라서 (주어진 식) = {t1} {S2} {pn(q)} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "거듭제곱 계산",
+          "points": 2,
+          "criterion": "{pn(na)}{SK} = {pk}{ro(pk)} 부호까지 바르게 계산했다.",
+          "partial": "부호가 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "곱셈·나눗셈 계산",
+          "points": 3,
+          "criterion": "{pk} × {b} = {t1}, {c} ÷ {pn(nd)} = {q}{eul(q)} 계산 순서에 맞게 구했다.",
+          "partial": "둘 중 하나만 맞으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{t1} {S2} {pn(q)} = {ans}{eul(ans)} 구했다.",
+          "partial": "앞의 계산은 옳고 마지막 덧셈·뺄셈의 부호가 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-1-rational-ops-t1",
+      "pitfalls": [
+        {
+          "text": "(−a)³의 부호를 양수로 씀 또는 (−a)²을 −a²으로 계산",
+          "on": "거듭제곱",
+          "effect": "불인정"
+        },
+        {
+          "text": "덧셈·뺄셈을 곱셈·나눗셈보다 먼저 함",
+          "on": "곱셈·나눗셈",
+          "effect": "불인정"
+        },
+        {
+          "text": "나눗셈에서 부호가 다른 두 수의 몫을 양수로 씀",
+          "on": "곱셈·나눗셈",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "사칙",
+        "거듭제곱"
+      ],
+      "traps": [
+        "부호",
+        "계산순서"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "유리수의 사칙연산",
+        "거듭제곱"
+      ],
+      "tags": [
+        "유리수의 계산",
+        "혼합 계산"
+      ],
+      "title": "분수의 거듭제곱과 나눗셈이 섞인 혼합 계산",
+      "skill": "분수의 거듭제곱은 분자·분모를 각각 제곱하고, 분수의 나눗셈은 역수의 곱셈으로 바꾸어 순서대로 계산하기",
+      "variant_axis": {
+        "가운데 부호": "+ / −",
+        "분모": "2~6"
+      },
+      "discriminates": "(−p/q)²의 부호와 값을 바르게 구하고, 나눗셈을 역수의 곱셈으로 바꾸는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "sg",
+          "values": {
+            "in": [
+              "plus",
+              "minus"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "int": [
+              2,
+              4
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "sg",
+        "rows": {
+          "plus": {
+            "S2": "+",
+            "s2": 1
+          },
+          "minus": {
+            "S2": "−",
+            "s2": -1
+          }
+        }
+      },
+      "derive": {
+        "e": "b*b*m",
+        "h": "d*n",
+        "sq": "a*a/(b*b)",
+        "t1": "a*a*m",
+        "q": "-n",
+        "ans": "a*a*m + s2*(-n)"
+      },
+      "constraints": [
+        "gcd(a, b) == 1",
+        "a < b",
+        "gcd(c, d) == 1",
+        "c < d",
+        "gcd(c, h) == 1",
+        "ans != 0",
+        "ans != a",
+        "ans != b",
+        "ans != e",
+        "ans != c",
+        "ans != d",
+        "ans != h",
+        "e <= 60"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "e",
+        "c",
+        "d",
+        "h",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == a*a*m + s2*(-n)",
+        "e == b*b*m",
+        "h == d*n"
+      ],
+      "question": "(-[[frac({a},{b})]])² × {e} {S2} [[frac({c},{d})]] ÷ (-[[frac({c},{h})]]){eul(c)} 계산하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "거듭제곱을 먼저 계산한다. (−[[frac({a},{b})]])²은 음수를 두 번 곱한 것이므로 양수 [[frac({a*a},{b*b})]]이다. 나눗셈 [[frac({c},{d})]] ÷ (−[[frac({c},{h})]])는 나누는 수의 역수 −[[frac({h},{c})]]{eul(h)} 곱하는 것으로 바꾼다. 그런 다음 곱셈·나눗셈을 먼저, 덧셈·뺄셈을 마지막에 한다.",
+      "sol2": [
+        "거듭제곱: (−[[frac({a},{b})]])² = [[frac({a*a},{b*b})]]",
+        "곱셈: [[frac({a*a},{b*b})]] × {e} = {t1}",
+        "나눗셈: [[frac({c},{d})]] ÷ (−[[frac({c},{h})]]) = [[frac({c},{d})]] × (−[[frac({h},{c})]]) = {q}",
+        "따라서 (주어진 식) = {t1} {S2} {pn(q)} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "(−[[frac({a},{b})]])² = [[frac({a*a},{b*b})]]",
+                "hint": "분자·분모 각각 제곱, 부호는 +"
+              },
+              {
+                "text": "[[frac({a*a},{b*b})]] × {e} = {t1}",
+                "hint": "약분"
+              },
+              {
+                "text": "[[frac({c},{d})]] × (−[[frac({h},{c})]]) = {q}",
+                "hint": "나눗셈 → 역수의 곱셈"
+              },
+              {
+                "text": "{t1} {S2} {pn(q)} = {ans}",
+                "hint": "덧셈·뺄셈은 마지막"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "hint:3"
+          }
+        ]
+      ],
+      "sol3": "(−[[frac({a},{b})]])²의 부호가 양수인 것, 나눗셈에서 역수를 취할 때 부호가 그대로 음수인 것을 다시 확인한다. {t1} {S2} {pn(q)} = {ans}이므로 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "(−[[frac({a},{b})]])² > 0,   [[frac({c},{d})]] ÷ (−[[frac({c},{h})]]) < 0",
+              "{t1} {S2} {pn(q)} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "(−[[frac({a},{b})]])² = [[frac({a*a},{b*b})]]이므로 [[frac({a*a},{b*b})]] × {e} = {t1}이고, [[frac({c},{d})]] ÷ (−[[frac({c},{h})]]) = [[frac({c},{d})]] × (−[[frac({h},{c})]]) = {q}이다. 따라서 (주어진 식) = {t1} {S2} {pn(q)} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "거듭제곱 계산",
+          "points": 2,
+          "criterion": "(−[[frac({a},{b})]])² = [[frac({a*a},{b*b})]]{ro(a*a)} 부호와 값을 바르게 구했다.",
+          "partial": "분자만 제곱하거나 부호를 음수로 했으면 인정하지 않는다."
+        },
+        {
+          "element": "나눗셈을 역수의 곱셈으로",
+          "points": 3,
+          "criterion": "나눗셈을 역수 −[[frac({h},{c})]]의 곱셈으로 바꾸어 {q}{eul(q)} 구했다.",
+          "partial": "역수를 취하지 않고 그대로 곱했으면 인정하지 않고, 역수는 맞으나 계산이 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{t1} {S2} {pn(q)} = {ans}{eul(ans)} 구했다.",
+          "partial": "마지막 덧셈·뺄셈의 부호가 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-1-rational-ops-t2",
+      "pitfalls": [
+        {
+          "text": "분수의 제곱에서 분자만 제곱함",
+          "on": "거듭제곱",
+          "effect": "불인정"
+        },
+        {
+          "text": "나눗셈을 역수의 곱셈으로 바꾸지 않고 그대로 곱함",
+          "on": "역수",
+          "effect": "불인정"
+        },
+        {
+          "text": "역수를 취하면서 부호를 바꿈",
+          "on": "역수",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "무맥락",
+      "ops": [
+        "사칙",
+        "거듭제곱"
+      ],
+      "traps": [
+        "부호",
+        "계산순서"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "유리수의 사칙연산",
+        "거듭제곱"
+      ],
+      "tags": [
+        "유리수의 계산",
+        "혼합 계산"
+      ],
+      "title": "잘못 계산한 결과로 어떤 수를 찾아 바르게 계산하기",
+      "skill": "잘못된 계산을 식으로 세워 어떤 수를 구한 뒤, 바른 연산을 다시 하기",
+      "variant_axis": {
+        "잘못한 연산": "곱→나눔 / 나눔→곱 / 더함→뺌 / 뺌→더함",
+        "수": "2~15"
+      },
+      "discriminates": "어떤 수 x를 잘못된 연산의 식으로 세우고 역연산으로 x를 구한 뒤 바른 연산을 마지막에 하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "md",
+              "dm",
+              "as",
+              "sa"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              2,
+              4,
+              5,
+              9,
+              12,
+              15
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "int": [
+              1,
+              20
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "md": {
+            "PRE": "에",
+            "OP1": "를 곱해야",
+            "OP2": "로 나누었더니",
+            "S1": "÷",
+            "S2": "×",
+            "S3": "×",
+            "WR": "나눈",
+            "CR": "곱한",
+            "iMD": 1,
+            "iDM": 0,
+            "iAS": 0,
+            "iSA": 0
+          },
+          "dm": {
+            "PRE": "를",
+            "OP1": "로 나누어야",
+            "OP2": "를 곱했더니",
+            "S1": "×",
+            "S2": "÷",
+            "S3": "÷",
+            "WR": "곱한",
+            "CR": "나눈",
+            "iMD": 0,
+            "iDM": 1,
+            "iAS": 0,
+            "iSA": 0
+          },
+          "as": {
+            "PRE": "에",
+            "OP1": "를 더해야",
+            "OP2": "를 뺐더니",
+            "S1": "−",
+            "S2": "+",
+            "S3": "+",
+            "WR": "뺀",
+            "CR": "더한",
+            "iMD": 0,
+            "iDM": 0,
+            "iAS": 1,
+            "iSA": 0
+          },
+          "sa": {
+            "PRE": "에서",
+            "OP1": "를 빼야",
+            "OP2": "를 더했더니",
+            "S1": "+",
+            "S2": "−",
+            "S3": "−",
+            "WR": "더한",
+            "CR": "뺀",
+            "iMD": 0,
+            "iDM": 0,
+            "iAS": 0,
+            "iSA": 1
+          }
+        }
+      },
+      "derive": {
+        "b": "iMD*q + iDM*a*a*q + iAS*q + iSA*(q + 2*a)",
+        "x": "(iMD + iDM)*a*q + (iAS + iSA)*(q + a)",
+        "ans": "iMD*a*a*q + iDM*q + iAS*(q + 2*a) + iSA*q"
+      },
+      "constraints": [
+        "b <= 300",
+        "ans <= 400",
+        "ans != a",
+        "ans != b",
+        "x != a",
+        "x != b",
+        "b != a",
+        "ans != x",
+        "q != a"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "x",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "iMD == 0 or (x/a == b and ans == x*a)",
+        "iDM == 0 or (x*a == b and ans == x/a)",
+        "iAS == 0 or (x - a == b and ans == x + a)",
+        "iSA == 0 or (x + a == b and ans == x - a)"
+      ],
+      "question": "어떤 수{PRE} {a}{OP1} 할 것을 잘못하여 {a}{OP2} {b}{ika(b)} 되었다. 바르게 계산한 답을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "'어떤 수'를 x로 놓고 잘못 계산한 과정을 그대로 식으로 쓰면 x {S1} {a} = {b}이다. 이 식에서 x를 구한 다음(역연산), 원래 하려던 바른 계산 x {S3} {a}{eul(a)} 한다. 잘못 계산한 결과 {b}{eul(b)} 답으로 쓰지 않도록 한다.",
+      "sol2": [
+        "어떤 수를 x라 하면 잘못 계산한 식은 x {S1} {a} = {b}",
+        "따라서 x = {b} {S2} {a} = {x}",
+        "바르게 계산하면 {x} {S3} {a} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "x {S1} {a} = {b}",
+                "hint": "잘못 {WR} 계산을 식으로"
+              },
+              {
+                "text": "x = {b} {S2} {a} = {x}",
+                "hint": "역연산으로 어떤 수"
+              },
+              {
+                "text": "{x} {S3} {a} = {ans}",
+                "hint": "바르게 {CR} 계산",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "x가 아니라 바른 계산 결과"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "어떤 수 {x}{ro(x)} 잘못 계산한 대로 하면 {x} {S1} {a} = {b}{ika(b)} 되어 문제의 조건과 같다. 따라서 바르게 계산한 답은 {x} {S3} {a} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{x} {S1} {a} = {b}  (조건 확인)",
+              "{x} {S3} {a} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "어떤 수를 x라 하면 x {S1} {a} = {b}이므로 x = {x}이다. 따라서 바르게 계산하면 {x} {S3} {a} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "어떤 수를 x로 놓고 잘못 계산한 식 x {S1} {a} = {b}{eul(b)} 세웠다.",
+          "partial": "바른 연산으로 식을 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "어떤 수 구하기",
+          "points": 2,
+          "criterion": "x = {x}{eul(x)} 구했다.",
+          "partial": "역연산을 잘못 골랐으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "바르게 계산한 값 {ans}{eul(ans)} 답했다.",
+          "partial": "어떤 수 {x}{eul(x)} 답으로 썼으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-1-rational-ops-t3",
+      "pitfalls": [
+        {
+          "text": "잘못 계산한 결과를 그대로 답함",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "어떤 수를 구하고 바른 계산을 하지 않은 채 답함",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "역연산을 잘못 골라 어떤 수가 틀림",
+          "on": "어떤 수",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "사칙",
+        "거듭제곱"
+      ],
+      "traps": [
+        "부호",
+        "계산순서"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "유리수의 사칙연산",
+        "거듭제곱"
+      ],
+      "tags": [
+        "유리수의 계산",
+        "혼합 계산"
+      ],
+      "title": "분수와 정수의 역수로 만든 식의 값 — x + y, x − y, xy",
+      "skill": "역수는 곱하여 1이 되는 수임을 알고 분수의 역수(분자·분모 바꾸기)와 정수의 역수(1/n)를 구해 식의 값 계산하기",
+      "variant_axis": {
+        "구하는 것": "x + y / x − y / xy",
+        "분수의 부호": "+ / −"
+      },
+      "discriminates": "역수를 취할 때 부호는 그대로 두고 분자·분모만 바꾸는가, 정수 n의 역수를 1/n으로 쓰는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              "sum",
+              "diff",
+              "prod"
+            ]
+          }
+        },
+        {
+          "name": "sg",
+          "values": {
+            "in": [
+              "pos",
+              "neg"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "q",
+          "rows": {
+            "sum": {
+              "QT": "x + y",
+              "c1": 1,
+              "c2": 1,
+              "cp": 0
+            },
+            "diff": {
+              "QT": "x − y",
+              "c1": 1,
+              "c2": -1,
+              "cp": 0
+            },
+            "prod": {
+              "QT": "xy",
+              "c1": 0,
+              "c2": 0,
+              "cp": 1
+            }
+          }
+        },
+        {
+          "key": "sg",
+          "rows": {
+            "pos": {
+              "SG": "",
+              "s": 1,
+              "SGW": ""
+            },
+            "neg": {
+              "SG": "-",
+              "s": -1,
+              "SGW": "−"
+            }
+          }
+        }
+      ],
+      "derive": {
+        "x": "s*b/a",
+        "y": "-1/c",
+        "nc": "-c",
+        "ans": "c1*x + c2*y + cp*x*y"
+      },
+      "constraints": [
+        "gcd(a, b) == 1",
+        "a != b",
+        "ans != 0",
+        "ans != a",
+        "ans != b",
+        "ans != -c",
+        "b != c"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "x",
+        "y",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "x*(s*a/b) == 1",
+        "y*(-c) == 1",
+        "ans == c1*x + c2*y + cp*x*y"
+      ],
+      "question": "{SG}[[frac({a},{b})]]의 역수를 x, {nc}의 역수를 y라 할 때, {QT}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "어떤 수의 역수는 그 수와 곱하여 1이 되는 수다. 분수의 역수는 부호는 그대로 두고 분자와 분모를 바꾼 것이고, 정수 {pn(nc)}의 역수는 1을 {pn(nc)}{ro(nc)} 나눈 {y}이다. x와 y를 구한 뒤 {QT}{eul(QT)} 계산한다.",
+      "sol2": [
+        "{SG}[[frac({a},{b})]]의 역수는 분자와 분모를 바꾼 x = {x}",
+        "{pn(nc)}의 역수는 y = {y}",
+        "따라서 {QT} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "x = {x}",
+                "hint": "분자·분모 바꾸기, 부호는 그대로"
+              },
+              {
+                "text": "y = {y}",
+                "hint": "정수 n의 역수는 1/n"
+              },
+              {
+                "text": "{QT} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "통분·부호 확인"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "{SG}[[frac({a},{b})]] × {pn(x)} = 1, {pn(nc)} × {pn(y)} = 1이므로 x, y는 역수가 맞다. {QT} = {ans}이므로 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{SG}[[frac({a},{b})]] × {pn(x)} = 1",
+              "{pn(nc)} × {pn(y)} = 1",
+              "{QT} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "model_answer": "{SG}[[frac({a},{b})]]의 역수는 x = {x}, {pn(nc)}의 역수는 y = {y}이다. 따라서 {QT} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "역수 구하기",
+          "points": 3,
+          "criterion": "x = {x}, y = {y}{eul(y)} 구했다.",
+          "partial": "부호를 바꾸거나 정수의 역수를 그 수 자신으로 썼으면 인정하지 않고, 하나만 맞으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{QT} = {ans}{eul(ans)} 구했다.",
+          "partial": "통분 또는 부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-rational-ops-t4",
+      "pitfalls": [
+        {
+          "text": "역수를 취하면서 부호를 바꿈",
+          "on": "역수",
+          "effect": "불인정"
+        },
+        {
+          "text": "정수의 역수를 그 수 자신 또는 −(그 수)로 씀",
+          "on": "역수",
+          "effect": "불인정"
+        },
+        {
+          "text": "분수의 덧셈·뺄셈에서 통분하지 않고 분자·분모끼리 더함",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "사칙"
+      ],
+      "traps": [
+        "부호",
+        "계산순서"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "유리수의 사칙연산",
+        "거듭제곱"
+      ],
+      "tags": [
+        "유리수의 계산",
+        "혼합 계산"
+      ],
+      "title": "'a보다 b만큼 큰 수'·'c보다 d만큼 작은 수'로 만든 식의 값",
+      "skill": "'b만큼 큰 수'는 덧셈, 'd만큼 작은 수'는 뺄셈으로 옮겨 음수의 덧셈·뺄셈을 하기",
+      "variant_axis": {
+        "구하는 것": "x + y / x − y / y − x",
+        "수": "−9~9"
+      },
+      "discriminates": "'−5만큼 큰 수'를 −5를 더하는 것으로 옮기고 뺄셈을 덧셈으로 고쳐 부호를 처리하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              "sum",
+              "diff",
+              "rdiff"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "q",
+        "rows": {
+          "sum": {
+            "QT": "x + y",
+            "c1": 1,
+            "c2": 1
+          },
+          "diff": {
+            "QT": "x − y",
+            "c1": 1,
+            "c2": -1
+          },
+          "rdiff": {
+            "QT": "y − x",
+            "c1": -1,
+            "c2": 1
+          }
+        }
+      },
+      "derive": {
+        "x": "a + b",
+        "y": "c - d",
+        "ans": "c1*(a + b) + c2*(c - d)"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans != a",
+        "ans != b",
+        "ans != c",
+        "ans != d",
+        "x != y",
+        "a != b",
+        "c != d",
+        "x != 0",
+        "y != 0"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "x",
+        "y",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == c1*(a + b) + c2*(c - d)"
+      ],
+      "question": "{a}보다 {b}만큼 큰 수를 x, {c}보다 {d}만큼 작은 수를 y라 할 때, {QT}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "'{a}보다 {b}만큼 큰 수'는 {a}에 {b}{eul(b)} 더한 수이고, '{c}보다 {d}만큼 작은 수'는 {c}에서 {d}{eul(d)} 뺀 수다. 음수를 더하거나 빼는 것이므로 뺄셈은 부호를 바꾸어 더하는 것으로 고쳐 계산한 뒤 {QT}{eul(QT)} 구한다.",
+      "sol2": [
+        "x = {a} + {pn(b)} = {x}",
+        "y = {c} − {pn(d)} = {c} + {pn(-d)} = {y}",
+        "따라서 {QT} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "x = {a} + {pn(b)} = {x}",
+                "hint": "'큰 수' = 더한다"
+              },
+              {
+                "text": "y = {c} − {pn(d)} = {c} + {pn(-d)} = {y}",
+                "hint": "'작은 수' = 뺀다 → 부호 바꿔 더하기"
+              },
+              {
+                "text": "{QT} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "x, y의 부호 확인"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "x = {x}{eun(x)} {a}보다 {b}만큼 크고({x} − {pn(a)} = {b}), y = {y}{eun(y)} {c}보다 {d}만큼 작다({c} − {pn(y)} = {d}). 따라서 {QT} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{x} − {pn(a)} = {b}",
+              "{c} − {pn(y)} = {d}",
+              "{QT} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "model_answer": "x = {a} + {pn(b)} = {x}, y = {c} − {pn(d)} = {y}이므로 {QT} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "x, y 구하기",
+          "points": 3,
+          "criterion": "x = {a} + {pn(b)} = {x}, y = {c} − {pn(d)} = {y}{eul(y)} 구했다.",
+          "partial": "'작은 수'를 더해 구했으면 인정하지 않고, 부호 실수 하나면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{QT} = {ans}{eul(ans)} 구했다.",
+          "partial": "x, y는 옳고 마지막 계산의 부호가 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-rational-ops-t5",
+      "pitfalls": [
+        {
+          "text": "'d만큼 작은 수'를 c에 d를 더한 것으로 계산",
+          "on": "x, y",
+          "effect": "불인정"
+        },
+        {
+          "text": "음수를 뺄 때 부호를 바꾸지 않음(c − (−d) = c − d)",
+          "on": "x, y",
+          "effect": "부분"
+        },
+        {
+          "text": "x − y와 y − x를 바꿔 계산",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

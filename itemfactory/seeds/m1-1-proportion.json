@@ -1,0 +1,2812 @@
+{
+  "seed_id": "m1-1-proportion",
+  "category": "연산",
+  "title": "정비례·반비례 — 한 쌍의 값·그래프 위의 점·두 점·삼각형 넓이·직사각형 넓이",
+  "unit_id": "m1-1",
+  "concept_ids": [
+    "m1-1-32",
+    "m1-1-33",
+    "m1-1-34"
+  ],
+  "schema_id": null,
+  "schema_name": "정비례와 반비례의 관계식과 그래프",
+  "source_item_ids": [],
+  "note": "구조만 차용. 정비례 그래프는 원점을 지나는 선분(틀 안에서 자름)으로 그리고 반비례 곡선은 그리지 않는다. 직사각형 넓이 틀은 k < 0 으로 두어 답 |k| 이 문면에 노출되지 않게 한다.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "비례",
+        "대입"
+      ],
+      "traps": [
+        "부호",
+        "구하는대상혼동"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정비례",
+        "반비례",
+        "좌표평면"
+      ],
+      "tags": [
+        "정비례",
+        "반비례"
+      ],
+      "title": "정비례 관계 — 한 쌍의 값으로 다른 x에서의 y 구하기",
+      "skill": "y = ax로 놓고 주어진 x, y를 대입해 a를 구한 뒤 다른 x에서의 y를 구하기",
+      "variant_axis": {
+        "비례상수": "±1/3~±6",
+        "x": "−18~18"
+      },
+      "discriminates": "정비례를 y = ax로 나타내고 a를 먼저 구하는가 (x, y를 직접 비례식으로 다룰 때 방향을 지키는가)",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "pa",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "qd",
+          "values": {
+            "in": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "m1",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "m2",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "a": "pa/qd",
+        "x1": "qd*m1",
+        "x2": "qd*m2",
+        "y1": "pa*m1",
+        "y2": "pa*m2",
+        "xlo": "min(x1, x2, 0) - 2",
+        "xhi": "max(x1, x2, 0) + 2",
+        "ylo": "min(y1, y2, 0) - 2",
+        "yhi": "max(y1, y2, 0) + 2",
+        "xs": "max(xlo, min(ylo/a, yhi/a))",
+        "xe": "min(xhi, max(ylo/a, yhi/a))",
+        "ys": "a*xs",
+        "ye": "a*xe"
+      },
+      "constraints": [
+        "gcd(pa, qd) == 1",
+        "m1 != m2",
+        "y2 != x1",
+        "y2 != y1",
+        "y2 != x2",
+        "y1 != x1",
+        "abs(y2) <= 30",
+        "abs(x1) <= 18",
+        "abs(x2) <= 18"
+      ],
+      "cost_values": [
+        "x1",
+        "y1",
+        "x2",
+        "a",
+        "y2"
+      ],
+      "answer_var": "y2",
+      "verify": [
+        "y1*x2 == ans*x1",
+        "ans == a*x2"
+      ],
+      "question": "y가 x에 정비례하고, x = {x1}일 때 y = {y1}이다. x = {x2}일 때 y의 값을 구하시오.",
+      "answer": "{y2}",
+      "answer_alt": [],
+      "sol1": "y가 x에 정비례하면 y = ax (a ≠ 0) 꼴이다. x = {x1}, y = {y1}{eul(y1)} 대입하면 a가 정해지고, 그 식에 x = {x2}{eul(x2)} 넣으면 y의 값이 나온다. 그래프는 원점을 지나는 직선이다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{x1}",
+                  "{y1}"
+                ]
+              },
+              {
+                "name": "Q",
+                "coord": [
+                  "{x2}",
+                  "{y2}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{xs}",
+                    "{ys}"
+                  ],
+                  [
+                    "{xe}",
+                    "{ye}"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:P",
+              "lbl:P"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "line:0",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:Q",
+              "lbl:Q"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "y가 x에 정비례하므로 y = ax로 놓는다.",
+        "x = {x1}, y = {y1}{eul(y1)} 대입하면 {y1} = {pn(x1)}a, a = {a}",
+        "따라서 y = {co(a)}x이고, x = {x2}{eul(x2)} 대입하면 y = {a} × {pn(x2)} = {y2}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = ax",
+                "hint": "정비례"
+              },
+              {
+                "text": "{y1} = a × {pn(x1)}  →  a = {a}",
+                "hint": "(x, y) = ({x1}, {y1}) 대입"
+              },
+              {
+                "text": "y = {co(a)}x  →  x = {x2}: y = {y2}",
+                "marks": [
+                  {
+                    "on": "{y2}",
+                    "note": "부호 확인"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "정비례에서는 x가 몇 배가 되면 y도 그만큼 몇 배가 된다. x가 {x1}에서 {x2}{ro(x2)} [[frac({x2},{x1})]]배가 되었으므로 y도 {y1} × [[frac({x2},{x1})]] = {y2}{ika(y2)} 되어 같은 값이다. 답은 {y2}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x: {x1} → {x2}  ([[frac({x2},{x1})]]배)",
+              "y: {y1} × [[frac({x2},{x1})]] = {y2}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y = ax에 x = {x1}, y = {y1}{eul(y1)} 대입하면 a = {a}이므로 y = {co(a)}x이다. 따라서 x = {x2}일 때 y = {y2}이다.",
+      "rubric": [
+        {
+          "element": "관계식 세우기",
+          "points": 3,
+          "criterion": "y = ax로 놓고 (x, y) = ({x1}, {y1}){eul(y1)} 대입해 a = {a}{eul(a)} 구했다.",
+          "partial": "y = a/x로 놓았으면 인정하지 않고, 대입 실수면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "y = {co(a)}x에 x = {x2}{eul(x2)} 대입해 y = {y2}{eul(y2)} 구했다.",
+          "partial": "부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-proportion-t1",
+      "pitfalls": [
+        {
+          "text": "정비례를 y = a/x로 놓음",
+          "on": "관계식",
+          "effect": "불인정"
+        },
+        {
+          "text": "a를 구할 때 x와 y를 바꿔 나눔 (a = x/y)",
+          "on": "관계식",
+          "effect": "불인정"
+        },
+        {
+          "text": "x = x₂ 대입에서 부호 실수",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "비례",
+        "대입"
+      ],
+      "traps": [
+        "부호",
+        "구하는대상혼동"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정비례",
+        "반비례",
+        "좌표평면"
+      ],
+      "tags": [
+        "정비례",
+        "반비례"
+      ],
+      "title": "반비례 관계 — 한 쌍의 값으로 다른 x에서의 y 구하기",
+      "skill": "y = a/x로 놓고 a = xy가 일정함을 이용해 다른 x에서의 y를 구하기",
+      "variant_axis": {
+        "xy의 값": "±2~±36",
+        "x": "−6~6"
+      },
+      "discriminates": "반비례를 y = a/x(xy = a)로 나타내는가 (정비례처럼 y = ax로 놓지 않는가)",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "x1",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "y1",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "x2",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "k": "x1*y1",
+        "y2": "x1*y1/x2"
+      },
+      "constraints": [
+        "k % x2 == 0",
+        "x2 != x1",
+        "y2 != y1",
+        "y2 != x1",
+        "y2 != x2",
+        "abs(k) >= 2",
+        "x1 != y1"
+      ],
+      "cost_values": [
+        "x1",
+        "y1",
+        "x2",
+        "k",
+        "y2"
+      ],
+      "answer_var": "y2",
+      "verify": [
+        "x2*ans == x1*y1",
+        "ans == k/x2"
+      ],
+      "question": "y가 x에 반비례하고, x = {x1}일 때 y = {y1}이다. x = {x2}일 때 y의 값을 구하시오.",
+      "answer": "{y2}",
+      "answer_alt": [],
+      "sol1": "y가 x에 반비례하면 y = [[frac(a,x)]] (a ≠ 0) 꼴이고, 이는 xy = a로 두 값의 곱이 항상 일정하다는 뜻이다. x = {x1}, y = {y1}{eul(y1)} 대입해 a를 구한 뒤 x = {x2}{eul(x2)} 넣는다.",
+      "sol2": [
+        "y가 x에 반비례하므로 y = [[frac(a,x)]]로 놓는다.",
+        "x = {x1}, y = {y1}{eul(y1)} 대입하면 {y1} = [[frac(a,{x1})]], a = {x1} × {pn(y1)} = {k}",
+        "따라서 y = [[frac({k},x)]]이고, x = {x2}{eul(x2)} 대입하면 y = [[frac({k},{x2})]] = {y2}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = [[frac(a,x)]],  즉 xy = a",
+                "hint": "반비례: 곱이 일정"
+              },
+              {
+                "text": "a = {x1} × {pn(y1)} = {k}",
+                "hint": "(x, y) = ({x1}, {y1}) 대입"
+              },
+              {
+                "text": "y = {k} ÷ {pn(x2)} = {y2}",
+                "marks": [
+                  {
+                    "on": "{y2}",
+                    "note": "부호 확인"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "반비례에서는 xy가 일정하다. {x1} × {pn(y1)} = {k}, {x2} × {pn(y2)} = {k}{ro(k)} 곱이 같으므로 y = {y2}{ika(y2)} 맞다. 답은 {y2}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{x1} × {pn(y1)} = {k}",
+              "{x2} × {pn(y2)} = {k}  ✓"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y = [[frac(a,x)]]에 x = {x1}, y = {y1}{eul(y1)} 대입하면 a = {k}이므로 y = [[frac({k},x)]]이다. 따라서 x = {x2}일 때 y = {y2}이다.",
+      "rubric": [
+        {
+          "element": "관계식 세우기",
+          "points": 3,
+          "criterion": "y = [[frac(a,x)]]로 놓고 (x, y) = ({x1}, {y1}){eul(y1)} 대입해 a = {k}{eul(k)} 구했다.",
+          "partial": "y = ax로 놓았으면 인정하지 않고, 대입 실수면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "y = [[frac({k},x)]]에 x = {x2}{eul(x2)} 대입해 y = {y2}{eul(y2)} 구했다.",
+          "partial": "부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-proportion-t2",
+      "pitfalls": [
+        {
+          "text": "반비례를 y = ax로 놓음",
+          "on": "관계식",
+          "effect": "불인정"
+        },
+        {
+          "text": "a = xy 대신 a = y/x로 구함",
+          "on": "관계식",
+          "effect": "불인정"
+        },
+        {
+          "text": "a ÷ x₂ 에서 부호 실수",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "비례",
+        "대입"
+      ],
+      "traps": [
+        "부호",
+        "구하는대상혼동"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정비례",
+        "반비례",
+        "좌표평면"
+      ],
+      "tags": [
+        "정비례",
+        "반비례"
+      ],
+      "title": "그래프가 한 점을 지날 때 상수 a — 정비례 y = ax·반비례 y = a/x",
+      "skill": "그래프 위의 점의 좌표는 관계식을 만족하므로 대입하여 a 구하기",
+      "variant_axis": {
+        "관계": "정비례 / 반비례",
+        "점": "−6~6"
+      },
+      "discriminates": "그래프 위의 점을 관계식에 대입하는가, 정비례(a = y/x)와 반비례(a = xy)의 계산을 구별하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "rel",
+          "values": {
+            "in": [
+              "p",
+              "i"
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "rel",
+        "rows": {
+          "p": {
+            "REL": "정비례",
+            "FORM": "ax",
+            "isP": 1,
+            "EQ": "y = ax",
+            "AEQ": "a = y ÷ x",
+            "SL": "a ×",
+            "SLV": "×",
+            "F1": "",
+            "F2": "x",
+            "S1": "",
+            "S2": "k"
+          },
+          "i": {
+            "REL": "반비례",
+            "FORM": "[[frac(a,x)]]",
+            "isP": 0,
+            "EQ": "y = [[frac(a,x)]]",
+            "AEQ": "a = xy",
+            "SL": "a ÷",
+            "SLV": "÷",
+            "F1": "[[frac(",
+            "F2": ",x)]]",
+            "S1": "[[frac(",
+            "S2": ",k)]]"
+          }
+        }
+      },
+      "derive": {
+        "q": "isP*(w*p) + (1 - isP)*w",
+        "ans": "isP*w + (1 - isP)*(p*w)"
+      },
+      "constraints": [
+        "ans != p",
+        "ans != q",
+        "ans != 0",
+        "p != q",
+        "abs(ans) != 1"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "isP == 0 or ans*p == q",
+        "isP == 1 or ans == p*q"
+      ],
+      "question": "{REL} 관계 y = {FORM}의 그래프가 점 ({p}, {q}){eul(q)} 지날 때, 상수 a의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "그래프가 점 ({p}, {q}){eul(q)} 지난다는 것은 x = {p}, y = {q}{eul(q)} 관계식에 대입하면 등식이 성립한다는 뜻이다. {EQ}에 대입해 a에 대한 식을 풀면 된다({AEQ}).",
+      "sol2": [
+        "그래프가 점 ({p}, {q}){eul(q)} 지나므로 {EQ}에 x = {p}, y = {q}{eul(q)} 대입할 수 있다.",
+        "대입하면 {q} = {SL} {pn(p)}",
+        "따라서 a = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{EQ}에 ({p}, {q}) 대입",
+                "hint": "그래프 위의 점 = 식을 만족"
+              },
+              {
+                "text": "{q} = {SL} {pn(p)}",
+                "hint": "{AEQ}"
+              },
+              {
+                "text": "a = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "a = {ans}이면 x = {p}일 때 y = {ans} {SLV} {pn(p)} = {q}{ika(q)} 되어 그래프가 점 ({p}, {q}){eul(q)} 지난다. 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = {p}: {ans} {SLV} {pn(p)} = {q}  ✓"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ]
+      ],
+      "model_answer": "{EQ}에 x = {p}, y = {q}{eul(q)} 대입하면 {q} = {SL} {pn(p)}이므로 a = {ans}이다.",
+      "rubric": [
+        {
+          "element": "점의 좌표 대입",
+          "points": 3,
+          "criterion": "{EQ}에 x = {p}, y = {q}{eul(q)} 대입해 {q} = {SL} {pn(p)}{eul(p)} 얻었다.",
+          "partial": "x와 y를 바꿔 대입했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "a = {ans}{eul(ans)} 구했다.",
+          "partial": "부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-proportion-t3",
+      "pitfalls": [
+        {
+          "text": "점의 x, y좌표를 바꿔 대입",
+          "on": "대입",
+          "effect": "불인정"
+        },
+        {
+          "text": "정비례에서 a = xy, 반비례에서 a = y/x로 잘못 계산",
+          "on": "대입",
+          "effect": "불인정"
+        },
+        {
+          "text": "나눗셈·곱셈의 부호 실수",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "비례",
+        "대입"
+      ],
+      "traps": [
+        "부호",
+        "구하는대상혼동"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정비례",
+        "반비례",
+        "좌표평면"
+      ],
+      "tags": [
+        "정비례",
+        "반비례"
+      ],
+      "title": "그래프가 두 점을 지날 때 — 한 점으로 a를 구하고 다른 점의 미지수 k 구하기",
+      "skill": "좌표가 모두 주어진 점으로 a를 구한 뒤, 다른 점의 좌표를 대입해 k 구하기",
+      "variant_axis": {
+        "관계": "정비례 / 반비례",
+        "점": "−6~6"
+      },
+      "discriminates": "어느 점으로 먼저 a를 구할지 판단하고, 구한 식에 남은 점을 대입하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "rel",
+          "values": {
+            "in": [
+              "p",
+              "i"
+            ]
+          }
+        },
+        {
+          "name": "a0",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "q0",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "rel",
+        "rows": {
+          "p": {
+            "REL": "정비례",
+            "FORM": "ax",
+            "isP": 1,
+            "EQ": "y = ax",
+            "AEQ": "a = y ÷ x",
+            "SL": "a ×",
+            "SLV": "×",
+            "F1": "",
+            "F2": "x",
+            "S1": "",
+            "S2": "k"
+          },
+          "i": {
+            "REL": "반비례",
+            "FORM": "[[frac(a,x)]]",
+            "isP": 0,
+            "EQ": "y = [[frac(a,x)]]",
+            "AEQ": "a = xy",
+            "SL": "a ÷",
+            "SLV": "÷",
+            "F1": "[[frac(",
+            "F2": ",x)]]",
+            "S1": "[[frac(",
+            "S2": ",k)]]"
+          }
+        }
+      },
+      "derive": {
+        "q": "isP*(a0*p) + (1 - isP)*q0",
+        "a": "isP*a0 + (1 - isP)*(p*q0)",
+        "r": "isP*(a0*m) + (1 - isP)*(p*q0/m)",
+        "k": "m"
+      },
+      "constraints": [
+        "isP == 1 or (p*q0) % m == 0",
+        "m != p",
+        "k != q",
+        "k != r",
+        "r != q",
+        "r != p",
+        "abs(a) != 1",
+        "abs(r) <= 36",
+        "p != q"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "r",
+        "a",
+        "k"
+      ],
+      "answer_var": "k",
+      "verify": [
+        "isP == 0 or (a*p == q and a*ans == r)",
+        "isP == 1 or (a == p*q and ans*r == a)"
+      ],
+      "question": "{REL} 관계 y = {FORM}의 그래프가 두 점 ({p}, {q}), (k, {r})를 지날 때, k의 값을 구하시오.",
+      "answer": "{k}",
+      "answer_alt": [],
+      "sol1": "두 점 모두 그래프 위의 점이므로 관계식을 만족한다. 좌표가 모두 알려진 점 ({p}, {q})를 먼저 대입해 a를 구하고, 완성된 식에 점 (k, {r})를 대입해 k를 구한다.",
+      "sol2": [
+        "점 ({p}, {q}){eul(q)} {EQ}에 대입하면 {q} = {SL} {pn(p)}, a = {a}",
+        "따라서 관계식은 y = {F1}{a}{F2}",
+        "점 (k, {r})를 대입하면 {r} = {S1}{a}{S2}, k = {k}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{q} = {SL} {pn(p)}  →  a = {a}",
+                "hint": "좌표를 모두 아는 점부터"
+              },
+              {
+                "text": "y = {F1}{a}{F2}",
+                "hint": "관계식 완성"
+              },
+              {
+                "text": "{r} = {S1}{a}{S2}  →  k = {k}",
+                "hint": "(k, {r}) 대입",
+                "marks": [
+                  {
+                    "on": "{k}",
+                    "note": "k는 x좌표"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "y = {F1}{a}{F2}에 x = {k}{eul(k)} 대입하면 y = {r}{ika(r)} 되어 점 ({k}, {r})를 지난다. 답은 {k}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "y = {F1}{a}{F2},  x = {k} → y = {r}  ✓"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ]
+      ],
+      "model_answer": "점 ({p}, {q}){eul(q)} {EQ}에 대입하면 a = {a}이므로 y = {F1}{a}{F2}이다. 점 (k, {r})를 대입하면 {r} = {S1}{a}{S2}이므로 k = {k}이다.",
+      "rubric": [
+        {
+          "element": "a 구하기",
+          "points": 3,
+          "criterion": "점 ({p}, {q}){eul(q)} 대입해 a = {a}{eul(a)} 구하고 관계식 y = {F1}{a}{F2}{eul(2)} 완성했다.",
+          "partial": "대입 실수면 1점."
+        },
+        {
+          "element": "k 구하기",
+          "points": 2,
+          "criterion": "점 (k, {r})를 대입해 k = {k}{eul(k)} 구했다.",
+          "partial": "x, y를 바꿔 대입했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-proportion-t4",
+      "pitfalls": [
+        {
+          "text": "좌표를 모르는 점 (k, r)로 먼저 a를 구하려 함",
+          "on": "a 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "완성된 식에 (k, r)를 대입할 때 x, y를 바꿈",
+          "on": "k 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "k를 구하는 마지막 나눗셈의 부호 실수",
+          "on": "k 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "ops": [
+        "비례",
+        "대입"
+      ],
+      "traps": [
+        "부호",
+        "구하는대상혼동"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정비례",
+        "반비례",
+        "좌표평면"
+      ],
+      "tags": [
+        "정비례",
+        "반비례"
+      ],
+      "title": "정비례 그래프 위의 점과 x축이 만드는 삼각형의 넓이",
+      "skill": "그래프 위의 점 A(p, ap)에서 x축에 내린 수선의 발 B로 직각삼각형 OAB를 만들고 넓이 = OB × AB ÷ 2 구하기",
+      "variant_axis": {
+        "비례상수": "±1~±5",
+        "A의 x좌표": "±2~±8"
+      },
+      "discriminates": "A의 y좌표를 관계식으로 구하는가, 밑변·높이를 좌표의 절댓값으로 잡는가",
+      "difficulty": 3,
+      "geometry": true,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -10,
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "ay": "a*p",
+        "S": "abs(a)*p*p/2",
+        "xlo": "min(p, 0) - 2",
+        "xhi": "max(p, 0) + 2",
+        "ylo": "min(a*p, 0) - 2",
+        "yhi": "max(a*p, 0) + 2",
+        "xs": "max(xlo, min(ylo/a, yhi/a))",
+        "xe": "min(xhi, max(ylo/a, yhi/a))",
+        "ys": "a*xs",
+        "ye": "a*xe"
+      },
+      "constraints": [
+        "(abs(a)*p*p) % 2 == 0",
+        "S != abs(p)",
+        "S != abs(a*p)",
+        "S != a",
+        "S != p",
+        "abs(a*p) <= 30"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "ay",
+        "S"
+      ],
+      "answer_var": "S",
+      "verify": [
+        "2*ans == abs(p)*abs(a*p)"
+      ],
+      "question": "정비례 관계 y = {co(a)}x의 그래프 위의 점 A의 x좌표가 {p}이다. 점 A에서 x축에 내린 수선의 발을 B라 할 때, 삼각형 OAB의 넓이를 구하시오. (단, O는 원점)",
+      "figure": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{p}",
+                  "{ay}"
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  "{p}",
+                  0
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{xs}",
+                    "{ys}"
+                  ],
+                  [
+                    "{xe}",
+                    "{ye}"
+                  ]
+                ]
+              },
+              {
+                "points": [
+                  [
+                    "{p}",
+                    "{ay}"
+                  ],
+                  [
+                    "{p}",
+                    0
+                  ]
+                ],
+                "style": "dashed"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{S}",
+      "answer_alt": [],
+      "sol1": "점 A는 y = {co(a)}x 위의 점이므로 x = {p}{eul(p)} 대입하면 y = {ay}, 곧 A({p}, {ay})이다. B는 A에서 x축에 내린 수선의 발이므로 B({p}, 0)이고, 삼각형 OAB는 ∠B = 90°인 직각삼각형이다. 밑변 OB = |{p}| = {abs(p)}, 높이 AB = |{ay}| = {abs(ay)}{ro(abs(ay))} 넓이를 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{p}",
+                  "{ay}"
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  "{p}",
+                  0
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{xs}",
+                    "{ys}"
+                  ],
+                  [
+                    "{xe}",
+                    "{ye}"
+                  ]
+                ]
+              },
+              {
+                "points": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    "{p}",
+                    "{ay}"
+                  ],
+                  [
+                    "{p}",
+                    0
+                  ],
+                  [
+                    0,
+                    0
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:A",
+              "lbl:A"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:B",
+              "lbl:B"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "line:1",
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "A의 y좌표: y = {a} × {pn(p)} = {ay}이므로 A({p}, {ay}), B({p}, 0)",
+        "OB = {abs(p)}, AB = {abs(ay)}",
+        "(삼각형 OAB의 넓이) = [[frac(1,2)]] × {abs(p)} × {abs(ay)} = {S}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "A({p}, {ay}),  B({p}, 0)",
+                "hint": "x = {p} 대입"
+              },
+              {
+                "text": "OB = {abs(p)},  AB = {abs(ay)}",
+                "hint": "길이는 절댓값"
+              },
+              {
+                "text": "[[frac(1,2)]] × {abs(p)} × {abs(ay)} = {S}",
+                "marks": [
+                  {
+                    "on": "[[frac(1,2)]]",
+                    "note": "직각삼각형"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol_check": "밑변 {abs(p)}, 높이 {abs(ay)}인 직각삼각형의 넓이는 {abs(p)} × {abs(ay)} ÷ 2 = {S}이다. 답: {S}",
+      "model_answer": "점 A의 y좌표는 {a} × {pn(p)} = {ay}이므로 A({p}, {ay}), B({p}, 0)이다. OB = {abs(p)}, AB = {abs(ay)}이므로 삼각형 OAB의 넓이는 [[frac(1,2)]] × {abs(p)} × {abs(ay)} = {S}이다.",
+      "rubric": [
+        {
+          "element": "점 A의 좌표",
+          "points": 3,
+          "criterion": "y = {co(a)}x에 x = {p}{eul(p)} 대입해 A({p}, {ay})와 B({p}, 0)을 구했다.",
+          "partial": "A의 y좌표 계산 실수면 1점."
+        },
+        {
+          "element": "넓이 구하기",
+          "points": 2,
+          "criterion": "OB = {abs(p)}, AB = {abs(ay)}{ro(abs(ay))} 넓이 {S}{eul(S)} 구했다.",
+          "partial": "길이를 음수로 두어 넓이가 음수이면 1점, [[frac(1,2)]]{eul(2)} 곱하지 않았으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-proportion-t5",
+      "pitfalls": [
+        {
+          "text": "A의 y좌표를 관계식으로 구하지 않음",
+          "on": "점 A",
+          "effect": "불인정"
+        },
+        {
+          "text": "OB·AB의 길이를 음수 좌표 그대로 써서 넓이가 음수",
+          "on": "넓이",
+          "effect": "부분"
+        },
+        {
+          "text": "넓이에 1/2을 곱하지 않음",
+          "on": "넓이",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "ops": [
+        "비례",
+        "대입"
+      ],
+      "traps": [
+        "부호",
+        "구하는대상혼동"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정비례",
+        "반비례",
+        "좌표평면"
+      ],
+      "tags": [
+        "정비례",
+        "반비례"
+      ],
+      "title": "반비례 그래프 위의 점과 두 좌표축이 만드는 직사각형의 넓이",
+      "skill": "y = k/x 위의 점 P(x, y)에서 두 축에 내린 수선으로 만든 직사각형의 넓이가 |xy| = |k|임을 이용하기",
+      "variant_axis": {
+        "k": "−4~−72",
+        "사분면": "2 / 4"
+      },
+      "discriminates": "직사각형의 가로·세로가 P의 좌표의 절댓값임을 알고 xy = k로 넓이를 구하는가",
+      "difficulty": 3,
+      "geometry": true,
+      "params": [
+        {
+          "name": "qd",
+          "values": {
+            "in": [
+              "q2",
+              "q4"
+            ]
+          }
+        },
+        {
+          "name": "kk",
+          "values": {
+            "in": [
+              "6",
+              "8",
+              "10",
+              "12",
+              "14",
+              "15",
+              "16",
+              "18",
+              "20",
+              "21",
+              "22",
+              "24",
+              "26",
+              "27",
+              "28",
+              "30",
+              "32",
+              "33",
+              "34",
+              "35",
+              "36",
+              "38",
+              "39",
+              "40",
+              "42",
+              "44",
+              "45",
+              "46",
+              "48",
+              "50",
+              "51",
+              "52",
+              "54",
+              "55",
+              "56",
+              "57",
+              "58",
+              "60",
+              "62",
+              "63",
+              "64",
+              "65",
+              "66",
+              "68",
+              "69",
+              "70",
+              "72"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "qd",
+          "rows": {
+            "q2": {
+              "sx": -1,
+              "sy": 1,
+              "QN": "2"
+            },
+            "q4": {
+              "sx": 1,
+              "sy": -1,
+              "QN": "4"
+            }
+          }
+        },
+        {
+          "key": "kk",
+          "rows": {
+            "6": {
+              "n": 6,
+              "u": 2,
+              "v": 3
+            },
+            "8": {
+              "n": 8,
+              "u": 2,
+              "v": 4
+            },
+            "10": {
+              "n": 10,
+              "u": 2,
+              "v": 5
+            },
+            "12": {
+              "n": 12,
+              "u": 3,
+              "v": 4
+            },
+            "14": {
+              "n": 14,
+              "u": 2,
+              "v": 7
+            },
+            "15": {
+              "n": 15,
+              "u": 3,
+              "v": 5
+            },
+            "16": {
+              "n": 16,
+              "u": 2,
+              "v": 8
+            },
+            "18": {
+              "n": 18,
+              "u": 3,
+              "v": 6
+            },
+            "20": {
+              "n": 20,
+              "u": 4,
+              "v": 5
+            },
+            "21": {
+              "n": 21,
+              "u": 3,
+              "v": 7
+            },
+            "22": {
+              "n": 22,
+              "u": 2,
+              "v": 11
+            },
+            "24": {
+              "n": 24,
+              "u": 3,
+              "v": 8
+            },
+            "26": {
+              "n": 26,
+              "u": 2,
+              "v": 13
+            },
+            "27": {
+              "n": 27,
+              "u": 3,
+              "v": 9
+            },
+            "28": {
+              "n": 28,
+              "u": 4,
+              "v": 7
+            },
+            "30": {
+              "n": 30,
+              "u": 3,
+              "v": 10
+            },
+            "32": {
+              "n": 32,
+              "u": 4,
+              "v": 8
+            },
+            "33": {
+              "n": 33,
+              "u": 3,
+              "v": 11
+            },
+            "34": {
+              "n": 34,
+              "u": 2,
+              "v": 17
+            },
+            "35": {
+              "n": 35,
+              "u": 5,
+              "v": 7
+            },
+            "36": {
+              "n": 36,
+              "u": 3,
+              "v": 12
+            },
+            "38": {
+              "n": 38,
+              "u": 2,
+              "v": 19
+            },
+            "39": {
+              "n": 39,
+              "u": 3,
+              "v": 13
+            },
+            "40": {
+              "n": 40,
+              "u": 4,
+              "v": 10
+            },
+            "42": {
+              "n": 42,
+              "u": 3,
+              "v": 14
+            },
+            "44": {
+              "n": 44,
+              "u": 4,
+              "v": 11
+            },
+            "45": {
+              "n": 45,
+              "u": 5,
+              "v": 9
+            },
+            "46": {
+              "n": 46,
+              "u": 2,
+              "v": 23
+            },
+            "48": {
+              "n": 48,
+              "u": 4,
+              "v": 12
+            },
+            "50": {
+              "n": 50,
+              "u": 5,
+              "v": 10
+            },
+            "51": {
+              "n": 51,
+              "u": 3,
+              "v": 17
+            },
+            "52": {
+              "n": 52,
+              "u": 4,
+              "v": 13
+            },
+            "54": {
+              "n": 54,
+              "u": 3,
+              "v": 18
+            },
+            "55": {
+              "n": 55,
+              "u": 5,
+              "v": 11
+            },
+            "56": {
+              "n": 56,
+              "u": 4,
+              "v": 14
+            },
+            "57": {
+              "n": 57,
+              "u": 3,
+              "v": 19
+            },
+            "58": {
+              "n": 58,
+              "u": 2,
+              "v": 29
+            },
+            "60": {
+              "n": 60,
+              "u": 4,
+              "v": 15
+            },
+            "62": {
+              "n": 62,
+              "u": 2,
+              "v": 31
+            },
+            "63": {
+              "n": 63,
+              "u": 7,
+              "v": 9
+            },
+            "64": {
+              "n": 64,
+              "u": 4,
+              "v": 16
+            },
+            "65": {
+              "n": 65,
+              "u": 5,
+              "v": 13
+            },
+            "66": {
+              "n": 66,
+              "u": 3,
+              "v": 22
+            },
+            "68": {
+              "n": 68,
+              "u": 4,
+              "v": 17
+            },
+            "69": {
+              "n": 69,
+              "u": 3,
+              "v": 23
+            },
+            "70": {
+              "n": 70,
+              "u": 5,
+              "v": 14
+            },
+            "72": {
+              "n": 72,
+              "u": 4,
+              "v": 18
+            }
+          }
+        }
+      ],
+      "derive": {
+        "half": "0",
+        "k": "-n",
+        "px": "sx*u",
+        "py": "sy*v",
+        "S": "n/(1 + half)",
+        "xlo": "min(px, 0) - 2",
+        "xhi": "max(px, 0) + 2",
+        "ylo": "min(py, 0) - 2",
+        "yhi": "max(py, 0) + 2"
+      },
+      "constraints": [
+        "half == 0 or n % 2 == 0",
+        "S != u",
+        "S != v",
+        "S != 2",
+        "S != 4"
+      ],
+      "cost_values": [
+        "k",
+        "S",
+        "half"
+      ],
+      "answer_var": "S",
+      "verify": [
+        "ans*(1 + half) == abs(k)",
+        "px*py == k"
+      ],
+      "question": "반비례 관계 y = [[frac({k},x)]]의 그래프 위의 제{QN}사분면의 한 점 P에서 x축, y축에 각각 내린 수선의 발을 A, B라 할 때, 직사각형 OAPB의 넓이를 구하시오. (단, O는 원점)",
+      "figure": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{px}",
+                  "{py}"
+                ]
+              },
+              {
+                "name": "A",
+                "coord": [
+                  "{px}",
+                  0
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  0,
+                  "{py}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{px}",
+                    "{py}"
+                  ],
+                  [
+                    "{px}",
+                    0
+                  ]
+                ],
+                "style": "dashed"
+              },
+              {
+                "points": [
+                  [
+                    "{px}",
+                    "{py}"
+                  ],
+                  [
+                    0,
+                    "{py}"
+                  ]
+                ],
+                "style": "dashed"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{S}",
+      "answer_alt": [],
+      "sol1": "점 P의 좌표를 (p, q)라 하면 A(p, 0), B(0, q)이므로 직사각형 OAPB의 가로는 |p|, 세로는 |q|이다. 따라서 직사각형의 넓이는 |p| × |q| = |pq|인데, P가 y = [[frac({k},x)]] 위의 점이므로 pq = {k}이다. 곧 P를 어디에 잡아도 직사각형의 넓이는 |{k}| = {n}{ro(n)} 일정하다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{px}",
+                  "{py}"
+                ]
+              },
+              {
+                "name": "A",
+                "coord": [
+                  "{px}",
+                  0
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  0,
+                  "{py}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    "{px}",
+                    0
+                  ],
+                  [
+                    "{px}",
+                    "{py}"
+                  ],
+                  [
+                    0,
+                    "{py}"
+                  ],
+                  [
+                    0,
+                    0
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:P",
+              "lbl:P"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "line:0",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:A",
+              "lbl:A",
+              "pt:B",
+              "lbl:B"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "P(p, q)라 하면 y = [[frac({k},x)]] 위의 점이므로 q = [[frac({k},p)]], 곧 pq = {k}",
+        "직사각형 OAPB의 가로 OA = |p|, 세로 OB = |q|",
+        "(직사각형 OAPB의 넓이) = |p| × |q| = |pq| = |{k}| = {n}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "pq = {k}",
+                "hint": "그래프 위의 점: xy = k"
+              },
+              {
+                "text": "OA = |p|,  OB = |q|",
+                "hint": "길이는 절댓값"
+              },
+              {
+                "text": "|p| × |q| = |{k}| = {n}",
+                "marks": [
+                  {
+                    "on": "{n}",
+                    "note": "넓이는 양수"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol_check": "예를 들어 P({px}, {py})를 잡으면 가로 {u}, 세로 {v}이고 직사각형의 넓이는 {u} × {v} = {n}이다. 답: {S}",
+      "model_answer": "P(p, q)라 하면 pq = {k}이고 직사각형 OAPB의 가로와 세로는 |p|, |q|이다. 따라서 직사각형의 넓이는 |p| × |q| = |pq| = |{k}| = {n}이다.",
+      "rubric": [
+        {
+          "element": "좌표와 넓이의 관계",
+          "points": 3,
+          "criterion": "P(p, q)로 놓아 가로 |p|, 세로 |q|이고 pq = {k}임을 밝혔다.",
+          "partial": "pq = {k}{eul(k)} 쓰지 않고 특정 점만 잡아 계산했으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "넓이 |{k}| = {S}{eul(S)} 구했다.",
+          "partial": "넓이를 음수로 답했으면 인정하지 않고, 직사각형과 삼각형을 혼동했으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-proportion-t6",
+      "pitfalls": [
+        {
+          "text": "pq = k(그래프 위의 점)라는 근거를 쓰지 않음",
+          "on": "관계",
+          "effect": "부분"
+        },
+        {
+          "text": "넓이를 k(음수)로 답함",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "가로·세로를 좌표 자체(음수)로 두고 계산",
+          "on": "관계",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "ops": [
+        "비례",
+        "대입"
+      ],
+      "traps": [
+        "부호",
+        "구하는대상혼동"
+      ],
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정비례",
+        "반비례",
+        "좌표평면"
+      ],
+      "tags": [
+        "정비례",
+        "반비례"
+      ],
+      "title": "반비례 그래프 위의 점과 두 좌표축이 만드는 삼각형의 넓이",
+      "skill": "y = k/x 위의 점 P(x, y)에서 두 축에 내린 수선으로 만든 직사각형의 넓이가 |xy| = |k|임을 이용하기",
+      "variant_axis": {
+        "k": "−4~−72",
+        "사분면": "2 / 4"
+      },
+      "discriminates": "직사각형의 가로·세로가 P의 좌표의 절댓값임을 알고 xy = k로 넓이를 구하는가",
+      "difficulty": 3,
+      "geometry": true,
+      "params": [
+        {
+          "name": "qd",
+          "values": {
+            "in": [
+              "q2",
+              "q4"
+            ]
+          }
+        },
+        {
+          "name": "kk",
+          "values": {
+            "in": [
+              "6",
+              "8",
+              "10",
+              "12",
+              "14",
+              "15",
+              "16",
+              "18",
+              "20",
+              "21",
+              "22",
+              "24",
+              "26",
+              "27",
+              "28",
+              "30",
+              "32",
+              "33",
+              "34",
+              "35",
+              "36",
+              "38",
+              "39",
+              "40",
+              "42",
+              "44",
+              "45",
+              "46",
+              "48",
+              "50",
+              "51",
+              "52",
+              "54",
+              "55",
+              "56",
+              "57",
+              "58",
+              "60",
+              "62",
+              "63",
+              "64",
+              "65",
+              "66",
+              "68",
+              "69",
+              "70",
+              "72"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "qd",
+          "rows": {
+            "q2": {
+              "sx": -1,
+              "sy": 1,
+              "QN": "2"
+            },
+            "q4": {
+              "sx": 1,
+              "sy": -1,
+              "QN": "4"
+            }
+          }
+        },
+        {
+          "key": "kk",
+          "rows": {
+            "6": {
+              "n": 6,
+              "u": 2,
+              "v": 3
+            },
+            "8": {
+              "n": 8,
+              "u": 2,
+              "v": 4
+            },
+            "10": {
+              "n": 10,
+              "u": 2,
+              "v": 5
+            },
+            "12": {
+              "n": 12,
+              "u": 3,
+              "v": 4
+            },
+            "14": {
+              "n": 14,
+              "u": 2,
+              "v": 7
+            },
+            "15": {
+              "n": 15,
+              "u": 3,
+              "v": 5
+            },
+            "16": {
+              "n": 16,
+              "u": 2,
+              "v": 8
+            },
+            "18": {
+              "n": 18,
+              "u": 3,
+              "v": 6
+            },
+            "20": {
+              "n": 20,
+              "u": 4,
+              "v": 5
+            },
+            "21": {
+              "n": 21,
+              "u": 3,
+              "v": 7
+            },
+            "22": {
+              "n": 22,
+              "u": 2,
+              "v": 11
+            },
+            "24": {
+              "n": 24,
+              "u": 3,
+              "v": 8
+            },
+            "26": {
+              "n": 26,
+              "u": 2,
+              "v": 13
+            },
+            "27": {
+              "n": 27,
+              "u": 3,
+              "v": 9
+            },
+            "28": {
+              "n": 28,
+              "u": 4,
+              "v": 7
+            },
+            "30": {
+              "n": 30,
+              "u": 3,
+              "v": 10
+            },
+            "32": {
+              "n": 32,
+              "u": 4,
+              "v": 8
+            },
+            "33": {
+              "n": 33,
+              "u": 3,
+              "v": 11
+            },
+            "34": {
+              "n": 34,
+              "u": 2,
+              "v": 17
+            },
+            "35": {
+              "n": 35,
+              "u": 5,
+              "v": 7
+            },
+            "36": {
+              "n": 36,
+              "u": 3,
+              "v": 12
+            },
+            "38": {
+              "n": 38,
+              "u": 2,
+              "v": 19
+            },
+            "39": {
+              "n": 39,
+              "u": 3,
+              "v": 13
+            },
+            "40": {
+              "n": 40,
+              "u": 4,
+              "v": 10
+            },
+            "42": {
+              "n": 42,
+              "u": 3,
+              "v": 14
+            },
+            "44": {
+              "n": 44,
+              "u": 4,
+              "v": 11
+            },
+            "45": {
+              "n": 45,
+              "u": 5,
+              "v": 9
+            },
+            "46": {
+              "n": 46,
+              "u": 2,
+              "v": 23
+            },
+            "48": {
+              "n": 48,
+              "u": 4,
+              "v": 12
+            },
+            "50": {
+              "n": 50,
+              "u": 5,
+              "v": 10
+            },
+            "51": {
+              "n": 51,
+              "u": 3,
+              "v": 17
+            },
+            "52": {
+              "n": 52,
+              "u": 4,
+              "v": 13
+            },
+            "54": {
+              "n": 54,
+              "u": 3,
+              "v": 18
+            },
+            "55": {
+              "n": 55,
+              "u": 5,
+              "v": 11
+            },
+            "56": {
+              "n": 56,
+              "u": 4,
+              "v": 14
+            },
+            "57": {
+              "n": 57,
+              "u": 3,
+              "v": 19
+            },
+            "58": {
+              "n": 58,
+              "u": 2,
+              "v": 29
+            },
+            "60": {
+              "n": 60,
+              "u": 4,
+              "v": 15
+            },
+            "62": {
+              "n": 62,
+              "u": 2,
+              "v": 31
+            },
+            "63": {
+              "n": 63,
+              "u": 7,
+              "v": 9
+            },
+            "64": {
+              "n": 64,
+              "u": 4,
+              "v": 16
+            },
+            "65": {
+              "n": 65,
+              "u": 5,
+              "v": 13
+            },
+            "66": {
+              "n": 66,
+              "u": 3,
+              "v": 22
+            },
+            "68": {
+              "n": 68,
+              "u": 4,
+              "v": 17
+            },
+            "69": {
+              "n": 69,
+              "u": 3,
+              "v": 23
+            },
+            "70": {
+              "n": 70,
+              "u": 5,
+              "v": 14
+            },
+            "72": {
+              "n": 72,
+              "u": 4,
+              "v": 18
+            }
+          }
+        }
+      ],
+      "derive": {
+        "half": "1",
+        "k": "-n",
+        "px": "sx*u",
+        "py": "sy*v",
+        "S": "n/(1 + half)",
+        "xlo": "min(px, 0) - 2",
+        "xhi": "max(px, 0) + 2",
+        "ylo": "min(py, 0) - 2",
+        "yhi": "max(py, 0) + 2"
+      },
+      "constraints": [
+        "half == 0 or n % 2 == 0",
+        "S != u",
+        "S != v",
+        "S != 2",
+        "S != 4"
+      ],
+      "cost_values": [
+        "k",
+        "S",
+        "half"
+      ],
+      "answer_var": "S",
+      "verify": [
+        "ans*(1 + half) == abs(k)",
+        "px*py == k"
+      ],
+      "question": "반비례 관계 y = [[frac({k},x)]]의 그래프 위의 제{QN}사분면의 한 점 P에서 x축, y축에 각각 내린 수선의 발을 A, B라 할 때, 삼각형 OAP의 넓이를 구하시오. (단, O는 원점)",
+      "figure": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{px}",
+                  "{py}"
+                ]
+              },
+              {
+                "name": "A",
+                "coord": [
+                  "{px}",
+                  0
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  0,
+                  "{py}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{px}",
+                    "{py}"
+                  ],
+                  [
+                    "{px}",
+                    0
+                  ]
+                ],
+                "style": "dashed"
+              },
+              {
+                "points": [
+                  [
+                    "{px}",
+                    "{py}"
+                  ],
+                  [
+                    0,
+                    "{py}"
+                  ]
+                ],
+                "style": "dashed"
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "{S}",
+      "answer_alt": [],
+      "sol1": "점 P의 좌표를 (p, q)라 하면 A(p, 0), B(0, q)이므로 직사각형 OAPB의 가로는 |p|, 세로는 |q|이다. 따라서 직사각형의 넓이는 |p| × |q| = |pq|인데, P가 y = [[frac({k},x)]] 위의 점이므로 pq = {k}이다. 곧 P를 어디에 잡아도 직사각형의 넓이는 |{k}| = {n}{ro(n)} 일정하다. 삼각형 OAP는 이 직사각형을 대각선 OP로 나눈 절반이므로 넓이는 {n} ÷ 2 = {S}이다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{px}",
+                  "{py}"
+                ]
+              },
+              {
+                "name": "A",
+                "coord": [
+                  "{px}",
+                  0
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  0,
+                  "{py}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    "{px}",
+                    0
+                  ],
+                  [
+                    "{px}",
+                    "{py}"
+                  ],
+                  [
+                    0,
+                    "{py}"
+                  ],
+                  [
+                    0,
+                    0
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:P",
+              "lbl:P"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "line:0",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "pt:A",
+              "lbl:A",
+              "pt:B",
+              "lbl:B"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "P(p, q)라 하면 y = [[frac({k},x)]] 위의 점이므로 q = [[frac({k},p)]], 곧 pq = {k}",
+        "직사각형 OAPB의 가로 OA = |p|, 세로 OB = |q|",
+        "(직사각형 OAPB의 넓이) = |p| × |q| = |pq| = |{k}| = {n}",
+        "삼각형 OAP는 직사각형 OAPB의 절반이므로 넓이는 {n} ÷ 2 = {S}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "pq = {k}",
+                "hint": "그래프 위의 점: xy = k"
+              },
+              {
+                "text": "OA = |p|,  OB = |q|",
+                "hint": "길이는 절댓값"
+              },
+              {
+                "text": "|p| × |q| = |{k}| = {n}",
+                "marks": [
+                  {
+                    "on": "{n}",
+                    "note": "넓이는 양수"
+                  }
+                ]
+              },
+              {
+                "text": "삼각형 OAP = {n} ÷ 2 = {S}",
+                "hint": "대각선이 직사각형을 반으로"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "hint:3"
+          }
+        ]
+      ],
+      "sol_check": "예를 들어 P({px}, {py})를 잡으면 가로 {u}, 세로 {v}이고 직사각형의 넓이는 {u} × {v} = {n}, 삼각형 OAP의 넓이는 {n} ÷ 2 = {S}이다. 답: {S}",
+      "model_answer": "P(p, q)라 하면 pq = {k}이고 직사각형 OAPB의 가로와 세로는 |p|, |q|이다. 따라서 직사각형의 넓이는 |p| × |q| = |pq| = |{k}| = {n}이다. 삼각형 OAP는 그 절반이므로 넓이는 {n} ÷ 2 = {S}이다.",
+      "rubric": [
+        {
+          "element": "좌표와 넓이의 관계",
+          "points": 3,
+          "criterion": "P(p, q)로 놓아 가로 |p|, 세로 |q|이고 pq = {k}임을 밝혔다.",
+          "partial": "pq = {k}{eul(k)} 쓰지 않고 특정 점만 잡아 계산했으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "직사각형의 넓이 {n}의 절반 {S}{eul(S)} 삼각형의 넓이로 답했다.",
+          "partial": "넓이를 음수로 답했으면 인정하지 않고, 직사각형과 삼각형을 혼동했으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-1-proportion-t7",
+      "pitfalls": [
+        {
+          "text": "pq = k(그래프 위의 점)라는 근거를 쓰지 않음",
+          "on": "관계",
+          "effect": "부분"
+        },
+        {
+          "text": "직사각형의 넓이를 그대로 삼각형의 넓이로 답함(절반을 취하지 않음)",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "넓이를 음수로 답함",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}
