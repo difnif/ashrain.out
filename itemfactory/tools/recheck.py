@@ -1420,6 +1420,8 @@ def recompute(it):
             x2, y2 = sym[m.group(3)](p + Fraction(m.group(1)), qq + Fraction(m.group(2))); return x2 + y2
     if tid.startswith("h1-2-set") or tid.startswith("h1-2-logic") or tid.startswith("h1-2-func") or tid.startswith("h1-2-ratfn"):
         return _h12b(tid, q)
+    if tid.startswith("h2-1-exp") or tid.startswith("h2-1-log"):
+        return _h21(tid, q)
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])
@@ -1712,6 +1714,190 @@ def _h12b(tid, q):
     if tid == "h1-2-ratfn-t5":
         m = re.match(r"함수 y = \[\[sqrt\((-?\d*)x\)\]\]의 그래프를 x축의 방향으로 (-?\d+)만큼, y축의 방향으로 (-?\d+)만큼 평행이동", q); a = _coef(m.group(1)); mm, nn = Fraction(m.group(2)), Fraction(m.group(3))
         return -a * mm + nn
+    return None
+
+
+def _mk(src):
+    """마커 안 식(pow/root/sqrt/frac/log/정수·소수)을 정확한 값으로 — 유리수면 Fraction, 아니면 float. 실패 시 None."""
+    src = src.strip()
+    if src.startswith("[[") and src.endswith("]]"):
+        src = src[2:-2].strip()
+    m = re.fullmatch(r"-?\d+(?:\.\d+)?", src)
+    if m:
+        return Fraction(src)
+    if src.startswith("-"):
+        v = _mk(src[1:]); return None if v is None else -v
+    m = re.fullmatch(r"(\w+)\((.*)\)", src)
+    if not m:
+        return None
+    fn, inner = m.group(1), m.group(2)
+    args, depth, cur = [], 0, ""
+    for ch in inner:
+        if ch == "(": depth += 1
+        if ch == ")": depth -= 1
+        if ch == "," and depth == 0:
+            args.append(cur); cur = ""
+        else:
+            cur += ch
+    args.append(cur)
+    vs = [_mk(a) for a in args]
+    if any(v is None for v in vs):
+        return None
+    if fn == "frac" and len(vs) == 2: return Fraction(vs[0]) / Fraction(vs[1]) if all(isinstance(v, Fraction) for v in vs) else vs[0] / vs[1]
+    if fn == "pow" and len(vs) == 2:
+        mr = re.fullmatch(r"root\((\d+), (-?\d+)\)", args[0].strip())
+        if mr and isinstance(vs[1], Fraction) and vs[1].denominator == 1:      # (ⁿ√v)ᵏ = ⁿ√(vᵏ) 을 정확히
+            return _rootf(Fraction(int(mr.group(2))) ** int(vs[1]), int(mr.group(1)))
+        b, e = vs
+        if isinstance(b, Fraction) and isinstance(e, Fraction):
+            if e.denominator == 1: return b ** int(e)
+            r = _rootf(b, e.denominator); return None if r is None else r ** e.numerator
+        return float(b) ** float(e)
+    if fn == "sqrt" and len(vs) == 1: return _rootf(vs[0], 2) if isinstance(vs[0], Fraction) else math.sqrt(vs[0])
+    if fn == "root" and len(vs) == 2: return _rootf(vs[1], int(vs[0])) if isinstance(vs[1], Fraction) else vs[1] ** (1 / float(vs[0]))
+    if fn == "log":
+        if len(vs) == 1: return _ratf(math.log10(float(vs[0])))
+        return _ratf(math.log(float(vs[1])) / math.log(float(vs[0])))
+    return None
+
+
+def _rootf(v, n):
+    """v의 n제곱근 — 유리수로 떨어지면 Fraction, 아니면 float(음수 밑은 홀수 n만)."""
+    v = Fraction(v)
+    if v < 0:
+        if n % 2 == 0: return None
+        r = _rootf(-v, n); return None if r is None else -r
+    for num in range(0, 3000):
+        if num ** n == v.numerator:
+            for den in range(1, 3000):
+                if den ** n == v.denominator:
+                    return Fraction(num, den)
+            break
+    return float(v) ** (1 / n)
+
+
+def _ratf(x):
+    f = Fraction(x).limit_denominator(1000)
+    return f if abs(float(f) - x) < 1e-9 else x
+
+
+def _h21(tid, q):
+    """h2-1 지수·로그 — 발문에서 다시 푼다."""
+    if tid == "h2-1-exp-t1":
+        m = re.match(r"(.+?) = \[\[pow\((\d+), k\)\]\]일 때", q); base = int(m.group(2)); lhs = m.group(1)
+        parts = re.split(r" ([×÷]) ", lhs); val = _mk(parts[0])
+        for op, t in zip(parts[1::2], parts[2::2]):
+            v = _mk(t); val = val * v if op == "×" else val / v
+        return _ratf(math.log(float(val)) / math.log(base))
+    if tid == "h2-1-exp-t2":
+        m = re.match(r"(\[\[.+?\]\]) ([×÷+−]) (\[\[.+?\]\])의 값", q); a, b = _mk(m.group(1)), _mk(m.group(3)); op = m.group(2)
+        v = {"×": a * b, "÷": a / b, "+": a + b, "−": a - b}[op]
+        return v if isinstance(v, Fraction) else _ratf(float(v))
+    if tid == "h2-1-exp-t3":
+        m = re.match(r"함수 y = \[\[pow\((\d+), x − m\)\]\] ([+−]) (\d+)의 그래프가 점 \((-?\d+), (-?\d+)\)를 지날 때", q); a = int(m.group(1)); n = _sv(m.group(2), m.group(3)); p, qq = Fraction(m.group(4)), Fraction(m.group(5))
+        e = _ratf(math.log(float(qq - n)) / math.log(a)); return p - e
+    if tid == "h2-1-exp-t4":
+        m = re.match(r"(-?\d+) ≤ x ≤ (-?\d+)에서 함수 y = \[\[pow\((.+?), x\)\]\] ([+−]) (\d+)의 최댓값을 M, 최솟값을 m이라 할 때, (M \+ m|M − m)의 값", q); lo, hi = int(m.group(1)), int(m.group(2)); base = _mk(m.group(3)); k = _sv(m.group(4), m.group(5))
+        vs = [base ** x + k for x in range(lo, hi + 1)]; M, mm = max(vs), min(vs)
+        return M + mm if m.group(6) == "M + m" else M - mm
+    if tid == "h2-1-exp-t5":
+        m = re.match(r"방정식 (.+?)의 (해|모든 해의 합|모든 해의 곱)[을를] 구하시오", q); e, ask = m.group(1), m.group(2)
+        mq = re.fullmatch(r"\[\[pow\((\d+), x\)\]\] − (\d+) × \[\[pow\((\d+), x\)\]\] \+ (\d+) = 0", e)
+        if mq:
+            sq, s_, b, p_ = [int(mq.group(i)) for i in (1, 2, 3, 4)]
+            if sq != b * b: return None
+            ts = [t for t in range(1, 2000) if t * t - s_ * t + p_ == 0]; xs = [_ratf(math.log(t) / math.log(b)) for t in ts]
+            if len(xs) != 2: return None
+            return sum(xs) if ask.endswith("합") else xs[0] * xs[1]
+        me = re.fullmatch(r"\[\[pow\((\d+), x(?: ([+−]) (\d+))?\)\]\] = \[\[pow\((\d+), x(?: ([+−]) (\d+))?\)\]\]", e)
+        if me:
+            A, B = int(me.group(1)), int(me.group(4)); u = _sv(me.group(2), me.group(3)) if me.group(2) else Fraction(0); v = _sv(me.group(5), me.group(6)) if me.group(5) else Fraction(0)
+            def _ie(x, b):
+                r = _ratf(math.log(x) / math.log(b)); return isinstance(r, Fraction) and r.denominator == 1
+            base = next((b for b in (2, 3, 5, 7) if _ie(A, b) and _ie(B, b)), None)
+            if base is None: return None
+            p_, q_ = _ratf(math.log(A) / math.log(base)), _ratf(math.log(B) / math.log(base))
+            return (q_ * v - p_ * u) / (p_ - q_)
+        return None
+    if tid == "h2-1-exp-t6":
+        m = re.match(r"부등식 (.+?)[을를] 만족시키는 (자연수|정수) x의 개수를 구하시오", q); e, kind = m.group(1), m.group(2)
+        ma = re.fullmatch(r"\[\[pow\((\d+), x(?: − (\d+))?\)\]\] (≤|<) (\d+)", e)
+        if ma:
+            a, c, rhs = int(ma.group(1)), int(ma.group(2) or 0), int(ma.group(4)); ee = _ratf(math.log(rhs) / math.log(a))
+            return Fraction(sum(1 for x in range(1, 200) if (x - c <= ee if ma.group(3) == "≤" else x - c < ee)))
+        mh = re.fullmatch(r"\[\[pow\(frac\(1,(\d+)\), x(?: − (\d+))?\)\]\] ≥ \[\[frac\(1, (\d+)\)\]\]", e)
+        if mh:
+            a, c, rhs = int(mh.group(1)), int(mh.group(2) or 0), int(mh.group(3)); ee = _ratf(math.log(rhs) / math.log(a))
+            return Fraction(sum(1 for x in range(1, 200) if x - c <= ee))
+        mq = re.fullmatch(r"\[\[pow\((\d+), x\)\]\] − (\d+) × \[\[pow\((\d+), x\)\]\] \+ (\d+) (≤|<) 0", e)
+        if mq:
+            sq, s_, b, p_ = [int(mq.group(i)) for i in (1, 2, 3, 4)]; op = mq.group(5)
+            return Fraction(sum(1 for x in range(-10, 30) if (((b ** x) ** 2 - s_ * b ** x + p_) <= 0 if op == "≤" else ((b ** x) ** 2 - s_ * b ** x + p_) < 0)))
+        return None
+    if tid == "h2-1-log-t1":
+        m = re.match(r"(\[\[.+?\]\]) ([+−]) (\[\[.+?\]\])의 값", q); a, b = _mk(m.group(1)), _mk(m.group(3)); return a + b if m.group(2) == "+" else a - b
+    if tid == "h2-1-log-t2":
+        m = re.match(r"(\[\[.+?\]\]) ([+−×]) (\[\[.+?\]\])의 값", q); a, b = _mk(m.group(1)), _mk(m.group(3)); op = m.group(2)
+        v = a + b if op == "+" else a - b if op == "−" else a * b
+        return _ratf(float(v)) if not isinstance(v, Fraction) else v
+    if tid == "h2-1-log-t3":
+        L2, L3 = Fraction("0.3010"), Fraction("0.4771"); L5 = 1 - L2
+        mv = re.search(r"log (\d+)의 값을 구하시오", q)
+        if mv:
+            N = int(mv.group(1)); p = q_ = r = 0
+            while N % 2 == 0: N //= 2; p += 1
+            while N % 3 == 0: N //= 3; q_ += 1
+            while N % 5 == 0: N //= 5; r += 1
+            return None if N != 1 else p * L2 + q_ * L3 + r * L5
+        md = re.search(r"\[\[pow\((.+?), (\d+)\)\]\][은는이가]? ?몇 자리의 자연수", q)
+        if md:
+            base, n = md.group(1), int(md.group(2)); L = {"2": L2, "3": L3, "6": L2 + L3, "12": 2 * L2 + L3, "15": L3 + L5}.get(base)
+            return None if L is None else Fraction(math.floor(n * L) + 1)
+        ms = re.search(r"\[\[pow\((.+?), (\d+)\)\]\]을 소수로 나타낼 때", q)
+        if ms:
+            base, n = ms.group(1), int(ms.group(2)); L = {"frac(1,2)": -L2, "0.3": L3 - 1, "frac(1,3)": -L3}.get(base)
+            return None if L is None else Fraction(-math.floor(n * L))
+        return None
+    if tid == "h2-1-log-t4":
+        m = re.match(r"함수 y = \[\[log\((\d+), x ([+−]) (\d+)\)\]\] \+ n의 그래프가 점 \((-?\d+), (-?\d+)\)를 지날 때", q); a = int(m.group(1)); mm = -_sv(m.group(2), m.group(3)); p, qq = Fraction(m.group(4)), Fraction(m.group(5))
+        return qq - _ratf(math.log(float(p - mm)) / math.log(a))
+    if tid == "h2-1-log-t5":
+        m = re.match(r"방정식 (.+?)의 (해|모든 해의 합|모든 해의 곱)[을를] 구하시오", q); e, ask = m.group(1), m.group(2)
+        ma = re.fullmatch(r"\[\[log\((\d+), x(?: − (\d+))?\)\]\] \+ \[\[log\((\d+), x \+ (\d+)\)\]\] = (\d+)", e)
+        if ma:
+            a, p, qv, ee = int(ma.group(1)), int(ma.group(2) or 0), int(ma.group(4)), int(ma.group(5)); xs = [x for x in range(p + 1, 500) if (x - p) * (x + qv) == a ** ee]
+            return Fraction(xs[0]) if len(xs) == 1 else None
+        mt = re.fullmatch(r"\[\[pow\(log\((\d+), x\), 2\)\]\] − (\d+)\[\[log\((\d+), x\)\]\](?: \+ (\d+))? = 0", e)
+        if mt:
+            a, s_, pr = int(mt.group(1)), int(mt.group(2)), int(mt.group(4) or 0); ts = [t for t in range(0, 50) if t * t - s_ * t + pr == 0]
+            if len(ts) != 2: return None
+            return Fraction(a ** ts[0] * a ** ts[1]) if ask.endswith("곱") else Fraction(a ** ts[0] + a ** ts[1])
+        mb = re.fullmatch(r"\[\[log\((\d+), x\)\]\] = \[\[log\((\d+), x \+ (\d+)\)\]\]", e)
+        if mb:
+            a, sq, c = int(mb.group(1)), int(mb.group(2)), int(mb.group(3))
+            if sq != a * a: return None
+            xs = [x for x in range(1, 500) if x * x == x + c]; return Fraction(xs[0]) if len(xs) == 1 else None
+        return None
+    if tid == "h2-1-log-t6":
+        m = re.match(r"부등식 (.+?)[을를] 만족시키는 (자연수 x의 개수|정수 x의 최댓값|정수 x의 최솟값|정수 x의 개수)[을를] 구하시오", q); e, ask = m.group(1), m.group(2)
+        def pick(xs):
+            if not xs: return None
+            return Fraction(len(xs)) if ask.endswith("개수") else Fraction(max(xs)) if ask.endswith("최댓값") else Fraction(min(xs))
+        ma = re.fullmatch(r"\[\[log\((\d+), x(?: − (\d+))?\)\]\] ≤ (\d+)", e)
+        if ma:
+            a, p, ee = int(ma.group(1)), int(ma.group(2) or 0), int(ma.group(3)); return pick([x for x in range(1, 2000) if x - p > 0 and x - p <= a ** ee])
+        mh = re.fullmatch(r"\[\[log\(frac\(1,(\d+)\), x(?: − (\d+))?\)\]\] ≥ −(\d+)", e)
+        if mh:
+            a, p, ee = int(mh.group(1)), int(mh.group(2) or 0), int(mh.group(3)); return pick([x for x in range(1, 2000) if x - p > 0 and x - p <= a ** ee])
+        mt = re.fullmatch(r"\[\[pow\(log\((\d+), x\), 2\)\]\] − (\d+)\[\[log\((\d+), x\)\]\](?: \+ (\d+))? ≤ 0", e)
+        if mt:
+            a, s_, pr = int(mt.group(1)), int(mt.group(2)), int(mt.group(4) or 0); ts = sorted(t for t in range(0, 50) if t * t - s_ * t + pr == 0)
+            if len(ts) != 2: return None
+            return pick([x for x in range(1, 5000) if a ** ts[0] <= x <= a ** ts[1]])
+        mc = re.fullmatch(r"\[\[log\((\d+), x(?: − (\d+))?\)\]\] ≤ \[\[log\((\d+), 2x − (\d+)\)\]\]", e)
+        if mc:
+            p, r_ = int(mc.group(2) or 0), int(mc.group(4)); return pick([x for x in range(-50, 200) if x - p > 0 and 2 * x - r_ > 0 and x - p <= 2 * x - r_][:1])
+        return None
     return None
 
 
