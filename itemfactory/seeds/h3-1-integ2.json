@@ -1,0 +1,5257 @@
+{
+  "seed_id": "h3-1-integ2",
+  "category": "해석",
+  "title": "여러 가지 적분법 — 기본 정적분·치환적분·부분적분·정적분과 급수·넓이·속도와 거리",
+  "unit_id": "h3-1",
+  "concept_ids": [
+    "h3-1-13",
+    "h3-1-14",
+    "h3-1-15",
+    "h3-1-16",
+    "h3-1-17",
+    "h3-1-18"
+  ],
+  "schema_id": null,
+  "schema_name": "여러 가지 함수의 적분",
+  "source_item_ids": [],
+  "note": "값이 유리수가 되는 구간(ln a, eᵏ, π 등)만 골랐다. 부분적분은 4가지 기본형 × 상수배.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정적분",
+        "미분법"
+      ],
+      "ops": [
+        "적분법"
+      ],
+      "traps": [
+        "치환 후 적분 구간",
+        "부분적분의 u·v 선택"
+      ],
+      "tags": [
+        "치환적분",
+        "부분적분",
+        "정적분과 급수",
+        "넓이"
+      ],
+      "id": "h3-1-integ2-t1",
+      "title": "여러 가지 함수의 정적분 — 지수·로그·삼각",
+      "skill": "eˣ, 1/x, sin x, cos x, sec²x의 원시함수를 알고 정적분 계산하기",
+      "variant_axis": {
+        "피적분함수": "eˣ, e²ˣ, 1/x, c sin x, c cos x, c sec²x, c sin 2x",
+        "구간": "[0, ln a], [1, eᵏ], [0, π] 등"
+      },
+      "discriminates": "원시함수를 정확히 알고 e^(ln a) = a, 삼각함수 특수각 값을 쓰는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              "i8",
+              "i17",
+              "i32",
+              "i11",
+              "i76",
+              "i86",
+              "i44",
+              "i92",
+              "i52",
+              "i97",
+              "i2",
+              "i21",
+              "i58",
+              "i84",
+              "i5",
+              "i71",
+              "i95",
+              "i28",
+              "i94",
+              "i6",
+              "i34",
+              "i33",
+              "i70",
+              "i1",
+              "i87",
+              "i20",
+              "i7",
+              "i23",
+              "i73",
+              "i10",
+              "i51",
+              "i3",
+              "i15",
+              "i43",
+              "i63",
+              "i31",
+              "i90",
+              "i78",
+              "i67",
+              "i22",
+              "i93",
+              "i101",
+              "i55",
+              "i79",
+              "i100",
+              "i66",
+              "i54",
+              "i89",
+              "i40",
+              "i41",
+              "i29",
+              "i83",
+              "i50",
+              "i77",
+              "i102",
+              "i48",
+              "i37",
+              "i26",
+              "i57",
+              "i62",
+              "i98",
+              "i19",
+              "i46",
+              "i38",
+              "i56",
+              "i82",
+              "i30",
+              "i18",
+              "i42",
+              "i45",
+              "i81",
+              "i75",
+              "i9",
+              "i12",
+              "i96",
+              "i64",
+              "i61",
+              "i49",
+              "i0",
+              "i13",
+              "i14",
+              "i99",
+              "i85",
+              "i69",
+              "i16",
+              "i59",
+              "i24",
+              "i60",
+              "i27",
+              "i80",
+              "i4",
+              "i72",
+              "i91",
+              "i39",
+              "i88",
+              "i74",
+              "i53",
+              "i47",
+              "i68",
+              "i36",
+              "i25",
+              "i65",
+              "i35"
+            ]
+          }
+        }
+      ],
+      "question": "{EXPR}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "f",
+        "rows": {
+          "i8": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), 2 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "2 × ([[pow(e, ln(3))]] − [[pow(e, 0)]] = 3 − 1)"
+          },
+          "i17": {
+            "VN": 20,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), 5 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "5 × ([[frac(1,2)]]([[pow(e, 2ln(3))]] − 1) = [[frac(1,2)]](9 − 1))"
+          },
+          "i32": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), 2 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "2 × ([[pow(e, ln(5))]] − [[pow(e, 0)]] = 5 − 1)"
+          },
+          "i11": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), 5 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "5 × ([[pow(e, ln(3))]] − [[pow(e, 0)]] = 3 − 1)"
+          },
+          "i76": {
+            "VN": 18,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 3), 6 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "6 × (ln [[pow(e, 3)]] − ln 1 = 3)"
+          },
+          "i86": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, 5 sin(x), x)]]",
+            "LAW": "sin x의 원시함수는 −cos x",
+            "STEP": "5 × (−cos π + cos 0 = 2)"
+          },
+          "i44": {
+            "VN": 14,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(8), 2 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "2 × ([[pow(e, ln(8))]] − [[pow(e, 0)]] = 8 − 1)"
+          },
+          "i92": {
+            "VN": 2,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 6), 2 cos(3x), x)]]",
+            "LAW": "cos 3x의 원시함수는 ⅓sin 3x",
+            "STEP": "2 × ([[frac(1,3)]](sin [[frac(pi, 2)]] − sin 0) = [[frac(1,3)]])"
+          },
+          "i52": {
+            "VN": 126,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(8), 4 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "4 × ([[frac(1,2)]]([[pow(e, 2ln(8))]] − 1) = [[frac(1,2)]](64 − 1))"
+          },
+          "i97": {
+            "VN": 2,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 3), sin(3x), x)]]",
+            "LAW": "sin 3x의 원시함수는 −⅓cos 3x",
+            "STEP": "[[frac(1,3)]](−cos π + cos 0) = [[frac(2,3)]]"
+          },
+          "i2": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(2), 2 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "2 × ([[frac(1,2)]]([[pow(e, 2ln(2))]] − 1) = [[frac(1,2)]](4 − 1))"
+          },
+          "i21": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(4), 3 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "3 × ([[pow(e, ln(4))]] − [[pow(e, 0)]] = 4 − 1)"
+          },
+          "i58": {
+            "VN": 32,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), 4 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "4 × ([[pow(e, ln(9))]] − [[pow(e, 0)]] = 9 − 1)"
+          },
+          "i84": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, 3 sin(x), x)]]",
+            "LAW": "sin x의 원시함수는 −cos x",
+            "STEP": "3 × (−cos π + cos 0 = 2)"
+          },
+          "i5": {
+            "VN": 15,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(2), 5 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "5 × ([[frac(1,2)]]([[pow(e, 2ln(2))]] − 1) = [[frac(1,2)]](4 − 1))"
+          },
+          "i71": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 2), 6 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "6 × (ln [[pow(e, 2)]] − ln 1 = 2)"
+          },
+          "i95": {
+            "VN": 5,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 6), 5 cos(3x), x)]]",
+            "LAW": "cos 3x의 원시함수는 ⅓sin 3x",
+            "STEP": "5 × ([[frac(1,3)]](sin [[frac(pi, 2)]] − sin 0) = [[frac(1,3)]])"
+          },
+          "i28": {
+            "VN": 30,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(4), 4 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "4 × ([[frac(1,2)]]([[pow(e, 2ln(4))]] − 1) = [[frac(1,2)]](16 − 1))"
+          },
+          "i94": {
+            "VN": 4,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 6), 4 cos(3x), x)]]",
+            "LAW": "cos 3x의 원시함수는 ⅓sin 3x",
+            "STEP": "4 × ([[frac(1,3)]](sin [[frac(pi, 2)]] − sin 0) = [[frac(1,3)]])"
+          },
+          "i6": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(2), 6 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "6 × ([[frac(1,2)]]([[pow(e, 2ln(2))]] − 1) = [[frac(1,2)]](4 − 1))"
+          },
+          "i34": {
+            "VN": 16,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), 4 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "4 × ([[pow(e, ln(5))]] − [[pow(e, 0)]] = 5 − 1)"
+          },
+          "i33": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), 3 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "3 × ([[pow(e, ln(5))]] − [[pow(e, 0)]] = 5 − 1)"
+          },
+          "i70": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 2), 5 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "5 × (ln [[pow(e, 2)]] − ln 1 = 2)"
+          },
+          "i1": {
+            "VN": 3,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "[[frac(1,2)]]([[pow(e, 2ln(2))]] − 1) = [[frac(1,2)]](4 − 1)"
+          },
+          "i87": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, 6 sin(x), x)]]",
+            "LAW": "sin x의 원시함수는 −cos x",
+            "STEP": "6 × (−cos π + cos 0 = 2)"
+          },
+          "i20": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(4), 2 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "2 × ([[pow(e, ln(4))]] − [[pow(e, 0)]] = 4 − 1)"
+          },
+          "i7": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "[[pow(e, ln(3))]] − [[pow(e, 0)]] = 3 − 1"
+          },
+          "i23": {
+            "VN": 15,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(4), 5 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "5 × ([[pow(e, ln(4))]] − [[pow(e, 0)]] = 4 − 1)"
+          },
+          "i73": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 3), 3 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "3 × (ln [[pow(e, 3)]] − ln 1 = 3)"
+          },
+          "i10": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), 4 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "4 × ([[pow(e, ln(3))]] − [[pow(e, 0)]] = 3 − 1)"
+          },
+          "i51": {
+            "VN": 189,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(8), 3 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "3 × ([[frac(1,2)]]([[pow(e, 2ln(8))]] − 1) = [[frac(1,2)]](64 − 1))"
+          },
+          "i3": {
+            "VN": 9,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(2), 3 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "3 × ([[frac(1,2)]]([[pow(e, 2ln(2))]] − 1) = [[frac(1,2)]](4 − 1))"
+          },
+          "i15": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), 3 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "3 × ([[frac(1,2)]]([[pow(e, 2ln(3))]] − 1) = [[frac(1,2)]](9 − 1))"
+          },
+          "i43": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(8), pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "[[pow(e, ln(8))]] − [[pow(e, 0)]] = 8 − 1"
+          },
+          "i63": {
+            "VN": 120,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), 3 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "3 × ([[frac(1,2)]]([[pow(e, 2ln(9))]] − 1) = [[frac(1,2)]](81 − 1))"
+          },
+          "i31": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "[[pow(e, ln(5))]] − [[pow(e, 0)]] = 5 − 1"
+          },
+          "i90": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), sin(2x), x)]]",
+            "LAW": "sin 2x의 원시함수는 −½cos 2x",
+            "STEP": "[[frac(1,2)]](−cos π + cos 0) = 1"
+          },
+          "i78": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 4), 3 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "3 × (ln [[pow(e, 4)]] − ln 1 = 4)"
+          },
+          "i67": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 2), 2 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "2 × (ln [[pow(e, 2)]] − ln 1 = 2)"
+          },
+          "i22": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(4), 4 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "4 × ([[pow(e, ln(4))]] − [[pow(e, 0)]] = 4 − 1)"
+          },
+          "i93": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 6), 3 cos(3x), x)]]",
+            "LAW": "cos 3x의 원시함수는 ⅓sin 3x",
+            "STEP": "3 × ([[frac(1,3)]](sin [[frac(pi, 2)]] − sin 0) = [[frac(1,3)]])"
+          },
+          "i101": {
+            "VN": 10,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 3), 5 sin(3x), x)]]",
+            "LAW": "sin 3x의 원시함수는 −⅓cos 3x",
+            "STEP": "5 × ([[frac(1,3)]](−cos π + cos 0) = [[frac(2,3)]])"
+          },
+          "i55": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "[[pow(e, ln(9))]] − [[pow(e, 0)]] = 9 − 1"
+          },
+          "i79": {
+            "VN": 16,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 4), 4 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "4 × (ln [[pow(e, 4)]] − ln 1 = 4)"
+          },
+          "i100": {
+            "VN": 8,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 3), 4 sin(3x), x)]]",
+            "LAW": "sin 3x의 원시함수는 −⅓cos 3x",
+            "STEP": "4 × ([[frac(1,3)]](−cos π + cos 0) = [[frac(2,3)]])"
+          },
+          "i66": {
+            "VN": 240,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), 6 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "6 × ([[frac(1,2)]]([[pow(e, 2ln(9))]] − 1) = [[frac(1,2)]](81 − 1))"
+          },
+          "i54": {
+            "VN": 189,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(8), 6 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "6 × ([[frac(1,2)]]([[pow(e, 2ln(8))]] − 1) = [[frac(1,2)]](64 − 1))"
+          },
+          "i89": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 4), pow(sec(x), 2), x)]]",
+            "LAW": "sec²x의 원시함수는 tan x",
+            "STEP": "tan [[frac(pi, 4)]] − tan 0 = 1"
+          },
+          "i40": {
+            "VN": 48,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), 4 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "4 × ([[frac(1,2)]]([[pow(e, 2ln(5))]] − 1) = [[frac(1,2)]](25 − 1))"
+          },
+          "i41": {
+            "VN": 60,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), 5 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "5 × ([[frac(1,2)]]([[pow(e, 2ln(5))]] − 1) = [[frac(1,2)]](25 − 1))"
+          },
+          "i29": {
+            "VN": 75,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(4), 5 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "5 × ([[frac(1,2)]]([[pow(e, 2ln(4))]] − 1) = [[frac(1,2)]](16 − 1))"
+          },
+          "i83": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, 2 sin(x), x)]]",
+            "LAW": "sin x의 원시함수는 −cos x",
+            "STEP": "2 × (−cos π + cos 0 = 2)"
+          },
+          "i50": {
+            "VN": 63,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(8), 2 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "2 × ([[frac(1,2)]]([[pow(e, 2ln(8))]] − 1) = [[frac(1,2)]](64 − 1))"
+          },
+          "i77": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 4), 2 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "2 × (ln [[pow(e, 4)]] − ln 1 = 4)"
+          },
+          "i102": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 3), 6 sin(3x), x)]]",
+            "LAW": "sin 3x의 원시함수는 −⅓cos 3x",
+            "STEP": "6 × ([[frac(1,3)]](−cos π + cos 0) = [[frac(2,3)]])"
+          },
+          "i48": {
+            "VN": 42,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(8), 6 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "6 × ([[pow(e, ln(8))]] − [[pow(e, 0)]] = 8 − 1)"
+          },
+          "i37": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "[[frac(1,2)]]([[pow(e, 2ln(5))]] − 1) = [[frac(1,2)]](25 − 1)"
+          },
+          "i26": {
+            "VN": 15,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(4), 2 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "2 × ([[frac(1,2)]]([[pow(e, 2ln(4))]] − 1) = [[frac(1,2)]](16 − 1))"
+          },
+          "i57": {
+            "VN": 24,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), 3 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "3 × ([[pow(e, ln(9))]] − [[pow(e, 0)]] = 9 − 1)"
+          },
+          "i62": {
+            "VN": 80,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), 2 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "2 × ([[frac(1,2)]]([[pow(e, 2ln(9))]] − 1) = [[frac(1,2)]](81 − 1))"
+          },
+          "i98": {
+            "VN": 4,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 3), 2 sin(3x), x)]]",
+            "LAW": "sin 3x의 원시함수는 −⅓cos 3x",
+            "STEP": "2 × ([[frac(1,3)]](−cos π + cos 0) = [[frac(2,3)]])"
+          },
+          "i19": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(4), pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "[[pow(e, ln(4))]] − [[pow(e, 0)]] = 4 − 1"
+          },
+          "i46": {
+            "VN": 28,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(8), 4 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "4 × ([[pow(e, ln(8))]] − [[pow(e, 0)]] = 8 − 1)"
+          },
+          "i38": {
+            "VN": 24,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), 2 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "2 × ([[frac(1,2)]]([[pow(e, 2ln(5))]] − 1) = [[frac(1,2)]](25 − 1))"
+          },
+          "i56": {
+            "VN": 16,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), 2 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "2 × ([[pow(e, ln(9))]] − [[pow(e, 0)]] = 9 − 1)"
+          },
+          "i82": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, sin(x), x)]]",
+            "LAW": "sin x의 원시함수는 −cos x",
+            "STEP": "−cos π + cos 0 = 2"
+          },
+          "i30": {
+            "VN": 45,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(4), 6 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "6 × ([[frac(1,2)]]([[pow(e, 2ln(4))]] − 1) = [[frac(1,2)]](16 − 1))"
+          },
+          "i18": {
+            "VN": 24,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), 6 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "6 × ([[frac(1,2)]]([[pow(e, 2ln(3))]] − 1) = [[frac(1,2)]](9 − 1))"
+          },
+          "i42": {
+            "VN": 72,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), 6 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "6 × ([[frac(1,2)]]([[pow(e, 2ln(5))]] − 1) = [[frac(1,2)]](25 − 1))"
+          },
+          "i45": {
+            "VN": 21,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(8), 3 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "3 × ([[pow(e, ln(8))]] − [[pow(e, 0)]] = 8 − 1)"
+          },
+          "i81": {
+            "VN": 24,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 4), 6 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "6 × (ln [[pow(e, 4)]] − ln 1 = 4)"
+          },
+          "i75": {
+            "VN": 15,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 3), 5 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "5 × (ln [[pow(e, 3)]] − ln 1 = 3)"
+          },
+          "i9": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), 3 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "3 × ([[pow(e, ln(3))]] − [[pow(e, 0)]] = 3 − 1)"
+          },
+          "i12": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), 6 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "6 × ([[pow(e, ln(3))]] − [[pow(e, 0)]] = 3 − 1)"
+          },
+          "i96": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 6), 6 cos(3x), x)]]",
+            "LAW": "cos 3x의 원시함수는 ⅓sin 3x",
+            "STEP": "6 × ([[frac(1,3)]](sin [[frac(pi, 2)]] − sin 0) = [[frac(1,3)]])"
+          },
+          "i64": {
+            "VN": 160,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), 4 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "4 × ([[frac(1,2)]]([[pow(e, 2ln(9))]] − 1) = [[frac(1,2)]](81 − 1))"
+          },
+          "i61": {
+            "VN": 40,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "[[frac(1,2)]]([[pow(e, 2ln(9))]] − 1) = [[frac(1,2)]](81 − 1)"
+          },
+          "i49": {
+            "VN": 63,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(8), pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "[[frac(1,2)]]([[pow(e, 2ln(8))]] − 1) = [[frac(1,2)]](64 − 1)"
+          },
+          "i0": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "[[pow(e, ln(2))]] − [[pow(e, 0)]] = 2 − 1"
+          },
+          "i13": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "[[frac(1,2)]]([[pow(e, 2ln(3))]] − 1) = [[frac(1,2)]](9 − 1)"
+          },
+          "i14": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), 2 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "2 × ([[frac(1,2)]]([[pow(e, 2ln(3))]] − 1) = [[frac(1,2)]](9 − 1))"
+          },
+          "i99": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 3), 3 sin(3x), x)]]",
+            "LAW": "sin 3x의 원시함수는 −⅓cos 3x",
+            "STEP": "3 × ([[frac(1,3)]](−cos π + cos 0) = [[frac(2,3)]])"
+          },
+          "i85": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, 4 sin(x), x)]]",
+            "LAW": "sin x의 원시함수는 −cos x",
+            "STEP": "4 × (−cos π + cos 0 = 2)"
+          },
+          "i69": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 2), 4 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "4 × (ln [[pow(e, 2)]] − ln 1 = 2)"
+          },
+          "i16": {
+            "VN": 16,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(3), 4 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "4 × ([[frac(1,2)]]([[pow(e, 2ln(3))]] − 1) = [[frac(1,2)]](9 − 1))"
+          },
+          "i59": {
+            "VN": 40,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), 5 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "5 × ([[pow(e, ln(9))]] − [[pow(e, 0)]] = 9 − 1)"
+          },
+          "i24": {
+            "VN": 18,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(4), 6 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "6 × ([[pow(e, ln(4))]] − [[pow(e, 0)]] = 4 − 1)"
+          },
+          "i60": {
+            "VN": 48,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), 6 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "6 × ([[pow(e, ln(9))]] − [[pow(e, 0)]] = 9 − 1)"
+          },
+          "i27": {
+            "VN": 45,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(4), 3 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "3 × ([[frac(1,2)]]([[pow(e, 2ln(4))]] − 1) = [[frac(1,2)]](16 − 1))"
+          },
+          "i80": {
+            "VN": 20,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 4), 5 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "5 × (ln [[pow(e, 4)]] − ln 1 = 4)"
+          },
+          "i4": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(2), 4 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "4 × ([[frac(1,2)]]([[pow(e, 2ln(2))]] − 1) = [[frac(1,2)]](4 − 1))"
+          },
+          "i72": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 3), 2 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "2 × (ln [[pow(e, 3)]] − ln 1 = 3)"
+          },
+          "i91": {
+            "VN": 1,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 6), cos(3x), x)]]",
+            "LAW": "cos 3x의 원시함수는 ⅓sin 3x",
+            "STEP": "[[frac(1,3)]](sin [[frac(pi, 2)]] − sin 0) = [[frac(1,3)]]"
+          },
+          "i39": {
+            "VN": 36,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), 3 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "3 × ([[frac(1,2)]]([[pow(e, 2ln(5))]] − 1) = [[frac(1,2)]](25 − 1))"
+          },
+          "i88": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), cos(x), x)]]",
+            "LAW": "cos x의 원시함수는 sin x",
+            "STEP": "sin [[frac(pi, 2)]] − sin 0 = 1"
+          },
+          "i74": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 3), 4 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "4 × (ln [[pow(e, 3)]] − ln 1 = 3)"
+          },
+          "i53": {
+            "VN": 315,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(8), 5 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "5 × ([[frac(1,2)]]([[pow(e, 2ln(8))]] − 1) = [[frac(1,2)]](64 − 1))"
+          },
+          "i47": {
+            "VN": 35,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(8), 5 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "5 × ([[pow(e, ln(8))]] − [[pow(e, 0)]] = 8 − 1)"
+          },
+          "i68": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, pow(e, 2), 3 frac(1, x), x)]]",
+            "LAW": "1/x의 원시함수는 ln|x|",
+            "STEP": "3 × (ln [[pow(e, 2)]] − ln 1 = 2)"
+          },
+          "i36": {
+            "VN": 24,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), 6 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "6 × ([[pow(e, ln(5))]] − [[pow(e, 0)]] = 5 − 1)"
+          },
+          "i25": {
+            "VN": 15,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(4), pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "[[frac(1,2)]]([[pow(e, 2ln(4))]] − 1) = [[frac(1,2)]](16 − 1)"
+          },
+          "i65": {
+            "VN": 200,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(9), 5 pow(e, 2x), x)]]",
+            "LAW": "e²ˣ의 원시함수는 ½e²ˣ",
+            "STEP": "5 × ([[frac(1,2)]]([[pow(e, 2ln(9))]] − 1) = [[frac(1,2)]](81 − 1))"
+          },
+          "i35": {
+            "VN": 20,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, ln(5), 5 pow(e, x), x)]]",
+            "LAW": "eˣ의 원시함수는 eˣ",
+            "STEP": "5 × ([[pow(e, ln(5))]] − [[pow(e, 0)]] = 5 − 1)"
+          }
+        }
+      },
+      "derive": {
+        "ans": "VN/VD"
+      },
+      "cost_values": [
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans*VD == VN"
+      ],
+      "sol1": "{LAW}. 원시함수 F(x)를 구해 F(위끝) − F(아래끝)을 계산한다. e^(ln a) = a, ln e = 1, 특수각의 삼각함수 값을 쓴다.",
+      "sol2": [
+        "{LAW}",
+        "{STEP}",
+        "= {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{LAW}",
+                "hint": "원시함수"
+              },
+              {
+                "text": "{STEP}",
+                "hint": "위끝 − 아래끝"
+              },
+              {
+                "text": "= {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "값"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "원시함수를 미분하면 피적분함수가 되는지 확인한다. 따라서 값은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{STEP}",
+              "답 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{LAW}이므로 {STEP} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "원시함수",
+          "points": 3,
+          "criterion": "{LAW}{ro(ans)} 원시함수를 세웠다.",
+          "partial": "부호(−cos x)를 틀리면 1점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{ans}{eul(ans)} 구했다.",
+          "partial": "e^(ln a), 특수각 값 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "sin x의 원시함수를 cos x로 둠",
+          "on": "원시함수",
+          "effect": "불인정"
+        },
+        {
+          "text": "e²ˣ의 원시함수에서 ½을 빠뜨림",
+          "on": "원시함수",
+          "effect": "부분"
+        },
+        {
+          "text": "e^(ln a)를 그대로 둠",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정적분",
+        "미분법"
+      ],
+      "ops": [
+        "적분법"
+      ],
+      "traps": [
+        "치환 후 적분 구간",
+        "부분적분의 u·v 선택"
+      ],
+      "tags": [
+        "치환적분",
+        "부분적분",
+        "정적분과 급수",
+        "넓이"
+      ],
+      "id": "h3-1-integ2-t2",
+      "title": "치환적분법 — 안쪽 함수를 t로 놓기",
+      "skill": "f(g(x))g'(x) 꼴을 찾아 g(x) = t로 치환하고 적분 구간도 t의 값으로 바꾸기",
+      "variant_axis": {
+        "형태": "2x(x² + a)ⁿ, (ln x)ᵏ/x, sinᵏx cos x, cosᵏx sin x, eˣ(eˣ + a)ⁿ"
+      },
+      "discriminates": "치환 후 dx와 구간을 함께 바꾸는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              "c2_1",
+              "e1_3",
+              "c5_6",
+              "s2_1",
+              "l4_3",
+              "l4_1",
+              "s1_3",
+              "s5_1",
+              "e4_2",
+              "p2_3",
+              "p3_4",
+              "s3_3",
+              "e1_2",
+              "s3_2",
+              "s4_2",
+              "c3_3",
+              "s2_3",
+              "p2_4",
+              "c3_6",
+              "s5_3",
+              "p2_2",
+              "s2_2",
+              "l2_2",
+              "e3_2",
+              "l3_1",
+              "s4_1",
+              "e4_1",
+              "c2_3",
+              "e1_1",
+              "l5_2",
+              "c1_6",
+              "e2_2",
+              "l1_6",
+              "c3_2",
+              "e2_1",
+              "l4_6",
+              "c5_2",
+              "c4_3",
+              "c1_3",
+              "s3_6",
+              "s1_1",
+              "s1_6",
+              "s5_2",
+              "l5_1",
+              "c1_1",
+              "e3_1",
+              "l2_1",
+              "s4_3",
+              "l1_3",
+              "c5_1",
+              "p1_4",
+              "l4_2",
+              "p1_3",
+              "p3_3",
+              "l5_3",
+              "p1_2",
+              "s5_6",
+              "p3_2",
+              "l3_3",
+              "s4_6",
+              "c5_3",
+              "e3_3",
+              "c4_1",
+              "l1_1",
+              "c4_6",
+              "e4_3",
+              "l3_6",
+              "c2_2",
+              "s3_1",
+              "l3_2",
+              "c4_2",
+              "e2_3",
+              "c3_1"
+            ]
+          }
+        }
+      ],
+      "question": "{EXPR}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "f",
+        "rows": {
+          "c2_1": {
+            "VN": 1,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 2), pow(cos(x), 2) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "[[dinteg(0, 1, pow(t, 2), t)]]",
+            "RES": "1 × [[frac(1, 3)]] = [[frac(1,3)]]"
+          },
+          "e1_3": {
+            "VN": 65,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 1, 3), x)]]",
+            "SUB": "eˣ + 1 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 2 → 3",
+            "NEW": "[[dinteg(2, 3, pow(t, 3), t)]]",
+            "RES": "[[frac(1, 4)]]([[pow(3, 4)]] − [[pow(2, 4)]]) = [[frac(65,4)]]"
+          },
+          "c5_6": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6pow(cos(x), 5) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "6[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "6 × [[frac(1, 6)]] = 1"
+          },
+          "s2_1": {
+            "VN": 1,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 2), pow(sin(x), 2) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "[[dinteg(0, 1, pow(t, 2), t)]]",
+            "RES": "1 × [[frac(1, 3)]] = [[frac(1,3)]]"
+          },
+          "l4_3": {
+            "VN": 3,
+            "VD": 5,
+            "EXPR": "[[dinteg(1, e, 3frac(pow(ln(x), 4), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "3[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "3 × [[frac(1, 5)]] = [[frac(3,5)]]"
+          },
+          "l4_1": {
+            "VN": 1,
+            "VD": 5,
+            "EXPR": "[[dinteg(1, e, frac(pow(ln(x), 4), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "1 × [[frac(1, 5)]] = [[frac(1,5)]]"
+          },
+          "s1_3": {
+            "VN": 3,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3pow(sin(x), 1) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "3[[dinteg(0, 1, pow(t, 1), t)]]",
+            "RES": "3 × [[frac(1, 2)]] = [[frac(3,2)]]"
+          },
+          "s5_1": {
+            "VN": 1,
+            "VD": 6,
+            "EXPR": "[[dinteg(0, frac(pi, 2), pow(sin(x), 5) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "1 × [[frac(1, 6)]] = [[frac(1,6)]]"
+          },
+          "e4_2": {
+            "VN": 91,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 4, 2), x)]]",
+            "SUB": "eˣ + 4 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 5 → 6",
+            "NEW": "[[dinteg(5, 6, pow(t, 2), t)]]",
+            "RES": "[[frac(1, 3)]]([[pow(6, 3)]] − [[pow(5, 3)]]) = [[frac(91,3)]]"
+          },
+          "p2_3": {
+            "VN": 65,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, 1, 2x pow(pow(x,2) + 2, 3), x)]]",
+            "SUB": "x² + 2 = t로 놓으면 2x dx = dt, x: 0 → 1일 때 t: 2 → 3",
+            "NEW": "[[dinteg(2, 3, pow(t, 3), t)]]",
+            "RES": "[[frac(1, 4)]]([[pow(3, 4)]] − [[pow(2, 4)]]) = [[frac(65,4)]]"
+          },
+          "p3_4": {
+            "VN": 781,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, 1, 2x pow(pow(x,2) + 3, 4), x)]]",
+            "SUB": "x² + 3 = t로 놓으면 2x dx = dt, x: 0 → 1일 때 t: 3 → 4",
+            "NEW": "[[dinteg(3, 4, pow(t, 4), t)]]",
+            "RES": "[[frac(1, 5)]]([[pow(4, 5)]] − [[pow(3, 5)]]) = [[frac(781,5)]]"
+          },
+          "s3_3": {
+            "VN": 3,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3pow(sin(x), 3) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "3[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "3 × [[frac(1, 4)]] = [[frac(3,4)]]"
+          },
+          "e1_2": {
+            "VN": 19,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 1, 2), x)]]",
+            "SUB": "eˣ + 1 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 2 → 3",
+            "NEW": "[[dinteg(2, 3, pow(t, 2), t)]]",
+            "RES": "[[frac(1, 3)]]([[pow(3, 3)]] − [[pow(2, 3)]]) = [[frac(19,3)]]"
+          },
+          "s3_2": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2pow(sin(x), 3) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "2[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "2 × [[frac(1, 4)]] = [[frac(1,2)]]"
+          },
+          "s4_2": {
+            "VN": 2,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2pow(sin(x), 4) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "2[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "2 × [[frac(1, 5)]] = [[frac(2,5)]]"
+          },
+          "c3_3": {
+            "VN": 3,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3pow(cos(x), 3) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "3[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "3 × [[frac(1, 4)]] = [[frac(3,4)]]"
+          },
+          "s2_3": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3pow(sin(x), 2) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "3[[dinteg(0, 1, pow(t, 2), t)]]",
+            "RES": "3 × [[frac(1, 3)]] = 1"
+          },
+          "p2_4": {
+            "VN": 211,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, 1, 2x pow(pow(x,2) + 2, 4), x)]]",
+            "SUB": "x² + 2 = t로 놓으면 2x dx = dt, x: 0 → 1일 때 t: 2 → 3",
+            "NEW": "[[dinteg(2, 3, pow(t, 4), t)]]",
+            "RES": "[[frac(1, 5)]]([[pow(3, 5)]] − [[pow(2, 5)]]) = [[frac(211,5)]]"
+          },
+          "c3_6": {
+            "VN": 3,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6pow(cos(x), 3) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "6[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "6 × [[frac(1, 4)]] = [[frac(3,2)]]"
+          },
+          "s5_3": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3pow(sin(x), 5) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "3[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "3 × [[frac(1, 6)]] = [[frac(1,2)]]"
+          },
+          "p2_2": {
+            "VN": 19,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, 1, 2x pow(pow(x,2) + 2, 2), x)]]",
+            "SUB": "x² + 2 = t로 놓으면 2x dx = dt, x: 0 → 1일 때 t: 2 → 3",
+            "NEW": "[[dinteg(2, 3, pow(t, 2), t)]]",
+            "RES": "[[frac(1, 3)]]([[pow(3, 3)]] − [[pow(2, 3)]]) = [[frac(19,3)]]"
+          },
+          "s2_2": {
+            "VN": 2,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2pow(sin(x), 2) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "2[[dinteg(0, 1, pow(t, 2), t)]]",
+            "RES": "2 × [[frac(1, 3)]] = [[frac(2,3)]]"
+          },
+          "l2_2": {
+            "VN": 2,
+            "VD": 3,
+            "EXPR": "[[dinteg(1, e, 2frac(pow(ln(x), 2), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "2[[dinteg(0, 1, pow(t, 2), t)]]",
+            "RES": "2 × [[frac(1, 3)]] = [[frac(2,3)]]"
+          },
+          "e3_2": {
+            "VN": 61,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 3, 2), x)]]",
+            "SUB": "eˣ + 3 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 4 → 5",
+            "NEW": "[[dinteg(4, 5, pow(t, 2), t)]]",
+            "RES": "[[frac(1, 3)]]([[pow(5, 3)]] − [[pow(4, 3)]]) = [[frac(61,3)]]"
+          },
+          "l3_1": {
+            "VN": 1,
+            "VD": 4,
+            "EXPR": "[[dinteg(1, e, frac(pow(ln(x), 3), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "1 × [[frac(1, 4)]] = [[frac(1,4)]]"
+          },
+          "s4_1": {
+            "VN": 1,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, frac(pi, 2), pow(sin(x), 4) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "1 × [[frac(1, 5)]] = [[frac(1,5)]]"
+          },
+          "e4_1": {
+            "VN": 11,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 4, 1), x)]]",
+            "SUB": "eˣ + 4 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 5 → 6",
+            "NEW": "[[dinteg(5, 6, pow(t, 1), t)]]",
+            "RES": "[[frac(1, 2)]]([[pow(6, 2)]] − [[pow(5, 2)]]) = [[frac(11,2)]]"
+          },
+          "c2_3": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3pow(cos(x), 2) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "3[[dinteg(0, 1, pow(t, 2), t)]]",
+            "RES": "3 × [[frac(1, 3)]] = 1"
+          },
+          "e1_1": {
+            "VN": 5,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 1, 1), x)]]",
+            "SUB": "eˣ + 1 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 2 → 3",
+            "NEW": "[[dinteg(2, 3, pow(t, 1), t)]]",
+            "RES": "[[frac(1, 2)]]([[pow(3, 2)]] − [[pow(2, 2)]]) = [[frac(5,2)]]"
+          },
+          "l5_2": {
+            "VN": 1,
+            "VD": 3,
+            "EXPR": "[[dinteg(1, e, 2frac(pow(ln(x), 5), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "2[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "2 × [[frac(1, 6)]] = [[frac(1,3)]]"
+          },
+          "c1_6": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6pow(cos(x), 1) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "6[[dinteg(0, 1, pow(t, 1), t)]]",
+            "RES": "6 × [[frac(1, 2)]] = 3"
+          },
+          "e2_2": {
+            "VN": 37,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 2, 2), x)]]",
+            "SUB": "eˣ + 2 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 3 → 4",
+            "NEW": "[[dinteg(3, 4, pow(t, 2), t)]]",
+            "RES": "[[frac(1, 3)]]([[pow(4, 3)]] − [[pow(3, 3)]]) = [[frac(37,3)]]"
+          },
+          "l1_6": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 6frac(pow(ln(x), 1), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "6[[dinteg(0, 1, pow(t, 1), t)]]",
+            "RES": "6 × [[frac(1, 2)]] = 3"
+          },
+          "c3_2": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2pow(cos(x), 3) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "2[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "2 × [[frac(1, 4)]] = [[frac(1,2)]]"
+          },
+          "e2_1": {
+            "VN": 7,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 2, 1), x)]]",
+            "SUB": "eˣ + 2 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 3 → 4",
+            "NEW": "[[dinteg(3, 4, pow(t, 1), t)]]",
+            "RES": "[[frac(1, 2)]]([[pow(4, 2)]] − [[pow(3, 2)]]) = [[frac(7,2)]]"
+          },
+          "l4_6": {
+            "VN": 6,
+            "VD": 5,
+            "EXPR": "[[dinteg(1, e, 6frac(pow(ln(x), 4), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "6[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "6 × [[frac(1, 5)]] = [[frac(6,5)]]"
+          },
+          "c5_2": {
+            "VN": 1,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2pow(cos(x), 5) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "2[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "2 × [[frac(1, 6)]] = [[frac(1,3)]]"
+          },
+          "c4_3": {
+            "VN": 3,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3pow(cos(x), 4) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "3[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "3 × [[frac(1, 5)]] = [[frac(3,5)]]"
+          },
+          "c1_3": {
+            "VN": 3,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3pow(cos(x), 1) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "3[[dinteg(0, 1, pow(t, 1), t)]]",
+            "RES": "3 × [[frac(1, 2)]] = [[frac(3,2)]]"
+          },
+          "s3_6": {
+            "VN": 3,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6pow(sin(x), 3) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "6[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "6 × [[frac(1, 4)]] = [[frac(3,2)]]"
+          },
+          "s1_1": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, frac(pi, 2), pow(sin(x), 1) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "[[dinteg(0, 1, pow(t, 1), t)]]",
+            "RES": "1 × [[frac(1, 2)]] = [[frac(1,2)]]"
+          },
+          "s1_6": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6pow(sin(x), 1) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "6[[dinteg(0, 1, pow(t, 1), t)]]",
+            "RES": "6 × [[frac(1, 2)]] = 3"
+          },
+          "s5_2": {
+            "VN": 1,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2pow(sin(x), 5) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "2[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "2 × [[frac(1, 6)]] = [[frac(1,3)]]"
+          },
+          "l5_1": {
+            "VN": 1,
+            "VD": 6,
+            "EXPR": "[[dinteg(1, e, frac(pow(ln(x), 5), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "1 × [[frac(1, 6)]] = [[frac(1,6)]]"
+          },
+          "c1_1": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, frac(pi, 2), pow(cos(x), 1) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "[[dinteg(0, 1, pow(t, 1), t)]]",
+            "RES": "1 × [[frac(1, 2)]] = [[frac(1,2)]]"
+          },
+          "e3_1": {
+            "VN": 9,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 3, 1), x)]]",
+            "SUB": "eˣ + 3 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 4 → 5",
+            "NEW": "[[dinteg(4, 5, pow(t, 1), t)]]",
+            "RES": "[[frac(1, 2)]]([[pow(5, 2)]] − [[pow(4, 2)]]) = [[frac(9,2)]]"
+          },
+          "l2_1": {
+            "VN": 1,
+            "VD": 3,
+            "EXPR": "[[dinteg(1, e, frac(pow(ln(x), 2), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "[[dinteg(0, 1, pow(t, 2), t)]]",
+            "RES": "1 × [[frac(1, 3)]] = [[frac(1,3)]]"
+          },
+          "s4_3": {
+            "VN": 3,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3pow(sin(x), 4) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "3[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "3 × [[frac(1, 5)]] = [[frac(3,5)]]"
+          },
+          "l1_3": {
+            "VN": 3,
+            "VD": 2,
+            "EXPR": "[[dinteg(1, e, 3frac(pow(ln(x), 1), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "3[[dinteg(0, 1, pow(t, 1), t)]]",
+            "RES": "3 × [[frac(1, 2)]] = [[frac(3,2)]]"
+          },
+          "c5_1": {
+            "VN": 1,
+            "VD": 6,
+            "EXPR": "[[dinteg(0, frac(pi, 2), pow(cos(x), 5) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "1 × [[frac(1, 6)]] = [[frac(1,6)]]"
+          },
+          "p1_4": {
+            "VN": 31,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, 1, 2x pow(pow(x,2) + 1, 4), x)]]",
+            "SUB": "x² + 1 = t로 놓으면 2x dx = dt, x: 0 → 1일 때 t: 1 → 2",
+            "NEW": "[[dinteg(1, 2, pow(t, 4), t)]]",
+            "RES": "[[frac(1, 5)]]([[pow(2, 5)]] − [[pow(1, 5)]]) = [[frac(31,5)]]"
+          },
+          "l4_2": {
+            "VN": 2,
+            "VD": 5,
+            "EXPR": "[[dinteg(1, e, 2frac(pow(ln(x), 4), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "2[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "2 × [[frac(1, 5)]] = [[frac(2,5)]]"
+          },
+          "p1_3": {
+            "VN": 15,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, 1, 2x pow(pow(x,2) + 1, 3), x)]]",
+            "SUB": "x² + 1 = t로 놓으면 2x dx = dt, x: 0 → 1일 때 t: 1 → 2",
+            "NEW": "[[dinteg(1, 2, pow(t, 3), t)]]",
+            "RES": "[[frac(1, 4)]]([[pow(2, 4)]] − [[pow(1, 4)]]) = [[frac(15,4)]]"
+          },
+          "p3_3": {
+            "VN": 175,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, 1, 2x pow(pow(x,2) + 3, 3), x)]]",
+            "SUB": "x² + 3 = t로 놓으면 2x dx = dt, x: 0 → 1일 때 t: 3 → 4",
+            "NEW": "[[dinteg(3, 4, pow(t, 3), t)]]",
+            "RES": "[[frac(1, 4)]]([[pow(4, 4)]] − [[pow(3, 4)]]) = [[frac(175,4)]]"
+          },
+          "l5_3": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[dinteg(1, e, 3frac(pow(ln(x), 5), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "3[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "3 × [[frac(1, 6)]] = [[frac(1,2)]]"
+          },
+          "p1_2": {
+            "VN": 7,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, 1, 2x pow(pow(x,2) + 1, 2), x)]]",
+            "SUB": "x² + 1 = t로 놓으면 2x dx = dt, x: 0 → 1일 때 t: 1 → 2",
+            "NEW": "[[dinteg(1, 2, pow(t, 2), t)]]",
+            "RES": "[[frac(1, 3)]]([[pow(2, 3)]] − [[pow(1, 3)]]) = [[frac(7,3)]]"
+          },
+          "s5_6": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6pow(sin(x), 5) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "6[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "6 × [[frac(1, 6)]] = 1"
+          },
+          "p3_2": {
+            "VN": 37,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, 1, 2x pow(pow(x,2) + 3, 2), x)]]",
+            "SUB": "x² + 3 = t로 놓으면 2x dx = dt, x: 0 → 1일 때 t: 3 → 4",
+            "NEW": "[[dinteg(3, 4, pow(t, 2), t)]]",
+            "RES": "[[frac(1, 3)]]([[pow(4, 3)]] − [[pow(3, 3)]]) = [[frac(37,3)]]"
+          },
+          "l3_3": {
+            "VN": 3,
+            "VD": 4,
+            "EXPR": "[[dinteg(1, e, 3frac(pow(ln(x), 3), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "3[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "3 × [[frac(1, 4)]] = [[frac(3,4)]]"
+          },
+          "s4_6": {
+            "VN": 6,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6pow(sin(x), 4) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "6[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "6 × [[frac(1, 5)]] = [[frac(6,5)]]"
+          },
+          "c5_3": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3pow(cos(x), 5) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "3[[dinteg(0, 1, pow(t, 5), t)]]",
+            "RES": "3 × [[frac(1, 6)]] = [[frac(1,2)]]"
+          },
+          "e3_3": {
+            "VN": 369,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 3, 3), x)]]",
+            "SUB": "eˣ + 3 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 4 → 5",
+            "NEW": "[[dinteg(4, 5, pow(t, 3), t)]]",
+            "RES": "[[frac(1, 4)]]([[pow(5, 4)]] − [[pow(4, 4)]]) = [[frac(369,4)]]"
+          },
+          "c4_1": {
+            "VN": 1,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, frac(pi, 2), pow(cos(x), 4) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "1 × [[frac(1, 5)]] = [[frac(1,5)]]"
+          },
+          "l1_1": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[dinteg(1, e, frac(pow(ln(x), 1), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "[[dinteg(0, 1, pow(t, 1), t)]]",
+            "RES": "1 × [[frac(1, 2)]] = [[frac(1,2)]]"
+          },
+          "c4_6": {
+            "VN": 6,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6pow(cos(x), 4) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "6[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "6 × [[frac(1, 5)]] = [[frac(6,5)]]"
+          },
+          "e4_3": {
+            "VN": 671,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 4, 3), x)]]",
+            "SUB": "eˣ + 4 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 5 → 6",
+            "NEW": "[[dinteg(5, 6, pow(t, 3), t)]]",
+            "RES": "[[frac(1, 4)]]([[pow(6, 4)]] − [[pow(5, 4)]]) = [[frac(671,4)]]"
+          },
+          "l3_6": {
+            "VN": 3,
+            "VD": 2,
+            "EXPR": "[[dinteg(1, e, 6frac(pow(ln(x), 3), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "6[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "6 × [[frac(1, 4)]] = [[frac(3,2)]]"
+          },
+          "c2_2": {
+            "VN": 2,
+            "VD": 3,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2pow(cos(x), 2) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "2[[dinteg(0, 1, pow(t, 2), t)]]",
+            "RES": "2 × [[frac(1, 3)]] = [[frac(2,3)]]"
+          },
+          "s3_1": {
+            "VN": 1,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, frac(pi, 2), pow(sin(x), 3) cos(x), x)]]",
+            "SUB": "sin x = t로 놓으면 cos x dx = dt, x: 0 → π/2일 때 t: 0 → 1",
+            "NEW": "[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "1 × [[frac(1, 4)]] = [[frac(1,4)]]"
+          },
+          "l3_2": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[dinteg(1, e, 2frac(pow(ln(x), 3), x), x)]]",
+            "SUB": "ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1",
+            "NEW": "2[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "2 × [[frac(1, 4)]] = [[frac(1,2)]]"
+          },
+          "c4_2": {
+            "VN": 2,
+            "VD": 5,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2pow(cos(x), 4) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "2[[dinteg(0, 1, pow(t, 4), t)]]",
+            "RES": "2 × [[frac(1, 5)]] = [[frac(2,5)]]"
+          },
+          "e2_3": {
+            "VN": 175,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + 2, 3), x)]]",
+            "SUB": "eˣ + 2 = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: 3 → 4",
+            "NEW": "[[dinteg(3, 4, pow(t, 3), t)]]",
+            "RES": "[[frac(1, 4)]]([[pow(4, 4)]] − [[pow(3, 4)]]) = [[frac(175,4)]]"
+          },
+          "c3_1": {
+            "VN": 1,
+            "VD": 4,
+            "EXPR": "[[dinteg(0, frac(pi, 2), pow(cos(x), 3) sin(x), x)]]",
+            "SUB": "cos x = t로 놓으면 −sin x dx = dt, x: 0 → π/2일 때 t: 1 → 0",
+            "NEW": "[[dinteg(0, 1, pow(t, 3), t)]]",
+            "RES": "1 × [[frac(1, 4)]] = [[frac(1,4)]]"
+          }
+        }
+      },
+      "derive": {
+        "ans": "VN/VD"
+      },
+      "cost_values": [
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans*VD == VN"
+      ],
+      "sol1": "피적분함수에 (안쪽 함수)와 (안쪽 함수의 도함수)가 함께 있으면 안쪽 함수를 t로 치환한다. {SUB}. 구간을 바꾼 뒤 t에 대한 정적분으로 계산한다.",
+      "sol2": [
+        "{SUB}",
+        "= {NEW}",
+        "{RES}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{SUB}",
+                "hint": "치환"
+              },
+              {
+                "text": "= {NEW}",
+                "hint": "t의 정적분"
+              },
+              {
+                "text": "{RES}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "값"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "치환한 뒤 적분 구간을 t의 값으로 바꾸었는지, dt = g'(x)dx의 계수를 맞췄는지 확인한다. 따라서 값은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{NEW}",
+              "답 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{SUB}이므로 주어진 정적분은 {NEW} = {RES}이다. 따라서 값은 {ans}이다.",
+      "rubric": [
+        {
+          "element": "치환·구간",
+          "points": 3,
+          "criterion": "{NEW} 꼴로 바꿨다.",
+          "partial": "구간을 바꾸지 않았으면 1점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{ans}{eul(ans)} 구했다.",
+          "partial": "거듭제곱 계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "치환 후 적분 구간을 그대로 둠",
+          "on": "치환·구간",
+          "effect": "불인정"
+        },
+        {
+          "text": "dt = g'(x)dx의 계수를 빠뜨림",
+          "on": "치환·구간",
+          "effect": "부분"
+        },
+        {
+          "text": "cos x = t 치환에서 부호(−)로 구간이 뒤집힘을 놓침",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정적분",
+        "미분법"
+      ],
+      "ops": [
+        "적분법"
+      ],
+      "traps": [
+        "치환 후 적분 구간",
+        "부분적분의 u·v 선택"
+      ],
+      "tags": [
+        "치환적분",
+        "부분적분",
+        "정적분과 급수",
+        "넓이"
+      ],
+      "id": "h3-1-integ2-t3",
+      "title": "부분적분법 — ∫uv' = uv − ∫u'v",
+      "skill": "다항식 × (지수·삼각), ln x 꼴에서 u, v'를 골라 부분적분하기",
+      "variant_axis": {
+        "형태": "x eˣ, ln x, x cos x, x sin x × 상수배"
+      },
+      "discriminates": "미분하면 간단해지는 쪽을 u로 잡고 경계값을 정확히 계산하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              "1_-2_dinteg(0, frac(pi, 2), x",
+              "1_3_dinteg(0, frac(pi, 2), x",
+              "6_-4_dinteg(0, 1, 6x pow(e, x",
+              "4_4_dinteg(1, e, 4ln(x) + fr",
+              "5_2_dinteg(0, 1, 5x pow(e, x",
+              "1_5_dinteg(0, 1, x pow(e, x)",
+              "4_3_dinteg(0, 1, 4x pow(e, x",
+              "4_-3_dinteg(0, frac(pi, 2), 4",
+              "2_1_dinteg(1, e, 2ln(x) + fr",
+              "6_2_dinteg(1, e, 6ln(x) + fr",
+              "5_6_dinteg(0, frac(pi, 2), 5",
+              "1_-4_dinteg(0, frac(pi, 2), x",
+              "1_4_dinteg(0, frac(pi, 2), x",
+              "2_cos",
+              "2_-6_dinteg(0, 1, 2x pow(e, x",
+              "1_-6_dinteg(0, frac(pi, 2), x",
+              "1_-6_dinteg(1, e, ln(x) − fra",
+              "2_1_dinteg(0, 1, 2x pow(e, x",
+              "5_4_dinteg(0, frac(pi, 2), 5",
+              "4_3_dinteg(0, frac(pi, 2), 4",
+              "6_6_dinteg(0, 1, 6x pow(e, x",
+              "5_5_dinteg(1, e, 5ln(x) + fr",
+              "6_5_dinteg(0, 1, 6x pow(e, x",
+              "1_3_dinteg(1, e, ln(x) + fra",
+              "5_4_dinteg(1, e, 5ln(x) + fr",
+              "3_-1_dinteg(0, 1, 3x pow(e, x",
+              "5_4_dinteg(0, 1, 5x pow(e, x",
+              "1_5_dinteg(1, e, ln(x) + fra",
+              "6_4_dinteg(1, e, 6ln(x) + fr",
+              "6_5_dinteg(0, frac(pi, 2), 6",
+              "4_-6_dinteg(1, e, 4ln(x) − fr",
+              "5_-3_dinteg(1, e, 5ln(x) − fr",
+              "3_cos",
+              "1_4_dinteg(0, 1, x pow(e, x)",
+              "2_4_dinteg(0, frac(pi, 2), 2",
+              "6_6_dinteg(1, e, 6ln(x) + fr",
+              "3_-5_dinteg(1, e, 3ln(x) − fr",
+              "2_3_dinteg(0, 1, 2x pow(e, x",
+              "2_2_dinteg(1, e, 2ln(x) + fr",
+              "4_6_dinteg(0, 1, 4x pow(e, x",
+              "5_-2_dinteg(1, e, 5ln(x) − fr",
+              "6_-2_dinteg(0, 1, 6x pow(e, x",
+              "2_4_dinteg(0, 1, 2x pow(e, x",
+              "2_3_dinteg(1, e, 2ln(x) + fr",
+              "1_-3_dinteg(0, 1, x pow(e, x)",
+              "1_4_dinteg(1, e, ln(x) + fra",
+              "3_6_dinteg(1, e, 3ln(x) + fr",
+              "2_-3_dinteg(0, frac(pi, 2), 2",
+              "3_4_dinteg(1, e, 3ln(x) + fr",
+              "3_-5_dinteg(0, 1, 3x pow(e, x",
+              "2_6_dinteg(1, e, 2ln(x) + fr",
+              "6_1_dinteg(0, frac(pi, 2), 6",
+              "4_3_dinteg(1, e, 4ln(x) + fr",
+              "3_4_dinteg(0, 1, 3x pow(e, x",
+              "2_1_dinteg(0, frac(pi, 2), 2",
+              "5_-1_dinteg(0, frac(pi, 2), 5",
+              "6_2_dinteg(0, frac(pi, 2), 6",
+              "2_-1_dinteg(0, frac(pi, 2), 2",
+              "5_6_dinteg(0, 1, 5x pow(e, x",
+              "6_-1_dinteg(0, frac(pi, 2), 6",
+              "1_2_dinteg(0, 1, x pow(e, x)",
+              "6_-2_dinteg(1, e, 6ln(x) − fr",
+              "5_-1_dinteg(1, e, 5ln(x) − fr",
+              "1_6_dinteg(0, frac(pi, 2), x",
+              "3_3_dinteg(0, frac(pi, 2), 3",
+              "4_1_dinteg(0, frac(pi, 2), 4",
+              "5_3_dinteg(0, frac(pi, 2), 5",
+              "4_1_dinteg(0, 1, 4x pow(e, x",
+              "6_2_dinteg(0, 1, 6x pow(e, x",
+              "3_5_dinteg(1, e, 3ln(x) + fr",
+              "4_1_dinteg(1, e, 4ln(x) + fr",
+              "6_3_dinteg(0, 1, 6x pow(e, x",
+              "4_-1_dinteg(0, frac(pi, 2), 4",
+              "3_6_dinteg(0, 1, 3x pow(e, x",
+              "6_4_dinteg(0, frac(pi, 2), 6",
+              "1_-3_dinteg(1, e, ln(x) − fra",
+              "1_3_dinteg(0, 1, x pow(e, x)",
+              "1_-5_dinteg(0, 1, x pow(e, x)",
+              "4_2_dinteg(0, 1, 4x pow(e, x",
+              "2_6_dinteg(0, frac(pi, 2), 2",
+              "5_2_dinteg(0, frac(pi, 2), 5",
+              "6_3_dinteg(0, frac(pi, 2), 6",
+              "1_1_dinteg(1, e, ln(x) + fra",
+              "4_-1_dinteg(1, e, 4ln(x) − fr",
+              "2_2_dinteg(0, 1, 2x pow(e, x",
+              "4_4_dinteg(0, frac(pi, 2), 4",
+              "2_5_dinteg(1, e, 2ln(x) + fr",
+              "1_cos",
+              "6_cos",
+              "4_6_dinteg(0, frac(pi, 2), 4",
+              "4_-1_dinteg(0, 1, 4x pow(e, x",
+              "1_-5_dinteg(0, frac(pi, 2), x",
+              "6_5_dinteg(1, e, 6ln(x) + fr",
+              "4_2_dinteg(1, e, 4ln(x) + fr",
+              "4_-5_dinteg(0, frac(pi, 2), 4",
+              "5_5_dinteg(0, frac(pi, 2), 5",
+              "5_-2_dinteg(0, 1, 5x pow(e, x",
+              "2_6_dinteg(0, 1, 2x pow(e, x",
+              "1_-4_dinteg(0, 1, x pow(e, x)",
+              "1_6_dinteg(0, 1, x pow(e, x)",
+              "5_cos",
+              "3_1_dinteg(0, 1, 3x pow(e, x",
+              "2_2_dinteg(0, frac(pi, 2), 2",
+              "1_-5_dinteg(1, e, ln(x) − fra",
+              "5_1_dinteg(1, e, 5ln(x) + fr",
+              "6_1_dinteg(1, e, 6ln(x) + fr",
+              "2_4_dinteg(1, e, 2ln(x) + fr",
+              "6_4_dinteg(0, 1, 6x pow(e, x",
+              "3_-2_dinteg(0, frac(pi, 2), 3",
+              "1_-4_dinteg(1, e, ln(x) − fra",
+              "1_2_dinteg(1, e, ln(x) + fra",
+              "5_-2_dinteg(0, frac(pi, 2), 5",
+              "1_2_dinteg(0, frac(pi, 2), x",
+              "6_-5_dinteg(0, frac(pi, 2), 6",
+              "1_1_dinteg(0, 1, x pow(e, x)",
+              "4_4_dinteg(0, 1, 4x pow(e, x",
+              "6_-2_dinteg(0, frac(pi, 2), 6",
+              "5_2_dinteg(1, e, 5ln(x) + fr",
+              "3_1_dinteg(0, frac(pi, 2), 3",
+              "6_6_dinteg(0, frac(pi, 2), 6",
+              "3_4_dinteg(0, frac(pi, 2), 3",
+              "3_3_dinteg(0, 1, 3x pow(e, x",
+              "6_-1_dinteg(0, 1, 6x pow(e, x",
+              "3_-4_dinteg(0, frac(pi, 2), 3",
+              "3_3_dinteg(1, e, 3ln(x) + fr",
+              "3_2_dinteg(0, 1, 3x pow(e, x",
+              "2_-5_dinteg(0, frac(pi, 2), 2",
+              "3_5_dinteg(0, frac(pi, 2), 3",
+              "2_3_dinteg(0, frac(pi, 2), 2",
+              "5_-6_dinteg(0, frac(pi, 2), 5",
+              "4_5_dinteg(0, 1, 4x pow(e, x",
+              "6_3_dinteg(1, e, 6ln(x) + fr",
+              "5_1_dinteg(0, frac(pi, 2), 5",
+              "4_2_dinteg(0, frac(pi, 2), 4",
+              "2_-5_dinteg(1, e, 2ln(x) − fr",
+              "2_5_dinteg(0, frac(pi, 2), 2",
+              "1_6_dinteg(1, e, ln(x) + fra",
+              "1_5_dinteg(0, frac(pi, 2), x",
+              "3_5_dinteg(0, 1, 3x pow(e, x",
+              "3_-1_dinteg(1, e, 3ln(x) − fr",
+              "5_3_dinteg(0, 1, 5x pow(e, x",
+              "6_-1_dinteg(1, e, 6ln(x) − fr",
+              "4_5_dinteg(1, e, 4ln(x) + fr",
+              "4_-6_dinteg(0, 1, 4x pow(e, x",
+              "6_-4_dinteg(1, e, 6ln(x) − fr",
+              "2_-6_dinteg(1, e, 2ln(x) − fr",
+              "5_6_dinteg(1, e, 5ln(x) + fr",
+              "3_1_dinteg(1, e, 3ln(x) + fr",
+              "2_-6_dinteg(0, frac(pi, 2), 2",
+              "3_6_dinteg(0, frac(pi, 2), 3",
+              "5_-1_dinteg(0, 1, 5x pow(e, x",
+              "6_1_dinteg(0, 1, 6x pow(e, x",
+              "5_-3_dinteg(0, 1, 5x pow(e, x",
+              "2_5_dinteg(0, 1, 2x pow(e, x",
+              "5_5_dinteg(0, 1, 5x pow(e, x",
+              "4_cos",
+              "5_-4_dinteg(0, frac(pi, 2), 5",
+              "4_5_dinteg(0, frac(pi, 2), 4",
+              "4_6_dinteg(1, e, 4ln(x) + fr",
+              "3_2_dinteg(0, frac(pi, 2), 3",
+              "1_-6_dinteg(0, 1, x pow(e, x)",
+              "5_1_dinteg(0, 1, 5x pow(e, x",
+              "2_-5_dinteg(0, 1, 2x pow(e, x",
+              "3_2_dinteg(1, e, 3ln(x) + fr",
+              "5_3_dinteg(1, e, 5ln(x) + fr"
+            ]
+          }
+        }
+      ],
+      "question": "{EXPR}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "f",
+        "rows": {
+          "1_-2_dinteg(0, frac(pi, 2), x": {
+            "VN": -1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), x sin(x) − 2cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 2[sin x]₀^(π/2) = (0 + 1) − 2",
+            "RES": "1 − 2 = -1"
+          },
+          "1_3_dinteg(0, frac(pi, 2), x": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), x sin(x) + 3cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 3[sin x]₀^(π/2) = (0 + 1) + 3",
+            "RES": "1 + 3 = 4"
+          },
+          "6_-4_dinteg(0, 1, 6x pow(e, x": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 6x pow(e, x) − 4, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "6([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 4 = 6(e − (e − 1)) − 4",
+            "RES": "6 − 4 = 2"
+          },
+          "4_4_dinteg(1, e, 4ln(x) + fr": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 4ln(x) + frac(4, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "4([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 4[ln x]₁ᵉ = 4(e − (e − 1)) + 4",
+            "RES": "4 + 4 = 8"
+          },
+          "5_2_dinteg(0, 1, 5x pow(e, x": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 5x pow(e, x) + 2, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "5([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 2 = 5(e − (e − 1)) + 2",
+            "RES": "5 + 2 = 7"
+          },
+          "1_5_dinteg(0, 1, x pow(e, x)": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, x pow(e, x) + 5, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 5 = (e − (e − 1)) + 5",
+            "RES": "1 + 5 = 6"
+          },
+          "4_3_dinteg(0, 1, 4x pow(e, x": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 4x pow(e, x) + 3, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "4([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 3 = 4(e − (e − 1)) + 3",
+            "RES": "4 + 3 = 7"
+          },
+          "4_-3_dinteg(0, frac(pi, 2), 4": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 4x sin(x) − 3cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "4([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 3[sin x]₀^(π/2) = 4(0 + 1) − 3",
+            "RES": "4 − 3 = 1"
+          },
+          "2_1_dinteg(1, e, 2ln(x) + fr": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 2ln(x) + frac(1, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "2([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + [ln x]₁ᵉ = 2(e − (e − 1)) + 1",
+            "RES": "2 + 1 = 3"
+          },
+          "6_2_dinteg(1, e, 6ln(x) + fr": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 6ln(x) + frac(2, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "6([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 2[ln x]₁ᵉ = 6(e − (e − 1)) + 2",
+            "RES": "6 + 2 = 8"
+          },
+          "5_6_dinteg(0, frac(pi, 2), 5": {
+            "VN": 11,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 5x sin(x) + 6cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "5([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 6[sin x]₀^(π/2) = 5(0 + 1) + 6",
+            "RES": "5 + 6 = 11"
+          },
+          "1_-4_dinteg(0, frac(pi, 2), x": {
+            "VN": -3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), x sin(x) − 4cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 4[sin x]₀^(π/2) = (0 + 1) − 4",
+            "RES": "1 − 4 = -3"
+          },
+          "1_4_dinteg(0, frac(pi, 2), x": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), x sin(x) + 4cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 4[sin x]₀^(π/2) = (0 + 1) + 4",
+            "RES": "1 + 4 = 5"
+          },
+          "2_cos": {
+            "VN": -4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, 2x cos(x), x)]]",
+            "UV": "u = x, v' = cos x",
+            "STEP": "2([x sin x]₀^π − [[dinteg(0, pi, sin(x), x)]]) = 2(0 − 2)",
+            "RES": "2 × (−2) = -4"
+          },
+          "2_-6_dinteg(0, 1, 2x pow(e, x": {
+            "VN": -4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 2x pow(e, x) − 6, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "2([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 6 = 2(e − (e − 1)) − 6",
+            "RES": "2 − 6 = -4"
+          },
+          "1_-6_dinteg(0, frac(pi, 2), x": {
+            "VN": -5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), x sin(x) − 6cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 6[sin x]₀^(π/2) = (0 + 1) − 6",
+            "RES": "1 − 6 = -5"
+          },
+          "1_-6_dinteg(1, e, ln(x) − fra": {
+            "VN": -5,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, ln(x) − frac(6, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 6[ln x]₁ᵉ = (e − (e − 1)) − 6",
+            "RES": "1 − 6 = -5"
+          },
+          "2_1_dinteg(0, 1, 2x pow(e, x": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 2x pow(e, x) + 1, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "2([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 1 = 2(e − (e − 1)) + 1",
+            "RES": "2 + 1 = 3"
+          },
+          "5_4_dinteg(0, frac(pi, 2), 5": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 5x sin(x) + 4cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "5([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 4[sin x]₀^(π/2) = 5(0 + 1) + 4",
+            "RES": "5 + 4 = 9"
+          },
+          "4_3_dinteg(0, frac(pi, 2), 4": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 4x sin(x) + 3cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "4([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 3[sin x]₀^(π/2) = 4(0 + 1) + 3",
+            "RES": "4 + 3 = 7"
+          },
+          "6_6_dinteg(0, 1, 6x pow(e, x": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 6x pow(e, x) + 6, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "6([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 6 = 6(e − (e − 1)) + 6",
+            "RES": "6 + 6 = 12"
+          },
+          "5_5_dinteg(1, e, 5ln(x) + fr": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 5ln(x) + frac(5, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "5([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 5[ln x]₁ᵉ = 5(e − (e − 1)) + 5",
+            "RES": "5 + 5 = 10"
+          },
+          "6_5_dinteg(0, 1, 6x pow(e, x": {
+            "VN": 11,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 6x pow(e, x) + 5, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "6([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 5 = 6(e − (e − 1)) + 5",
+            "RES": "6 + 5 = 11"
+          },
+          "1_3_dinteg(1, e, ln(x) + fra": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, ln(x) + frac(3, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 3[ln x]₁ᵉ = (e − (e − 1)) + 3",
+            "RES": "1 + 3 = 4"
+          },
+          "5_4_dinteg(1, e, 5ln(x) + fr": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 5ln(x) + frac(4, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "5([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 4[ln x]₁ᵉ = 5(e − (e − 1)) + 4",
+            "RES": "5 + 4 = 9"
+          },
+          "3_-1_dinteg(0, 1, 3x pow(e, x": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 3x pow(e, x) − 1, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "3([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 1 = 3(e − (e − 1)) − 1",
+            "RES": "3 − 1 = 2"
+          },
+          "5_4_dinteg(0, 1, 5x pow(e, x": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 5x pow(e, x) + 4, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "5([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 4 = 5(e − (e − 1)) + 4",
+            "RES": "5 + 4 = 9"
+          },
+          "1_5_dinteg(1, e, ln(x) + fra": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, ln(x) + frac(5, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 5[ln x]₁ᵉ = (e − (e − 1)) + 5",
+            "RES": "1 + 5 = 6"
+          },
+          "6_4_dinteg(1, e, 6ln(x) + fr": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 6ln(x) + frac(4, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "6([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 4[ln x]₁ᵉ = 6(e − (e − 1)) + 4",
+            "RES": "6 + 4 = 10"
+          },
+          "6_5_dinteg(0, frac(pi, 2), 6": {
+            "VN": 11,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6x sin(x) + 5cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "6([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 5[sin x]₀^(π/2) = 6(0 + 1) + 5",
+            "RES": "6 + 5 = 11"
+          },
+          "4_-6_dinteg(1, e, 4ln(x) − fr": {
+            "VN": -2,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 4ln(x) − frac(6, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "4([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 6[ln x]₁ᵉ = 4(e − (e − 1)) − 6",
+            "RES": "4 − 6 = -2"
+          },
+          "5_-3_dinteg(1, e, 5ln(x) − fr": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 5ln(x) − frac(3, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "5([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 3[ln x]₁ᵉ = 5(e − (e − 1)) − 3",
+            "RES": "5 − 3 = 2"
+          },
+          "3_cos": {
+            "VN": -6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, 3x cos(x), x)]]",
+            "UV": "u = x, v' = cos x",
+            "STEP": "3([x sin x]₀^π − [[dinteg(0, pi, sin(x), x)]]) = 3(0 − 2)",
+            "RES": "3 × (−2) = -6"
+          },
+          "1_4_dinteg(0, 1, x pow(e, x)": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, x pow(e, x) + 4, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 4 = (e − (e − 1)) + 4",
+            "RES": "1 + 4 = 5"
+          },
+          "2_4_dinteg(0, frac(pi, 2), 2": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2x sin(x) + 4cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "2([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 4[sin x]₀^(π/2) = 2(0 + 1) + 4",
+            "RES": "2 + 4 = 6"
+          },
+          "6_6_dinteg(1, e, 6ln(x) + fr": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 6ln(x) + frac(6, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "6([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 6[ln x]₁ᵉ = 6(e − (e − 1)) + 6",
+            "RES": "6 + 6 = 12"
+          },
+          "3_-5_dinteg(1, e, 3ln(x) − fr": {
+            "VN": -2,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 3ln(x) − frac(5, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "3([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 5[ln x]₁ᵉ = 3(e − (e − 1)) − 5",
+            "RES": "3 − 5 = -2"
+          },
+          "2_3_dinteg(0, 1, 2x pow(e, x": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 2x pow(e, x) + 3, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "2([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 3 = 2(e − (e − 1)) + 3",
+            "RES": "2 + 3 = 5"
+          },
+          "2_2_dinteg(1, e, 2ln(x) + fr": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 2ln(x) + frac(2, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "2([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 2[ln x]₁ᵉ = 2(e − (e − 1)) + 2",
+            "RES": "2 + 2 = 4"
+          },
+          "4_6_dinteg(0, 1, 4x pow(e, x": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 4x pow(e, x) + 6, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "4([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 6 = 4(e − (e − 1)) + 6",
+            "RES": "4 + 6 = 10"
+          },
+          "5_-2_dinteg(1, e, 5ln(x) − fr": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 5ln(x) − frac(2, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "5([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 2[ln x]₁ᵉ = 5(e − (e − 1)) − 2",
+            "RES": "5 − 2 = 3"
+          },
+          "6_-2_dinteg(0, 1, 6x pow(e, x": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 6x pow(e, x) − 2, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "6([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 2 = 6(e − (e − 1)) − 2",
+            "RES": "6 − 2 = 4"
+          },
+          "2_4_dinteg(0, 1, 2x pow(e, x": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 2x pow(e, x) + 4, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "2([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 4 = 2(e − (e − 1)) + 4",
+            "RES": "2 + 4 = 6"
+          },
+          "2_3_dinteg(1, e, 2ln(x) + fr": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 2ln(x) + frac(3, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "2([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 3[ln x]₁ᵉ = 2(e − (e − 1)) + 3",
+            "RES": "2 + 3 = 5"
+          },
+          "1_-3_dinteg(0, 1, x pow(e, x)": {
+            "VN": -2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, x pow(e, x) − 3, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 3 = (e − (e − 1)) − 3",
+            "RES": "1 − 3 = -2"
+          },
+          "1_4_dinteg(1, e, ln(x) + fra": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, ln(x) + frac(4, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 4[ln x]₁ᵉ = (e − (e − 1)) + 4",
+            "RES": "1 + 4 = 5"
+          },
+          "3_6_dinteg(1, e, 3ln(x) + fr": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 3ln(x) + frac(6, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "3([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 6[ln x]₁ᵉ = 3(e − (e − 1)) + 6",
+            "RES": "3 + 6 = 9"
+          },
+          "2_-3_dinteg(0, frac(pi, 2), 2": {
+            "VN": -1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2x sin(x) − 3cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "2([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 3[sin x]₀^(π/2) = 2(0 + 1) − 3",
+            "RES": "2 − 3 = -1"
+          },
+          "3_4_dinteg(1, e, 3ln(x) + fr": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 3ln(x) + frac(4, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "3([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 4[ln x]₁ᵉ = 3(e − (e − 1)) + 4",
+            "RES": "3 + 4 = 7"
+          },
+          "3_-5_dinteg(0, 1, 3x pow(e, x": {
+            "VN": -2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 3x pow(e, x) − 5, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "3([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 5 = 3(e − (e − 1)) − 5",
+            "RES": "3 − 5 = -2"
+          },
+          "2_6_dinteg(1, e, 2ln(x) + fr": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 2ln(x) + frac(6, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "2([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 6[ln x]₁ᵉ = 2(e − (e − 1)) + 6",
+            "RES": "2 + 6 = 8"
+          },
+          "6_1_dinteg(0, frac(pi, 2), 6": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6x sin(x) + cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "6([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + [sin x]₀^(π/2) = 6(0 + 1) + 1",
+            "RES": "6 + 1 = 7"
+          },
+          "4_3_dinteg(1, e, 4ln(x) + fr": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 4ln(x) + frac(3, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "4([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 3[ln x]₁ᵉ = 4(e − (e − 1)) + 3",
+            "RES": "4 + 3 = 7"
+          },
+          "3_4_dinteg(0, 1, 3x pow(e, x": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 3x pow(e, x) + 4, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "3([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 4 = 3(e − (e − 1)) + 4",
+            "RES": "3 + 4 = 7"
+          },
+          "2_1_dinteg(0, frac(pi, 2), 2": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2x sin(x) + cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "2([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + [sin x]₀^(π/2) = 2(0 + 1) + 1",
+            "RES": "2 + 1 = 3"
+          },
+          "5_-1_dinteg(0, frac(pi, 2), 5": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 5x sin(x) − cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "5([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − [sin x]₀^(π/2) = 5(0 + 1) − 1",
+            "RES": "5 − 1 = 4"
+          },
+          "6_2_dinteg(0, frac(pi, 2), 6": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6x sin(x) + 2cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "6([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 2[sin x]₀^(π/2) = 6(0 + 1) + 2",
+            "RES": "6 + 2 = 8"
+          },
+          "2_-1_dinteg(0, frac(pi, 2), 2": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2x sin(x) − cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "2([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − [sin x]₀^(π/2) = 2(0 + 1) − 1",
+            "RES": "2 − 1 = 1"
+          },
+          "5_6_dinteg(0, 1, 5x pow(e, x": {
+            "VN": 11,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 5x pow(e, x) + 6, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "5([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 6 = 5(e − (e − 1)) + 6",
+            "RES": "5 + 6 = 11"
+          },
+          "6_-1_dinteg(0, frac(pi, 2), 6": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6x sin(x) − cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "6([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − [sin x]₀^(π/2) = 6(0 + 1) − 1",
+            "RES": "6 − 1 = 5"
+          },
+          "1_2_dinteg(0, 1, x pow(e, x)": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, x pow(e, x) + 2, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 2 = (e − (e − 1)) + 2",
+            "RES": "1 + 2 = 3"
+          },
+          "6_-2_dinteg(1, e, 6ln(x) − fr": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 6ln(x) − frac(2, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "6([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 2[ln x]₁ᵉ = 6(e − (e − 1)) − 2",
+            "RES": "6 − 2 = 4"
+          },
+          "5_-1_dinteg(1, e, 5ln(x) − fr": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 5ln(x) − frac(1, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "5([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − [ln x]₁ᵉ = 5(e − (e − 1)) − 1",
+            "RES": "5 − 1 = 4"
+          },
+          "1_6_dinteg(0, frac(pi, 2), x": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), x sin(x) + 6cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 6[sin x]₀^(π/2) = (0 + 1) + 6",
+            "RES": "1 + 6 = 7"
+          },
+          "3_3_dinteg(0, frac(pi, 2), 3": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3x sin(x) + 3cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "3([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 3[sin x]₀^(π/2) = 3(0 + 1) + 3",
+            "RES": "3 + 3 = 6"
+          },
+          "4_1_dinteg(0, frac(pi, 2), 4": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 4x sin(x) + cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "4([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + [sin x]₀^(π/2) = 4(0 + 1) + 1",
+            "RES": "4 + 1 = 5"
+          },
+          "5_3_dinteg(0, frac(pi, 2), 5": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 5x sin(x) + 3cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "5([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 3[sin x]₀^(π/2) = 5(0 + 1) + 3",
+            "RES": "5 + 3 = 8"
+          },
+          "4_1_dinteg(0, 1, 4x pow(e, x": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 4x pow(e, x) + 1, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "4([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 1 = 4(e − (e − 1)) + 1",
+            "RES": "4 + 1 = 5"
+          },
+          "6_2_dinteg(0, 1, 6x pow(e, x": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 6x pow(e, x) + 2, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "6([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 2 = 6(e − (e − 1)) + 2",
+            "RES": "6 + 2 = 8"
+          },
+          "3_5_dinteg(1, e, 3ln(x) + fr": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 3ln(x) + frac(5, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "3([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 5[ln x]₁ᵉ = 3(e − (e − 1)) + 5",
+            "RES": "3 + 5 = 8"
+          },
+          "4_1_dinteg(1, e, 4ln(x) + fr": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 4ln(x) + frac(1, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "4([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + [ln x]₁ᵉ = 4(e − (e − 1)) + 1",
+            "RES": "4 + 1 = 5"
+          },
+          "6_3_dinteg(0, 1, 6x pow(e, x": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 6x pow(e, x) + 3, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "6([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 3 = 6(e − (e − 1)) + 3",
+            "RES": "6 + 3 = 9"
+          },
+          "4_-1_dinteg(0, frac(pi, 2), 4": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 4x sin(x) − cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "4([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − [sin x]₀^(π/2) = 4(0 + 1) − 1",
+            "RES": "4 − 1 = 3"
+          },
+          "3_6_dinteg(0, 1, 3x pow(e, x": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 3x pow(e, x) + 6, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "3([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 6 = 3(e − (e − 1)) + 6",
+            "RES": "3 + 6 = 9"
+          },
+          "6_4_dinteg(0, frac(pi, 2), 6": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6x sin(x) + 4cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "6([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 4[sin x]₀^(π/2) = 6(0 + 1) + 4",
+            "RES": "6 + 4 = 10"
+          },
+          "1_-3_dinteg(1, e, ln(x) − fra": {
+            "VN": -2,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, ln(x) − frac(3, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 3[ln x]₁ᵉ = (e − (e − 1)) − 3",
+            "RES": "1 − 3 = -2"
+          },
+          "1_3_dinteg(0, 1, x pow(e, x)": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, x pow(e, x) + 3, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 3 = (e − (e − 1)) + 3",
+            "RES": "1 + 3 = 4"
+          },
+          "1_-5_dinteg(0, 1, x pow(e, x)": {
+            "VN": -4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, x pow(e, x) − 5, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 5 = (e − (e − 1)) − 5",
+            "RES": "1 − 5 = -4"
+          },
+          "4_2_dinteg(0, 1, 4x pow(e, x": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 4x pow(e, x) + 2, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "4([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 2 = 4(e − (e − 1)) + 2",
+            "RES": "4 + 2 = 6"
+          },
+          "2_6_dinteg(0, frac(pi, 2), 2": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2x sin(x) + 6cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "2([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 6[sin x]₀^(π/2) = 2(0 + 1) + 6",
+            "RES": "2 + 6 = 8"
+          },
+          "5_2_dinteg(0, frac(pi, 2), 5": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 5x sin(x) + 2cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "5([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 2[sin x]₀^(π/2) = 5(0 + 1) + 2",
+            "RES": "5 + 2 = 7"
+          },
+          "6_3_dinteg(0, frac(pi, 2), 6": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6x sin(x) + 3cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "6([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 3[sin x]₀^(π/2) = 6(0 + 1) + 3",
+            "RES": "6 + 3 = 9"
+          },
+          "1_1_dinteg(1, e, ln(x) + fra": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, ln(x) + frac(1, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + [ln x]₁ᵉ = (e − (e − 1)) + 1",
+            "RES": "1 + 1 = 2"
+          },
+          "4_-1_dinteg(1, e, 4ln(x) − fr": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 4ln(x) − frac(1, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "4([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − [ln x]₁ᵉ = 4(e − (e − 1)) − 1",
+            "RES": "4 − 1 = 3"
+          },
+          "2_2_dinteg(0, 1, 2x pow(e, x": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 2x pow(e, x) + 2, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "2([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 2 = 2(e − (e − 1)) + 2",
+            "RES": "2 + 2 = 4"
+          },
+          "4_4_dinteg(0, frac(pi, 2), 4": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 4x sin(x) + 4cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "4([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 4[sin x]₀^(π/2) = 4(0 + 1) + 4",
+            "RES": "4 + 4 = 8"
+          },
+          "2_5_dinteg(1, e, 2ln(x) + fr": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 2ln(x) + frac(5, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "2([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 5[ln x]₁ᵉ = 2(e − (e − 1)) + 5",
+            "RES": "2 + 5 = 7"
+          },
+          "1_cos": {
+            "VN": -2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, x cos(x), x)]]",
+            "UV": "u = x, v' = cos x",
+            "STEP": "([x sin x]₀^π − [[dinteg(0, pi, sin(x), x)]]) = (0 − 2)",
+            "RES": "1 × (−2) = -2"
+          },
+          "6_cos": {
+            "VN": -12,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, 6x cos(x), x)]]",
+            "UV": "u = x, v' = cos x",
+            "STEP": "6([x sin x]₀^π − [[dinteg(0, pi, sin(x), x)]]) = 6(0 − 2)",
+            "RES": "6 × (−2) = -12"
+          },
+          "4_6_dinteg(0, frac(pi, 2), 4": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 4x sin(x) + 6cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "4([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 6[sin x]₀^(π/2) = 4(0 + 1) + 6",
+            "RES": "4 + 6 = 10"
+          },
+          "4_-1_dinteg(0, 1, 4x pow(e, x": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 4x pow(e, x) − 1, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "4([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 1 = 4(e − (e − 1)) − 1",
+            "RES": "4 − 1 = 3"
+          },
+          "1_-5_dinteg(0, frac(pi, 2), x": {
+            "VN": -4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), x sin(x) − 5cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 5[sin x]₀^(π/2) = (0 + 1) − 5",
+            "RES": "1 − 5 = -4"
+          },
+          "6_5_dinteg(1, e, 6ln(x) + fr": {
+            "VN": 11,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 6ln(x) + frac(5, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "6([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 5[ln x]₁ᵉ = 6(e − (e − 1)) + 5",
+            "RES": "6 + 5 = 11"
+          },
+          "4_2_dinteg(1, e, 4ln(x) + fr": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 4ln(x) + frac(2, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "4([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 2[ln x]₁ᵉ = 4(e − (e − 1)) + 2",
+            "RES": "4 + 2 = 6"
+          },
+          "4_-5_dinteg(0, frac(pi, 2), 4": {
+            "VN": -1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 4x sin(x) − 5cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "4([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 5[sin x]₀^(π/2) = 4(0 + 1) − 5",
+            "RES": "4 − 5 = -1"
+          },
+          "5_5_dinteg(0, frac(pi, 2), 5": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 5x sin(x) + 5cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "5([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 5[sin x]₀^(π/2) = 5(0 + 1) + 5",
+            "RES": "5 + 5 = 10"
+          },
+          "5_-2_dinteg(0, 1, 5x pow(e, x": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 5x pow(e, x) − 2, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "5([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 2 = 5(e − (e − 1)) − 2",
+            "RES": "5 − 2 = 3"
+          },
+          "2_6_dinteg(0, 1, 2x pow(e, x": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 2x pow(e, x) + 6, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "2([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 6 = 2(e − (e − 1)) + 6",
+            "RES": "2 + 6 = 8"
+          },
+          "1_-4_dinteg(0, 1, x pow(e, x)": {
+            "VN": -3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, x pow(e, x) − 4, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 4 = (e − (e − 1)) − 4",
+            "RES": "1 − 4 = -3"
+          },
+          "1_6_dinteg(0, 1, x pow(e, x)": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, x pow(e, x) + 6, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 6 = (e − (e − 1)) + 6",
+            "RES": "1 + 6 = 7"
+          },
+          "5_cos": {
+            "VN": -10,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, 5x cos(x), x)]]",
+            "UV": "u = x, v' = cos x",
+            "STEP": "5([x sin x]₀^π − [[dinteg(0, pi, sin(x), x)]]) = 5(0 − 2)",
+            "RES": "5 × (−2) = -10"
+          },
+          "3_1_dinteg(0, 1, 3x pow(e, x": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 3x pow(e, x) + 1, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "3([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 1 = 3(e − (e − 1)) + 1",
+            "RES": "3 + 1 = 4"
+          },
+          "2_2_dinteg(0, frac(pi, 2), 2": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2x sin(x) + 2cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "2([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 2[sin x]₀^(π/2) = 2(0 + 1) + 2",
+            "RES": "2 + 2 = 4"
+          },
+          "1_-5_dinteg(1, e, ln(x) − fra": {
+            "VN": -4,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, ln(x) − frac(5, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 5[ln x]₁ᵉ = (e − (e − 1)) − 5",
+            "RES": "1 − 5 = -4"
+          },
+          "5_1_dinteg(1, e, 5ln(x) + fr": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 5ln(x) + frac(1, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "5([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + [ln x]₁ᵉ = 5(e − (e − 1)) + 1",
+            "RES": "5 + 1 = 6"
+          },
+          "6_1_dinteg(1, e, 6ln(x) + fr": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 6ln(x) + frac(1, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "6([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + [ln x]₁ᵉ = 6(e − (e − 1)) + 1",
+            "RES": "6 + 1 = 7"
+          },
+          "2_4_dinteg(1, e, 2ln(x) + fr": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 2ln(x) + frac(4, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "2([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 4[ln x]₁ᵉ = 2(e − (e − 1)) + 4",
+            "RES": "2 + 4 = 6"
+          },
+          "6_4_dinteg(0, 1, 6x pow(e, x": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 6x pow(e, x) + 4, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "6([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 4 = 6(e − (e − 1)) + 4",
+            "RES": "6 + 4 = 10"
+          },
+          "3_-2_dinteg(0, frac(pi, 2), 3": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3x sin(x) − 2cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "3([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 2[sin x]₀^(π/2) = 3(0 + 1) − 2",
+            "RES": "3 − 2 = 1"
+          },
+          "1_-4_dinteg(1, e, ln(x) − fra": {
+            "VN": -3,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, ln(x) − frac(4, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 4[ln x]₁ᵉ = (e − (e − 1)) − 4",
+            "RES": "1 − 4 = -3"
+          },
+          "1_2_dinteg(1, e, ln(x) + fra": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, ln(x) + frac(2, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 2[ln x]₁ᵉ = (e − (e − 1)) + 2",
+            "RES": "1 + 2 = 3"
+          },
+          "5_-2_dinteg(0, frac(pi, 2), 5": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 5x sin(x) − 2cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "5([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 2[sin x]₀^(π/2) = 5(0 + 1) − 2",
+            "RES": "5 − 2 = 3"
+          },
+          "1_2_dinteg(0, frac(pi, 2), x": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), x sin(x) + 2cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 2[sin x]₀^(π/2) = (0 + 1) + 2",
+            "RES": "1 + 2 = 3"
+          },
+          "6_-5_dinteg(0, frac(pi, 2), 6": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6x sin(x) − 5cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "6([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 5[sin x]₀^(π/2) = 6(0 + 1) − 5",
+            "RES": "6 − 5 = 1"
+          },
+          "1_1_dinteg(0, 1, x pow(e, x)": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, x pow(e, x) + 1, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 1 = (e − (e − 1)) + 1",
+            "RES": "1 + 1 = 2"
+          },
+          "4_4_dinteg(0, 1, 4x pow(e, x": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 4x pow(e, x) + 4, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "4([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 4 = 4(e − (e − 1)) + 4",
+            "RES": "4 + 4 = 8"
+          },
+          "6_-2_dinteg(0, frac(pi, 2), 6": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6x sin(x) − 2cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "6([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 2[sin x]₀^(π/2) = 6(0 + 1) − 2",
+            "RES": "6 − 2 = 4"
+          },
+          "5_2_dinteg(1, e, 5ln(x) + fr": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 5ln(x) + frac(2, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "5([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 2[ln x]₁ᵉ = 5(e − (e − 1)) + 2",
+            "RES": "5 + 2 = 7"
+          },
+          "3_1_dinteg(0, frac(pi, 2), 3": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3x sin(x) + cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "3([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + [sin x]₀^(π/2) = 3(0 + 1) + 1",
+            "RES": "3 + 1 = 4"
+          },
+          "6_6_dinteg(0, frac(pi, 2), 6": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 6x sin(x) + 6cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "6([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 6[sin x]₀^(π/2) = 6(0 + 1) + 6",
+            "RES": "6 + 6 = 12"
+          },
+          "3_4_dinteg(0, frac(pi, 2), 3": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3x sin(x) + 4cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "3([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 4[sin x]₀^(π/2) = 3(0 + 1) + 4",
+            "RES": "3 + 4 = 7"
+          },
+          "3_3_dinteg(0, 1, 3x pow(e, x": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 3x pow(e, x) + 3, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "3([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 3 = 3(e − (e − 1)) + 3",
+            "RES": "3 + 3 = 6"
+          },
+          "6_-1_dinteg(0, 1, 6x pow(e, x": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 6x pow(e, x) − 1, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "6([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 1 = 6(e − (e − 1)) − 1",
+            "RES": "6 − 1 = 5"
+          },
+          "3_-4_dinteg(0, frac(pi, 2), 3": {
+            "VN": -1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3x sin(x) − 4cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "3([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 4[sin x]₀^(π/2) = 3(0 + 1) − 4",
+            "RES": "3 − 4 = -1"
+          },
+          "3_3_dinteg(1, e, 3ln(x) + fr": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 3ln(x) + frac(3, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "3([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 3[ln x]₁ᵉ = 3(e − (e − 1)) + 3",
+            "RES": "3 + 3 = 6"
+          },
+          "3_2_dinteg(0, 1, 3x pow(e, x": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 3x pow(e, x) + 2, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "3([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 2 = 3(e − (e − 1)) + 2",
+            "RES": "3 + 2 = 5"
+          },
+          "2_-5_dinteg(0, frac(pi, 2), 2": {
+            "VN": -3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2x sin(x) − 5cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "2([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 5[sin x]₀^(π/2) = 2(0 + 1) − 5",
+            "RES": "2 − 5 = -3"
+          },
+          "3_5_dinteg(0, frac(pi, 2), 3": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3x sin(x) + 5cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "3([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 5[sin x]₀^(π/2) = 3(0 + 1) + 5",
+            "RES": "3 + 5 = 8"
+          },
+          "2_3_dinteg(0, frac(pi, 2), 2": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2x sin(x) + 3cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "2([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 3[sin x]₀^(π/2) = 2(0 + 1) + 3",
+            "RES": "2 + 3 = 5"
+          },
+          "5_-6_dinteg(0, frac(pi, 2), 5": {
+            "VN": -1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 5x sin(x) − 6cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "5([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 6[sin x]₀^(π/2) = 5(0 + 1) − 6",
+            "RES": "5 − 6 = -1"
+          },
+          "4_5_dinteg(0, 1, 4x pow(e, x": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 4x pow(e, x) + 5, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "4([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 5 = 4(e − (e − 1)) + 5",
+            "RES": "4 + 5 = 9"
+          },
+          "6_3_dinteg(1, e, 6ln(x) + fr": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 6ln(x) + frac(3, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "6([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 3[ln x]₁ᵉ = 6(e − (e − 1)) + 3",
+            "RES": "6 + 3 = 9"
+          },
+          "5_1_dinteg(0, frac(pi, 2), 5": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 5x sin(x) + cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "5([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + [sin x]₀^(π/2) = 5(0 + 1) + 1",
+            "RES": "5 + 1 = 6"
+          },
+          "4_2_dinteg(0, frac(pi, 2), 4": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 4x sin(x) + 2cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "4([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 2[sin x]₀^(π/2) = 4(0 + 1) + 2",
+            "RES": "4 + 2 = 6"
+          },
+          "2_-5_dinteg(1, e, 2ln(x) − fr": {
+            "VN": -3,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 2ln(x) − frac(5, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "2([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 5[ln x]₁ᵉ = 2(e − (e − 1)) − 5",
+            "RES": "2 − 5 = -3"
+          },
+          "2_5_dinteg(0, frac(pi, 2), 2": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2x sin(x) + 5cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "2([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 5[sin x]₀^(π/2) = 2(0 + 1) + 5",
+            "RES": "2 + 5 = 7"
+          },
+          "1_6_dinteg(1, e, ln(x) + fra": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, ln(x) + frac(6, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 6[ln x]₁ᵉ = (e − (e − 1)) + 6",
+            "RES": "1 + 6 = 7"
+          },
+          "1_5_dinteg(0, frac(pi, 2), x": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), x sin(x) + 5cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 5[sin x]₀^(π/2) = (0 + 1) + 5",
+            "RES": "1 + 5 = 6"
+          },
+          "3_5_dinteg(0, 1, 3x pow(e, x": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 3x pow(e, x) + 5, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "3([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 5 = 3(e − (e − 1)) + 5",
+            "RES": "3 + 5 = 8"
+          },
+          "3_-1_dinteg(1, e, 3ln(x) − fr": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 3ln(x) − frac(1, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "3([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − [ln x]₁ᵉ = 3(e − (e − 1)) − 1",
+            "RES": "3 − 1 = 2"
+          },
+          "5_3_dinteg(0, 1, 5x pow(e, x": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 5x pow(e, x) + 3, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "5([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 3 = 5(e − (e − 1)) + 3",
+            "RES": "5 + 3 = 8"
+          },
+          "6_-1_dinteg(1, e, 6ln(x) − fr": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 6ln(x) − frac(1, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "6([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − [ln x]₁ᵉ = 6(e − (e − 1)) − 1",
+            "RES": "6 − 1 = 5"
+          },
+          "4_5_dinteg(1, e, 4ln(x) + fr": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 4ln(x) + frac(5, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "4([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 5[ln x]₁ᵉ = 4(e − (e − 1)) + 5",
+            "RES": "4 + 5 = 9"
+          },
+          "4_-6_dinteg(0, 1, 4x pow(e, x": {
+            "VN": -2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 4x pow(e, x) − 6, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "4([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 6 = 4(e − (e − 1)) − 6",
+            "RES": "4 − 6 = -2"
+          },
+          "6_-4_dinteg(1, e, 6ln(x) − fr": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 6ln(x) − frac(4, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "6([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 4[ln x]₁ᵉ = 6(e − (e − 1)) − 4",
+            "RES": "6 − 4 = 2"
+          },
+          "2_-6_dinteg(1, e, 2ln(x) − fr": {
+            "VN": -4,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 2ln(x) − frac(6, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "2([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) − 6[ln x]₁ᵉ = 2(e − (e − 1)) − 6",
+            "RES": "2 − 6 = -4"
+          },
+          "5_6_dinteg(1, e, 5ln(x) + fr": {
+            "VN": 11,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 5ln(x) + frac(6, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "5([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 6[ln x]₁ᵉ = 5(e − (e − 1)) + 6",
+            "RES": "5 + 6 = 11"
+          },
+          "3_1_dinteg(1, e, 3ln(x) + fr": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 3ln(x) + frac(1, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "3([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + [ln x]₁ᵉ = 3(e − (e − 1)) + 1",
+            "RES": "3 + 1 = 4"
+          },
+          "2_-6_dinteg(0, frac(pi, 2), 2": {
+            "VN": -4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 2x sin(x) − 6cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "2([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 6[sin x]₀^(π/2) = 2(0 + 1) − 6",
+            "RES": "2 − 6 = -4"
+          },
+          "3_6_dinteg(0, frac(pi, 2), 3": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3x sin(x) + 6cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "3([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 6[sin x]₀^(π/2) = 3(0 + 1) + 6",
+            "RES": "3 + 6 = 9"
+          },
+          "5_-1_dinteg(0, 1, 5x pow(e, x": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 5x pow(e, x) − 1, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "5([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 1 = 5(e − (e − 1)) − 1",
+            "RES": "5 − 1 = 4"
+          },
+          "6_1_dinteg(0, 1, 6x pow(e, x": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 6x pow(e, x) + 1, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "6([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 1 = 6(e − (e − 1)) + 1",
+            "RES": "6 + 1 = 7"
+          },
+          "5_-3_dinteg(0, 1, 5x pow(e, x": {
+            "VN": 2,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 5x pow(e, x) − 3, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "5([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 3 = 5(e − (e − 1)) − 3",
+            "RES": "5 − 3 = 2"
+          },
+          "2_5_dinteg(0, 1, 2x pow(e, x": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 2x pow(e, x) + 5, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "2([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 5 = 2(e − (e − 1)) + 5",
+            "RES": "2 + 5 = 7"
+          },
+          "5_5_dinteg(0, 1, 5x pow(e, x": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 5x pow(e, x) + 5, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "5([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 5 = 5(e − (e − 1)) + 5",
+            "RES": "5 + 5 = 10"
+          },
+          "4_cos": {
+            "VN": -8,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, pi, 4x cos(x), x)]]",
+            "UV": "u = x, v' = cos x",
+            "STEP": "4([x sin x]₀^π − [[dinteg(0, pi, sin(x), x)]]) = 4(0 − 2)",
+            "RES": "4 × (−2) = -8"
+          },
+          "5_-4_dinteg(0, frac(pi, 2), 5": {
+            "VN": 1,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 5x sin(x) − 4cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "5([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) − 4[sin x]₀^(π/2) = 5(0 + 1) − 4",
+            "RES": "5 − 4 = 1"
+          },
+          "4_5_dinteg(0, frac(pi, 2), 4": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 4x sin(x) + 5cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "4([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 5[sin x]₀^(π/2) = 4(0 + 1) + 5",
+            "RES": "4 + 5 = 9"
+          },
+          "4_6_dinteg(1, e, 4ln(x) + fr": {
+            "VN": 10,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 4ln(x) + frac(6, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "4([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 6[ln x]₁ᵉ = 4(e − (e − 1)) + 6",
+            "RES": "4 + 6 = 10"
+          },
+          "3_2_dinteg(0, frac(pi, 2), 3": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, frac(pi, 2), 3x sin(x) + 2cos(x), x)]]",
+            "UV": "u = x, v' = sin x (cos x 항은 sin x로 적분)",
+            "STEP": "3([−x cos x]₀^(π/2) + [[dinteg(0, frac(pi, 2), cos(x), x)]]) + 2[sin x]₀^(π/2) = 3(0 + 1) + 2",
+            "RES": "3 + 2 = 5"
+          },
+          "1_-6_dinteg(0, 1, x pow(e, x)": {
+            "VN": -5,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, x pow(e, x) − 6, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 6 = (e − (e − 1)) − 6",
+            "RES": "1 − 6 = -5"
+          },
+          "5_1_dinteg(0, 1, 5x pow(e, x": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 5x pow(e, x) + 1, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "5([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) + 1 = 5(e − (e − 1)) + 1",
+            "RES": "5 + 1 = 6"
+          },
+          "2_-5_dinteg(0, 1, 2x pow(e, x": {
+            "VN": -3,
+            "VD": 1,
+            "EXPR": "[[dinteg(0, 1, 2x pow(e, x) − 5, x)]]",
+            "UV": "u = x, v' = eˣ (상수항은 따로 적분)",
+            "STEP": "2([x eˣ]₀¹ − [[dinteg(0, 1, pow(e, x), x)]]) − 5 = 2(e − (e − 1)) − 5",
+            "RES": "2 − 5 = -3"
+          },
+          "3_2_dinteg(1, e, 3ln(x) + fr": {
+            "VN": 5,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 3ln(x) + frac(2, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "3([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 2[ln x]₁ᵉ = 3(e − (e − 1)) + 2",
+            "RES": "3 + 2 = 5"
+          },
+          "5_3_dinteg(1, e, 5ln(x) + fr": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[dinteg(1, e, 5ln(x) + frac(3, x), x)]]",
+            "UV": "u = ln x, v' = 1 (1/x 항은 ln|x|로 적분)",
+            "STEP": "5([x ln x]₁ᵉ − [[dinteg(1, e, 1, x)]]) + 3[ln x]₁ᵉ = 5(e − (e − 1)) + 3",
+            "RES": "5 + 3 = 8"
+          }
+        }
+      },
+      "derive": {
+        "ans": "VN/VD"
+      },
+      "cost_values": [
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans*VD == VN"
+      ],
+      "sol1": "부분적분법 ∫uv'dx = uv − ∫u'v dx에서 미분하면 간단해지는 것(x, ln x)을 u, 적분하기 쉬운 것(eˣ, sin x, cos x, 1)을 v'로 잡는다. 여기서는 {UV}.",
+      "sol2": [
+        "{UV}",
+        "{STEP}",
+        "{RES}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{UV}",
+                "hint": "u, v' 선택"
+              },
+              {
+                "text": "{STEP}",
+                "hint": "부분적분"
+              },
+              {
+                "text": "{RES}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "값"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "uv의 경계값과 남은 적분의 부호를 다시 확인한다. 따라서 값은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{STEP}",
+              "답 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{UV}{ro(UV)} 부분적분하면 {STEP}이므로 {RES}이다. 따라서 값은 {ans}이다.",
+      "rubric": [
+        {
+          "element": "부분적분",
+          "points": 3,
+          "criterion": "{STEP} 꼴로 계산했다.",
+          "partial": "u, v'를 바꿔 잡아 더 복잡해졌으면 1점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{ans}{eul(ans)} 구했다.",
+          "partial": "경계값 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "ln x를 v'로 잡음",
+          "on": "부분적분",
+          "effect": "불인정"
+        },
+        {
+          "text": "uv − ∫u'v의 부호를 +로 둠",
+          "on": "부분적분",
+          "effect": "불인정"
+        },
+        {
+          "text": "경계값 대입 실수",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정적분",
+        "미분법"
+      ],
+      "ops": [
+        "적분법"
+      ],
+      "traps": [
+        "치환 후 적분 구간",
+        "부분적분의 u·v 선택"
+      ],
+      "tags": [
+        "치환적분",
+        "부분적분",
+        "정적분과 급수",
+        "넓이"
+      ],
+      "id": "h3-1-integ2-t4",
+      "title": "정적분과 급수의 합 — lim ∑ f(xₖ)Δx",
+      "skill": "합의 극한을 x = a + k(b − a)/n, Δx = (b − a)/n으로 읽어 정적분으로 바꾸기",
+      "variant_axis": {
+        "f": "xᵐ (m = 1, 2, 3)",
+        "구간": "[0, 1], [1, 2], [0, 2]",
+        "상수배": "1~6"
+      },
+      "discriminates": "k/n 꼴을 x로, 1/n 꼴을 dx로 읽어 구간을 정확히 잡는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              "1_01_1",
+              "1_01_3",
+              "1_01_6",
+              "1_12_1",
+              "1_12_2",
+              "1_12_3",
+              "1_12_6",
+              "1_02_2",
+              "1_02_3",
+              "1_02_6",
+              "2_01_1",
+              "2_01_2",
+              "2_12_1",
+              "2_12_2",
+              "2_12_3",
+              "2_12_6",
+              "2_02_1",
+              "2_02_2",
+              "2_02_3",
+              "2_02_6",
+              "3_01_1",
+              "3_01_2",
+              "3_01_3",
+              "3_01_6",
+              "3_12_1",
+              "3_12_2",
+              "3_12_3",
+              "3_12_6",
+              "3_02_1",
+              "3_02_2",
+              "3_02_3",
+              "3_02_6",
+              "4_01_1",
+              "4_01_2",
+              "4_01_3",
+              "4_01_6",
+              "4_12_1",
+              "4_12_2",
+              "4_12_3",
+              "4_12_6",
+              "4_02_1",
+              "4_02_2",
+              "4_02_3",
+              "4_02_6"
+            ]
+          }
+        }
+      ],
+      "question": "{EXPR}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "f",
+        "rows": {
+          "1_01_1": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[lim(n, inf, sum(k, 1, n, frac(k, pow(n, 2))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 1))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "[[dinteg(0, 1, pow(x, 1), x)]]",
+            "RES": "= [[frac(1,2)]]"
+          },
+          "1_01_3": {
+            "VN": 3,
+            "VD": 2,
+            "EXPR": "[[lim(n, inf, 3 sum(k, 1, n, frac(k, pow(n, 2))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 1))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "3[[dinteg(0, 1, pow(x, 1), x)]]",
+            "RES": "3 × [[frac(1,2)]] = [[frac(3,2)]]"
+          },
+          "1_01_6": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 6 sum(k, 1, n, frac(k, pow(n, 2))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 1))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "6[[dinteg(0, 1, pow(x, 1), x)]]",
+            "RES": "6 × [[frac(1,2)]] = 3"
+          },
+          "1_12_1": {
+            "VN": 3,
+            "VD": 2,
+            "EXPR": "[[lim(n, inf, frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 1)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "[[dinteg(1, 2, pow(x, 1), x)]]",
+            "RES": "= [[frac(3,2)]]"
+          },
+          "1_12_2": {
+            "VN": 3,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 2 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 1)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "2[[dinteg(1, 2, pow(x, 1), x)]]",
+            "RES": "2 × [[frac(3,2)]] = 3"
+          },
+          "1_12_3": {
+            "VN": 9,
+            "VD": 2,
+            "EXPR": "[[lim(n, inf, 3 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 1)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "3[[dinteg(1, 2, pow(x, 1), x)]]",
+            "RES": "3 × [[frac(3,2)]] = [[frac(9,2)]]"
+          },
+          "1_12_6": {
+            "VN": 9,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 6 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 1)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "6[[dinteg(1, 2, pow(x, 1), x)]]",
+            "RES": "6 × [[frac(3,2)]] = 9"
+          },
+          "1_02_2": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 2 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 1)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "2[[dinteg(0, 2, pow(x, 1), x)]]",
+            "RES": "2 × 2 = 4"
+          },
+          "1_02_3": {
+            "VN": 6,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 3 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 1)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "3[[dinteg(0, 2, pow(x, 1), x)]]",
+            "RES": "3 × 2 = 6"
+          },
+          "1_02_6": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 6 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 1)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "6[[dinteg(0, 2, pow(x, 1), x)]]",
+            "RES": "6 × 2 = 12"
+          },
+          "2_01_1": {
+            "VN": 1,
+            "VD": 3,
+            "EXPR": "[[lim(n, inf, sum(k, 1, n, frac(pow(k, 2), pow(n, 3))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 2))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "[[dinteg(0, 1, pow(x, 2), x)]]",
+            "RES": "= [[frac(1,3)]]"
+          },
+          "2_01_2": {
+            "VN": 2,
+            "VD": 3,
+            "EXPR": "[[lim(n, inf, 2 sum(k, 1, n, frac(pow(k, 2), pow(n, 3))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 2))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "2[[dinteg(0, 1, pow(x, 2), x)]]",
+            "RES": "2 × [[frac(1,3)]] = [[frac(2,3)]]"
+          },
+          "2_12_1": {
+            "VN": 7,
+            "VD": 3,
+            "EXPR": "[[lim(n, inf, frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 2)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "[[dinteg(1, 2, pow(x, 2), x)]]",
+            "RES": "= [[frac(7,3)]]"
+          },
+          "2_12_2": {
+            "VN": 14,
+            "VD": 3,
+            "EXPR": "[[lim(n, inf, 2 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 2)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "2[[dinteg(1, 2, pow(x, 2), x)]]",
+            "RES": "2 × [[frac(7,3)]] = [[frac(14,3)]]"
+          },
+          "2_12_3": {
+            "VN": 7,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 3 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 2)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "3[[dinteg(1, 2, pow(x, 2), x)]]",
+            "RES": "3 × [[frac(7,3)]] = 7"
+          },
+          "2_12_6": {
+            "VN": 14,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 6 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 2)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "6[[dinteg(1, 2, pow(x, 2), x)]]",
+            "RES": "6 × [[frac(7,3)]] = 14"
+          },
+          "2_02_1": {
+            "VN": 8,
+            "VD": 3,
+            "EXPR": "[[lim(n, inf, frac(2, n) sum(k, 1, n, pow(frac(2k, n), 2)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "[[dinteg(0, 2, pow(x, 2), x)]]",
+            "RES": "= [[frac(8,3)]]"
+          },
+          "2_02_2": {
+            "VN": 16,
+            "VD": 3,
+            "EXPR": "[[lim(n, inf, 2 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 2)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "2[[dinteg(0, 2, pow(x, 2), x)]]",
+            "RES": "2 × [[frac(8,3)]] = [[frac(16,3)]]"
+          },
+          "2_02_3": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 3 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 2)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "3[[dinteg(0, 2, pow(x, 2), x)]]",
+            "RES": "3 × [[frac(8,3)]] = 8"
+          },
+          "2_02_6": {
+            "VN": 16,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 6 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 2)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "6[[dinteg(0, 2, pow(x, 2), x)]]",
+            "RES": "6 × [[frac(8,3)]] = 16"
+          },
+          "3_01_1": {
+            "VN": 1,
+            "VD": 4,
+            "EXPR": "[[lim(n, inf, sum(k, 1, n, frac(pow(k, 3), pow(n, 4))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 3))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "[[dinteg(0, 1, pow(x, 3), x)]]",
+            "RES": "= [[frac(1,4)]]"
+          },
+          "3_01_2": {
+            "VN": 1,
+            "VD": 2,
+            "EXPR": "[[lim(n, inf, 2 sum(k, 1, n, frac(pow(k, 3), pow(n, 4))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 3))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "2[[dinteg(0, 1, pow(x, 3), x)]]",
+            "RES": "2 × [[frac(1,4)]] = [[frac(1,2)]]"
+          },
+          "3_01_3": {
+            "VN": 3,
+            "VD": 4,
+            "EXPR": "[[lim(n, inf, 3 sum(k, 1, n, frac(pow(k, 3), pow(n, 4))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 3))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "3[[dinteg(0, 1, pow(x, 3), x)]]",
+            "RES": "3 × [[frac(1,4)]] = [[frac(3,4)]]"
+          },
+          "3_01_6": {
+            "VN": 3,
+            "VD": 2,
+            "EXPR": "[[lim(n, inf, 6 sum(k, 1, n, frac(pow(k, 3), pow(n, 4))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 3))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "6[[dinteg(0, 1, pow(x, 3), x)]]",
+            "RES": "6 × [[frac(1,4)]] = [[frac(3,2)]]"
+          },
+          "3_12_1": {
+            "VN": 15,
+            "VD": 4,
+            "EXPR": "[[lim(n, inf, frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 3)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "[[dinteg(1, 2, pow(x, 3), x)]]",
+            "RES": "= [[frac(15,4)]]"
+          },
+          "3_12_2": {
+            "VN": 15,
+            "VD": 2,
+            "EXPR": "[[lim(n, inf, 2 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 3)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "2[[dinteg(1, 2, pow(x, 3), x)]]",
+            "RES": "2 × [[frac(15,4)]] = [[frac(15,2)]]"
+          },
+          "3_12_3": {
+            "VN": 45,
+            "VD": 4,
+            "EXPR": "[[lim(n, inf, 3 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 3)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "3[[dinteg(1, 2, pow(x, 3), x)]]",
+            "RES": "3 × [[frac(15,4)]] = [[frac(45,4)]]"
+          },
+          "3_12_6": {
+            "VN": 45,
+            "VD": 2,
+            "EXPR": "[[lim(n, inf, 6 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 3)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "6[[dinteg(1, 2, pow(x, 3), x)]]",
+            "RES": "6 × [[frac(15,4)]] = [[frac(45,2)]]"
+          },
+          "3_02_1": {
+            "VN": 4,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, frac(2, n) sum(k, 1, n, pow(frac(2k, n), 3)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "[[dinteg(0, 2, pow(x, 3), x)]]",
+            "RES": "= 4"
+          },
+          "3_02_2": {
+            "VN": 8,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 2 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 3)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "2[[dinteg(0, 2, pow(x, 3), x)]]",
+            "RES": "2 × 4 = 8"
+          },
+          "3_02_3": {
+            "VN": 12,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 3 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 3)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "3[[dinteg(0, 2, pow(x, 3), x)]]",
+            "RES": "3 × 4 = 12"
+          },
+          "3_02_6": {
+            "VN": 24,
+            "VD": 1,
+            "EXPR": "[[lim(n, inf, 6 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 3)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "6[[dinteg(0, 2, pow(x, 3), x)]]",
+            "RES": "6 × 4 = 24"
+          },
+          "4_01_1": {
+            "VN": 1,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, sum(k, 1, n, frac(pow(k, 4), pow(n, 5))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 4))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "[[dinteg(0, 1, pow(x, 4), x)]]",
+            "RES": "= [[frac(1,5)]]"
+          },
+          "4_01_2": {
+            "VN": 2,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, 2 sum(k, 1, n, frac(pow(k, 4), pow(n, 5))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 4))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "2[[dinteg(0, 1, pow(x, 4), x)]]",
+            "RES": "2 × [[frac(1,5)]] = [[frac(2,5)]]"
+          },
+          "4_01_3": {
+            "VN": 3,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, 3 sum(k, 1, n, frac(pow(k, 4), pow(n, 5))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 4))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "3[[dinteg(0, 1, pow(x, 4), x)]]",
+            "RES": "3 × [[frac(1,5)]] = [[frac(3,5)]]"
+          },
+          "4_01_6": {
+            "VN": 6,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, 6 sum(k, 1, n, frac(pow(k, 4), pow(n, 5))))]]",
+            "STEP": "[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), 4))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]",
+            "INT": "6[[dinteg(0, 1, pow(x, 4), x)]]",
+            "RES": "6 × [[frac(1,5)]] = [[frac(6,5)]]"
+          },
+          "4_12_1": {
+            "VN": 31,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 4)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "[[dinteg(1, 2, pow(x, 4), x)]]",
+            "RES": "= [[frac(31,5)]]"
+          },
+          "4_12_2": {
+            "VN": 62,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, 2 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 4)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "2[[dinteg(1, 2, pow(x, 4), x)]]",
+            "RES": "2 × [[frac(31,5)]] = [[frac(62,5)]]"
+          },
+          "4_12_3": {
+            "VN": 93,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, 3 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 4)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "3[[dinteg(1, 2, pow(x, 4), x)]]",
+            "RES": "3 × [[frac(31,5)]] = [[frac(93,5)]]"
+          },
+          "4_12_6": {
+            "VN": 186,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, 6 frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), 4)))]]",
+            "STEP": "x = 1 + k/n, dx = 1/n, 구간 [1, 2]",
+            "INT": "6[[dinteg(1, 2, pow(x, 4), x)]]",
+            "RES": "6 × [[frac(31,5)]] = [[frac(186,5)]]"
+          },
+          "4_02_1": {
+            "VN": 32,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, frac(2, n) sum(k, 1, n, pow(frac(2k, n), 4)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "[[dinteg(0, 2, pow(x, 4), x)]]",
+            "RES": "= [[frac(32,5)]]"
+          },
+          "4_02_2": {
+            "VN": 64,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, 2 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 4)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "2[[dinteg(0, 2, pow(x, 4), x)]]",
+            "RES": "2 × [[frac(32,5)]] = [[frac(64,5)]]"
+          },
+          "4_02_3": {
+            "VN": 96,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, 3 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 4)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "3[[dinteg(0, 2, pow(x, 4), x)]]",
+            "RES": "3 × [[frac(32,5)]] = [[frac(96,5)]]"
+          },
+          "4_02_6": {
+            "VN": 192,
+            "VD": 5,
+            "EXPR": "[[lim(n, inf, 6 frac(2, n) sum(k, 1, n, pow(frac(2k, n), 4)))]]",
+            "STEP": "x = 2k/n, dx = 2/n, 구간 [0, 2]",
+            "INT": "6[[dinteg(0, 2, pow(x, 4), x)]]",
+            "RES": "6 × [[frac(32,5)]] = [[frac(192,5)]]"
+          }
+        }
+      },
+      "derive": {
+        "ans": "VN/VD"
+      },
+      "cost_values": [
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans*VD == VN"
+      ],
+      "sol1": "구분구적법을 거꾸로 읽는다: [[lim(n, inf, sum(k, 1, n, f(a + frac(k(b − a), n)) frac(b − a, n)))]] = [[dinteg(a, b, f(x), x)]]. {STEP}이므로 주어진 극한은 {INT}이다.",
+      "sol2": [
+        "{STEP}",
+        "= {INT}",
+        "{RES}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{STEP}",
+                "hint": "x, dx 읽기"
+              },
+              {
+                "text": "= {INT}",
+                "hint": "정적분으로"
+              },
+              {
+                "text": "{RES}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "값"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "n이 클 때의 합을 직사각형 넓이의 합으로 보아 구간과 함수가 맞는지 확인한다. 따라서 값은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{INT}",
+              "답 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{STEP}이므로 극한은 {INT}이고 그 값은 {RES}이다. 따라서 답은 {ans}이다.",
+      "rubric": [
+        {
+          "element": "정적분으로 옮기기",
+          "points": 3,
+          "criterion": "{INT} 꼴로 옮겼다.",
+          "partial": "구간을 잘못 잡았으면 1점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{ans}{eul(ans)} 구했다.",
+          "partial": "적분 계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "구간을 항상 [0, 1]로 둠",
+          "on": "정적분으로 옮기기",
+          "effect": "불인정"
+        },
+        {
+          "text": "Δx = 2/n을 1/n으로 봄",
+          "on": "정적분으로 옮기기",
+          "effect": "부분"
+        },
+        {
+          "text": "적분 계산 실수",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정적분",
+        "미분법"
+      ],
+      "ops": [
+        "적분법"
+      ],
+      "traps": [
+        "치환 후 적분 구간",
+        "부분적분의 u·v 선택"
+      ],
+      "tags": [
+        "치환적분",
+        "부분적분",
+        "정적분과 급수",
+        "넓이"
+      ],
+      "id": "h3-1-integ2-t5",
+      "title": "넓이 — 지수·로그·삼각·무리함수와 x축 사이",
+      "skill": "구간에서 함수의 부호를 확인하고 ∫|f(x)|dx로 넓이 구하기",
+      "variant_axis": {
+        "곡선": "eˣ, 1/x, sin x, cos x, √x, 1/x², ln x, e²ˣ, sec²x × 상수배",
+        "구간": "ln a, eᵏ, π 등"
+      },
+      "discriminates": "x축 아래 부분의 부호를 처리하고 지수·로그의 특수값을 정확히 계산하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              "1_0",
+              "1_1",
+              "1_2",
+              "1_3",
+              "1_4",
+              "1_5",
+              "1_6",
+              "1_7",
+              "1_8",
+              "1_9",
+              "1_10",
+              "1_11",
+              "1_12",
+              "1_13",
+              "1_14",
+              "1_15",
+              "1_16",
+              "2_17",
+              "2_18",
+              "2_19",
+              "2_20",
+              "2_21",
+              "2_22",
+              "2_23",
+              "2_24",
+              "2_25",
+              "2_26",
+              "2_27",
+              "2_28",
+              "2_29",
+              "2_30",
+              "3_31",
+              "3_32",
+              "3_33",
+              "3_34",
+              "3_35",
+              "3_36",
+              "3_37",
+              "3_38",
+              "3_39",
+              "3_40",
+              "3_41",
+              "3_42",
+              "3_43",
+              "3_44"
+            ]
+          }
+        }
+      ],
+      "question": "{Q}",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "f",
+        "rows": {
+          "1_0": {
+            "VN": 2,
+            "VD": 1,
+            "Q": "곡선 y = [[pow(e, x)]], x축 및 두 직선 x = 0, x = ln 3으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(0, ln(3), pow(e, x), x)]]",
+            "STEP": "= [[pow(e, ln(3))]] − 1 = 3 − 1",
+            "CURVE": "[[pow(e, x)]]"
+          },
+          "1_1": {
+            "VN": 4,
+            "VD": 1,
+            "Q": "곡선 y = [[pow(e, x)]], x축 및 두 직선 x = 0, x = ln 5로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(0, ln(5), pow(e, x), x)]]",
+            "STEP": "= 5 − 1",
+            "CURVE": "[[pow(e, x)]]"
+          },
+          "1_2": {
+            "VN": 2,
+            "VD": 1,
+            "Q": "곡선 y = [[frac(1, x)]], x축 및 두 직선 x = 1, x = e²으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(1, pow(e, 2), frac(1, x), x)]]",
+            "STEP": "= ln e² = 2",
+            "CURVE": "[[frac(1, x)]]"
+          },
+          "1_3": {
+            "VN": 2,
+            "VD": 1,
+            "Q": "곡선 y = [[frac(1, x)]], x축 및 두 직선 x = e, x = e³으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(e, pow(e, 3), frac(1, x), x)]]",
+            "STEP": "= 3 − 1 = 2",
+            "CURVE": "[[frac(1, x)]]"
+          },
+          "1_4": {
+            "VN": 2,
+            "VD": 1,
+            "Q": "곡선 y = [[sin(x)]], x축 및 두 직선 x = 0, x = π으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(0, pi, sin(x), x)]]",
+            "STEP": "= −cos π + cos 0 = 2",
+            "CURVE": "[[sin(x)]]"
+          },
+          "1_5": {
+            "VN": 1,
+            "VD": 1,
+            "Q": "곡선 y = [[cos(x)]], x축 및 두 직선 x = 0, x = [[frac(pi, 2)]]로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(0, frac(pi, 2), cos(x), x)]]",
+            "STEP": "= sin [[frac(pi, 2)]] − sin 0 = 1",
+            "CURVE": "[[cos(x)]]"
+          },
+          "1_6": {
+            "VN": 4,
+            "VD": 1,
+            "Q": "곡선 y = [[sin(x)]], x축 및 두 직선 x = 0, x = 2π으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[2 dinteg(0, pi, sin(x), x)]]",
+            "STEP": "= 2 × 2 = 4 (x축 아래 부분은 부호를 바꿔 더함)",
+            "CURVE": "[[sin(x)]]"
+          },
+          "1_7": {
+            "VN": 16,
+            "VD": 3,
+            "Q": "곡선 y = [[sqrt(x)]], x축 및 두 직선 x = 0, x = 4로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(0, 4, sqrt(x), x)]]",
+            "STEP": "= [[frac(2,3)]] × [[pow(4, frac(3,2))]] = [[frac(16,3)]]",
+            "CURVE": "[[sqrt(x)]]"
+          },
+          "1_8": {
+            "VN": 18,
+            "VD": 1,
+            "Q": "곡선 y = [[sqrt(x)]], x축 및 두 직선 x = 0, x = 9로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(0, 9, sqrt(x), x)]]",
+            "STEP": "= [[frac(2,3)]] × 27 = 18",
+            "CURVE": "[[sqrt(x)]]"
+          },
+          "1_9": {
+            "VN": 14,
+            "VD": 3,
+            "Q": "곡선 y = [[sqrt(x)]], x축 및 두 직선 x = 1, x = 4로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(1, 4, sqrt(x), x)]]",
+            "STEP": "= [[frac(2,3)]](8 − 1) = [[frac(14,3)]]",
+            "CURVE": "[[sqrt(x)]]"
+          },
+          "1_10": {
+            "VN": 1,
+            "VD": 2,
+            "Q": "곡선 y = [[frac(1, pow(x,2))]], x축 및 두 직선 x = 1, x = 2로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(1, 2, frac(1, pow(x,2)), x)]]",
+            "STEP": "= −[[frac(1,2)]] + 1 = [[frac(1,2)]]",
+            "CURVE": "[[frac(1, pow(x,2))]]"
+          },
+          "1_11": {
+            "VN": 3,
+            "VD": 4,
+            "Q": "곡선 y = [[frac(1, pow(x,2))]], x축 및 두 직선 x = 1, x = 4로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(1, 4, frac(1, pow(x,2)), x)]]",
+            "STEP": "= −[[frac(1,4)]] + 1 = [[frac(3,4)]]",
+            "CURVE": "[[frac(1, pow(x,2))]]"
+          },
+          "1_12": {
+            "VN": 1,
+            "VD": 3,
+            "Q": "곡선 y = [[frac(1, pow(x,2))]], x축 및 두 직선 x = 2, x = 6으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(2, 6, frac(1, pow(x,2)), x)]]",
+            "STEP": "= −[[frac(1,6)]] + [[frac(1,2)]] = [[frac(1,3)]]",
+            "CURVE": "[[frac(1, pow(x,2))]]"
+          },
+          "1_13": {
+            "VN": 3,
+            "VD": 2,
+            "Q": "곡선 y = [[pow(e, 2x)]], x축 및 두 직선 x = 0, x = ln 2로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(0, ln(2), pow(e, 2x), x)]]",
+            "STEP": "= [[frac(1,2)]](4 − 1) = [[frac(3,2)]]",
+            "CURVE": "[[pow(e, 2x)]]"
+          },
+          "1_14": {
+            "VN": 1,
+            "VD": 2,
+            "Q": "곡선 y = [[pow(e, -x)]], x축 및 두 직선 x = 0, x = ln 2로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(0, ln(2), pow(e, -x), x)]]",
+            "STEP": "= −[[frac(1,2)]] + 1 = [[frac(1,2)]]",
+            "CURVE": "[[pow(e, -x)]]"
+          },
+          "1_15": {
+            "VN": 1,
+            "VD": 1,
+            "Q": "곡선 y = [[sin(2x)]], x축 및 두 직선 x = 0, x = [[frac(pi, 2)]]로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(0, frac(pi, 2), sin(2x), x)]]",
+            "STEP": "= [[frac(1,2)]](−cos π + 1) = 1",
+            "CURVE": "[[sin(2x)]]"
+          },
+          "1_16": {
+            "VN": 1,
+            "VD": 1,
+            "Q": "곡선 y = [[pow(sec(x), 2)]], x축 및 두 직선 x = 0, x = [[frac(pi, 4)]]로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "[[dinteg(0, frac(pi, 4), pow(sec(x), 2), x)]]",
+            "STEP": "= tan [[frac(pi, 4)]] − 0 = 1",
+            "CURVE": "[[pow(sec(x), 2)]]"
+          },
+          "2_17": {
+            "VN": 4,
+            "VD": 1,
+            "Q": "곡선 y = 2[[pow(e, x)]], x축 및 두 직선 x = 0, x = ln 3으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(0, ln(3), pow(e, x), x)]]",
+            "STEP": "2 × ([[pow(e, ln(3))]] − 1 = 3 − 1)",
+            "CURVE": "2[[pow(e, x)]]"
+          },
+          "2_18": {
+            "VN": 8,
+            "VD": 1,
+            "Q": "곡선 y = 2[[pow(e, x)]], x축 및 두 직선 x = 0, x = ln 5로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(0, ln(5), pow(e, x), x)]]",
+            "STEP": "2 × (5 − 1)",
+            "CURVE": "2[[pow(e, x)]]"
+          },
+          "2_19": {
+            "VN": 4,
+            "VD": 1,
+            "Q": "곡선 y = 2[[frac(1, x)]], x축 및 두 직선 x = 1, x = e²으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(1, pow(e, 2), frac(1, x), x)]]",
+            "STEP": "2 × (ln e² = 2)",
+            "CURVE": "2[[frac(1, x)]]"
+          },
+          "2_20": {
+            "VN": 4,
+            "VD": 1,
+            "Q": "곡선 y = 2[[frac(1, x)]], x축 및 두 직선 x = e, x = e³으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(e, pow(e, 3), frac(1, x), x)]]",
+            "STEP": "2 × (3 − 1 = 2)",
+            "CURVE": "2[[frac(1, x)]]"
+          },
+          "2_21": {
+            "VN": 4,
+            "VD": 1,
+            "Q": "곡선 y = 2[[sin(x)]], x축 및 두 직선 x = 0, x = π으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(0, pi, sin(x), x)]]",
+            "STEP": "2 × (−cos π + cos 0 = 2)",
+            "CURVE": "2[[sin(x)]]"
+          },
+          "2_22": {
+            "VN": 8,
+            "VD": 1,
+            "Q": "곡선 y = 2[[sin(x)]], x축 및 두 직선 x = 0, x = 2π으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[2 dinteg(0, pi, sin(x), x)]]",
+            "STEP": "2 × (2 × 2 = 4 (x축 아래 부분은 부호를 바꿔 더함))",
+            "CURVE": "2[[sin(x)]]"
+          },
+          "2_23": {
+            "VN": 32,
+            "VD": 3,
+            "Q": "곡선 y = 2[[sqrt(x)]], x축 및 두 직선 x = 0, x = 4로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(0, 4, sqrt(x), x)]]",
+            "STEP": "2 × ([[frac(2,3)]] × [[pow(4, frac(3,2))]] = [[frac(16,3)]])",
+            "CURVE": "2[[sqrt(x)]]"
+          },
+          "2_24": {
+            "VN": 36,
+            "VD": 1,
+            "Q": "곡선 y = 2[[sqrt(x)]], x축 및 두 직선 x = 0, x = 9로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(0, 9, sqrt(x), x)]]",
+            "STEP": "2 × ([[frac(2,3)]] × 27 = 18)",
+            "CURVE": "2[[sqrt(x)]]"
+          },
+          "2_25": {
+            "VN": 28,
+            "VD": 3,
+            "Q": "곡선 y = 2[[sqrt(x)]], x축 및 두 직선 x = 1, x = 4로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(1, 4, sqrt(x), x)]]",
+            "STEP": "2 × ([[frac(2,3)]](8 − 1) = [[frac(14,3)]])",
+            "CURVE": "2[[sqrt(x)]]"
+          },
+          "2_26": {
+            "VN": 3,
+            "VD": 2,
+            "Q": "곡선 y = 2[[frac(1, pow(x,2))]], x축 및 두 직선 x = 1, x = 4로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(1, 4, frac(1, pow(x,2)), x)]]",
+            "STEP": "2 × (−[[frac(1,4)]] + 1 = [[frac(3,4)]])",
+            "CURVE": "2[[frac(1, pow(x,2))]]"
+          },
+          "2_27": {
+            "VN": 2,
+            "VD": 3,
+            "Q": "곡선 y = 2[[frac(1, pow(x,2))]], x축 및 두 직선 x = 2, x = 6으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(2, 6, frac(1, pow(x,2)), x)]]",
+            "STEP": "2 × (−[[frac(1,6)]] + [[frac(1,2)]] = [[frac(1,3)]])",
+            "CURVE": "2[[frac(1, pow(x,2))]]"
+          },
+          "2_28": {
+            "VN": 3,
+            "VD": 1,
+            "Q": "곡선 y = 2[[pow(e, 2x)]], x축 및 두 직선 x = 0, x = ln 2로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(0, ln(2), pow(e, 2x), x)]]",
+            "STEP": "2 × ([[frac(1,2)]](4 − 1) = [[frac(3,2)]])",
+            "CURVE": "2[[pow(e, 2x)]]"
+          },
+          "2_29": {
+            "VN": 1,
+            "VD": 1,
+            "Q": "곡선 y = 2[[pow(e, -x)]], x축 및 두 직선 x = 0, x = ln 2로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(0, ln(2), pow(e, -x), x)]]",
+            "STEP": "2 × (−[[frac(1,2)]] + 1 = [[frac(1,2)]])",
+            "CURVE": "2[[pow(e, -x)]]"
+          },
+          "2_30": {
+            "VN": 4,
+            "VD": 1,
+            "Q": "곡선 y = 2[[frac(2, x)]], x축 및 두 직선 x = 1, x = e로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "2[[dinteg(1, e, frac(2, x), x)]]",
+            "STEP": "2 × (2 ln e = 2)",
+            "CURVE": "2[[frac(2, x)]]"
+          },
+          "3_31": {
+            "VN": 6,
+            "VD": 1,
+            "Q": "곡선 y = 3[[pow(e, x)]], x축 및 두 직선 x = 0, x = ln 3으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(0, ln(3), pow(e, x), x)]]",
+            "STEP": "3 × ([[pow(e, ln(3))]] − 1 = 3 − 1)",
+            "CURVE": "3[[pow(e, x)]]"
+          },
+          "3_32": {
+            "VN": 12,
+            "VD": 1,
+            "Q": "곡선 y = 3[[pow(e, x)]], x축 및 두 직선 x = 0, x = ln 5로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(0, ln(5), pow(e, x), x)]]",
+            "STEP": "3 × (5 − 1)",
+            "CURVE": "3[[pow(e, x)]]"
+          },
+          "3_33": {
+            "VN": 6,
+            "VD": 1,
+            "Q": "곡선 y = 3[[frac(1, x)]], x축 및 두 직선 x = 1, x = e²으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(1, pow(e, 2), frac(1, x), x)]]",
+            "STEP": "3 × (ln e² = 2)",
+            "CURVE": "3[[frac(1, x)]]"
+          },
+          "3_34": {
+            "VN": 6,
+            "VD": 1,
+            "Q": "곡선 y = 3[[frac(1, x)]], x축 및 두 직선 x = e, x = e³으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(e, pow(e, 3), frac(1, x), x)]]",
+            "STEP": "3 × (3 − 1 = 2)",
+            "CURVE": "3[[frac(1, x)]]"
+          },
+          "3_35": {
+            "VN": 6,
+            "VD": 1,
+            "Q": "곡선 y = 3[[sin(x)]], x축 및 두 직선 x = 0, x = π으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(0, pi, sin(x), x)]]",
+            "STEP": "3 × (−cos π + cos 0 = 2)",
+            "CURVE": "3[[sin(x)]]"
+          },
+          "3_36": {
+            "VN": 12,
+            "VD": 1,
+            "Q": "곡선 y = 3[[sin(x)]], x축 및 두 직선 x = 0, x = 2π으로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[2 dinteg(0, pi, sin(x), x)]]",
+            "STEP": "3 × (2 × 2 = 4 (x축 아래 부분은 부호를 바꿔 더함))",
+            "CURVE": "3[[sin(x)]]"
+          },
+          "3_37": {
+            "VN": 16,
+            "VD": 1,
+            "Q": "곡선 y = 3[[sqrt(x)]], x축 및 두 직선 x = 0, x = 4로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(0, 4, sqrt(x), x)]]",
+            "STEP": "3 × ([[frac(2,3)]] × [[pow(4, frac(3,2))]] = [[frac(16,3)]])",
+            "CURVE": "3[[sqrt(x)]]"
+          },
+          "3_38": {
+            "VN": 54,
+            "VD": 1,
+            "Q": "곡선 y = 3[[sqrt(x)]], x축 및 두 직선 x = 0, x = 9로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(0, 9, sqrt(x), x)]]",
+            "STEP": "3 × ([[frac(2,3)]] × 27 = 18)",
+            "CURVE": "3[[sqrt(x)]]"
+          },
+          "3_39": {
+            "VN": 14,
+            "VD": 1,
+            "Q": "곡선 y = 3[[sqrt(x)]], x축 및 두 직선 x = 1, x = 4로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(1, 4, sqrt(x), x)]]",
+            "STEP": "3 × ([[frac(2,3)]](8 − 1) = [[frac(14,3)]])",
+            "CURVE": "3[[sqrt(x)]]"
+          },
+          "3_40": {
+            "VN": 3,
+            "VD": 2,
+            "Q": "곡선 y = 3[[frac(1, pow(x,2))]], x축 및 두 직선 x = 1, x = 2로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(1, 2, frac(1, pow(x,2)), x)]]",
+            "STEP": "3 × (−[[frac(1,2)]] + 1 = [[frac(1,2)]])",
+            "CURVE": "3[[frac(1, pow(x,2))]]"
+          },
+          "3_41": {
+            "VN": 9,
+            "VD": 4,
+            "Q": "곡선 y = 3[[frac(1, pow(x,2))]], x축 및 두 직선 x = 1, x = 4로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(1, 4, frac(1, pow(x,2)), x)]]",
+            "STEP": "3 × (−[[frac(1,4)]] + 1 = [[frac(3,4)]])",
+            "CURVE": "3[[frac(1, pow(x,2))]]"
+          },
+          "3_42": {
+            "VN": 9,
+            "VD": 2,
+            "Q": "곡선 y = 3[[pow(e, 2x)]], x축 및 두 직선 x = 0, x = ln 2로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(0, ln(2), pow(e, 2x), x)]]",
+            "STEP": "3 × ([[frac(1,2)]](4 − 1) = [[frac(3,2)]])",
+            "CURVE": "3[[pow(e, 2x)]]"
+          },
+          "3_43": {
+            "VN": 3,
+            "VD": 2,
+            "Q": "곡선 y = 3[[pow(e, -x)]], x축 및 두 직선 x = 0, x = ln 2로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(0, ln(2), pow(e, -x), x)]]",
+            "STEP": "3 × (−[[frac(1,2)]] + 1 = [[frac(1,2)]])",
+            "CURVE": "3[[pow(e, -x)]]"
+          },
+          "3_44": {
+            "VN": 6,
+            "VD": 1,
+            "Q": "곡선 y = 3[[frac(2, x)]], x축 및 두 직선 x = 1, x = e로 둘러싸인 부분의 넓이를 구하시오.",
+            "INT": "3[[dinteg(1, e, frac(2, x), x)]]",
+            "STEP": "3 × (2 ln e = 2)",
+            "CURVE": "3[[frac(2, x)]]"
+          }
+        }
+      },
+      "derive": {
+        "ans": "VN/VD"
+      },
+      "cost_values": [
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans*VD == VN"
+      ],
+      "sol1": "곡선과 x축 사이의 넓이는 구간에서 |f(x)|를 적분한 것이다. 구간에서 f(x) ≥ 0이면 그대로, 음수인 부분이 있으면 부호를 바꿔 더한다. 넓이 = {INT}.",
+      "sol2": [
+        "구간에서의 부호 확인 → 넓이 = {INT}",
+        "{STEP}",
+        "넓이 = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "구간에서의 부호 확인 → 넓이 = {INT}",
+                "hint": "적분 세우기"
+              },
+              {
+                "text": "{STEP}",
+                "hint": "계산"
+              },
+              {
+                "text": "넓이 = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "넓이"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "계산 결과가 양수인지, 원시함수를 미분하면 피적분함수가 되는지 확인한다. 따라서 넓이는 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{INT}",
+              "넓이 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "넓이 = {INT} {STEP}. 따라서 넓이는 {ans}이다.",
+      "rubric": [
+        {
+          "element": "적분 세우기",
+          "points": 3,
+          "criterion": "{INT} 꼴로 세웠다.",
+          "partial": "x축 아래 부분의 부호를 바꾸지 않았으면 1점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{ans}{eul(ans)} 구했다.",
+          "partial": "특수값 계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "sin x를 0에서 2π까지 그대로 적분해 0으로 답함",
+          "on": "적분 세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "e^(ln a)를 그대로 둠",
+          "on": "계산",
+          "effect": "부분"
+        },
+        {
+          "text": "√x의 원시함수 계수 2/3 실수",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "정적분",
+        "미분법"
+      ],
+      "ops": [
+        "적분법"
+      ],
+      "traps": [
+        "치환 후 적분 구간",
+        "부분적분의 u·v 선택"
+      ],
+      "tags": [
+        "치환적분",
+        "부분적분",
+        "정적분과 급수",
+        "넓이"
+      ],
+      "id": "h3-1-integ2-t6",
+      "title": "속도와 거리 — 위치의 변화량과 움직인 거리",
+      "skill": "위치의 변화량은 ∫v dt, 움직인 거리는 ∫|v| dt로 구분해 계산하기",
+      "variant_axis": {
+        "v(t)": "3(t − a)(t − b) / c sin t / c cos t",
+        "묻는 것": "변화량 / 거리"
+      },
+      "discriminates": "속도의 부호가 바뀌는 구간을 나눠 절댓값을 취하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              "p1_3_dist",
+              "p1_4_disp",
+              "p1_4_dist",
+              "p1_5_disp",
+              "p1_5_dist",
+              "p1_6_disp",
+              "p1_6_dist",
+              "p2_3_disp",
+              "p2_3_dist",
+              "p2_4_disp",
+              "p2_5_disp",
+              "p2_5_dist",
+              "p2_6_dist",
+              "p3_4_disp",
+              "p3_4_dist",
+              "p3_5_disp",
+              "p3_5_dist",
+              "p3_6_dist",
+              "p4_5_disp",
+              "p4_5_dist",
+              "p4_6_disp",
+              "p4_6_dist",
+              "p5_6_disp",
+              "p5_6_dist",
+              "t1_s2",
+              "t1_s1",
+              "t1_c1",
+              "t2_s2",
+              "t2_s1",
+              "t2_c1",
+              "t3_s2",
+              "t3_s1",
+              "t3_c1",
+              "t4_s2",
+              "t4_s1",
+              "t4_c1"
+            ]
+          }
+        }
+      ],
+      "question": "{Q}",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "f",
+        "rows": {
+          "p1_3_dist": {
+            "VN": 8,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 12t + 9일 때, t = 0에서 t = 3까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 12t + 9",
+            "EXPL": "움직인 거리 = [[dinteg(0, 3, abs(v(t)), t)]], v(t) = 3(t − 1)(t − 3)의 부호가 t = 1에서 바뀌므로 [0, 1]와 [1, 3]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 3까지 점 P가 움직인 거리",
+            "VAL": "8"
+          },
+          "p1_4_disp": {
+            "VN": -8,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 15t + 12일 때, t = 0에서 t = 4까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 15t + 12",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 4, v(t), t)]]",
+            "ASK": "t = 0에서 t = 4까지 점 P의 위치의 변화량",
+            "VAL": "-8"
+          },
+          "p1_4_dist": {
+            "VN": 19,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 15t + 12일 때, t = 0에서 t = 4까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 15t + 12",
+            "EXPL": "움직인 거리 = [[dinteg(0, 4, abs(v(t)), t)]], v(t) = 3(t − 1)(t − 4)의 부호가 t = 1에서 바뀌므로 [0, 1]와 [1, 4]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 4까지 점 P가 움직인 거리",
+            "VAL": "19"
+          },
+          "p1_5_disp": {
+            "VN": -25,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 18t + 15일 때, t = 0에서 t = 5까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 18t + 15",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 5, v(t), t)]]",
+            "ASK": "t = 0에서 t = 5까지 점 P의 위치의 변화량",
+            "VAL": "-25"
+          },
+          "p1_5_dist": {
+            "VN": 39,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 18t + 15일 때, t = 0에서 t = 5까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 18t + 15",
+            "EXPL": "움직인 거리 = [[dinteg(0, 5, abs(v(t)), t)]], v(t) = 3(t − 1)(t − 5)의 부호가 t = 1에서 바뀌므로 [0, 1]와 [1, 5]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 5까지 점 P가 움직인 거리",
+            "VAL": "39"
+          },
+          "p1_6_disp": {
+            "VN": -54,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 21t + 18일 때, t = 0에서 t = 6까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 21t + 18",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 6, v(t), t)]]",
+            "ASK": "t = 0에서 t = 6까지 점 P의 위치의 변화량",
+            "VAL": "-54"
+          },
+          "p1_6_dist": {
+            "VN": 71,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 21t + 18일 때, t = 0에서 t = 6까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 21t + 18",
+            "EXPL": "움직인 거리 = [[dinteg(0, 6, abs(v(t)), t)]], v(t) = 3(t − 1)(t − 6)의 부호가 t = 1에서 바뀌므로 [0, 1]와 [1, 6]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 6까지 점 P가 움직인 거리",
+            "VAL": "71"
+          },
+          "p2_3_disp": {
+            "VN": 27,
+            "VD": 2,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 15t + 18일 때, t = 0에서 t = 3까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 15t + 18",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 3, v(t), t)]]",
+            "ASK": "t = 0에서 t = 3까지 점 P의 위치의 변화량",
+            "VAL": "[[frac(27,2)]]"
+          },
+          "p2_3_dist": {
+            "VN": 29,
+            "VD": 2,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 15t + 18일 때, t = 0에서 t = 3까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 15t + 18",
+            "EXPL": "움직인 거리 = [[dinteg(0, 3, abs(v(t)), t)]], v(t) = 3(t − 2)(t − 3)의 부호가 t = 2에서 바뀌므로 [0, 2]와 [2, 3]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 3까지 점 P가 움직인 거리",
+            "VAL": "[[frac(29,2)]]"
+          },
+          "p2_4_disp": {
+            "VN": 16,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 18t + 24일 때, t = 0에서 t = 4까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 18t + 24",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 4, v(t), t)]]",
+            "ASK": "t = 0에서 t = 4까지 점 P의 위치의 변화량",
+            "VAL": "16"
+          },
+          "p2_5_disp": {
+            "VN": 25,
+            "VD": 2,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 21t + 30일 때, t = 0에서 t = 5까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 21t + 30",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 5, v(t), t)]]",
+            "ASK": "t = 0에서 t = 5까지 점 P의 위치의 변화량",
+            "VAL": "[[frac(25,2)]]"
+          },
+          "p2_5_dist": {
+            "VN": 79,
+            "VD": 2,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 21t + 30일 때, t = 0에서 t = 5까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 21t + 30",
+            "EXPL": "움직인 거리 = [[dinteg(0, 5, abs(v(t)), t)]], v(t) = 3(t − 2)(t − 5)의 부호가 t = 2에서 바뀌므로 [0, 2]와 [2, 5]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 5까지 점 P가 움직인 거리",
+            "VAL": "[[frac(79,2)]]"
+          },
+          "p2_6_dist": {
+            "VN": 64,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 24t + 36일 때, t = 0에서 t = 6까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 24t + 36",
+            "EXPL": "움직인 거리 = [[dinteg(0, 6, abs(v(t)), t)]], v(t) = 3(t − 2)(t − 6)의 부호가 t = 2에서 바뀌므로 [0, 2]와 [2, 6]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 6까지 점 P가 움직인 거리",
+            "VAL": "64"
+          },
+          "p3_4_disp": {
+            "VN": 40,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 21t + 36일 때, t = 0에서 t = 4까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 21t + 36",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 4, v(t), t)]]",
+            "ASK": "t = 0에서 t = 4까지 점 P의 위치의 변화량",
+            "VAL": "40"
+          },
+          "p3_4_dist": {
+            "VN": 41,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 21t + 36일 때, t = 0에서 t = 4까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 21t + 36",
+            "EXPL": "움직인 거리 = [[dinteg(0, 4, abs(v(t)), t)]], v(t) = 3(t − 3)(t − 4)의 부호가 t = 3에서 바뀌므로 [0, 3]와 [3, 4]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 4까지 점 P가 움직인 거리",
+            "VAL": "41"
+          },
+          "p3_5_disp": {
+            "VN": 50,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 24t + 45일 때, t = 0에서 t = 5까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 24t + 45",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 5, v(t), t)]]",
+            "ASK": "t = 0에서 t = 5까지 점 P의 위치의 변화량",
+            "VAL": "50"
+          },
+          "p3_5_dist": {
+            "VN": 58,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 24t + 45일 때, t = 0에서 t = 5까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 24t + 45",
+            "EXPL": "움직인 거리 = [[dinteg(0, 5, abs(v(t)), t)]], v(t) = 3(t − 3)(t − 5)의 부호가 t = 3에서 바뀌므로 [0, 3]와 [3, 5]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 5까지 점 P가 움직인 거리",
+            "VAL": "58"
+          },
+          "p3_6_dist": {
+            "VN": 81,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 27t + 54일 때, t = 0에서 t = 6까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 27t + 54",
+            "EXPL": "움직인 거리 = [[dinteg(0, 6, abs(v(t)), t)]], v(t) = 3(t − 3)(t − 6)의 부호가 t = 3에서 바뀌므로 [0, 3]와 [3, 6]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 6까지 점 P가 움직인 거리",
+            "VAL": "81"
+          },
+          "p4_5_disp": {
+            "VN": 175,
+            "VD": 2,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 27t + 60일 때, t = 0에서 t = 5까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 27t + 60",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 5, v(t), t)]]",
+            "ASK": "t = 0에서 t = 5까지 점 P의 위치의 변화량",
+            "VAL": "[[frac(175,2)]]"
+          },
+          "p4_5_dist": {
+            "VN": 177,
+            "VD": 2,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 27t + 60일 때, t = 0에서 t = 5까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 27t + 60",
+            "EXPL": "움직인 거리 = [[dinteg(0, 5, abs(v(t)), t)]], v(t) = 3(t − 4)(t − 5)의 부호가 t = 4에서 바뀌므로 [0, 4]와 [4, 5]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 5까지 점 P가 움직인 거리",
+            "VAL": "[[frac(177,2)]]"
+          },
+          "p4_6_disp": {
+            "VN": 108,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 30t + 72일 때, t = 0에서 t = 6까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 30t + 72",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 6, v(t), t)]]",
+            "ASK": "t = 0에서 t = 6까지 점 P의 위치의 변화량",
+            "VAL": "108"
+          },
+          "p4_6_dist": {
+            "VN": 116,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 30t + 72일 때, t = 0에서 t = 6까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 30t + 72",
+            "EXPL": "움직인 거리 = [[dinteg(0, 6, abs(v(t)), t)]], v(t) = 3(t − 4)(t − 6)의 부호가 t = 4에서 바뀌므로 [0, 4]와 [4, 6]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 6까지 점 P가 움직인 거리",
+            "VAL": "116"
+          },
+          "p5_6_disp": {
+            "VN": 162,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 33t + 90일 때, t = 0에서 t = 6까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3t² − 33t + 90",
+            "EXPL": "위치의 변화량 = [[dinteg(0, 6, v(t), t)]]",
+            "ASK": "t = 0에서 t = 6까지 점 P의 위치의 변화량",
+            "VAL": "162"
+          },
+          "p5_6_dist": {
+            "VN": 163,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3t² − 33t + 90일 때, t = 0에서 t = 6까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3t² − 33t + 90",
+            "EXPL": "움직인 거리 = [[dinteg(0, 6, abs(v(t)), t)]], v(t) = 3(t − 5)(t − 6)의 부호가 t = 5에서 바뀌므로 [0, 5]와 [5, 6]로 나눠 절댓값을 취한다",
+            "ASK": "t = 0에서 t = 6까지 점 P가 움직인 거리",
+            "VAL": "163"
+          },
+          "t1_s2": {
+            "VN": 4,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = sin t일 때, t = 0에서 t = 2π까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "sin t",
+            "EXPL": "[[dinteg(0, 2pi, abs(sin(t)), t)]] = 2[[dinteg(0, pi, sin(t), t)]] = 2 × 2",
+            "ASK": "t = 0에서 t = 2π까지 점 P가 움직인 거리",
+            "VAL": "4"
+          },
+          "t1_s1": {
+            "VN": 2,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = sin t일 때, t = 0에서 t = π까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "sin t",
+            "EXPL": "[[dinteg(0, pi, sin(t), t)]] = 1(−cos π + cos 0)",
+            "ASK": "t = 0에서 t = π까지 점 P의 위치의 변화량",
+            "VAL": "2"
+          },
+          "t1_c1": {
+            "VN": 2,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = cos t일 때, t = 0에서 t = π까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "cos t",
+            "EXPL": "[[dinteg(0, pi, abs(cos(t)), t)]] = 2[[dinteg(0, frac(pi, 2), cos(t), t)]] = 2 × 1 = 2",
+            "ASK": "t = 0에서 t = π까지 점 P가 움직인 거리",
+            "VAL": "2"
+          },
+          "t2_s2": {
+            "VN": 8,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 2sin t일 때, t = 0에서 t = 2π까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "2sin t",
+            "EXPL": "[[dinteg(0, 2pi, abs(2sin(t)), t)]] = 2[[dinteg(0, pi, 2sin(t), t)]] = 2 × 4",
+            "ASK": "t = 0에서 t = 2π까지 점 P가 움직인 거리",
+            "VAL": "8"
+          },
+          "t2_s1": {
+            "VN": 4,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 2sin t일 때, t = 0에서 t = π까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "2sin t",
+            "EXPL": "[[dinteg(0, pi, 2sin(t), t)]] = 2(−cos π + cos 0)",
+            "ASK": "t = 0에서 t = π까지 점 P의 위치의 변화량",
+            "VAL": "4"
+          },
+          "t2_c1": {
+            "VN": 4,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 2cos t일 때, t = 0에서 t = π까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "2cos t",
+            "EXPL": "[[dinteg(0, pi, abs(2cos(t)), t)]] = 2[[dinteg(0, frac(pi, 2), 2cos(t), t)]] = 2 × 2 = 4",
+            "ASK": "t = 0에서 t = π까지 점 P가 움직인 거리",
+            "VAL": "4"
+          },
+          "t3_s2": {
+            "VN": 12,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3sin t일 때, t = 0에서 t = 2π까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3sin t",
+            "EXPL": "[[dinteg(0, 2pi, abs(3sin(t)), t)]] = 2[[dinteg(0, pi, 3sin(t), t)]] = 2 × 6",
+            "ASK": "t = 0에서 t = 2π까지 점 P가 움직인 거리",
+            "VAL": "12"
+          },
+          "t3_s1": {
+            "VN": 6,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3sin t일 때, t = 0에서 t = π까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "3sin t",
+            "EXPL": "[[dinteg(0, pi, 3sin(t), t)]] = 3(−cos π + cos 0)",
+            "ASK": "t = 0에서 t = π까지 점 P의 위치의 변화량",
+            "VAL": "6"
+          },
+          "t3_c1": {
+            "VN": 6,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 3cos t일 때, t = 0에서 t = π까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "3cos t",
+            "EXPL": "[[dinteg(0, pi, abs(3cos(t)), t)]] = 2[[dinteg(0, frac(pi, 2), 3cos(t), t)]] = 2 × 3 = 6",
+            "ASK": "t = 0에서 t = π까지 점 P가 움직인 거리",
+            "VAL": "6"
+          },
+          "t4_s2": {
+            "VN": 16,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 4sin t일 때, t = 0에서 t = 2π까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "4sin t",
+            "EXPL": "[[dinteg(0, 2pi, abs(4sin(t)), t)]] = 2[[dinteg(0, pi, 4sin(t), t)]] = 2 × 8",
+            "ASK": "t = 0에서 t = 2π까지 점 P가 움직인 거리",
+            "VAL": "16"
+          },
+          "t4_s1": {
+            "VN": 8,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 4sin t일 때, t = 0에서 t = π까지 점 P의 위치의 변화량를 구하시오.",
+            "VT": "4sin t",
+            "EXPL": "[[dinteg(0, pi, 4sin(t), t)]] = 4(−cos π + cos 0)",
+            "ASK": "t = 0에서 t = π까지 점 P의 위치의 변화량",
+            "VAL": "8"
+          },
+          "t4_c1": {
+            "VN": 8,
+            "VD": 1,
+            "Q": "수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = 4cos t일 때, t = 0에서 t = π까지 점 P가 움직인 거리를 구하시오.",
+            "VT": "4cos t",
+            "EXPL": "[[dinteg(0, pi, abs(4cos(t)), t)]] = 2[[dinteg(0, frac(pi, 2), 4cos(t), t)]] = 2 × 4 = 8",
+            "ASK": "t = 0에서 t = π까지 점 P가 움직인 거리",
+            "VAL": "8"
+          }
+        }
+      },
+      "derive": {
+        "ans": "VN/VD"
+      },
+      "cost_values": [
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans*VD == VN"
+      ],
+      "sol1": "시각 a에서 b까지 위치의 변화량은 [[dinteg(a, b, v(t), t)]], 움직인 거리는 [[dinteg(a, b, abs(v(t)), t)]]이다. 거리를 구할 때는 v(t)의 부호가 바뀌는 시각에서 구간을 나눈다.",
+      "sol2": [
+        "v(t) = {VT}",
+        "{EXPL}",
+        "= {VAL}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "v(t) = {VT}",
+                "hint": "속도"
+              },
+              {
+                "text": "{EXPL}",
+                "hint": "적분 세우기"
+              },
+              {
+                "text": "= {VAL}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "움직인 거리는 위치의 변화량의 절댓값보다 작을 수 없음을 확인한다. 따라서 {ASK}{eun(ASK)} {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{EXPL}",
+              "답 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{EXPL} = {VAL}. 따라서 {ASK}{eun(ASK)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "적분 세우기",
+          "points": 3,
+          "criterion": "{EXPL} 꼴로 세웠다.",
+          "partial": "거리에서 절댓값을 빠뜨렸으면 1점."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{ans}{eul(ans)} 구했다.",
+          "partial": "구간 나누기 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "움직인 거리를 ∫v dt로 계산",
+          "on": "적분 세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "부호가 바뀌는 시각을 찾지 않음",
+          "on": "적분 세우기",
+          "effect": "부분"
+        },
+        {
+          "text": "적분 계산 실수",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

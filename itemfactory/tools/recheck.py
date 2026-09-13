@@ -1428,6 +1428,8 @@ def recompute(it):
         return _h21s(tid, q)
     if tid.startswith("h2-2-diffapp") or tid.startswith("h2-2-integ"):
         return _h22b(tid, q)
+    if tid.startswith("h3-1-"):
+        return _h31(tid, q)
     if tid.startswith("h2-2-lim") or tid.startswith("h2-2-diff"):
         return _h22a(tid, q)
     if tid.startswith("m3-1-sqrt-basic"):
@@ -2171,6 +2173,105 @@ def _h22b(tid, q):
         if m:
             d = _polyq(m.group(1)) - _polyq(m.group(2)); rs = sorted(r for r in sp.solve(d, x) if r.is_real); return _spv(sp.integrate(abs(d), (x, rs[0], rs[-1]))) if len(rs) == 2 else None
         return None
+    return None
+
+
+def _sym2(src):
+    """h3 마커 문법 → sympy (지수·로그·삼각·합·극한 포함)."""
+    import sympy as sp
+    e = src.replace("−", "-").replace("×", "*").replace("π", "pi")
+    e = re.sub(r"([a-zA-Z0-9)])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)", lambda m: f"{m.group(1)}**{m.group(2).translate(_SUPD)}", e)
+    e = e.replace("frac(", "_frac(").replace("inf", "oo")
+    e = re.sub(r"(\d)\s*([a-zA-Z_(])", r"\1*\2", e)
+    e = re.sub(r"(\))\s+([a-zA-Z_(])", r"\1*\2", e)
+    e = re.sub(r"(\))\(", r"\1*(", e)
+    e = re.sub(r"\b([xntk])\s*\(", r"\1*(", e)
+    e = re.sub(r"\b([xntk])\s+(pow|sin|cos|tan|ln|sqrt|_frac|e\b)", r"\1*\2", e)
+    e = re.sub(r"\b(sqrt|_frac|pow|sin|cos|tan|sec|ln|abs)\*\(", r"\1(", e)
+    x, n, k, t = sp.symbols("x n k t")
+    loc = {"_frac": lambda a, b: a / b, "x": x, "n": n, "k": k, "t": t, "oo": sp.oo, "e": sp.E, "pi": sp.pi, "ln": sp.log, "sec": sp.sec, "pow": lambda a, b: a ** b}
+    return sp.sympify(e, locals=loc)
+
+
+def _targs(inner):
+    """괄호 깊이를 고려해 최상위 쉼표로 인자 나누기"""
+    args, depth, cur = [], 0, ""
+    for ch in inner:
+        if ch == "(": depth += 1
+        if ch == ")": depth -= 1
+        if ch == "," and depth == 0:
+            args.append(cur.strip()); cur = ""
+        else:
+            cur += ch
+    args.append(cur.strip())
+    return args
+
+
+def _h31(tid, q):
+    import sympy as sp
+    x, n, k, t = sp.symbols("x n k t")
+    if tid == "h3-1-seqlim-t1":
+        m = re.match(r"\[\[lim\(n, inf, (.+)\)\]\]의 값", q); return _spv(sp.limit(_sym2(m.group(1)), n, sp.oo))
+    if tid == "h3-1-seqlim-t2":
+        m = re.match(r"등비수열 \{\[\[pow\(frac\(r ([+−]) (\d+), (\d+)\), n\)\]\]\}이 수렴하도록 하는 (정수 r의 개수|정수 r의 최댓값)", q); c = -_sv(m.group(1), m.group(2)); kk = int(m.group(3))
+        rs = [r for r in range(-100, 101) if -1 < Fraction(r - c, kk) <= 1]; return Fraction(len(rs)) if m.group(4).endswith("개수") else Fraction(max(rs))
+    if tid == "h3-1-seqlim-t3":
+        m = re.match(r"급수 \[\[sum\(n, 1, inf, (.+)\)\]\]의 합", q); e = _sym2(m.group(1)); return _spv(sp.summation(e, (n, 1, sp.oo)))
+    if tid == "h3-1-seqlim-t4":
+        m = re.match(r"등비급수 \[\[sum\(n, 1, inf, (.+)\)\]\]의 합", q)
+        if m: return _spv(sp.summation(_sym2(m.group(1)), (n, 1, sp.oo)))
+        m = re.match(r"순환소수 0\.(\d\d)", q); f = Fraction(int(m.group(1)), 99); return Fraction(f.numerator + f.denominator)
+    if tid == "h3-1-seqlim-t5":
+        m = re.match(r"넓이가 (\d+)인 도형 S₁에서 시작하여 (.+?)을 차례로", q); S1 = int(m.group(1)); d = m.group(2)
+        r = Fraction(1, 4) if "1/4" in d else Fraction(4, 9) if "4/9" in d else Fraction(1, 3) if "1/3" in d else Fraction(1, 2); return S1 / (1 - r)
+    if tid in ("h3-1-diff2-t1", "h3-1-diff2-t2"):
+        m = re.match(r"\[\[lim\(x, 0, (.+)\)\]\]의 값", q); return _spv(sp.limit(_sym2(m.group(1)), x, 0))
+    if tid == "h3-1-diff2-t3":
+        m = re.match(r"함수 f\(x\) = (.+?)에 대하여 f'\((-?\d+)\)의 값", q)
+        if m:
+            fx = m.group(1); mm = re.fullmatch(r"\((.+?)\)\[\[pow\(e, x\)\]\]", fx); f = _sym2(mm.group(1)) * sp.exp(x) if mm else _sym2(fx[2:-2])
+            return _spv(sp.diff(f, x).subs(x, int(m.group(2))))
+        m = re.match(r"매개변수 t로 나타낸 곡선 x = \[\[(.+?)\]\], y = \[\[(.+?)\]\]에 대하여 t = (-?\d+)일 때", q)
+        if m: xt, yt, t0 = _sym2(m.group(1)), _sym2(m.group(2)), int(m.group(3)); return _spv((sp.diff(yt, t) / sp.diff(xt, t)).subs(t, t0))
+        m = re.match(r"곡선 \[\[(.+?) = (\d+)\]\] 위의 점 \((-?\d+), (-?\d+)\)에서의", q)
+        if m:
+            y = sp.Symbol("y"); F = _sym2(m.group(1).replace("y", "Y")).subs(sp.Symbol("Y"), y) - int(m.group(2)); dydx = -sp.diff(F, x) / sp.diff(F, y); return _spv(dydx.subs({x: int(m.group(3)), y: int(m.group(4))}))
+        m = re.match(r"함수 f\(x\) = \[\[(.+?)\]\]의 역함수를 g\(x\)라 할 때, g'\((-?\d+)\)의 값", q); f = _sym2(m.group(1)); y0 = int(m.group(2))
+        xs = [r for r in sp.solve(sp.Eq(f, y0), x) if r.is_real]
+        return _spv(1 / sp.diff(f, x).subs(x, xs[0])) if len(xs) == 1 else None
+    if tid == "h3-1-diff2-t4":
+        m = re.match(r"곡선 y = \[\[(.+?)\]\] 위의 점 \((-?\d+), (.+?)\)에서의 접선의 방정식이 y = mx \+ n일 때, (상수 m, n에 대하여 m \+ n의 값|이 접선의 y절편|이 접선의 x절편)", q); f = _sym2(m.group(1)); x0 = int(m.group(2)); y0 = _spv(f.subs(x, x0)); mm = _spv(sp.diff(f, x).subs(x, x0)); nn = y0 - mm * x0
+        return mm + nn if m.group(4).startswith("상수") else nn if "y절편" in m.group(4) else -nn / mm
+    if tid == "h3-1-diff2-t5":
+        m = re.match(r"(?:x > 0에서 )?함수 f\(x\) = (.+?)의 (극솟값|극댓값)[을를] 구하시오", q); fx = m.group(1)
+        fx = re.sub(r"\[\[(.+?)\]\]", r"(\1)", fx); f = _sym2(fx); cs = [c for c in sp.solve(sp.diff(f, x), x) if c.is_real and (c > 0 if "x > 0" in q else True)]
+        vals = [f.subs(x, c) for c in cs]; d2 = [sp.diff(f, x, 2).subs(x, c) for c in cs]
+        want = [v for v, dd in zip(vals, d2) if (dd > 0 if m.group(2) == "극솟값" else dd < 0)]
+        return _spv(want[0]) if len(want) == 1 else None
+    if tid in ("h3-1-integ2-t1", "h3-1-integ2-t2", "h3-1-integ2-t3"):
+        m = re.match(r"\[\[dinteg\((.+)\)\]\]의 값", q); lo, hi, body, var = _targs(m.group(1)); return _spv(sp.integrate(_sym2(body), (x, _sym2(lo), _sym2(hi))))
+    if tid == "h3-1-integ2-t4":
+        m = re.match(r"\[\[lim\(n, inf, (.+)\)\]\]의 값", q)
+        body = m.group(1)
+        mm = re.fullmatch(r"(?:(\d+) )?sum\(k, 1, n, (.+)\)", body)
+        if mm:
+            c = int(mm.group(1) or 1); f = _sym2(mm.group(2)); val = c * sp.limit(sp.summation(f, (k, 1, n)), n, sp.oo); return _spv(val)
+        mm = re.fullmatch(r"(?:(\d+) )?frac\((\d+), n\) sum\(k, 1, n, (.+)\)", body)
+        if mm:
+            c = int(mm.group(1) or 1); w = int(mm.group(2)); f = _sym2(mm.group(3)); val = c * sp.limit(sp.summation(f * sp.Rational(w) / n, (k, 1, n)), n, sp.oo); return _spv(val)
+        return None
+    if tid == "h3-1-integ2-t5":
+        m = re.match(r"곡선 y = (.+?), x축 및 두 직선 x = (.+?), x = (.+?)(?:으로|로) 둘러싸인", q); fx = re.sub(r"\[\[(.+?)\]\]", r"(\1)", m.group(1)); f = _sym2(fx)
+        fixln = lambda z: re.sub(r"ln (\d+)", r"ln(\1)", z.strip("[]"))  # noqa: E731
+        lo = _sym2(fixln(m.group(2))); hi = _sym2(fixln(m.group(3)))
+        val = sp.integrate(sp.Abs(f), (x, lo, hi))
+        if val.has(sp.Abs) or not val.is_number: val = sp.Integral(sp.Abs(f), (x, lo, hi)).evalf(30)
+        return _spv(sp.simplify(val))
+    if tid == "h3-1-integ2-t6":
+        m = re.match(r"수직선 위를 움직이는 점 P의 시각 t\(t ≥ 0\)에서의 속도가 v\(t\) = (.+?)일 때, t = 0에서 t = (.+?)까지 점 P(가 움직인 거리|의 위치의 변화량)", q); v = _sym2(m.group(1).replace("sin t", "sin(t)").replace("cos t", "cos(t)")); hi = _sym2(m.group(2))
+        val = sp.integrate(sp.Abs(v) if m.group(3).startswith("가") else v, (t, 0, hi))
+        if not val.is_number or val.has(sp.Abs): val = sp.Integral(sp.Abs(v) if m.group(3).startswith("가") else v, (t, 0, hi)).evalf(30)
+        return _spv(sp.simplify(val))
     return None
 
 
