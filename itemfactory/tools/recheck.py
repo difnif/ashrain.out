@@ -1426,6 +1426,8 @@ def recompute(it):
         return _h21t(tid, q)
     if tid.startswith("h2-1-seq"):
         return _h21s(tid, q)
+    if tid.startswith("h2-2-lim") or tid.startswith("h2-2-diff"):
+        return _h22a(tid, q)
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])
@@ -2012,6 +2014,94 @@ def _h21s(tid, q):
         for n in range(1, M):
             cur = Fraction(eval(rule, {"__builtins__": {}}, {"a": cur, "n": Fraction(n)}))  # noqa: S307
         return cur
+    return None
+
+
+_SUPD = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789")
+
+
+def _sym(src):
+    """마커 안 문법(pow/frac/sqrt/inf, 위첨자, 암시적 곱)을 sympy 식으로."""
+    import sympy as sp
+    e = src.replace("−", "-").replace("×", "*")
+    e = re.sub(r"([xhtfF])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)", lambda m: f"{m.group(1)}**{m.group(2).translate(_SUPD)}", e)
+    e = re.sub(r"pow\(([^,()]+|\([^()]*\)|[^,]+?), ?([^()]+)\)", r"((\1)**(\2))", e)
+    e = e.replace("frac(", "_frac(").replace("inf", "oo")
+    e = re.sub(r"(\d)\s*([a-zA-Z(])", r"\1*\2", e); e = re.sub(r"(\))\s*([a-zA-Z(])", r"\1*\2", e); e = re.sub(r"([xht])\s*\(", r"\1*(", e)
+    e = re.sub(r"\b(sqrt|_frac)\*\(", r"\1(", e)
+    x, h, t = sp.symbols("x h t")
+    return sp.sympify(e, locals={"_frac": lambda a, b: a / b, "x": x, "h": h, "t": t, "oo": sp.oo})
+
+
+def _spv(v):
+    import sympy as sp
+    v = sp.nsimplify(v)
+    if v.is_Rational: return Fraction(int(v.p), int(v.q))
+    return _ratf(float(v))
+
+
+def _polyq(text):
+    """'x³ − 3x² − 5x' 같은 본문 다항식 → sympy"""
+    return _sym(text)
+
+
+def _h22a(tid, q):
+    import sympy as sp
+    x = sp.Symbol("x")
+    if tid == "h2-2-lim-t1":
+        m = re.match(r"\[\[lim\((\w), (-?\w+), (.+)\)\]\]의 값", q); var = sp.Symbol(m.group(1)); pt = sp.oo if m.group(2) == "inf" else sp.Integer(m.group(2)); e = _sym(m.group(3))
+        return _spv(sp.limit(e, var, pt))
+    if tid == "h2-2-lim-t2":
+        m = re.match(r"함수 f\(x\)에 대하여 \[\[lim\(x, (\d+), frac\(f\(x\), x − \d+\)\)\]\] = (-?\d+)일 때, \[\[lim\(x, \d+, frac\((.+)\)\)\]\]의 값", q); a = int(m.group(1)); L = Fraction(m.group(2)); body = m.group(3)
+        mm = re.fullmatch(r"\(x ([+−]) (\d+)\) f\(x\), x − \d+", body)
+        if mm: return (a + _sv(mm.group(1), mm.group(2))) * L
+        if body.startswith("(pow(x,2)"): return 2 * a * L
+        if body.startswith("f(x), (x −"): return L / (2 * a)
+        return None
+    if tid == "h2-2-lim-t3":
+        m = re.match(r"\[\[lim\(x, (-?\d+), frac\(pow\(x,2\) \+ a x \+ b, x [+−] \d+\)\)\]\] = (-?\d+)일 때, 상수 a, b에 대하여 (a \+ b|ab|b − a)의 값", q); p = int(m.group(1)); L = int(m.group(2)); qv = p - L
+        a, b = -(p + qv), p * qv; return Fraction({"a + b": a + b, "ab": a * b, "b − a": b - a}[m.group(3)])
+    if tid == "h2-2-lim-t4":
+        m = re.match(r"함수 f\(x\) = \[\[cases\(frac\((.+?), x ([+−]) (\d+)\), x ≠ (-?\d+), k, x = -?\d+\)\]\]가", q); num = _sym(m.group(1)); p = int(m.group(4)); den = x - _sv(m.group(2), m.group(3)) * -1
+        return _spv(sp.limit(num / (x + _sv(m.group(2), m.group(3))), x, p))
+    if tid == "h2-2-lim-t5":
+        m = re.match(r"함수 f\(x\) = x³ ([+−]) (\d*)x ([+−]) (\d+) − k에 대하여 방정식 f\(x\) = 0이 열린구간 \((-?\d+), (-?\d+)\)에서", q); c = _sv(m.group(1), m.group(2) or "1"); d = _sv(m.group(3), m.group(4)); p, p1 = int(m.group(5)), int(m.group(6))
+        f = lambda t: t ** 3 + c * t + d  # noqa: E731
+        return Fraction(f(p1) - f(p) - 1)
+    if tid == "h2-2-lim-t6":
+        m = re.match(r"함수 f\(x\) = \[\[cases\(pow\(x,2\) ([+−]) (\d+), x ≥ (-?\d+), (.+?), x < -?\d+\)\]\]에 대하여", q); a = _sv(m.group(1), m.group(2)); p = int(m.group(3)); g = _sym(m.group(4))
+        return Fraction(p * p) + a + _spv(g.subs(x, p))
+    if tid == "h2-2-lim-t7":
+        m = re.match(r"함수 f\(x\) = \[\[cases\(pow\(x,2\) \+ a, x ≥ (-?\d+), (.+?), x < -?\d+\)\]\]가", q); p = int(m.group(1)); g = _sym(m.group(2)); return _spv(g.subs(x, p)) - p * p
+    if tid == "h2-2-diff-t1":
+        m = re.match(r"함수 f\(x\) = (.+?)에 대하여 \[\[lim\(h, 0, frac\((.+), h\)\)\]\]의 값", q); f = _polyq(m.group(1)); body = m.group(2)
+        h = sp.Symbol("h"); expr = _sym(body)
+        fl = sp.Lambda(x, f); expr = expr.replace(sp.Function("f"), fl)
+        return _spv(sp.limit(expr / h, h, 0))
+    if tid == "h2-2-diff-t7":
+        m = re.match(r"함수 f\(x\) = (.+?)에 대하여 \[\[lim\(x, (-?\d+), frac\((.+)\)\)\]\]의 값", q); f = _polyq(m.group(1)); p = int(m.group(2)); body = m.group(3)
+        num, den = body.rsplit(", ", 1); num_e = _sym(num).replace(sp.Function("f"), sp.Lambda(x, f)); den_e = _sym(den)
+        return _spv(sp.limit(num_e / den_e, x, p))
+    if tid == "h2-2-diff-t2":
+        m = re.match(r"함수 f\(x\) = (.+?)에 대하여 f'\((-?\d+)\)의 값", q); f = _polyq(m.group(1)); return _spv(sp.diff(f, x).subs(x, int(m.group(2))))
+    if tid == "h2-2-diff-t3":
+        m = re.match(r"곡선 y = (.+?) 위의 점 \((-?\d+), (-?\d+)\)에서의 접선의 방정식이 y = mx \+ n일 때, 상수 m, n에 대하여 (m \+ n|n)의 값", q); f = _polyq(m.group(1)); p = int(m.group(2))
+        if _spv(f.subs(x, p)) != Fraction(m.group(3)): return None
+        mm = _spv(sp.diff(f, x).subs(x, p)); n = Fraction(m.group(3)) - mm * p
+        return mm + n if m.group(4) == "m + n" else n
+    if tid == "h2-2-diff-t4":
+        m = re.match(r"함수 f\(x\) = (.+?)에 대하여 닫힌구간 \[(-?\d+), (-?\d+)\]에서 (평균값 정리|롤의 정리)", q); f = _polyq(m.group(1)); p, qq = int(m.group(2)), int(m.group(3))
+        avg = (f.subs(x, qq) - f.subs(x, p)) / (qq - p); cs = sp.solve(sp.Eq(sp.diff(f, x), avg), x); cs = [c for c in cs if p < c < qq]
+        return _spv(cs[0]) if len(cs) == 1 else None
+    if tid == "h2-2-diff-t5":
+        m = re.match(r"함수 f\(x\) = (.+?)[가이] 감소하는 구간이 \[α, β\]일 때, (α \+ β|β − α)의 값", q); f = _polyq(m.group(1)); rs = sorted(sp.solve(sp.diff(f, x), x))
+        if len(rs) != 2: return None
+        return _spv(rs[0] + rs[1]) if m.group(2) == "α + β" else _spv(rs[1] - rs[0])
+    if tid == "h2-2-diff-t6":
+        m = re.match(r"함수 f\(x\) = (.+?)의 (극댓값|극솟값|극댓값과 극솟값의 차|극댓값과 극솟값의 합)[을를] 구하시오", q); f = _polyq(m.group(1)); rs = sorted(sp.solve(sp.diff(f, x), x))
+        if len(rs) != 2: return None
+        M, mn = _spv(f.subs(x, rs[0])), _spv(f.subs(x, rs[1]))
+        return {"극댓값": M, "극솟값": mn, "극댓값과 극솟값의 차": M - mn, "극댓값과 극솟값의 합": M + mn}[m.group(2)]
     return None
 
 
