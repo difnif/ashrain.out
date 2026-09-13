@@ -1,4 +1,4 @@
-# genkit/expr.py — 시드 명세의 식 평가와 수치 표시 (v1.1 · 09-13: 문자열 속 분수는 마커로)
+# genkit/expr.py — 시드 명세의 식 평가와 수치 표시 (v1.2 · 09-13: 문자열 속 분수는 마커로 · sgt 추가)
 #
 # 시드는 파이썬 코드가 아니라 JSON이다. 그 안의 식은 여기서만 평가되고,
 # 허용 심볼 밖의 것은 예외로 떨어진다(임의 코드 실행 차단).
@@ -23,7 +23,7 @@ _ALLOWED = {
     "sin": sp.sin, "cos": sp.cos, "tan": sp.tan, "log": sp.log,
     "Eq": sp.Eq, "And": sp.And, "Or": sp.Or, "Not": sp.Not,
 }
-_JOSA_NAMES = ("eul", "eun", "ika", "ro", "wa", "ida", "co", "sgn", "pn", "dec", "dv")
+_JOSA_NAMES = ("eul", "eun", "ika", "ro", "wa", "ida", "co", "sgn", "pn", "dec", "dv", "sgt")
 _NAME_RE = re.compile(r"[A-Za-z_][A-Za-z_0-9]*")
 _KEYWORDS = {"in", "not", "and", "or", "if", "else", "True", "False"}   # 문자열 파라미터 판별용 (ans in skew 등)
 _SAFE_CHARS = re.compile(r"^[0-9A-Za-z_+\-*/%().,<>=!&| \t]*$")
@@ -233,6 +233,16 @@ def sgn(v):
     except (TypeError, ValueError):
         return str(v)
     return ("\u2212 " if f < 0 else "+ ") + show(abs(f), marker=True)
+
+
+def sgt(v):
+    """문자 앞의 부호 붙은 계수 — `{sgt(b)}x` 가 '+ x'·'− x'·'+ 3x'·'− 3x' 로 나온다 (계수 ±1 에서 '1x' 를 피한다)."""
+    try:
+        f = Fraction(v)
+    except (TypeError, ValueError):
+        return str(v)
+    s = "\u2212 " if f < 0 else "+ "
+    return s if abs(f) == 1 else s + show(abs(f), marker=True)
 
 
 # ---------------------------------------------------------------- 파라미터 공간
