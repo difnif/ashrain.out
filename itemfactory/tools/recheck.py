@@ -1109,6 +1109,41 @@ def recompute(it):
             for nn in range(3, 100):
                 if nn * (nn - 3) == 2 * D: return Fraction(nn)
             return None
+    if tid.startswith("m3-1-quad-func-apply"):
+        if tid == "m3-1-quad-func-apply-t1":
+            m = re.match(r"이차함수 y = (-?\d*)x² ([+−]) (\d*)x ([+−]) (\d+)의 (최댓값|최솟값)", q); a = _coef(m.group(1)); b = _coef(m.group(3)) * (1 if m.group(2) == "+" else -1); c = Fraction(m.group(5)) * (1 if m.group(4) == "+" else -1)
+            if (a < 0) != (m.group(6) == "최댓값"): return None
+            return c - b * b / (4 * a)
+        if tid == "m3-1-quad-func-apply-t2":
+            m = re.match(r"이차함수 y = (-?\d*)x² ([+−]) (\d*)x \+ c의 (최댓값|최솟값)이 (-?\d+)일 때", q); a = _coef(m.group(1)); b = _coef(m.group(3)) * (1 if m.group(2) == "+" else -1); M = Fraction(m.group(5))
+            if (a < 0) != (m.group(4) == "최댓값"): return None
+            return M + b * b / (4 * a)
+        if tid == "m3-1-quad-func-apply-t3":
+            L = Fraction(re.match(r"둘레의 길이가 (\d+) cm인 직사각형", q).group(1)); return (L / 4) ** 2
+        m = re.match(r"지면에서 초속 (\d+) m로 .+?h = (\d+)t − 5t².+?이 물체의 (최고 높이|최고 높이에 도달하는 시각)[을를]", q); v = Fraction(m.group(1))
+        if m.group(2) != m.group(1): return None
+        return v * v / 20 if m.group(3) == "최고 높이" else v / 10
+    if tid.startswith("m3-1-quad-func"):
+        if tid == "m3-1-quad-func-t1":
+            m = re.match(r"이차함수 y = ax²의 그래프가 점 \((-?\d+), (-?\d+)\)를 지날 때, 상수 a", q); pp, qq = Fraction(m.group(1)), Fraction(m.group(2)); return qq / (pp * pp)
+        if tid == "m3-1-quad-func-t2":
+            m = re.match(r"이차함수 y = ax²의 그래프가 두 점 \((-?\d+), (-?\d+)\), \((-?\d+), k\)를 지날 때", q); pp, qq, mm = [Fraction(m.group(i)) for i in (1, 2, 3)]; return qq / (pp * pp) * mm * mm
+        if tid == "m3-1-quad-func-t3":
+            m = re.match(r"이차함수 y = (-?\d*)x²의 그래프를 x축의 방향으로 (-?\d+)만큼, y축의 방향으로 (-?\d+)만큼 평행이동한 그래프가 점 \((-?\d+), k\)", q); a = _coef(m.group(1)); pp, qq, mm = [Fraction(m.group(i)) for i in (2, 3, 4)]
+            return a * (mm - pp) ** 2 + qq
+        if tid == "m3-1-quad-func-t4":
+            m = re.match(r"이차함수 y = (-?\d*)x² ([+−]) (\d*)x ([+−]) (\d+)의 그래프의 꼭짓점의 좌표가 \(p, q\)일 때, (p \+ q|pq)", q); a = _coef(m.group(1)); b = _coef(m.group(3)) * (1 if m.group(2) == "+" else -1); c = Fraction(m.group(5)) * (1 if m.group(4) == "+" else -1)
+            pp = -b / (2 * a); qq = c - b * b / (4 * a); return pp + qq if m.group(6) == "p + q" else pp * qq
+        if tid == "m3-1-quad-func-t5":
+            m = re.match(r"이차함수 y = (-?\d*)\(x ([+−]) (\d+)\)² ([+−]) (\d+)의 그래프가 x축과 만나는 두 점에 대하여 (두 점 사이의 거리|두 점의 x좌표의 곱)", q); a = _coef(m.group(1)); pp = -Fraction(m.group(3)) * (1 if m.group(2) == "+" else -1); qq = Fraction(m.group(5)) * (1 if m.group(4) == "+" else -1)
+            s_ = _isqrt(-qq / a)
+            if s_ is None: return None
+            return 2 * s_ if m.group(6) == "두 점 사이의 거리" else (pp - s_) * (pp + s_)
+        if tid == "m3-1-quad-func-t6":
+            m = re.match(r"이차함수 y = (-?\d*)\(x ([+−]) (\d+)\)² ([+−]) (\d+)의 그래프가 y축과 만나는 점", q); a = _coef(m.group(1)); pp = -Fraction(m.group(3)) * (1 if m.group(2) == "+" else -1); qq = Fraction(m.group(5)) * (1 if m.group(4) == "+" else -1)
+            return a * pp * pp + qq
+        m = re.match(r"꼭짓점의 좌표가 \((-?\d+), (-?\d+)\)이고 점 \((-?\d+), (-?\d+)\)을 지나는 이차함수", q); pp, qq, mm, nn = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
+        a = (nn - qq) / (mm - pp) ** 2; return a - 2 * a * pp + a * pp * pp + qq
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])

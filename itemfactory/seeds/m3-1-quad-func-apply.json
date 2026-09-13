@@ -1,0 +1,927 @@
+{
+  "seed_id": "m3-1-quad-func-apply",
+  "category": "함수",
+  "title": "이차함수의 최댓값·최솟값과 활용 — 일반형 최대/최소·최댓값→상수·둘레 고정 넓이·물체 최고 높이",
+  "unit_id": "m3-1",
+  "concept_ids": [
+    "m3-1-29",
+    "m3-1-30"
+  ],
+  "schema_id": null,
+  "schema_name": "이차함수의 최댓값과 최솟값·활용",
+  "source_item_ids": [],
+  "note": "최대/최소는 a 의 부호 행(MM_ROWS)으로 나눈다. 활용 두 틀은 둘레 4k·초속 10k 로 정수 꼭짓점 보장.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "이차함수의 꼭짓점",
+        "완전제곱식"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "최대/최소 구분",
+        "꼭짓점 y좌표"
+      ],
+      "tags": [
+        "이차함수의 최댓값과 최솟값"
+      ],
+      "title": "y = ax² + bx + c의 최댓값 또는 최솟값",
+      "skill": "완전제곱식으로 고쳐 꼭짓점의 y좌표를 읽고, a의 부호로 최댓값인지 최솟값인지 판단하기",
+      "variant_axis": {
+        "a": "±1~±3",
+        "꼭짓점": "p ±1~±4, q ±1~±9"
+      },
+      "difficulty": 3,
+      "discriminates": "a < 0이면 최댓값, a > 0이면 최솟값이며 그 값은 꼭짓점의 y좌표임을 아는가",
+      "params": [
+        {
+          "name": "aa",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "name": "v",
+          "values": {
+            "in": [
+              "max",
+              "min"
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "v",
+        "rows": {
+          "max": {
+            "MM": "최댓값",
+            "sg": -1,
+            "DIR": "위로 볼록"
+          },
+          "min": {
+            "MM": "최솟값",
+            "sg": 1,
+            "DIR": "아래로 볼록"
+          }
+        }
+      },
+      "derive": {
+        "a": "sg*aa",
+        "b": "-2*sg*aa*p",
+        "c": "sg*aa*p*p + q",
+        "np": "-p",
+        "p2": "p*p",
+        "boa": "-2*p",
+        "ap2": "sg*aa*p*p",
+        "ans": "q"
+      },
+      "constraints": [
+        "c != 0",
+        "ans not in (b, c)",
+        "ans != 0"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "q",
+        "b",
+        "c",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "b == -2*a*p",
+        "c == ap2 + q",
+        "ans == q"
+      ],
+      "question": "이차함수 y = {co(a)}x² {sgt(b)}x {sgn(c)}의 {MM}{eul(MM)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "y = a(x − p)² + q 꼴로 고치면 그래프의 꼭짓점이 (p, q)이고, a = {a}{eun(a)} {DIR}이므로 꼭짓점에서 {MM} q를 갖는다. 이차항·일차항을 {a}{ro(a)} 묶고 (x의 계수의 반)² = {p2}{eul(p2)} 더하고 빼어 완전제곱식을 만든다.",
+      "sol2": [
+        "y = {co(a)}(x² {sgt(boa)}x) {sgn(c)} = {co(a)}(x² {sgt(boa)}x + {p2} − {p2}) {sgn(c)}",
+        "= {co(a)}(x {sgn(np)})² {sgn(-ap2)} {sgn(c)} = {co(a)}(x {sgn(np)})² {sgn(q)}",
+        "a = {a}{eun(a)} {DIR}: x = {p}일 때 {MM} {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(a)}(x² {sgt(boa)}x + {p2} − {p2}) {sgn(c)}",
+                "hint": "a로 묶고 완전제곱식"
+              },
+              {
+                "text": "{co(a)}(x {sgn(np)})² {sgn(q)}",
+                "hint": "꼭짓점 ({p}, {q})",
+                "marks": [
+                  {
+                    "on": "{sgn(q)}",
+                    "note": "{MM} {q}"
+                  }
+                ]
+              },
+              {
+                "text": "a = {a} → {DIR} → {MM} {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "{co(a)}(x {sgn(np)})²{eun(p)} x = {p}일 때 0이고 그 밖에서는 {DIR}의 방향으로 커지거나 작아지므로 y는 x = {p}에서 {MM} {q}{eul(q)} 갖는다. 따라서 {MM}{eun(MM)} {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "(x {sgn(np)})² ≥ 0, a = {a}",
+              "{MM} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y = {co(a)}x² {sgt(b)}x {sgn(c)} = {co(a)}(x {sgn(np)})² {sgn(q)}이고 a = {a}{eun(a)} {DIR}이므로 x = {p}일 때 {MM} {ans}{eul(ans)} 갖는다.",
+      "rubric": [
+        {
+          "element": "완전제곱식 변형",
+          "points": 3,
+          "criterion": "y = {co(a)}(x {sgn(np)})² {sgn(q)}{ro(q)} 고쳤다.",
+          "partial": "빼는 값에 a를 곱하지 않았으면 1점."
+        },
+        {
+          "element": "최대·최소 판단",
+          "points": 2,
+          "criterion": "a의 부호로 {MM}임을 밝히고 {ans}{eul(ans)} 답했다.",
+          "partial": "최댓값·최솟값을 반대로 말했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-apply-t1",
+      "pitfalls": [
+        {
+          "text": "최댓값·최솟값을 반대로 판단",
+          "on": "최대·최소 판단",
+          "effect": "불인정"
+        },
+        {
+          "text": "빼는 값에 a를 곱하지 않음",
+          "on": "완전제곱식 변형",
+          "effect": "부분"
+        },
+        {
+          "text": "꼭짓점의 x좌표를 답함",
+          "on": "최대·최소 판단",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "이차함수의 꼭짓점",
+        "완전제곱식"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "최대/최소 구분",
+        "꼭짓점 y좌표"
+      ],
+      "tags": [
+        "이차함수의 최댓값과 최솟값"
+      ],
+      "title": "최댓값(최솟값)이 주어진 이차함수 y = ax² + bx + c의 상수 c",
+      "skill": "완전제곱식으로 고쳐 꼭짓점의 y좌표를 c로 나타내고 주어진 최댓값(최솟값)과 같다고 놓기",
+      "variant_axis": {
+        "a": "±1, ±2",
+        "p": "±1~±4",
+        "M": "−9~9"
+      },
+      "difficulty": 3,
+      "discriminates": "꼭짓점의 y좌표 c − ap²이 최댓값(최솟값)임을 식으로 세워 c를 역으로 구하는가",
+      "params": [
+        {
+          "name": "aa",
+          "values": {
+            "int": [
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "M",
+          "values": {
+            "int": [
+              -9,
+              9
+            ]
+          }
+        },
+        {
+          "name": "v",
+          "values": {
+            "in": [
+              "max",
+              "min"
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "v",
+        "rows": {
+          "max": {
+            "MM": "최댓값",
+            "sg": -1,
+            "DIR": "위로 볼록"
+          },
+          "min": {
+            "MM": "최솟값",
+            "sg": 1,
+            "DIR": "아래로 볼록"
+          }
+        }
+      },
+      "derive": {
+        "a": "sg*aa",
+        "b": "-2*sg*aa*p",
+        "np": "-p",
+        "p2": "p*p",
+        "boa": "-2*p",
+        "ap2": "sg*aa*p*p",
+        "ans": "M + sg*aa*p*p"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (b, M)",
+        "M != 0"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "M",
+        "b",
+        "ap2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "b == -2*a*p",
+        "ans == M + ap2"
+      ],
+      "question": "이차함수 y = {co(a)}x² {sgt(b)}x + c의 {MM}{ika(MM)} {M}일 때, 상수 c의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "a = {a}{eun(a)} {DIR}이므로 {MM}{eun(MM)} 꼭짓점의 y좌표이다. y = {co(a)}(x² {sgt(boa)}x) + c = {co(a)}(x {sgn(np)})² {sgn(-ap2)} + c로 고치면 꼭짓점의 y좌표는 c {sgn(-ap2)}이고, 이것이 {M}{wa(M)} 같다고 놓아 c를 구한다.",
+      "sol2": [
+        "y = {co(a)}(x² {sgt(boa)}x + {p2} − {p2}) + c = {co(a)}(x {sgn(np)})² {sgn(-ap2)} + c",
+        "{MM}(꼭짓점의 y좌표) c {sgn(-ap2)} = {M}",
+        "c = {M} {sgn(ap2)} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(a)}(x {sgn(np)})² {sgn(-ap2)} + c",
+                "hint": "완전제곱식"
+              },
+              {
+                "text": "c {sgn(-ap2)} = {M}",
+                "hint": "{MM} = 꼭짓점의 y좌표",
+                "marks": [
+                  {
+                    "on": "= {M}",
+                    "note": "{MM}"
+                  }
+                ]
+              },
+              {
+                "text": "c = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "c = {ans}{eul(ans)} 넣으면 y = {co(a)}(x {sgn(np)})² {sgn(M)}{ika(M)} 되어 x = {p}에서 {MM} {M}{eul(M)} 갖는다. 따라서 c = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "y = {co(a)}(x {sgn(np)})² {sgn(M)}",
+              "c = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y = {co(a)}x² {sgt(b)}x + c = {co(a)}(x {sgn(np)})² {sgn(-ap2)} + c이므로 {MM}{eun(MM)} c {sgn(-ap2)}이다. c {sgn(-ap2)} = {M}에서 c = {ans}이다.",
+      "rubric": [
+        {
+          "element": "꼭짓점의 y좌표",
+          "points": 3,
+          "criterion": "완전제곱식으로 고쳐 {MM}{ika(MM)} c {sgn(-ap2)}임을 밝혔다.",
+          "partial": "빼는 값에 a를 곱하지 않았으면 1점."
+        },
+        {
+          "element": "c 구하기",
+          "points": 2,
+          "criterion": "c {sgn(-ap2)} = {M}에서 c = {ans}{eul(ans)} 구했다.",
+          "partial": "이항 부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-apply-t2",
+      "pitfalls": [
+        {
+          "text": "c를 최댓값과 같다고 놓음",
+          "on": "꼭짓점의 y좌표",
+          "effect": "불인정"
+        },
+        {
+          "text": "이항 부호 실수",
+          "on": "c 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "빼는 값에 a를 곱하지 않음",
+          "on": "꼭짓점의 y좌표",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "이차함수의 꼭짓점",
+        "완전제곱식"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "최대/최소 구분",
+        "꼭짓점 y좌표"
+      ],
+      "tags": [
+        "이차함수의 최댓값과 최솟값"
+      ],
+      "title": "둘레의 길이가 일정한 직사각형의 넓이의 최댓값",
+      "skill": "가로를 x로 놓아 넓이를 x의 이차함수로 나타내고 완전제곱식으로 최댓값 구하기",
+      "variant_axis": {
+        "둘레": "12~100 (4의 배수)"
+      },
+      "difficulty": 3,
+      "discriminates": "세로를 (둘레/2 − x)로 나타내 넓이 식을 세우고, 정사각형일 때 최대임을 확인하는가",
+      "params": [
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              3,
+              25
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "L": "4*k",
+        "H": "2*k",
+        "ans": "k*k"
+      },
+      "constraints": [
+        "ans != L"
+      ],
+      "cost_values": [
+        "k",
+        "L",
+        "H",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "L == 4*k",
+        "H == 2*k",
+        "ans == k*k"
+      ],
+      "question": "둘레의 길이가 {L} cm인 직사각형의 넓이의 최댓값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans} cm²"
+      ],
+      "sol1": "가로를 x cm라 하면 가로 + 세로 = {L} ÷ 2 = {H}이므로 세로는 ({H} − x) cm이다. 넓이 S = x({H} − x) = −x² + {H}x는 x의 이차함수이고 x²의 계수가 음수이므로 최댓값을 갖는다. 완전제곱식으로 고쳐 꼭짓점의 y좌표를 읽는다.",
+      "sol2": [
+        "가로 x, 세로 {H} − x: S = x({H} − x) = −x² + {H}x",
+        "S = −(x² − {H}x + {k*k} − {k*k}) = −(x − {k})² + {ans}",
+        "x = {k}일 때 최댓값 {ans} (가로 = 세로 = {k} cm인 정사각형)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "S = x({H} − x)",
+                "hint": "가로 + 세로 = {H}"
+              },
+              {
+                "text": "S = −(x − {k})² + {ans}",
+                "hint": "완전제곱식",
+                "marks": [
+                  {
+                    "on": "+ {ans}",
+                    "note": "최댓값"
+                  }
+                ]
+              },
+              {
+                "text": "x = {k}: 정사각형일 때 최대"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "가로와 세로가 같은 {k} cm일 때 넓이는 {k} × {k} = {ans}이고, 예컨대 가로를 {k+1} cm로 하면 세로는 {k-1} cm가 되어 넓이 {(k+1)*(k-1)}{ro((k+1)*(k-1))} 더 작다. 따라서 최댓값은 {ans} cm²이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{k} × {k} = {ans}  vs  {k+1} × {k-1} = {(k+1)*(k-1)}",
+              "최댓값 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "가로를 x cm라 하면 세로는 ({H} − x) cm이므로 넓이 S = x({H} − x) = −(x − {k})² + {ans}이다. 따라서 x = {k}일 때 넓이의 최댓값은 {ans} cm²이다.",
+      "rubric": [
+        {
+          "element": "넓이 식",
+          "points": 2,
+          "criterion": "S = x({H} − x){eul(H)} 세웠다.",
+          "partial": "세로를 {L} − x로 놓았으면 인정하지 않는다."
+        },
+        {
+          "element": "최댓값",
+          "points": 3,
+          "criterion": "완전제곱식으로 고쳐 최댓값 {ans}{eul(ans)} 구했다.",
+          "partial": "정사각형일 때 최대라는 사실만 써서 답했으면 2점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-apply-t3",
+      "pitfalls": [
+        {
+          "text": "세로를 (둘레 − x)로 놓음",
+          "on": "넓이 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "완전제곱식 변형 계산 실수",
+          "on": "최댓값",
+          "effect": "부분"
+        },
+        {
+          "text": "최댓값 대신 그때의 x를 답함",
+          "on": "최댓값",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "생활맥락",
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "이차함수의 꼭짓점",
+        "완전제곱식"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "최대/최소 구분",
+        "꼭짓점 y좌표"
+      ],
+      "tags": [
+        "이차함수의 최댓값과 최솟값"
+      ],
+      "title": "던져 올린 물체의 최고 높이와 그때의 시각",
+      "skill": "h = −5t² + vt를 완전제곱식으로 고쳐 꼭짓점 (t, h)를 읽기",
+      "variant_axis": {
+        "초속": "20~120 (10의 배수)",
+        "구하는 것": "최고 높이 / 시각"
+      },
+      "difficulty": 3,
+      "discriminates": "꼭짓점의 t좌표가 시각, h좌표가 최고 높이임을 구별해 답하는가",
+      "params": [
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "h",
+              "t"
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "ask",
+        "rows": {
+          "h": {
+            "ASK": "최고 높이",
+            "UNIT": " m",
+            "w": 1
+          },
+          "t": {
+            "ASK": "최고 높이에 도달하는 시각",
+            "UNIT": "초",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "v": "10*k",
+        "hmax": "5*k*k",
+        "k2": "k*k",
+        "ans": "w*5*k*k + (1 - w)*k"
+      },
+      "constraints": [
+        "ans != v"
+      ],
+      "cost_values": [
+        "k",
+        "v",
+        "hmax",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "v == 10*k",
+        "hmax == 5*k2",
+        "ans == w*hmax + (1 - w)*k"
+      ],
+      "question": "지면에서 초속 {v} m로 똑바로 위로 던져 올린 물체의 t초 후의 높이를 h m라 하면 h = {v}t − 5t²인 관계가 성립한다. 이 물체의 {ASK}{eul(ASK)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [
+        "{ans}{UNIT}"
+      ],
+      "sol1": "h = −5t² + {v}t는 t의 이차함수이고 t²의 계수가 음수이므로 꼭짓점에서 최댓값(최고 높이)을 갖는다. −5로 묶어 h = −5(t² − {2*k}t) = −5(t − {k})² + {hmax}{ro(hmax)} 고치면 꼭짓점은 ({k}, {hmax}): t = {k}초일 때 최고 높이 {hmax} m이다.",
+      "sol2": [
+        "h = −5(t² − {2*k}t) = −5(t² − {2*k}t + {k2} − {k2})",
+        "= −5(t − {k})² + {hmax}",
+        "t = {k}초일 때 최고 높이 {hmax} m → {ASK}{eun(ASK)} {ans}{UNIT}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "h = −5(t² − {2*k}t)",
+                "hint": "−5로 묶기"
+              },
+              {
+                "text": "h = −5(t − {k})² + {hmax}",
+                "hint": "꼭짓점 ({k}, {hmax})",
+                "marks": [
+                  {
+                    "on": "(t − {k})²",
+                    "note": "시각 {k}초"
+                  },
+                  {
+                    "on": "+ {hmax}",
+                    "note": "최고 높이"
+                  }
+                ]
+              },
+              {
+                "text": "{ASK} = {ans}{UNIT}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0",
+              "mark:1-1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "t = {k}{eul(k)} 대입하면 h = {v} × {k} − 5 × {k2} = {v*k} − {hmax} = {hmax}{ro(hmax)} 맞고, 대칭성으로 t = 0과 t = {2*k}(지면)의 한가운데 t = {k}에서 최고이다. 따라서 {ASK}{eun(ASK)} {ans}{UNIT}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "t = {k}: h = {hmax} (지면 t = 0, {2*k}의 중점)",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "h = −5t² + {v}t = −5(t − {k})² + {hmax}이므로 t = {k}초일 때 최고 높이 {hmax} m에 도달한다. 따라서 {ASK}{eun(ASK)} {ans}{UNIT}이다.",
+      "rubric": [
+        {
+          "element": "완전제곱식 변형",
+          "points": 3,
+          "criterion": "h = −5(t − {k})² + {hmax}{ro(hmax)} 고쳤다.",
+          "partial": "−5로 묶지 않아 계수가 틀렸으면 1점."
+        },
+        {
+          "element": "시각·높이 읽기",
+          "points": 2,
+          "criterion": "{ASK} {ans}{UNIT}{eul(UNIT)} 답했다.",
+          "partial": "시각과 높이를 바꿔 답했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-apply-t4",
+      "pitfalls": [
+        {
+          "text": "시각과 높이를 바꿔 답함",
+          "on": "시각·높이",
+          "effect": "불인정"
+        },
+        {
+          "text": "−5로 묶지 않아 계수가 틀림",
+          "on": "완전제곱식 변형",
+          "effect": "부분"
+        },
+        {
+          "text": "지면에 떨어지는 시각을 답함",
+          "on": "시각·높이",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

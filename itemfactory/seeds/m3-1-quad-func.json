@@ -1,0 +1,1709 @@
+{
+  "seed_id": "m3-1-quad-func",
+  "category": "함수",
+  "title": "이차함수의 그래프 — y = ax² 점 통과·두 점·평행이동·꼭짓점·x절편·y절편·식 구하기",
+  "unit_id": "m3-1",
+  "concept_ids": [
+    "m3-1-22",
+    "m3-1-23",
+    "m3-1-24",
+    "m3-1-25",
+    "m3-1-26",
+    "m3-1-27",
+    "m3-1-28"
+  ],
+  "schema_id": null,
+  "schema_name": "이차함수의 그래프와 식",
+  "source_item_ids": [],
+  "note": "그래프 그림 없이 식·좌표로만 묻는 틀. 일반형 y = ax² + bx + c 는 꼭짓점 (p, q) 에서 b = −2ap, c = ap² + q 로 파생해 정수 보장.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "제곱"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "평행이동 부호",
+        "꼭짓점 좌표"
+      ],
+      "tags": [
+        "이차함수"
+      ],
+      "title": "y = ax²의 그래프가 지나는 점으로 a 구하기",
+      "skill": "점의 좌표를 x, y에 대입해 a에 대한 일차방정식으로 풀기",
+      "variant_axis": {
+        "점": "x ±2~±4, y ±1~±12"
+      },
+      "difficulty": 2,
+      "discriminates": "x좌표를 제곱해 대입하고, 필요하면 분수로 a를 구하는가(정수라고 단정하지 않는가)",
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -12,
+              -11,
+              -10,
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "p2": "p*p",
+        "ans": "q/(p*p)"
+      },
+      "constraints": [
+        "ans != 1",
+        "ans != -1",
+        "ans not in (p, q)"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "p2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans*p2 == q"
+      ],
+      "question": "이차함수 y = ax²의 그래프가 점 ({p}, {q})를 지날 때, 상수 a의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "그래프가 점을 지난다는 것은 그 점의 좌표를 대입하면 등식이 성립한다는 뜻이다. y = ax²에 x = {p}, y = {q}{eul(q)} 넣으면 {q} = a × {pn(p)}² = {p2}a이므로 a = {q} ÷ {p2}{ro(p2)} 구한다.",
+      "sol2": [
+        "x = {p}, y = {q} 대입: {q} = a × {pn(p)}²",
+        "{q} = {p2}a",
+        "a = [[frac({q}, {p2})]] = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{q} = a × {pn(p)}²",
+                "hint": "점의 좌표 대입"
+              },
+              {
+                "text": "{q} = {p2}a",
+                "hint": "제곱 먼저",
+                "marks": [
+                  {
+                    "on": "{p2}a",
+                    "note": "{pn(p)}² = {p2}"
+                  }
+                ]
+              },
+              {
+                "text": "a = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "a = {ans}{eul(ans)} 넣은 y = {ans}x²에 x = {p}{eul(p)} 대입하면 y = {ans} × {p2} = {q}{ro(q)} 점 ({p}, {q})를 지난다. 따라서 a = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{ans} × {p2} = {q} ✓",
+              "a = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y = ax²에 x = {p}, y = {q}{eul(q)} 대입하면 {q} = {p2}a이므로 a = {ans}이다.",
+      "rubric": [
+        {
+          "element": "대입",
+          "points": 2,
+          "criterion": "{q} = a × {pn(p)}²{eul(p2)} 세웠다.",
+          "partial": "x와 y를 바꿔 대입했으면 인정하지 않는다."
+        },
+        {
+          "element": "a 구하기",
+          "points": 3,
+          "criterion": "a = {ans}{eul(ans)} 구했다.",
+          "partial": "제곱을 빠뜨려 {p2}a가 아닌 {p}a로 풀었으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-t1",
+      "pitfalls": [
+        {
+          "text": "x좌표를 제곱하지 않고 대입",
+          "on": "a 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "x, y를 바꿔 대입",
+          "on": "대입",
+          "effect": "불인정"
+        },
+        {
+          "text": "분수 답을 정수로 반올림",
+          "on": "a 구하기",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "제곱"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "평행이동 부호",
+        "꼭짓점 좌표"
+      ],
+      "tags": [
+        "이차함수"
+      ],
+      "title": "y = ax²의 그래프가 두 점을 지날 때 — 다른 점의 y좌표",
+      "skill": "한 점으로 a를 구한 뒤 다른 점의 x좌표를 대입해 y좌표 구하기",
+      "variant_axis": {
+        "첫 점": "x ±2~±3",
+        "둘째 점": "x ±2~±5"
+      },
+      "difficulty": 2,
+      "discriminates": "a를 먼저 정하고, 둘째 점의 x좌표를 제곱해 대입하는가",
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "q": "a*p*p",
+        "p2": "p*p",
+        "m2": "m*m",
+        "ans": "a*m*m"
+      },
+      "constraints": [
+        "m*m != p*p",
+        "ans not in (p, q, m)",
+        "ans != 0"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "a",
+        "m",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "q == a*p2",
+        "ans == a*m2"
+      ],
+      "question": "이차함수 y = ax²의 그래프가 두 점 ({p}, {q}), ({m}, k)를 지날 때, k의 값을 구하시오. (단, a는 상수)",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "먼저 좌표를 모두 아는 점 ({p}, {q})를 대입해 a를 정한다: {q} = a × {pn(p)}² = {p2}a에서 a = {a}. 그다음 y = {co(a)}x²에 x = {m}{eul(m)} 넣으면 k가 나온다.",
+      "sol2": [
+        "({p}, {q}) 대입: {q} = {p2}a → a = {a}",
+        "y = {co(a)}x²에 x = {m} 대입: k = {a} × {pn(m)}² = {a} × {m2}",
+        "따라서 k = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{q} = {p2}a → a = {a}",
+                "hint": "아는 점으로 a"
+              },
+              {
+                "text": "k = {a} × {pn(m)}²",
+                "hint": "x = {m} 대입",
+                "marks": [
+                  {
+                    "on": "{pn(m)}²",
+                    "note": "= {m2}"
+                  }
+                ]
+              },
+              {
+                "text": "k = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "y = {co(a)}x²은 x = {p}에서 {a} × {p2} = {q}, x = {m}에서 {a} × {m2} = {ans}{ro(ans)} 두 점을 모두 지난다. 따라서 k = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "y = {co(a)}x²: ({p}, {q}) ✓",
+              "k = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "({p}, {q}){eul(q)} 대입하면 {q} = {p2}a이므로 a = {a}이다. y = {co(a)}x²에 x = {m}{eul(m)} 대입하면 k = {a} × {m2} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "a 구하기",
+          "points": 2,
+          "criterion": "({p}, {q}){eul(q)} 대입해 a = {a}{eul(a)} 구했다.",
+          "partial": "제곱을 빠뜨렸으면 인정하지 않는다."
+        },
+        {
+          "element": "k 구하기",
+          "points": 3,
+          "criterion": "x = {m}{eul(m)} 대입해 k = {ans}{eul(ans)} 구했다.",
+          "partial": "x좌표의 부호를 살려 제곱하지 않았으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-t2",
+      "pitfalls": [
+        {
+          "text": "a를 구하지 않고 비례식으로 k를 추정",
+          "on": "a 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "음수 x좌표의 제곱 부호 실수",
+          "on": "k 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "제곱을 빠뜨림",
+          "on": "a 구하기",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "제곱"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "평행이동 부호",
+        "꼭짓점 좌표"
+      ],
+      "tags": [
+        "이차함수"
+      ],
+      "title": "y = ax²의 그래프를 평행이동한 그래프가 지나는 점 — k의 값",
+      "skill": "x축 방향 p, y축 방향 q만큼 평행이동한 식 y = a(x − p)² + q를 세우고 대입하기",
+      "variant_axis": {
+        "a": "±1~±3",
+        "p, q": "±1~±5",
+        "x좌표": "−4~4"
+      },
+      "difficulty": 3,
+      "discriminates": "x축 방향 이동은 (x − p)로 부호가 바뀌고 y축 방향 이동은 + q로 그대로임을 구별하는가",
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "np": "-p",
+        "d": "m - p",
+        "d2": "(m - p)**2",
+        "ad2": "a*(m - p)**2",
+        "ans": "a*(m - p)**2 + q"
+      },
+      "constraints": [
+        "m != p",
+        "d2 != 1",
+        "ans not in (a, p, q, m)",
+        "ans != 0",
+        "d2 <= 49"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "q",
+        "m",
+        "d",
+        "d2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == ad2 + q",
+        "d2 == d*d"
+      ],
+      "question": "이차함수 y = {co(a)}x²의 그래프를 x축의 방향으로 {p}만큼, y축의 방향으로 {q}만큼 평행이동한 그래프가 점 ({m}, k)를 지날 때, k의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "y = ax²의 그래프를 x축의 방향으로 p만큼, y축의 방향으로 q만큼 평행이동하면 y = a(x − p)² + q이다. x 대신 x − p를 넣는 것이므로 x축 방향은 부호가 반대로 들어가고, y축 방향은 그대로 더한다. 평행이동한 식 y = {co(a)}(x {sgn(np)})² {sgn(q)}에 x = {m}{eul(m)} 대입한다.",
+      "sol2": [
+        "평행이동한 식: y = {co(a)}(x {sgn(np)})² {sgn(q)}",
+        "x = {m} 대입: k = {a} × ({m} {sgn(np)})² {sgn(q)} = {a} × {pn(d)}² {sgn(q)}",
+        "= {a} × {d2} {sgn(q)} = {ad2} {sgn(q)} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = {co(a)}(x {sgn(np)})² {sgn(q)}",
+                "hint": "x → x − ({p}), y → y − ({q})",
+                "marks": [
+                  {
+                    "on": "(x {sgn(np)})²",
+                    "note": "x축 방향 {p}"
+                  }
+                ]
+              },
+              {
+                "text": "k = {a} × {pn(d)}² {sgn(q)}",
+                "hint": "x = {m} 대입"
+              },
+              {
+                "text": "k = {ad2} {sgn(q)} = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:0",
+              "mark:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "평행이동한 그래프의 꼭짓점은 ({p}, {q})이다. x = {m}{eun(m)} 꼭짓점에서 {pn(d)}만큼 떨어져 있으므로 y는 꼭짓점의 y좌표 {q}보다 {a} × {d2} = {ad2}만큼 변한 {ans}이다. 따라서 k = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "꼭짓점 ({p}, {q}), x = {m}{eun(m)} {pn(d)}만큼 떨어짐",
+              "k = {q} + {pn(ad2)} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "평행이동한 그래프의 식은 y = {co(a)}(x {sgn(np)})² {sgn(q)}이다. x = {m}{eul(m)} 대입하면 k = {a} × {pn(d)}² {sgn(q)} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "평행이동한 식",
+          "points": 3,
+          "criterion": "y = {co(a)}(x {sgn(np)})² {sgn(q)}{eul(q)} 세웠다.",
+          "partial": "x축 방향의 부호를 반대로 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "대입·계산",
+          "points": 2,
+          "criterion": "x = {m}{eul(m)} 대입해 k = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-t3",
+      "pitfalls": [
+        {
+          "text": "x축 방향 이동을 (x + p)로 씀",
+          "on": "평행이동한 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "y축 방향 이동을 빼서 씀",
+          "on": "평행이동한 식",
+          "effect": "부분"
+        },
+        {
+          "text": "대입 계산 실수",
+          "on": "대입·계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "제곱"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "평행이동 부호",
+        "꼭짓점 좌표"
+      ],
+      "tags": [
+        "이차함수"
+      ],
+      "title": "y = ax² + bx + c의 꼭짓점 — y = a(x − p)² + q로 고쳐 p + q 또는 pq",
+      "skill": "이차항·일차항을 a로 묶고 완전제곱식을 만들어 꼭짓점의 좌표 읽기",
+      "variant_axis": {
+        "a": "±1, ±2",
+        "꼭짓점": "p ±1~±4, q ±1~±9",
+        "구하는 것": "p + q / pq"
+      },
+      "difficulty": 3,
+      "discriminates": "a로 묶은 뒤 (x의 계수의 반)²을 더하고 빼며, 빼는 값에 a를 곱하는 것을 잊지 않는가",
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -2,
+              -1,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "sum",
+              "prod"
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "ask",
+        "rows": {
+          "sum": {
+            "ASK": "p + q",
+            "w": 1
+          },
+          "prod": {
+            "ASK": "pq",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "b": "-2*a*p",
+        "c": "a*p*p + q",
+        "np": "-p",
+        "p2": "p*p",
+        "ap2": "a*p*p",
+        "boa": "-2*p",
+        "ans": "w*(p + q) + (1 - w)*p*q"
+      },
+      "constraints": [
+        "c != 0",
+        "ans not in (a, b, c)",
+        "ans != 0"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "q",
+        "b",
+        "c",
+        "p2",
+        "ap2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "b == -2*a*p",
+        "c == ap2 + q",
+        "ans == w*(p + q) + (1 - w)*p*q"
+      ],
+      "question": "이차함수 y = {co(a)}x² {sgt(b)}x {sgn(c)}의 그래프의 꼭짓점의 좌표가 (p, q)일 때, {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "y = ax² + bx + c를 y = a(x − p)² + q 꼴로 고치면 꼭짓점은 (p, q)이다. 이차항과 일차항을 a = {a}{ro(a)} 묶어 y = {co(a)}(x² {sgt(boa)}x) {sgn(c)}{ro(c)} 만들고, 괄호 안에 (x의 계수의 반)² = {p2}{eul(p2)} 더하고 빼어 완전제곱식을 만든다 — 괄호 밖으로 나올 때 {a}배가 되는 것에 주의한다.",
+      "sol2": [
+        "y = {co(a)}(x² {sgt(boa)}x) {sgn(c)} = {co(a)}(x² {sgt(boa)}x + {p2} − {p2}) {sgn(c)}",
+        "= {co(a)}(x {sgn(np)})² {sgn(-ap2)} {sgn(c)} = {co(a)}(x {sgn(np)})² {sgn(q)}",
+        "꼭짓점 ({p}, {q})이므로 {ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(a)}(x² {sgt(boa)}x + {p2} − {p2}) {sgn(c)}",
+                "hint": "a로 묶고 ({boa} ÷ 2)² 더하고 빼기"
+              },
+              {
+                "text": "{co(a)}(x {sgn(np)})² {sgn(q)}",
+                "hint": "−{p2}에 {a}{eul(a)} 곱해 밖으로",
+                "marks": [
+                  {
+                    "on": "(x {sgn(np)})²",
+                    "note": "p = {p}"
+                  },
+                  {
+                    "on": "{sgn(q)}",
+                    "note": "q = {q}"
+                  }
+                ]
+              },
+              {
+                "text": "꼭짓점 ({p}, {q}) → {ASK} = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0",
+              "mark:1-1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "{co(a)}(x {sgn(np)})² {sgn(q)}{eul(q)} 전개하면 {co(a)}x² {sgt(b)}x + {pn(ap2)} {sgn(q)} = {co(a)}x² {sgt(b)}x {sgn(c)}{ro(c)} 원래 식과 같다. 따라서 꼭짓점은 ({p}, {q})이고 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "전개 확인: {co(a)}x² {sgt(b)}x {sgn(c)} ✓",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y = {co(a)}x² {sgt(b)}x {sgn(c)} = {co(a)}(x² {sgt(boa)}x + {p2} − {p2}) {sgn(c)} = {co(a)}(x {sgn(np)})² {sgn(q)}이므로 꼭짓점은 ({p}, {q})이다. 따라서 {ASK} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "완전제곱식 변형",
+          "points": 3,
+          "criterion": "y = {co(a)}(x {sgn(np)})² {sgn(q)}{ro(q)} 고쳤다.",
+          "partial": "빼는 값에 a를 곱하지 않아 q가 틀렸으면 1점."
+        },
+        {
+          "element": "꼭짓점·답",
+          "points": 2,
+          "criterion": "꼭짓점 ({p}, {q})에서 {ASK} = {ans}{eul(ans)} 구했다.",
+          "partial": "p의 부호를 반대로 읽었으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-t4",
+      "pitfalls": [
+        {
+          "text": "빼는 값에 a를 곱하지 않음",
+          "on": "완전제곱식 변형",
+          "effect": "부분"
+        },
+        {
+          "text": "p의 부호를 반대로 읽음",
+          "on": "꼭짓점·답",
+          "effect": "불인정"
+        },
+        {
+          "text": "x의 계수의 반이 아닌 계수 자체를 제곱",
+          "on": "완전제곱식 변형",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "제곱"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "평행이동 부호",
+        "꼭짓점 좌표"
+      ],
+      "tags": [
+        "이차함수"
+      ],
+      "title": "y = a(x − p)² + q의 그래프와 x축의 두 교점 — 거리 또는 x좌표의 곱",
+      "skill": "y = 0을 대입해 (x − p)² = −q/a를 제곱근으로 풀어 두 x절편 구하기",
+      "variant_axis": {
+        "a": "±1~±3",
+        "p": "±1~±4",
+        "s": "1~4",
+        "구하는 것": "거리 / 곱"
+      },
+      "difficulty": 3,
+      "discriminates": "y = 0을 넣어 (x − p)² = s²에서 x = p ± s를 얻고, 거리 2s 또는 곱 (p − s)(p + s)를 구하는가",
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "s",
+          "values": {
+            "int": [
+              1,
+              4
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "dist",
+              "prod"
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "ask",
+        "rows": {
+          "dist": {
+            "ASK": "두 점 사이의 거리",
+            "w": 1
+          },
+          "prod": {
+            "ASK": "두 점의 x좌표의 곱",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "q": "-a*s*s",
+        "np": "-p",
+        "s2": "s*s",
+        "x1": "p - s",
+        "x2": "p + s",
+        "ans": "w*2*s + (1 - w)*(p - s)*(p + s)"
+      },
+      "constraints": [
+        "ans not in (a, p, q)",
+        "ans != 0",
+        "x1 != 0",
+        "x2 != 0"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "q",
+        "s",
+        "x1",
+        "x2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "q == -a*s2",
+        "x2 - x1 == 2*s",
+        "ans == w*2*s + (1 - w)*x1*x2"
+      ],
+      "question": "이차함수 y = {co(a)}(x {sgn(np)})² {sgn(q)}의 그래프가 x축과 만나는 두 점에 대하여 {ASK}{eul(ASK)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "x축과 만나는 점은 y = 0인 점이다. {co(a)}(x {sgn(np)})² {sgn(q)} = 0에서 (x {sgn(np)})² = {s2}{ika(s2)} 되고, 제곱근을 취하면 x {sgn(np)} = ±{s}, 즉 x = {x1} 또는 x = {x2}이다. 두 점의 x좌표로 거리(차)와 곱을 구한다.",
+      "sol2": [
+        "y = 0: {co(a)}(x {sgn(np)})² {sgn(q)} = 0 → (x {sgn(np)})² = {s2}",
+        "x {sgn(np)} = ±{s} → x = {x1} 또는 x = {x2}",
+        "두 점 ({x1}, 0), ({x2}, 0): 거리 {x2} − {pn(x1)} = {2*s}, 곱 {pn(x1)} × {pn(x2)} = {x1*x2} → {ASK} {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "(x {sgn(np)})² = {s2}",
+                "hint": "y = 0 대입, {a}{ro(a)} 나눔"
+              },
+              {
+                "text": "x = {x1} 또는 x = {x2}",
+                "hint": "x {sgn(np)} = ±{s}",
+                "marks": [
+                  {
+                    "on": "x = {x1}",
+                    "note": "p − s"
+                  },
+                  {
+                    "on": "x = {x2}",
+                    "note": "p + s"
+                  }
+                ]
+              },
+              {
+                "text": "{ASK} = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0",
+              "mark:1-1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "꼭짓점 ({p}, {q})를 중심으로 두 x절편이 좌우로 {s}씩 떨어져 있으므로 x절편은 {x1}, {x2}이다. 거리는 2 × {s} = {2*s}, 곱은 {pn(x1)} × {pn(x2)} = {x1*x2}이므로 {ASK}{eun(ASK)} {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "축 x = {p}에서 좌우 {s}: {x1}, {x2}",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y = 0을 대입하면 (x {sgn(np)})² = {s2}이므로 x = {x1} 또는 x = {x2}이다. 따라서 {ASK}{eun(ASK)} {ans}이다.",
+      "rubric": [
+        {
+          "element": "x절편 구하기",
+          "points": 3,
+          "criterion": "y = 0을 대입해 x = {x1}, {x2}{eul(x2)} 구했다.",
+          "partial": "±를 빠뜨려 한 점만 구했으면 1점."
+        },
+        {
+          "element": "거리·곱 구하기",
+          "points": 2,
+          "criterion": "{ASK} {ans}{eul(ans)} 구했다.",
+          "partial": "거리와 곱을 바꿔 답했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-t5",
+      "pitfalls": [
+        {
+          "text": "±를 빠뜨려 한 점만 구함",
+          "on": "x절편 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "a로 나누지 않고 제곱근을 취함",
+          "on": "x절편 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "거리와 곱을 바꿔 답함",
+          "on": "거리·곱",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "제곱"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "평행이동 부호",
+        "꼭짓점 좌표"
+      ],
+      "tags": [
+        "이차함수"
+      ],
+      "title": "y = a(x − p)² + q의 그래프가 y축과 만나는 점의 y좌표",
+      "skill": "y축 위의 점은 x = 0이므로 x = 0을 대입해 y좌표 구하기",
+      "variant_axis": {
+        "a": "±1~±3",
+        "p": "±2~±5",
+        "q": "±1~±9"
+      },
+      "difficulty": 2,
+      "discriminates": "y절편은 x = 0을 대입한 값 ap² + q이지 q(꼭짓점의 y좌표)가 아님을 아는가",
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "np": "-p",
+        "p2": "p*p",
+        "ap2": "a*p*p",
+        "ans": "a*p*p + q"
+      },
+      "constraints": [
+        "ans not in (a, p, q)",
+        "ans != 0"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "q",
+        "p2",
+        "ap2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == ap2 + q",
+        "ap2 == a*p2"
+      ],
+      "question": "이차함수 y = {co(a)}(x {sgn(np)})² {sgn(q)}의 그래프가 y축과 만나는 점의 y좌표를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "y축 위의 점은 x좌표가 0이다. 따라서 x = 0을 대입한 y = {a} × (0 {sgn(np)})² {sgn(q)}{ika(q)} y절편이다. 꼭짓점의 y좌표 {q}{eul(q)} 그대로 답하지 않도록 한다.",
+      "sol2": [
+        "x = 0 대입: y = {a} × (0 {sgn(np)})² {sgn(q)}",
+        "= {a} × {pn(np)}² {sgn(q)} = {a} × {p2} {sgn(q)}",
+        "= {ap2} {sgn(q)} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = {a} × (0 {sgn(np)})² {sgn(q)}",
+                "hint": "y축 위 → x = 0"
+              },
+              {
+                "text": "= {a} × {p2} {sgn(q)}",
+                "hint": "{pn(np)}² = {p2}",
+                "marks": [
+                  {
+                    "on": "{a} × {p2}",
+                    "note": "= {ap2}"
+                  }
+                ]
+              },
+              {
+                "text": "= {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "전개하면 y = {co(a)}x² {sgt(-2*a*p)}x {sgn(ans)}이고 상수항이 y절편이므로 {ans}{ika(ans)} 맞다. 꼭짓점의 y좌표 {q}{wa(q)} 다르다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "전개: 상수항 = {ans}",
+              "y절편 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "x = 0을 대입하면 y = {a} × {pn(np)}² {sgn(q)} = {ap2} {sgn(q)} = {ans}이므로 y축과 만나는 점의 y좌표는 {ans}이다.",
+      "rubric": [
+        {
+          "element": "x = 0 대입",
+          "points": 2,
+          "criterion": "x = 0을 대입해 {a} × {pn(np)}² {sgn(q)}{eul(q)} 세웠다.",
+          "partial": "꼭짓점의 y좌표 {q}{eul(q)} 답했으면 인정하지 않는다."
+        },
+        {
+          "element": "계산",
+          "points": 3,
+          "criterion": "{ans}{eul(ans)} 구했다.",
+          "partial": "부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-t6",
+      "pitfalls": [
+        {
+          "text": "꼭짓점의 y좌표 q를 답함",
+          "on": "x = 0 대입",
+          "effect": "불인정"
+        },
+        {
+          "text": "(0 − p)²의 부호 실수",
+          "on": "계산",
+          "effect": "부분"
+        },
+        {
+          "text": "a를 곱하지 않음",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "제곱"
+      ],
+      "ops": [
+        "이차함수"
+      ],
+      "traps": [
+        "평행이동 부호",
+        "꼭짓점 좌표"
+      ],
+      "tags": [
+        "이차함수"
+      ],
+      "title": "꼭짓점과 다른 한 점이 주어진 이차함수의 식 — a + b + c",
+      "skill": "꼭짓점형 y = a(x − p)² + q에 다른 점을 대입해 a를 정하고 일반형으로 전개하기",
+      "variant_axis": {
+        "a": "±1, ±2",
+        "꼭짓점": "p ±1~±4, q ±1~±6",
+        "다른 점": "x −4~4"
+      },
+      "difficulty": 3,
+      "discriminates": "꼭짓점을 y = a(x − p)² + q로 옮기고 나머지 한 점으로 a를 구한 뒤 전개까지 하는가",
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -2,
+              -1,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "np": "-p",
+        "d": "m - p",
+        "d2": "(m - p)**2",
+        "n": "a*(m - p)**2 + q",
+        "b": "-2*a*p",
+        "c": "a*p*p + q",
+        "ans": "a - 2*a*p + a*p*p + q"
+      },
+      "constraints": [
+        "m != p",
+        "d2 != 1",
+        "d2 <= 25",
+        "c != 0",
+        "n != 0",
+        "n != q",
+        "ans not in (p, q, m, n)",
+        "ans != 0"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "q",
+        "m",
+        "n",
+        "b",
+        "c",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "n == a*d2 + q",
+        "ans == a + b + c",
+        "b == -2*a*p",
+        "c == a*p*p + q"
+      ],
+      "question": "꼭짓점의 좌표가 ({p}, {q})이고 점 ({m}, {n})을 지나는 이차함수의 식이 y = ax² + bx + c일 때, 상수 a, b, c에 대하여 a + b + c의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "꼭짓점이 ({p}, {q})이므로 식을 y = a(x {sgn(np)})² {sgn(q)}{ro(q)} 놓을 수 있다. 여기에 지나는 점 ({m}, {n})을 대입하면 {n} = a × {pn(d)}² {sgn(q)}에서 a = {a}{ika(a)} 나온다. 마지막으로 전개해 y = ax² + bx + c 꼴로 만들고 계수를 읽는다.",
+      "sol2": [
+        "y = a(x {sgn(np)})² {sgn(q)}에 ({m}, {n}) 대입: {n} = {d2}a {sgn(q)} → a = {a}",
+        "y = {co(a)}(x {sgn(np)})² {sgn(q)} = {co(a)}(x² {sgt(-2*p)}x + {p*p}) {sgn(q)}",
+        "= {co(a)}x² {sgt(b)}x {sgn(c)}이므로 a + b + c = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = a(x {sgn(np)})² {sgn(q)}",
+                "hint": "꼭짓점 ({p}, {q})"
+              },
+              {
+                "text": "{n} = {d2}a {sgn(q)} → a = {a}",
+                "hint": "({m}, {n}) 대입",
+                "marks": [
+                  {
+                    "on": "a = {a}",
+                    "note": "a"
+                  }
+                ]
+              },
+              {
+                "text": "y = {co(a)}x² {sgt(b)}x {sgn(c)} → a + b + c = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "y = {co(a)}x² {sgt(b)}x {sgn(c)}에 x = {m}{eul(m)} 넣으면 {n}{ika(n)} 되고, 꼭짓점의 x좌표 −b/(2a) = {p}{ro(p)} 맞다. a + b + c는 x = 1일 때의 y의 값이기도 하다: {ans}.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = {m} → y = {n} ✓",
+              "a + b + c = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "꼭짓점이 ({p}, {q})이므로 y = a(x {sgn(np)})² {sgn(q)}{ro(q)} 놓고 ({m}, {n})을 대입하면 a = {a}이다. 전개하면 y = {co(a)}x² {sgt(b)}x {sgn(c)}이므로 a + b + c = {ans}이다.",
+      "rubric": [
+        {
+          "element": "꼭짓점형·a",
+          "points": 3,
+          "criterion": "y = a(x {sgn(np)})² {sgn(q)}{ro(q)} 놓고 a = {a}{eul(a)} 구했다.",
+          "partial": "p의 부호를 반대로 놓았으면 인정하지 않는다."
+        },
+        {
+          "element": "전개·답",
+          "points": 2,
+          "criterion": "y = {co(a)}x² {sgt(b)}x {sgn(c)}{ro(c)} 전개해 a + b + c = {ans}{eul(ans)} 구했다.",
+          "partial": "전개 계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-1-quad-func-t7",
+      "pitfalls": [
+        {
+          "text": "꼭짓점형에서 p의 부호를 반대로 놓음",
+          "on": "꼭짓점형·a",
+          "effect": "불인정"
+        },
+        {
+          "text": "전개 계산 실수",
+          "on": "전개·답",
+          "effect": "부분"
+        },
+        {
+          "text": "a를 구하지 않고 a = 1로 가정",
+          "on": "꼭짓점형·a",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}
