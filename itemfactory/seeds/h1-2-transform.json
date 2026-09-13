@@ -1,0 +1,1106 @@
+{
+  "seed_id": "h1-2-transform",
+  "category": "함수",
+  "title": "도형의 이동 — 원의 평행이동·점의 대칭이동·직선의 대칭이동·평행이동과 대칭이동의 합성",
+  "unit_id": "h1-2",
+  "concept_ids": [
+    "h1-2-06",
+    "h1-2-07"
+  ],
+  "schema_id": null,
+  "schema_name": "평행이동과 대칭이동",
+  "source_item_ids": [],
+  "note": "대칭 규칙은 행 표의 가중치(wx, wy, sw)로 좌표를 파생.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "원의 방정식",
+        "직선의 방정식"
+      ],
+      "ops": [
+        "도형의 이동"
+      ],
+      "traps": [
+        "이동 방향 부호",
+        "대칭의 종류"
+      ],
+      "tags": [
+        "평행이동",
+        "대칭이동"
+      ],
+      "id": "h1-2-transform-t1",
+      "title": "원의 평행이동 — 옮긴 원의 방정식의 상수항",
+      "skill": "x 대신 x − m, y 대신 y − n을 넣어 옮긴 도형의 식을 만들고 전개하기",
+      "variant_axis": {
+        "중심": "−4~4",
+        "이동": "±1~±5"
+      },
+      "discriminates": "x축 방향 m만큼의 이동이 x → x − m임을 알고 중심이 (p + m, q + n)이 됨을 쓰는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        },
+        {
+          "name": "qv",
+          "values": {
+            "int": [
+              -4,
+              4
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "question": "원 (x {sgn(np)})² + (y {sgn(nq)})² = {r2}{eul(r2)} x축의 방향으로 {m}만큼, y축의 방향으로 {n}만큼 평행이동한 원의 방정식이 x² + y² + ax + by + c = 0일 때, 상수 c의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "np": "-p",
+        "nq": "-qv",
+        "r2": "r*r",
+        "p2": "p + m",
+        "q2": "qv + n",
+        "np2": "-(p + m)",
+        "nq2": "-(qv + n)",
+        "A": "-2*(p + m)",
+        "B": "-2*(qv + n)",
+        "ans": "(p + m)**2 + (qv + n)**2 - r*r"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (p, qv, r2, m, n)",
+        "p2 != 0",
+        "q2 != 0"
+      ],
+      "cost_values": [
+        "p",
+        "qv",
+        "r",
+        "m",
+        "n",
+        "p2",
+        "q2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == p2*p2 + q2*q2 - r2"
+      ],
+      "sol1": "도형을 x축 방향으로 m, y축 방향으로 n만큼 평행이동하면 식의 x 대신 x − m, y 대신 y − n을 넣는다. 원의 중심 ({p}, {qv})는 ({p2}, {q2})로 옮겨지고 반지름은 그대로 {r}이다. (x {sgn(np2)})² + (y {sgn(nq2)})² = {r2}{eul(r2)} 전개해 상수항을 읽는다.",
+      "sol2": [
+        "중심 ({p}, {qv}) → ({p2}, {q2}), 반지름 {r} 그대로",
+        "(x {sgn(np2)})² + (y {sgn(nq2)})² = {r2}",
+        "전개: x² + y² {sgt(A)}x {sgt(B)}y {sgn(ans)} = 0 → c = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "중심 ({p}, {qv}) → ({p2}, {q2}), 반지름 {r} 그대로",
+                "hint": "평행이동"
+              },
+              {
+                "text": "(x {sgn(np2)})² + (y {sgn(nq2)})² = {r2}",
+                "hint": "옮긴 원"
+              },
+              {
+                "text": "전개: x² + y² {sgt(A)}x {sgt(B)}y {sgn(ans)} = 0 → c = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "c"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "상수항 c = (중심의 x좌표)² + (중심의 y좌표)² − r² = {p2}² + {pn(q2)}² − {r2} = {ans}이다. 따라서 c = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "c = {p2}² + {pn(q2)}² − {r2}",
+              "c = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "평행이동한 원은 (x {sgn(np2)})² + (y {sgn(nq2)})² = {r2}이고 전개하면 x² + y² {sgt(A)}x {sgt(B)}y {sgn(ans)} = 0이므로 c = {ans}이다.",
+      "rubric": [
+        {
+          "element": "평행이동",
+          "points": 3,
+          "criterion": "옮긴 원 (x {sgn(np2)})² + (y {sgn(nq2)})² = {r2}{eul(r2)} 세웠다.",
+          "partial": "이동 방향 부호가 반대면 인정하지 않는다."
+        },
+        {
+          "element": "전개·c",
+          "points": 2,
+          "criterion": "c = {ans}{eul(ans)} 구했다.",
+          "partial": "전개 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "x 대신 x + m을 넣음(방향 반대)",
+          "on": "평행이동",
+          "effect": "불인정"
+        },
+        {
+          "text": "반지름도 바뀐다고 생각함",
+          "on": "평행이동",
+          "effect": "부분"
+        },
+        {
+          "text": "전개 실수",
+          "on": "전개·c",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "원의 방정식",
+        "직선의 방정식"
+      ],
+      "ops": [
+        "도형의 이동"
+      ],
+      "traps": [
+        "이동 방향 부호",
+        "대칭의 종류"
+      ],
+      "tags": [
+        "평행이동",
+        "대칭이동"
+      ],
+      "id": "h1-2-transform-t2",
+      "title": "점의 대칭이동 — x축·y축·원점·직선 y = x",
+      "skill": "대칭의 종류에 따라 좌표의 부호를 바꾸거나 x, y를 서로 바꾸기",
+      "variant_axis": {
+        "점": "±1~±7",
+        "대칭": "4가지"
+      },
+      "discriminates": "x축 대칭은 y의 부호, y축 대칭은 x의 부호, 원점은 둘 다, y = x는 자리 바꿈임을 구별하는가",
+      "difficulty": 1,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "x",
+              "y",
+              "o",
+              "yx"
+            ]
+          }
+        }
+      ],
+      "question": "점 ({a}, {b}){eul(b)} {SYM}에 대하여 대칭이동한 점의 좌표를 (p, q)라 할 때, p − q의 값을 구하시오.",
+      "answer": "{ans2}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "x": {
+            "SYM": "x축",
+            "RULE": "(a, b) → (a, −b)",
+            "wx": 1,
+            "wy": -1,
+            "sw": 0
+          },
+          "y": {
+            "SYM": "y축",
+            "RULE": "(a, b) → (−a, b)",
+            "wx": -1,
+            "wy": 1,
+            "sw": 0
+          },
+          "o": {
+            "SYM": "원점",
+            "RULE": "(a, b) → (−a, −b)",
+            "wx": -1,
+            "wy": -1,
+            "sw": 0
+          },
+          "yx": {
+            "SYM": "직선 y = x",
+            "RULE": "(a, b) → (b, a)",
+            "wx": 1,
+            "wy": 1,
+            "sw": 1
+          }
+        }
+      },
+      "derive": {
+        "x2": "(1 - sw)*wx*a + sw*b",
+        "y2": "(1 - sw)*wy*b + sw*a",
+        "ans": "(1 - sw)*(wx*a - wy*b) + sw*(b - a)",
+        "ans2": "(1 - sw)*(wx*a - wy*b) + sw*(b - a)"
+      },
+      "constraints": [
+        "a != b",
+        "a != -b",
+        "ans2 != 0",
+        "ans2 not in (a, b)"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "x2",
+        "y2",
+        "ans2"
+      ],
+      "answer_var": "ans2",
+      "verify": [
+        "ans2 == x2 - y2"
+      ],
+      "sol1": "{SYM}에 대한 대칭이동: {RULE}. 따라서 점 ({a}, {b})는 ({x2}, {y2})로 옮겨진다.",
+      "sol2": [
+        "{SYM} 대칭: {RULE}",
+        "({a}, {b}) → ({x2}, {y2})",
+        "p − q = {x2} − {pn(y2)} = {ans2}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{SYM} 대칭: {RULE}",
+                "hint": "대칭의 규칙"
+              },
+              {
+                "text": "({a}, {b}) → ({x2}, {y2})",
+                "hint": "적용"
+              },
+              {
+                "text": "p − q = {x2} − {pn(y2)} = {ans2}",
+                "marks": [
+                  {
+                    "on": "{ans2}",
+                    "note": "p − q"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "대칭이동한 점과 원래 점을 이은 선분의 중점이 대칭축(또는 원점) 위에 있는지 확인하면 {SYM} 대칭이 맞다. 따라서 p − q = {ans2}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "중점이 {SYM} 위 ✓",
+              "p − q = {ans2}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{SYM}에 대하여 대칭이동하면 ({a}, {b}) → ({x2}, {y2})이므로 p − q = {ans2}이다.",
+      "rubric": [
+        {
+          "element": "대칭 규칙",
+          "points": 3,
+          "criterion": "{RULE}{eul(RULE)} 적용해 ({x2}, {y2}){eul(y2)} 구했다.",
+          "partial": "다른 대칭의 규칙을 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "p − q = {ans2}{eul(ans2)} 구했다.",
+          "partial": "부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "x축 대칭에서 x의 부호를 바꿈",
+          "on": "대칭 규칙",
+          "effect": "불인정"
+        },
+        {
+          "text": "y = x 대칭에서 부호까지 바꿈",
+          "on": "대칭 규칙",
+          "effect": "불인정"
+        },
+        {
+          "text": "p − q 부호 실수",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "원의 방정식",
+        "직선의 방정식"
+      ],
+      "ops": [
+        "도형의 이동"
+      ],
+      "traps": [
+        "이동 방향 부호",
+        "대칭의 종류"
+      ],
+      "tags": [
+        "평행이동",
+        "대칭이동"
+      ],
+      "id": "h1-2-transform-t3",
+      "title": "직선의 대칭이동 — 대칭이동한 직선 y = ax + b의 a + b",
+      "skill": "x축(y → −y)·y축(x → −x)·원점(둘 다)·직선 y = x(x ↔ y) 대칭으로 식을 바꾸고 y에 대해 정리하기",
+      "variant_axis": {
+        "직선": "y = mx + n",
+        "대칭": "x축 / y축 / 원점 / y = x"
+      },
+      "discriminates": "대칭의 종류에 맞게 식의 x, y를 바꾼 뒤 y에 대해 정리해 기울기와 y절편을 읽는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "in": [
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "x",
+              "y",
+              "o",
+              "yx"
+            ]
+          }
+        }
+      ],
+      "question": "직선 y = {co(m)}x {sgn(n)}{eul(n)} {SYM}에 대하여 대칭이동한 직선의 방정식이 y = ax + b일 때, 상수 a, b에 대하여 a + b의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "x": {
+            "SYM": "x축",
+            "RULE": "y 대신 −y",
+            "wa": -1,
+            "wb": -1,
+            "sw": 0
+          },
+          "y": {
+            "SYM": "y축",
+            "RULE": "x 대신 −x",
+            "wa": -1,
+            "wb": 1,
+            "sw": 0
+          },
+          "o": {
+            "SYM": "원점",
+            "RULE": "x 대신 −x, y 대신 −y",
+            "wa": 1,
+            "wb": -1,
+            "sw": 0
+          },
+          "yx": {
+            "SYM": "직선 y = x",
+            "RULE": "x와 y를 서로 바꿈",
+            "wa": 1,
+            "wb": 1,
+            "sw": 1
+          }
+        }
+      },
+      "derive": {
+        "a2": "(1 - sw)*wa*m + sw/m",
+        "b2": "(1 - sw)*wb*n - sw*n/m",
+        "ans": "(1 - sw)*(wa*m + wb*n) + sw*(1 - n)/m",
+        "nm": "-m",
+        "nn": "-n"
+      },
+      "constraints": [
+        "m*m != 1",
+        "ans != 0",
+        "ans not in (m, n)"
+      ],
+      "cost_values": [
+        "m",
+        "n",
+        "a2",
+        "b2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == a2 + b2",
+        "sw == 1 or a2 == wa*m",
+        "sw == 0 or a2*m == 1"
+      ],
+      "sol1": "{SYM}에 대한 대칭이동은 식에서 {RULE}{ro(RULE)} 바꾸는 것이다. 바뀐 식을 y에 대해 정리하면 기울기 a와 y절편 b를 읽을 수 있다.",
+      "sol2": [
+        "{RULE}: 대칭이동한 직선의 식을 만든다",
+        "y에 대해 정리: y = {co(a2)}x {sgn(b2)}",
+        "a + b = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{RULE}: 대칭이동한 직선의 식을 만든다",
+                "hint": "{SYM} 대칭"
+              },
+              {
+                "text": "y에 대해 정리: y = {co(a2)}x {sgn(b2)}",
+                "hint": "a = {a2}, b = {b2}"
+              },
+              {
+                "text": "a + b = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "a + b"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "원래 직선 위의 점 (0, {n})을 {SYM}에 대하여 대칭이동한 점이 y = {co(a2)}x {sgn(b2)} 위에 있는지 대입해 확인할 수 있다. 따라서 a + b = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "y = {co(a2)}x {sgn(b2)}",
+              "a + b = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{SYM}에 대하여 대칭이동하면 {RULE}이므로 대칭이동한 직선은 y = {co(a2)}x {sgn(b2)}이고 a + b = {ans}이다.",
+      "rubric": [
+        {
+          "element": "대칭이동한 식",
+          "points": 3,
+          "criterion": "{RULE}{ro(RULE)} 바꿔 정리한 식이 y = {co(a2)}x {sgn(b2)}이다.",
+          "partial": "다른 대칭의 규칙을 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "합",
+          "points": 2,
+          "criterion": "a + b = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "x축 대칭에서 x의 부호를 바꿈",
+          "on": "대칭이동한 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "y = x 대칭 후 y에 대해 정리하지 않고 계수를 읽음",
+          "on": "대칭이동한 식",
+          "effect": "부분"
+        },
+        {
+          "text": "부호 실수",
+          "on": "합",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "원의 방정식",
+        "직선의 방정식"
+      ],
+      "ops": [
+        "도형의 이동"
+      ],
+      "traps": [
+        "이동 방향 부호",
+        "대칭의 종류"
+      ],
+      "tags": [
+        "평행이동",
+        "대칭이동"
+      ],
+      "id": "h1-2-transform-t4",
+      "title": "평행이동과 대칭이동의 합성 — 옮긴 원의 중심",
+      "skill": "원의 중심을 차례로 옮겨(평행이동 → 대칭이동) 최종 중심의 좌표 구하기",
+      "variant_axis": {
+        "중심": "−5~5",
+        "이동": "±1~±5",
+        "대칭": "x축 / y축 / y = x"
+      },
+      "discriminates": "이동의 순서를 지키고 각 단계의 규칙을 바르게 적용하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "qv",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "x",
+              "y",
+              "yx"
+            ]
+          }
+        }
+      ],
+      "question": "원 (x {sgn(np)})² + (y {sgn(nq)})² = 4를 x축의 방향으로 {m}만큼, y축의 방향으로 {n}만큼 평행이동한 후 {SYM}에 대하여 대칭이동한 원의 중심의 좌표를 (a, b)라 할 때, a + b의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "k",
+        "rows": {
+          "x": {
+            "SYM": "x축",
+            "RULE": "(a, b) → (a, −b)",
+            "wx": 1,
+            "wy": -1,
+            "sw": 0
+          },
+          "y": {
+            "SYM": "y축",
+            "RULE": "(a, b) → (−a, b)",
+            "wx": -1,
+            "wy": 1,
+            "sw": 0
+          },
+          "yx": {
+            "SYM": "직선 y = x",
+            "RULE": "(a, b) → (b, a)",
+            "wx": 1,
+            "wy": 1,
+            "sw": 1
+          }
+        }
+      },
+      "derive": {
+        "np": "-p",
+        "nq": "-qv",
+        "p1": "p + m",
+        "q1": "qv + n",
+        "x2": "(1 - sw)*wx*(p + m) + sw*(qv + n)",
+        "y2": "(1 - sw)*wy*(qv + n) + sw*(p + m)",
+        "ans": "(1 - sw)*(wx*(p + m) + wy*(qv + n)) + sw*(p + m + qv + n)"
+      },
+      "constraints": [
+        "p1 != 0",
+        "q1 != 0",
+        "p1 != q1",
+        "ans != 0",
+        "ans not in (p, qv, m, n)"
+      ],
+      "cost_values": [
+        "p",
+        "qv",
+        "m",
+        "n",
+        "p1",
+        "q1",
+        "x2",
+        "y2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == x2 + y2"
+      ],
+      "sol1": "원의 이동은 중심의 이동으로 추적하면 된다(반지름은 변하지 않는다). 중심 ({p}, {qv})를 평행이동하면 ({p1}, {q1}), 이어서 {SYM} 대칭({RULE})하면 ({x2}, {y2})이다.",
+      "sol2": [
+        "평행이동: ({p}, {qv}) → ({p1}, {q1})",
+        "{SYM} 대칭: ({p1}, {q1}) → ({x2}, {y2})",
+        "a + b = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "평행이동: ({p}, {qv}) → ({p1}, {q1})",
+                "hint": "x + {m}, y + {n}"
+              },
+              {
+                "text": "{SYM} 대칭: ({p1}, {q1}) → ({x2}, {y2})",
+                "hint": "{RULE}"
+              },
+              {
+                "text": "a + b = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "a + b"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "순서를 바꿔(대칭 후 평행이동) 계산하면 일반적으로 다른 점이 나오므로 문제의 순서대로 옮겨야 한다. 따라서 a + b = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "순서: 평행이동 → 대칭",
+              "a + b = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "중심 ({p}, {qv})를 평행이동하면 ({p1}, {q1}), {SYM}에 대하여 대칭이동하면 ({x2}, {y2})이므로 a + b = {ans}이다.",
+      "rubric": [
+        {
+          "element": "두 이동",
+          "points": 3,
+          "criterion": "({p1}, {q1}) → ({x2}, {y2}){ro(y2)} 차례로 옮겼다.",
+          "partial": "한 단계만 맞으면 1점."
+        },
+        {
+          "element": "합",
+          "points": 2,
+          "criterion": "a + b = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "이동 순서를 바꿈",
+          "on": "두 이동",
+          "effect": "불인정"
+        },
+        {
+          "text": "평행이동 방향 부호 반대",
+          "on": "두 이동",
+          "effect": "부분"
+        },
+        {
+          "text": "대칭 규칙 혼동",
+          "on": "두 이동",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

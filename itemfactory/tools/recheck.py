@@ -1368,6 +1368,56 @@ def recompute(it):
         C = [A[0] * B[0] + A[1] * B[2], A[0] * B[1] + A[1] * B[3], A[2] * B[0] + A[3] * B[2], A[2] * B[1] + A[3] * B[3]]
         ask = re.search(r"의 (\(1, 1\) 성분|\(2, 1\) 성분|모든 성분의 합)[을를] 구하시오", q).group(1)
         return C[0] if ask.startswith("(1, 1)") else C[2] if ask.startswith("(2, 1)") else sum(C)
+    if tid.startswith("h1-2-coord"):
+        P = [(Fraction(x), Fraction(y)) for x, y in re.findall(r"\((-?\d+), (-?\d+)\)", q)]
+        if tid == "h1-2-coord-t1":
+            m = re.search(r"선분 AB를 (\d+) : (\d+)(?:으로|로) 내분", q); mm, nn = Fraction(m.group(1)), Fraction(m.group(2)); (x1, y1), (x2, y2) = P[:2]
+            return (mm * x2 + nn * x1) / (mm + nn) + (mm * y2 + nn * y1) / (mm + nn)
+        if tid == "h1-2-coord-t2":
+            (x1, y1), (x2, y2) = P[:2]; return _isqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        if tid == "h1-2-coord-t3":
+            m = re.match(r"두 직선 ax ([+−]) (\d*)y [+−] \d+ = 0, (-?\d*)x ([+−]) (\d*)y [+−] \d+ = 0이 서로 (평행|수직)일 때", q); b = _sv(m.group(1), m.group(2) or "1"); p = _coef(m.group(3)); qq = _sv(m.group(4), m.group(5) or "1")
+            return b * p / qq if m.group(6) == "평행" else -b * qq / p
+        if tid == "h1-2-coord-t4":
+            m = re.search(r"직선 (\d+)x \+ (\d+)y ([+−]) (\d+) = 0 사이의 거리", q); A, B, c = Fraction(m.group(1)), Fraction(m.group(2)), _sv(m.group(3), m.group(4)); (x0, y0) = P[0]
+            N = _isqrt(A * A + B * B)
+            return None if N is None else abs(A * x0 + B * y0 + c) / N
+        if tid == "h1-2-coord-t5":
+            (x1, y1), (x2, y2) = P[:2]; x3 = Fraction(re.search(r"C\((-?\d+), k\)", q).group(1)); return y1 + (y2 - y1) * (x3 - x1) / (x2 - x1)
+    if tid.startswith("h1-2-circle") or tid.startswith("h1-2-transform"):
+        def std(s):
+            m = re.search(r"\(x ([+−]) (\d+)\)² \+ \(y ([+−]) (\d+)\)² = (\d+)", s)
+            return (-_sv(m.group(1), m.group(2)), -_sv(m.group(3), m.group(4)), Fraction(m.group(5))) if m else None
+        sym = {"x축": lambda x, y: (x, -y), "y축": lambda x, y: (-x, y), "원점": lambda x, y: (-x, -y), "직선 y = x": lambda x, y: (y, x)}
+        if tid == "h1-2-circle-t1":
+            m = re.match(r"원 x² \+ y² ([+−]) (\d*)x ([+−]) (\d*)y ([+−]) (\d+) = 0의", q); A = _sv(m.group(1), m.group(2) or "1"); B = _sv(m.group(3), m.group(4) or "1"); C = _sv(m.group(5), m.group(6))
+            p, qq = -A / 2, -B / 2; r = _isqrt(p * p + qq * qq - C)
+            if r is None: return None
+            return p + qq + r if "a + b + r의 값" in q else r
+        if tid == "h1-2-circle-t2":
+            p, qq, r2 = std(q); r = _isqrt(r2); m = re.search(r"직선 (\d+)x \+ (\d+)y \+ k = 0이 접할", q); A, B = Fraction(m.group(1)), Fraction(m.group(2)); N = _isqrt(A * A + B * B)
+            if r is None or N is None: return None
+            ks = [v for v in (N * r - A * p - B * qq, -N * r - A * p - B * qq) if v > 0]
+            return ks[0] if len(ks) == 1 else None
+        if tid == "h1-2-circle-t3":
+            m = re.match(r"점 P\((-?\d+), (-?\d+)\)에서", q); px, py = Fraction(m.group(1)), Fraction(m.group(2)); p, qq, r2 = std(q); return _isqrt((px - p) ** 2 + (py - qq) ** 2 - r2)
+        if tid == "h1-2-circle-t4":
+            m = re.match(r"두 점 A\((-?\d+), (-?\d+)\), B\((-?\d+), (-?\d+)\)를 지름", q); x1, y1, x2, y2 = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
+            p, qq = (x1 + x2) / 2, (y1 + y2) / 2; r2 = ((x2 - x1) ** 2 + (y2 - y1) ** 2) / 4; return -2 * p - 2 * qq + p * p + qq * qq - r2
+        if tid == "h1-2-circle-t5":
+            m = re.match(r"원 x² \+ y² = (\d+) 위의 점 \((-?\d+), (-?\d+)\)에서의 접선의 (x절편|y절편)", q); r2, x1, y1 = Fraction(m.group(1)), Fraction(m.group(2)), Fraction(m.group(3))
+            if x1 * x1 + y1 * y1 != r2: return None
+            return r2 / x1 if m.group(4) == "x절편" else r2 / y1
+        if tid == "h1-2-transform-t1":
+            p, qq, r2 = std(q); m = re.search(r"x축의 방향으로 (-?\d+)만큼, y축의 방향으로 (-?\d+)만큼", q); mm, nn = Fraction(m.group(1)), Fraction(m.group(2)); return (p + mm) ** 2 + (qq + nn) ** 2 - r2
+        if tid == "h1-2-transform-t2":
+            m = re.match(r"점 \((-?\d+), (-?\d+)\)[을를] (x축|y축|원점|직선 y = x)에 대하여 대칭이동", q); x2, y2 = sym[m.group(3)](Fraction(m.group(1)), Fraction(m.group(2))); return x2 - y2
+        if tid == "h1-2-transform-t3":
+            m = re.match(r"직선 y = (-?\d*)x ([+−]) (\d+)[을를] (x축|y축|원점|직선 y = x)에 대하여 대칭이동", q); mm = _coef(m.group(1)); nn = _sv(m.group(2), m.group(3)); k = m.group(4)
+            a2, b2 = {"x축": (-mm, -nn), "y축": (-mm, nn), "원점": (mm, -nn), "직선 y = x": (1 / mm, -nn / mm)}[k]; return a2 + b2
+        if tid == "h1-2-transform-t4":
+            p, qq, r2 = std(q); m = re.search(r"x축의 방향으로 (-?\d+)만큼, y축의 방향으로 (-?\d+)만큼 평행이동한 후 (x축|y축|원점|직선 y = x)에 대하여", q)
+            x2, y2 = sym[m.group(3)](p + Fraction(m.group(1)), qq + Fraction(m.group(2))); return x2 + y2
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])
