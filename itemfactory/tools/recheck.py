@@ -1620,7 +1620,7 @@ def _sets(q):
     return [[e.strip() for e in m.split(",")] for m in re.findall(r"\[\[set\((.*?)\)\]\]", q)]
 
 
-def _lin(s):
+def _lin2(s):
     """'-3x − 5' / 'x + 3' / '2x' → (a, b)"""
     m = re.fullmatch(r"(-?\d*)x(?: ([+−]) (\d+))?", s.strip())
     if not m: return None
@@ -1701,28 +1701,28 @@ def _h12b(tid, q):
         m = re.match(r"함수 f\(x\) = ax \+ b에 대하여 f\((-?\d+)\) = (-?\d+), f\((-?\d+)\) = (-?\d+)일 때, f\((-?\d+)\)의 값", q); x1, v1, x2, v2, x3 = [Fraction(m.group(i)) for i in (1, 2, 3, 4, 5)]
         a = (v2 - v1) / (x2 - x1); b = v1 - a * x1; return a * x3 + b
     if tid == "h1-2-func-t2":
-        m = re.match(r"두 함수 f\(x\) = (.+?), g\(x\) = x² ([+−]) (\d+)에 대하여 \((f∘g|g∘f|f∘f)\)\((-?\d+)\)의 값", q); a, b = _lin(m.group(1)); c = _sv(m.group(2), m.group(3)); k = Fraction(m.group(5))
+        m = re.match(r"두 함수 f\(x\) = (.+?), g\(x\) = x² ([+−]) (\d+)에 대하여 \((f∘g|g∘f|f∘f)\)\((-?\d+)\)의 값", q); a, b = _lin2(m.group(1)); c = _sv(m.group(2), m.group(3)); k = Fraction(m.group(5))
         f = lambda x: a * x + b; g = lambda x: x * x + c  # noqa: E731
         return {"f∘g": f(g(k)), "g∘f": g(f(k)), "f∘f": f(f(k))}[m.group(4)]
     if tid == "h1-2-func-t3":
-        m = re.match(r"함수 f\(x\) = (.+?)에 대하여 f⁻¹\((-?\d+)\)의 값", q); a, b = _lin(m.group(1)); k = Fraction(m.group(2)); return (k - b) / a
+        m = re.match(r"함수 f\(x\) = (.+?)에 대하여 f⁻¹\((-?\d+)\)의 값", q); a, b = _lin2(m.group(1)); k = Fraction(m.group(2)); return (k - b) / a
     if tid == "h1-2-func-t4":
-        m = re.match(r"두 함수 f\(x\) = (.+?), g\(x\) = x ([+−]) (\d+)에 대하여 \((f∘g|g∘f)\)⁻¹\((-?\d+)\)의 값", q); a, b = _lin(m.group(1)); c = _sv(m.group(2), m.group(3)); k = Fraction(m.group(5))
+        m = re.match(r"두 함수 f\(x\) = (.+?), g\(x\) = x ([+−]) (\d+)에 대하여 \((f∘g|g∘f)\)⁻¹\((-?\d+)\)의 값", q); a, b = _lin2(m.group(1)); c = _sv(m.group(2), m.group(3)); k = Fraction(m.group(5))
         return (k - b) / a - c if m.group(4) == "f∘g" else (k - b - c) / a
     if tid == "h1-2-func-t5":
         X, Y = _sets(q)[:2]; m_, n_ = len(X), len(Y); kind = re.search(r"에 대하여 X에서 (X|Y)로의 (.+?)의 개수", q).group(2)
         return Fraction({"함수": n_ ** m_, "상수함수": n_, "일대일함수": math.perm(n_, m_) if n_ >= m_ else 0, "일대일대응": math.factorial(m_) if n_ == m_ else 0}[kind])
     if tid == "h1-2-ratfn-t1":
-        m = re.match(r"함수 y = \[\[frac\((.+?), x ([+−]) (\d+)\)\]\]의 그래프의 두 점근선의 교점의 좌표를 \(p, q\)라 할 때, (p \+ q|pq)의 값", q); a, b = _lin(m.group(1)); c = _sv(m.group(2), m.group(3))
+        m = re.match(r"함수 y = \[\[frac\((.+?), x ([+−]) (\d+)\)\]\]의 그래프의 두 점근선의 교점의 좌표를 \(p, q\)라 할 때, (p \+ q|pq)의 값", q); a, b = _lin2(m.group(1)); c = _sv(m.group(2), m.group(3))
         p, qq = -c, a; return p + qq if m.group(4) == "p + q" else p * qq
     if tid == "h1-2-ratfn-t2":
         m = re.match(r"함수 y = \[\[frac\((-?\d+), x\)\]\]의 그래프를 x축의 방향으로 (-?\d+)만큼, y축의 방향으로 (-?\d+)만큼 평행이동", q); k, mm, nn = [Fraction(m.group(i)) for i in (1, 2, 3)]
         return nn + (k - mm * nn) - mm
     if tid == "h1-2-ratfn-t3":
-        m = re.match(r"함수 y = \[\[frac\((.+?), x ([+−]) (\d+)\)\]\]의 그래프는 함수 y = \[\[frac\(k, x\)\]\]", q); a, b = _lin(m.group(1)); c = _sv(m.group(2), m.group(3))
+        m = re.match(r"함수 y = \[\[frac\((.+?), x ([+−]) (\d+)\)\]\]의 그래프는 함수 y = \[\[frac\(k, x\)\]\]", q); a, b = _lin2(m.group(1)); c = _sv(m.group(2), m.group(3))
         return (b - a * c) + (-c) + a
     if tid == "h1-2-ratfn-t4":
-        m = re.match(r"함수 y = \[\[sqrt\((.+?)\)\]\] ([+−]) (\d+)의 정의역이 \[\[setb\(x, x ([≥≤]) p\)\]\]", q); a, b = _lin(m.group(1)); c = _sv(m.group(2), m.group(3))
+        m = re.match(r"함수 y = \[\[sqrt\((.+?)\)\]\] ([+−]) (\d+)의 정의역이 \[\[setb\(x, x ([≥≤]) p\)\]\]", q); a, b = _lin2(m.group(1)); c = _sv(m.group(2), m.group(3))
         if (a > 0) != (m.group(4) == "≥"): return None
         return -b / a + c
     if tid == "h1-2-ratfn-t5":
