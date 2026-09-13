@@ -1027,7 +1027,85 @@ def recompute(it):
             m = re.search(r"출발까지 (\d+)분이 남아 있다. 시속 (\d+) km로 .+? 사는 데 (\d+)분이 걸린다", q); T, v, sv = [Fraction(m.group(i)) for i in (1, 2, 3)]; return v * (T - sv) / 120
         if tid.startswith("m2-1-ineq-apply-t5"):
             m = re.search(r"한 번에 (\d+) kg까지 .+? 몸무게가 (\d+) kg인 사람이 한 개에 (\d+) kg인", q); W, pv, w = [Fraction(m.group(i)) for i in (1, 2, 3)]; return Fraction(math.floor((W - pv) / w))
+    if tid.startswith("m3-1-sqrt-basic"):
+        if tid.startswith("m3-1-sqrt-basic-t1"):
+            k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])
+        if tid.startswith("m3-1-sqrt-basic-t2"):
+            m = re.search(r"\[\[sqrt\((\d+) − x\)\]\]가 자연수가 되도록 하는 (자연수 x의 개수|가장 작은 자연수 x의 값)", q); a = int(m.group(1))
+            sq = [t * t for t in range(1, a) if t * t < a]; return Fraction(len(sq)) if m.group(2).startswith("자연수 x의 개수") else Fraction(a - max(sq))
+        if tid.startswith("m3-1-sqrt-basic-t3"):
+            m = re.search(r"\[\[sqrt\((\d+)\)\]\] < n < \[\[sqrt\((\d+)\)\]\]", q); a, b = int(m.group(1)), int(m.group(2)); return Fraction(sum(1 for t in range(1, b) if a < t * t < b))
+        if tid.startswith("m3-1-sqrt-basic-t4"):
+            m = re.search(r"sqrt\(pow\(-(\d+), 2\)\)\]\] \+ \[\[pow\(-sqrt\((\d+)\), 2\)\]\] − \[\[sqrt\(pow\((\d+), 2\)\)\]\] − \[\[pow\(sqrt\((\d+)\), 2\)\]\]", q); a, b, c, d = [int(m.group(i)) for i in (1, 2, 3, 4)]; return Fraction(a + b - c - d)
+        m = re.search(r"(-?\d+) \+ \[\[sqrt\((\d+)\)\]\]의 정수 부분", q); return Fraction(int(m.group(1)) + math.isqrt(int(m.group(2))))
+    if tid.startswith("m3-1-sqrt-ops"):
+        if tid.startswith("m3-1-sqrt-ops-t1"):
+            n = int(re.search(r"\[\[sqrt\((\d+)\)\]\][을를] a", q).group(1)); A, B = _sqfree(n); return Fraction(A + B)
+        if tid.startswith("m3-1-sqrt-ops-t2"):
+            m = re.search(r"\[\[(\d*)\*?sqrt\((\d+)\)\]\] × \[\[(\d*)\*?sqrt\((\d+)\)\]\] = k", q); p, a, qq, b = _coef(m.group(1)), int(m.group(2)), _coef(m.group(3)), int(m.group(4))
+            c, mm = _sqfree(a * b); return p * qq * c + mm
+        if tid.startswith("m3-1-sqrt-ops-t3"):
+            m = re.search(r"\[\[frac\((\d+), sqrt\((\d+)\)\)\]\]의 분모를 유리화", q); p, n = int(m.group(1)), int(m.group(2)); s_, mm = _sqfree(n)
+            f = Fraction(p, s_ * mm); return Fraction(f.numerator + mm + f.denominator)
+        if tid.startswith("m3-1-sqrt-ops-t4"):
+            m = re.search(r"\[\[sqrt\((\d+)\)\]\] \+ \[\[sqrt\((\d+)\)\]\] − \[\[sqrt\((\d+)\)\]\] = k\[\[sqrt\((\d+)\)\]\]", q); n1, n2, n3, mm = [int(m.group(i)) for i in (1, 2, 3, 4)]
+            cs = [_sqfree(n) for n in (n1, n2, n3)]
+            if any(c[1] != mm for c in cs): return None
+            return Fraction(cs[0][0] + cs[1][0] - cs[2][0])
+        m = re.search(r"\[\[sqrt\((\d+)\)\]\]\(\[\[sqrt\((\d+)\)\]\] − \[\[sqrt\((\d+)\)\]\]\) = p \+ q\[\[sqrt\((\d+)\)\]\]", q); a, b, c, mm = [int(m.group(i)) for i in (1, 2, 3, 4)]
+        p = _isqrt(a * b); qc, qm = _sqfree(a * c)
+        if p is None or qm != mm: return None
+        return p - qc
+    if tid.startswith("m3-1-mult-formula"):
+        if tid == "m3-1-mult-formula-t1":
+            m = re.match(r"\((-?\d*)x ([+−]) (\d+)(y?)\)\((-?\d*)x ([+−]) (\d+)(y?)\)의 전개식에서 (x|xy)의 계수", q); a = _coef(m.group(1)); b = Fraction(m.group(3)) * (1 if m.group(2) == "+" else -1); c = _coef(m.group(5)); d = Fraction(m.group(7)) * (1 if m.group(6) == "+" else -1)
+            if (m.group(9) == "xy") != (m.group(4) == "y"): return None
+            return a * d + b * c
+        if tid.startswith("m3-1-mult-formula-t2"):
+            A = int(re.search(r"(\d+)²을 계산", q).group(1)); return Fraction(A * A)
+        if tid.startswith("m3-1-mult-formula-t3") or tid.startswith("m3-1-mult-formula-t4"):
+            m = re.search(r"(\d+) × (\d+)[을를] 계산", q); return Fraction(int(m.group(1)) * int(m.group(2)))
+        if tid.startswith("m3-1-mult-formula-t5"):
+            m = re.search(r"\[\[pow\((\d*)\*?sqrt\((\d+)\) ([+−]) (\d+), 2\)\]\] = m \+ n\[\[sqrt\((\d+)\)\]\]", q); p, a, qq = _coef(m.group(1)), int(m.group(2)), Fraction(m.group(4)) * (1 if m.group(3) == "+" else -1)
+            if int(m.group(5)) != a: return None
+            return p * p * a + qq * qq + 2 * p * qq
+        if tid.startswith("m3-1-mult-formula-t6"):
+            m = re.search(r"\[\[frac\((\d+), (.+?)\)\]\]의 분모를 유리화하여 p \+ q\[\[sqrt\((\d+)\)\]\]", q); c, den, a = int(m.group(1)), m.group(2), int(m.group(3))
+            mr = re.fullmatch(r"sqrt\((\d+)\) ([+−]) (\d+)", den); mn = re.fullmatch(r"(\d+) ([+−]) sqrt\((\d+)\)", den)
+            if mr:
+                if int(mr.group(1)) != a: return None
+                b = int(mr.group(3)); sg = 1 if mr.group(2) == "+" else -1; D = a - b * b       # c(√a − s b)/(a − b²)
+                return Fraction(-sg * c * b, D) + Fraction(c, D)
+            if int(mn.group(3)) != a: return None
+            b = int(mn.group(1)); sg = 1 if mn.group(2) == "+" else -1; D = b * b - a            # c(b − s√a)/(b² − a)
+            return Fraction(c * b, D) + Fraction(-sg * c, D)
+        if tid.startswith("m3-1-mult-formula-t7"):
+            m = re.match(r"x ([+−]) y = (-?\d+), xy = (-?\d+)일 때, (x² \+ y²|\(x − y\)²|\(x \+ y\)²)의 값", q); s_, pv = Fraction(m.group(2)), Fraction(m.group(3)); plus = m.group(1) == "+"; ask = m.group(4)
+            if ask == "x² + y²": return s_ * s_ - 2 * pv if plus else s_ * s_ + 2 * pv
+            if ask == "(x − y)²": return s_ * s_ - 4 * pv if plus else None
+            return s_ * s_ + 4 * pv if not plus else None
+        if tid.startswith("m3-1-mult-formula-t8"):
+            m = re.match(r"x ([+−]) \[\[frac\(1, x\)\]\] = (-?\d+)일 때, (.+?)의 값", q); s_ = Fraction(m.group(2)); plus = m.group(1) == "+"; ask = m.group(3)
+            if ask == "x² + [[frac(1, pow(x,2))]]": return s_ * s_ - 2 if plus else s_ * s_ + 2
+            if ask == "[[pow(x − frac(1, x), 2)]]": return s_ * s_ - 4 if plus else None
+            return s_ * s_ + 4 if (not plus and ask == "[[pow(x + frac(1, x), 2)]]") else None
+        if tid.startswith("m3-1-mult-formula-t9"):
+            m = re.match(r"x² ([+−]) (\d+)x ([+−]) 1 = 0일 때, x² \+ \[\[frac\(1, pow\(x,2\)\)\]\]", q); s_ = Fraction(m.group(2)); return s_ * s_ - 2 if m.group(3) == "+" else s_ * s_ + 2
+        m = re.match(r"x = (\d+) ([+−]) \[\[sqrt\((\d+)\)\]\]일 때, x² − (\d+)x ([+−]) (\d+)의 값", q); c, a, c2 = int(m.group(1)), int(m.group(3)), int(m.group(4)); e = Fraction(m.group(6)) * (1 if m.group(5) == "+" else -1)
+        if c2 != 2 * c: return None
+        return a - c * c + e
     return "skip"
+
+
+def _sqfree(n):
+    a, b = 1, n
+    p = 2
+    while p * p <= b:
+        while b % (p * p) == 0:
+            b //= p * p
+            a *= p
+        p += 1
+    return a, b
 
 
 def _lin(text):
