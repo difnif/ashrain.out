@@ -1,0 +1,1334 @@
+{
+  "seed_id": "m2-1-ineq-property",
+  "category": "연산",
+  "title": "부등식의 성질 — 식의 값의 범위(m + n·정수의 개수·최댓값 조건·분수 계수)",
+  "unit_id": "m2-1",
+  "concept_ids": [
+    "m2-1-07"
+  ],
+  "schema_id": null,
+  "schema_name": "부등식의 성질과 식의 값의 범위",
+  "source_item_ids": [],
+  "note": "결과 범위의 부등호는 표 행(x 범위 꼴 × 계수 부호)이 정한다. 계수가 음수이면 끝점이 서로 바뀐다(lo·hi 파생).",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "부등식의 뜻",
+        "일차식의 값"
+      ],
+      "ops": [
+        "부등식의 성질"
+      ],
+      "traps": [
+        "음수 곱셈 시 방향"
+      ],
+      "tags": [
+        "부등식의 성질"
+      ],
+      "title": "x의 범위가 주어질 때 px + q의 값의 범위 — m + n (n − m)",
+      "skill": "x의 범위의 각 변에 x의 계수를 곱하고(음수면 부등호 방향 반전) 상수를 더해 식의 값의 범위 구하기",
+      "variant_axis": {
+        "x의 범위 꼴": "≤·< 조합 4가지",
+        "계수": "±2~±5",
+        "구하는 것": "m + n / n − m"
+      },
+      "discriminates": "음수를 곱할 때 부등호의 방향을 바꾸고 끝점을 서로 바꾸어 놓는가, 등호의 위치를 그대로 따라가는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              "le_lt_p",
+              "le_lt_n",
+              "lt_le_p",
+              "lt_le_n",
+              "le_le_p",
+              "le_le_n",
+              "lt_lt_p",
+              "lt_lt_n"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              -5,
+              3
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              -2,
+              6
+            ]
+          }
+        },
+        {
+          "name": "pp",
+          "values": {
+            "int": [
+              2,
+              5
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "sum",
+              "diff"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "f",
+          "rows": {
+            "le_lt_p": {
+              "XL": "≤",
+              "XR": "<",
+              "OPL": "≤",
+              "OPR": "<",
+              "s": 1,
+              "FLIP": "",
+              "SGW": "양수",
+              "adj": 0,
+              "dl": 0,
+              "dr": 1
+            },
+            "le_lt_n": {
+              "XL": "≤",
+              "XR": "<",
+              "OPL": "<",
+              "OPR": "≤",
+              "s": -1,
+              "FLIP": " (음수를 곱하므로 부등호의 방향이 바뀐다)",
+              "SGW": "음수",
+              "adj": 0,
+              "dl": 1,
+              "dr": 0
+            },
+            "lt_le_p": {
+              "XL": "<",
+              "XR": "≤",
+              "OPL": "<",
+              "OPR": "≤",
+              "s": 1,
+              "FLIP": "",
+              "SGW": "양수",
+              "adj": 0,
+              "dl": 1,
+              "dr": 0
+            },
+            "lt_le_n": {
+              "XL": "<",
+              "XR": "≤",
+              "OPL": "≤",
+              "OPR": "<",
+              "s": -1,
+              "FLIP": " (음수를 곱하므로 부등호의 방향이 바뀐다)",
+              "SGW": "음수",
+              "adj": 0,
+              "dl": 0,
+              "dr": 1
+            },
+            "le_le_p": {
+              "XL": "≤",
+              "XR": "≤",
+              "OPL": "≤",
+              "OPR": "≤",
+              "s": 1,
+              "FLIP": "",
+              "SGW": "양수",
+              "adj": 1,
+              "dl": 0,
+              "dr": 0
+            },
+            "le_le_n": {
+              "XL": "≤",
+              "XR": "≤",
+              "OPL": "≤",
+              "OPR": "≤",
+              "s": -1,
+              "FLIP": " (음수를 곱하므로 부등호의 방향이 바뀐다)",
+              "SGW": "음수",
+              "adj": 1,
+              "dl": 0,
+              "dr": 0
+            },
+            "lt_lt_p": {
+              "XL": "<",
+              "XR": "<",
+              "OPL": "<",
+              "OPR": "<",
+              "s": 1,
+              "FLIP": "",
+              "SGW": "양수",
+              "adj": -1,
+              "dl": 1,
+              "dr": 1
+            },
+            "lt_lt_n": {
+              "XL": "<",
+              "XR": "<",
+              "OPL": "<",
+              "OPR": "<",
+              "s": -1,
+              "FLIP": " (음수를 곱하므로 부등호의 방향이 바뀐다)",
+              "SGW": "음수",
+              "adj": -1,
+              "dl": 1,
+              "dr": 1
+            }
+          }
+        },
+        {
+          "key": "ask",
+          "rows": {
+            "sum": {
+              "ASK": "m + n",
+              "t": 1
+            },
+            "diff": {
+              "ASK": "n − m",
+              "t": -1
+            }
+          }
+        }
+      ],
+      "derive": {
+        "p": "s*pp",
+        "lo": "(a*(1 + s) + b*(1 - s))/2",
+        "hi": "(b*(1 + s) + a*(1 - s))/2",
+        "LO": "s*pp*lo",
+        "HI": "s*pp*hi",
+        "m": "s*pp*lo + q",
+        "n": "s*pp*hi + q",
+        "ea": "s*pp*a + q",
+        "eb": "s*pp*b + q",
+        "ans": "n + t*m"
+      },
+      "constraints": [
+        "a < b",
+        "ans != 0",
+        "ans not in (a, b, p, abs(q))",
+        "abs(m) <= 40",
+        "abs(n) <= 40",
+        "m != 0",
+        "n != 0"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "p",
+        "q",
+        "LO",
+        "HI",
+        "m",
+        "n",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == n + t*m",
+        "m < n",
+        "m == min(ea, eb)",
+        "n == max(ea, eb)"
+      ],
+      "question": "{a} {XL} x {XR} {b}일 때, {co(p)}x {sgn(q)}의 값의 범위가 m {OPL} {co(p)}x {sgn(q)} {OPR} n이다. 이때 {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "부등식의 각 변에 같은 양수를 곱하거나 같은 수를 더해도 부등호의 방향은 그대로이고, 음수를 곱하면 방향이 바뀐다. x의 범위 {a} {XL} x {XR} {b}의 각 변에 x의 계수 {p}{eul(p)} 곱한 다음 {q}{eul(q)} 더하면 {co(p)}x {sgn(q)}의 범위가 된다. 등호(≤)는 원래 붙어 있던 끝을 그대로 따라간다.",
+      "sol2": [
+        "각 변에 {p}{eul(p)} 곱하면 {LO} {OPL} {co(p)}x {OPR} {HI}{FLIP}",
+        "각 변에 {q}{eul(q)} 더하면 {m} {OPL} {co(p)}x {sgn(q)} {OPR} {n}",
+        "따라서 m = {m}, n = {n}이므로 {ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{a} {XL} x {XR} {b}",
+                "hint": "x의 범위"
+              },
+              {
+                "text": "{LO} {OPL} {co(p)}x {OPR} {HI}",
+                "hint": "각 변 × {p}{FLIP}"
+              },
+              {
+                "text": "{m} {OPL} {co(p)}x {sgn(q)} {OPR} {n}",
+                "hint": "각 변 + {pn(q)}",
+                "marks": [
+                  {
+                    "on": "{m}",
+                    "note": "m"
+                  },
+                  {
+                    "on": "{n}",
+                    "note": "n"
+                  }
+                ]
+              },
+              {
+                "text": "{ASK} = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0",
+              "mark:2-1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol3": "끝점을 대입해 보면 x = {a}일 때 {co(p)}x {sgn(q)} = {ea}, x = {b}일 때 {eb}이므로 작은 값 {m}{ika(m)} m, 큰 값 {n}{ika(n)} n이다. 계수가 {SGW}이므로 부등호 방향도 맞다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = {a} → {ea},  x = {b} → {eb}",
+              "m = {m}, n = {n} → {ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "{a} {XL} x {XR} {b}의 각 변에 {p}{eul(p)} 곱하면 {LO} {OPL} {co(p)}x {OPR} {HI}이고, 각 변에 {q}{eul(q)} 더하면 {m} {OPL} {co(p)}x {sgn(q)} {OPR} {n}이다. 따라서 m = {m}, n = {n}이고 {ASK} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "계수 곱하기",
+          "points": 3,
+          "criterion": "각 변에 {p}{eul(p)} 곱해 {LO} {OPL} {co(p)}x {OPR} {HI}{eul(HI)} 얻었다(음수이면 방향을 바꾸었다).",
+          "partial": "음수를 곱하며 방향을 바꾸지 않았으면 인정하지 않는다."
+        },
+        {
+          "element": "상수 더하기",
+          "points": 2,
+          "criterion": "각 변에 {q}{eul(q)} 더해 {m} {OPL} {co(p)}x {sgn(q)} {OPR} {n}{eul(n)} 얻었다.",
+          "partial": "한 변에만 더했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "m = {m}, n = {n}에서 {ASK} = {ans}{eul(ans)} 구했다.",
+          "partial": "m, n을 바꾸어 읽었으면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m2-1-ineq-property-t1",
+      "pitfalls": [
+        {
+          "text": "음수를 곱하면서 부등호의 방향을 바꾸지 않음",
+          "on": "계수",
+          "effect": "불인정"
+        },
+        {
+          "text": "등호(≤)의 위치를 원래 끝과 반대로 붙임",
+          "on": "계수",
+          "effect": "부분"
+        },
+        {
+          "text": "상수를 한 변에만 더함",
+          "on": "상수",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "부등식의 뜻",
+        "일차식의 값"
+      ],
+      "ops": [
+        "부등식의 성질"
+      ],
+      "traps": [
+        "음수 곱셈 시 방향"
+      ],
+      "tags": [
+        "부등식의 성질"
+      ],
+      "title": "x의 범위가 주어질 때 px + q의 값이 될 수 있는 정수의 개수",
+      "skill": "식의 값의 범위를 구한 뒤 경계의 포함 여부(등호)에 맞게 정수를 세기",
+      "variant_axis": {
+        "x의 범위 꼴": "≤·< 조합 4가지",
+        "계수": "±2~±5"
+      },
+      "discriminates": "범위를 바르게 구한 뒤 등호가 붙은 끝은 포함하고 붙지 않은 끝은 제외하며 세는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              "le_lt_p",
+              "le_lt_n",
+              "lt_le_p",
+              "lt_le_n",
+              "le_le_p",
+              "le_le_n",
+              "lt_lt_p",
+              "lt_lt_n"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              -4,
+              2
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              -1,
+              5
+            ]
+          }
+        },
+        {
+          "name": "pp",
+          "values": {
+            "int": [
+              2,
+              4
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "f",
+        "rows": {
+          "le_lt_p": {
+            "XL": "≤",
+            "XR": "<",
+            "OPL": "≤",
+            "OPR": "<",
+            "s": 1,
+            "FLIP": "",
+            "SGW": "양수",
+            "adj": 0,
+            "dl": 0,
+            "dr": 1
+          },
+          "le_lt_n": {
+            "XL": "≤",
+            "XR": "<",
+            "OPL": "<",
+            "OPR": "≤",
+            "s": -1,
+            "FLIP": " (음수를 곱하므로 부등호의 방향이 바뀐다)",
+            "SGW": "음수",
+            "adj": 0,
+            "dl": 1,
+            "dr": 0
+          },
+          "lt_le_p": {
+            "XL": "<",
+            "XR": "≤",
+            "OPL": "<",
+            "OPR": "≤",
+            "s": 1,
+            "FLIP": "",
+            "SGW": "양수",
+            "adj": 0,
+            "dl": 1,
+            "dr": 0
+          },
+          "lt_le_n": {
+            "XL": "<",
+            "XR": "≤",
+            "OPL": "≤",
+            "OPR": "<",
+            "s": -1,
+            "FLIP": " (음수를 곱하므로 부등호의 방향이 바뀐다)",
+            "SGW": "음수",
+            "adj": 0,
+            "dl": 0,
+            "dr": 1
+          },
+          "le_le_p": {
+            "XL": "≤",
+            "XR": "≤",
+            "OPL": "≤",
+            "OPR": "≤",
+            "s": 1,
+            "FLIP": "",
+            "SGW": "양수",
+            "adj": 1,
+            "dl": 0,
+            "dr": 0
+          },
+          "le_le_n": {
+            "XL": "≤",
+            "XR": "≤",
+            "OPL": "≤",
+            "OPR": "≤",
+            "s": -1,
+            "FLIP": " (음수를 곱하므로 부등호의 방향이 바뀐다)",
+            "SGW": "음수",
+            "adj": 1,
+            "dl": 0,
+            "dr": 0
+          },
+          "lt_lt_p": {
+            "XL": "<",
+            "XR": "<",
+            "OPL": "<",
+            "OPR": "<",
+            "s": 1,
+            "FLIP": "",
+            "SGW": "양수",
+            "adj": -1,
+            "dl": 1,
+            "dr": 1
+          },
+          "lt_lt_n": {
+            "XL": "<",
+            "XR": "<",
+            "OPL": "<",
+            "OPR": "<",
+            "s": -1,
+            "FLIP": " (음수를 곱하므로 부등호의 방향이 바뀐다)",
+            "SGW": "음수",
+            "adj": -1,
+            "dl": 1,
+            "dr": 1
+          }
+        }
+      },
+      "derive": {
+        "p": "s*pp",
+        "lo": "(a*(1 + s) + b*(1 - s))/2",
+        "hi": "(b*(1 + s) + a*(1 - s))/2",
+        "LO": "s*pp*lo",
+        "HI": "s*pp*hi",
+        "m": "s*pp*lo + q",
+        "n": "s*pp*hi + q",
+        "FIRST": "s*pp*lo + q + dl",
+        "LAST": "s*pp*hi + q - dr",
+        "ans": "n - m + adj"
+      },
+      "constraints": [
+        "a < b",
+        "ans >= 3",
+        "ans not in (a, b, p, abs(q))",
+        "abs(m) <= 30",
+        "abs(n) <= 30"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "p",
+        "q",
+        "m",
+        "n",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == LAST - FIRST + 1",
+        "m < n",
+        "FIRST >= m",
+        "LAST <= n"
+      ],
+      "question": "{a} {XL} x {XR} {b}일 때, {co(p)}x {sgn(q)}의 값이 될 수 있는 정수의 개수를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "먼저 x의 범위의 각 변에 {p}{eul(p)} 곱하고 {q}{eul(q)} 더해 {co(p)}x {sgn(q)}의 값의 범위를 구한다(음수를 곱하면 부등호 방향이 바뀐다). 그다음 그 범위에 들어가는 정수를 센다 — 등호가 있는 끝은 포함하고, 등호가 없는 끝은 뺀다.",
+      "sol2": [
+        "각 변에 {p}{eul(p)} 곱하면 {LO} {OPL} {co(p)}x {OPR} {HI}{FLIP}",
+        "각 변에 {q}{eul(q)} 더하면 {m} {OPL} {co(p)}x {sgn(q)} {OPR} {n}",
+        "이 범위의 정수는 {FIRST}, …, {LAST}이므로 {ans}개"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{LO} {OPL} {co(p)}x {OPR} {HI}",
+                "hint": "각 변 × {p}{FLIP}"
+              },
+              {
+                "text": "{m} {OPL} {co(p)}x {sgn(q)} {OPR} {n}",
+                "hint": "각 변 + {pn(q)}"
+              },
+              {
+                "text": "정수: {FIRST}, …, {LAST} → {ans}개",
+                "marks": [
+                  {
+                    "on": "{FIRST}, …, {LAST}",
+                    "note": "등호 없는 끝은 제외"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "{FIRST}부터 {LAST}까지의 정수는 {LAST} − {pn(FIRST)} + 1 = {ans}개다. 끝점 {m}, {n}의 포함 여부를 등호로 다시 확인하면 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{LAST} − {pn(FIRST)} + 1 = {ans}",
+              "정수의 개수 = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "{a} {XL} x {XR} {b}의 각 변에 {p}{eul(p)} 곱하고 {q}{eul(q)} 더하면 {m} {OPL} {co(p)}x {sgn(q)} {OPR} {n}이다. 이 범위의 정수는 {FIRST}, …, {LAST}의 {ans}개이다.",
+      "rubric": [
+        {
+          "element": "식의 값의 범위",
+          "points": 3,
+          "criterion": "{m} {OPL} {co(p)}x {sgn(q)} {OPR} {n}{eul(n)} 구했다.",
+          "partial": "음수를 곱하며 방향을 바꾸지 않았으면 인정하지 않는다."
+        },
+        {
+          "element": "정수 세기",
+          "points": 2,
+          "criterion": "등호 유무에 맞게 {FIRST}부터 {LAST}까지 {ans}개를 셌다.",
+          "partial": "끝점 하나의 포함 여부를 틀려 1개 차이면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-ineq-property-t2",
+      "pitfalls": [
+        {
+          "text": "음수를 곱하면서 부등호의 방향을 바꾸지 않음",
+          "on": "범위",
+          "effect": "불인정"
+        },
+        {
+          "text": "등호가 없는 끝의 정수를 포함해 셈",
+          "on": "정수",
+          "effect": "부분"
+        },
+        {
+          "text": "정수의 개수를 n − m으로만 계산해 등호 포함을 놓침",
+          "on": "정수",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "부등식의 뜻",
+        "일차식의 값"
+      ],
+      "ops": [
+        "부등식의 성질"
+      ],
+      "traps": [
+        "음수 곱셈 시 방향"
+      ],
+      "tags": [
+        "부등식의 성질"
+      ],
+      "title": "x의 범위에서 px + k의 최댓값(최솟값)이 주어질 때 상수 k",
+      "skill": "x의 계수의 부호로 최댓값·최솟값이 생기는 끝점을 정하고 대입해 k를 구하기",
+      "variant_axis": {
+        "계수 부호": "양 / 음",
+        "구하는 것": "최댓값 / 최솟값 조건"
+      },
+      "discriminates": "계수가 음수이면 최댓값이 x의 가장 작은 값에서 생김을 아는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "maxp",
+              "minp",
+              "maxn",
+              "minn"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              -4,
+              2
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              -1,
+              5
+            ]
+          }
+        },
+        {
+          "name": "pp",
+          "values": {
+            "int": [
+              2,
+              5
+            ]
+          }
+        },
+        {
+          "name": "V",
+          "values": {
+            "int": [
+              -9,
+              12
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "maxp": {
+            "MX": "최댓값",
+            "s": 1,
+            "ia": 0,
+            "SGW": "양수",
+            "WHY": "x가 클수록 값이 커지므로 오른쪽 끝에서 최댓값"
+          },
+          "minp": {
+            "MX": "최솟값",
+            "s": 1,
+            "ia": 1,
+            "SGW": "양수",
+            "WHY": "x가 작을수록 값이 작아지므로 왼쪽 끝에서 최솟값"
+          },
+          "maxn": {
+            "MX": "최댓값",
+            "s": -1,
+            "ia": 1,
+            "SGW": "음수",
+            "WHY": "x가 작을수록 값이 커지므로 왼쪽 끝에서 최댓값"
+          },
+          "minn": {
+            "MX": "최솟값",
+            "s": -1,
+            "ia": 0,
+            "SGW": "음수",
+            "WHY": "x가 클수록 값이 작아지므로 오른쪽 끝에서 최솟값"
+          }
+        }
+      },
+      "derive": {
+        "p": "s*pp",
+        "xe": "a*ia + b*(1 - ia)",
+        "pxe": "s*pp*(a*ia + b*(1 - ia))",
+        "k": "V - s*pp*(a*ia + b*(1 - ia))",
+        "ea": "s*pp*a + k",
+        "eb": "s*pp*b + k",
+        "ans": "k"
+      },
+      "constraints": [
+        "a < b",
+        "k != 0",
+        "ans not in (a, b, p, V)",
+        "abs(k) <= 30"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "p",
+        "V",
+        "pxe",
+        "k"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == V - p*xe",
+        "ia*(a - xe) == 0",
+        "(1 - ia)*(b - xe) == 0",
+        "max(ea, eb) == V or min(ea, eb) == V"
+      ],
+      "question": "{a} ≤ x ≤ {b}일 때, {co(p)}x + k의 {MX}{ika(MX)} {V}이다. 상수 k의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "x의 계수가 양수이면 x가 클수록 식의 값이 커지고, 음수이면 x가 클수록 식의 값이 작아진다. 그래서 {co(p)}x + k의 최댓값과 최솟값은 x의 범위의 양 끝 {a}, {b} 중 한쪽에서 생긴다. 계수 {p}의 부호로 어느 끝인지 정한 뒤 대입해 k를 구한다.",
+      "sol2": [
+        "x의 계수 {p}{eun(p)} {SGW}이므로 {MX}{eun(MX)} x = {xe}일 때 생긴다",
+        "x = {xe}{eul(xe)} 대입하면 {p} × {pn(xe)} + k = {V}, 즉 {pxe} + k = {V}",
+        "따라서 k = {V} − {pn(pxe)} = {k}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "계수 {p}{eun(p)} {SGW} → {MX}{eun(MX)} x = {xe}에서",
+                "hint": "{WHY}"
+              },
+              {
+                "text": "{p} × {pn(xe)} + k = {V}",
+                "hint": "대입"
+              },
+              {
+                "text": "k = {V} − {pn(pxe)} = {k}",
+                "marks": [
+                  {
+                    "on": "{k}",
+                    "note": "다른 끝을 쓰면 틀림"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "k = {k}{ro(k)} 놓고 양 끝을 대입하면 x = {a}일 때 {ea}, x = {b}일 때 {eb}이므로 {MX}{eun(MX)} {V}{ika(V)} 맞다. 따라서 k = {k}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = {a} → {ea},  x = {b} → {eb}",
+              "{MX} = {V} ✓ → k = {k}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "x의 계수 {p}{ika(p)} {SGW}이므로 {co(p)}x + k의 {MX}{eun(MX)} x = {xe}일 때이고, {p} × {pn(xe)} + k = {V}에서 k = {k}이다.",
+      "rubric": [
+        {
+          "element": "끝점 정하기",
+          "points": 3,
+          "criterion": "계수의 부호를 근거로 {MX}{ika(MX)} x = {xe}에서 생김을 밝혔다.",
+          "partial": "근거 없이 끝점만 맞게 골랐으면 1점."
+        },
+        {
+          "element": "대입·계산",
+          "points": 2,
+          "criterion": "{p} × {pn(xe)} + k = {V}에서 k = {k}{eul(k)} 구했다.",
+          "partial": "부호 실수 하나면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-ineq-property-t3",
+      "pitfalls": [
+        {
+          "text": "계수가 음수인데 최댓값을 x의 최댓값에서 구함",
+          "on": "끝점",
+          "effect": "불인정"
+        },
+        {
+          "text": "최댓값과 최솟값을 바꾸어 대입함",
+          "on": "끝점",
+          "effect": "불인정"
+        },
+        {
+          "text": "k를 이항할 때 부호 실수",
+          "on": "대입",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "부등식의 뜻",
+        "일차식의 값"
+      ],
+      "ops": [
+        "부등식의 성질"
+      ],
+      "traps": [
+        "음수 곱셈 시 방향"
+      ],
+      "tags": [
+        "부등식의 성질"
+      ],
+      "title": "x의 범위가 주어질 때 x/d + q의 값의 범위 — 분수 계수",
+      "skill": "각 변을 같은 양수로 나누고 상수를 더해 분수 계수 식의 값의 범위를 구하기",
+      "variant_axis": {
+        "분모": "2~5",
+        "x의 범위 꼴": "≤·< 조합 4가지"
+      },
+      "discriminates": "각 변을 나눌 때 끝점이 분수가 되어도 그대로 두고 상수를 더하는가, 부등호 방향을 유지하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              "le_lt",
+              "lt_le",
+              "le_le",
+              "lt_lt"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              -9,
+              3
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              -2,
+              9
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "int": [
+              2,
+              5
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "sum",
+              "diff"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "f",
+          "rows": {
+            "le_lt": {
+              "XL": "≤",
+              "XR": "<"
+            },
+            "lt_le": {
+              "XL": "<",
+              "XR": "≤"
+            },
+            "le_le": {
+              "XL": "≤",
+              "XR": "≤"
+            },
+            "lt_lt": {
+              "XL": "<",
+              "XR": "<"
+            }
+          }
+        },
+        {
+          "key": "ask",
+          "rows": {
+            "sum": {
+              "ASK": "m + n",
+              "t": 1
+            },
+            "diff": {
+              "ASK": "n − m",
+              "t": -1
+            }
+          }
+        }
+      ],
+      "derive": {
+        "LO": "a/d",
+        "HI": "b/d",
+        "m": "a/d + q",
+        "n": "b/d + q",
+        "ans": "n + t*m"
+      },
+      "constraints": [
+        "a < b",
+        "ans != 0",
+        "ans not in (a, b, d, abs(q))",
+        "a % d != 0 or b % d != 0"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "d",
+        "q",
+        "LO",
+        "HI",
+        "m",
+        "n",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == n + t*m",
+        "m < n",
+        "m*d == a + q*d",
+        "n*d == b + q*d"
+      ],
+      "question": "{a} {XL} x {XR} {b}일 때, [[frac(x, {d})]] {sgn(q)}의 값의 범위가 m {XL} [[frac(x, {d})]] {sgn(q)} {XR} n이다. 이때 {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "[[frac(x, {d})]]{eun(d)} x를 {d}{ro(d)} 나눈 것이므로 x의 범위의 각 변을 {d}{ro(d)} 나눈다. 양수로 나누므로 부등호의 방향은 그대로이고, 끝점이 분수가 되어도 약분만 하고 그대로 둔다. 그다음 각 변에 {q}{eul(q)} 더한다.",
+      "sol2": [
+        "각 변을 {d}{ro(d)} 나누면 {LO} {XL} [[frac(x, {d})]] {XR} {HI}",
+        "각 변에 {q}{eul(q)} 더하면 {m} {XL} [[frac(x, {d})]] {sgn(q)} {XR} {n}",
+        "따라서 m = {m}, n = {n}이므로 {ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{LO} {XL} [[frac(x, {d})]] {XR} {HI}",
+                "hint": "각 변 ÷ {d} — 방향 그대로"
+              },
+              {
+                "text": "{m} {XL} [[frac(x, {d})]] {sgn(q)} {XR} {n}",
+                "hint": "각 변 + {pn(q)} → m, n"
+              },
+              {
+                "text": "{ASK} = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "끝점을 대입해 보면 x = {a}일 때 [[frac(x, {d})]] {sgn(q)} = {m}, x = {b}일 때 {n}{ika(n)} 되어 m, n이 맞다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = {a} → {m},  x = {b} → {n}",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "{a} {XL} x {XR} {b}의 각 변을 {d}{ro(d)} 나누면 {LO} {XL} [[frac(x, {d})]] {XR} {HI}이고, 각 변에 {q}{eul(q)} 더하면 {m} {XL} [[frac(x, {d})]] {sgn(q)} {XR} {n}이다. 따라서 m = {m}, n = {n}이고 {ASK} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "나누기",
+          "points": 3,
+          "criterion": "각 변을 {d}{ro(d)} 나누어 {LO} {XL} [[frac(x, {d})]] {XR} {HI}{eul(HI)} 얻었다.",
+          "partial": "분모를 곱했거나 방향을 바꾸었으면 인정하지 않는다."
+        },
+        {
+          "element": "상수 더하기",
+          "points": 2,
+          "criterion": "각 변에 {q}{eul(q)} 더해 {m} {XL} [[frac(x, {d})]] {sgn(q)} {XR} {n}{eul(n)} 얻었다.",
+          "partial": "한 변에만 더했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "m = {m}, n = {n}에서 {ASK} = {ans}{eul(ans)} 구했다.",
+          "partial": "약분하지 않았으면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m2-1-ineq-property-t4",
+      "pitfalls": [
+        {
+          "text": "각 변을 나누지 않고 분모를 곱함",
+          "on": "나누기",
+          "effect": "불인정"
+        },
+        {
+          "text": "끝점을 분수로 두지 않고 반올림·정수화함",
+          "on": "나누기",
+          "effect": "부분"
+        },
+        {
+          "text": "상수를 한 변에만 더함",
+          "on": "상수",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

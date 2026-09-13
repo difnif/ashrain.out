@@ -155,6 +155,8 @@ _JONG = {"0", "1", "3", "6", "7", "8"}      # 숫자 읽기 끝소리에 받침�
 
 def _has_jong(v) -> bool:
     t = str(v).strip().rstrip(")")
+    if "/" in t:                             # 분수(11/2)는 '이분의 십일' — 분자로 읽는다
+        t = t.split("/")[0].strip()
     m = re.search(r"(\d)\s*$", t)
     if m:
         return m.group(1) in _JONG

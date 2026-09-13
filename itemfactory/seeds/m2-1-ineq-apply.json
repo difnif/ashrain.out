@@ -1,0 +1,1354 @@
+{
+  "seed_id": "m2-1-ineq-apply",
+  "category": "활용",
+  "title": "일차부등식의 활용 — 평균 점수·두 품목 최대 개수·상점 다녀오기·넓이 조건 범위·엘리베이터",
+  "unit_id": "m2-1",
+  "concept_ids": [
+    "m2-1-09",
+    "m2-1-10"
+  ],
+  "schema_id": null,
+  "schema_name": "일차부등식 세우기(문장제)",
+  "source_item_ids": [],
+  "note": "최대 개수 틀은 답(k)을 파라미터로 두고 예산을 역산(나머지 dl)한다. 거리 틀의 답은 소수(dec) 표기, 넓이 틀의 답은 부등식 문자열.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "부등식",
+        "사칙"
+      ],
+      "time_limit": 120,
+      "points": 5,
+      "prereq": [
+        "일차부등식의 풀이"
+      ],
+      "traps": [
+        "부등호 방향(이상·이하)",
+        "자연수 조건"
+      ],
+      "tags": [
+        "일차부등식의 활용"
+      ],
+      "qtype": "short",
+      "pool_target": 300,
+      "title": "세 번의 점수가 주어질 때 평균이 M점 이상이 되기 위한 네 번째 최소 점수",
+      "skill": "평균 조건을 (점수의 합) ÷ 4 ≥ M의 부등식으로 세우고 풀어 최소 점수를 구하기",
+      "variant_axis": {
+        "점수": "70~96",
+        "목표 평균": "80~92"
+      },
+      "discriminates": "평균을 합 ÷ 4로 세우는가, '이상'을 ≥로 옮기고 최소 점수를 경계값으로 답하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "nm",
+          "values": {
+            "in": [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6"
+            ]
+          }
+        },
+        {
+          "name": "sub",
+          "values": {
+            "in": [
+              "m",
+              "e",
+              "s"
+            ]
+          }
+        },
+        {
+          "name": "s1",
+          "values": {
+            "step": [
+              70,
+              96,
+              2
+            ]
+          }
+        },
+        {
+          "name": "s2",
+          "values": {
+            "step": [
+              71,
+              97,
+              2
+            ]
+          }
+        },
+        {
+          "name": "s3",
+          "values": {
+            "step": [
+              74,
+              98,
+              3
+            ]
+          }
+        },
+        {
+          "name": "M",
+          "values": {
+            "int": [
+              80,
+              92
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "nm",
+          "rows": {
+            "1": {
+              "S": "지수"
+            },
+            "2": {
+              "S": "민준"
+            },
+            "3": {
+              "S": "서연"
+            },
+            "4": {
+              "S": "도윤"
+            },
+            "5": {
+              "S": "하은"
+            },
+            "6": {
+              "S": "시우"
+            }
+          }
+        },
+        {
+          "key": "sub",
+          "rows": {
+            "m": {
+              "SUB": "수학"
+            },
+            "e": {
+              "SUB": "영어"
+            },
+            "s": {
+              "SUB": "과학"
+            }
+          }
+        }
+      ],
+      "derive": {
+        "sum3": "s1 + s2 + s3",
+        "M4": "4*M",
+        "ans": "4*M - s1 - s2 - s3"
+      },
+      "constraints": [
+        "ans >= 1",
+        "ans <= 100",
+        "ans not in (s1, s2, s3, M, 4)",
+        "s1 != s2",
+        "s2 != s3",
+        "s1 != s3"
+      ],
+      "cost_values": [
+        "s1",
+        "s2",
+        "s3",
+        "M",
+        "sum3",
+        "M4",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == 4*M - sum3",
+        "(sum3 + ans)/4 == M"
+      ],
+      "question": "{S}{eun(S)} 세 번의 {SUB} 시험에서 {s1}점, {s2}점, {s3}점을 받았다. 네 번째 시험까지의 평균이 {M}점 이상이 되려면 네 번째 시험에서 최소 몇 점을 받아야 하는지 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "네 번째 시험 점수를 x점이라 하면 네 번의 평균은 (네 점수의 합) ÷ 4이다. '평균이 {M}점 이상'은 (합) ÷ 4 ≥ {M}이라는 부등식이고, 양변에 4를 곱해 풀면 x의 범위가 나온다. 최소 점수는 그 범위의 경계값이다.",
+      "sol2": [
+        "네 번째 점수를 x점이라 하면 [[frac({s1} + {s2} + {s3} + x, 4)]] ≥ {M}",
+        "양변에 4를 곱하면 {sum3} + x ≥ {M4}",
+        "x ≥ {ans}이므로 최소 {ans}점"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "[[frac({s1} + {s2} + {s3} + x, 4)]] ≥ {M}",
+                "hint": "평균 = 합 ÷ 4, '이상' = ≥"
+              },
+              {
+                "text": "{sum3} + x ≥ {M4}",
+                "hint": "양변 × 4"
+              },
+              {
+                "text": "x ≥ {ans} → 최소 {ans}점",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "경계값이 최소"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "네 번째에 {ans}점을 받으면 합은 {sum3} + {ans} = {M4}이고 평균은 {M4} ÷ 4 = {M}점으로 꼭 {M}점이 된다. {ans}점보다 낮으면 평균이 {M}점에 못 미친다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{sum3} + {ans} = {M4},  {M4} ÷ 4 = {M} ✓",
+              "최소 {ans}점"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "네 번째 시험 점수를 x점이라 하면 [[frac({s1} + {s2} + {s3} + x, 4)]] ≥ {M}에서 {sum3} + x ≥ {M4}, x ≥ {ans}이다. 따라서 최소 {ans}점을 받아야 한다.",
+      "rubric": [
+        {
+          "element": "부등식 세우기",
+          "points": 3,
+          "criterion": "네 번째 점수를 x로 놓고 [[frac({s1} + {s2} + {s3} + x, 4)]] ≥ {M}{eul(M)} 세웠다.",
+          "partial": "4로 나누지 않았거나 부등호 방향이 틀렸으면 1점."
+        },
+        {
+          "element": "부등식 풀기",
+          "points": 3,
+          "criterion": "x ≥ {ans}{eul(ans)} 얻었다.",
+          "partial": "계산 실수 하나면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "최소 점수 {ans}점을 답했다.",
+          "partial": "범위만 쓰고 최소 점수를 답하지 않았으면 1점."
+        }
+      ],
+      "rubric_total": 8,
+      "id": "m2-1-ineq-apply-t1",
+      "pitfalls": [
+        {
+          "text": "평균을 합 ÷ 3으로 세움(네 번째 점수를 빠뜨림)",
+          "on": "세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "'이상'을 >로 옮겨 경계값을 답에서 뺌",
+          "on": "답",
+          "effect": "부분"
+        },
+        {
+          "text": "양변에 4를 곱하지 않고 M에서 세 점수를 뺌",
+          "on": "풀기",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "부등식",
+        "사칙"
+      ],
+      "time_limit": 120,
+      "points": 5,
+      "prereq": [
+        "일차부등식의 풀이"
+      ],
+      "traps": [
+        "부등호 방향(이상·이하)",
+        "자연수 조건"
+      ],
+      "tags": [
+        "일차부등식의 활용"
+      ],
+      "qtype": "short",
+      "pool_target": 300,
+      "title": "두 품목을 합해 n개 살 때 예산 안에서 비싼 품목의 최대 개수",
+      "skill": "비싼 품목을 x개, 싼 품목을 (n − x)개로 놓고 금액 부등식을 세워 최대 개수를 자연수로 답하기",
+      "variant_axis": {
+        "단가": "500~1500원 / 1500~3000원",
+        "총 개수": "10~20",
+        "예산": "정확·나머지 있음"
+      },
+      "discriminates": "다른 품목의 개수를 (n − x)로 놓는가, 해의 범위에서 자연수 최댓값을 고르는가(올림하지 않는가)",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "it",
+          "values": {
+            "in": [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              500,
+              600,
+              800,
+              1000,
+              1200,
+              1500
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              1500,
+              2000,
+              2500,
+              3000
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "in": [
+              10,
+              12,
+              15,
+              20
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              3,
+              9
+            ]
+          }
+        },
+        {
+          "name": "dl",
+          "values": {
+            "in": [
+              0,
+              100,
+              200,
+              300,
+              400
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "it",
+        "rows": {
+          "1": {
+            "I1": "사과",
+            "I2": "배",
+            "U": "개"
+          },
+          "2": {
+            "I1": "연필",
+            "I2": "볼펜",
+            "U": "자루"
+          },
+          "3": {
+            "I1": "빵",
+            "I2": "케이크",
+            "U": "개"
+          },
+          "4": {
+            "I1": "장미",
+            "I2": "백합",
+            "U": "송이"
+          },
+          "5": {
+            "I1": "귤",
+            "I2": "망고",
+            "U": "개"
+          },
+          "6": {
+            "I1": "공책",
+            "I2": "파일",
+            "U": "권"
+          }
+        }
+      },
+      "derive": {
+        "bma": "b - a",
+        "an": "a*n",
+        "B": "a*n + (b - a)*k + dl",
+        "Bmn": "(b - a)*k + dl",
+        "q": "((b - a)*k + dl)/max(b - a, 1)",
+        "ans": "k"
+      },
+      "constraints": [
+        "b > a",
+        "dl < bma",
+        "k < n",
+        "ans not in (a, b, n, B)",
+        "q*100 == floor(q*100)"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "n",
+        "B",
+        "an",
+        "Bmn",
+        "q",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == floor(q)",
+        "b*ans + a*(n - ans) <= B",
+        "b*(ans + 1) + a*(n - ans - 1) > B"
+      ],
+      "question": "한 {U}에 {a}원인 {I1}{wa(I1)} 한 {U}에 {b}원인 {I2}{eul(I2)} 합하여 {n}{U} 사려고 한다. 전체 금액이 {B}원 이하가 되게 하려면 {I2}{eun(I2)} 최대 몇 {U}까지 살 수 있는지 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "{I2}{eul(I2)} x{U} 사면 {I1}{eun(I1)} 나머지 ({n} − x){U}이다. 전체 금액 {b}x + {a}({n} − x)가 {B}원 이하라는 부등식을 세워 풀면 x의 범위가 나오고, x는 자연수이므로 그 범위 안의 가장 큰 자연수가 답이다.",
+      "sol2": [
+        "{I2}{eul(I2)} x{U} 사면 {I1}{eun(I1)} ({n} − x){U}이므로 {b}x + {a}({n} − x) ≤ {B}",
+        "{b}x + {an} − {a}x ≤ {B}, {bma}x ≤ {Bmn}",
+        "x ≤ {dec(q)}이고 x는 자연수이므로 최대 {ans}{U}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{b}x + {a}({n} − x) ≤ {B}",
+                "hint": "{I2} x{U}, {I1} ({n} − x){U}"
+              },
+              {
+                "text": "{bma}x ≤ {Bmn}",
+                "hint": "괄호 풀고 정리"
+              },
+              {
+                "text": "x ≤ {dec(q)} → 최대 {ans}{U}",
+                "marks": [
+                  {
+                    "on": "{ans}{U}",
+                    "note": "자연수 최댓값 — 올리지 않는다"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "{I2} {ans}{U}, {I1} {n - ans}{U}이면 금액은 {b} × {ans} + {a} × {n - ans} = {b*ans + a*(n - ans)}원으로 {B}원 이하이고, {I2}{eul(I2)} {ans + 1}{U} 사면 {b*(ans + 1) + a*(n - ans - 1)}원으로 예산을 넘는다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{ans}{U}: {b*ans + a*(n - ans)}원 ≤ {B}원 ✓",
+              "{ans + 1}{U}: {b*(ans + 1) + a*(n - ans - 1)}원 > {B}원 ✗"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "{I2}{eul(I2)} x{U} 사면 {I1}{eun(I1)} ({n} − x){U}이므로 {b}x + {a}({n} − x) ≤ {B}, {bma}x ≤ {Bmn}, x ≤ {dec(q)}이다. x는 자연수이므로 {I2}{eun(I2)} 최대 {ans}{U}까지 살 수 있다.",
+      "rubric": [
+        {
+          "element": "부등식 세우기",
+          "points": 3,
+          "criterion": "{I2}{eul(I2)} x{U}{ro(U)} 놓고 {b}x + {a}({n} − x) ≤ {B}{eul(B)} 세웠다.",
+          "partial": "{I1}의 개수를 ({n} − x)로 놓지 않았으면 인정하지 않는다."
+        },
+        {
+          "element": "부등식 풀기",
+          "points": 3,
+          "criterion": "x ≤ {dec(q)}{eul(dec(q))} 얻었다.",
+          "partial": "괄호를 풀 때 실수 하나면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "자연수 조건으로 최대 {ans}{U}{eul(U)} 답했다.",
+          "partial": "올림해 {ans + 1}{U}{ro(U)} 답했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 8,
+      "id": "m2-1-ineq-apply-t2",
+      "pitfalls": [
+        {
+          "text": "싼 품목의 개수를 (n − x)가 아니라 x로 둠",
+          "on": "세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "해의 범위를 올림해 한 개 더 답함",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "괄호를 풀 때 분배 실수",
+          "on": "풀기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "부등식",
+        "사칙"
+      ],
+      "time_limit": 120,
+      "points": 5,
+      "prereq": [
+        "일차부등식의 풀이"
+      ],
+      "traps": [
+        "부등호 방향(이상·이하)",
+        "자연수 조건"
+      ],
+      "tags": [
+        "일차부등식의 활용"
+      ],
+      "qtype": "short",
+      "pool_target": 300,
+      "title": "기차 출발까지 남은 시간 안에 다녀올 수 있는 상점까지의 최대 거리",
+      "skill": "왕복 거리 ÷ 속력을 시간으로 바꾸고(시간 단위를 분으로 맞추어) 머무는 시간까지 더해 부등식을 세우기",
+      "variant_axis": {
+        "속력": "시속 3·4·6 km",
+        "남은 시간·머무는 시간": "40~60분 / 10~20분"
+      },
+      "discriminates": "왕복이므로 거리에 2를 곱하는가, 시간 단위(시·분)를 맞추는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "nm",
+          "values": {
+            "in": [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6"
+            ]
+          }
+        },
+        {
+          "name": "v",
+          "values": {
+            "in": [
+              3,
+              4,
+              5,
+              6,
+              8
+            ]
+          }
+        },
+        {
+          "name": "T",
+          "values": {
+            "in": [
+              40,
+              45,
+              50,
+              55,
+              60,
+              70,
+              80,
+              90
+            ]
+          }
+        },
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              10,
+              12,
+              15,
+              20,
+              25,
+              30
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "nm",
+        "rows": {
+          "1": {
+            "S": "지수"
+          },
+          "2": {
+            "S": "민준"
+          },
+          "3": {
+            "S": "서연"
+          },
+          "4": {
+            "S": "도윤"
+          },
+          "5": {
+            "S": "하은"
+          },
+          "6": {
+            "S": "시우"
+          }
+        }
+      },
+      "derive": {
+        "k": "120/v",
+        "m": "T - s",
+        "ans": "v*(T - s)/120"
+      },
+      "constraints": [
+        "m >= 20",
+        "ans*100 == floor(ans*100)",
+        "ans not in (v, T, s)"
+      ],
+      "cost_values": [
+        "v",
+        "T",
+        "s",
+        "k",
+        "m",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == m/k",
+        "k*v == 120",
+        "2*ans/v*60 + s == T"
+      ],
+      "question": "{S}{ika(S)} 역에서 기차를 기다리는데 출발까지 {T}분이 남아 있다. 시속 {v} km로 걸어서 상점에 가서 물건을 사는 데 {s}분이 걸린다고 할 때, 역에서 최대 몇 km 떨어진 상점까지 다녀올 수 있는지 구하시오.",
+      "answer": "{dec(ans)}",
+      "answer_alt": [],
+      "sol1": "상점까지의 거리를 x km라 하면 갔다 오는 거리는 2x km이고, 시속 {v} km로 걸으면 왕복 시간은 [[frac(2x, {v})]]시간이다. 남은 시간이 분 단위이므로 60을 곱해 분으로 바꾸면 {k}x분이다. (왕복 시간) + (물건 사는 시간) ≤ (남은 시간)의 부등식을 세운다.",
+      "sol2": [
+        "상점까지의 거리를 x km라 하면 왕복 시간은 [[frac(2x, {v})]]시간 = [[frac(2x, {v})]] × 60분 = {k}x분",
+        "{k}x + {s} ≤ {T}",
+        "{k}x ≤ {m}, x ≤ {dec(ans)}이므로 최대 {dec(ans)} km"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "왕복 [[frac(2x, {v})]]시간 = {k}x분",
+                "hint": "거리 × 2, 시간 × 60"
+              },
+              {
+                "text": "{k}x + {s} ≤ {T}",
+                "hint": "왕복 + 머무는 시간 ≤ 남은 시간"
+              },
+              {
+                "text": "x ≤ {dec(ans)} → 최대 {dec(ans)} km",
+                "marks": [
+                  {
+                    "on": "{dec(ans)} km",
+                    "note": "{m} ÷ {k}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "{dec(ans)} km 떨어진 상점이면 왕복 {dec(2*ans)} km를 시속 {v} km로 걷는 데 {m}분이 걸리고, 물건 사는 {s}분을 더하면 꼭 {T}분이다. 더 멀면 시간이 모자란다. 따라서 답은 {dec(ans)}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "왕복 {dec(2*ans)} km ÷ 시속 {v} km = {m}분",
+              "{m} + {s} = {T}분 ✓"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "상점까지의 거리를 x km라 하면 왕복 시간은 [[frac(2x, {v})]] × 60 = {k}x(분)이므로 {k}x + {s} ≤ {T}, x ≤ {dec(ans)}이다. 따라서 최대 {dec(ans)} km 떨어진 상점까지 다녀올 수 있다.",
+      "rubric": [
+        {
+          "element": "부등식 세우기",
+          "points": 3,
+          "criterion": "왕복 시간을 {k}x분으로 나타내어 {k}x + {s} ≤ {T}{eul(T)} 세웠다.",
+          "partial": "왕복(×2)이나 단위 변환(×60) 중 하나를 빠뜨렸으면 1점."
+        },
+        {
+          "element": "부등식 풀기",
+          "points": 3,
+          "criterion": "x ≤ {dec(ans)}{eul(dec(ans))} 얻었다.",
+          "partial": "계산 실수 하나면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "최대 거리 {dec(ans)} km를 답했다."
+        }
+      ],
+      "rubric_total": 8,
+      "id": "m2-1-ineq-apply-t3",
+      "pitfalls": [
+        {
+          "text": "왕복인데 거리에 2를 곱하지 않음",
+          "on": "세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "시간(시)과 분을 맞추지 않고 더함",
+          "on": "세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "물건 사는 시간을 빠뜨림",
+          "on": "세우기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "ops": [
+        "부등식",
+        "사칙"
+      ],
+      "time_limit": 120,
+      "points": 5,
+      "prereq": [
+        "일차부등식의 풀이"
+      ],
+      "traps": [
+        "부등호 방향(이상·이하)",
+        "자연수 조건"
+      ],
+      "tags": [
+        "일차부등식의 활용"
+      ],
+      "qtype": "short",
+      "pool_target": 300,
+      "title": "넓이 조건을 만족하는 삼각형(직사각형)의 높이 x의 범위",
+      "skill": "넓이 공식으로 부등식을 세우고 x의 계수로 나누어 x의 범위를 부등식으로 나타내기",
+      "variant_axis": {
+        "도형": "삼각형 / 직사각형",
+        "조건": "이상 / 초과"
+      },
+      "discriminates": "삼각형의 넓이에 1/2을 곱하는가, '이상'과 '보다 크다'를 ≥와 >로 구별하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "sh",
+          "values": {
+            "in": [
+              "tri",
+              "rect"
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              "ge",
+              "gt"
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              3,
+              12
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "sh",
+          "rows": {
+            "tri": {
+              "D1": "밑변의 길이가",
+              "D2": "높이가 x cm인 삼각형",
+              "kk": 2,
+              "PRE1": "[[frac(1,2)]] × ",
+              "FIG": "삼각형",
+              "FORMW": "(밑변) × (높이) ÷ 2"
+            },
+            "rect": {
+              "D1": "가로의 길이가",
+              "D2": "세로의 길이가 x cm인 직사각형",
+              "kk": 1,
+              "PRE1": "",
+              "FIG": "직사각형",
+              "FORMW": "(가로) × (세로)"
+            }
+          }
+        },
+        {
+          "key": "d",
+          "rows": {
+            "ge": {
+              "W": " 이상일 때",
+              "OP": "≥",
+              "WW": "이상"
+            },
+            "gt": {
+              "W": "보다 클 때",
+              "OP": ">",
+              "WW": "초과"
+            }
+          }
+        }
+      ],
+      "derive": {
+        "c": "b/kk",
+        "A": "b*k/kk"
+      },
+      "constraints": [
+        "c == floor(c)",
+        "A == floor(A)",
+        "k != b",
+        "A != b",
+        "A != k"
+      ],
+      "cost_values": [
+        "b",
+        "k",
+        "c",
+        "A"
+      ],
+      "verify": [
+        "c*k == A",
+        "kk*A == b*k"
+      ],
+      "question": "{D1} {b} cm이고 {D2}의 넓이가 {A} cm²{W}, x의 값의 범위를 구하시오.",
+      "answer": "x {OP} {k}",
+      "answer_alt": [],
+      "sol1": "{FIG}의 넓이는 {FORMW}이므로 {PRE1}{b} × x이다. 넓이가 {A} cm² {WW}라는 조건을 부등식으로 쓰면 {c}x {OP} {A}이고, 양변을 {c}{ro(c)} 나누면 x의 범위가 나온다. '이상'은 등호를 포함하고 '보다 크다'는 포함하지 않는다.",
+      "sol2": [
+        "넓이는 {PRE1}{b} × x = {c}x (cm²)이므로 {c}x {OP} {A}",
+        "양변을 {c}{ro(c)} 나누면 x {OP} {k}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{PRE1}{b} × x {OP} {A}",
+                "hint": "넓이 = {FORMW}"
+              },
+              {
+                "text": "{c}x {OP} {A} → x {OP} {k}",
+                "hint": "양변 ÷ {c}",
+                "marks": [
+                  {
+                    "on": "x {OP} {k}",
+                    "note": "등호 유무 확인"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "x = {k}이면 넓이는 {c} × {k} = {A} cm²로 경계값과 같고, x가 {k}보다 크면 넓이도 {A} cm²보다 커진다. 따라서 x의 범위는 x {OP} {k}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = {k}: 넓이 = {A} cm² (경계)",
+              "x {OP} {k}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "{FIG}의 넓이는 {PRE1}{b} × x = {c}x이므로 {c}x {OP} {A}, 양변을 {c}{ro(c)} 나누면 x {OP} {k}이다.",
+      "rubric": [
+        {
+          "element": "부등식 세우기",
+          "points": 3,
+          "criterion": "넓이 {c}x를 써서 {c}x {OP} {A}{eul(A)} 세웠다.",
+          "partial": "삼각형에서 2로 나누는 것을 빠뜨렸거나 부등호 종류가 틀렸으면 1점."
+        },
+        {
+          "element": "범위 구하기",
+          "points": 2,
+          "criterion": "x {OP} {k}{eul(k)} 얻었다.",
+          "partial": "등호 유무가 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-ineq-apply-t4",
+      "pitfalls": [
+        {
+          "text": "삼각형의 넓이를 (밑변) × (높이)로 세워 2로 나누지 않음",
+          "on": "세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "'이상'과 '보다 크다'의 등호를 바꿈",
+          "on": "범위",
+          "effect": "부분"
+        },
+        {
+          "text": "양변을 계수로 나누지 않고 답함",
+          "on": "범위",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "부등식",
+        "사칙"
+      ],
+      "time_limit": 120,
+      "points": 5,
+      "prereq": [
+        "일차부등식의 풀이"
+      ],
+      "traps": [
+        "부등호 방향(이상·이하)",
+        "자연수 조건"
+      ],
+      "tags": [
+        "일차부등식의 활용"
+      ],
+      "qtype": "short",
+      "pool_target": 300,
+      "title": "엘리베이터 적재 한도 안에서 실을 수 있는 상자의 최대 개수",
+      "skill": "(사람 몸무게) + (상자 무게) × (개수) ≤ (한도)의 부등식을 세우고 자연수 최댓값을 구하기",
+      "variant_axis": {
+        "한도": "450~1000 kg",
+        "상자": "10~30 kg"
+      },
+      "discriminates": "사람의 몸무게를 더하는가, 해의 범위에서 자연수 최댓값을 고르는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "W",
+          "values": {
+            "in": [
+              450,
+              500,
+              550,
+              600,
+              650,
+              700,
+              750,
+              800,
+              900,
+              1000
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              50,
+              55,
+              60,
+              65,
+              70,
+              75,
+              80,
+              85
+            ]
+          }
+        },
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              8,
+              10,
+              12,
+              15,
+              16,
+              20,
+              24,
+              25,
+              30
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "Wp": "W - p",
+        "q": "(W - p)/w",
+        "ans": "floor((W - p)/w)"
+      },
+      "constraints": [
+        "ans >= 3",
+        "ans not in (W, p, w)",
+        "q*100 == floor(q*100)"
+      ],
+      "cost_values": [
+        "W",
+        "p",
+        "w",
+        "Wp",
+        "q",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "w*ans + p <= W",
+        "w*(ans + 1) + p > W"
+      ],
+      "question": "한 번에 {W} kg까지 실을 수 있는 엘리베이터에 몸무게가 {p} kg인 사람이 한 개에 {w} kg인 상자를 여러 개 싣고 타려고 한다. 한 번에 최대 몇 개까지 실을 수 있는지 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "상자를 x개 실으면 엘리베이터에 실리는 무게는 사람 {p} kg과 상자 {w}x kg을 합한 것이다. 이것이 한도 {W} kg 이하여야 하므로 {w}x + {p} ≤ {W}의 부등식을 세우고, x는 자연수이므로 범위 안의 가장 큰 자연수를 답한다.",
+      "sol2": [
+        "상자를 x개 실으면 {w}x + {p} ≤ {W}",
+        "{w}x ≤ {Wp}, x ≤ {dec(q)}",
+        "x는 자연수이므로 최대 {ans}개"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{w}x + {p} ≤ {W}",
+                "hint": "사람 무게도 더한다"
+              },
+              {
+                "text": "{w}x ≤ {Wp} → x ≤ {dec(q)}",
+                "hint": "양변 ÷ {w}"
+              },
+              {
+                "text": "최대 {ans}개",
+                "marks": [
+                  {
+                    "on": "{ans}개",
+                    "note": "자연수 최댓값"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "상자 {ans}개이면 {w} × {ans} + {p} = {w*ans + p} kg으로 한도 이하이고, {ans + 1}개이면 {w*(ans + 1) + p} kg으로 한도를 넘는다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{ans}개: {w*ans + p} kg ≤ {W} kg ✓",
+              "{ans + 1}개: {w*(ans + 1) + p} kg > {W} kg ✗"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "상자를 x개 실으면 {w}x + {p} ≤ {W}에서 {w}x ≤ {Wp}, x ≤ {dec(q)}이다. x는 자연수이므로 최대 {ans}개까지 실을 수 있다.",
+      "rubric": [
+        {
+          "element": "부등식 세우기",
+          "points": 3,
+          "criterion": "상자 x개로 놓고 {w}x + {p} ≤ {W}{eul(W)} 세웠다.",
+          "partial": "사람의 몸무게를 빠뜨렸으면 인정하지 않는다."
+        },
+        {
+          "element": "부등식 풀기",
+          "points": 3,
+          "criterion": "x ≤ {dec(q)}{eul(dec(q))} 얻었다.",
+          "partial": "계산 실수 하나면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "자연수 조건으로 최대 {ans}개를 답했다.",
+          "partial": "올림해 답했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 8,
+      "id": "m2-1-ineq-apply-t5",
+      "pitfalls": [
+        {
+          "text": "사람의 몸무게를 빠뜨리고 세움",
+          "on": "세우기",
+          "effect": "불인정"
+        },
+        {
+          "text": "해의 범위를 올림해 한 개 더 답함",
+          "on": "답",
+          "effect": "불인정"
+        },
+        {
+          "text": "한도를 '미만'으로 보아 등호를 빠뜨림",
+          "on": "세우기",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

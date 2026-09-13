@@ -887,6 +887,39 @@ def recompute(it):
         import sympy as sp
         m = re.match(r"x = (-?\d+), y = (-?\d+)일 때, \((\[\[.+?\]\])\) ÷ (\S+)의 값", q); x, y = sp.Symbol("x"), sp.Symbol("y")
         v = sp.cancel(_sy(m.group(3)) / _sy(m.group(4))).subs({x: int(m.group(1)), y: int(m.group(2))}); return Fraction(str(v))
+    # ── 세션 5 (09-13): m2-1 부등식 — 성질·풀이 2·활용 (mkseed_m2_ineq.py)
+    if tid.startswith("m2-1-ineq-property"):
+        if tid.startswith(("m2-1-ineq-property-t1", "m2-1-ineq-property-t2", "m2-1-ineq-property-t4")):
+            m = re.match(r"(-?\d+) ([≤<]) x ([≤<]) (-?\d+)일 때, (.+?)의 값", q); a, XL, XR, b, ex = Fraction(m.group(1)), m.group(2), m.group(3), Fraction(m.group(4)), m.group(5)
+            mm = re.match(r"(-?\d*)x ([+−]) (\d+)$", ex); m2 = re.match(r"\[\[frac\(x, (\d+)\)\]\] ([+−]) (\d+)$", ex)
+            if mm:
+                p = _coef(mm.group(1)); qv = Fraction(mm.group(3)) * (1 if mm.group(2) == "+" else -1)
+            else:
+                p = Fraction(1, int(m2.group(1))); qv = Fraction(m2.group(3)) * (1 if m2.group(2) == "+" else -1)
+            ea, eb = p * a + qv, p * b + qv; lo, hi = min(ea, eb), max(ea, eb)
+            if tid.startswith("m2-1-ineq-property-t2"):
+                loinc, hiinc = (XL == "≤", XR == "≤") if p > 0 else (XR == "≤", XL == "≤")
+                first = math.ceil(lo) + (0 if loinc or math.ceil(lo) != lo else 1); last = math.floor(hi) - (0 if hiinc or math.floor(hi) != hi else 1)
+                return Fraction(last - first + 1)
+            return hi + lo if "m + n" in q else hi - lo
+        m = re.match(r"(-?\d+) ≤ x ≤ (-?\d+)일 때, (-?\d*)x \+ k의 (최댓값|최솟값)이 (-?\d+)이다", q); a, b, p, mx, V = Fraction(m.group(1)), Fraction(m.group(2)), _coef(m.group(3)), m.group(4), Fraction(m.group(5))
+        xe = (b if p > 0 else a) if mx == "최댓값" else (a if p > 0 else b); return V - p * xe
+    if tid.startswith("m2-1-ineq-solve-2-t4"):
+        m = re.match(r"x에 대한 일차부등식 \[\[frac\(x − a, (\d+)\)\]\] [<>≤≥] (-?\d+)의 해가 x [<>≤≥] (-?\d+)일 때", q); return Fraction(m.group(3)) - Fraction(m.group(2)) * Fraction(m.group(1))
+    if tid.startswith("m2-1-ineq-solve-2-t5"):
+        m = re.match(r"두 일차부등식 (\d+)x ([+−]) (\d+) [<>≤≥] (-?\d+)[와과] (-?\d*)x \+ a [<>≤≥] (-?\d+)의 해가", q)
+        p, qv, r, u, t = Fraction(m.group(1)), Fraction(m.group(3)) * (1 if m.group(2) == "+" else -1), Fraction(m.group(4)), _coef(m.group(5)), Fraction(m.group(6))
+        x0 = (r - qv) / p; return t - u * x0
+    if tid.startswith("m2-1-ineq-apply"):
+        if tid.startswith("m2-1-ineq-apply-t1"):
+            m = re.search(r"(\d+)점, (\d+)점, (\d+)점을 받았다. 네 번째 시험까지의 평균이 (\d+)점 이상", q); return 4 * Fraction(m.group(4)) - sum(Fraction(m.group(i)) for i in (1, 2, 3))
+        if tid.startswith("m2-1-ineq-apply-t2"):
+            m = re.search(r"(\d+)원인 .+?(\d+)원인 .+? 합하여 (\d+)\S* 사려고 한다. 전체 금액이 (\d+)원 이하", q); a, b, nn, B = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
+            return Fraction(math.floor((B - a * nn) / (b - a)))
+        if tid.startswith("m2-1-ineq-apply-t3"):
+            m = re.search(r"출발까지 (\d+)분이 남아 있다. 시속 (\d+) km로 .+? 사는 데 (\d+)분이 걸린다", q); T, v, sv = [Fraction(m.group(i)) for i in (1, 2, 3)]; return v * (T - sv) / 120
+        if tid.startswith("m2-1-ineq-apply-t5"):
+            m = re.search(r"한 번에 (\d+) kg까지 .+? 몸무게가 (\d+) kg인 사람이 한 개에 (\d+) kg인", q); W, pv, w = [Fraction(m.group(i)) for i in (1, 2, 3)]; return Fraction(math.floor((W - pv) / w))
     return "skip"
 
 
@@ -961,6 +994,28 @@ def check_polyexpr(it):
             m = re.match(r"넓이가 (\[\[.+?\]\])인 (직사각형|삼각형|평행사변형)의 .+?가 (\S+)일 때", q)
             want = (2 if m.group(2) == "삼각형" else 1) * _sy(m.group(1)) / _sy(m.group(3))
         return sp.simplify(sp.cancel(want - _sy(it["answer"]))) == 0
+    except Exception:                                   # noqa: BLE001
+        return False
+
+
+def check_ineq2(it):
+    """m2-1-ineq-solve-2-t3(a의 범위)·m2-1-ineq-apply-t4(x의 범위): 발문에서 되읽어 문자열 답과 대조."""
+    tid, q = it["template_id"], it["question"]
+    if not tid.startswith(("m2-1-ineq-solve-2-t3", "m2-1-ineq-apply-t4")):
+        return None
+    try:
+        if tid.startswith("m2-1-ineq-solve-2-t3"):
+            m = re.match(r"x에 대한 일차부등식 (\d+)x − a ([≤<]) (\d*)x ([+−]) (\d+)[을를] 만족하는 자연수 x가 (\d+)개", q)
+            p, op, qv, r, n = int(m.group(1)), m.group(2), int(_coef(m.group(3))), int(m.group(5)) * (1 if m.group(4) == "+" else -1), int(m.group(6))
+            if p - qv != 1:
+                return False
+            lo, hi = n - r, n + 1 - r
+            want = f"{lo} ≤ a < {hi}" if op == "≤" else f"{lo} < a ≤ {hi}"
+        else:
+            m = re.match(r".+?가 (\d+) cm이고 .+?x cm인 (삼각형|직사각형)의 넓이가 (\d+) cm²(.+?), x의 값의 범위", q)
+            b, kk, A = int(m.group(1)), 2 if m.group(2) == "삼각형" else 1, int(m.group(3)); k = Fraction(kk * A, b)
+            want = f"x {'≥' if '이상' in m.group(4) else '>'} {k.numerator if k.denominator == 1 else k}"
+        return re.sub(r"\s+", " ", it["answer"]).strip() == want
     except Exception:                                   # noqa: BLE001
         return False
 
@@ -1096,13 +1151,14 @@ def _coef(s):
 def check_ineq(it):
     """일차부등식 풀이(문자열 답 'x > 3'): 발문의 양변을 mathir 로 다시 읽어 일차식 f = 좌변 − 우변 의 기울기·절편에서 해를 재구성해 답과 대조.
     True/False = 일치 여부, None = 해당 없음."""
-    if not it["template_id"].startswith(("m2-1-ineq-solve-t1", "m2-1-ineq-solve-t2")):
+    if not it["template_id"].startswith(("m2-1-ineq-solve-t1", "m2-1-ineq-solve-t2", "m2-1-ineq-solve-2-t1", "m2-1-ineq-solve-2-t2")):
         return None
     import mathir
     m = re.search(r"일차부등식 (.+?) ([<>≤≥]) (.+?)[을를] 푸시오", it["question"])
     if not m:
         return False
-    L, R = mathir.parse(m.group(1))[0], mathir.parse(m.group(3))[0]
+    strip = lambda t: re.sub(r"\[\[|\]\]", "", t)          # noqa: E731 — 분수 마커는 벗기고 mathir 식으로
+    L, R = mathir.parse(strip(m.group(1)))[0], mathir.parse(strip(m.group(3)))[0]
     f = lambda x: Fraction(mathir.ev(L, {"x": x})) - Fraction(mathir.ev(R, {"x": x}))   # noqa: E731
     f0 = f(Fraction(0)); slope = f(Fraction(1)) - f0
     if slope == 0:
@@ -1274,6 +1330,8 @@ for f in sorted(OUT.glob("*_pool.json")):
             pos = check_linexpr(it)
         if pos is None:
             pos = check_polyexpr(it)
+        if pos is None:
+            pos = check_ineq2(it)
         if pos is not None:
             if not pos:
                 bad("R1-독립 검산 불일치", it, f"문자열 답 재계산 ≠ 답 {it['answer']}")
