@@ -1432,6 +1432,8 @@ def recompute(it):
         return _h31(tid, q)
     if tid.startswith("h3-2-"):
         return _h32(tid, q)
+    if tid.startswith("h3-3-"):
+        return _h33(tid, q)
     if tid.startswith("h2-2-lim") or tid.startswith("h2-2-diff"):
         return _h22a(tid, q)
     if tid.startswith("m3-1-sqrt-basic"):
@@ -2432,6 +2434,248 @@ def _h32(tid, q):
         if m:
             n_ = int(m.group(1)); p = _pv(m.group(2)); r = _rootf(p * (1 - p) / n_, 2)
             return None if not isinstance(r, Fraction) else 2 * Fraction("1.96") * r
+        return None
+    return None
+
+
+def _pts3(q):
+    return [tuple(Fraction(v) for v in m) for m in re.findall(r"\((-?\d+), (-?\d+), (-?\d+)\)", q)]
+
+
+def _vcs(q):
+    return [tuple(Fraction(v) for v in m.split(", ")) for m in re.findall(r"vcomp\(([-\d, ]+)\)", q)]
+
+
+def _sqr(v):
+    """정확한 제곱근(유리수) 또는 None."""
+    r = _rootf(Fraction(v), 2)
+    return r if isinstance(r, Fraction) else None
+
+
+def _plane3(text):
+    """'ax + by + cz + d = 0' → (a, b, c, d) (계수 1 생략·부호 허용)."""
+    m = re.search(r"(-?\d*)x ([+-]) (\d*)y ([+-]) (\d*)z(?: ([+-]) (\d+))? = 0", text)
+    if not m:
+        return None
+    a = _coef(m.group(1)); b = _sv(m.group(2), m.group(3) or "1"); c = _sv(m.group(4), m.group(5) or "1"); d = _sv(m.group(6), m.group(7)) if m.group(6) else Fraction(0)
+    return a, b, c, d
+
+
+def _dirs(text):
+    """직선 '(x − a)/l = (y − b)/m = (z − c)/n' 마커에서 (l, m, n) 목록 — k 는 None."""
+    out = []
+    for var, den in re.findall(r"frac\(([xyz])(?: [+-] \d+)?, (-?\d+|k)\)", text):
+        out.append(None if den == "k" else Fraction(den))
+    return out
+
+
+def _h33(tid, q):
+    """h3-3 기하 — 발문에서 다시 푼다."""
+    q = q.replace("−", "-")
+    if tid == "h3-3-conic-t1":
+        m = re.match(r"포물선 \[\[pow\(([xy]),2\) = (-?\d+)([xy])\]\]", q)
+        if m:
+            p = Fraction(int(m.group(2)), 4)
+            if "초점의 x좌표" in q or "초점의 y좌표" in q: return p
+            if "준선의 방정식" in q: return -p
+            if "초점과 준선 사이의 거리" in q: return 2 * abs(p)
+            mm = re.search(r"점 P의 x좌표가 (-?\d+)일 때", q); return Fraction(mm.group(1)) + p
+        m = re.match(r"포물선 \[\[pow\(y ([+-]) (\d+), 2\) = (-?\d+)\(x ([+-]) (\d+)\)\]\]", q)
+        k = -_sv(m.group(1), m.group(2)); p = Fraction(int(m.group(3)), 4); h = -_sv(m.group(4), m.group(5))
+        return h + p + k if "초점의 좌표" in q else h - p
+    if tid in ("h3-3-conic-t2", "h3-3-conic-t3"):
+        m = re.search(r"두 초점 F\((\d+), 0\), F'\(-\d+, 0\)으로부터의 거리의 (합|차)[가이] (\d+)인", q)
+        if m:
+            c = Fraction(m.group(1)); a = Fraction(m.group(3)) / 2
+            b2 = a * a - c * c if m.group(2) == "합" else c * c - a * a
+            return a * a + b2
+        m = re.search(r"frac\(pow\(x,2\), (\d+)\) ([+-]) frac\(pow\(y,2\), (\d+)\) = (-?1)", q); A, B = Fraction(m.group(1)), Fraction(m.group(3)); rhs = m.group(4)
+        if m.group(2) == "+":
+            a2, b2 = max(A, B), min(A, B); a, b, c = _sqr(a2), _sqr(b2), _sqr(a2 - b2)
+            main = 2 * a
+        else:
+            a, b, c = _sqr(A), _sqr(B), _sqr(A + B)
+            main = 2 * a if rhs == "1" else 2 * b
+        if None in (a, b, c): return None
+        if "두 초점 사이의 거리" in q: return 2 * c
+        if "장축의 길이" in q or "주축의 길이" in q: return main
+        if "단축의 길이" in q: return 2 * b
+        if "PF + PF'의 값" in q or "|PF - PF'|의 값" in q: return main
+        if "양수 c의 값" in q: return c
+        if "점근선" in q: return b / a
+        mm = re.search(r"PF = (\d+)일 때, 선분 PF'", q)
+        if mm: return 2 * a - Fraction(mm.group(1))
+        return None
+    if tid == "h3-3-conic-t4":
+        mm = re.search(r"위의 점 \((-?\d+), (-?\d+)\)에서의 접선", q); x1, y1 = Fraction(mm.group(1)), Fraction(mm.group(2))
+        m = re.match(r"포물선 \[\[pow\(y,2\) = (-?\d+)x\]\]", q)
+        if m:
+            p = Fraction(int(m.group(1)), 4); slope = 2 * p / y1; n = 2 * p * x1 / y1; xi = -x1
+        else:
+            m = re.search(r"frac\(pow\(x,2\), (\d+)\) ([+-]) frac\(pow\(y,2\), (\d+)\) = 1", q); A, B = Fraction(m.group(1)), Fraction(m.group(3))
+            if m.group(2) == "+": slope = -(B * x1) / (A * y1); n = B / y1
+            else: slope = (B * x1) / (A * y1); n = -B / y1
+            xi = A / x1
+        if "기울기" in q: return slope
+        if "x절편" in q: return xi
+        if "y절편" in q: return n
+        if "m + n" in q: return slope + n
+        return None
+    if tid == "h3-3-conic-t5":
+        mm = re.search(r"기울기가 (\[\[.+?\]\]|-?\d+)인", q); mv = _mk(mm.group(1))
+        m = re.match(r"포물선 \[\[pow\(([xy]),2\) = (-?\d+)([xy])\]\]", q)
+        if m:
+            p = Fraction(int(m.group(2)), 4); return p / mv if m.group(1) == "y" else -p * mv * mv
+        m = re.search(r"frac\(pow\(x,2\), (\d+)\) ([+-]) frac\(pow\(y,2\), (\d+)\) = 1", q); A, B = Fraction(m.group(1)), Fraction(m.group(3))
+        s2 = A * mv * mv + B if m.group(2) == "+" else A * mv * mv - B
+        if "y절편의 곱" in q: return -s2
+        return _sqr(s2)
+    if tid == "h3-3-space-t1":
+        m = re.search(r"PH = (\d+), HQ = (\d+)일 때", q)
+        if m: return _sqr(Fraction(m.group(1)) ** 2 + Fraction(m.group(2)) ** 2)
+        m = re.search(r"PH = (\d+)이고 점 P와 직선 l 사이의 거리가 (\d+)일 때", q)
+        if m: return _sqr(Fraction(m.group(2)) ** 2 - Fraction(m.group(1)) ** 2)
+        m = re.match(r"넓이가 (\d+)인 삼각형 ABC가 평면 α와 이루는 각의 크기가 60°", q)
+        if m: return Fraction(m.group(1)) / 2
+        m = re.match(r"삼각형 ABC의 평면 α 위로의 정사영의 넓이가 (\d+)이고", q)
+        if m: return 2 * Fraction(m.group(1))
+        m = re.match(r"넓이가 (\d+)인 평면도형의 평면 α 위로의 정사영의 넓이가 (\d+)이다", q)
+        if m: return Fraction(m.group(2)) / Fraction(m.group(1))
+        m = re.match(r"길이가 (\d+)인 선분 AB가 평면 α와 이루는 각의 크기가 60°", q)
+        if m: return Fraction(m.group(1)) / 2
+        m = re.search(r"각의 크기가 30°이고, 직선 l 위의 점 P와 평면 α 사이의 거리가 (\d+)이다", q)
+        if m: return 2 * Fraction(m.group(1))
+        return None
+    if tid == "h3-3-space-t2":
+        P = _pts3(q)
+        if q.startswith("두 점"):
+            A, B = P[:2]; return _sqr(sum((B[i] - A[i]) ** 2 for i in range(3)))
+        a, b, c = P[0]
+        if "xy평면에 대하여 대칭이동한 점을 Q라 할 때, 선분 PQ" in q: return 2 * abs(c)
+        if "xy평면 사이의 거리" in q: return abs(c)
+        if "xy평면에 대하여 대칭이동한 점을 Q(p, q, r)" in q: return a + b - c
+        if "z축에 대하여 대칭이동한 점을 Q(p, q, r)" in q: return -a - b + c
+        if "z축 사이의 거리" in q: return _sqr(a * a + b * b)
+        if "x축에 내린 수선의 발" in q: return _sqr(b * b + c * c)
+        return None
+    if tid == "h3-3-space-t3":
+        P = _pts3(q)
+        m = re.search(r"선분 AB를 (\d+) : (\d+)(?:으로|로) (내분|외분)", q)
+        if m:
+            mm, nn = Fraction(m.group(1)), Fraction(m.group(2)); A, B = P[:2]
+            if m.group(3) == "내분": return sum((mm * B[i] + nn * A[i]) / (mm + nn) for i in range(3))
+            return sum((mm * B[i] - nn * A[i]) / (mm - nn) for i in range(3))
+        if "중점" in q: A, B = P[:2]; return sum((A[i] + B[i]) / 2 for i in range(3))
+        if "무게중심" in q: A, B, C = P[:3]; return sum((A[i] + B[i] + C[i]) / 3 for i in range(3))
+        return None
+    if tid == "h3-3-space-t4":
+        m = re.match(r"구 \[\[pow\(x,2\) \+ pow\(y,2\) \+ pow\(z,2\)(.*?) = 0\]\]", q)
+        if m:
+            rest = m.group(1); co = {"x": Fraction(0), "y": Fraction(0), "z": Fraction(0)}; d = Fraction(0)
+            for sg, num, var in re.findall(r"([+-]) (\d*)([xyz]?)", rest):
+                if var: co[var] = _sv(sg, num or "1")
+                elif num: d = _sv(sg, num)
+            ctr = tuple(-co[v] / 2 for v in "xyz"); r2 = sum(t * t for t in ctr) - d
+            return _sqr(r2) if "반지름" in q else sum(ctr)
+        m = re.match(r"중심이 \((-?\d+), (-?\d+), (-?\d+)\)이고 xy평면에 접하는 구", q)
+        if m: return abs(Fraction(m.group(3)))
+        m = re.match(r"구 \[\[(.+?) = (\d+)\]\](?:과|와) xy평면이 만나서", q)
+        if m:
+            R2 = Fraction(m.group(2)); mz = re.search(r"pow\(z(?: ([+-]) (\d+))?, ?2\)", m.group(1)); cz = -_sv(mz.group(1), mz.group(2)) if mz.group(1) else Fraction(0)
+            return _sqr(R2 - cz * cz)
+        m = re.match(r"두 점 A\((-?\d+), (-?\d+), (-?\d+)\), B\((-?\d+), (-?\d+), (-?\d+)\)[을를] 지름", q)
+        if m:
+            A = tuple(Fraction(m.group(i)) for i in (1, 2, 3)); B = tuple(Fraction(m.group(i)) for i in (4, 5, 6)); dd = _sqr(sum((B[i] - A[i]) ** 2 for i in range(3)))
+            return None if dd is None else dd / 2
+        return None
+    if tid == "h3-3-vec-t1":
+        V = _vcs(q)
+        m = re.search(r"\[\[(?:abs\()?(-?\d*) ?vec\(a\) ([+-]) (\d*) ?vec\(b\)\)?\]\]", q)
+        if m and "성분의 합" in q or (m and "abs(" in q and "의 값" in q and "vcomp(x" not in q):
+            k = _coef(m.group(1)); l = _sv(m.group(2), m.group(3) or "1"); a, b = V[0], V[1]
+            w = tuple(k * a[i] + l * b[i] for i in range(2))
+            return sum(w) if "성분의 합" in q else _sqr(w[0] ** 2 + w[1] ** 2)
+        if "서로 평행할 때, 실수 t" in q:
+            a, b, c = V[:3]; den = b[0] * c[1] - b[1] * c[0]
+            return None if den == 0 else (a[1] * c[0] - a[0] * c[1]) / den
+        if q.startswith("공간벡터"): a = V[0]; return _sqr(sum(t * t for t in a))
+        mm = re.search(r"\[\[vec\(a\)\]\] = \[\[vcomp\(x, (-?\d+)\)\]\], \[\[vec\(b\)\]\] = \[\[vcomp\((-?\d+), y\)\]\]에 대하여 \[\[(-?\d*) ?vec\(a\) ([+-]) (\d*) ?vec\(b\)\]\] = \[\[vcomp\((-?\d+), (-?\d+)\)\]\]", q)
+        if mm:
+            a2, b1 = Fraction(mm.group(1)), Fraction(mm.group(2)); k = _coef(mm.group(3)); l = _sv(mm.group(4), mm.group(5) or "1"); r0, r1 = Fraction(mm.group(6)), Fraction(mm.group(7))
+            x = (r0 - l * b1) / k; y = (r1 - k * a2) / l; return x + y
+        return None
+    if tid == "h3-3-vec-t2":
+        m = re.search(r"\[\[abs\(vec\(a\)\)\]\] = (\d+), \[\[abs\(vec\(b\)\)\]\] = (\d+)", q)
+        if m:
+            p, r = Fraction(m.group(1)), Fraction(m.group(2))
+            mm = re.search(r"각의 크기가 (\d+)°", q)
+            if mm: th = int(mm.group(1)); dot = p * r * {60: Fraction(1, 2), 90: Fraction(0), 120: Fraction(-1, 2)}[th]
+            else: dot = Fraction(re.search(r"\[\[dot\(vec\(a\), vec\(b\)\)\]\] = (-?\d+)", q).group(1))
+            sgn = 1 if re.search(r"vec\(a\) \+ vec\(b\)", q) else -1
+            v = p * p + 2 * sgn * dot + r * r
+            return v if "pow(abs" in q else _sqr(v)
+        V = _vcs(q)
+        m = re.search(r"선분 AB를 (\d+) : (\d+)(?:으로|로) 내분", q)
+        if m: mm, nn = Fraction(m.group(1)), Fraction(m.group(2)); A, B = V[:2]; return sum((nn * A[i] + mm * B[i]) / (mm + nn) for i in range(2))
+        if "무게중심" in q: A, B, C = V[:3]; return sum((A[i] + B[i] + C[i]) / 3 for i in range(2))
+        return None
+    if tid == "h3-3-vec-t3":
+        m = re.search(r"\[\[abs\(vec\(a\)\)\]\] = (\d+), \[\[abs\(vec\(b\)\)\]\] = (\d+)", q)
+        if m:
+            p, r = Fraction(m.group(1)), Fraction(m.group(2))
+            mm = re.search(r"\[\[abs\(vec\(a\) \+ vec\(b\)\)\]\] = (\d+)", q)
+            if mm: return (Fraction(mm.group(1)) ** 2 - p * p - r * r) / 2
+            return p * p - r * r
+        V = _vcs(q)
+        if "서로 수직" in q or "서로 평행" in q or "실수 x" in q:
+            mm = re.search(r"\[\[vec\(a\)\]\] = \[\[vcomp\((-?\d+), (-?\d+)\)\]\], \[\[vec\(b\)\]\] = \[\[vcomp\((-?\d+), [kx]\)\]\]", q); a1, a2, b1 = (Fraction(mm.group(i)) for i in (1, 2, 3))
+            if "서로 수직" in q: return -a1 * b1 / a2
+            if "서로 평행" in q: return a2 * b1 / a1
+            val = Fraction(re.search(r"\[\[dot\(vec\(a\), vec\(b\)\)\]\] = (-?\d+)일 때", q).group(1)); return (val - a1 * b1) / a2
+        a, b = V[:2]; dot = sum(a[i] * b[i] for i in range(len(a)))
+        if "cos θ" in q:
+            na, nb = _sqr(sum(t * t for t in a)), _sqr(sum(t * t for t in b)); return None if None in (na, nb) else dot / (na * nb)
+        return dot
+    if tid == "h3-3-vec-t4":
+        m = re.search(r"\[\[abs\(vec\(a\)\)\]\] = (\d+), \[\[abs\(vec\(b\)\)\]\] = (\d+)", q)
+        if m:
+            p, r = Fraction(m.group(1)), Fraction(m.group(2))
+            mm = re.search(r"\[\[dot\(vec\(a\), vec\(b\)\)\]\] = (-?\d+)", q)
+            if mm: dot = Fraction(mm.group(1))
+            else: s_ = Fraction(re.search(r"\[\[abs\(vec\(a\) \+ vec\(b\)\)\]\] = (\d+)", q).group(1)); dot = (s_ * s_ - p * p - r * r) / 2
+            c2 = dot * dot / (p * p * r * r)
+        else:
+            V = _vcs(q); a, b = V[:2]; dot = sum(a[i] * b[i] for i in range(len(a))); c2 = dot * dot / (sum(t * t for t in a) * sum(t * t for t in b))
+        if dot == 0: return Fraction(90)
+        base = {Fraction(1): 0, Fraction(3, 4): 30, Fraction(1, 2): 45, Fraction(1, 4): 60}.get(c2)
+        if base is None: return None
+        return Fraction(base if dot > 0 else 180 - base)
+    if tid == "h3-3-vec-t5":
+        pl = _plane3(q)
+        if q.startswith("두 직선"):
+            ds = _dirs(q); u, v = ds[:3], ds[3:6]
+            if None in u or None in v: return None
+            nu, nv = _sqr(sum(t * t for t in u)), _sqr(sum(t * t for t in v)); dot = sum(u[i] * v[i] for i in range(3))
+            return None if None in (nu, nv) else abs(dot) / (nu * nv)
+        if q.startswith("직선"):
+            ds = _dirs(q)[:3]; n = pl[:3]; j = ds.index(None)
+            if "수직일 때" in q:
+                i = (j + 1) % 3; s_ = ds[i] / n[i]; return s_ * n[j]
+            others = sum(ds[i] * n[i] for i in range(3) if i != j); return -others / n[j]
+        if q.startswith("점") and "지나고 법선벡터" in q:
+            P = _pts3(q)[0]; n = _vcs(q)[0]; return -sum(n[i] * P[i] for i in range(3))
+        P = _pts3(q)
+        if q.startswith("점") or q.startswith("중심이"):
+            x0 = P[0]; a, b, c, d = pl; nn = _sqr(a * a + b * b + c * c); val = a * x0[0] + b * x0[1] + c * x0[2] + d
+            return None if nn is None else abs(val) / nn
+        m = re.match(r"구 \[\[(.+?) = (\d+)\]\]", q)
+        if m:
+            R2 = Fraction(m.group(2)); ctr = []
+            for var in "xyz":
+                mv = re.search(r"pow\(" + var + r"(?: ([+-]) (\d+))?, ?2\)", m.group(1)); ctr.append(-_sv(mv.group(1), mv.group(2)) if mv.group(1) else Fraction(0))
+            a, b, c, d = pl; nn = _sqr(a * a + b * b + c * c); val = a * ctr[0] + b * ctr[1] + c * ctr[2] + d
+            if nn is None: return None
+            dist = abs(val) / nn; return _sqr(R2 - dist * dist)
         return None
     return None
 
