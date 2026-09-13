@@ -1,0 +1,901 @@
+{
+  "seed_id": "m1-2-sphere-apply",
+  "category": "도형",
+  "title": "구의 응용 — 원기둥 속 구·쇠구슬 개수·물 높이 상승·반구 물 옮기기",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-16",
+    "m1-2-14"
+  ],
+  "schema_id": null,
+  "schema_name": "구의 부피의 활용",
+  "source_item_ids": [],
+  "note": "구조만 차용. 반지름을 3의 배수로 두어 4/3·2/3 계수가 정수가 되게 한다. 물 높이는 vessel 도식(원기둥)으로.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "ops": [
+        "부피",
+        "비례"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "단위"
+      ],
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "구의 부피",
+        "원기둥의 부피"
+      ],
+      "tags": [
+        "구",
+        "부피",
+        "원기둥"
+      ],
+      "title": "원기둥에 꼭 맞게 들어 있는 구 — 원기둥·빈 공간·원뿔의 부피",
+      "skill": "구가 원기둥에 꼭 맞으면 원기둥의 밑면 반지름은 r, 높이는 2r임을 이용해 부피를 비교하기 (원뿔 : 구 : 원기둥 = 1 : 2 : 3)",
+      "variant_axis": {
+        "구하는 것": "원기둥 / 빈 공간 / 원뿔",
+        "반지름": "3의 배수"
+      },
+      "discriminates": "원기둥의 높이를 구의 지름으로 잡는가, 구의 부피 공식 4/3 πr³을 정확히 쓰는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "cyl",
+              "gap",
+              "cone"
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              1,
+              5
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "cyl": {
+            "ASK": "원기둥의 부피",
+            "mul": 3,
+            "WHAT": "원기둥",
+            "REL": "원기둥의 높이는 구의 지름 2r이므로 원기둥의 부피는 πr² × 2r = 2πr³"
+          },
+          "gap": {
+            "ASK": "원기둥에서 구를 뺀 빈 공간의 부피",
+            "mul": 1,
+            "WHAT": "빈 공간",
+            "REL": "원기둥의 부피 2πr³에서 구의 부피를 빼면 빈 공간은 2πr³ − [[frac(4,3)]]πr³ = [[frac(2,3)]]πr³"
+          },
+          "cone": {
+            "ASK": "원기둥에 꼭 맞게 들어가는 원뿔의 부피",
+            "mul": 1,
+            "WHAT": "원뿔",
+            "REL": "원뿔의 부피는 [[frac(1,3)]] × πr² × 2r = [[frac(2,3)]]πr³"
+          }
+        }
+      },
+      "derive": {
+        "r": "3*m",
+        "h": "6*m",
+        "ks": "4*r*r*r/3",
+        "kc": "2*r*r*r",
+        "kg": "2*r*r*r/3",
+        "k": "mul*2*r*r*r/3"
+      },
+      "constraints": [
+        "k != r",
+        "k != h",
+        "k != ks"
+      ],
+      "cost_values": [
+        "r",
+        "ks",
+        "k"
+      ],
+      "answer_var": "k",
+      "verify": [
+        "ans*3 == mul*2*r**3",
+        "ks*3 == 4*r**3"
+      ],
+      "question": "반지름의 길이가 {r} cm인 구가 원기둥 모양의 통에 꼭 맞게 들어 있다. 이 {ASK}{eul(ASK)} 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r} cm",
+            "height": "{h} cm"
+          }
+        }
+      ],
+      "answer": "[[{k} * pi]]",
+      "answer_alt": [
+        "[[{k} * pi]] cm³"
+      ],
+      "sol1": "구가 원기둥에 꼭 맞게 들어 있으므로 원기둥의 밑면의 반지름은 구의 반지름 {r} cm와 같고, 높이는 구의 지름 {h} cm다. 구의 부피는 [[frac(4,3)]]πr³ = {ks}π cm³이고, {REL}이다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "r = {r}",
+            "height": "2r = {h}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "height",
+              "h-lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "원기둥의 밑면의 반지름은 {r} cm, 높이는 구의 지름 2 × {r} = {h} (cm)",
+        "구의 부피: [[frac(4,3)]] × π × {r}³ = {ks}π (cm³), 원기둥의 부피: π × {r}² × {h} = {kc}π (cm³)",
+        "따라서 {ASK}{eun(ASK)} {k}π cm³"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "밑면 반지름 {r}, 높이 {h}",
+                "hint": "높이 = 구의 지름",
+                "marks": [
+                  {
+                    "on": "{h}",
+                    "note": "2r"
+                  }
+                ]
+              },
+              {
+                "text": "구 = [[frac(4,3)]]π × {r}³ = {ks}π,  원기둥 = π × {r}² × {h} = {kc}π"
+              },
+              {
+                "text": "{ASK} = {k}π"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:0",
+              "mark:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol_check": "원뿔 : 구 : 원기둥 = 1 : 2 : 3이므로 구의 부피 {ks}π에서 원기둥은 그 [[frac(3,2)]]배 {kc}π, 원뿔과 빈 공간은 그 절반 {kg}π다. 답은 [[{k} * pi]] cm³다.",
+      "model_answer": "원기둥의 밑면의 반지름은 {r} cm, 높이는 {h} cm이므로 구의 부피는 {ks}π cm³, 원기둥의 부피는 {kc}π cm³이다. 따라서 {ASK}{eun(ASK)} {k}π cm³이다.",
+      "rubric": [
+        {
+          "element": "원기둥의 치수",
+          "points": 2,
+          "criterion": "원기둥의 밑면 반지름 {r} cm, 높이 {h} cm(구의 지름)를 밝혔다.",
+          "partial": "높이를 반지름과 같게 잡았으면 인정하지 않는다."
+        },
+        {
+          "element": "부피 계산",
+          "points": 3,
+          "criterion": "구의 부피 {ks}π, 원기둥의 부피 {kc}π를 공식으로 구했다.",
+          "partial": "하나만 맞으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ASK} {k}π cm³를 구했다.",
+          "partial": "다른 것의 부피를 답했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-sphere-apply-t1",
+      "pitfalls": [
+        {
+          "text": "원기둥의 높이를 구의 반지름과 같게 잡음",
+          "on": "원기둥의 치수",
+          "effect": "불인정"
+        },
+        {
+          "text": "구의 부피 공식의 계수 4/3을 틀리게 씀",
+          "on": "부피",
+          "effect": "불인정"
+        },
+        {
+          "text": "묻는 것(원기둥·빈 공간·원뿔)이 아닌 다른 부피를 답함",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "ops": [
+        "부피",
+        "비례"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "단위"
+      ],
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "구의 부피",
+        "원기둥의 부피"
+      ],
+      "tags": [
+        "구",
+        "부피",
+        "원기둥"
+      ],
+      "title": "큰 쇠구슬을 녹여 작은 쇠구슬 만들기 — 개수",
+      "skill": "부피가 보존됨을 이용해 (큰 구의 부피) ÷ (작은 구의 부피) = (반지름의 비)³을 구하기",
+      "variant_axis": {
+        "반지름의 비": "2~5배"
+      },
+      "discriminates": "부피의 비가 반지름의 비의 세제곱임을 쓰는가(제곱·1제곱으로 착각하지 않는가)",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              2,
+              5
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "R": "m*r",
+        "n": "m*m*m",
+        "kR": "4*R*R*R/3",
+        "kr": "4*r*r*r/3"
+      },
+      "constraints": [
+        "n != R",
+        "n != r",
+        "R <= 24"
+      ],
+      "cost_values": [
+        "R",
+        "r",
+        "n"
+      ],
+      "answer_var": "n",
+      "verify": [
+        "ans*r**3 == R**3",
+        "ans == m**3"
+      ],
+      "question": "반지름의 길이가 {R} cm인 쇠구슬 한 개를 녹여 반지름의 길이가 {r} cm인 쇠구슬을 만들려고 한다. 쇠구슬을 최대 몇 개 만들 수 있는지 구하시오.",
+      "answer": "{n}",
+      "answer_alt": [
+        "{n}개"
+      ],
+      "sol1": "녹여서 다시 만들어도 쇠의 부피는 변하지 않는다. 구의 부피는 [[frac(4,3)]]πr³이므로 큰 구의 부피를 작은 구의 부피로 나누면 개수가 나온다. 반지름이 {m}배이면 부피는 {m}³ = {n}배다.",
+      "sol2": [
+        "큰 쇠구슬의 부피: [[frac(4,3)]] × π × {R}³ (cm³), 작은 쇠구슬 한 개의 부피: [[frac(4,3)]] × π × {r}³ (cm³)",
+        "부피가 보존되므로 개수 = [[frac(4,3)]]π × {R}³ ÷ ([[frac(4,3)]]π × {r}³) = ({R} ÷ {r})³ = {m}³",
+        "따라서 최대 {n}개를 만들 수 있다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "[[frac(4,3)]]π × {R}³ ÷ ([[frac(4,3)]]π × {r}³)",
+                "hint": "부피 보존"
+              },
+              {
+                "text": "= ({R} ÷ {r})³ = {m}³",
+                "hint": "반지름의 비의 세제곱",
+                "marks": [
+                  {
+                    "on": "³",
+                    "note": "제곱이 아님"
+                  }
+                ]
+              },
+              {
+                "text": "= {n}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol_check": "작은 쇠구슬 {n}개의 부피는 {n} × [[frac(4,3)]]π × {r}³ = [[frac(4,3)]]π × {R}³으로 큰 쇠구슬의 부피와 같다. 답은 {n}개다.",
+      "model_answer": "부피가 보존되므로 개수는 [[frac(4,3)]]π × {R}³ ÷ ([[frac(4,3)]]π × {r}³) = ({R} ÷ {r})³ = {m}³ = {n}이다. 따라서 최대 {n}개다.",
+      "rubric": [
+        {
+          "element": "부피 보존과 식",
+          "points": 3,
+          "criterion": "큰 구의 부피를 작은 구의 부피로 나누는 식을 세웠다.",
+          "partial": "부피 대신 반지름이나 겉넓이의 비로 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "({R} ÷ {r})³ = {n}개를 구했다.",
+          "partial": "세제곱 계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-2-sphere-apply-t2",
+      "pitfalls": [
+        {
+          "text": "부피의 비를 반지름의 비 또는 그 제곱으로 놓음",
+          "on": "부피 보존",
+          "effect": "불인정"
+        },
+        {
+          "text": "부피 보존(녹여도 부피 같음)을 밝히지 않음",
+          "on": "부피 보존",
+          "effect": "부분"
+        },
+        {
+          "text": "세제곱 계산 실수",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "ops": [
+        "부피",
+        "비례"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "단위"
+      ],
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "구의 부피",
+        "원기둥의 부피"
+      ],
+      "tags": [
+        "구",
+        "부피",
+        "원기둥"
+      ],
+      "title": "원기둥 모양 물통에 쇠구슬을 넣었을 때 높아지는 물의 높이",
+      "skill": "높아진 물의 부피(원기둥 πR²h)가 잠긴 구의 부피와 같음을 이용하기",
+      "variant_axis": {
+        "물통 반지름": "2~12",
+        "구슬 반지름": "3의 배수"
+      },
+      "discriminates": "늘어난 물의 부피를 원기둥 모양으로 보고 구의 부피와 같게 놓는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "R",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "r": "3*m",
+        "V": "4*r*r*r/3",
+        "h": "4*r*r*r/(3*R*R)"
+      },
+      "constraints": [
+        "h != R",
+        "h != r",
+        "R >= r",
+        "h != V",
+        "h <= 40"
+      ],
+      "cost_values": [
+        "R",
+        "r",
+        "V",
+        "h"
+      ],
+      "answer_var": "h",
+      "verify": [
+        "ans*R*R == V",
+        "V*3 == 4*r**3"
+      ],
+      "question": "밑면의 반지름의 길이가 {R} cm인 원기둥 모양의 물통에 물이 들어 있다. 이 물통에 반지름의 길이가 {r} cm인 구 모양의 쇠구슬을 완전히 잠기도록 넣었을 때, 물의 높이는 몇 cm 높아지는지 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{R} cm"
+          }
+        }
+      ],
+      "answer": "{h}",
+      "answer_alt": [
+        "{h} cm"
+      ],
+      "sol1": "쇠구슬이 완전히 잠기면 밀려 올라간 물의 부피는 쇠구슬의 부피와 같다. 올라간 물은 밑면 반지름 {R} cm, 높이 x cm인 원기둥 모양이므로 π × {R}² × x = (구의 부피)라는 방정식을 세운다.",
+      "sol1_fig": [
+        {
+          "fn": "vessel",
+          "args": {
+            "kind": "cylinder",
+            "rows": [
+              {
+                "name": "물통",
+                "total": "{2*V + V}",
+                "parts": [
+                  {
+                    "label": "원래 물",
+                    "value": "{2*V}",
+                    "kind": "water"
+                  },
+                  {
+                    "label": "높아진 부피 = 구",
+                    "value": "{V}",
+                    "kind": "other"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "part:0-0",
+              "part-lbl:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "part:0-1",
+              "part-lbl:0-1"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "쇠구슬의 부피: [[frac(4,3)]] × π × {r}³ = {V}π (cm³)",
+        "높아진 물의 높이를 x cm라 하면 늘어난 물의 부피는 π × {R}² × x = {R*R}πx (cm³)",
+        "{R*R}πx = {V}π이므로 x = {h}",
+        "따라서 물의 높이는 {h} cm 높아진다."
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "구의 부피 = [[frac(4,3)]]π × {r}³ = {V}π",
+                "hint": "잠긴 부피"
+              },
+              {
+                "text": "π × {R}² × x = {V}π",
+                "hint": "늘어난 물 = 원기둥",
+                "marks": [
+                  {
+                    "on": "{R}²",
+                    "note": "물통의 반지름"
+                  }
+                ]
+              },
+              {
+                "text": "x = {V} ÷ {R*R} = {h}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ],
+        []
+      ],
+      "sol_check": "높이가 {h} cm 올라가면 늘어난 부피는 π × {R}² × {h} = {V}π cm³로 쇠구슬의 부피 {V}π cm³와 같다. 답은 {h} cm다.",
+      "model_answer": "쇠구슬의 부피는 [[frac(4,3)]] × π × {r}³ = {V}π cm³이고, 높아진 물의 높이를 x cm라 하면 π × {R}² × x = {V}π이므로 x = {h}이다. 따라서 물의 높이는 {h} cm 높아진다.",
+      "rubric": [
+        {
+          "element": "구의 부피",
+          "points": 2,
+          "criterion": "쇠구슬의 부피 {V}π cm³를 구했다.",
+          "partial": "공식의 계수 [[frac(4,3)]]{eul(3)} 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "늘어난 물의 부피를 π × {R}² × x로 놓고 구의 부피와 같게 놓았다.",
+          "partial": "쇠구슬의 반지름으로 원기둥을 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "x = {h} cm를 구했다.",
+          "partial": "π를 약분하지 못해 계산이 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-sphere-apply-t3",
+      "pitfalls": [
+        {
+          "text": "늘어난 물의 부피를 쇠구슬의 반지름으로 세움",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "구의 부피 공식 계수 실수",
+          "on": "구의 부피",
+          "effect": "불인정"
+        },
+        {
+          "text": "π를 한쪽에서만 약분",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "ops": [
+        "부피",
+        "비례"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "단위"
+      ],
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "구의 부피",
+        "원기둥의 부피"
+      ],
+      "tags": [
+        "구",
+        "부피",
+        "원기둥"
+      ],
+      "title": "반구 모양 그릇의 물을 원기둥 모양 그릇에 옮겨 담은 높이",
+      "skill": "반구의 부피(구의 절반)를 원기둥의 부피 πR²h와 같게 놓아 높이 구하기",
+      "variant_axis": {
+        "반구 반지름": "3의 배수",
+        "원기둥 반지름": "2~12"
+      },
+      "discriminates": "반구의 부피를 구의 절반으로 구하는가, 원기둥의 밑면 반지름을 바르게 쓰는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "m",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "R",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "r": "3*m",
+        "V": "2*r*r*r/3",
+        "h": "2*r*r*r/(3*R*R)"
+      },
+      "constraints": [
+        "h != R",
+        "h != r",
+        "h != V",
+        "h <= 40"
+      ],
+      "cost_values": [
+        "R",
+        "r",
+        "V",
+        "h"
+      ],
+      "answer_var": "h",
+      "verify": [
+        "ans*R*R == V",
+        "V*3 == 2*r**3"
+      ],
+      "question": "반지름의 길이가 {r} cm인 반구 모양의 그릇에 물을 가득 채운 다음, 이 물을 밑면의 반지름의 길이가 {R} cm인 원기둥 모양의 그릇에 모두 부었다. 원기둥 모양의 그릇에 담긴 물의 높이를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "hemisphere",
+            "radius": "{r} cm"
+          }
+        }
+      ],
+      "answer": "{h}",
+      "answer_alt": [
+        "{h} cm"
+      ],
+      "sol1": "물의 부피는 옮겨 담아도 변하지 않는다. 반구의 부피는 구의 부피의 절반 [[frac(1,2)]] × [[frac(4,3)]]πr³ = [[frac(2,3)]]πr³이고, 원기둥에 담긴 물의 부피는 π × {R}² × (높이)이므로 두 부피를 같게 놓는다.",
+      "sol1_fig": [
+        {
+          "fn": "vessel",
+          "args": {
+            "kind": "cylinder",
+            "rows": [
+              {
+                "name": "원기둥 그릇",
+                "total": "{V}",
+                "parts": [
+                  {
+                    "label": "반구의 물 {V}π",
+                    "value": "{V}",
+                    "kind": "water"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "part:0-0",
+              "part-lbl:0-0"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "반구의 부피: [[frac(1,2)]] × [[frac(4,3)]] × π × {r}³ = {V}π (cm³)",
+        "원기둥 그릇에 담긴 물의 높이를 x cm라 하면 π × {R}² × x = {V}π",
+        "따라서 x = {V} ÷ {R*R} = {h}, 물의 높이는 {h} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "반구 = [[frac(2,3)]]π × {r}³ = {V}π",
+                "hint": "구의 절반",
+                "marks": [
+                  {
+                    "on": "[[frac(2,3)]]",
+                    "note": "4/3의 절반"
+                  }
+                ]
+              },
+              {
+                "text": "π × {R}² × x = {V}π",
+                "hint": "부피 보존"
+              },
+              {
+                "text": "x = {h}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:0",
+              "mark:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol_check": "원기둥에 높이 {h} cm로 담긴 물의 부피는 π × {R}² × {h} = {V}π cm³로 반구의 부피와 같다. 답은 {h} cm다.",
+      "model_answer": "반구의 부피는 [[frac(1,2)]] × [[frac(4,3)]] × π × {r}³ = {V}π cm³이고, 원기둥 그릇의 물의 높이를 x cm라 하면 π × {R}² × x = {V}π이므로 x = {h}이다. 따라서 물의 높이는 {h} cm다.",
+      "rubric": [
+        {
+          "element": "반구의 부피",
+          "points": 3,
+          "criterion": "구의 부피의 절반으로 반구의 부피 {V}π cm³를 구했다.",
+          "partial": "구 전체의 부피를 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "식 세우기와 답",
+          "points": 2,
+          "criterion": "π × {R}² × x = {V}π를 풀어 x = {h}{eul(h)} 구했다.",
+          "partial": "π를 한쪽에만 두어 계산이 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-2-sphere-apply-t4",
+      "pitfalls": [
+        {
+          "text": "반구의 부피를 구 전체의 부피로 놓음",
+          "on": "반구",
+          "effect": "불인정"
+        },
+        {
+          "text": "원기둥의 밑면 반지름 자리에 반구의 반지름을 씀",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "π를 한쪽에서만 약분",
+          "on": "식",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

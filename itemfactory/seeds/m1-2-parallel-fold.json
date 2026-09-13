@@ -1,0 +1,3164 @@
+{
+  "seed_id": "m1-2-parallel-fold",
+  "category": "도형",
+  "title": "평행선의 응용 — 두 번 꺾인 선(보조선 두 개)·종이 테이프 접기",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-04"
+  ],
+  "schema_id": null,
+  "schema_name": "평행선의 성질의 응용(보조선·접기)",
+  "source_item_ids": [],
+  "note": "구조만 차용. 꺾인 선은 세 각(a, β, d)에서 좌표를 코탄젠트로 계산해 관계 x = a + c − d 가 항상 성립. 미지수 자리별로 틀을 나눴다(문면·라벨이 달라서). 접기는 x = 180° − 2a.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행선의 성질(동위각·엇각)",
+        "보조선"
+      ],
+      "tags": [
+        "평행선",
+        "엇각",
+        "보조선"
+      ],
+      "title": "평행선 사이에서 두 번 꺾인 선 — 보조선 두 개로 각 구하기 (PBC 구하기)",
+      "skill": "꺾인 점마다 평행한 보조선을 그어 엇각으로 각을 나누고, 같은 쪽 각의 합이 같음(a + c = x + d)을 이용하기",
+      "variant_axis": {
+        "구하는 각": "∠PBC / ∠QPB / ∠BCQ / ∠RQC",
+        "각": "25°~70°"
+      },
+      "discriminates": "두 꺾인 점에 각각 평행한 보조선을 긋고 엇각으로 각을 쪼개는가, 어느 쪽 각을 더하는지 방향을 지키는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55,
+              60,
+              65,
+              70
+            ]
+          }
+        },
+        {
+          "name": "bt",
+          "values": {
+            "in": [
+              20,
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55,
+              60,
+              65,
+              70
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "S_a": "1",
+        "S_x": "0",
+        "S_c": "1",
+        "S_d": "1",
+        "x": "a + bt",
+        "c": "bt + d",
+        "ans_v": "x*(S_x == 0) + a*(S_a == 0) + c*(S_c == 0) + d*(S_d == 0)",
+        "bx": "cos(pi*a/180)/sin(pi*a/180)",
+        "cx": "cos(pi*a/180)/sin(pi*a/180) - cos(pi*bt/180)/sin(pi*bt/180)",
+        "qx": "cos(pi*a/180)/sin(pi*a/180) - cos(pi*bt/180)/sin(pi*bt/180) + cos(pi*d/180)/sin(pi*d/180)",
+        "xlo": "min(0, cx) - 0.8",
+        "xhi": "max(bx, qx) + 0.8"
+      },
+      "constraints": [
+        "x <= 120",
+        "c <= 120",
+        "a != d",
+        "a != c",
+        "x != c",
+        "ans_v != a or S_a == 0",
+        "ans_v != x or S_x == 0",
+        "ans_v != c or S_c == 0",
+        "ans_v != d or S_d == 0",
+        "xhi - xlo <= 7"
+      ],
+      "cost_values": [
+        "a",
+        "x",
+        "c",
+        "d",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "x + d == a + c",
+        "ans == x*(S_x == 0) + a*(S_a == 0) + c*(S_c == 0) + d*(S_d == 0)"
+      ],
+      "question": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg({a})]], [[angle(BCQ) = deg({c})]], [[angle(RQC) = deg({d})]]일 때, [[angle(PBC)]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "L1": [
+                "{xlo}",
+                3
+              ],
+              "L2": [
+                "{xhi}",
+                3
+              ],
+              "M1": [
+                "{xlo}",
+                0
+              ],
+              "M2": [
+                "{xhi}",
+                0
+              ],
+              "P": [
+                0,
+                3
+              ],
+              "B": [
+                "{bx}",
+                2
+              ],
+              "C": [
+                "{cx}",
+                1
+              ],
+              "Q": [
+                "{qx}",
+                0
+              ],
+              "R": [
+                "{xlo}",
+                0
+              ]
+            },
+            "nodot": [
+              "L1",
+              "L2",
+              "M1",
+              "M2",
+              "R"
+            ],
+            "segs": [
+              [
+                "L1",
+                "L2"
+              ],
+              [
+                "M1",
+                "M2"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "Q"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "P",
+                  "from": "L2",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:P"
+                },
+                {
+                  "at": "B",
+                  "from": "P",
+                  "to": "C",
+                  "label": "x",
+                  "k": "arc:B"
+                },
+                {
+                  "at": "C",
+                  "from": "B",
+                  "to": "Q",
+                  "label": "{c}°",
+                  "k": "arc:C"
+                },
+                {
+                  "at": "Q",
+                  "from": "M1",
+                  "to": "C",
+                  "label": "{d}°",
+                  "k": "arc:Q"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{xhi}",
+                  3
+                ],
+                "text": "l",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  "{xhi}",
+                  0
+                ],
+                "text": "m",
+                "dx": 10,
+                "dy": 4
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "꺾인 점 B, C를 지나고 l에 평행한 보조선을 각각 그으면, 평행선의 엇각은 같으므로 ∠PBC는 ∠QPB와 같은 {a}°와 나머지 {bt}°로 나뉘고, ∠BCQ는 그 {bt}°와 ∠RQC와 같은 {d}°로 나뉜다. 그래서 ∠QPB + ∠BCQ = ∠PBC + ∠RQC, 곧 {a}° + {c}° = {x}° + {d}°가 성립한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "L1": [
+                "{xlo}",
+                3
+              ],
+              "L2": [
+                "{xhi}",
+                3
+              ],
+              "M1": [
+                "{xlo}",
+                0
+              ],
+              "M2": [
+                "{xhi}",
+                0
+              ],
+              "P": [
+                0,
+                3
+              ],
+              "B": [
+                "{bx}",
+                2
+              ],
+              "C": [
+                "{cx}",
+                1
+              ],
+              "Q": [
+                "{qx}",
+                0
+              ],
+              "R": [
+                "{xlo}",
+                0
+              ],
+              "B1": [
+                "{xlo}",
+                2
+              ],
+              "B2": [
+                "{xhi}",
+                2
+              ],
+              "C1": [
+                "{xlo}",
+                1
+              ],
+              "C2": [
+                "{xhi}",
+                1
+              ]
+            },
+            "nodot": [
+              "L1",
+              "L2",
+              "M1",
+              "M2",
+              "R",
+              "B1",
+              "B2",
+              "C1",
+              "C2"
+            ],
+            "segs": [
+              [
+                "L1",
+                "L2"
+              ],
+              [
+                "M1",
+                "M2"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "Q"
+              ],
+              {
+                "a": "B1",
+                "b": "B2",
+                "style": "dashed"
+              },
+              {
+                "a": "C1",
+                "b": "C2",
+                "style": "dashed"
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "P",
+                  "from": "L2",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:P"
+                },
+                {
+                  "at": "B",
+                  "from": "P",
+                  "to": "B1",
+                  "label": "{a}°",
+                  "k": "arc:B1"
+                },
+                {
+                  "at": "B",
+                  "from": "B1",
+                  "to": "C",
+                  "k": "arc:B2"
+                },
+                {
+                  "at": "C",
+                  "from": "B",
+                  "to": "C2",
+                  "label": "{bt}°",
+                  "k": "arc:C1"
+                },
+                {
+                  "at": "C",
+                  "from": "C2",
+                  "to": "Q",
+                  "label": "{d}°",
+                  "k": "arc:C2"
+                },
+                {
+                  "at": "Q",
+                  "from": "M1",
+                  "to": "C",
+                  "label": "{d}°",
+                  "k": "arc:Q"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{xhi}",
+                  3
+                ],
+                "text": "l",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  "{xhi}",
+                  0
+                ],
+                "text": "m",
+                "dx": 10,
+                "dy": 4
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:B1-B2",
+              "seg:C1-C2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:P",
+              "arc:B1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:B2",
+              "arc:C1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:C2",
+              "arc:Q"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "점 B, C를 지나고 l에 평행한 보조선을 긋는다.",
+        "엇각이 같으므로 ∠PBC = {a}° + {bt}° = {x}°, ∠BCQ = {bt}° + {d}° = {c}°",
+        "따라서 ∠QPB + ∠BCQ = ∠PBC + ∠RQC, 곧 {a}° + {c}° = {x}° + {d}°",
+        "구하는 [[angle(PBC)]] = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "B, C를 지나는 평행한 보조선",
+                "hint": "꺾인 점마다 하나씩"
+              },
+              {
+                "text": "∠PBC = {a}° + {bt}°,  ∠BCQ = {bt}° + {d}°",
+                "hint": "엇각",
+                "marks": [
+                  {
+                    "on": "{bt}°",
+                    "note": "공통"
+                  }
+                ]
+              },
+              {
+                "text": "{a}° + {c}° = {x}° + {d}°",
+                "hint": "같은 쪽 각의 합"
+              },
+              {
+                "text": "[[angle(PBC)]] = {ans_v}°"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol_check": "{a}° + {c}° = {a + c}°, {x}° + {d}° = {x + d}°로 두 합이 같으므로 네 각이 평행선의 조건을 만족한다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "점 B, C를 지나고 l에 평행한 보조선을 그으면 엇각에 의해 ∠PBC = {a}° + {bt}° = {x}°, ∠BCQ = {bt}° + {d}° = {c}°이므로 ∠QPB + ∠BCQ = ∠PBC + ∠RQC이다. 따라서 [[angle(PBC)]] = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "보조선과 엇각",
+          "points": 3,
+          "criterion": "B, C를 지나는 평행한 보조선을 긋고 엇각이 같음을 이용해 각을 나누었다.",
+          "partial": "보조선을 하나만 그었으면 1점."
+        },
+        {
+          "element": "관계식",
+          "points": 2,
+          "criterion": "∠QPB + ∠BCQ = ∠PBC + ∠RQC(또는 각을 쪼갠 등식)를 세웠다.",
+          "partial": "각의 합의 방향을 반대로 했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "[[angle(PBC)]] = {ans_v}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-parallel-fold-t1",
+      "pitfalls": [
+        {
+          "text": "꺾인 점 두 곳 중 한 곳에만 보조선을 그음",
+          "on": "보조선",
+          "effect": "부분"
+        },
+        {
+          "text": "엇각이 아니라 동위각 위치의 각을 같다고 놓음",
+          "on": "보조선",
+          "effect": "불인정"
+        },
+        {
+          "text": "같은 쪽 각의 합 관계에서 방향을 반대로 함(a + c = x + d 를 a + x = c + d 로)",
+          "on": "관계식",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행선의 성질(동위각·엇각)",
+        "보조선"
+      ],
+      "tags": [
+        "평행선",
+        "엇각",
+        "보조선"
+      ],
+      "title": "평행선 사이에서 두 번 꺾인 선 — 보조선 두 개로 각 구하기 (QPB 구하기)",
+      "skill": "꺾인 점마다 평행한 보조선을 그어 엇각으로 각을 나누고, 같은 쪽 각의 합이 같음(a + c = x + d)을 이용하기",
+      "variant_axis": {
+        "구하는 각": "∠PBC / ∠QPB / ∠BCQ / ∠RQC",
+        "각": "25°~70°"
+      },
+      "discriminates": "두 꺾인 점에 각각 평행한 보조선을 긋고 엇각으로 각을 쪼개는가, 어느 쪽 각을 더하는지 방향을 지키는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55,
+              60,
+              65,
+              70
+            ]
+          }
+        },
+        {
+          "name": "bt",
+          "values": {
+            "in": [
+              20,
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55,
+              60,
+              65,
+              70
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "S_a": "0",
+        "S_x": "1",
+        "S_c": "1",
+        "S_d": "1",
+        "x": "a + bt",
+        "c": "bt + d",
+        "ans_v": "x*(S_x == 0) + a*(S_a == 0) + c*(S_c == 0) + d*(S_d == 0)",
+        "bx": "cos(pi*a/180)/sin(pi*a/180)",
+        "cx": "cos(pi*a/180)/sin(pi*a/180) - cos(pi*bt/180)/sin(pi*bt/180)",
+        "qx": "cos(pi*a/180)/sin(pi*a/180) - cos(pi*bt/180)/sin(pi*bt/180) + cos(pi*d/180)/sin(pi*d/180)",
+        "xlo": "min(0, cx) - 0.8",
+        "xhi": "max(bx, qx) + 0.8"
+      },
+      "constraints": [
+        "x <= 120",
+        "c <= 120",
+        "a != d",
+        "a != c",
+        "x != c",
+        "ans_v != a or S_a == 0",
+        "ans_v != x or S_x == 0",
+        "ans_v != c or S_c == 0",
+        "ans_v != d or S_d == 0",
+        "xhi - xlo <= 7"
+      ],
+      "cost_values": [
+        "a",
+        "x",
+        "c",
+        "d",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "x + d == a + c",
+        "ans == x*(S_x == 0) + a*(S_a == 0) + c*(S_c == 0) + d*(S_d == 0)"
+      ],
+      "question": "다음 그림에서 [[par(l, m)]]이고 [[angle(PBC) = deg({x})]], [[angle(BCQ) = deg({c})]], [[angle(RQC) = deg({d})]]일 때, [[angle(QPB)]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "L1": [
+                "{xlo}",
+                3
+              ],
+              "L2": [
+                "{xhi}",
+                3
+              ],
+              "M1": [
+                "{xlo}",
+                0
+              ],
+              "M2": [
+                "{xhi}",
+                0
+              ],
+              "P": [
+                0,
+                3
+              ],
+              "B": [
+                "{bx}",
+                2
+              ],
+              "C": [
+                "{cx}",
+                1
+              ],
+              "Q": [
+                "{qx}",
+                0
+              ],
+              "R": [
+                "{xlo}",
+                0
+              ]
+            },
+            "nodot": [
+              "L1",
+              "L2",
+              "M1",
+              "M2",
+              "R"
+            ],
+            "segs": [
+              [
+                "L1",
+                "L2"
+              ],
+              [
+                "M1",
+                "M2"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "Q"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "P",
+                  "from": "L2",
+                  "to": "B",
+                  "label": "x",
+                  "k": "arc:P"
+                },
+                {
+                  "at": "B",
+                  "from": "P",
+                  "to": "C",
+                  "label": "{x}°",
+                  "k": "arc:B"
+                },
+                {
+                  "at": "C",
+                  "from": "B",
+                  "to": "Q",
+                  "label": "{c}°",
+                  "k": "arc:C"
+                },
+                {
+                  "at": "Q",
+                  "from": "M1",
+                  "to": "C",
+                  "label": "{d}°",
+                  "k": "arc:Q"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{xhi}",
+                  3
+                ],
+                "text": "l",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  "{xhi}",
+                  0
+                ],
+                "text": "m",
+                "dx": 10,
+                "dy": 4
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "꺾인 점 B, C를 지나고 l에 평행한 보조선을 각각 그으면, 평행선의 엇각은 같으므로 ∠PBC는 ∠QPB와 같은 {a}°와 나머지 {bt}°로 나뉘고, ∠BCQ는 그 {bt}°와 ∠RQC와 같은 {d}°로 나뉜다. 그래서 ∠QPB + ∠BCQ = ∠PBC + ∠RQC, 곧 {a}° + {c}° = {x}° + {d}°가 성립한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "L1": [
+                "{xlo}",
+                3
+              ],
+              "L2": [
+                "{xhi}",
+                3
+              ],
+              "M1": [
+                "{xlo}",
+                0
+              ],
+              "M2": [
+                "{xhi}",
+                0
+              ],
+              "P": [
+                0,
+                3
+              ],
+              "B": [
+                "{bx}",
+                2
+              ],
+              "C": [
+                "{cx}",
+                1
+              ],
+              "Q": [
+                "{qx}",
+                0
+              ],
+              "R": [
+                "{xlo}",
+                0
+              ],
+              "B1": [
+                "{xlo}",
+                2
+              ],
+              "B2": [
+                "{xhi}",
+                2
+              ],
+              "C1": [
+                "{xlo}",
+                1
+              ],
+              "C2": [
+                "{xhi}",
+                1
+              ]
+            },
+            "nodot": [
+              "L1",
+              "L2",
+              "M1",
+              "M2",
+              "R",
+              "B1",
+              "B2",
+              "C1",
+              "C2"
+            ],
+            "segs": [
+              [
+                "L1",
+                "L2"
+              ],
+              [
+                "M1",
+                "M2"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "Q"
+              ],
+              {
+                "a": "B1",
+                "b": "B2",
+                "style": "dashed"
+              },
+              {
+                "a": "C1",
+                "b": "C2",
+                "style": "dashed"
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "P",
+                  "from": "L2",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:P"
+                },
+                {
+                  "at": "B",
+                  "from": "P",
+                  "to": "B1",
+                  "label": "{a}°",
+                  "k": "arc:B1"
+                },
+                {
+                  "at": "B",
+                  "from": "B1",
+                  "to": "C",
+                  "k": "arc:B2"
+                },
+                {
+                  "at": "C",
+                  "from": "B",
+                  "to": "C2",
+                  "label": "{bt}°",
+                  "k": "arc:C1"
+                },
+                {
+                  "at": "C",
+                  "from": "C2",
+                  "to": "Q",
+                  "label": "{d}°",
+                  "k": "arc:C2"
+                },
+                {
+                  "at": "Q",
+                  "from": "M1",
+                  "to": "C",
+                  "label": "{d}°",
+                  "k": "arc:Q"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{xhi}",
+                  3
+                ],
+                "text": "l",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  "{xhi}",
+                  0
+                ],
+                "text": "m",
+                "dx": 10,
+                "dy": 4
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:B1-B2",
+              "seg:C1-C2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:P",
+              "arc:B1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:B2",
+              "arc:C1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:C2",
+              "arc:Q"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "점 B, C를 지나고 l에 평행한 보조선을 긋는다.",
+        "엇각이 같으므로 ∠PBC = {a}° + {bt}° = {x}°, ∠BCQ = {bt}° + {d}° = {c}°",
+        "따라서 ∠QPB + ∠BCQ = ∠PBC + ∠RQC, 곧 {a}° + {c}° = {x}° + {d}°",
+        "구하는 [[angle(QPB)]] = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "B, C를 지나는 평행한 보조선",
+                "hint": "꺾인 점마다 하나씩"
+              },
+              {
+                "text": "∠PBC = {a}° + {bt}°,  ∠BCQ = {bt}° + {d}°",
+                "hint": "엇각",
+                "marks": [
+                  {
+                    "on": "{bt}°",
+                    "note": "공통"
+                  }
+                ]
+              },
+              {
+                "text": "{a}° + {c}° = {x}° + {d}°",
+                "hint": "같은 쪽 각의 합"
+              },
+              {
+                "text": "[[angle(QPB)]] = {ans_v}°"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol_check": "{a}° + {c}° = {a + c}°, {x}° + {d}° = {x + d}°로 두 합이 같으므로 네 각이 평행선의 조건을 만족한다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "점 B, C를 지나고 l에 평행한 보조선을 그으면 엇각에 의해 ∠PBC = {a}° + {bt}° = {x}°, ∠BCQ = {bt}° + {d}° = {c}°이므로 ∠QPB + ∠BCQ = ∠PBC + ∠RQC이다. 따라서 [[angle(QPB)]] = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "보조선과 엇각",
+          "points": 3,
+          "criterion": "B, C를 지나는 평행한 보조선을 긋고 엇각이 같음을 이용해 각을 나누었다.",
+          "partial": "보조선을 하나만 그었으면 1점."
+        },
+        {
+          "element": "관계식",
+          "points": 2,
+          "criterion": "∠QPB + ∠BCQ = ∠PBC + ∠RQC(또는 각을 쪼갠 등식)를 세웠다.",
+          "partial": "각의 합의 방향을 반대로 했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "[[angle(QPB)]] = {ans_v}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-parallel-fold-t2",
+      "pitfalls": [
+        {
+          "text": "꺾인 점 두 곳 중 한 곳에만 보조선을 그음",
+          "on": "보조선",
+          "effect": "부분"
+        },
+        {
+          "text": "엇각이 아니라 동위각 위치의 각을 같다고 놓음",
+          "on": "보조선",
+          "effect": "불인정"
+        },
+        {
+          "text": "같은 쪽 각의 합 관계에서 방향을 반대로 함(a + c = x + d 를 a + x = c + d 로)",
+          "on": "관계식",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행선의 성질(동위각·엇각)",
+        "보조선"
+      ],
+      "tags": [
+        "평행선",
+        "엇각",
+        "보조선"
+      ],
+      "title": "평행선 사이에서 두 번 꺾인 선 — 보조선 두 개로 각 구하기 (BCQ 구하기)",
+      "skill": "꺾인 점마다 평행한 보조선을 그어 엇각으로 각을 나누고, 같은 쪽 각의 합이 같음(a + c = x + d)을 이용하기",
+      "variant_axis": {
+        "구하는 각": "∠PBC / ∠QPB / ∠BCQ / ∠RQC",
+        "각": "25°~70°"
+      },
+      "discriminates": "두 꺾인 점에 각각 평행한 보조선을 긋고 엇각으로 각을 쪼개는가, 어느 쪽 각을 더하는지 방향을 지키는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55,
+              60,
+              65,
+              70
+            ]
+          }
+        },
+        {
+          "name": "bt",
+          "values": {
+            "in": [
+              20,
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55,
+              60,
+              65,
+              70
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "S_a": "1",
+        "S_x": "1",
+        "S_c": "0",
+        "S_d": "1",
+        "x": "a + bt",
+        "c": "bt + d",
+        "ans_v": "x*(S_x == 0) + a*(S_a == 0) + c*(S_c == 0) + d*(S_d == 0)",
+        "bx": "cos(pi*a/180)/sin(pi*a/180)",
+        "cx": "cos(pi*a/180)/sin(pi*a/180) - cos(pi*bt/180)/sin(pi*bt/180)",
+        "qx": "cos(pi*a/180)/sin(pi*a/180) - cos(pi*bt/180)/sin(pi*bt/180) + cos(pi*d/180)/sin(pi*d/180)",
+        "xlo": "min(0, cx) - 0.8",
+        "xhi": "max(bx, qx) + 0.8"
+      },
+      "constraints": [
+        "x <= 120",
+        "c <= 120",
+        "a != d",
+        "a != c",
+        "x != c",
+        "ans_v != a or S_a == 0",
+        "ans_v != x or S_x == 0",
+        "ans_v != c or S_c == 0",
+        "ans_v != d or S_d == 0",
+        "xhi - xlo <= 7"
+      ],
+      "cost_values": [
+        "a",
+        "x",
+        "c",
+        "d",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "x + d == a + c",
+        "ans == x*(S_x == 0) + a*(S_a == 0) + c*(S_c == 0) + d*(S_d == 0)"
+      ],
+      "question": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg({a})]], [[angle(PBC) = deg({x})]], [[angle(RQC) = deg({d})]]일 때, [[angle(BCQ)]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "L1": [
+                "{xlo}",
+                3
+              ],
+              "L2": [
+                "{xhi}",
+                3
+              ],
+              "M1": [
+                "{xlo}",
+                0
+              ],
+              "M2": [
+                "{xhi}",
+                0
+              ],
+              "P": [
+                0,
+                3
+              ],
+              "B": [
+                "{bx}",
+                2
+              ],
+              "C": [
+                "{cx}",
+                1
+              ],
+              "Q": [
+                "{qx}",
+                0
+              ],
+              "R": [
+                "{xlo}",
+                0
+              ]
+            },
+            "nodot": [
+              "L1",
+              "L2",
+              "M1",
+              "M2",
+              "R"
+            ],
+            "segs": [
+              [
+                "L1",
+                "L2"
+              ],
+              [
+                "M1",
+                "M2"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "Q"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "P",
+                  "from": "L2",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:P"
+                },
+                {
+                  "at": "B",
+                  "from": "P",
+                  "to": "C",
+                  "label": "{x}°",
+                  "k": "arc:B"
+                },
+                {
+                  "at": "C",
+                  "from": "B",
+                  "to": "Q",
+                  "label": "x",
+                  "k": "arc:C"
+                },
+                {
+                  "at": "Q",
+                  "from": "M1",
+                  "to": "C",
+                  "label": "{d}°",
+                  "k": "arc:Q"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{xhi}",
+                  3
+                ],
+                "text": "l",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  "{xhi}",
+                  0
+                ],
+                "text": "m",
+                "dx": 10,
+                "dy": 4
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "꺾인 점 B, C를 지나고 l에 평행한 보조선을 각각 그으면, 평행선의 엇각은 같으므로 ∠PBC는 ∠QPB와 같은 {a}°와 나머지 {bt}°로 나뉘고, ∠BCQ는 그 {bt}°와 ∠RQC와 같은 {d}°로 나뉜다. 그래서 ∠QPB + ∠BCQ = ∠PBC + ∠RQC, 곧 {a}° + {c}° = {x}° + {d}°가 성립한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "L1": [
+                "{xlo}",
+                3
+              ],
+              "L2": [
+                "{xhi}",
+                3
+              ],
+              "M1": [
+                "{xlo}",
+                0
+              ],
+              "M2": [
+                "{xhi}",
+                0
+              ],
+              "P": [
+                0,
+                3
+              ],
+              "B": [
+                "{bx}",
+                2
+              ],
+              "C": [
+                "{cx}",
+                1
+              ],
+              "Q": [
+                "{qx}",
+                0
+              ],
+              "R": [
+                "{xlo}",
+                0
+              ],
+              "B1": [
+                "{xlo}",
+                2
+              ],
+              "B2": [
+                "{xhi}",
+                2
+              ],
+              "C1": [
+                "{xlo}",
+                1
+              ],
+              "C2": [
+                "{xhi}",
+                1
+              ]
+            },
+            "nodot": [
+              "L1",
+              "L2",
+              "M1",
+              "M2",
+              "R",
+              "B1",
+              "B2",
+              "C1",
+              "C2"
+            ],
+            "segs": [
+              [
+                "L1",
+                "L2"
+              ],
+              [
+                "M1",
+                "M2"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "Q"
+              ],
+              {
+                "a": "B1",
+                "b": "B2",
+                "style": "dashed"
+              },
+              {
+                "a": "C1",
+                "b": "C2",
+                "style": "dashed"
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "P",
+                  "from": "L2",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:P"
+                },
+                {
+                  "at": "B",
+                  "from": "P",
+                  "to": "B1",
+                  "label": "{a}°",
+                  "k": "arc:B1"
+                },
+                {
+                  "at": "B",
+                  "from": "B1",
+                  "to": "C",
+                  "k": "arc:B2"
+                },
+                {
+                  "at": "C",
+                  "from": "B",
+                  "to": "C2",
+                  "label": "{bt}°",
+                  "k": "arc:C1"
+                },
+                {
+                  "at": "C",
+                  "from": "C2",
+                  "to": "Q",
+                  "label": "{d}°",
+                  "k": "arc:C2"
+                },
+                {
+                  "at": "Q",
+                  "from": "M1",
+                  "to": "C",
+                  "label": "{d}°",
+                  "k": "arc:Q"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{xhi}",
+                  3
+                ],
+                "text": "l",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  "{xhi}",
+                  0
+                ],
+                "text": "m",
+                "dx": 10,
+                "dy": 4
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:B1-B2",
+              "seg:C1-C2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:P",
+              "arc:B1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:B2",
+              "arc:C1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:C2",
+              "arc:Q"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "점 B, C를 지나고 l에 평행한 보조선을 긋는다.",
+        "엇각이 같으므로 ∠PBC = {a}° + {bt}° = {x}°, ∠BCQ = {bt}° + {d}° = {c}°",
+        "따라서 ∠QPB + ∠BCQ = ∠PBC + ∠RQC, 곧 {a}° + {c}° = {x}° + {d}°",
+        "구하는 [[angle(BCQ)]] = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "B, C를 지나는 평행한 보조선",
+                "hint": "꺾인 점마다 하나씩"
+              },
+              {
+                "text": "∠PBC = {a}° + {bt}°,  ∠BCQ = {bt}° + {d}°",
+                "hint": "엇각",
+                "marks": [
+                  {
+                    "on": "{bt}°",
+                    "note": "공통"
+                  }
+                ]
+              },
+              {
+                "text": "{a}° + {c}° = {x}° + {d}°",
+                "hint": "같은 쪽 각의 합"
+              },
+              {
+                "text": "[[angle(BCQ)]] = {ans_v}°"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol_check": "{a}° + {c}° = {a + c}°, {x}° + {d}° = {x + d}°로 두 합이 같으므로 네 각이 평행선의 조건을 만족한다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "점 B, C를 지나고 l에 평행한 보조선을 그으면 엇각에 의해 ∠PBC = {a}° + {bt}° = {x}°, ∠BCQ = {bt}° + {d}° = {c}°이므로 ∠QPB + ∠BCQ = ∠PBC + ∠RQC이다. 따라서 [[angle(BCQ)]] = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "보조선과 엇각",
+          "points": 3,
+          "criterion": "B, C를 지나는 평행한 보조선을 긋고 엇각이 같음을 이용해 각을 나누었다.",
+          "partial": "보조선을 하나만 그었으면 1점."
+        },
+        {
+          "element": "관계식",
+          "points": 2,
+          "criterion": "∠QPB + ∠BCQ = ∠PBC + ∠RQC(또는 각을 쪼갠 등식)를 세웠다.",
+          "partial": "각의 합의 방향을 반대로 했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "[[angle(BCQ)]] = {ans_v}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-parallel-fold-t3",
+      "pitfalls": [
+        {
+          "text": "꺾인 점 두 곳 중 한 곳에만 보조선을 그음",
+          "on": "보조선",
+          "effect": "부분"
+        },
+        {
+          "text": "엇각이 아니라 동위각 위치의 각을 같다고 놓음",
+          "on": "보조선",
+          "effect": "불인정"
+        },
+        {
+          "text": "같은 쪽 각의 합 관계에서 방향을 반대로 함(a + c = x + d 를 a + x = c + d 로)",
+          "on": "관계식",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행선의 성질(동위각·엇각)",
+        "보조선"
+      ],
+      "tags": [
+        "평행선",
+        "엇각",
+        "보조선"
+      ],
+      "title": "평행선 사이에서 두 번 꺾인 선 — 보조선 두 개로 각 구하기 (RQC 구하기)",
+      "skill": "꺾인 점마다 평행한 보조선을 그어 엇각으로 각을 나누고, 같은 쪽 각의 합이 같음(a + c = x + d)을 이용하기",
+      "variant_axis": {
+        "구하는 각": "∠PBC / ∠QPB / ∠BCQ / ∠RQC",
+        "각": "25°~70°"
+      },
+      "discriminates": "두 꺾인 점에 각각 평행한 보조선을 긋고 엇각으로 각을 쪼개는가, 어느 쪽 각을 더하는지 방향을 지키는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55,
+              60,
+              65,
+              70
+            ]
+          }
+        },
+        {
+          "name": "bt",
+          "values": {
+            "in": [
+              20,
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              25,
+              30,
+              35,
+              40,
+              45,
+              50,
+              55,
+              60,
+              65,
+              70
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "S_a": "1",
+        "S_x": "1",
+        "S_c": "1",
+        "S_d": "0",
+        "x": "a + bt",
+        "c": "bt + d",
+        "ans_v": "x*(S_x == 0) + a*(S_a == 0) + c*(S_c == 0) + d*(S_d == 0)",
+        "bx": "cos(pi*a/180)/sin(pi*a/180)",
+        "cx": "cos(pi*a/180)/sin(pi*a/180) - cos(pi*bt/180)/sin(pi*bt/180)",
+        "qx": "cos(pi*a/180)/sin(pi*a/180) - cos(pi*bt/180)/sin(pi*bt/180) + cos(pi*d/180)/sin(pi*d/180)",
+        "xlo": "min(0, cx) - 0.8",
+        "xhi": "max(bx, qx) + 0.8"
+      },
+      "constraints": [
+        "x <= 120",
+        "c <= 120",
+        "a != d",
+        "a != c",
+        "x != c",
+        "ans_v != a or S_a == 0",
+        "ans_v != x or S_x == 0",
+        "ans_v != c or S_c == 0",
+        "ans_v != d or S_d == 0",
+        "xhi - xlo <= 7"
+      ],
+      "cost_values": [
+        "a",
+        "x",
+        "c",
+        "d",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "x + d == a + c",
+        "ans == x*(S_x == 0) + a*(S_a == 0) + c*(S_c == 0) + d*(S_d == 0)"
+      ],
+      "question": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg({a})]], [[angle(PBC) = deg({x})]], [[angle(BCQ) = deg({c})]]일 때, [[angle(RQC)]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "L1": [
+                "{xlo}",
+                3
+              ],
+              "L2": [
+                "{xhi}",
+                3
+              ],
+              "M1": [
+                "{xlo}",
+                0
+              ],
+              "M2": [
+                "{xhi}",
+                0
+              ],
+              "P": [
+                0,
+                3
+              ],
+              "B": [
+                "{bx}",
+                2
+              ],
+              "C": [
+                "{cx}",
+                1
+              ],
+              "Q": [
+                "{qx}",
+                0
+              ],
+              "R": [
+                "{xlo}",
+                0
+              ]
+            },
+            "nodot": [
+              "L1",
+              "L2",
+              "M1",
+              "M2",
+              "R"
+            ],
+            "segs": [
+              [
+                "L1",
+                "L2"
+              ],
+              [
+                "M1",
+                "M2"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "Q"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "P",
+                  "from": "L2",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:P"
+                },
+                {
+                  "at": "B",
+                  "from": "P",
+                  "to": "C",
+                  "label": "{x}°",
+                  "k": "arc:B"
+                },
+                {
+                  "at": "C",
+                  "from": "B",
+                  "to": "Q",
+                  "label": "{c}°",
+                  "k": "arc:C"
+                },
+                {
+                  "at": "Q",
+                  "from": "M1",
+                  "to": "C",
+                  "label": "x",
+                  "k": "arc:Q"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{xhi}",
+                  3
+                ],
+                "text": "l",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  "{xhi}",
+                  0
+                ],
+                "text": "m",
+                "dx": 10,
+                "dy": 4
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "꺾인 점 B, C를 지나고 l에 평행한 보조선을 각각 그으면, 평행선의 엇각은 같으므로 ∠PBC는 ∠QPB와 같은 {a}°와 나머지 {bt}°로 나뉘고, ∠BCQ는 그 {bt}°와 ∠RQC와 같은 {d}°로 나뉜다. 그래서 ∠QPB + ∠BCQ = ∠PBC + ∠RQC, 곧 {a}° + {c}° = {x}° + {d}°가 성립한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "L1": [
+                "{xlo}",
+                3
+              ],
+              "L2": [
+                "{xhi}",
+                3
+              ],
+              "M1": [
+                "{xlo}",
+                0
+              ],
+              "M2": [
+                "{xhi}",
+                0
+              ],
+              "P": [
+                0,
+                3
+              ],
+              "B": [
+                "{bx}",
+                2
+              ],
+              "C": [
+                "{cx}",
+                1
+              ],
+              "Q": [
+                "{qx}",
+                0
+              ],
+              "R": [
+                "{xlo}",
+                0
+              ],
+              "B1": [
+                "{xlo}",
+                2
+              ],
+              "B2": [
+                "{xhi}",
+                2
+              ],
+              "C1": [
+                "{xlo}",
+                1
+              ],
+              "C2": [
+                "{xhi}",
+                1
+              ]
+            },
+            "nodot": [
+              "L1",
+              "L2",
+              "M1",
+              "M2",
+              "R",
+              "B1",
+              "B2",
+              "C1",
+              "C2"
+            ],
+            "segs": [
+              [
+                "L1",
+                "L2"
+              ],
+              [
+                "M1",
+                "M2"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "Q"
+              ],
+              {
+                "a": "B1",
+                "b": "B2",
+                "style": "dashed"
+              },
+              {
+                "a": "C1",
+                "b": "C2",
+                "style": "dashed"
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "P",
+                  "from": "L2",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:P"
+                },
+                {
+                  "at": "B",
+                  "from": "P",
+                  "to": "B1",
+                  "label": "{a}°",
+                  "k": "arc:B1"
+                },
+                {
+                  "at": "B",
+                  "from": "B1",
+                  "to": "C",
+                  "k": "arc:B2"
+                },
+                {
+                  "at": "C",
+                  "from": "B",
+                  "to": "C2",
+                  "label": "{bt}°",
+                  "k": "arc:C1"
+                },
+                {
+                  "at": "C",
+                  "from": "C2",
+                  "to": "Q",
+                  "label": "{d}°",
+                  "k": "arc:C2"
+                },
+                {
+                  "at": "Q",
+                  "from": "M1",
+                  "to": "C",
+                  "label": "{d}°",
+                  "k": "arc:Q"
+                }
+              ]
+            },
+            "labels": [
+              {
+                "at": [
+                  "{xhi}",
+                  3
+                ],
+                "text": "l",
+                "dx": 10,
+                "dy": 4
+              },
+              {
+                "at": [
+                  "{xhi}",
+                  0
+                ],
+                "text": "m",
+                "dx": 10,
+                "dy": 4
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "seg:B1-B2",
+              "seg:C1-C2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:P",
+              "arc:B1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:B2",
+              "arc:C1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:C2",
+              "arc:Q"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "점 B, C를 지나고 l에 평행한 보조선을 긋는다.",
+        "엇각이 같으므로 ∠PBC = {a}° + {bt}° = {x}°, ∠BCQ = {bt}° + {d}° = {c}°",
+        "따라서 ∠QPB + ∠BCQ = ∠PBC + ∠RQC, 곧 {a}° + {c}° = {x}° + {d}°",
+        "구하는 [[angle(RQC)]] = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "B, C를 지나는 평행한 보조선",
+                "hint": "꺾인 점마다 하나씩"
+              },
+              {
+                "text": "∠PBC = {a}° + {bt}°,  ∠BCQ = {bt}° + {d}°",
+                "hint": "엇각",
+                "marks": [
+                  {
+                    "on": "{bt}°",
+                    "note": "공통"
+                  }
+                ]
+              },
+              {
+                "text": "{a}° + {c}° = {x}° + {d}°",
+                "hint": "같은 쪽 각의 합"
+              },
+              {
+                "text": "[[angle(RQC)]] = {ans_v}°"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol_check": "{a}° + {c}° = {a + c}°, {x}° + {d}° = {x + d}°로 두 합이 같으므로 네 각이 평행선의 조건을 만족한다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "점 B, C를 지나고 l에 평행한 보조선을 그으면 엇각에 의해 ∠PBC = {a}° + {bt}° = {x}°, ∠BCQ = {bt}° + {d}° = {c}°이므로 ∠QPB + ∠BCQ = ∠PBC + ∠RQC이다. 따라서 [[angle(RQC)]] = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "보조선과 엇각",
+          "points": 3,
+          "criterion": "B, C를 지나는 평행한 보조선을 긋고 엇각이 같음을 이용해 각을 나누었다.",
+          "partial": "보조선을 하나만 그었으면 1점."
+        },
+        {
+          "element": "관계식",
+          "points": 2,
+          "criterion": "∠QPB + ∠BCQ = ∠PBC + ∠RQC(또는 각을 쪼갠 등식)를 세웠다.",
+          "partial": "각의 합의 방향을 반대로 했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "[[angle(RQC)]] = {ans_v}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-parallel-fold-t4",
+      "pitfalls": [
+        {
+          "text": "꺾인 점 두 곳 중 한 곳에만 보조선을 그음",
+          "on": "보조선",
+          "effect": "부분"
+        },
+        {
+          "text": "엇각이 아니라 동위각 위치의 각을 같다고 놓음",
+          "on": "보조선",
+          "effect": "불인정"
+        },
+        {
+          "text": "같은 쪽 각의 합 관계에서 방향을 반대로 함(a + c = x + d 를 a + x = c + d 로)",
+          "on": "관계식",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행선의 성질(동위각·엇각)",
+        "보조선"
+      ],
+      "tags": [
+        "평행선",
+        "엇각",
+        "보조선"
+      ],
+      "title": "폭이 일정한 종이 테이프 접기 — 접은 각과 평행선의 엇각 (접은 각 → x)",
+      "skill": "접은 각과 접힌 각이 같음(∠DEF = ∠GEF)과 평행선의 엇각(∠DEF = ∠EFB)을 함께 써서 각 구하기",
+      "variant_axis": {
+        "주어진 것": "접는 선의 각 a → x / x → a",
+        "각": "55°~75°"
+      },
+      "discriminates": "접어 겹친 두 각이 같다는 것과 테이프의 두 변이 평행하다는 것을 모두 근거로 쓰는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              52,
+              54,
+              55,
+              56,
+              58,
+              62,
+              64,
+              65,
+              66,
+              68,
+              70,
+              72,
+              74,
+              75
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "isF": "1",
+        "x": "180 - 2*a",
+        "ans_v": "isF*(180 - 2*a) + (1 - isF)*a",
+        "gv": "isF*a + (1 - isF)*(180 - 2*a)",
+        "fx": "1.5*cos(pi*a/180)/sin(pi*a/180)",
+        "gx": "1.5*cos(pi*2*a/180)/sin(pi*2*a/180)",
+        "xlo": "min(gx, 0) - 1.2",
+        "xhi": "fx + 1.5"
+      },
+      "constraints": [
+        "x != a",
+        "x >= 30"
+      ],
+      "cost_values": [
+        "a",
+        "x",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "x == 180 - 2*a",
+        "isF == 0 or ans == x",
+        "isF == 1 or ans == a"
+      ],
+      "question": "다음 그림은 폭이 일정한 종이 테이프를 선분 EF를 접는 선으로 하여 접은 것이다. [[angle(DEF) = deg({gv})]]일 때, [[angle(EGC)]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{xlo}",
+                1.5
+              ],
+              "D": [
+                "{xhi}",
+                1.5
+              ],
+              "B": [
+                "{xlo}",
+                0
+              ],
+              "C": [
+                "{xhi}",
+                0
+              ],
+              "E": [
+                0,
+                1.5
+              ],
+              "F": [
+                "{fx}",
+                0
+              ],
+              "G": [
+                "{gx}",
+                0
+              ]
+            },
+            "nodot": [
+              "A",
+              "B",
+              "C",
+              "D"
+            ],
+            "segs": [
+              [
+                "A",
+                "D"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "E",
+                "G"
+              ],
+              [
+                "G",
+                "F"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "E",
+                  "from": "D",
+                  "to": "F",
+                  "label": "{a}°",
+                  "k": "arc:E"
+                },
+                {
+                  "at": "G",
+                  "from": "C",
+                  "to": "E",
+                  "label": "x",
+                  "k": "arc:G"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "종이를 접으면 접힌 부분은 원래 부분과 포개지므로 ∠GEF = ∠DEF다. 또 테이프의 두 변 AD, BC는 평행하므로 ∠EFB는 ∠DEF의 엇각으로 같다. 그러면 △EFG에서 ∠GEF + ∠EFG를 180°에서 빼면 ∠EGF, 곧 아랫변과 접힌 변이 이루는 각이 나온다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{xlo}",
+                1.5
+              ],
+              "D": [
+                "{xhi}",
+                1.5
+              ],
+              "B": [
+                "{xlo}",
+                0
+              ],
+              "C": [
+                "{xhi}",
+                0
+              ],
+              "E": [
+                0,
+                1.5
+              ],
+              "F": [
+                "{fx}",
+                0
+              ],
+              "G": [
+                "{gx}",
+                0
+              ]
+            },
+            "nodot": [
+              "A",
+              "B",
+              "C",
+              "D"
+            ],
+            "segs": [
+              [
+                "A",
+                "D"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "E",
+                "G"
+              ],
+              [
+                "G",
+                "F"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "E",
+                  "from": "D",
+                  "to": "F",
+                  "label": "{a}°",
+                  "k": "arc:E1"
+                },
+                {
+                  "at": "E",
+                  "from": "F",
+                  "to": "G",
+                  "label": "{a}°",
+                  "k": "arc:E2"
+                },
+                {
+                  "at": "F",
+                  "from": "E",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:F"
+                },
+                {
+                  "at": "G",
+                  "from": "C",
+                  "to": "E",
+                  "label": "{x}°",
+                  "k": "arc:G"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:E1",
+              "arc:E2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:F",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:G",
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "접은 각과 접힌 각은 같으므로 ∠GEF = ∠DEF = {a}°",
+        "AD ∥ BC이므로 엇각에 의해 ∠EFG = ∠DEF = {a}°",
+        "△EFG에서 ∠EGF = 180° − {a}° − {a}° = {x}°",
+        "따라서 [[angle(EGC)]] = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠GEF = ∠DEF = {a}°",
+                "hint": "접은 각 = 접힌 각"
+              },
+              {
+                "text": "∠EFG = ∠DEF = {a}°",
+                "hint": "AD ∥ BC — 엇각"
+              },
+              {
+                "text": "∠EGF = 180° − 2 × {a}° = {x}°",
+                "hint": "삼각형의 내각의 합",
+                "marks": [
+                  {
+                    "on": "2 × {a}°",
+                    "note": "같은 각 두 개"
+                  }
+                ]
+              },
+              {
+                "text": "[[angle(EGC)]] = {ans_v}°"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol_check": "△EFG의 세 각 {a}° + {a}° + {x}° = 180°로 맞고, ∠DEF와 ∠GEF가 같으므로 접었을 때 겹친다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "접은 각과 접힌 각이 같으므로 ∠GEF = ∠DEF = {a}°이고, AD ∥ BC이므로 엇각 ∠EFG = {a}°다. △EFG에서 ∠EGF = 180° − 2 × {a}° = {x}°이므로 [[angle(EGC)]] = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "접은 각의 성질",
+          "points": 3,
+          "criterion": "접었을 때 겹치는 두 각(∠GEF = ∠DEF)이 같음을 밝혔다.",
+          "partial": "근거 없이 같다고만 썼으면 1점."
+        },
+        {
+          "element": "평행선의 엇각",
+          "points": 2,
+          "criterion": "AD ∥ BC에서 엇각 ∠EFG = ∠DEF임을 밝혔다.",
+          "partial": "동위각·엇각의 위치를 잘못 잡았으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "삼각형의 내각의 합으로 [[angle(EGC)]] = {ans_v}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-parallel-fold-t5",
+      "pitfalls": [
+        {
+          "text": "접은 각과 접힌 각이 같다는 근거를 쓰지 않음",
+          "on": "접은 각",
+          "effect": "부분"
+        },
+        {
+          "text": "테이프의 두 변이 평행함을 쓰지 않고 각을 옮김",
+          "on": "엇각",
+          "effect": "불인정"
+        },
+        {
+          "text": "삼각형의 내각의 합에서 같은 각을 한 번만 뺌",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "방정식"
+      ],
+      "traps": [
+        "구하는대상혼동",
+        "조건누락"
+      ],
+      "time_limit": 120,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행선의 성질(동위각·엇각)",
+        "보조선"
+      ],
+      "tags": [
+        "평행선",
+        "엇각",
+        "보조선"
+      ],
+      "title": "폭이 일정한 종이 테이프 접기 — 접은 각과 평행선의 엇각 (x → 접은 각)",
+      "skill": "접은 각과 접힌 각이 같음(∠DEF = ∠GEF)과 평행선의 엇각(∠DEF = ∠EFB)을 함께 써서 각 구하기",
+      "variant_axis": {
+        "주어진 것": "접는 선의 각 a → x / x → a",
+        "각": "55°~75°"
+      },
+      "discriminates": "접어 겹친 두 각이 같다는 것과 테이프의 두 변이 평행하다는 것을 모두 근거로 쓰는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              52,
+              54,
+              55,
+              56,
+              58,
+              62,
+              64,
+              65,
+              66,
+              68,
+              70,
+              72,
+              74,
+              75
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "isF": "0",
+        "x": "180 - 2*a",
+        "ans_v": "isF*(180 - 2*a) + (1 - isF)*a",
+        "gv": "isF*a + (1 - isF)*(180 - 2*a)",
+        "fx": "1.5*cos(pi*a/180)/sin(pi*a/180)",
+        "gx": "1.5*cos(pi*2*a/180)/sin(pi*2*a/180)",
+        "xlo": "min(gx, 0) - 1.2",
+        "xhi": "fx + 1.5"
+      },
+      "constraints": [
+        "x != a",
+        "x >= 30"
+      ],
+      "cost_values": [
+        "a",
+        "x",
+        "ans_v"
+      ],
+      "answer_var": "ans_v",
+      "verify": [
+        "x == 180 - 2*a",
+        "isF == 0 or ans == x",
+        "isF == 1 or ans == a"
+      ],
+      "question": "다음 그림은 폭이 일정한 종이 테이프를 선분 EF를 접는 선으로 하여 접은 것이다. [[angle(EGC) = deg({gv})]]일 때, [[angle(DEF)]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{xlo}",
+                1.5
+              ],
+              "D": [
+                "{xhi}",
+                1.5
+              ],
+              "B": [
+                "{xlo}",
+                0
+              ],
+              "C": [
+                "{xhi}",
+                0
+              ],
+              "E": [
+                0,
+                1.5
+              ],
+              "F": [
+                "{fx}",
+                0
+              ],
+              "G": [
+                "{gx}",
+                0
+              ]
+            },
+            "nodot": [
+              "A",
+              "B",
+              "C",
+              "D"
+            ],
+            "segs": [
+              [
+                "A",
+                "D"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "E",
+                "G"
+              ],
+              [
+                "G",
+                "F"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "E",
+                  "from": "D",
+                  "to": "F",
+                  "label": "x",
+                  "k": "arc:E"
+                },
+                {
+                  "at": "G",
+                  "from": "C",
+                  "to": "E",
+                  "label": "{x}°",
+                  "k": "arc:G"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({ans_v})]]",
+      "answer_alt": [
+        "{ans_v}°",
+        "{ans_v}"
+      ],
+      "sol1": "종이를 접으면 접힌 부분은 원래 부분과 포개지므로 ∠GEF = ∠DEF다. 또 테이프의 두 변 AD, BC는 평행하므로 ∠EFB는 ∠DEF의 엇각으로 같다. 그러면 △EFG에서 ∠GEF + ∠EFG를 180°에서 빼면 ∠EGF, 곧 아랫변과 접힌 변이 이루는 각이 나온다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{xlo}",
+                1.5
+              ],
+              "D": [
+                "{xhi}",
+                1.5
+              ],
+              "B": [
+                "{xlo}",
+                0
+              ],
+              "C": [
+                "{xhi}",
+                0
+              ],
+              "E": [
+                0,
+                1.5
+              ],
+              "F": [
+                "{fx}",
+                0
+              ],
+              "G": [
+                "{gx}",
+                0
+              ]
+            },
+            "nodot": [
+              "A",
+              "B",
+              "C",
+              "D"
+            ],
+            "segs": [
+              [
+                "A",
+                "D"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "E",
+                "G"
+              ],
+              [
+                "G",
+                "F"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "E",
+                  "from": "D",
+                  "to": "F",
+                  "label": "{a}°",
+                  "k": "arc:E1"
+                },
+                {
+                  "at": "E",
+                  "from": "F",
+                  "to": "G",
+                  "label": "{a}°",
+                  "k": "arc:E2"
+                },
+                {
+                  "at": "F",
+                  "from": "E",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:F"
+                },
+                {
+                  "at": "G",
+                  "from": "C",
+                  "to": "E",
+                  "label": "{x}°",
+                  "k": "arc:G"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:E1",
+              "arc:E2"
+            ],
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:F",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:G",
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "접은 각과 접힌 각은 같으므로 ∠GEF = ∠DEF = {a}°",
+        "AD ∥ BC이므로 엇각에 의해 ∠EFG = ∠DEF = {a}°",
+        "△EFG에서 ∠EGF = 180° − {a}° − {a}° = {x}°",
+        "따라서 [[angle(DEF)]] = {ans_v}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠GEF = ∠DEF = {a}°",
+                "hint": "접은 각 = 접힌 각"
+              },
+              {
+                "text": "∠EFG = ∠DEF = {a}°",
+                "hint": "AD ∥ BC — 엇각"
+              },
+              {
+                "text": "∠EGF = 180° − 2 × {a}° = {x}°",
+                "hint": "삼각형의 내각의 합",
+                "marks": [
+                  {
+                    "on": "2 × {a}°",
+                    "note": "같은 각 두 개"
+                  }
+                ]
+              },
+              {
+                "text": "[[angle(DEF)]] = {ans_v}°"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          }
+        ]
+      ],
+      "sol_check": "△EFG의 세 각 {a}° + {a}° + {x}° = 180°로 맞고, ∠DEF와 ∠GEF가 같으므로 접었을 때 겹친다. 답은 [[deg({ans_v})]]다.",
+      "model_answer": "접은 각과 접힌 각이 같으므로 ∠GEF = ∠DEF = {a}°이고, AD ∥ BC이므로 엇각 ∠EFG = {a}°다. △EFG에서 ∠EGF = 180° − 2 × {a}° = {x}°이므로 [[angle(DEF)]] = {ans_v}°다.",
+      "rubric": [
+        {
+          "element": "접은 각의 성질",
+          "points": 3,
+          "criterion": "접었을 때 겹치는 두 각(∠GEF = ∠DEF)이 같음을 밝혔다.",
+          "partial": "근거 없이 같다고만 썼으면 1점."
+        },
+        {
+          "element": "평행선의 엇각",
+          "points": 2,
+          "criterion": "AD ∥ BC에서 엇각 ∠EFG = ∠DEF임을 밝혔다.",
+          "partial": "동위각·엇각의 위치를 잘못 잡았으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "삼각형의 내각의 합으로 [[angle(DEF)]] = {ans_v}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-parallel-fold-t6",
+      "pitfalls": [
+        {
+          "text": "접은 각과 접힌 각이 같다는 근거를 쓰지 않음",
+          "on": "접은 각",
+          "effect": "부분"
+        },
+        {
+          "text": "테이프의 두 변이 평행함을 쓰지 않고 각을 옮김",
+          "on": "엇각",
+          "effect": "불인정"
+        },
+        {
+          "text": "삼각형의 내각의 합에서 같은 각을 한 번만 뺌",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

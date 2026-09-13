@@ -805,6 +805,48 @@ def recompute(it):
         if tid.startswith("m1-1-proportion-t6") or tid.startswith("m1-1-proportion-t7"):
             m = re.match(r"반비례 관계 y = \[\[frac\((-?\d+),x\)\]\]의 그래프 위의 .*?(직사각형 OAPB|삼각형 OAP)의 넓이", q); k = int(m.group(1))
             return Fraction(abs(k)) / (2 if "삼각형" in m.group(2) else 1)
+    # ── 세션 5 (09-13): m1-2 잔여 — 삼각형 각 2·평행선 접기·색칠 부분·세 변 조건·구 응용
+    if tid.startswith("m1-2-tri-angle-2"):
+        if tid.startswith("m1-2-tri-angle-2-t1"):
+            m = re.search(r"= (\d+) : (\d+) : (\d+)일 때, (.+?)의 크기", q); a, b, c = [Fraction(m.group(i)) for i in (1, 2, 3)]; s = a + b + c
+            ask = m.group(4); vals = {"A": 180 * a / s, "B": 180 * b / s, "C": 180 * c / s}
+            return max(vals.values()) if "가장" in ask else vals[re.search(r"angle\(([ABC])\)", ask).group(1)]
+        if tid.startswith("m1-2-tri-angle-2-t2"):
+            a = Fraction(re.search(r"\[\[angle\(A\) = deg\((\d+)\)\]\]", q).group(1)); return 3 * a if "DCE" in _asked_angle(q) else 2 * a
+        if tid.startswith("m1-2-tri-angle-2-t3"):
+            g, v = _given1(q); return 90 + v / 2 if g == "A" else 2 * (v - 90)
+    if tid.startswith("m1-2-parallel-fold"):
+        given = {m.group(1): Fraction(m.group(2)) for m in re.finditer(r"\[\[angle\(([A-Z]+)\) = deg\((\d+)\)\]\]", q)}
+        ask = _asked_angle(q)
+        if tid.startswith(("m1-2-parallel-fold-t1", "m1-2-parallel-fold-t2", "m1-2-parallel-fold-t3", "m1-2-parallel-fold-t4")):
+            a, x, c, d = given.get("QPB"), given.get("PBC"), given.get("BCQ"), given.get("RQC")      # a + c = x + d
+            return {"PBC": lambda: a + c - d, "QPB": lambda: x + d - c, "BCQ": lambda: x + d - a, "RQC": lambda: a + c - x}[ask]()
+        g, v = _given1(q)
+        return 180 - 2 * v if g == "DEF" else (180 - v) / 2
+    if tid.startswith("m1-2-sector-shade"):
+        if tid.startswith("m1-2-sector-shade-t1") or tid.startswith("m1-2-sector-shade-t2"):
+            th = Fraction(re.search(r"\[\[deg\((\d+)\)\]\]", q).group(1)); R, r = [Fraction(v) for v in re.findall(r"(\d+) cm", q)][:2]
+            if tid.startswith("m1-2-sector-shade-t1"): return (R * R - r * r) * th / 360
+            return 2 * (R + r) * th / 360 + 2 * (R - r)
+        if tid.startswith("m1-2-sector-shade-t3"):
+            a = Fraction(re.search(r"한 변의 길이가 (\d+) cm", q).group(1)); return a * a + a * a / 4
+        if tid.startswith("m1-2-sector-shade-t4"):
+            d1, d2 = [Fraction(v) for v in re.findall(r"= (\d+) cm", q)][:2]; return (d1 / 2) * (d2 / 2)
+    if tid.startswith("m1-2-tri-sides"):
+        a, b = [Fraction(v) for v in re.findall(r"(\d+) cm", q)][:2]
+        return 2 * min(a, b) - 1 if tid.startswith("m1-2-tri-sides-t1") else 2 * max(a, b)
+    if tid.startswith("m1-2-sphere-apply"):
+        if tid.startswith("m1-2-sphere-apply-t1"):
+            r = Fraction(re.search(r"반지름의 길이가 (\d+) cm인 구", q).group(1))
+            return 2 * r ** 3 if "원기둥의 부피" in q else Fraction(2, 3) * r ** 3
+        if tid.startswith("m1-2-sphere-apply-t2"):
+            R, r = [Fraction(v) for v in re.findall(r"(\d+) cm", q)][:2]; return (R / r) ** 3
+        if tid.startswith("m1-2-sphere-apply-t3"):
+            R = Fraction(re.search(r"밑면의 반지름의 길이가 (\d+) cm", q).group(1)); r = Fraction(re.search(r"반지름의 길이가 (\d+) cm인 구", q).group(1))
+            return Fraction(4, 3) * r ** 3 / (R * R)
+        if tid.startswith("m1-2-sphere-apply-t4"):
+            r = Fraction(re.search(r"반지름의 길이가 (\d+) cm인 반구", q).group(1)); R = Fraction(re.search(r"밑면의 반지름의 길이가 (\d+) cm", q).group(1))
+            return Fraction(2, 3) * r ** 3 / (R * R)
     return "skip"
 
 
@@ -932,6 +974,12 @@ def check_judge(it):
 def _given_angle(q):
     """'[[angle(X)]] = [[deg(v)]]' 꼴의 마지막(주어진) 각 → (이름, 값)."""
     m = re.findall(r"\[\[angle\(([A-Z]+)\)\]\] = \[\[deg\((\d+)\)\]\]", q)
+    return (m[-1][0], Fraction(m[-1][1])) if m else (None, None)
+
+
+def _given1(q):
+    """'[[angle(X) = deg(v)]]' 한 마커 꼴의 마지막 주어진 각 → (이름, 값)."""
+    m = re.findall(r"\[\[angle\(([A-Z]+)\) = deg\((\d+)\)\]\]", q)
     return (m[-1][0], Fraction(m[-1][1])) if m else (None, None)
 
 
@@ -1067,7 +1115,7 @@ def check_fig(it):
                 if abs(real - int(m.group(1))) > 0.6:
                     bad("F1-scene 각 라벨≠실제각", it, f"{arc['at']} 라벨 {lab} 실제 {real:.1f}")
         elif fn == "sector":
-            if isinstance(a.get("angle"), (int, float)):
+            if isinstance(a.get("angle"), (int, float)) and "중심각" in it["question"]:
                 qn = nums(it["question"])
                 if qn and qn[0] != a["angle"]:
                     bad("F2-sector 각≠문면", it, f"{a['angle']} vs {qn[0]}")
