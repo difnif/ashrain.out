@@ -910,6 +910,51 @@ def recompute(it):
         m = re.match(r"두 일차부등식 (\d+)x ([+−]) (\d+) [<>≤≥] (-?\d+)[와과] (-?\d*)x \+ a [<>≤≥] (-?\d+)의 해가", q)
         p, qv, r, u, t = Fraction(m.group(1)), Fraction(m.group(3)) * (1 if m.group(2) == "+" else -1), Fraction(m.group(4)), _coef(m.group(5)), Fraction(m.group(6))
         x0 = (r - qv) / p; return t - u * x0
+    # ── 세션 5 (09-13): m2-1 연립방정식 — 풀이·활용 2 (mkseed_m2_system.py)
+    if tid.startswith("m2-1-sys-solve"):
+        ask = (lambda X, Y: X + Y if ("m + n" in q or "a + b" in q) else (X - Y if ("m − n" in q or "a − b" in q) else X * Y))
+        if tid.startswith(("m2-1-sys-solve-t1", "m2-1-sys-solve-t2")):
+            m = re.match(r"연립방정식 (.+?), (.+?)의 해가", q); e1, e2 = m.group(1), m.group(2)
+            if tid.startswith("m2-1-sys-solve-t2"):
+                mm = re.match(r"y = (-?\d*)x ([+−]) (\d+)$", e1); A = (-_coef(mm.group(1)), Fraction(1), Fraction(mm.group(3)) * (1 if mm.group(2) == "+" else -1))
+            else:
+                A = _lineq(e1)
+            X, Y = _solve2(A, _lineq(e2)); return ask(X, Y)
+        if tid.startswith("m2-1-sys-solve-t3"):
+            m = re.match(r"연립방정식 ax \+ by = (-?\d+), bx − ay = (-?\d+)의 해가 x = (-?\d+), y = (-?\d+)", q); c1, c2, x0, y0 = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
+            A, B = _solve2((x0, y0, c1), (-y0, x0, c2)); return ask(A, B)
+        if tid.startswith("m2-1-sys-solve-t4"):
+            m = re.match(r"연립방정식 (.+?), ax (.+?) = (-?\d+)의 해와 연립방정식 (.+?), (-?\d*)x \+ by = (-?\d+)의 해가", q)
+            X, Y = _solve2(_lineq(m.group(1)), _lineq(m.group(4))); q3 = _lineq("x " + m.group(2) + " = 0")[1]
+            A = (Fraction(m.group(3)) - q3 * Y) / X; B = (Fraction(m.group(6)) - _coef(m.group(5)) * X) / Y; return ask(A, B)
+        if tid.startswith("m2-1-sys-solve-t5"):
+            m = re.search(r"일차방정식 (-?\d*)x \+ (\d*)y = (\d+)의 해의 개수", q); a, b, c = int(_coef(m.group(1))), int(_coef(m.group(2))), int(m.group(3))
+            return Fraction(sum(1 for x in range(1, c) if c - a * x > 0 and (c - a * x) % b == 0))
+        if tid.startswith("m2-1-sys-solve-t6"):
+            m = re.match(r"방정식 (.+?) = (.+?) = (-?\d+)의 해가", q); t = m.group(3)
+            X, Y = _solve2(_lineq(m.group(1) + " = " + t), _lineq(m.group(2) + " = " + t)); return ask(X, Y)
+        if tid.startswith("m2-1-sys-solve-t7"):
+            m = re.match(r"연립방정식 ax \+ by = (-?\d+), bx − ay = (-?\d+)에서 .+? 해가 x = (-?\d+), y = (-?\d+)이었다", q); c1, c2, pv, qv = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
+            A, B = _solve2((qv, pv, c1), (pv, -qv, c2)); X, Y = _solve2((A, B, c1), (B, -A, c2)); return ask(X, Y)
+    if tid.startswith("m2-1-sys-apply-2"):
+        if tid.startswith("m2-1-sys-apply-2-t1"):
+            m = re.search(r"집에서 (\d+) km 떨어진 .+? 시속 (\d+) km로 걷다가 .+? 시속 (\d+) km로 뛰어서 모두 (\d+)분", q); D, a, b, T = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
+            X, Y = _solve2((1, 1, D), (60 / a, 60 / b, T)); return X if "걸은 거리" in q else Y
+        if tid.startswith("m2-1-sys-apply-2-t2"):
+            m = re.search(r"A가 (\d+)일 동안 한 다음 B가 (\d+)일 동안 하면 끝나고, A가 (\d+)일 동안 한 다음 B가 (\d+)일 동안 해도 끝난다. 이 일을 (A|B) 혼자", q)
+            pv, qv, r, sv = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]; A, B = _solve2((pv, qv, 1), (r, sv, 1)); return 1 / (A if m.group(5) == "A" else B)
+        if tid.startswith("m2-1-sys-apply-2-t3"):
+            m = re.search(r"학생 (\d+)명이 본 .+? 전체 평균은 (\d+)점이고, 남학생의 평균은 (\d+)점, 여학생의 평균은 (\d+)점", q); n, M, a, b = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
+            X, Y = _solve2((1, 1, n), (a, b, M * n)); return X if "남학생은 몇 명" in q else Y
+        if tid.startswith("m2-1-sys-apply-2-t4"):
+            m = re.search(r"둘레의 길이가 (\d+) m인 .+? 둘레를 (\S+?)[와과] (\S+?)[이가] 같은 지점.+?반대 방향으로 돌면 (\d+)분.+?같은 방향으로 돌면 (\d+)분.+?빠를 때, (\S+?)의 속력은", q)
+            L, t1, t2 = Fraction(m.group(1)), Fraction(m.group(4)), Fraction(m.group(5)); X, Y = _solve2((1, 1, L / t1), (1, -1, L / t2)); return X if m.group(6) == m.group(2) else Y
+        if tid.startswith("m2-1-sys-apply-2-t5"):
+            m = re.search(r"(\d+)%의 소금물과 (\d+)%의 소금물을 섞어서 (\d+)%의 소금물 (\d+) g을 만들려고 한다. (\d+)%의 소금물은", q); pv, qv, r, W, askp = [Fraction(m.group(i)) for i in (1, 2, 3, 4, 5)]
+            X, Y = _solve2((1, 1, W), (pv, qv, r * W)); return X if askp == pv else Y
+        if tid.startswith("m2-1-sys-apply-2-t6"):
+            m = re.search(r"어른이 (\d+)원, 어린이가 (\d+)원이다. .+? 합하여 (\d+)명이 입장하는 데 모두 (\d+)원", q); a, b, n, T = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
+            X, Y = _solve2((1, 1, n), (a, b, T)); return X if "어른는 몇 명" in q or "어른은 몇 명" in q else Y
     if tid.startswith("m2-1-ineq-apply"):
         if tid.startswith("m2-1-ineq-apply-t1"):
             m = re.search(r"(\d+)점, (\d+)점, (\d+)점을 받았다. 네 번째 시험까지의 평균이 (\d+)점 이상", q); return 4 * Fraction(m.group(4)) - sum(Fraction(m.group(i)) for i in (1, 2, 3))
@@ -1018,6 +1063,22 @@ def check_ineq2(it):
         return re.sub(r"\s+", " ", it["answer"]).strip() == want
     except Exception:                                   # noqa: BLE001
         return False
+
+
+def _lineq(text):
+    """'2x − 3y = 5' / 'x + y = 5' / 'ax + 2y = 7'(a는 무시) → (x의 계수, y의 계수, 상수)"""
+    m = re.match(r"\s*(-?\d*)x ([+−]) (\d*)y = (-?\d+)\s*$", text.replace("−", "−"))
+    if not m:
+        raise ValueError(text)
+    b = _coef(m.group(3)) * (1 if m.group(2) == "+" else -1)
+    return (_coef(m.group(1)), b, Fraction(m.group(4)))
+
+
+def _solve2(e1, e2):
+    """두 일차식 (a, b, c): ax + by = c 를 크래머 공식으로 푼다."""
+    a1, b1, c1 = [Fraction(v) for v in e1]; a2, b2, c2 = [Fraction(v) for v in e2]
+    d = a1 * b2 - a2 * b1
+    return (c1 * b2 - c2 * b1) / d, (a1 * c2 - a2 * c1) / d
 
 
 def _fac(n):
