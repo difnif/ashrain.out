@@ -1218,6 +1218,27 @@ def recompute(it):
             m = re.search(r"\[\[angle\(DCE\)\]\] = \[\[deg\((\d+)\)\]\], \[\[angle\(ABD\)\]\] = \[\[deg\((\d+)\)\]\]일 때, \[\[angle\(ADB\)\]\]", q); return 180 - Fraction(m.group(1)) - Fraction(m.group(2))
         m = re.search(r"호 CD의 길이의 (\d+)배이다. \[\[angle\((CQD|APB)\)\]\] = \[\[deg\((\d+)\)\]\]일 때, \[\[angle\((APB|CQD)\)\]\]", q); n, gq, gv = int(m.group(1)), m.group(2), Fraction(m.group(3))
         return gv * n if gq == "CQD" else gv / n
+    if tid.startswith("m3-2-stat"):
+        if tid == "m3-2-stat-t1":
+            m = re.search(r"평균이 (\d+)\S*일 때, x의 값[을를] 구하시오.  \[ (.+?) \]", q); mean = int(m.group(1)); items = [t.strip() for t in m.group(2).split(",")]
+            known = [int(t) for t in items if t != "x"]; return Fraction(mean * len(items) - sum(known))
+        if tid == "m3-2-stat-t2":
+            m = re.search(r"(a \+ b|a − b)의 값을 구하시오.  \[ (.+?) \]", q); vals = sorted(int(t) for t in m.group(2).split(",")); n = len(vals)
+            med = Fraction(vals[n // 2]) if n % 2 else Fraction(vals[n // 2 - 1] + vals[n // 2], 2)
+            cnt = {v: vals.count(v) for v in set(vals)}; mode = max(cnt, key=lambda v: (cnt[v], -v)); return med + mode if m.group(1) == "a + b" else med - mode
+        if tid == "m3-2-stat-t3":
+            m = re.search(r"평균이 (\d+)점일 때, (x의 값|학생 ([A-E])의 점수)[을를] 구하시오.  \[ (.+?) \]", q); mean = int(m.group(1)); cells = [t.split(":")[1].strip() for t in m.group(4).split(",")]
+            known = [int(t) for t in cells if t != "x"]; x = -sum(known)
+            if m.group(2) == "x의 값": return Fraction(x)
+            d = cells["ABCDE".index(m.group(3))]; return Fraction(mean + (x if d == "x" else int(d)))
+        if tid == "m3-2-stat-t4":
+            m = re.search(r"이 자료의 (분산|표준편차)[을를] 구하시오.  \[ (.+?) \]", q); vals = [int(t) for t in m.group(2).split(",")]; n = len(vals); mean = Fraction(sum(vals), n)
+            var = sum((v - mean) ** 2 for v in vals) / n; return var if m.group(1) == "분산" else _isqrt(var)
+        m = re.search(r"평균이 (\d+), 분산이 (\d+)일 때, 변량 (.+?)의 (평균|분산|표준편차)[을를] 구하시오", q); mean, var, tr, ask = int(m.group(1)), int(m.group(2)), m.group(3), m.group(4)
+        first = tr.split(",")[0].strip()
+        mk_ = re.fullmatch(r"(\d*)a(?: \+ (\d+))?", first); k = int(mk_.group(1)) if mk_.group(1) else 1; c = int(mk_.group(2)) if mk_.group(2) else 0
+        if ask == "평균": return Fraction(k * mean + c)
+        return Fraction(k * k * var) if ask == "분산" else _isqrt(k * k * var)
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])
