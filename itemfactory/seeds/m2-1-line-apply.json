@@ -1,0 +1,1282 @@
+{
+  "seed_id": "m2-1-line-apply",
+  "category": "활용",
+  "title": "일차함수의 활용 — 물통·양초·기온·점 P의 이동과 넓이·용수철",
+  "unit_id": "m2-1",
+  "concept_ids": [
+    "m2-1-19",
+    "m2-1-20"
+  ],
+  "schema_id": null,
+  "schema_name": "일차함수 세우기(문장제)",
+  "source_item_ids": [],
+  "note": "답(시각·값)을 파라미터로 두고 조건값을 역산. 점 P 틀은 scene 그림(직사각형 + 점 P) — geometry False 로 두어 3단 해설.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "일차함수",
+        "사칙"
+      ],
+      "time_limit": 120,
+      "points": 5,
+      "prereq": [
+        "일차함수의 식"
+      ],
+      "traps": [
+        "변화율 부호",
+        "단위"
+      ],
+      "tags": [
+        "일차함수의 활용"
+      ],
+      "qtype": "short",
+      "pool_target": 300,
+      "title": "물통에 물을 넣거나 빼는 상황 — 물의 양이 T L가 되는 시각",
+      "skill": "처음 양과 매분 변화량으로 y = (처음 양) ± (변화량)x의 식을 세우고 y = T를 풀기",
+      "variant_axis": {
+        "처음 양": "20~300 L",
+        "변화량": "2~15 L/분",
+        "넣기 / 빼기": "부호"
+      },
+      "discriminates": "변화량의 부호(넣기 +, 빼기 −)를 식에 반영하고, y = T의 방정식으로 x를 구하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              "in",
+              "out"
+            ]
+          }
+        },
+        {
+          "name": "V0",
+          "values": {
+            "in": [
+              20,
+              30,
+              40,
+              50,
+              60,
+              80,
+              100,
+              120,
+              150,
+              200,
+              240,
+              300
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              8,
+              10,
+              12,
+              15
+            ]
+          }
+        },
+        {
+          "name": "x",
+          "values": {
+            "int": [
+              3,
+              20
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "w",
+        "rows": {
+          "in": {
+            "ACT": "넣는다",
+            "SG": 1,
+            "DIR": "늘어",
+            "OPW": "+",
+            "WHY": "매분 넣는 양만큼 늘어난다"
+          },
+          "out": {
+            "ACT": "뺀다",
+            "SG": -1,
+            "DIR": "줄어",
+            "OPW": "−",
+            "WHY": "매분 빼는 양만큼 줄어든다"
+          }
+        }
+      },
+      "derive": {
+        "T": "V0 + SG*r*x",
+        "ans": "x",
+        "diff": "SG*(T - V0)"
+      },
+      "constraints": [
+        "T > 0",
+        "T != V0",
+        "ans not in (V0, r, T)"
+      ],
+      "cost_values": [
+        "V0",
+        "r",
+        "T",
+        "diff",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "V0 + SG*r*ans == T",
+        "diff == r*ans"
+      ],
+      "question": "{V0} L의 물이 들어 있는 물통에 매분 {r} L씩 물을 {ACT}. 물의 양이 변하기 시작한 지 x분 후 물통에 들어 있는 물의 양을 y L라 할 때, 물의 양이 {T} L가 되는 것은 몇 분 후인지 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "물의 양은 처음 {V0} L에서 매분 {r} L씩 {DIR}드니 x분 후에는 {V0} {OPW} {r}x (L)이다. 즉 y = {V0} {OPW} {r}x이고, 이것은 x의 일차함수다. y = {T}{eul(T)} 대입해 x에 대한 일차방정식을 풀면 몇 분 후인지 알 수 있다.",
+      "sol2": [
+        "x분 후 물의 양: y = {V0} {OPW} {r}x",
+        "y = {T}이면 {V0} {OPW} {r}x = {T}, {r}x = {diff}",
+        "x = {ans}이므로 {ans}분 후"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = {V0} {OPW} {r}x",
+                "hint": "{WHY}"
+              },
+              {
+                "text": "{V0} {OPW} {r}x = {T}  →  {r}x = {diff}",
+                "hint": "y = {T} 대입"
+              },
+              {
+                "text": "x = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{diff} ÷ {r}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "{ans}분 동안 물이 {r} × {ans} = {r*ans} L {DIR}드니 {V0} {OPW} {r*ans} = {T} L가 맞다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{r} × {ans} = {r*ans} L 변화",
+              "{V0} {OPW} {r*ans} = {T} L ✓"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "x분 후 물의 양은 y = {V0} {OPW} {r}x이다. y = {T}{eul(T)} 대입하면 {V0} {OPW} {r}x = {T}에서 x = {ans}이므로 {ans}분 후이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "y = {V0} {OPW} {r}x{eul(r)} 세웠다.",
+          "partial": "변화량의 부호가 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "방정식 풀기",
+          "points": 3,
+          "criterion": "y = {T}{eul(T)} 대입해 x = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수 하나면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans}분 후라고 답했다."
+        }
+      ],
+      "rubric_total": 8,
+      "id": "m2-1-line-apply-t1",
+      "pitfalls": [
+        {
+          "text": "빼는데 +, 넣는데 −로 부호를 바꿔 세움",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "처음 양을 빠뜨리고 y = rx로 세움",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "방정식 이항 실수",
+          "on": "방정식",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "일차함수",
+        "사칙"
+      ],
+      "time_limit": 120,
+      "points": 5,
+      "prereq": [
+        "일차함수의 식"
+      ],
+      "traps": [
+        "변화율 부호",
+        "단위"
+      ],
+      "tags": [
+        "일차함수의 활용"
+      ],
+      "qtype": "short",
+      "pool_target": 300,
+      "title": "타는 양초의 길이 — 남은 길이가 R cm가 되는 시각",
+      "skill": "t분마다 d cm씩 짧아지는 것을 1분당 변화량으로 바꾸어 y = L₀ − (d/t)x의 식을 세우기",
+      "variant_axis": {
+        "처음 길이": "15~30 cm",
+        "변화": "t분마다 d cm"
+      },
+      "discriminates": "'t분마다 d cm'를 1분당 d/t cm의 기울기로 바꾸는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "L0",
+          "values": {
+            "in": [
+              15,
+              18,
+              20,
+              24,
+              25,
+              30
+            ]
+          }
+        },
+        {
+          "name": "t",
+          "values": {
+            "in": [
+              2,
+              3,
+              4,
+              5,
+              6,
+              10
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "x",
+          "values": {
+            "in": [
+              6,
+              8,
+              10,
+              12,
+              15,
+              16,
+              18,
+              20,
+              24,
+              25,
+              30,
+              36,
+              40
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "k": "d/t",
+        "R": "L0 - d*x/t",
+        "burn": "L0 - R",
+        "ans": "x"
+      },
+      "constraints": [
+        "R == floor(R)",
+        "R >= 1",
+        "R < L0",
+        "ans not in (L0, t, d, R)",
+        "d != t",
+        "ans % t == 0"
+      ],
+      "cost_values": [
+        "L0",
+        "t",
+        "d",
+        "k",
+        "R",
+        "burn",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "L0 - k*ans == R",
+        "k*t == d"
+      ],
+      "question": "길이가 {L0} cm인 양초에 불을 붙이면 {t}분마다 {d} cm씩 짧아진다. 불을 붙인 지 x분 후 남은 양초의 길이를 y cm라 할 때, 남은 길이가 {R} cm가 되는 것은 불을 붙인 지 몇 분 후인지 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "{t}분마다 {d} cm씩 짧아지므로 1분에 {k} cm씩 짧아진다(변화율 = {d} ÷ {t}). 따라서 x분 후 남은 길이는 y = {L0} − {k}x이다. y = {R}{eul(R)} 대입해 x를 구한다.",
+      "sol2": [
+        "1분당 짧아지는 길이는 [[frac({d}, {t})]] = {k} (cm)이므로 y = {L0} − {k}x",
+        "y = {R}이면 {L0} − {k}x = {R}, {k}x = {burn}",
+        "x = {burn} ÷ {k} = {ans}이므로 {ans}분 후"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = {L0} − {k}x",
+                "hint": "1분당 [[frac({d}, {t})]] cm"
+              },
+              {
+                "text": "{L0} − {k}x = {R}  →  {k}x = {burn}",
+                "hint": "y = {R} 대입"
+              },
+              {
+                "text": "x = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{burn} ÷ {k}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "{ans}분은 {t}분의 {ans/t}배이므로 짧아진 길이는 {d} × {ans/t} = {burn} cm이고, {L0} − {burn} = {R} cm가 맞다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{ans}분 = {t}분 × {ans/t} → {d} × {ans/t} = {burn} cm 짧아짐",
+              "{L0} − {burn} = {R} cm ✓"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "1분에 {k} cm씩 짧아지므로 y = {L0} − {k}x이다. y = {R}{eul(R)} 대입하면 {L0} − {k}x = {R}에서 x = {ans}이므로 {ans}분 후이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "1분당 변화량 {k}{eul(k)} 구해 y = {L0} − {k}x를 세웠다.",
+          "partial": "{t}분마다를 1분당으로 바꾸지 않았으면 인정하지 않는다."
+        },
+        {
+          "element": "방정식 풀기",
+          "points": 3,
+          "criterion": "y = {R}{eul(R)} 대입해 x = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수 하나면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans}분 후라고 답했다."
+        }
+      ],
+      "rubric_total": 8,
+      "id": "m2-1-line-apply-t2",
+      "pitfalls": [
+        {
+          "text": "t분마다 d cm를 1분당 d cm로 씀",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "짧아지는데 +로 세움",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "분수 계수 방정식 계산 실수",
+          "on": "방정식",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "일차함수",
+        "사칙"
+      ],
+      "time_limit": 120,
+      "points": 5,
+      "prereq": [
+        "일차함수의 식"
+      ],
+      "traps": [
+        "변화율 부호",
+        "단위"
+      ],
+      "tags": [
+        "일차함수의 활용"
+      ],
+      "qtype": "short",
+      "pool_target": 300,
+      "title": "높이에 따라 내려가는 기온 — 높이 h km에서의 기온",
+      "skill": "지면의 기온과 1 km당 내려가는 온도로 y = T₀ − dx의 식을 세워 대입하기",
+      "variant_axis": {
+        "지면 기온": "10~30 ℃",
+        "변화율": "1 km당 5~8 ℃"
+      },
+      "discriminates": "내려가는 변화를 음의 기울기로 식에 넣고 대입하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "T0",
+          "values": {
+            "in": [
+              10,
+              12,
+              14,
+              15,
+              16,
+              18,
+              20,
+              22,
+              24,
+              25,
+              28,
+              30
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "in": [
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "dh": "d*h",
+        "ans": "T0 - d*h"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (T0, d, h)"
+      ],
+      "cost_values": [
+        "T0",
+        "d",
+        "h",
+        "dh",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == T0 - dh",
+        "dh == d*h"
+      ],
+      "question": "지면의 기온이 {T0} ℃이고, 높이가 1 km 높아질 때마다 기온은 {d} ℃씩 내려간다고 한다. 지면에서 높이가 x km인 곳의 기온을 y ℃라 할 때, 높이가 {h} km인 곳의 기온은 몇 ℃인지 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "높이가 1 km 높아질 때마다 {d} ℃씩 내려가므로 x km 높아지면 {d}x ℃만큼 내려간다. 따라서 높이 x km인 곳의 기온은 y = {T0} − {d}x (℃)이고, x = {h}{eul(h)} 대입하면 된다. 내려가는 변화이므로 기울기가 음수다.",
+      "sol2": [
+        "높이 x km에서의 기온: y = {T0} − {d}x",
+        "x = {h}{eul(h)} 대입하면 y = {T0} − {d} × {h} = {T0} − {dh}",
+        "따라서 {ans} ℃"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = {T0} − {d}x",
+                "hint": "1 km당 {d} ℃ 내려감 → 기울기 −{d}"
+              },
+              {
+                "text": "y = {T0} − {d} × {h} = {ans}",
+                "hint": "x = {h} 대입",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{T0} − {dh}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "{h} km 높아지면 {d} × {h} = {dh} ℃ 내려가므로 {T0} − {dh} = {ans} ℃가 맞다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{d} × {h} = {dh} ℃ 내려감",
+              "{T0} − {dh} = {ans} ℃"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "높이 x km인 곳의 기온은 y = {T0} − {d}x이므로 x = {h}{eul(h)} 대입하면 y = {T0} − {dh} = {ans}이다. 따라서 {ans} ℃이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "y = {T0} − {d}x{eul(d)} 세웠다.",
+          "partial": "기울기의 부호가 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "대입·답",
+          "points": 2,
+          "criterion": "x = {h}{eul(h)} 대입해 {ans} ℃를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-apply-t3",
+      "pitfalls": [
+        {
+          "text": "내려가는데 기울기를 +로 둠",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "1 km당 변화를 h km에 곱하지 않음",
+          "on": "대입",
+          "effect": "불인정"
+        },
+        {
+          "text": "뺄셈 계산 실수",
+          "on": "대입",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "기하맥락",
+      "ops": [
+        "일차함수",
+        "사칙"
+      ],
+      "time_limit": 120,
+      "points": 5,
+      "prereq": [
+        "일차함수의 식"
+      ],
+      "traps": [
+        "변화율 부호",
+        "단위"
+      ],
+      "tags": [
+        "일차함수의 활용"
+      ],
+      "qtype": "short",
+      "pool_target": 300,
+      "title": "직사각형의 변 위를 움직이는 점 P — 삼각형의 넓이가 S가 되는 시각",
+      "skill": "x초 후 BP의 길이를 속력 × 시간으로 나타내고 삼각형 넓이를 x의 일차식으로 세우기",
+      "variant_axis": {
+        "변": "AB 4~12 cm, BC 10~20 cm",
+        "속력": "매초 1~3 cm"
+      },
+      "discriminates": "넓이 = (1/2) × AB × BP에서 BP = (속력) × x로 두는가, 1/2을 빠뜨리지 않는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              4,
+              5,
+              6,
+              8,
+              10,
+              12
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              10,
+              12,
+              15,
+              16,
+              18,
+              20
+            ]
+          }
+        },
+        {
+          "name": "v",
+          "values": {
+            "in": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "x",
+          "values": {
+            "int": [
+              2,
+              10
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "k": "a*v/2",
+        "BP": "v*x",
+        "S": "a*v*x/2",
+        "ans": "x"
+      },
+      "constraints": [
+        "BP < b",
+        "S == floor(S)",
+        "ans not in (a, b, v, S)"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "v",
+        "k",
+        "BP",
+        "S",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a*BP/2 == S",
+        "BP == v*ans",
+        "k*ans == S"
+      ],
+      "question": "다음 그림과 같이 [[seg(AB)]] = {a} cm, [[seg(BC)]] = {b} cm인 직사각형 ABCD에서 점 P는 점 B를 출발하여 [[seg(BC)]]를 따라 점 C까지 매초 {v} cm의 속력으로 움직인다. 점 P가 출발한 지 x초 후 삼각형 ABP의 넓이를 y cm²라 할 때, 넓이가 {S} cm²가 되는 것은 출발한 지 몇 초 후인지 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                "{a}"
+              ],
+              "B": [
+                0,
+                0
+              ],
+              "C": [
+                "{b}",
+                0
+              ],
+              "D": [
+                "{b}",
+                "{a}"
+              ],
+              "P": [
+                "{BP}",
+                0
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              {
+                "a": "A",
+                "b": "P",
+                "dash": true
+              }
+            ],
+            "nodot": true
+          }
+        }
+      ],
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "점 P는 매초 {v} cm씩 움직이므로 x초 후 [[seg(BP)]] = {co(v)}x (cm)이다. 삼각형 ABP는 ∠B = 90°인 직각삼각형이므로 넓이는 [[frac(1,2)]] × [[seg(AB)]] × [[seg(BP)]] = [[frac(1,2)]] × {a} × {co(v)}x이다. 이것을 정리한 일차함수에 y = {S}{eul(S)} 대입해 x를 구한다.",
+      "sol2": [
+        "x초 후 [[seg(BP)]] = {co(v)}x (cm)",
+        "y = [[frac(1,2)]] × {a} × {co(v)}x = {k}x",
+        "y = {S}이면 {k}x = {S}, x = {ans}이므로 {ans}초 후"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "[[seg(BP)]] = {co(v)}x",
+                "hint": "속력 × 시간"
+              },
+              {
+                "text": "y = [[frac(1,2)]] × {a} × {co(v)}x = {k}x",
+                "hint": "직각삼각형 ABP의 넓이"
+              },
+              {
+                "text": "{k}x = {S}  →  x = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{S} ÷ {k}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "{ans}초 후 [[seg(BP)]] = {v} × {ans} = {BP} cm이고 넓이는 [[frac(1,2)]] × {a} × {BP} = {S} cm²로 조건과 같다. [[seg(BP)]] = {BP} cm는 [[seg(BC)]] = {b} cm보다 짧으므로 P는 아직 변 BC 위에 있다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "[[seg(BP)]] = {v} × {ans} = {BP} cm (< {b} cm)",
+              "[[frac(1,2)]] × {a} × {BP} = {S} cm² ✓"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "x초 후 [[seg(BP)]] = {co(v)}x이므로 삼각형 ABP의 넓이는 y = [[frac(1,2)]] × {a} × {co(v)}x = {k}x이다. y = {S}{eul(S)} 대입하면 {k}x = {S}에서 x = {ans}이므로 {ans}초 후이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "[[seg(BP)]] = {co(v)}x로 놓고 y = [[frac(1,2)]] × {a} × {co(v)}x = {k}x를 세웠다.",
+          "partial": "2로 나누는 것을 빠뜨렸으면 1점."
+        },
+        {
+          "element": "방정식 풀기",
+          "points": 3,
+          "criterion": "y = {S}{eul(S)} 대입해 x = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수 하나면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans}초 후라고 답했다."
+        }
+      ],
+      "rubric_total": 8,
+      "id": "m2-1-line-apply-t4",
+      "pitfalls": [
+        {
+          "text": "삼각형의 넓이를 (밑변) × (높이)로 두고 2로 나누지 않음",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "BP를 x가 아니라 v로 둠(속력 × 시간을 빠뜨림)",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "방정식 계산 실수",
+          "on": "방정식",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "생활맥락",
+      "ops": [
+        "일차함수",
+        "사칙"
+      ],
+      "time_limit": 120,
+      "points": 5,
+      "prereq": [
+        "일차함수의 식"
+      ],
+      "traps": [
+        "변화율 부호",
+        "단위"
+      ],
+      "tags": [
+        "일차함수의 활용"
+      ],
+      "qtype": "short",
+      "pool_target": 300,
+      "title": "용수철의 길이 — 두 측정값으로 식을 세워 다른 무게에서의 길이",
+      "skill": "추의 무게가 늘 때 길이가 일정하게 늘어나므로 y = ax + b로 놓고 두 측정값으로 a, b를 구하기",
+      "variant_axis": {
+        "처음 길이": "10~30 cm",
+        "10 g당 늘어나는 길이": "1~4 cm"
+      },
+      "discriminates": "두 측정값의 차로 기울기(무게 1 g당 늘어나는 길이)를 구하고 절편을 맞추는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "L0",
+          "values": {
+            "in": [
+              10,
+              12,
+              15,
+              18,
+              20,
+              24,
+              25,
+              30
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "w1",
+          "values": {
+            "in": [
+              10,
+              20,
+              30,
+              40
+            ]
+          }
+        },
+        {
+          "name": "w2",
+          "values": {
+            "in": [
+              30,
+              40,
+              50,
+              60,
+              80
+            ]
+          }
+        },
+        {
+          "name": "w3",
+          "values": {
+            "in": [
+              50,
+              60,
+              70,
+              80,
+              90,
+              100,
+              120
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "L1": "L0 + k*w1/10",
+        "L2": "L0 + k*w2/10",
+        "dL": "k*(w2 - w1)/10",
+        "dw": "w2 - w1",
+        "a": "k/10",
+        "ans": "L0 + k*w3/10"
+      },
+      "constraints": [
+        "w1 < w2",
+        "w3 > w2",
+        "ans not in (L0, w1, w2, w3, L1, L2)"
+      ],
+      "cost_values": [
+        "w1",
+        "L1",
+        "w2",
+        "L2",
+        "dL",
+        "dw",
+        "a",
+        "L0",
+        "w3",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == L0 + a*w3",
+        "a*dw == dL",
+        "L1 == L0 + a*w1",
+        "L2 == L0 + a*w2"
+      ],
+      "question": "어떤 용수철에 {w1} g의 추를 매달면 길이가 {L1} cm가 되고, {w2} g의 추를 매달면 길이가 {L2} cm가 된다. 추의 무게에 따라 용수철의 길이가 일정하게 늘어날 때, {w3} g의 추를 매달면 용수철의 길이는 몇 cm가 되는지 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "추의 무게 x g에 따라 길이 y cm가 일정하게 늘어나므로 y는 x의 일차함수 y = ax + b이다. 두 측정값 ({w1}, {L1}), ({w2}, {L2})로 기울기 a(1 g당 늘어나는 길이)를 구하고, 한 점을 대입해 b(추가 없을 때의 길이)를 구한 뒤 x = {w3}{eul(w3)} 대입한다.",
+      "sol2": [
+        "y = ax + b로 놓으면 기울기 a = [[frac({L2} − {L1}, {w2} − {w1})]] = [[frac({dL}, {dw})]] = {a}",
+        "({w1}, {L1})을 대입: {L1} = {a} × {w1} + b, b = {L0}이므로 y = {a}x + {L0}",
+        "x = {w3}{eul(w3)} 대입하면 y = {a} × {w3} + {L0} = {ans}이므로 {ans} cm"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "a = [[frac({dL}, {dw})]] = {a}",
+                "hint": "무게 1 g당 늘어나는 길이"
+              },
+              {
+                "text": "{L1} = {a} × {w1} + b  →  b = {L0}",
+                "hint": "({w1}, {L1}) 대입"
+              },
+              {
+                "text": "y = {a}x + {L0}  →  x = {w3}: y = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{a} × {w3} + {L0}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "y = {a}x + {L0}에 x = {w2}{eul(w2)} 넣으면 {a} × {w2} + {L0} = {L2}{ro(L2)} 둘째 측정값과도 맞다. x = {w3}일 때 {ans} cm이다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "x = {w2}: {a} × {w2} + {L0} = {L2} ✓",
+              "x = {w3}: {ans} cm"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y = ax + b로 놓으면 a = [[frac({dL}, {dw})]] = {a}, b = {L0}이므로 y = {a}x + {L0}이다. x = {w3}{eul(w3)} 대입하면 y = {ans}이므로 용수철의 길이는 {ans} cm이다.",
+      "rubric": [
+        {
+          "element": "기울기·식 세우기",
+          "points": 3,
+          "criterion": "두 측정값으로 a = {a}, b = {L0}{eul(L0)} 구해 y = {a}x + {L0}{eul(L0)} 세웠다.",
+          "partial": "기울기만 맞으면 1점."
+        },
+        {
+          "element": "대입·계산",
+          "points": 3,
+          "criterion": "x = {w3}{eul(w3)} 대입해 {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수 하나면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ans} cm를 답했다."
+        }
+      ],
+      "rubric_total": 8,
+      "id": "m2-1-line-apply-t5",
+      "pitfalls": [
+        {
+          "text": "기울기를 (길이의 차) ÷ (무게의 차)가 아니라 거꾸로 구함",
+          "on": "기울기",
+          "effect": "불인정"
+        },
+        {
+          "text": "b를 구하지 않고 y = ax로 대입함",
+          "on": "기울기",
+          "effect": "불인정"
+        },
+        {
+          "text": "대입 계산 실수",
+          "on": "대입",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

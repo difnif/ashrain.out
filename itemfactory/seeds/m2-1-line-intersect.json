@@ -1,0 +1,2509 @@
+{
+  "seed_id": "m2-1-line-intersect",
+  "category": "연산",
+  "title": "일차방정식의 그래프 — 기울기·절편·두 직선의 교점·해가 무수히 많음·해 없음·세 직선 한 점·축에 평행한 직선",
+  "unit_id": "m2-1",
+  "concept_ids": [
+    "m2-1-21",
+    "m2-1-22",
+    "m2-1-23"
+  ],
+  "schema_id": null,
+  "schema_name": "일차방정식의 그래프와 연립방정식의 해",
+  "source_item_ids": [],
+  "note": "교점은 해(x0, y0)를 파라미터로 두고 상수항을 역산. 축에 평행 조건은 좌표에 k를 넣은 두 점의 x(y)좌표가 같다는 식.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 그래프",
+        "연립방정식"
+      ],
+      "ops": [
+        "일차방정식의 그래프"
+      ],
+      "traps": [
+        "부호",
+        "교점 = 연립 해"
+      ],
+      "tags": [
+        "일차방정식의 그래프",
+        "연립방정식과 그래프"
+      ],
+      "title": "일차방정식 ax + by + c = 0의 그래프의 기울기 p, y절편 q — p + q (pq)",
+      "skill": "y에 대해 풀어 y = (기울기)x + (y절편) 꼴로 고치기",
+      "variant_axis": {
+        "계수": "a ±1~±6, b ±1~±4, c ±1~±8",
+        "구하는 것": "p + q / pq"
+      },
+      "discriminates": "y에 대해 풀 때 각 항을 b로 나누며 부호를 바르게 처리하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "sum",
+              "prod"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "b",
+          "rows": {
+            "-4": {
+              "BS": "− 4y"
+            },
+            "-3": {
+              "BS": "− 3y"
+            },
+            "-2": {
+              "BS": "− 2y"
+            },
+            "-1": {
+              "BS": "− y"
+            },
+            "1": {
+              "BS": "+ y"
+            },
+            "2": {
+              "BS": "+ 2y"
+            },
+            "3": {
+              "BS": "+ 3y"
+            },
+            "4": {
+              "BS": "+ 4y"
+            }
+          }
+        },
+        {
+          "key": "ask",
+          "rows": {
+            "sum": {
+              "ASK": "p + q",
+              "w": 1,
+              "wp": 0
+            },
+            "prod": {
+              "ASK": "pq",
+              "w": 0,
+              "wp": 1
+            }
+          }
+        }
+      ],
+      "derive": {
+        "p": "-a/b",
+        "q": "-c/b",
+        "na": "-a",
+        "nc": "-c",
+        "ans": "w*(p + q) + wp*p*q"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (a, abs(b), abs(c))",
+        "abs(b) != 1"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "p",
+        "q",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "p*b == -a",
+        "q*b == -c",
+        "ans == w*(p + q) + wp*p*q"
+      ],
+      "question": "일차방정식 {co(a)}x {BS} {sgn(c)} = 0의 그래프의 기울기를 p, y절편을 q라 할 때, {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "일차방정식 ax + by + c = 0의 그래프는 y에 대해 풀면 일차함수 y = −[[frac(a, b)]]x − [[frac(c, b)]]의 그래프와 같다. 그래서 y항만 남기고 이항한 뒤 y의 계수 {b}{ro(b)} 나누면 기울기와 y절편이 보인다. 나눌 때 각 항의 부호를 조심한다.",
+      "sol2": [
+        "y항만 남기고 이항하면 {co(b)}y = {co(na)}x {sgn(nc)}",
+        "양변을 {b}{ro(b)} 나누면 y = {co(p)}x {sgn(q)}",
+        "따라서 p = {p}, q = {q}이므로 {ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(b)}y = {co(na)}x {sgn(nc)}",
+                "hint": "x항·상수항 이항"
+              },
+              {
+                "text": "y = {co(p)}x {sgn(q)}",
+                "hint": "양변 ÷ {pn(b)}",
+                "marks": [
+                  {
+                    "on": "{co(p)}x",
+                    "note": "기울기 p"
+                  },
+                  {
+                    "on": "{sgn(q)}",
+                    "note": "y절편 q"
+                  }
+                ]
+              },
+              {
+                "text": "{ASK} = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0",
+              "mark:1-1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "y = {co(p)}x {sgn(q)}의 양변에 {b}{eul(b)} 곱하고 정리하면 {co(a)}x {BS} {sgn(c)} = 0으로 돌아오므로 맞다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "y = {co(p)}x {sgn(q)}  ⟺  {co(a)}x {BS} {sgn(c)} = 0 ✓",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "{co(a)}x {BS} {sgn(c)} = 0을 y에 대해 풀면 y = {co(p)}x {sgn(q)}이므로 기울기 p = {p}, y절편 q = {q}이고 {ASK} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "y에 대해 풀기",
+          "points": 3,
+          "criterion": "y = {co(p)}x {sgn(q)}{ro(q)} 고쳤다.",
+          "partial": "나눌 때 한 항의 부호만 틀렸으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "p = {p}, q = {q}에서 {ASK} = {ans}{eul(ans)} 구했다.",
+          "partial": "p, q를 바꾸어 읽었으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-intersect-t1",
+      "pitfalls": [
+        {
+          "text": "y에 대해 풀 때 x항만 나누고 상수항은 나누지 않음",
+          "on": "y에 대해",
+          "effect": "불인정"
+        },
+        {
+          "text": "이항하며 부호를 바꾸지 않음",
+          "on": "y에 대해",
+          "effect": "부분"
+        },
+        {
+          "text": "p, q를 바꾸어 읽음",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 그래프",
+        "연립방정식"
+      ],
+      "ops": [
+        "일차방정식의 그래프"
+      ],
+      "traps": [
+        "부호",
+        "교점 = 연립 해"
+      ],
+      "tags": [
+        "일차방정식의 그래프",
+        "연립방정식과 그래프"
+      ],
+      "title": "두 직선의 교점의 좌표 (p, q) — p + q (pq)",
+      "skill": "두 직선의 교점은 두 일차방정식의 연립방정식의 해임을 이용해 풀기",
+      "variant_axis": {
+        "계수": "±1~±4",
+        "구하는 것": "p + q / pq"
+      },
+      "discriminates": "교점을 연립방정식의 해로 구하는가, 가감법의 부호를 지키는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a1",
+          "values": {
+            "in": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "b1",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "a2",
+          "values": {
+            "in": [
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b2",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "x0",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "y0",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "sum",
+              "prod"
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "b1",
+          "rows": {
+            "-4": {
+              "B1S": "− 4y"
+            },
+            "-3": {
+              "B1S": "− 3y"
+            },
+            "-2": {
+              "B1S": "− 2y"
+            },
+            "-1": {
+              "B1S": "− y"
+            },
+            "1": {
+              "B1S": "+ y"
+            },
+            "2": {
+              "B1S": "+ 2y"
+            },
+            "3": {
+              "B1S": "+ 3y"
+            },
+            "4": {
+              "B1S": "+ 4y"
+            }
+          }
+        },
+        {
+          "key": "b2",
+          "rows": {
+            "-4": {
+              "B2S": "− 4y"
+            },
+            "-3": {
+              "B2S": "− 3y"
+            },
+            "-2": {
+              "B2S": "− 2y"
+            },
+            "-1": {
+              "B2S": "− y"
+            },
+            "1": {
+              "B2S": "+ y"
+            },
+            "2": {
+              "B2S": "+ 2y"
+            },
+            "3": {
+              "B2S": "+ 3y"
+            },
+            "4": {
+              "B2S": "+ 4y"
+            }
+          }
+        },
+        {
+          "key": "ask",
+          "rows": {
+            "sum": {
+              "ASK": "p + q",
+              "w": 1,
+              "wp": 0
+            },
+            "prod": {
+              "ASK": "pq",
+              "w": 0,
+              "wp": 1
+            }
+          }
+        }
+      ],
+      "derive": {
+        "c1": "a1*x0 + b1*y0",
+        "c2": "a2*x0 + b2*y0",
+        "det": "a1*b2 - a2*b1",
+        "dx": "a2*b1 - a1*b2",
+        "rx": "b1*c2 - b2*c1",
+        "b1y": "b1*y0",
+        "ans": "w*(x0 + y0) + wp*x0*y0",
+        "xlo": "-6",
+        "xhi": "6",
+        "ylo": "-6",
+        "yhi": "6",
+        "lxa": "(ylo - (c1/b1))/(-a1/b1)",
+        "lxb": "(yhi - (c1/b1))/(-a1/b1)",
+        "lxs": "max(xlo, min(lxa, lxb))",
+        "lxe": "min(xhi, max(lxa, lxb))",
+        "lys": "(-a1/b1)*lxs + (c1/b1)",
+        "lye": "(-a1/b1)*lxe + (c1/b1)",
+        "mxa": "(ylo - (c2/b2))/(-a2/b2)",
+        "mxb": "(yhi - (c2/b2))/(-a2/b2)",
+        "mxs": "max(xlo, min(mxa, mxb))",
+        "mxe": "min(xhi, max(mxa, mxb))",
+        "mys": "(-a2/b2)*mxs + (c2/b2)",
+        "mye": "(-a2/b2)*mxe + (c2/b2)",
+        "ry": "a2*c1 - a1*c2"
+      },
+      "constraints": [
+        "det != 0",
+        "c1 != 0",
+        "c2 != 0",
+        "ans != 0",
+        "ans not in (a1, a2, abs(b1), abs(b2), c1, c2)",
+        "x0 != y0",
+        "a1*b2 != a2*b1",
+        "a1 != a2"
+      ],
+      "cost_values": [
+        "a1",
+        "b1",
+        "c1",
+        "a2",
+        "b2",
+        "c2",
+        "dx",
+        "rx",
+        "x0",
+        "y0",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a1*x0 + b1*y0 == c1",
+        "a2*x0 + b2*y0 == c2",
+        "dx*y0 == a2*c1 - a1*c2",
+        "ans == w*(x0 + y0) + wp*x0*y0"
+      ],
+      "question": "두 직선 {co(a1)}x {B1S} = {c1}, {co(a2)}x {B2S} = {c2}의 교점의 좌표가 (p, q)일 때, {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "두 직선의 교점은 두 방정식을 동시에 만족하는 점이므로, 교점의 좌표는 연립방정식 {co(a1)}x {B1S} = {c1}, {co(a2)}x {B2S} = {c2}의 해와 같다. 가감법으로 한 문자를 없애 x, y를 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{x0}",
+                  "{y0}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{lxs}",
+                    "{lys}"
+                  ],
+                  [
+                    "{lxe}",
+                    "{lye}"
+                  ]
+                ]
+              },
+              {
+                "points": [
+                  [
+                    "{mxs}",
+                    "{mys}"
+                  ],
+                  [
+                    "{mxe}",
+                    "{mye}"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "교점의 좌표는 연립방정식 {co(a1)}x {B1S} = {c1} … ①, {co(a2)}x {B2S} = {c2} … ②의 해",
+        "(① × {a2}) − (② × {a1})에서 {co(dx)}y = {ry}, y = {y0}이고 ①에서 {co(a1)}x {sgn(b1y)} = {c1}, x = {x0}",
+        "교점은 ({x0}, {y0})이므로 {ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(a1)}x {B1S} = {c1},  {co(a2)}x {B2S} = {c2}",
+                "hint": "교점 = 연립방정식의 해"
+              },
+              {
+                "text": "{co(dx)}y = {ry}  →  y = {y0}",
+                "hint": "(① × {a2}) − (② × {a1})"
+              },
+              {
+                "text": "{co(a1)}x {sgn(b1y)} = {c1}  →  x = {x0}",
+                "hint": "①에 대입"
+              },
+              {
+                "text": "교점 ({x0}, {y0}) → {ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "({x0}, {y0})",
+                    "note": "두 식 모두 만족"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": "mark:3-0"
+          }
+        ]
+      ],
+      "sol3": "({x0}, {y0})를 두 식에 넣으면 {a1} × {pn(x0)} {sgn(b1y)} = {c1}, {a2} × {pn(x0)} {sgn(b2*y0)} = {c2}{ro(c2)} 모두 성립하므로 두 직선 위의 점이 맞다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "①: {a1} × {pn(x0)} {sgn(b1y)} = {c1} ✓",
+              "②: {a2} × {pn(x0)} {sgn(b2*y0)} = {c2} ✓ → {ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "교점의 좌표는 연립방정식 {co(a1)}x {B1S} = {c1}, {co(a2)}x {B2S} = {c2}의 해이므로 이를 풀면 x = {x0}, y = {y0}이다. 따라서 p = {x0}, q = {y0}이고 {ASK} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "연립방정식으로 보기",
+          "points": 2,
+          "criterion": "교점의 좌표가 두 방정식의 연립방정식의 해임을 밝혔다.",
+          "partial": "한 식에만 대입해 구하려 했으면 인정하지 않는다."
+        },
+        {
+          "element": "해 구하기",
+          "points": 3,
+          "criterion": "x = {x0}, y = {y0}{eul(y0)} 구했다.",
+          "partial": "하나만 맞으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ASK} = {ans}{eul(ans)} 구했다."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m2-1-line-intersect-t2",
+      "pitfalls": [
+        {
+          "text": "교점을 한 식에만 대입해 구하려 함",
+          "on": "연립",
+          "effect": "불인정"
+        },
+        {
+          "text": "가감법 부호 실수",
+          "on": "해",
+          "effect": "부분"
+        },
+        {
+          "text": "p, q를 바꾸어 곱하거나 더함",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 그래프",
+        "연립방정식"
+      ],
+      "ops": [
+        "일차방정식의 그래프"
+      ],
+      "traps": [
+        "부호",
+        "교점 = 연립 해"
+      ],
+      "tags": [
+        "일차방정식의 그래프",
+        "연립방정식과 그래프"
+      ],
+      "title": "연립방정식의 해가 무수히 많을 조건 — a + b",
+      "skill": "두 직선이 일치할 때(계수의 비가 모두 같을 때) 해가 무수히 많음을 이용해 a, b를 구하기",
+      "variant_axis": {
+        "배수": "2~4",
+        "계수": "±1~±5"
+      },
+      "discriminates": "해가 무수히 많은 것을 '두 직선이 일치'로 해석해 a, b를 같은 배수로 맞추는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              2,
+              3,
+              4
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "q",
+          "rows": {
+            "-4": {
+              "QS": "− 4y"
+            },
+            "-3": {
+              "QS": "− 3y"
+            },
+            "-2": {
+              "QS": "− 2y"
+            },
+            "-1": {
+              "QS": "− y"
+            },
+            "1": {
+              "QS": "+ y"
+            },
+            "2": {
+              "QS": "+ 2y"
+            },
+            "3": {
+              "QS": "+ 3y"
+            },
+            "4": {
+              "QS": "+ 4y"
+            }
+          }
+        }
+      ],
+      "derive": {
+        "a": "k*p",
+        "b": "k*r",
+        "kq": "k*q",
+        "ans": "k*p + k*r"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (p, abs(q), r, kq, k)",
+        "a != b"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "r",
+        "k",
+        "a",
+        "b",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a == k*p",
+        "b == k*r",
+        "ans == a + b"
+      ],
+      "question": "연립방정식 {co(p)}x {QS} = {r}, ax {sgn(kq)}y = b의 해가 무수히 많을 때, 상수 a, b에 대하여 a + b의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "연립방정식의 해가 무수히 많다는 것은 두 일차방정식의 그래프(직선)가 완전히 겹친다는 뜻이다. 그러려면 한 식이 다른 식의 몇 배가 되어야 한다. y의 계수를 비교하면 {kq}{eun(kq)} {q}의 {k}배이므로 둘째 식은 첫째 식의 {k}배여야 하고, a, b도 각각 {k}배가 된다.",
+      "sol2": [
+        "해가 무수히 많으려면 두 직선이 일치해야 하므로 둘째 식은 첫째 식의 몇 배여야 한다",
+        "y의 계수 비교: {kq} ÷ {pn(q)} = {k}이므로 첫째 식 × {k}: {co(a)}x {sgn(kq)}y = {b}",
+        "따라서 a = {a}, b = {b}이고 a + b = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "해가 무수히 많다 ⟺ 두 직선이 일치",
+                "hint": "한 식이 다른 식의 배수"
+              },
+              {
+                "text": "({co(p)}x {QS} = {r}) × {k}  →  {co(a)}x {sgn(kq)}y = {b}",
+                "hint": "y의 계수로 배수 {k} 찾기",
+                "marks": [
+                  {
+                    "on": "{co(a)}x",
+                    "note": "a = {a}"
+                  },
+                  {
+                    "on": "= {b}",
+                    "note": "b = {b}"
+                  }
+                ]
+              },
+              {
+                "text": "a + b = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0",
+              "mark:1-1"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          }
+        ]
+      ],
+      "sol3": "a = {a}, b = {b}이면 둘째 식 {co(a)}x {sgn(kq)}y = {b}의 양변을 {k}{ro(k)} 나누면 첫째 식 {co(p)}x {QS} = {r}{ika(r)} 되어 두 식이 같다. 따라서 a + b = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "({co(a)}x {sgn(kq)}y = {b}) ÷ {k} = ({co(p)}x {QS} = {r}) ✓",
+              "a + b = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "해가 무수히 많으려면 두 식이 같아야 하므로 둘째 식은 첫째 식의 {k}배이다. 따라서 a = {p} × {k} = {a}, b = {r} × {k} = {b}이고 a + b = {ans}이다.",
+      "rubric": [
+        {
+          "element": "조건 해석",
+          "points": 3,
+          "criterion": "해가 무수히 많으려면 두 식이 일치(배수 관계)해야 함을 밝혔다.",
+          "partial": "'기울기만 같다'고 했으면 1점."
+        },
+        {
+          "element": "a, b 구하기",
+          "points": 2,
+          "criterion": "배수 {k}{eul(k)} 찾아 a = {a}, b = {b}{eul(b)} 구했다.",
+          "partial": "하나만 맞으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-intersect-t3",
+      "pitfalls": [
+        {
+          "text": "기울기만 같으면 된다고 보아 b를 정하지 못함",
+          "on": "조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "배수를 x의 계수에서 잘못 읽음",
+          "on": "a, b",
+          "effect": "부분"
+        },
+        {
+          "text": "a와 b 중 하나만 k배함",
+          "on": "a, b",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 그래프",
+        "연립방정식"
+      ],
+      "ops": [
+        "일차방정식의 그래프"
+      ],
+      "traps": [
+        "부호",
+        "교점 = 연립 해"
+      ],
+      "tags": [
+        "일차방정식의 그래프",
+        "연립방정식과 그래프"
+      ],
+      "title": "연립방정식의 해가 없을 조건 — 상수 a",
+      "skill": "두 직선이 평행할 때(기울기는 같고 y절편은 다를 때) 해가 없음을 이용해 a를 구하기",
+      "variant_axis": {
+        "배수": "2~4",
+        "계수": "±1~±5"
+      },
+      "discriminates": "해가 없는 것을 '두 직선이 평행'으로 해석해 x, y의 계수의 비만 맞추고 상수항은 다름을 확인하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "bb",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "q",
+          "rows": {
+            "-4": {
+              "QS": "− 4y"
+            },
+            "-3": {
+              "QS": "− 3y"
+            },
+            "-2": {
+              "QS": "− 2y"
+            },
+            "-1": {
+              "QS": "− y"
+            },
+            "1": {
+              "QS": "+ y"
+            },
+            "2": {
+              "QS": "+ 2y"
+            },
+            "3": {
+              "QS": "+ 3y"
+            },
+            "4": {
+              "QS": "+ 4y"
+            }
+          }
+        }
+      ],
+      "derive": {
+        "a": "k*p",
+        "kq": "k*q",
+        "kr": "k*r",
+        "ans": "k*p"
+      },
+      "constraints": [
+        "bb != kr",
+        "ans not in (p, abs(q), r, kq, k, bb)"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "r",
+        "k",
+        "bb",
+        "a"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == k*p",
+        "kq == k*q",
+        "bb != k*r"
+      ],
+      "question": "연립방정식 {co(p)}x {QS} = {r}, ax {sgn(kq)}y = {bb}의 해가 없을 때, 상수 a의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "연립방정식의 해가 없다는 것은 두 직선이 평행해서 만나지 않는다는 뜻이다. 두 직선이 평행하려면 x, y의 계수의 비가 같고(기울기 같음) 상수항의 비는 달라야 한다(y절편 다름). y의 계수 {kq}{eun(kq)} {q}의 {k}배이므로 a도 {p}의 {k}배여야 하고, 상수항 {bb}{eun(bb)} {r}의 {k}배인 {kr}{wa(kr)} 다르므로 조건에 맞는다.",
+      "sol2": [
+        "해가 없으려면 두 직선이 평행: x, y의 계수의 비는 같고 상수항의 비는 다르다",
+        "y의 계수 비교: {kq} ÷ {pn(q)} = {k}이므로 a = {p} × {k} = {a}",
+        "상수항: {r} × {k} = {kr} ≠ {bb}이므로 두 직선은 일치하지 않고 평행하다. 따라서 a = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "해가 없다 ⟺ 두 직선이 평행",
+                "hint": "계수의 비는 같고 상수항의 비는 다르다"
+              },
+              {
+                "text": "a = {p} × {k} = {a}",
+                "hint": "y의 계수로 배수 {k} 찾기",
+                "marks": [
+                  {
+                    "on": "{a}",
+                    "note": "x의 계수도 {k}배"
+                  }
+                ]
+              },
+              {
+                "text": "{r} × {k} = {kr} ≠ {bb} ✓",
+                "hint": "상수항은 달라야 한다(일치 아님)"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ]
+      ],
+      "sol3": "a = {a}이면 둘째 식은 {co(a)}x {sgn(kq)}y = {bb}이고, 첫째 식의 {k}배 {co(a)}x {sgn(kq)}y = {kr}{wa(kr)} 좌변은 같고 우변만 다르므로 두 직선은 평행하다 — 해가 없다. 따라서 a = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "첫째 × {k}: {co(a)}x {sgn(kq)}y = {kr}",
+              "둘째: {co(a)}x {sgn(kq)}y = {bb} — 좌변 같고 우변 다름 → 평행 ✓"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "해가 없으려면 두 직선이 평행해야 하므로 x, y의 계수의 비가 같아야 한다. y의 계수에서 배수가 {k}이므로 a = {p} × {k} = {a}이고, 상수항은 {kr} ≠ {bb}이므로 조건에 맞는다. 따라서 a = {ans}이다.",
+      "rubric": [
+        {
+          "element": "조건 해석",
+          "points": 3,
+          "criterion": "해가 없으려면 두 직선이 평행(계수의 비 같음, 상수항의 비 다름)임을 밝혔다.",
+          "partial": "상수항 조건을 언급하지 않았으면 1점."
+        },
+        {
+          "element": "a 구하기",
+          "points": 2,
+          "criterion": "배수 {k}{eul(k)} 찾아 a = {a}{eul(a)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-intersect-t4",
+      "pitfalls": [
+        {
+          "text": "해가 없는 조건을 두 직선이 일치하는 것으로 봄",
+          "on": "조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "상수항까지 배수로 맞추어 해가 무수히 많은 경우와 혼동",
+          "on": "조건",
+          "effect": "부분"
+        },
+        {
+          "text": "배수 계산 실수",
+          "on": "a",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 그래프",
+        "연립방정식"
+      ],
+      "ops": [
+        "일차방정식의 그래프"
+      ],
+      "traps": [
+        "부호",
+        "교점 = 연립 해"
+      ],
+      "tags": [
+        "일차방정식의 그래프",
+        "연립방정식과 그래프"
+      ],
+      "title": "세 직선이 한 점에서 만날 때 상수 a",
+      "skill": "상수가 없는 두 직선의 교점을 먼저 구하고, 그 점이 셋째 직선 위에 있도록 a를 정하기",
+      "variant_axis": {
+        "계수": "±1~±4"
+      },
+      "discriminates": "'세 직선이 한 점에서 만난다'를 두 직선의 교점이 셋째 직선 위에 있는 것으로 옮기는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a1",
+          "values": {
+            "in": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "b1",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "a2",
+          "values": {
+            "in": [
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b2",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "x0",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "y0",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "b1",
+          "rows": {
+            "-4": {
+              "B1S": "− 4y"
+            },
+            "-3": {
+              "B1S": "− 3y"
+            },
+            "-2": {
+              "B1S": "− 2y"
+            },
+            "-1": {
+              "B1S": "− y"
+            },
+            "1": {
+              "B1S": "+ y"
+            },
+            "2": {
+              "B1S": "+ 2y"
+            },
+            "3": {
+              "B1S": "+ 3y"
+            },
+            "4": {
+              "B1S": "+ 4y"
+            }
+          }
+        },
+        {
+          "key": "b2",
+          "rows": {
+            "-4": {
+              "B2S": "− 4y"
+            },
+            "-3": {
+              "B2S": "− 3y"
+            },
+            "-2": {
+              "B2S": "− 2y"
+            },
+            "-1": {
+              "B2S": "− y"
+            },
+            "1": {
+              "B2S": "+ y"
+            },
+            "2": {
+              "B2S": "+ 2y"
+            },
+            "3": {
+              "B2S": "+ 3y"
+            },
+            "4": {
+              "B2S": "+ 4y"
+            }
+          }
+        }
+      ],
+      "derive": {
+        "c1": "a1*x0 + b1*y0",
+        "c2": "a2*x0 + b2*y0",
+        "det": "a1*b2 - a2*b1",
+        "c3": "a*x0 - y0",
+        "ax0": "a*x0",
+        "ans": "a",
+        "xlo": "-6",
+        "xhi": "6",
+        "ylo": "-6",
+        "yhi": "6",
+        "lxa": "(ylo - (c1/b1))/(-a1/b1)",
+        "lxb": "(yhi - (c1/b1))/(-a1/b1)",
+        "lxs": "max(xlo, min(lxa, lxb))",
+        "lxe": "min(xhi, max(lxa, lxb))",
+        "lys": "(-a1/b1)*lxs + (c1/b1)",
+        "lye": "(-a1/b1)*lxe + (c1/b1)",
+        "mxa": "(ylo - (c2/b2))/(-a2/b2)",
+        "mxb": "(yhi - (c2/b2))/(-a2/b2)",
+        "mxs": "max(xlo, min(mxa, mxb))",
+        "mxe": "min(xhi, max(mxa, mxb))",
+        "mys": "(-a2/b2)*mxs + (c2/b2)",
+        "mye": "(-a2/b2)*mxe + (c2/b2)",
+        "nxa": "(ylo - (-c3))/(a)",
+        "nxb": "(yhi - (-c3))/(a)",
+        "nxs": "max(xlo, min(nxa, nxb))",
+        "nxe": "min(xhi, max(nxa, nxb))",
+        "nys": "(a)*nxs + (-c3)",
+        "nye": "(a)*nxe + (-c3)"
+      },
+      "constraints": [
+        "det != 0",
+        "c1 != 0",
+        "c2 != 0",
+        "c3 != 0",
+        "ans not in (a1, a2, abs(b1), abs(b2), c1, c2, c3, x0, y0)",
+        "x0 != y0",
+        "a1 != a2",
+        "a1*b2 != a2*b1"
+      ],
+      "cost_values": [
+        "a1",
+        "b1",
+        "c1",
+        "a2",
+        "b2",
+        "c2",
+        "x0",
+        "y0",
+        "c3",
+        "a"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a1*x0 + b1*y0 == c1",
+        "a2*x0 + b2*y0 == c2",
+        "ans*x0 - y0 == c3"
+      ],
+      "question": "세 직선 {co(a1)}x {B1S} = {c1}, {co(a2)}x {B2S} = {c2}, ax − y = {c3}{ika(c3)} 한 점에서 만날 때, 상수 a의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "세 직선이 한 점에서 만나면 그 점은 세 방정식을 모두 만족한다. 상수 a가 없는 두 직선의 교점을 연립방정식으로 먼저 구하고, 그 교점의 좌표를 셋째 직선 ax − y = {c3}에 대입해 a를 정한다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{x0}",
+                  "{y0}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{lxs}",
+                    "{lys}"
+                  ],
+                  [
+                    "{lxe}",
+                    "{lye}"
+                  ]
+                ]
+              },
+              {
+                "points": [
+                  [
+                    "{mxs}",
+                    "{mys}"
+                  ],
+                  [
+                    "{mxe}",
+                    "{mye}"
+                  ]
+                ]
+              },
+              {
+                "points": [
+                  [
+                    "{nxs}",
+                    "{nys}"
+                  ],
+                  [
+                    "{nxe}",
+                    "{nye}"
+                  ]
+                ],
+                "style": "dashed"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "a가 없는 두 직선 {co(a1)}x {B1S} = {c1}, {co(a2)}x {B2S} = {c2}의 교점: 연립하여 풀면 x = {x0}, y = {y0}",
+        "이 점 ({x0}, {y0})가 ax − y = {c3} 위에 있어야 하므로 {co(x0)}a − {pn(y0)} = {c3}",
+        "{co(x0)}a = {c3} + {pn(y0)} = {ax0}, a = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "두 직선의 교점: ({x0}, {y0})",
+                "hint": "a 없는 두 식을 연립"
+              },
+              {
+                "text": "{co(x0)}a − {pn(y0)} = {c3}",
+                "hint": "교점을 셋째 직선에 대입"
+              },
+              {
+                "text": "{co(x0)}a = {ax0}  →  a = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "세 직선이 한 점 ({x0}, {y0})를 지난다"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "a = {ans}이면 셋째 직선 {co(a)}x − y = {c3}에 ({x0}, {y0})를 넣으면 {a} × {pn(x0)} − {pn(y0)} = {c3}{ro(c3)} 성립하므로 세 직선은 모두 점 ({x0}, {y0})를 지난다. 따라서 a = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{a} × {pn(x0)} − {pn(y0)} = {c3} ✓",
+              "a = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "두 직선 {co(a1)}x {B1S} = {c1}, {co(a2)}x {B2S} = {c2}의 교점은 ({x0}, {y0})이다. 이 점이 ax − y = {c3} 위에 있으므로 {co(x0)}a − {pn(y0)} = {c3}에서 a = {ans}이다.",
+      "rubric": [
+        {
+          "element": "교점 구하기",
+          "points": 3,
+          "criterion": "a가 없는 두 직선을 연립해 교점 ({x0}, {y0})를 구했다.",
+          "partial": "가감법 부호 실수면 1점."
+        },
+        {
+          "element": "a 구하기",
+          "points": 2,
+          "criterion": "교점을 ax − y = {c3}에 대입해 a = {ans}{eul(ans)} 구했다.",
+          "partial": "대입 부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-intersect-t5",
+      "pitfalls": [
+        {
+          "text": "a가 있는 직선부터 연립하려다 풀지 못함",
+          "on": "교점",
+          "effect": "불인정"
+        },
+        {
+          "text": "교점을 셋째 직선에 대입할 때 부호 실수",
+          "on": "a",
+          "effect": "부분"
+        },
+        {
+          "text": "교점 계산 실수",
+          "on": "교점",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 그래프",
+        "연립방정식"
+      ],
+      "ops": [
+        "일차방정식의 그래프"
+      ],
+      "traps": [
+        "부호",
+        "교점 = 연립 해"
+      ],
+      "tags": [
+        "일차방정식의 그래프",
+        "연립방정식과 그래프"
+      ],
+      "title": "두 점을 지나는 직선이 y축에 평행할 때 상수 k",
+      "skill": "y축에 평행한 직선은 x = p 꼴이므로 두 점의 x좌표가 같음을 이용하기",
+      "variant_axis": {
+        "계수": "±1~±3",
+        "상수": "±1~±6"
+      },
+      "discriminates": "y축에 평행 ⟺ x좌표가 같다(y좌표가 아님)를 구별하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "c1",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "d1",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "c2",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "d2",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "e1",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "e2",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "d1",
+          "rows": {
+            "-6": {
+              "D1S": "− 6"
+            },
+            "-5": {
+              "D1S": "− 5"
+            },
+            "-4": {
+              "D1S": "− 4"
+            },
+            "-3": {
+              "D1S": "− 3"
+            },
+            "-2": {
+              "D1S": "− 2"
+            },
+            "-1": {
+              "D1S": "− 1"
+            },
+            "1": {
+              "D1S": "+ 1"
+            },
+            "2": {
+              "D1S": "+ 2"
+            },
+            "3": {
+              "D1S": "+ 3"
+            },
+            "4": {
+              "D1S": "+ 4"
+            },
+            "5": {
+              "D1S": "+ 5"
+            },
+            "6": {
+              "D1S": "+ 6"
+            }
+          }
+        },
+        {
+          "key": "d2",
+          "rows": {
+            "-6": {
+              "D2S": "− 6"
+            },
+            "-5": {
+              "D2S": "− 5"
+            },
+            "-4": {
+              "D2S": "− 4"
+            },
+            "-3": {
+              "D2S": "− 3"
+            },
+            "-2": {
+              "D2S": "− 2"
+            },
+            "-1": {
+              "D2S": "− 1"
+            },
+            "1": {
+              "D2S": "+ 1"
+            },
+            "2": {
+              "D2S": "+ 2"
+            },
+            "3": {
+              "D2S": "+ 3"
+            },
+            "4": {
+              "D2S": "+ 4"
+            },
+            "5": {
+              "D2S": "+ 5"
+            },
+            "6": {
+              "D2S": "+ 6"
+            }
+          }
+        }
+      ],
+      "derive": {
+        "dc": "c1 - c2",
+        "dd": "d2 - d1",
+        "k": "(d2 - d1)/(dc + (dc == 0))",
+        "xk": "c1*k + d1",
+        "ans": "k"
+      },
+      "constraints": [
+        "c1 != c2",
+        "k == floor(k)",
+        "k != 0",
+        "e1 != e2",
+        "ans not in (c1, c2, abs(d1), abs(d2), e1, e2)",
+        "abs(k) <= 8"
+      ],
+      "cost_values": [
+        "c1",
+        "d1",
+        "c2",
+        "d2",
+        "dc",
+        "dd",
+        "k",
+        "xk"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "c1*ans + d1 == c2*ans + d2",
+        "xk == c2*ans + d2"
+      ],
+      "question": "두 점 ({co(c1)}k {D1S}, {e1}), ({co(c2)}k {D2S}, {e2})를 지나는 직선이 y축에 평행할 때, 상수 k의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "y축에 평행한 직선은 x = p 꼴이고, 그 위의 점은 x좌표가 모두 {xk}처럼 같은 값이다. 그러므로 두 점의 x좌표 {co(c1)}k {D1S}{wa(D1S)} {co(c2)}k {D2S}{ika(d2)} 같다는 방정식을 세워 k를 구한다. y좌표가 같은 것은 x축에 평행한 경우이니 헷갈리지 않도록 한다.",
+      "sol2": [
+        "y축에 평행하려면 두 점의 x좌표가 같아야 하므로 {co(c1)}k {D1S} = {co(c2)}k {D2S}",
+        "{co(dc)}k = {dd}, k = {ans}",
+        "이때 두 점의 x좌표는 {xk}{ro(xk)} 같다"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(c1)}k {D1S} = {co(c2)}k {D2S}",
+                "hint": "y축에 평행 ⟺ x좌표가 같다"
+              },
+              {
+                "text": "{co(dc)}k = {dd}  →  k = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "x좌표 {xk}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "sol3": "k = {ans}이면 두 점은 ({xk}, {e1}), ({xk}, {e2})가 되어 x좌표가 같으므로 두 점을 지나는 직선은 x = {xk}, 곧 y축에 평행한 직선이다. 따라서 k = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "({xk}, {e1}), ({xk}, {e2}) → 직선 x = {xk}",
+              "k = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y축에 평행한 직선 위의 점은 x좌표가 같으므로 {co(c1)}k {D1S} = {co(c2)}k {D2S}에서 {co(dc)}k = {dd}, k = {ans}이다.",
+      "rubric": [
+        {
+          "element": "조건 세우기",
+          "points": 3,
+          "criterion": "x좌표가 같다는 식 {co(c1)}k {D1S} = {co(c2)}k {D2S}{eul(d2)} 세웠다.",
+          "partial": "y좌표가 같다는 식을 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "k 구하기",
+          "points": 2,
+          "criterion": "k = {ans}{eul(ans)} 구했다.",
+          "partial": "이항 부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-intersect-t6",
+      "pitfalls": [
+        {
+          "text": "y좌표가 같다는 식을 세움(x축 평행과 혼동)",
+          "on": "조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "이항 부호 실수",
+          "on": "k",
+          "effect": "부분"
+        },
+        {
+          "text": "두 x좌표의 식을 더해 놓음",
+          "on": "조건",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 그래프",
+        "연립방정식"
+      ],
+      "ops": [
+        "일차방정식의 그래프"
+      ],
+      "traps": [
+        "부호",
+        "교점 = 연립 해"
+      ],
+      "tags": [
+        "일차방정식의 그래프",
+        "연립방정식과 그래프"
+      ],
+      "title": "두 점을 지나는 직선이 x축에 평행할 때 상수 k",
+      "skill": "x축에 평행한 직선은 y = q 꼴이므로 두 점의 y좌표가 같음을 이용하기",
+      "variant_axis": {
+        "계수": "±1~±3",
+        "상수": "±1~±6"
+      },
+      "discriminates": "x축에 평행 ⟺ y좌표가 같다(x좌표가 아님)를 구별하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "c1",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "d1",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "c2",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "d2",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "e1",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "e2",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "table": [
+        {
+          "key": "d1",
+          "rows": {
+            "-6": {
+              "D1S": "− 6"
+            },
+            "-5": {
+              "D1S": "− 5"
+            },
+            "-4": {
+              "D1S": "− 4"
+            },
+            "-3": {
+              "D1S": "− 3"
+            },
+            "-2": {
+              "D1S": "− 2"
+            },
+            "-1": {
+              "D1S": "− 1"
+            },
+            "1": {
+              "D1S": "+ 1"
+            },
+            "2": {
+              "D1S": "+ 2"
+            },
+            "3": {
+              "D1S": "+ 3"
+            },
+            "4": {
+              "D1S": "+ 4"
+            },
+            "5": {
+              "D1S": "+ 5"
+            },
+            "6": {
+              "D1S": "+ 6"
+            }
+          }
+        },
+        {
+          "key": "d2",
+          "rows": {
+            "-6": {
+              "D2S": "− 6"
+            },
+            "-5": {
+              "D2S": "− 5"
+            },
+            "-4": {
+              "D2S": "− 4"
+            },
+            "-3": {
+              "D2S": "− 3"
+            },
+            "-2": {
+              "D2S": "− 2"
+            },
+            "-1": {
+              "D2S": "− 1"
+            },
+            "1": {
+              "D2S": "+ 1"
+            },
+            "2": {
+              "D2S": "+ 2"
+            },
+            "3": {
+              "D2S": "+ 3"
+            },
+            "4": {
+              "D2S": "+ 4"
+            },
+            "5": {
+              "D2S": "+ 5"
+            },
+            "6": {
+              "D2S": "+ 6"
+            }
+          }
+        }
+      ],
+      "derive": {
+        "dc": "c1 - c2",
+        "dd": "d2 - d1",
+        "k": "(d2 - d1)/(dc + (dc == 0))",
+        "yk": "c1*k + d1",
+        "ans": "k"
+      },
+      "constraints": [
+        "c1 != c2",
+        "k == floor(k)",
+        "k != 0",
+        "e1 != e2",
+        "ans not in (c1, c2, abs(d1), abs(d2), e1, e2)",
+        "abs(k) <= 8"
+      ],
+      "cost_values": [
+        "c1",
+        "d1",
+        "c2",
+        "d2",
+        "dc",
+        "dd",
+        "k",
+        "yk"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "c1*ans + d1 == c2*ans + d2",
+        "yk == c2*ans + d2"
+      ],
+      "question": "두 점 ({e1}, {co(c1)}k {D1S}), ({e2}, {co(c2)}k {D2S})를 지나는 직선이 x축에 평행할 때, 상수 k의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "x축에 평행한 직선은 y = q 꼴이고, 그 위의 점은 y좌표가 모두 같다. 그러므로 두 점의 y좌표 {co(c1)}k {D1S}{wa(D1S)} {co(c2)}k {D2S}{ika(d2)} 같다는 방정식을 세워 k를 구한다. x좌표가 같은 것은 y축에 평행한 경우다.",
+      "sol2": [
+        "x축에 평행하려면 두 점의 y좌표가 같아야 하므로 {co(c1)}k {D1S} = {co(c2)}k {D2S}",
+        "{co(dc)}k = {dd}, k = {ans}",
+        "이때 두 점의 y좌표는 {yk}{ro(yk)} 같다"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(c1)}k {D1S} = {co(c2)}k {D2S}",
+                "hint": "x축에 평행 ⟺ y좌표가 같다"
+              },
+              {
+                "text": "{co(dc)}k = {dd}  →  k = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "y좌표 {yk}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "sol3": "k = {ans}이면 두 점은 ({e1}, {yk}), ({e2}, {yk})가 되어 y좌표가 같으므로 두 점을 지나는 직선은 y = {yk}, 곧 x축에 평행한 직선이다. 따라서 k = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "({e1}, {yk}), ({e2}, {yk}) → 직선 y = {yk}",
+              "k = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "x축에 평행한 직선 위의 점은 y좌표가 같으므로 {co(c1)}k {D1S} = {co(c2)}k {D2S}에서 {co(dc)}k = {dd}, k = {ans}이다.",
+      "rubric": [
+        {
+          "element": "조건 세우기",
+          "points": 3,
+          "criterion": "y좌표가 같다는 식 {co(c1)}k {D1S} = {co(c2)}k {D2S}{eul(d2)} 세웠다.",
+          "partial": "x좌표가 같다는 식을 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "k 구하기",
+          "points": 2,
+          "criterion": "k = {ans}{eul(ans)} 구했다.",
+          "partial": "이항 부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-intersect-t7",
+      "pitfalls": [
+        {
+          "text": "x좌표가 같다는 식을 세움(y축 평행과 혼동)",
+          "on": "조건",
+          "effect": "불인정"
+        },
+        {
+          "text": "이항 부호 실수",
+          "on": "k",
+          "effect": "부분"
+        },
+        {
+          "text": "두 y좌표의 식을 더해 놓음",
+          "on": "조건",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

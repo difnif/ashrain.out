@@ -1,0 +1,1689 @@
+{
+  "seed_id": "m2-1-line-props",
+  "category": "연산",
+  "title": "일차함수 그래프의 성질 — 평행이동한 그래프의 점·평행이동량·절편의 합·평행 조건·절편 삼각형 넓이·절편으로 기울기",
+  "unit_id": "m2-1",
+  "concept_ids": [
+    "m2-1-17",
+    "m2-1-18"
+  ],
+  "schema_id": null,
+  "schema_name": "일차함수의 그래프(평행이동·절편·기울기·평행)",
+  "source_item_ids": [],
+  "note": "그래프는 coordplane 선분(line_clip)으로, 찍는 점은 절편·지나는 점만(recheck F4). 분수 절편·기울기는 그대로 둔다.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 뜻",
+        "좌표평면"
+      ],
+      "ops": [
+        "일차함수"
+      ],
+      "traps": [
+        "평행이동 방향",
+        "절편 혼동"
+      ],
+      "tags": [
+        "일차함수",
+        "그래프"
+      ],
+      "title": "y = ax의 그래프를 y축 방향으로 k만큼 평행이동한 그래프가 지나는 점 (p, m) — m",
+      "skill": "y축 방향으로 k만큼 평행이동하면 y = ax + k가 됨을 알고 점의 x좌표를 대입하기",
+      "variant_axis": {
+        "기울기": "±1~±4",
+        "평행이동": "±1~±6"
+      },
+      "discriminates": "평행이동을 상수항 k의 덧셈으로 나타내는가(기울기를 바꾸지 않는가)",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "ap": "a*p",
+        "m": "a*p + k",
+        "ans": "a*p + k",
+        "xlo": "-6",
+        "xhi": "6",
+        "ylo": "-6",
+        "yhi": "6",
+        "lxa": "(ylo - (k))/(a)",
+        "lxb": "(yhi - (k))/(a)",
+        "lxs": "max(xlo, min(lxa, lxb))",
+        "lxe": "min(xhi, max(lxa, lxb))",
+        "lys": "(a)*lxs + (k)",
+        "lye": "(a)*lxe + (k)"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (a, k, p)",
+        "abs(m) <= 6"
+      ],
+      "cost_values": [
+        "a",
+        "k",
+        "p",
+        "ap",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == a*p + k"
+      ],
+      "question": "일차함수 y = {co(a)}x의 그래프를 y축의 방향으로 {k}만큼 평행이동한 그래프가 점 ({p}, m)을 지날 때, m의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "일차함수 y = ax의 그래프를 y축의 방향으로 k만큼 평행이동하면 y = ax + k의 그래프가 된다(기울기는 그대로, y절편만 k만큼 옮겨진다). 평행이동한 그래프의 식에 점의 x좌표 {p}{eul(p)} 대입하면 m이 나온다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{p}",
+                  "{m}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{lxs}",
+                    "{lys}"
+                  ],
+                  [
+                    "{lxe}",
+                    "{lye}"
+                  ]
+                ],
+                "label": "y = {co(a)}x {sgn(k)}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "평행이동한 그래프의 식은 y = {co(a)}x {sgn(k)}",
+        "점 ({p}, m)을 지나므로 x = {p}, y = m을 대입하면 m = {a} × {pn(p)} {sgn(k)} = {ap} {sgn(k)}",
+        "따라서 m = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = {co(a)}x  →  y = {co(a)}x {sgn(k)}",
+                "hint": "y축 방향으로 {k}만큼: 상수항 + {pn(k)}"
+              },
+              {
+                "text": "m = {a} × {pn(p)} {sgn(k)} = {ans}",
+                "hint": "x = {p} 대입",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "기울기는 그대로"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "y = {co(a)}x {sgn(k)}에 x = {p}{eul(p)} 넣으면 y = {ans}이므로 점 ({p}, {ans})는 이 그래프 위에 있다. 평행이동 전 y = {co(a)}x에서는 x = {p}일 때 y = {ap}이고, 여기에 {k}{eul(k)} 더한 값과 같다. 따라서 m = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "평행이동 전: ({p}, {ap}) → 후: ({p}, {ap} {sgn(k)}) = ({p}, {ans})",
+              "m = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y = {co(a)}x의 그래프를 y축의 방향으로 {k}만큼 평행이동한 그래프의 식은 y = {co(a)}x {sgn(k)}이다. x = {p}{eul(p)} 대입하면 m = {a} × {pn(p)} {sgn(k)} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "평행이동한 식",
+          "points": 3,
+          "criterion": "y = {co(a)}x {sgn(k)}{eul(k)} 썼다.",
+          "partial": "기울기에 {k}{eul(k)} 더했으면 인정하지 않는다."
+        },
+        {
+          "element": "대입·답",
+          "points": 2,
+          "criterion": "x = {p}{eul(p)} 대입해 m = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-props-t1",
+      "pitfalls": [
+        {
+          "text": "평행이동을 기울기에 더해 y = (a + k)x로 씀",
+          "on": "평행이동",
+          "effect": "불인정"
+        },
+        {
+          "text": "x축의 방향으로 평행이동한 것으로 봄",
+          "on": "평행이동",
+          "effect": "불인정"
+        },
+        {
+          "text": "x = p 대입 계산 실수",
+          "on": "대입",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 뜻",
+        "좌표평면"
+      ],
+      "ops": [
+        "일차함수"
+      ],
+      "traps": [
+        "평행이동 방향",
+        "절편 혼동"
+      ],
+      "tags": [
+        "일차함수",
+        "그래프"
+      ],
+      "title": "y = ax의 그래프를 y축 방향으로 k만큼 평행이동한 그래프가 점 (p, q)를 지날 때 k",
+      "skill": "평행이동한 식 y = ax + k에 점의 좌표를 대입해 k에 대한 방정식으로 풀기",
+      "variant_axis": {
+        "기울기": "±1~±4",
+        "점": "±1~±4"
+      },
+      "discriminates": "평행이동한 식을 y = ax + k로 놓고 점을 대입해 k를 구하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "ap": "a*p",
+        "q": "a*p + k",
+        "ans": "k",
+        "xlo": "-6",
+        "xhi": "6",
+        "ylo": "-6",
+        "yhi": "6",
+        "lxa": "(ylo - (k))/(a)",
+        "lxb": "(yhi - (k))/(a)",
+        "lxs": "max(xlo, min(lxa, lxb))",
+        "lxe": "min(xhi, max(lxa, lxb))",
+        "lys": "(a)*lxs + (k)",
+        "lye": "(a)*lxe + (k)"
+      },
+      "constraints": [
+        "q != 0",
+        "ans not in (a, p, q)",
+        "abs(q) <= 6"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "q",
+        "ap",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a*p + ans == q"
+      ],
+      "question": "일차함수 y = {co(a)}x의 그래프를 y축의 방향으로 k만큼 평행이동한 그래프가 점 ({p}, {q})를 지날 때, k의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "y축의 방향으로 k만큼 평행이동한 그래프의 식은 y = {co(a)}x + k이다. 이 그래프가 점 ({p}, {q})를 지나므로 x = {p}, y = {q}{eul(q)} 대입하면 k에 대한 일차방정식이 되어 k를 구할 수 있다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "P",
+                "coord": [
+                  "{p}",
+                  "{q}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{lxs}",
+                    "{lys}"
+                  ],
+                  [
+                    "{lxe}",
+                    "{lye}"
+                  ]
+                ],
+                "label": "y = {co(a)}x {sgn(k)}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "평행이동한 그래프의 식은 y = {co(a)}x + k",
+        "x = {p}, y = {q}{eul(q)} 대입하면 {q} = {a} × {pn(p)} + k, 즉 {q} = {ap} + k",
+        "따라서 k = {q} − {pn(ap)} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = {co(a)}x + k",
+                "hint": "y축 방향으로 k만큼 평행이동"
+              },
+              {
+                "text": "{q} = {ap} + k",
+                "hint": "({p}, {q}) 대입"
+              },
+              {
+                "text": "k = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{q} − {pn(ap)}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "k = {ans}이면 평행이동한 식은 y = {co(a)}x {sgn(k)}이고, x = {p}{eul(p)} 넣으면 {ap} {sgn(k)} = {q}{ro(q)} 점 ({p}, {q})를 지난다. 따라서 k = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "y = {co(a)}x {sgn(k)}: x = {p} → y = {q} ✓",
+              "k = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "평행이동한 그래프의 식 y = {co(a)}x + k에 x = {p}, y = {q}{eul(q)} 대입하면 {q} = {ap} + k이므로 k = {ans}이다.",
+      "rubric": [
+        {
+          "element": "평행이동한 식",
+          "points": 2,
+          "criterion": "y = {co(a)}x + k로 놓았다.",
+          "partial": "기울기를 바꾸었으면 인정하지 않는다."
+        },
+        {
+          "element": "대입·답",
+          "points": 3,
+          "criterion": "점을 대입해 {q} = {ap} + k에서 k = {ans}{eul(ans)} 구했다.",
+          "partial": "x, y를 바꾸어 대입했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-props-t2",
+      "pitfalls": [
+        {
+          "text": "x, y를 바꾸어 대입함",
+          "on": "대입",
+          "effect": "불인정"
+        },
+        {
+          "text": "평행이동한 식을 y = ax로 두고 k를 못 구함",
+          "on": "평행이동",
+          "effect": "불인정"
+        },
+        {
+          "text": "k를 이항할 때 부호 실수",
+          "on": "대입",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 뜻",
+        "좌표평면"
+      ],
+      "ops": [
+        "일차함수"
+      ],
+      "traps": [
+        "평행이동 방향",
+        "절편 혼동"
+      ],
+      "tags": [
+        "일차함수",
+        "그래프"
+      ],
+      "title": "일차함수 y = ax + b의 x절편 p, y절편 q — p + q (pq)",
+      "skill": "x절편은 y = 0일 때의 x, y절편은 x = 0일 때의 y임을 이용해 구하기",
+      "variant_axis": {
+        "기울기": "±1~±4",
+        "y절편": "±1~±8",
+        "구하는 것": "p + q / pq"
+      },
+      "discriminates": "x절편과 y절편을 혼동하지 않는가, x절편이 분수일 때도 그대로 두는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "sum",
+              "prod"
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "ask",
+        "rows": {
+          "sum": {
+            "ASK": "p + q",
+            "w": 1,
+            "wp": 0
+          },
+          "prod": {
+            "ASK": "pq",
+            "w": 0,
+            "wp": 1
+          }
+        }
+      },
+      "derive": {
+        "p": "-b/a",
+        "q": "b",
+        "ans": "w*(p + q) + wp*p*q",
+        "xlo": "min(-3, floor(p) - 2)",
+        "xhi": "max(3, ceiling(p) + 2)",
+        "ylo": "min(-3, floor(q) - 2)",
+        "yhi": "max(3, ceiling(q) + 2)",
+        "lxa": "(ylo - (b))/(a)",
+        "lxb": "(yhi - (b))/(a)",
+        "lxs": "max(xlo, min(lxa, lxb))",
+        "lxe": "min(xhi, max(lxa, lxb))",
+        "lys": "(a)*lxs + (b)",
+        "lye": "(a)*lxe + (b)",
+        "nb": "-b"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (a, abs(b))",
+        "abs(p) <= 8"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "p",
+        "q",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a*p + b == 0",
+        "q == b",
+        "ans == w*(p + q) + wp*p*q"
+      ],
+      "question": "일차함수 y = {co(a)}x {sgn(b)}의 그래프의 x절편을 p, y절편을 q라 할 때, {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "그래프가 x축과 만나는 점의 x좌표가 x절편, y축과 만나는 점의 y좌표가 y절편이다. x축 위의 점은 y = 0이므로 0 = {co(a)}x {sgn(b)}{eul(b)} 풀면 x절편이고, y축 위의 점은 x = 0이므로 y절편은 상수항 {b}이다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{p}",
+                  0
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  0,
+                  "{q}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{lxs}",
+                    "{lys}"
+                  ],
+                  [
+                    "{lxe}",
+                    "{lye}"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "y = 0을 대입하면 0 = {co(a)}x {sgn(b)}, {co(a)}x = {nb}, x = {p}이므로 x절편 p = {p}",
+        "x = 0을 대입하면 y = {b}이므로 y절편 q = {q}",
+        "따라서 {ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "0 = {co(a)}x {sgn(b)}  →  p = {p}",
+                "hint": "x절편: y = 0"
+              },
+              {
+                "text": "y = {co(a)} × 0 {sgn(b)}  →  q = {q}",
+                "hint": "y절편: x = 0"
+              },
+              {
+                "text": "{ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "p, q 자리 확인"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "점 ({p}, 0)과 (0, {q})를 식에 넣으면 {a} × {pn(p)} {sgn(b)} = 0, {a} × 0 {sgn(b)} = {q}{ro(q)} 둘 다 그래프 위의 점이다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "({p}, 0): {a} × {pn(p)} {sgn(b)} = 0 ✓",
+              "(0, {q}): y = {q} ✓ → {ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "y = 0일 때 {co(a)}x {sgn(b)} = 0에서 x = {p}이므로 p = {p}, x = 0일 때 y = {b}이므로 q = {q}이다. 따라서 {ASK} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "x절편",
+          "points": 3,
+          "criterion": "y = 0을 대입해 p = {p}{eul(p)} 구했다.",
+          "partial": "x = 0을 대입했으면 인정하지 않는다."
+        },
+        {
+          "element": "y절편·답",
+          "points": 2,
+          "criterion": "q = {q}{eul(q)} 구해 {ASK} = {ans}{eul(ans)} 답했다.",
+          "partial": "p, q를 바꾸어 썼으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-props-t3",
+      "pitfalls": [
+        {
+          "text": "x절편을 구할 때 x = 0을 대입함",
+          "on": "x절편",
+          "effect": "불인정"
+        },
+        {
+          "text": "x절편의 부호를 틀림(b/a로 둠)",
+          "on": "x절편",
+          "effect": "부분"
+        },
+        {
+          "text": "p, q를 바꾸어 답함",
+          "on": "y절편",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 뜻",
+        "좌표평면"
+      ],
+      "ops": [
+        "일차함수"
+      ],
+      "traps": [
+        "평행이동 방향",
+        "절편 혼동"
+      ],
+      "tags": [
+        "일차함수",
+        "그래프"
+      ],
+      "title": "두 일차함수의 그래프가 평행할 조건 — 기울기가 같다",
+      "skill": "두 그래프가 평행하면 기울기가 같고 y절편이 다름을 이용해 k를 구하기",
+      "variant_axis": {
+        "기울기": "±1~±5",
+        "k의 계수": "±1~±3"
+      },
+      "discriminates": "평행 조건을 '기울기가 같다'로 쓰는가(y절편이 같다고 하지 않는가)",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "d",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "e",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "ck": "c*k",
+        "a": "c*k + d",
+        "ans": "k"
+      },
+      "constraints": [
+        "a != 0",
+        "abs(a) <= 6",
+        "b != e",
+        "ans not in (a, abs(b), c, abs(d), abs(e))"
+      ],
+      "cost_values": [
+        "a",
+        "c",
+        "d",
+        "ck",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "c*ans + d == a"
+      ],
+      "question": "두 일차함수 y = {co(a)}x {sgn(b)}{wa(b)} y = ({co(c)}k {sgn(d)})x {sgn(e)}의 그래프가 서로 평행할 때, 상수 k의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "두 일차함수의 그래프가 서로 평행하려면 기울기가 같고 y절편은 달라야 한다. 두 식의 y절편 {b}{wa(b)} {e}{eun(e)} 이미 다르므로, 기울기 {a}{wa(a)} {co(c)}k {sgn(d)}{ika(d)} 같다는 방정식을 풀면 된다.",
+      "sol2": [
+        "평행하려면 기울기가 같아야 하므로 {co(c)}k {sgn(d)} = {a}",
+        "{co(c)}k = {a} − {pn(d)} = {ck}",
+        "따라서 k = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(c)}k {sgn(d)} = {a}",
+                "hint": "평행 ⟺ 기울기가 같다"
+              },
+              {
+                "text": "{co(c)}k = {ck}  →  k = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "y절편 {b} ≠ {e} 확인"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "sol3": "k = {ans}이면 둘째 함수는 y = {co(a)}x {sgn(e)}{ika(e)} 되어 기울기가 {a}{ro(a)} 첫째 함수와 같고 y절편은 {e}{ro(e)} {b}{wa(b)} 다르므로 두 그래프는 평행하다. 따라서 k = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "k = {ans}: y = {co(a)}x {sgn(e)} — 기울기 {a} 같음, y절편 {e} ≠ {b}",
+              "k = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "두 그래프가 평행하려면 기울기가 같아야 하므로 {co(c)}k {sgn(d)} = {a}, {co(c)}k = {ck}에서 k = {ans}이다.",
+      "rubric": [
+        {
+          "element": "평행 조건",
+          "points": 3,
+          "criterion": "기울기가 같다는 식 {co(c)}k {sgn(d)} = {a}{eul(a)} 세웠다.",
+          "partial": "y절편이 같다는 식을 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "k 구하기",
+          "points": 2,
+          "criterion": "k = {ans}{eul(ans)} 구했다.",
+          "partial": "이항 부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-props-t4",
+      "pitfalls": [
+        {
+          "text": "y절편이 같다는 식을 세움",
+          "on": "평행",
+          "effect": "불인정"
+        },
+        {
+          "text": "기울기 ck + d를 c + d로 잘못 읽음",
+          "on": "평행",
+          "effect": "불인정"
+        },
+        {
+          "text": "이항 부호 실수",
+          "on": "k",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "기하맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 뜻",
+        "좌표평면"
+      ],
+      "ops": [
+        "일차함수"
+      ],
+      "traps": [
+        "평행이동 방향",
+        "절편 혼동"
+      ],
+      "tags": [
+        "일차함수",
+        "그래프"
+      ],
+      "title": "일차함수의 그래프와 x축, y축으로 둘러싸인 삼각형의 넓이",
+      "skill": "x절편과 y절편을 구해 두 절편의 절댓값으로 직각삼각형의 넓이를 구하기",
+      "variant_axis": {
+        "기울기": "±1/1~±4",
+        "y절편": "±2~±8"
+      },
+      "discriminates": "절편에 음수가 있어도 길이는 절댓값으로 잡는가, 1/2을 곱하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -16,
+              -15,
+              -14,
+              -13,
+              -12,
+              -11,
+              -10,
+              -9,
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "p": "-b/a",
+        "q": "b",
+        "ap": "abs(p)",
+        "ab": "abs(b)",
+        "ans": "abs(p)*abs(b)/2",
+        "xlo": "min(-3, floor(p) - 2)",
+        "xhi": "max(3, ceiling(p) + 2)",
+        "ylo": "min(-3, floor(q) - 2)",
+        "yhi": "max(3, ceiling(q) + 2)",
+        "lxa": "(ylo - (b))/(a)",
+        "lxb": "(yhi - (b))/(a)",
+        "lxs": "max(xlo, min(lxa, lxb))",
+        "lxe": "min(xhi, max(lxa, lxb))",
+        "lys": "(a)*lxs + (b)",
+        "lye": "(a)*lxe + (b)"
+      },
+      "constraints": [
+        "abs(p) <= 8",
+        "ap >= 2",
+        "ans not in (a, abs(b))",
+        "ans != ap"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "p",
+        "ap",
+        "ab",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a*p + b == 0",
+        "2*ans == ap*ab"
+      ],
+      "question": "일차함수 y = {co(a)}x {sgn(b)}의 그래프와 x축, y축으로 둘러싸인 삼각형의 넓이를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "그래프가 x축, y축과 만나는 점이 삼각형의 두 꼭짓점이고 원점이 나머지 꼭짓점이다. 이 삼각형은 원점에서 직각인 직각삼각형이므로, 밑변과 높이는 x절편과 y절편의 절댓값이다. 절편이 음수여도 길이는 절댓값으로 잡는다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{p}",
+                  0
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  0,
+                  "{b}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{lxs}",
+                    "{lys}"
+                  ],
+                  [
+                    "{lxe}",
+                    "{lye}"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "x절편: y = 0에서 {co(a)}x {sgn(b)} = 0, x = {p}이므로 A({p}, 0). y절편: x = 0에서 y = {b}이므로 B(0, {b})",
+        "삼각형 OAB는 ∠O = 90°인 직각삼각형이고 OA = {ap}, OB = {ab}",
+        "넓이 = [[frac(1,2)]] × {ap} × {ab} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "A({p}, 0),  B(0, {b})",
+                "hint": "x절편·y절편"
+              },
+              {
+                "text": "OA = {ap},  OB = {ab}",
+                "hint": "길이는 절댓값"
+              },
+              {
+                "text": "[[frac(1,2)]] × {ap} × {ab} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "직각삼각형 넓이"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "두 절편 {p}, {b}의 절댓값 {ap}, {ab}{ika(ab)} 밑변과 높이이므로 넓이는 {ap} × {ab} ÷ 2 = {ans}이다. 절댓값을 빼먹어 음수가 나오지 않았는지 확인한다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{ap} × {ab} ÷ 2 = {ans}",
+              "넓이 = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "x절편은 {p}, y절편은 {b}이므로 삼각형의 밑변과 높이는 각각 {ap}, {ab}이다. 따라서 넓이는 [[frac(1,2)]] × {ap} × {ab} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "절편 구하기",
+          "points": 3,
+          "criterion": "x절편 {p}, y절편 {b}{eul(b)} 구했다.",
+          "partial": "하나만 맞으면 1점."
+        },
+        {
+          "element": "넓이 구하기",
+          "points": 2,
+          "criterion": "[[frac(1,2)]] × {ap} × {ab} = {ans}{eul(ans)} 구했다.",
+          "partial": "절댓값을 쓰지 않아 부호가 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-props-t5",
+      "pitfalls": [
+        {
+          "text": "절편이 음수일 때 절댓값을 쓰지 않아 넓이가 음수",
+          "on": "넓이",
+          "effect": "부분"
+        },
+        {
+          "text": "2로 나누지 않음",
+          "on": "넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "x절편을 y = 0이 아닌 x = 0으로 구함",
+          "on": "절편",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수의 뜻",
+        "좌표평면"
+      ],
+      "ops": [
+        "일차함수"
+      ],
+      "traps": [
+        "평행이동 방향",
+        "절편 혼동"
+      ],
+      "tags": [
+        "일차함수",
+        "그래프"
+      ],
+      "title": "x절편과 y절편이 주어진 일차함수의 그래프의 기울기",
+      "skill": "두 절편으로 두 점 (p, 0), (0, q)를 잡아 기울기 = (y의 증가량)/(x의 증가량)으로 구하기",
+      "variant_axis": {
+        "절편": "±1~±8"
+      },
+      "discriminates": "절편을 점의 좌표로 옮기고 기울기의 부호(오른쪽 위/아래)를 바르게 정하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "ans": "-q/p",
+        "np": "-p",
+        "xlo": "min(-3, floor(p) - 2)",
+        "xhi": "max(3, ceiling(p) + 2)",
+        "ylo": "min(-3, floor(q) - 2)",
+        "yhi": "max(3, ceiling(q) + 2)",
+        "lxa": "(ylo - (q))/(-q/p)",
+        "lxb": "(yhi - (q))/(-q/p)",
+        "lxs": "max(xlo, min(lxa, lxb))",
+        "lxe": "min(xhi, max(lxa, lxb))",
+        "lys": "(-q/p)*lxs + (q)",
+        "lye": "(-q/p)*lxe + (q)"
+      },
+      "constraints": [
+        "ans not in (p, q)",
+        "abs(p) != abs(q)"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans*p + q == 0"
+      ],
+      "question": "x절편이 {p}, y절편이 {q}인 일차함수의 그래프의 기울기를 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "x절편이 {p}이면 그래프는 점 ({p}, 0)을, y절편이 {q}이면 점 (0, {q})를 지난다. 두 점을 알면 기울기는 (y의 증가량) ÷ (x의 증가량)이다. ({p}, 0)에서 (0, {q})로 갈 때 x는 {np}만큼, y는 {q}만큼 변한다.",
+      "sol1_fig": [
+        {
+          "fn": "coordplane",
+          "args": {
+            "x": [
+              "{xlo}",
+              "{xhi}"
+            ],
+            "y": [
+              "{ylo}",
+              "{yhi}"
+            ],
+            "points": [
+              {
+                "name": "A",
+                "coord": [
+                  "{p}",
+                  0
+                ]
+              },
+              {
+                "name": "B",
+                "coord": [
+                  0,
+                  "{q}"
+                ]
+              }
+            ],
+            "lines": [
+              {
+                "points": [
+                  [
+                    "{lxs}",
+                    "{lys}"
+                  ],
+                  [
+                    "{lxe}",
+                    "{lye}"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2": [
+        "그래프는 두 점 ({p}, 0), (0, {q})를 지난다",
+        "기울기 = [[frac({q} − 0, 0 − {pn(p)})]] = [[frac({q}, {np})]] = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "({p}, 0),  (0, {q})",
+                "hint": "절편 → 점"
+              },
+              {
+                "text": "기울기 = [[frac({q}, {np})]] = {ans}",
+                "hint": "y의 증가량 ÷ x의 증가량",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "부호 확인"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "기울기가 {ans}이고 y절편이 {q}인 식 y = {co(ans)}x {sgn(q)}에 x = {p}{eul(p)} 넣으면 y = 0이 되어 x절편 {p}{wa(p)} 맞다. 따라서 기울기는 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "y = {co(ans)}x {sgn(q)}: x = {p} → y = 0 ✓",
+              "기울기 = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "그래프가 두 점 ({p}, 0), (0, {q})를 지나므로 기울기는 [[frac({q} − 0, 0 − {pn(p)})]] = {ans}이다.",
+      "rubric": [
+        {
+          "element": "두 점 잡기",
+          "points": 2,
+          "criterion": "절편으로 두 점 ({p}, 0), (0, {q})를 잡았다.",
+          "partial": "절편을 좌표로 옮기지 못했으면 인정하지 않는다."
+        },
+        {
+          "element": "기울기 구하기",
+          "points": 3,
+          "criterion": "[[frac({q}, {np})]] = {ans}{eul(ans)} 구했다.",
+          "partial": "부호가 틀렸으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-line-props-t6",
+      "pitfalls": [
+        {
+          "text": "기울기를 p/q로 거꾸로 구함",
+          "on": "기울기",
+          "effect": "불인정"
+        },
+        {
+          "text": "기울기의 부호를 틀림",
+          "on": "기울기",
+          "effect": "부분"
+        },
+        {
+          "text": "절편을 점의 좌표로 옮기지 못함",
+          "on": "두 점",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

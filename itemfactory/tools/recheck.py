@@ -955,6 +955,68 @@ def recompute(it):
         if tid.startswith("m2-1-sys-apply-2-t6"):
             m = re.search(r"어른이 (\d+)원, 어린이가 (\d+)원이다. .+? 합하여 (\d+)명이 입장하는 데 모두 (\d+)원", q); a, b, n, T = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
             X, Y = _solve2((1, 1, n), (a, b, T)); return X if "어른는 몇 명" in q or "어른은 몇 명" in q else Y
+    # ── 세션 5 (09-13): m2-1 함수·일차함수 (mkseed_m2_func.py)
+    if tid.startswith("m2-1-func-value"):
+        if tid.startswith("m2-1-func-value-t1"):
+            m = re.match(r"함수 f\(x\) = (-?\d*)x ([+−]) (\d+)에 대하여 f\((-?\d+)\) ([+−]) f\((-?\d+)\)", q); a = _coef(m.group(1)); b = Fraction(m.group(3)) * (1 if m.group(2) == "+" else -1)
+            fp, fq = a * Fraction(m.group(4)) + b, a * Fraction(m.group(6)) + b; return fp + fq if m.group(5) == "+" else fp - fq
+        if tid.startswith("m2-1-func-value-t2"):
+            m = re.match(r"함수 f\(x\) = \[\[frac\(a, x\)\]\] ([+−]) (\d+)에서 f\((-?\d+)\) = (-?\d+)", q); c = Fraction(m.group(2)) * (1 if m.group(1) == "+" else -1)
+            return (Fraction(m.group(4)) - c) * Fraction(m.group(3))
+        if tid.startswith("m2-1-func-value-t3"):
+            m = re.match(r"함수 f\(x\) = ax \+ b에 대하여 f\((-?\d+)\) = (-?\d+), f\((-?\d+)\) = (-?\d+)일 때, .+?(a \+ b|a − b|ab)의 값", q)
+            p, v1, qv, v2 = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]; a = (v2 - v1) / (qv - p); b = v1 - a * p
+            return a + b if m.group(5) == "a + b" else (a - b if m.group(5) == "a − b" else a * b)
+        m = re.match(r"함수 f\(x\) = (-?\d*)x \+ b에 대하여 f\((-?\d+)\) = (-?\d+)일 때, f\((-?\d+)\)", q); a = _coef(m.group(1)); b = Fraction(m.group(3)) - a * Fraction(m.group(2))
+        return a * Fraction(m.group(4)) + b
+    if tid.startswith("m2-1-line-props"):
+        if tid.startswith("m2-1-line-props-t1"):
+            m = re.match(r"일차함수 y = (-?\d*)x의 그래프를 y축의 방향으로 (-?\d+)만큼 평행이동한 그래프가 점 \((-?\d+), m\)", q); return _coef(m.group(1)) * Fraction(m.group(3)) + Fraction(m.group(2))
+        if tid.startswith("m2-1-line-props-t2"):
+            m = re.match(r"일차함수 y = (-?\d*)x의 그래프를 y축의 방향으로 k만큼 평행이동한 그래프가 점 \((-?\d+), (-?\d+)\)", q); return Fraction(m.group(3)) - _coef(m.group(1)) * Fraction(m.group(2))
+        if tid.startswith("m2-1-line-props-t3"):
+            m = re.match(r"일차함수 y = (-?\d*)x ([+−]) (\d+)의 그래프의 x절편을 p, y절편을 q라 할 때, (p \+ q|pq)", q); a = _coef(m.group(1)); b = Fraction(m.group(3)) * (1 if m.group(2) == "+" else -1)
+            p, qv = -b / a, b; return p + qv if m.group(4) == "p + q" else p * qv
+        if tid.startswith("m2-1-line-props-t4"):
+            m = re.match(r"두 일차함수 y = (-?\d*)x ([+−]) (\d+)[와과] y = \((-?\d*)k ([+−]) (\d+)\)x", q); a = _coef(m.group(1)); c = _coef(m.group(4)); d = Fraction(m.group(6)) * (1 if m.group(5) == "+" else -1)
+            return (a - d) / c
+        if tid.startswith("m2-1-line-props-t5"):
+            m = re.match(r"일차함수 y = (-?\d*)x ([+−]) (\d+)의 그래프와 x축, y축", q); a = _coef(m.group(1)); b = Fraction(m.group(3)) * (1 if m.group(2) == "+" else -1)
+            return abs(b / a) * abs(b) / 2
+        m = re.match(r"x절편이 (-?\d+), y절편이 (-?\d+)인", q); return -Fraction(m.group(2)) / Fraction(m.group(1))
+    if tid.startswith("m2-1-line-apply"):
+        if tid.startswith("m2-1-line-apply-t1"):
+            m = re.match(r"(\d+) L의 물이 들어 있는 물통에 매분 (\d+) L씩 물을 (넣는다|뺀다).+?물의 양이 (\d+) L가 되는", q); V0, r, T = Fraction(m.group(1)), Fraction(m.group(2)), Fraction(m.group(4))
+            return (T - V0) / r if m.group(3) == "넣는다" else (V0 - T) / r
+        if tid.startswith("m2-1-line-apply-t2"):
+            m = re.match(r"길이가 (\d+) cm인 양초에 불을 붙이면 (\d+)분마다 (\d+) cm씩 짧아진다.+?남은 길이가 (\d+) cm가 되는", q); L0, t, d, R = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]; return (L0 - R) * t / d
+        if tid.startswith("m2-1-line-apply-t3"):
+            m = re.match(r"지면의 기온이 (\d+) ℃이고, 높이가 1 km 높아질 때마다 기온은 (\d+) ℃씩.+?높이가 (\d+) km인 곳", q); return Fraction(m.group(1)) - Fraction(m.group(2)) * Fraction(m.group(3))
+        if tid.startswith("m2-1-line-apply-t4"):
+            m = re.search(r"\[\[seg\(AB\)\]\] = (\d+) cm, \[\[seg\(BC\)\]\] = (\d+) cm.+?매초 (\d+) cm.+?넓이가 (\d+) cm²가 되는", q); a, v, S = Fraction(m.group(1)), Fraction(m.group(3)), Fraction(m.group(4)); return 2 * S / (a * v)
+        m = re.match(r"어떤 용수철에 (\d+) g의 추를 매달면 길이가 (\d+) cm가 되고, (\d+) g의 추를 매달면 길이가 (\d+) cm가 된다.+?(\d+) g의 추를 매달면", q); w1, L1, w2, L2, w3 = [Fraction(m.group(i)) for i in (1, 2, 3, 4, 5)]
+        a = (L2 - L1) / (w2 - w1); return L1 + a * (w3 - w1)
+    if tid.startswith("m2-1-line-intersect"):
+        if tid.startswith("m2-1-line-intersect-t1"):
+            m = re.match(r"일차방정식 (-?\d*)x ([+−]) (\d*)y ([+−]) (\d+) = 0의 그래프의 기울기를 p, y절편을 q라 할 때, (p \+ q|pq)", q); a = _coef(m.group(1)); b = _coef(m.group(3)) * (1 if m.group(2) == "+" else -1); c = Fraction(m.group(5)) * (1 if m.group(4) == "+" else -1)
+            p, qv = -a / b, -c / b; return p + qv if m.group(6) == "p + q" else p * qv
+        if tid.startswith("m2-1-line-intersect-t2"):
+            m = re.match(r"두 직선 (.+?), (.+?)의 교점의 좌표가 \(p, q\)일 때, (p \+ q|pq)", q); X, Y = _solve2(_lineq(m.group(1)), _lineq(m.group(2))); return X + Y if m.group(3) == "p + q" else X * Y
+        if tid.startswith("m2-1-line-intersect-t3"):
+            m = re.match(r"연립방정식 (-?\d*)x ([+−]) (\d*)y = (-?\d+), ax ([+−]) (\d*)y = b의 해가 무수히 많을 때", q); p = _coef(m.group(1)); qv = _coef(m.group(3)) * (1 if m.group(2) == "+" else -1); r = Fraction(m.group(4))
+            kq = _coef(m.group(6)) * (1 if m.group(5) == "+" else -1); k = kq / qv; return k * p + k * r
+        if tid.startswith("m2-1-line-intersect-t4"):
+            m = re.match(r"연립방정식 (-?\d*)x ([+−]) (\d*)y = (-?\d+), ax ([+−]) (\d*)y = (-?\d+)의 해가 없을 때", q); p = _coef(m.group(1)); qv = _coef(m.group(3)) * (1 if m.group(2) == "+" else -1)
+            kq = _coef(m.group(6)) * (1 if m.group(5) == "+" else -1); return kq / qv * p
+        if tid.startswith("m2-1-line-intersect-t5"):
+            m = re.match(r"세 직선 (.+?), (.+?), ax − y = (-?\d+)[이가] 한 점에서", q); X, Y = _solve2(_lineq(m.group(1)), _lineq(m.group(2))); return (Fraction(m.group(3)) + Y) / X
+        m = re.search(r"\((-?\d*)k ([+−]) (\d+), (-?\d+)\), \((-?\d*)k ([+−]) (\d+), (-?\d+)\)", q) or re.search(r"\((-?\d+), (-?\d*)k ([+−]) (\d+)\), \((-?\d+), (-?\d*)k ([+−]) (\d+)\)", q)
+        g = m.groups()
+        if tid.startswith("m2-1-line-intersect-t6"):
+            c1, d1, c2, d2 = _coef(g[0]), Fraction(g[2]) * (1 if g[1] == "+" else -1), _coef(g[4]), Fraction(g[6]) * (1 if g[5] == "+" else -1)
+        else:
+            c1, d1, c2, d2 = _coef(g[1]), Fraction(g[3]) * (1 if g[2] == "+" else -1), _coef(g[5]), Fraction(g[7]) * (1 if g[6] == "+" else -1)
+        return (d2 - d1) / (c1 - c2)
     if tid.startswith("m2-1-ineq-apply"):
         if tid.startswith("m2-1-ineq-apply-t1"):
             m = re.search(r"(\d+)점, (\d+)점, (\d+)점을 받았다. 네 번째 시험까지의 평균이 (\d+)점 이상", q); return 4 * Fraction(m.group(4)) - sum(Fraction(m.group(i)) for i in (1, 2, 3))
@@ -1334,7 +1396,7 @@ def check_fig(it):
                     (x1, y1), (x2, y2) = ln["points"][:2]
                     for p in a.get("points", []) or []:
                         x, y = p["coord"]
-                        if (x2 - x1) * (y - y1) != (y2 - y1) * (x - x1):
+                        if abs((x2 - x1) * (y - y1) - (y2 - y1) * (x - x1)) > 1e-6:      # 09-13: 분수 좌표(소수 변환)의 오차 허용
                             bad("F4-coordplane 점이 직선 밖", it, str(p))
 
 

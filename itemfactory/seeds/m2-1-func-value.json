@@ -1,0 +1,1131 @@
+{
+  "seed_id": "m2-1-func-value",
+  "category": "연산",
+  "title": "함수와 함숫값 — f(p) ± f(q)·a/x + c의 상수·두 조건으로 a, b·f(p)로 b와 f(q)",
+  "unit_id": "m2-1",
+  "concept_ids": [
+    "m2-1-16"
+  ],
+  "schema_id": null,
+  "schema_name": "함숫값과 함수의 식 결정",
+  "source_item_ids": [],
+  "note": "함숫값은 대입이 전부 — 계수·대입값을 파라미터로 두고 조건값(v)을 역산한다.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "식의 값"
+      ],
+      "ops": [
+        "함숫값"
+      ],
+      "traps": [
+        "대입 시 부호"
+      ],
+      "tags": [
+        "함수",
+        "함숫값"
+      ],
+      "title": "일차함수 f(x) = ax + b의 함숫값 — f(p) ± f(q)",
+      "skill": "f(p)는 x에 p를 대입한 값임을 알고 두 함숫값을 각각 구해 더하거나 빼기",
+      "variant_axis": {
+        "계수": "a ±1~±4, b ±1~±8",
+        "대입값": "±1~±6"
+      },
+      "discriminates": "f(p)를 x = p일 때의 값으로 읽는가, 음수를 대입할 때 괄호를 쓰는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "op",
+          "values": {
+            "in": [
+              "sum",
+              "diff"
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "op",
+        "rows": {
+          "sum": {
+            "FOP": "+",
+            "s": 1
+          },
+          "diff": {
+            "FOP": "−",
+            "s": -1
+          }
+        }
+      },
+      "derive": {
+        "fp": "a*p + b",
+        "fq": "a*q + b",
+        "ans": "a*p + b + s*(a*q + b)"
+      },
+      "constraints": [
+        "p != q",
+        "ans != 0",
+        "ans not in (a, abs(b), p, q)",
+        "fp != 0",
+        "fq != 0"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "p",
+        "q",
+        "fp",
+        "fq",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == fp + s*fq",
+        "fp == a*p + b",
+        "fq == a*q + b"
+      ],
+      "question": "함수 f(x) = {co(a)}x {sgn(b)}에 대하여 f({p}) {FOP} f({q})의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "f(p)는 함수 f(x)의 x에 p를 대입해 얻는 함숫값이다. f({p})는 x = {p}{eul(p)}, f({q})는 x = {q}{eul(q)} 각각 대입해 구하고, 두 값을 {FOP} 기호로 계산한다. 음수를 대입할 때는 괄호를 써서 부호 실수를 막는다.",
+      "sol2": [
+        "f({p}) = {a} × {pn(p)} {sgn(b)} = {fp}",
+        "f({q}) = {a} × {pn(q)} {sgn(b)} = {fq}",
+        "따라서 f({p}) {FOP} f({q}) = {fp} {FOP} {pn(fq)} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "f({p}) = {a} × {pn(p)} {sgn(b)} = {fp}",
+                "hint": "x = {p} 대입"
+              },
+              {
+                "text": "f({q}) = {a} × {pn(q)} {sgn(b)} = {fq}",
+                "hint": "x = {q} 대입"
+              },
+              {
+                "text": "{fp} {FOP} {pn(fq)} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "부호 확인"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "f({p}) = {fp}, f({q}) = {fq}{eun(fq)} 각각 x에 {p}, {q}{eul(q)} 넣은 값이 맞고, {fp} {FOP} {pn(fq)} = {ans}이다. 따라서 답은 {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "f({p}) = {fp},  f({q}) = {fq}",
+              "{fp} {FOP} {pn(fq)} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "f({p}) = {a} × {pn(p)} {sgn(b)} = {fp}, f({q}) = {a} × {pn(q)} {sgn(b)} = {fq}이므로 f({p}) {FOP} f({q}) = {fp} {FOP} {pn(fq)} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "함숫값 구하기",
+          "points": 3,
+          "criterion": "f({p}) = {fp}, f({q}) = {fq}{eul(fq)} 구했다.",
+          "partial": "하나만 맞으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "f({p}) {FOP} f({q}) = {ans}{eul(ans)} 구했다.",
+          "partial": "뺄셈의 부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-func-value-t1",
+      "pitfalls": [
+        {
+          "text": "f(p)를 p × f(x)처럼 곱으로 오해함",
+          "on": "함숫값",
+          "effect": "불인정"
+        },
+        {
+          "text": "음수를 괄호 없이 대입해 부호가 틀림",
+          "on": "함숫값",
+          "effect": "부분"
+        },
+        {
+          "text": "f(p) − f(q)에서 뺄셈의 부호를 틀림",
+          "on": "답",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "식의 값"
+      ],
+      "ops": [
+        "함숫값"
+      ],
+      "traps": [
+        "대입 시 부호"
+      ],
+      "tags": [
+        "함수",
+        "함숫값"
+      ],
+      "title": "f(x) = a/x + c에서 f(p)의 값이 주어질 때 상수 a",
+      "skill": "함숫값 조건 f(p) = v를 식에 대입해 a에 대한 방정식으로 풀기",
+      "variant_axis": {
+        "p": "±1~±6",
+        "c": "±1~±5"
+      },
+      "discriminates": "f(p) = v를 a/p + c = v로 옮기고 분수 방정식을 바르게 푸는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -12,
+              -10,
+              -9,
+              -8,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              2,
+              3,
+              4,
+              5,
+              6,
+              8,
+              9,
+              10,
+              12
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "ap": "a/p",
+        "v": "a/p + c",
+        "vc": "a/p",
+        "ans": "a"
+      },
+      "constraints": [
+        "ap == floor(ap)",
+        "v != 0",
+        "ans not in (p, c, v)",
+        "ans != vc"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "c",
+        "ap",
+        "v"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans/p + c == v",
+        "vc == v - c",
+        "vc*p == ans"
+      ],
+      "question": "함수 f(x) = [[frac(a, x)]] {sgn(c)}에서 f({p}) = {v}일 때, 상수 a의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "f({p})는 x = {p}{eul(p)} 대입한 값이므로 f({p}) = [[frac(a, {p})]] {sgn(c)}이다. 이것이 {v}{wa(v)} 같다는 방정식을 세우고, 상수항을 이항한 뒤 양변에 {p}{eul(p)} 곱해 a를 구한다.",
+      "sol2": [
+        "x = {p}{eul(p)} 대입하면 f({p}) = [[frac(a, {p})]] {sgn(c)} = {v}",
+        "{c}{eul(c)} 이항하면 [[frac(a, {p})]] = {v} − {pn(c)} = {vc}",
+        "양변에 {p}{eul(p)} 곱하면 a = {vc} × {pn(p)} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "[[frac(a, {p})]] {sgn(c)} = {v}",
+                "hint": "f({p}) = {v}"
+              },
+              {
+                "text": "[[frac(a, {p})]] = {vc}",
+                "hint": "상수항 이항"
+              },
+              {
+                "text": "a = {vc} × {pn(p)} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "양변 × {p}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "a = {ans}{eul(ans)} 넣으면 f({p}) = [[frac({ans}, {p})]] {sgn(c)} = {ap} {sgn(c)} = {v}{ro(v)} 조건과 같다. 따라서 a = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "f({p}) = [[frac({ans}, {p})]] {sgn(c)} = {v} ✓",
+              "a = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "f({p}) = [[frac(a, {p})]] {sgn(c)} = {v}에서 [[frac(a, {p})]] = {vc}이므로 a = {vc} × {pn(p)} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "x = {p}{eul(p)} 대입해 [[frac(a, {p})]] {sgn(c)} = {v}{eul(v)} 세웠다.",
+          "partial": "대입 위치가 틀렸으면 인정하지 않는다."
+        },
+        {
+          "element": "a 구하기",
+          "points": 2,
+          "criterion": "이항하고 양변에 {p}{eul(p)} 곱해 a = {ans}{eul(ans)} 구했다.",
+          "partial": "부호 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-func-value-t2",
+      "pitfalls": [
+        {
+          "text": "x 대신 a 자리에 p를 대입함",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "상수항을 이항하지 않고 양변에 p를 곱함",
+          "on": "a",
+          "effect": "불인정"
+        },
+        {
+          "text": "양변에 p를 곱하며 부호 실수",
+          "on": "a",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "문제해결",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "식의 값"
+      ],
+      "ops": [
+        "함숫값"
+      ],
+      "traps": [
+        "대입 시 부호"
+      ],
+      "tags": [
+        "함수",
+        "함숫값"
+      ],
+      "title": "f(x) = ax + b에서 두 함숫값이 주어질 때 a + b (a − b, ab)",
+      "skill": "두 조건 f(p) = v₁, f(q) = v₂를 대입해 a, b의 연립방정식으로 풀기",
+      "variant_axis": {
+        "계수": "a ±1~±4, b ±1~±6",
+        "대입값": "±1~±5"
+      },
+      "discriminates": "두 조건을 두 식으로 세우고 빼서 a를 먼저 구하는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "ask",
+          "values": {
+            "in": [
+              "sum",
+              "diff",
+              "prod"
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "ask",
+        "rows": {
+          "sum": {
+            "ASK": "a + b",
+            "w1": 1,
+            "w2": 1,
+            "wp": 0
+          },
+          "diff": {
+            "ASK": "a − b",
+            "w1": 1,
+            "w2": -1,
+            "wp": 0
+          },
+          "prod": {
+            "ASK": "ab",
+            "w1": 0,
+            "w2": 0,
+            "wp": 1
+          }
+        }
+      },
+      "derive": {
+        "v1": "a*p + b",
+        "v2": "a*q + b",
+        "dv": "a*q + b - (a*p + b)",
+        "dq": "q - p",
+        "ap": "a*p",
+        "ans": "w1*a + w2*b + wp*a*b"
+      },
+      "constraints": [
+        "p < q",
+        "v1 != 0",
+        "v2 != 0",
+        "ans != 0",
+        "ans not in (p, q, v1, v2)",
+        "a != b"
+      ],
+      "cost_values": [
+        "p",
+        "q",
+        "v1",
+        "v2",
+        "dv",
+        "dq",
+        "a",
+        "b",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a*p + b == v1",
+        "a*q + b == v2",
+        "dq*a == dv",
+        "ans == w1*a + w2*b + wp*a*b"
+      ],
+      "question": "함수 f(x) = ax + b에 대하여 f({p}) = {v1}, f({q}) = {v2}일 때, 상수 a, b에 대하여 {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "f({p}) = {v1}{eun(v1)} x = {p}{eul(p)} 대입하면 {v1}{ika(v1)} 된다는 뜻이므로 {co(p)}a + b = {v1}, 마찬가지로 f({q}) = {v2}에서 {co(q)}a + b = {v2}이다. 두 식을 빼면 b가 없어져 a를 구할 수 있고, 다시 대입해 b를 구한다.",
+      "sol2": [
+        "f({p}) = {v1}에서 {co(p)}a + b = {v1} … ①, f({q}) = {v2}에서 {co(q)}a + b = {v2} … ②",
+        "② − ①: {dq}a = {dv}, a = {a}",
+        "①에 a = {a}{eul(a)} 대입하면 {ap} + b = {v1}, b = {b}이므로 {ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(p)}a + b = {v1}",
+                "hint": "f({p}) = {v1}"
+              },
+              {
+                "text": "{co(q)}a + b = {v2}",
+                "hint": "f({q}) = {v2}"
+              },
+              {
+                "text": "{dq}a = {dv}  →  a = {a}",
+                "hint": "② − ① — b 소거"
+              },
+              {
+                "text": "{ap} + b = {v1}  →  b = {b}",
+                "hint": "①에 대입",
+                "marks": [
+                  {
+                    "on": "b = {b}",
+                    "note": "a 먼저, b 나중"
+                  }
+                ]
+              },
+              {
+                "text": "{ASK} = {ans}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:3",
+              "mark:3-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:4"
+          }
+        ]
+      ],
+      "sol3": "f(x) = {co(a)}x {sgn(b)}이면 f({p}) = {a} × {pn(p)} {sgn(b)} = {v1}, f({q}) = {a} × {pn(q)} {sgn(b)} = {v2}{ro(v2)} 두 조건에 모두 맞다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "f(x) = {co(a)}x {sgn(b)}: f({p}) = {v1} ✓, f({q}) = {v2} ✓",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "f({p}) = {v1}, f({q}) = {v2}에서 {co(p)}a + b = {v1}, {co(q)}a + b = {v2}이다. 두 식을 빼면 {dq}a = {dv}, a = {a}이고 b = {b}이므로 {ASK} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "식 세우기",
+          "points": 3,
+          "criterion": "두 조건을 {co(p)}a + b = {v1}, {co(q)}a + b = {v2}{ro(v2)} 세웠다.",
+          "partial": "한 식만 세웠으면 1점."
+        },
+        {
+          "element": "a, b 구하기",
+          "points": 2,
+          "criterion": "연립하여 a = {a}, b = {b}{eul(b)} 구했다.",
+          "partial": "하나만 맞으면 1점."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "{ASK} = {ans}{eul(ans)} 구했다."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m2-1-func-value-t3",
+      "pitfalls": [
+        {
+          "text": "한 조건만 써서 a, b를 정하지 못함",
+          "on": "식",
+          "effect": "불인정"
+        },
+        {
+          "text": "두 식을 뺄 때 부호 실수",
+          "on": "a, b",
+          "effect": "부분"
+        },
+        {
+          "text": "a와 b를 바꾸어 답함",
+          "on": "답",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 90,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "함수의 뜻",
+        "식의 값"
+      ],
+      "ops": [
+        "함숫값"
+      ],
+      "traps": [
+        "대입 시 부호"
+      ],
+      "tags": [
+        "함수",
+        "함숫값"
+      ],
+      "title": "f(x) = ax + b에서 f(p)가 주어질 때 상수 b와 f(q)",
+      "skill": "f(p) = v를 대입해 b를 구하고, 완성된 식에 q를 대입해 f(q)를 구하기",
+      "variant_axis": {
+        "a": "±1~±4",
+        "대입값": "±1~±6"
+      },
+      "discriminates": "b를 구한 뒤 f(q)를 새 식에 대입해 구하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -8,
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        {
+          "name": "p",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "v": "a*p + b",
+        "ap": "a*p",
+        "ans": "a*q + b"
+      },
+      "constraints": [
+        "p != q",
+        "v != 0",
+        "ans != 0",
+        "ans not in (a, p, q, v)",
+        "ans != b"
+      ],
+      "cost_values": [
+        "a",
+        "p",
+        "v",
+        "b",
+        "q",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a*p + b == v",
+        "ans == a*q + b"
+      ],
+      "question": "함수 f(x) = {co(a)}x + b에 대하여 f({p}) = {v}일 때, f({q})의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "sol1": "f({p}) = {v}{eun(v)} x = {p}{eul(p)} 대입하면 {v}{ika(v)} 된다는 뜻이므로 {a} × {pn(p)} + b = {v}에서 b를 구할 수 있다. 그러면 함수의 식이 완전히 정해지고, 거기에 x = {q}{eul(q)} 대입하면 f({q})가 나온다.",
+      "sol2": [
+        "f({p}) = {v}에서 {a} × {pn(p)} + b = {v}, {ap} + b = {v}, b = {b}",
+        "따라서 f(x) = {co(a)}x {sgn(b)}",
+        "f({q}) = {a} × {pn(q)} {sgn(b)} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{ap} + b = {v}  →  b = {b}",
+                "hint": "f({p}) = {v} 대입"
+              },
+              {
+                "text": "f(x) = {co(a)}x {sgn(b)}",
+                "hint": "식 완성"
+              },
+              {
+                "text": "f({q}) = {a} × {pn(q)} {sgn(b)} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "x = {q} 대입"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "f(x) = {co(a)}x {sgn(b)}에 x = {p}{eul(p)} 넣으면 {ap} {sgn(b)} = {v}{ro(v)} 조건과 같고, x = {q}{eul(q)} 넣으면 {ans}이다. 따라서 f({q}) = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "f({p}) = {ap} {sgn(b)} = {v} ✓",
+              "f({q}) = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "model_answer": "f({p}) = {v}에서 {ap} + b = {v}, b = {b}이므로 f(x) = {co(a)}x {sgn(b)}이다. 따라서 f({q}) = {a} × {pn(q)} {sgn(b)} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "b 구하기",
+          "points": 3,
+          "criterion": "f({p}) = {v}{eul(v)} 대입해 b = {b}{eul(b)} 구했다.",
+          "partial": "대입은 맞고 계산 실수면 1점."
+        },
+        {
+          "element": "f({q}) 구하기",
+          "points": 2,
+          "criterion": "f(x) = {co(a)}x {sgn(b)}에 x = {q}{eul(q)} 대입해 {ans}{eul(ans)} 구했다.",
+          "partial": "b 없이 대입했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m2-1-func-value-t4",
+      "pitfalls": [
+        {
+          "text": "b를 구하지 않고 f(q) = aq로 답함",
+          "on": "f(",
+          "effect": "불인정"
+        },
+        {
+          "text": "f(p) = v에서 b의 부호 실수",
+          "on": "b",
+          "effect": "부분"
+        },
+        {
+          "text": "q를 f(p) = v 식에 다시 대입함",
+          "on": "f(",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}
