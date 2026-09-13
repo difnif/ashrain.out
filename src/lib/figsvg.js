@@ -412,7 +412,16 @@ function fnScene(a, o) {
   const minA = a.aspect_min ?? 0.5, maxA = 1.4;
   if (spanY / spanX < minA) { const need = minA * spanX; my += (need - spanY) / 2; spanY = need; }
   if (spanY / spanX > maxA) { const need = spanY / maxA; mx += (need - spanX) / 2; spanX = need; }
-  const f = frame([xlo - mx, xhi + mx], [ylo - my, yhi + my], o, { aspect: spanY / spanX, padExtra: 6 });
+  let f = frame([xlo - mx, xhi + mx], [ylo - my, yhi + my], o, { aspect: spanY / spanX, padExtra: 6 });
+  // 09-13: frame 이 높이를 90~360px 로 자르면 x·y 배율이 달라져 각·원이 찌그러진다 — 짧은 쪽 여백을 늘려 등축으로 되돌린다.
+  {
+    const sxp = (f.W - 2 * f.pad) / spanX, syp = (f.H - 2 * f.pad) / spanY;
+    if (Math.abs(sxp - syp) > 1e-6) {
+      if (syp < sxp) { const need = spanX * sxp / syp; mx += (need - spanX) / 2; spanX = need; }
+      else { const need = spanY * syp / sxp; my += (need - spanY) / 2; spanY = need; }
+      f = frame([xlo - mx, xhi + mx], [ylo - my, yhi + my], o, { aspect: spanY / spanX, padExtra: 6 });
+    }
+  }
   const p2 = (n) => [f.X(P[n][0]), f.Y(P[n][1])];
   let s = svgOpen(f.W, f.H, o);
   if (a.axes) s += axes(f, o, { grid: true });
@@ -491,7 +500,7 @@ function fnScene(a, o) {
     if (hideDot.has(k)) continue;
     s += DOT(x, y, { r: 2.8, k: `pt:${k}` });
     // 점 이름은 무게중심 반대쪽이 기본. 그 자리가 선분에 얹히면(예: 외심 O 옆을 지나는 현) 반대쪽·양옆 순으로 비켜 준다.
-    const u0 = norm([x - cxm, y - cym]);
+    const u0 = Math.hypot(x - cxm, y - cym) < 1e-6 ? [0.7071, 0.7071] : norm([x - cxm, y - cym]);   // 09-13: 무게중심에 놓인 점(외접사각형의 중심 O)은 오른쪽 아래로
     const w = textW(k, 11.5), h = 11.5;
     let u = u0;
     for (const c of [u0, [-u0[0], -u0[1]], [-u0[1], u0[0]], [u0[1], -u0[0]]]) {

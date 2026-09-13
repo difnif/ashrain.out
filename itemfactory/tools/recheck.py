@@ -1179,6 +1179,45 @@ def recompute(it):
         h = Fraction(m.group(3)); S, C, T = Fraction(m.group(5)), Fraction(m.group(6)), Fraction(m.group(7))
         if m.group(2) == "빗변 AB": return h * S if m.group(4) == "BC" else h * C
         return h * T
+    if tid.startswith("m3-2-circle-chord-tangent"):
+        if tid == "m3-2-circle-chord-tangent-t1":
+            r = re.search(r"반지름의 길이가 (\d+)", q); ab = re.search(r"\[\[seg\(AB\)\]\] = (\d+)", q); om = re.search(r"\[\[seg\(OM\)\]\] = (\d+)", q)
+            if r and om: return 2 * _isqrt(int(r.group(1)) ** 2 - int(om.group(1)) ** 2)
+            if ab and om: return _isqrt(int(om.group(1)) ** 2 + (int(ab.group(1)) // 2) ** 2)
+            return _isqrt(int(r.group(1)) ** 2 - (int(ab.group(1)) // 2) ** 2)
+        if tid == "m3-2-circle-chord-tangent-t2":
+            r = re.search(r"반지름의 길이가 (\d+)", q); pa = re.search(r"\[\[seg\(PA\)\]\] = (\d+)", q); op = re.search(r"\[\[seg\(OP\)\]\] = (\d+)", q)
+            if r and op: return _isqrt(int(op.group(1)) ** 2 - int(r.group(1)) ** 2)
+            if pa and op: return _isqrt(int(op.group(1)) ** 2 - int(pa.group(1)) ** 2)
+            return _isqrt(int(r.group(1)) ** 2 + int(pa.group(1)) ** 2)
+        if tid == "m3-2-circle-chord-tangent-t3":
+            m = re.search(r"\[\[angle\((APB|AOB)\)\]\] = \[\[deg\((\d+)\)\]\]일 때, \[\[angle\((AOB|APB|PAB)\)\]\]", q); gq, gv, xq = m.group(1), Fraction(m.group(2)), m.group(3)
+            if xq == "PAB": return (180 - gv) / 2 if gq == "APB" else None
+            return 180 - gv
+        if tid == "m3-2-circle-chord-tangent-t4":
+            m = re.search(r"\[\[seg\(AB\)\]\] = (\d+), \[\[seg\(BC\)\]\] = (\d+), \[\[seg\(CA\)\]\] = (\d+)일 때, \[\[seg\((AD|BE|CF)\)\]\]", q); c, a, b = [Fraction(m.group(i)) for i in (1, 2, 3)]
+            return {"AD": (b + c - a) / 2, "BE": (a + c - b) / 2, "CF": (a + b - c) / 2}[m.group(4)]
+        sides = {k: Fraction(v) for k, v in re.findall(r"\[\[seg\((AB|BC|CD|DA)\)\]\] = (\d+)", q)}; ask = re.search(r"일 때, \[\[seg\((AB|BC|CD|DA)\)\]\]의 길이", q).group(1)
+        if ask == "AB": return sides["BC"] + sides["DA"] - sides["CD"]
+        if ask == "CD": return sides["BC"] + sides["DA"] - sides["AB"]
+        if ask == "BC": return sides["AB"] + sides["CD"] - sides["DA"]
+        return sides["AB"] + sides["CD"] - sides["BC"]
+    if tid.startswith("m3-2-circle-angle"):
+        if tid == "m3-2-circle-angle-t1":
+            m = re.search(r"\[\[angle\((AOB|APB)\)\]\] = \[\[deg\((\d+)\)\]\]일 때, \[\[angle\((APB|AOB)\)\]\]", q); gv = Fraction(m.group(2))
+            return gv / 2 if m.group(1) == "AOB" else 2 * gv
+        if tid == "m3-2-circle-angle-t2":
+            m = re.search(r"\[\[angle\((CAB|ABC)\)\]\] = \[\[deg\((\d+)\)\]\]", q); return 90 - Fraction(m.group(2))
+        if tid == "m3-2-circle-angle-t3":
+            m = re.search(r"\[\[angle\((A|B)\)\]\] = \[\[deg\((\d+)\)\]\]일 때, \[\[angle\((BCD|ADC)\)\]\]", q); return 180 - Fraction(m.group(2))
+        if tid == "m3-2-circle-angle-t4":
+            m = re.search(r"\[\[angle\(BAT\)\]\] = \[\[deg\((\d+)\)\]\], \[\[angle\((ABC|BAC)\)\]\] = \[\[deg\((\d+)\)\]\]일 때, \[\[angle\((BAC|ABC)\)\]\]", q)
+            if m.group(2) == m.group(4): return None
+            return 180 - Fraction(m.group(1)) - Fraction(m.group(3))
+        if tid == "m3-2-circle-angle-t6":
+            m = re.search(r"\[\[angle\(DCE\)\]\] = \[\[deg\((\d+)\)\]\], \[\[angle\(ABD\)\]\] = \[\[deg\((\d+)\)\]\]일 때, \[\[angle\(ADB\)\]\]", q); return 180 - Fraction(m.group(1)) - Fraction(m.group(2))
+        m = re.search(r"호 CD의 길이의 (\d+)배이다. \[\[angle\((CQD|APB)\)\]\] = \[\[deg\((\d+)\)\]\]일 때, \[\[angle\((APB|CQD)\)\]\]", q); n, gq, gv = int(m.group(1)), m.group(2), Fraction(m.group(3))
+        return gv * n if gq == "CQD" else gv / n
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])

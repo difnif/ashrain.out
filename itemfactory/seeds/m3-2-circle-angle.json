@@ -1,0 +1,2752 @@
+{
+  "seed_id": "m3-2-circle-angle",
+  "category": "도형",
+  "title": "원주각 — 원주각과 중심각·반원의 원주각·내접사각형(대각·외각)·접선과 현이 이루는 각·원주각과 호의 길이(×n·÷n)",
+  "unit_id": "m3-2",
+  "concept_ids": [
+    "m3-2-09",
+    "m3-2-10",
+    "m3-2-11"
+  ],
+  "schema_id": null,
+  "schema_name": "원주각의 성질",
+  "source_item_ids": [],
+  "note": "원 위의 점은 P3(각 식) 로 실제 각에 맞게 배치(반지름 3). 각 라벨 '{gv}°' 는 recheck F1 이 좌표로 실측·대조한다.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "qtype": "short",
+      "pool_target": 300,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원주각과 중심각의 관계",
+        "삼각형의 내각의 합"
+      ],
+      "ops": [
+        "원의 성질"
+      ],
+      "tags": [
+        "원주각"
+      ],
+      "title": "원주각과 중심각 — 한 호에 대한 원주각은 중심각의 ½",
+      "skill": "같은 호 AB에 대한 원주각 ∠APB와 중심각 ∠AOB의 관계 ∠APB = ½∠AOB 쓰기",
+      "variant_axis": {
+        "주어진 각": "중심각 / 원주각",
+        "원주각": "15°~85°"
+      },
+      "difficulty": 1,
+      "discriminates": "원주각과 중심각을 구별하고 2배·½의 방향을 바르게 쓰는가",
+      "params": [
+        {
+          "name": "v",
+          "values": {
+            "in": [
+              "AOB-APB",
+              "APB-AOB"
+            ]
+          }
+        },
+        {
+          "name": "x",
+          "values": {
+            "int": [
+              15,
+              85
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "v",
+        "rows": {
+          "AOB-APB": {
+            "GQ": "AOB",
+            "XQ": "APB",
+            "GA": "O",
+            "XA": "P",
+            "isC": 1,
+            "STEP": "∠APB = ½ × ∠AOB",
+            "LAW": "원주각은 중심각의 ½"
+          },
+          "APB-AOB": {
+            "GQ": "APB",
+            "XQ": "AOB",
+            "GA": "P",
+            "XA": "O",
+            "isC": 0,
+            "STEP": "∠AOB = 2 × ∠APB",
+            "LAW": "중심각은 원주각의 2배"
+          }
+        }
+      },
+      "derive": {
+        "c": "2*x",
+        "gv": "2*x*isC + x*(1 - isC)",
+        "ans": "x*isC + 2*x*(1 - isC)"
+      },
+      "cost_values": [
+        "x",
+        "c",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "c == 2*x",
+        "ans != gv"
+      ],
+      "question": "다음 그림에서 점 O는 원의 중심이고 [[angle({GQ})]] = [[deg({gv})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "O": [
+                0,
+                0
+              ],
+              "A": [
+                "{3*cos(pi*(270 - x)/180)}",
+                "{3*sin(pi*(270 - x)/180)}"
+              ],
+              "B": [
+                "{3*cos(pi*(270 + x)/180)}",
+                "{3*sin(pi*(270 + x)/180)}"
+              ],
+              "P": [
+                0,
+                3
+              ]
+            },
+            "segs": [
+              [
+                "O",
+                "A"
+              ],
+              [
+                "O",
+                "B"
+              ],
+              [
+                "P",
+                "A"
+              ],
+              [
+                "P",
+                "B"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "A",
+                  "to": "B",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans})]]",
+      "answer_alt": [
+        "{ans}°",
+        "{ans}"
+      ],
+      "sol1": "호 AB에 대한 중심각은 ∠AOB, 원주각은 ∠APB이다. 한 호에 대한 원주각의 크기는 그 호에 대한 중심각의 크기의 ½이다: ∠APB = ½∠AOB. {LAW}이므로 {STEP}{ro(STEP)} 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "O": [
+                0,
+                0
+              ],
+              "A": [
+                "{3*cos(pi*(270 - x)/180)}",
+                "{3*sin(pi*(270 - x)/180)}"
+              ],
+              "B": [
+                "{3*cos(pi*(270 + x)/180)}",
+                "{3*sin(pi*(270 + x)/180)}"
+              ],
+              "P": [
+                0,
+                3
+              ]
+            },
+            "segs": [
+              [
+                "O",
+                "A"
+              ],
+              [
+                "O",
+                "B"
+              ],
+              [
+                "P",
+                "A"
+              ],
+              [
+                "P",
+                "B"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "O",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{c}°",
+                  "k": "arc:o"
+                },
+                {
+                  "at": "P",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{x}°",
+                  "k": "arc:p"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "arc:o",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:p"
+          }
+        ]
+      ],
+      "sol2": [
+        "호 AB에 대한 중심각 ∠AOB = {c}°, 원주각 ∠APB = {x}°의 관계: ∠APB = ½∠AOB",
+        "{STEP} = {ans}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠APB = ½ × ∠AOB",
+                "hint": "{LAW}"
+              },
+              {
+                "text": "{STEP} = {ans}°",
+                "marks": [
+                  {
+                    "on": "{ans}°",
+                    "note": "∠{XQ}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "model_answer": "한 호에 대한 원주각은 중심각의 ½이므로 {STEP} = {ans}°이다.",
+      "rubric": [
+        {
+          "element": "원주각·중심각의 관계",
+          "points": 3,
+          "criterion": "∠APB = ½∠AOB(또는 ∠AOB = 2∠APB)를 썼다.",
+          "partial": "관계를 반대로 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "각 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-2-circle-angle-t1",
+      "geometry": true,
+      "sol_check": "중심각 {c}°는 원주각 {x}°의 2배로 관계가 맞는다. 원주각은 항상 중심각보다 작다는 점으로 방향을 확인하면 ∠{XQ} = {ans}이다.",
+      "pitfalls": [
+        {
+          "text": "원주각을 중심각의 2배로 둠",
+          "on": "원주각·중심각의 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "원주각과 중심각을 같다고 둠",
+          "on": "원주각·중심각의 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "계산 실수",
+          "on": "각 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "qtype": "short",
+      "pool_target": 300,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원주각과 중심각의 관계",
+        "삼각형의 내각의 합"
+      ],
+      "ops": [
+        "원의 성질"
+      ],
+      "tags": [
+        "원주각"
+      ],
+      "title": "반원에 대한 원주각 — 지름 AB, ∠ACB = 90°",
+      "skill": "지름에 대한 원주각이 90°임을 써서 직각삼각형 ABC의 나머지 예각 구하기",
+      "variant_axis": {
+        "주어진 각": "∠CAB / ∠ABC",
+        "각": "15°~75°"
+      },
+      "difficulty": 2,
+      "discriminates": "AB가 지름이면 ∠ACB = 90°임을 알고 두 예각의 합이 90°임을 쓰는가",
+      "params": [
+        {
+          "name": "v",
+          "values": {
+            "in": [
+              "A-B",
+              "B-A"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              15,
+              75
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "v",
+        "rows": {
+          "A-B": {
+            "GQ": "CAB",
+            "XQ": "ABC",
+            "GA": "A",
+            "GF": "B",
+            "GT": "C",
+            "XA": "B",
+            "XF": "A",
+            "XT": "C",
+            "isA": 1
+          },
+          "B-A": {
+            "GQ": "ABC",
+            "XQ": "CAB",
+            "GA": "B",
+            "GF": "A",
+            "GT": "C",
+            "XA": "A",
+            "XF": "B",
+            "XT": "C",
+            "isA": 0
+          }
+        }
+      },
+      "derive": {
+        "gv": "a",
+        "ans": "90 - a",
+        "cang": "2*a*isA + (180 - 2*a)*(1 - isA)"
+      },
+      "constraints": [
+        "ans != a"
+      ],
+      "cost_values": [
+        "a",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans + a == 90"
+      ],
+      "question": "다음 그림에서 [[seg(AB)]]는 원 O의 지름이고 [[angle({GQ})]] = [[deg({gv})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "O": [
+                0,
+                0
+              ],
+              "A": [
+                -3,
+                0
+              ],
+              "B": [
+                3,
+                0
+              ],
+              "C": [
+                "{3*cos(pi*(cang)/180)}",
+                "{3*sin(pi*(cang)/180)}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              [
+                "B",
+                "C"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans})]]",
+      "answer_alt": [
+        "{ans}°",
+        "{ans}"
+      ],
+      "sol1": "AB가 지름이므로 호 AB(반원)에 대한 중심각은 180°이고, 그 원주각 ∠ACB는 그 ½인 90°이다. 따라서 △ABC는 ∠C = 90°인 직각삼각형이고 나머지 두 각의 합은 90°이다: ∠CAB + ∠ABC = 90°.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "O": [
+                0,
+                0
+              ],
+              "A": [
+                -3,
+                0
+              ],
+              "B": [
+                3,
+                0
+              ],
+              "C": [
+                "{3*cos(pi*(cang)/180)}",
+                "{3*sin(pi*(cang)/180)}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              [
+                "B",
+                "C"
+              ]
+            ],
+            "marks": {
+              "right": [
+                [
+                  "A",
+                  "C",
+                  "B"
+                ]
+              ],
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": "O",
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "seg:A-B",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "right:C",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:ask"
+          }
+        ]
+      ],
+      "sol2": [
+        "AB가 지름이므로 ∠ACB = 90° (반원에 대한 원주각)",
+        "∠{XQ} = 90° − {gv}° = {ans}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠ACB = 90°",
+                "hint": "지름 → 반원의 원주각"
+              },
+              {
+                "text": "90° − {gv}° = {ans}°",
+                "hint": "직각삼각형의 두 예각",
+                "marks": [
+                  {
+                    "on": "{ans}°",
+                    "note": "∠{XQ}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "model_answer": "AB가 지름이므로 ∠ACB = 90°이다. 따라서 ∠{XQ} = 90° − {gv}° = {ans}°이다.",
+      "rubric": [
+        {
+          "element": "반원의 원주각",
+          "points": 3,
+          "criterion": "AB가 지름이므로 ∠ACB = 90°임을 밝혔다.",
+          "partial": "근거 없이 직각이라 했으면 1점."
+        },
+        {
+          "element": "각 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-2-circle-angle-t2",
+      "geometry": true,
+      "sol_check": "세 각 {gv}° + {ans} + 90° = 180°로 삼각형의 내각의 합이 맞는다. 따라서 ∠{XQ} = {ans}이다.",
+      "pitfalls": [
+        {
+          "text": "∠ACB = 90°를 쓰지 않음",
+          "on": "반원의 원주각",
+          "effect": "불인정"
+        },
+        {
+          "text": "180°에서 빼서 답함",
+          "on": "각 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "계산 실수",
+          "on": "각 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "qtype": "short",
+      "pool_target": 300,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원주각과 중심각의 관계",
+        "삼각형의 내각의 합"
+      ],
+      "ops": [
+        "원의 성질"
+      ],
+      "tags": [
+        "원주각"
+      ],
+      "title": "원에 내접하는 사각형 — 마주 보는 두 각의 합은 180°",
+      "skill": "원에 내접하는 사각형의 대각의 합이 180°임을 써서 나머지 각 구하기",
+      "variant_axis": {
+        "주어진 각": "∠A / ∠B",
+        "호": "세 호 40°~"
+      },
+      "difficulty": 2,
+      "discriminates": "마주 보는 각(이웃한 각이 아님)의 합이 180°임을 지키는가",
+      "params": [
+        {
+          "name": "v",
+          "values": {
+            "in": [
+              "A-C",
+              "B-D"
+            ]
+          }
+        },
+        {
+          "name": "u",
+          "values": {
+            "in": [
+              40,
+              42,
+              44,
+              46,
+              48,
+              50,
+              52,
+              54,
+              56,
+              58,
+              60,
+              62,
+              64,
+              66,
+              68,
+              70,
+              72,
+              74,
+              76,
+              78,
+              80,
+              82,
+              84,
+              86,
+              88,
+              90,
+              92,
+              94,
+              96,
+              98,
+              100,
+              102,
+              104,
+              106,
+              108,
+              110,
+              112,
+              114,
+              116,
+              118,
+              120,
+              122,
+              124,
+              126,
+              128,
+              130,
+              132,
+              134,
+              136,
+              138,
+              140,
+              142,
+              144,
+              146,
+              148
+            ]
+          }
+        },
+        {
+          "name": "w2",
+          "values": {
+            "in": [
+              40,
+              42,
+              44,
+              46,
+              48,
+              50,
+              52,
+              54,
+              56,
+              58,
+              60,
+              62,
+              64,
+              66,
+              68,
+              70,
+              72,
+              74,
+              76,
+              78,
+              80,
+              82,
+              84,
+              86,
+              88,
+              90,
+              92,
+              94,
+              96,
+              98,
+              100,
+              102,
+              104,
+              106,
+              108,
+              110,
+              112,
+              114,
+              116,
+              118,
+              120,
+              122,
+              124,
+              126,
+              128,
+              130,
+              132,
+              134,
+              136,
+              138,
+              140,
+              142,
+              144,
+              146,
+              148
+            ]
+          }
+        },
+        {
+          "name": "w",
+          "values": {
+            "in": [
+              40,
+              42,
+              44,
+              46,
+              48,
+              50,
+              52,
+              54,
+              56,
+              58,
+              60,
+              62,
+              64,
+              66,
+              68,
+              70,
+              72,
+              74,
+              76,
+              78,
+              80,
+              82,
+              84,
+              86,
+              88,
+              90,
+              92,
+              94,
+              96,
+              98,
+              100,
+              102,
+              104,
+              106,
+              108,
+              110,
+              112,
+              114,
+              116,
+              118,
+              120,
+              122,
+              124,
+              126,
+              128,
+              130,
+              132,
+              134,
+              136,
+              138,
+              140,
+              142,
+              144,
+              146,
+              148
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "v",
+        "rows": {
+          "A-C": {
+            "GQ": "A",
+            "XQ": "BCD",
+            "GA": "A",
+            "GF": "B",
+            "GT": "D",
+            "XA": "C",
+            "XF": "B",
+            "XT": "D",
+            "useA": 1,
+            "LAW": "∠A + ∠C = 180° (마주 보는 두 각의 합)",
+            "STEP": "∠BCD = 180° − ∠A"
+          },
+          "B-D": {
+            "GQ": "B",
+            "XQ": "ADC",
+            "GA": "B",
+            "GF": "A",
+            "GT": "C",
+            "XA": "D",
+            "XF": "A",
+            "XT": "C",
+            "useA": 0,
+            "LAW": "∠B + ∠D = 180° (마주 보는 두 각의 합)",
+            "STEP": "∠ADC = 180° − ∠B"
+          }
+        }
+      },
+      "derive": {
+        "angA": "(u + w2)/2",
+        "angB": "(w2 + w)/2",
+        "gv": "(u + w2)/2*useA + (w2 + w)/2*(1 - useA)",
+        "ans": "(180 - (u + w2)/2)*useA + (180 - (w2 + w)/2)*(1 - useA)"
+      },
+      "constraints": [
+        "u + w2 + w <= 300",
+        "ans != gv",
+        "angA != angB"
+      ],
+      "cost_values": [
+        "u",
+        "w2",
+        "w",
+        "gv",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "2*angA == u + w2",
+        "2*angB == w2 + w",
+        "ans + gv == 180"
+      ],
+      "question": "다음 그림에서 사각형 ABCD는 원에 내접하고 [[angle({GQ})]] = [[deg({gv})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{3*cos(pi*(240 + u + w2 + w)/180)}",
+                "{3*sin(pi*(240 + u + w2 + w)/180)}"
+              ],
+              "B": [
+                "{3*cos(pi*(240)/180)}",
+                "{3*sin(pi*(240)/180)}"
+              ],
+              "C": [
+                "{3*cos(pi*(240 + u)/180)}",
+                "{3*sin(pi*(240 + u)/180)}"
+              ],
+              "D": [
+                "{3*cos(pi*(240 + u + w2)/180)}",
+                "{3*sin(pi*(240 + u + w2)/180)}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans})]]",
+      "answer_alt": [
+        "{ans}°",
+        "{ans}"
+      ],
+      "sol1": "원에 내접하는 사각형에서 마주 보는 두 각은 원을 둘로 나누는 두 호에 대한 원주각이다. 두 호의 중심각의 합이 360°이므로 두 원주각의 합은 그 ½인 180°이다: ∠A + ∠C = 180°, ∠B + ∠D = 180°. {LAW}{eul(LAW)} 쓴다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{3*cos(pi*(240 + u + w2 + w)/180)}",
+                "{3*sin(pi*(240 + u + w2 + w)/180)}"
+              ],
+              "B": [
+                "{3*cos(pi*(240)/180)}",
+                "{3*sin(pi*(240)/180)}"
+              ],
+              "C": [
+                "{3*cos(pi*(240 + u)/180)}",
+                "{3*sin(pi*(240 + u)/180)}"
+              ],
+              "D": [
+                "{3*cos(pi*(240 + u + w2)/180)}",
+                "{3*sin(pi*(240 + u + w2)/180)}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "{GA}",
+                  "from": "{GF}",
+                  "to": "{GT}",
+                  "label": "{gv}°",
+                  "k": "arc:given"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "arc:given",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:ask"
+          }
+        ]
+      ],
+      "sol2": [
+        "{LAW}",
+        "{STEP} = 180° − {gv}° = {ans}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{LAW}",
+                "hint": "내접사각형의 성질"
+              },
+              {
+                "text": "180° − {gv}° = {ans}°",
+                "marks": [
+                  {
+                    "on": "{ans}°",
+                    "note": "∠{XQ}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "model_answer": "{LAW}이므로 {STEP} = 180° − {gv}° = {ans}°이다.",
+      "rubric": [
+        {
+          "element": "내접사각형의 성질",
+          "points": 3,
+          "criterion": "{LAW}{eul(LAW)} 근거로 썼다.",
+          "partial": "이웃한 각의 합을 180°로 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "각 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-2-circle-angle-t3",
+      "geometry": true,
+      "sol_check": "∠A = {angA}°, ∠B = {angB}°이면 ∠C = {180 - angA}°, ∠D = {180 - angB}°로 네 각의 합이 360°이고 대각의 합은 각각 180°이다. 따라서 ∠{XQ} = {ans}이다.",
+      "pitfalls": [
+        {
+          "text": "이웃한 각의 합을 180°로 둠",
+          "on": "내접사각형의 성질",
+          "effect": "불인정"
+        },
+        {
+          "text": "대각을 같다고 둠",
+          "on": "내접사각형의 성질",
+          "effect": "불인정"
+        },
+        {
+          "text": "계산 실수",
+          "on": "각 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "qtype": "short",
+      "pool_target": 300,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원주각과 중심각의 관계",
+        "삼각형의 내각의 합"
+      ],
+      "ops": [
+        "원의 성질"
+      ],
+      "tags": [
+        "원주각"
+      ],
+      "title": "원의 접선과 현이 이루는 각 — ∠BAT = ∠ACB",
+      "skill": "접선 AT와 현 AB가 이루는 각이 호 AB에 대한 원주각 ∠ACB와 같음을 쓰고 삼각형의 내각의 합으로 나머지 각 구하기",
+      "variant_axis": {
+        "구하는 각": "∠BAC / ∠ABC",
+        "∠BAT": "20°~80°",
+        "다른 각": "20°~80°"
+      },
+      "difficulty": 3,
+      "discriminates": "접선과 현이 이루는 각이 반대쪽 호의 원주각 ∠ACB와 같음을 알고, △ABC에서 나머지 각을 구하는가",
+      "params": [
+        {
+          "name": "v",
+          "values": {
+            "in": [
+              "B→BAC",
+              "C→ABC"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              20,
+              80
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              20,
+              80
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "v",
+        "rows": {
+          "B→BAC": {
+            "G2Q": "ABC",
+            "XQ": "BAC",
+            "useB": 1,
+            "G2A": "B",
+            "G2F": "A",
+            "G2T": "C",
+            "XA": "A",
+            "XF": "B",
+            "XT": "C",
+            "STEP": "∠BAC = 180° − ∠ACB − ∠ABC"
+          },
+          "C→ABC": {
+            "G2Q": "BAC",
+            "XQ": "ABC",
+            "useB": 0,
+            "G2A": "A",
+            "G2F": "B",
+            "G2T": "C",
+            "XA": "B",
+            "XF": "A",
+            "XT": "C",
+            "STEP": "∠ABC = 180° − ∠ACB − ∠BAC"
+          }
+        }
+      },
+      "derive": {
+        "c": "180 - a - b",
+        "g2": "b*useB + (180 - a - b)*(1 - useB)",
+        "ans": "(180 - a - b)*useB + b*(1 - useB)",
+        "bx": "3*cos(pi*(2*a - 90)/180)",
+        "by": "3*sin(pi*(2*a - 90)/180)",
+        "cx": "3*cos(pi*(-90 - 2*b)/180)",
+        "cy": "3*sin(pi*(-90 - 2*b)/180)"
+      },
+      "constraints": [
+        "a + b <= 150",
+        "ans != a",
+        "ans != g2",
+        "a != b"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a + b + c == 180",
+        "ans + g2 + a == 180"
+      ],
+      "question": "다음 그림에서 직선 AT는 원의 접선이고 점 A는 접점이다. [[angle(BAT)]] = [[deg({a})]], [[angle({G2Q})]] = [[deg({g2})]]일 때, [[angle({XQ})]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                -3
+              ],
+              "T": [
+                2.6,
+                -3
+              ],
+              "B": [
+                "{bx}",
+                "{by}"
+              ],
+              "C": [
+                "{cx}",
+                "{cy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "T"
+              ],
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "T",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:a"
+                },
+                {
+                  "at": "{G2A}",
+                  "from": "{G2F}",
+                  "to": "{G2T}",
+                  "label": "{g2}°",
+                  "k": "arc:g2"
+                },
+                {
+                  "at": "{XA}",
+                  "from": "{XF}",
+                  "to": "{XT}",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans})]]",
+      "answer_alt": [
+        "{ans}°",
+        "{ans}"
+      ],
+      "sol1": "접선과 현이 이루는 각 ∠BAT는 그 현 AB에 대한 원주각(현의 반대쪽 점 C에서 본 각) ∠ACB와 같다: ∠ACB = ∠BAT = {a}°. 그러면 △ABC의 세 각 중 둘을 알게 되므로 내각의 합 180°로 나머지 각을 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                -3
+              ],
+              "T": [
+                2.6,
+                -3
+              ],
+              "B": [
+                "{bx}",
+                "{by}"
+              ],
+              "C": [
+                "{cx}",
+                "{cy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "T"
+              ],
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "A"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "T",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:a"
+                },
+                {
+                  "at": "C",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{a}°",
+                  "k": "arc:c"
+                },
+                {
+                  "at": "{G2A}",
+                  "from": "{G2F}",
+                  "to": "{G2T}",
+                  "label": "{g2}°",
+                  "k": "arc:g2"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "arc:a",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:c",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:g2"
+          }
+        ]
+      ],
+      "sol2": [
+        "∠ACB = ∠BAT = {a}° (접선과 현이 이루는 각)",
+        "△ABC에서 {STEP} = 180° − {a}° − {g2}° = {ans}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠ACB = {a}°",
+                "hint": "접선과 현이 이루는 각 = 원주각"
+              },
+              {
+                "text": "{STEP} = {ans}°",
+                "hint": "내각의 합 180°",
+                "marks": [
+                  {
+                    "on": "{ans}°",
+                    "note": "∠{XQ}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "model_answer": "접선과 현이 이루는 각은 그 현에 대한 원주각과 같으므로 ∠ACB = ∠BAT = {a}°이다. 따라서 {STEP} = {ans}°이다.",
+      "rubric": [
+        {
+          "element": "접선과 현의 각",
+          "points": 3,
+          "criterion": "∠ACB = ∠BAT = {a}°임을 밝혔다.",
+          "partial": "다른 각과 같다고 했으면 인정하지 않는다."
+        },
+        {
+          "element": "각 구하기",
+          "points": 2,
+          "criterion": "∠{XQ} = {ans}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-2-circle-angle-t4",
+      "geometry": true,
+      "sol_check": "△ABC의 세 각 ∠ACB = {a}°, ∠ABC = {b}°, ∠BAC = {c}°의 합은 180°로 맞는다. 따라서 ∠{XQ} = {ans}이다.",
+      "pitfalls": [
+        {
+          "text": "∠BAT와 ∠ABC를 같다고 둠",
+          "on": "접선과 현의 각",
+          "effect": "불인정"
+        },
+        {
+          "text": "내각의 합 계산 실수",
+          "on": "각 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "∠ACB를 구하고 멈춤",
+          "on": "각 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "qtype": "short",
+      "pool_target": 300,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원주각과 중심각의 관계",
+        "삼각형의 내각의 합"
+      ],
+      "ops": [
+        "원의 성질"
+      ],
+      "tags": [
+        "원주각"
+      ],
+      "title": "원주각과 호의 길이 — 호가 n배이면 원주각도 n배",
+      "skill": "호의 길이의 비로 큰 호의 원주각 구하기",
+      "variant_axis": {
+        "배수": "2·3·4",
+        "각": "8°~30°"
+      },
+      "difficulty": 2,
+      "discriminates": "호의 길이의 비가 원주각의 비와 같음을 알고 곱하는가",
+      "params": [
+        {
+          "name": "n",
+          "values": {
+            "in": [
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "x",
+          "values": {
+            "int": [
+              8,
+              30
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "big": "n*x",
+        "gv": "x",
+        "ans": "n*x"
+      },
+      "constraints": [
+        "n*x <= 90"
+      ],
+      "cost_values": [
+        "n",
+        "x",
+        "big",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "big == n*x"
+      ],
+      "question": "다음 그림의 원에서 호 AB의 길이는 호 CD의 길이의 {n}배이다. [[angle(CQD)]] = [[deg({gv})]]일 때, [[angle(APB)]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{3*cos(pi*(0)/180)}",
+                "{3*sin(pi*(0)/180)}"
+              ],
+              "B": [
+                "{3*cos(pi*(2*n*x)/180)}",
+                "{3*sin(pi*(2*n*x)/180)}"
+              ],
+              "C": [
+                "{3*cos(pi*(2*n*x + 70)/180)}",
+                "{3*sin(pi*(2*n*x + 70)/180)}"
+              ],
+              "D": [
+                "{3*cos(pi*(2*n*x + 70 + 2*x)/180)}",
+                "{3*sin(pi*(2*n*x + 70 + 2*x)/180)}"
+              ],
+              "Q": [
+                "{3*cos(pi*(2*n*x + 35)/180)}",
+                "{3*sin(pi*(2*n*x + 35)/180)}"
+              ],
+              "P": [
+                "{3*cos(pi*((2*n*x + 70 + 2*x)/2 + 180)/180)}",
+                "{3*sin(pi*((2*n*x + 70 + 2*x)/2 + 180)/180)}"
+              ]
+            },
+            "segs": [
+              [
+                "P",
+                "A"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "Q",
+                "C"
+              ],
+              [
+                "Q",
+                "D"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "Q",
+                  "from": "C",
+                  "to": "D",
+                  "label": "{x}°",
+                  "k": "arc:q"
+                },
+                {
+                  "at": "P",
+                  "from": "A",
+                  "to": "B",
+                  "k": "arc:p"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans})]]",
+      "answer_alt": [
+        "{ans}°",
+        "{ans}"
+      ],
+      "sol1": "한 원에서 호의 길이는 중심각의 크기에 정비례하고, 원주각은 중심각의 ½이므로 원주각의 크기도 호의 길이에 정비례한다. 호 AB가 호 CD의 {n}배이면 ∠APB도 ∠CQD의 {n}배이다: ∠APB = {n} × ∠CQD.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{3*cos(pi*(0)/180)}",
+                "{3*sin(pi*(0)/180)}"
+              ],
+              "B": [
+                "{3*cos(pi*(2*n*x)/180)}",
+                "{3*sin(pi*(2*n*x)/180)}"
+              ],
+              "C": [
+                "{3*cos(pi*(2*n*x + 70)/180)}",
+                "{3*sin(pi*(2*n*x + 70)/180)}"
+              ],
+              "D": [
+                "{3*cos(pi*(2*n*x + 70 + 2*x)/180)}",
+                "{3*sin(pi*(2*n*x + 70 + 2*x)/180)}"
+              ],
+              "Q": [
+                "{3*cos(pi*(2*n*x + 35)/180)}",
+                "{3*sin(pi*(2*n*x + 35)/180)}"
+              ],
+              "P": [
+                "{3*cos(pi*((2*n*x + 70 + 2*x)/2 + 180)/180)}",
+                "{3*sin(pi*((2*n*x + 70 + 2*x)/2 + 180)/180)}"
+              ]
+            },
+            "segs": [
+              [
+                "P",
+                "A"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "Q",
+                "C"
+              ],
+              [
+                "Q",
+                "D"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "Q",
+                  "from": "C",
+                  "to": "D",
+                  "label": "{x}°",
+                  "k": "arc:q"
+                },
+                {
+                  "at": "P",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{big}°",
+                  "k": "arc:p"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "arc:q",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:p"
+          }
+        ]
+      ],
+      "sol2": [
+        "호 AB : 호 CD = {n} : 1이므로 ∠APB : ∠CQD = {n} : 1",
+        "∠APB = {n} × {x}° = {ans}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠APB : ∠CQD = {n} : 1",
+                "hint": "원주각 ∝ 호의 길이"
+              },
+              {
+                "text": "∠APB = {n} × {x}° = {ans}°",
+                "marks": [
+                  {
+                    "on": "{ans}°",
+                    "note": "∠APB"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "model_answer": "원주각의 크기는 호의 길이에 정비례하므로 ∠APB = {n} × ∠CQD이다. 따라서 ∠APB = {n} × {x}° = {ans}°이다.",
+      "rubric": [
+        {
+          "element": "비례 관계",
+          "points": 3,
+          "criterion": "원주각의 크기가 호의 길이에 정비례함을 써서 ∠APB = {n}∠CQD를 세웠다.",
+          "partial": "비를 반대로 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "각 구하기",
+          "points": 2,
+          "criterion": "∠APB = {ans}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-2-circle-angle-t5",
+      "geometry": true,
+      "sol_check": "∠APB = {big}°는 ∠CQD = {x}°의 {n}배로 호의 길이의 비 {n} : 1과 맞는다. 따라서 ∠APB = {ans}이다.",
+      "pitfalls": [
+        {
+          "text": "비를 반대로 세워 나눔",
+          "on": "비례 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "호의 길이와 현의 길이를 혼동",
+          "on": "비례 관계",
+          "effect": "부분"
+        },
+        {
+          "text": "계산 실수",
+          "on": "각 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "qtype": "short",
+      "pool_target": 300,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원주각과 중심각의 관계",
+        "삼각형의 내각의 합"
+      ],
+      "ops": [
+        "원의 성질"
+      ],
+      "tags": [
+        "원주각"
+      ],
+      "title": "원에 내접하는 사각형의 외각 — ∠DCE = ∠A와 △ABD의 내각의 합",
+      "skill": "한 외각이 그 내대각과 같음(∠DCE = ∠A)을 쓰고 대각선 BD로 만든 △ABD에서 나머지 각 구하기",
+      "variant_axis": {
+        "외각": "40°~110°",
+        "∠ABD": "20°~70°"
+      },
+      "difficulty": 3,
+      "discriminates": "외각이 이웃한 내각이 아니라 내대각 ∠A와 같음을 알고, △ABD에서 내각의 합을 쓰는가",
+      "params": [
+        {
+          "name": "u",
+          "values": {
+            "in": [
+              40,
+              42,
+              44,
+              46,
+              48,
+              50,
+              52,
+              54,
+              56,
+              58,
+              60,
+              62,
+              64,
+              66,
+              68,
+              70,
+              72,
+              74,
+              76,
+              78,
+              80,
+              82,
+              84,
+              86,
+              88,
+              90,
+              92,
+              94,
+              96,
+              98,
+              100,
+              102,
+              104,
+              106,
+              108,
+              110,
+              112,
+              114,
+              116,
+              118,
+              120,
+              122,
+              124,
+              126,
+              128,
+              130,
+              132,
+              134,
+              136,
+              138,
+              140,
+              142,
+              144,
+              146,
+              148
+            ]
+          }
+        },
+        {
+          "name": "w2",
+          "values": {
+            "in": [
+              40,
+              42,
+              44,
+              46,
+              48,
+              50,
+              52,
+              54,
+              56,
+              58,
+              60,
+              62,
+              64,
+              66,
+              68,
+              70,
+              72,
+              74,
+              76,
+              78,
+              80,
+              82,
+              84,
+              86,
+              88,
+              90,
+              92,
+              94,
+              96,
+              98,
+              100,
+              102,
+              104,
+              106,
+              108,
+              110,
+              112,
+              114,
+              116,
+              118,
+              120,
+              122,
+              124,
+              126,
+              128,
+              130,
+              132,
+              134,
+              136,
+              138,
+              140,
+              142,
+              144,
+              146,
+              148
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              20,
+              70
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "w": "2*b",
+        "e": "(u + w2)/2",
+        "angC": "180 - (u + w2)/2",
+        "ans": "180 - (u + w2)/2 - b",
+        "cx": "3*cos(pi*(240 + u)/180)",
+        "cy": "3*sin(pi*(240 + u)/180)",
+        "bx": "3*cos(pi*240/180)",
+        "by": "3*sin(pi*240/180)"
+      },
+      "constraints": [
+        "u + w2 + w <= 300",
+        "ans not in (e, b, angC)",
+        "ans >= 20",
+        "e != b"
+      ],
+      "cost_values": [
+        "u",
+        "w2",
+        "b",
+        "e",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "e + angC == 180",
+        "e + b + ans == 180"
+      ],
+      "question": "다음 그림에서 사각형 ABCD는 원에 내접하고 점 E는 변 BC의 연장선 위의 점이다. [[angle(DCE)]] = [[deg({e})]], [[angle(ABD)]] = [[deg({b})]]일 때, [[angle(ADB)]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{3*cos(pi*(240 + u + w2 + w)/180)}",
+                "{3*sin(pi*(240 + u + w2 + w)/180)}"
+              ],
+              "B": [
+                "{3*cos(pi*(240)/180)}",
+                "{3*sin(pi*(240)/180)}"
+              ],
+              "C": [
+                "{3*cos(pi*(240 + u)/180)}",
+                "{3*sin(pi*(240 + u)/180)}"
+              ],
+              "D": [
+                "{3*cos(pi*(240 + u + w2)/180)}",
+                "{3*sin(pi*(240 + u + w2)/180)}"
+              ],
+              "E": [
+                "{cx + 0.7*(cx - bx)}",
+                "{cy + 0.7*(cy - by)}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              [
+                "B",
+                "D"
+              ],
+              {
+                "a": "C",
+                "b": "E",
+                "dash": true
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "C",
+                  "from": "D",
+                  "to": "E",
+                  "label": "{e}°",
+                  "k": "arc:e"
+                },
+                {
+                  "at": "B",
+                  "from": "A",
+                  "to": "D",
+                  "label": "{b}°",
+                  "k": "arc:b"
+                },
+                {
+                  "at": "D",
+                  "from": "A",
+                  "to": "B",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans})]]",
+      "answer_alt": [
+        "{ans}°",
+        "{ans}"
+      ],
+      "sol1": "외각 ∠DCE와 이웃한 내각 ∠BCD는 합이 180°이고, 원에 내접하는 사각형에서 ∠A + ∠BCD = 180°이므로 ∠DCE = ∠A — 외각은 그 내대각과 같다. 따라서 ∠BAD = {e}°이고, △ABD에서 세 내각의 합 180°로 ∠ADB를 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{3*cos(pi*(240 + u + w2 + w)/180)}",
+                "{3*sin(pi*(240 + u + w2 + w)/180)}"
+              ],
+              "B": [
+                "{3*cos(pi*(240)/180)}",
+                "{3*sin(pi*(240)/180)}"
+              ],
+              "C": [
+                "{3*cos(pi*(240 + u)/180)}",
+                "{3*sin(pi*(240 + u)/180)}"
+              ],
+              "D": [
+                "{3*cos(pi*(240 + u + w2)/180)}",
+                "{3*sin(pi*(240 + u + w2)/180)}"
+              ],
+              "E": [
+                "{cx + 0.7*(cx - bx)}",
+                "{cy + 0.7*(cy - by)}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "C",
+                "D"
+              ],
+              [
+                "D",
+                "A"
+              ],
+              [
+                "B",
+                "D"
+              ],
+              {
+                "a": "C",
+                "b": "E",
+                "dash": true
+              }
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "C",
+                  "from": "D",
+                  "to": "E",
+                  "label": "{e}°",
+                  "k": "arc:e"
+                },
+                {
+                  "at": "A",
+                  "from": "B",
+                  "to": "D",
+                  "label": "{e}°",
+                  "k": "arc:a"
+                },
+                {
+                  "at": "B",
+                  "from": "A",
+                  "to": "D",
+                  "label": "{b}°",
+                  "k": "arc:b"
+                },
+                {
+                  "at": "D",
+                  "from": "A",
+                  "to": "B",
+                  "k": "arc:ask"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "arc:e",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:a",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:b",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:ask"
+          }
+        ]
+      ],
+      "sol2": [
+        "∠BAD = ∠DCE = {e}° (외각 = 내대각)",
+        "△ABD에서 ∠ADB = 180° − {e}° − {b}° = {ans}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠BAD = {e}°",
+                "hint": "외각 = 내대각"
+              },
+              {
+                "text": "180° − {e}° − {b}° = {ans}°",
+                "hint": "△ABD의 내각의 합",
+                "marks": [
+                  {
+                    "on": "{ans}°",
+                    "note": "∠ADB"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "model_answer": "원에 내접하는 사각형의 한 외각은 그 내대각과 같으므로 ∠BAD = ∠DCE = {e}°이다. △ABD에서 ∠ADB = 180° − {e}° − {b}° = {ans}°이다.",
+      "rubric": [
+        {
+          "element": "외각 = 내대각",
+          "points": 3,
+          "criterion": "∠BAD = ∠DCE = {e}°임을 밝혔다.",
+          "partial": "이웃한 내각 ∠BCD와 같다고 했으면 인정하지 않는다."
+        },
+        {
+          "element": "각 구하기",
+          "points": 2,
+          "criterion": "△ABD의 내각의 합으로 ∠ADB = {ans}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-2-circle-angle-t6",
+      "geometry": true,
+      "sol_check": "∠BCD = 180° − {e}° = {angC}°이고 ∠A + ∠BCD = {e}° + {angC}° = 180°로 내접사각형의 성질에 맞는다. △ABD의 세 각 {e}° + {b}° + {ans} = 180°. 따라서 ∠ADB = {ans}이다.",
+      "pitfalls": [
+        {
+          "text": "외각을 이웃한 내각 ∠BCD와 같다고 둠",
+          "on": "외각 = 내대각",
+          "effect": "불인정"
+        },
+        {
+          "text": "∠BAD를 구하고 멈춤",
+          "on": "각 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "내각의 합 계산 실수",
+          "on": "각 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "points": 4,
+      "time_limit": 90,
+      "qtype": "short",
+      "pool_target": 300,
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "prereq": [
+        "원주각과 중심각의 관계",
+        "삼각형의 내각의 합"
+      ],
+      "ops": [
+        "원의 성질"
+      ],
+      "tags": [
+        "원주각"
+      ],
+      "title": "원주각과 호의 길이 — 큰 호의 원주각으로 작은 호의 원주각 구하기",
+      "skill": "호의 길이의 비로 작은 호의 원주각 구하기",
+      "variant_axis": {
+        "배수": "2·3·4",
+        "각": "8°~30°"
+      },
+      "difficulty": 2,
+      "discriminates": "호의 길이의 비가 원주각의 비와 같음을 알고 나누는가",
+      "params": [
+        {
+          "name": "n",
+          "values": {
+            "in": [
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "x",
+          "values": {
+            "int": [
+              8,
+              30
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "big": "n*x",
+        "gv": "n*x",
+        "ans": "x"
+      },
+      "constraints": [
+        "n*x <= 90"
+      ],
+      "cost_values": [
+        "n",
+        "x",
+        "big",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "big == n*x"
+      ],
+      "question": "다음 그림의 원에서 호 AB의 길이는 호 CD의 길이의 {n}배이다. [[angle(APB)]] = [[deg({gv})]]일 때, [[angle(CQD)]]의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{3*cos(pi*(0)/180)}",
+                "{3*sin(pi*(0)/180)}"
+              ],
+              "B": [
+                "{3*cos(pi*(2*n*x)/180)}",
+                "{3*sin(pi*(2*n*x)/180)}"
+              ],
+              "C": [
+                "{3*cos(pi*(2*n*x + 70)/180)}",
+                "{3*sin(pi*(2*n*x + 70)/180)}"
+              ],
+              "D": [
+                "{3*cos(pi*(2*n*x + 70 + 2*x)/180)}",
+                "{3*sin(pi*(2*n*x + 70 + 2*x)/180)}"
+              ],
+              "Q": [
+                "{3*cos(pi*(2*n*x + 35)/180)}",
+                "{3*sin(pi*(2*n*x + 35)/180)}"
+              ],
+              "P": [
+                "{3*cos(pi*((2*n*x + 70 + 2*x)/2 + 180)/180)}",
+                "{3*sin(pi*((2*n*x + 70 + 2*x)/2 + 180)/180)}"
+              ]
+            },
+            "segs": [
+              [
+                "P",
+                "A"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "Q",
+                "C"
+              ],
+              [
+                "Q",
+                "D"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "P",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{big}°",
+                  "k": "arc:p"
+                },
+                {
+                  "at": "Q",
+                  "from": "C",
+                  "to": "D",
+                  "k": "arc:q"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "[[deg({ans})]]",
+      "answer_alt": [
+        "{ans}°",
+        "{ans}"
+      ],
+      "sol1": "한 원에서 호의 길이는 중심각의 크기에 정비례하고, 원주각은 중심각의 ½이므로 원주각의 크기도 호의 길이에 정비례한다. 호 AB가 호 CD의 {n}배이면 ∠APB도 ∠CQD의 {n}배이다: ∠APB = {n} × ∠CQD.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                "{3*cos(pi*(0)/180)}",
+                "{3*sin(pi*(0)/180)}"
+              ],
+              "B": [
+                "{3*cos(pi*(2*n*x)/180)}",
+                "{3*sin(pi*(2*n*x)/180)}"
+              ],
+              "C": [
+                "{3*cos(pi*(2*n*x + 70)/180)}",
+                "{3*sin(pi*(2*n*x + 70)/180)}"
+              ],
+              "D": [
+                "{3*cos(pi*(2*n*x + 70 + 2*x)/180)}",
+                "{3*sin(pi*(2*n*x + 70 + 2*x)/180)}"
+              ],
+              "Q": [
+                "{3*cos(pi*(2*n*x + 35)/180)}",
+                "{3*sin(pi*(2*n*x + 35)/180)}"
+              ],
+              "P": [
+                "{3*cos(pi*((2*n*x + 70 + 2*x)/2 + 180)/180)}",
+                "{3*sin(pi*((2*n*x + 70 + 2*x)/2 + 180)/180)}"
+              ]
+            },
+            "segs": [
+              [
+                "P",
+                "A"
+              ],
+              [
+                "P",
+                "B"
+              ],
+              [
+                "Q",
+                "C"
+              ],
+              [
+                "Q",
+                "D"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "Q",
+                  "from": "C",
+                  "to": "D",
+                  "label": "{x}°",
+                  "k": "arc:q"
+                },
+                {
+                  "at": "P",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{big}°",
+                  "k": "arc:p"
+                }
+              ]
+            },
+            "circles": [
+              {
+                "c": [
+                  0,
+                  0
+                ],
+                "r": 3
+              }
+            ]
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": "arc:q",
+            "keep": true
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": "arc:p"
+          }
+        ]
+      ],
+      "sol2": [
+        "호 AB : 호 CD = {n} : 1이므로 ∠APB : ∠CQD = {n} : 1",
+        "∠CQD = {big}° ÷ {n} = {ans}°"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠APB : ∠CQD = {n} : 1",
+                "hint": "원주각 ∝ 호의 길이"
+              },
+              {
+                "text": "∠CQD = {big}° ÷ {n} = {ans}°",
+                "marks": [
+                  {
+                    "on": "{ans}°",
+                    "note": "∠CQD"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "model_answer": "원주각의 크기는 호의 길이에 정비례하므로 ∠APB = {n} × ∠CQD이다. 따라서 ∠CQD = {big}° ÷ {n} = {ans}°이다.",
+      "rubric": [
+        {
+          "element": "비례 관계",
+          "points": 3,
+          "criterion": "원주각의 크기가 호의 길이에 정비례함을 써서 ∠APB = {n}∠CQD를 세웠다.",
+          "partial": "비를 반대로 세웠으면 인정하지 않는다."
+        },
+        {
+          "element": "각 구하기",
+          "points": 2,
+          "criterion": "∠CQD = {ans}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m3-2-circle-angle-t7",
+      "geometry": true,
+      "sol_check": "∠APB = {big}°는 ∠CQD = {x}°의 {n}배로 호의 길이의 비 {n} : 1과 맞는다. 따라서 ∠CQD = {ans}이다.",
+      "pitfalls": [
+        {
+          "text": "비를 반대로 세워 곱함",
+          "on": "비례 관계",
+          "effect": "불인정"
+        },
+        {
+          "text": "호의 길이와 현의 길이를 혼동",
+          "on": "비례 관계",
+          "effect": "부분"
+        },
+        {
+          "text": "계산 실수",
+          "on": "각 구하기",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}
