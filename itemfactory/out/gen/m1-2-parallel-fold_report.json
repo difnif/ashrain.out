@@ -1,0 +1,175 @@
+{
+ "run_id": "m1-2-parallel-fold-20260913-185048",
+ "seed_id": "m1-2-parallel-fold",
+ "title": "평행선의 응용 — 두 번 꺾인 선(보조선 두 개)·종이 테이프 접기",
+ "accepted": 1228,
+ "rejected": 226,
+ "per_template": {
+  "m1-2-parallel-fold-t1": {
+   "target": 300,
+   "space": 800,
+   "ok": 300,
+   "rej": 60,
+   "by_gate": {
+    "G1:제약 위반 a != d": 35,
+    "G1:제약 위반 ans_v != d or S_d == 0": 6,
+    "G1:제약 위반 a != c": 11,
+    "G1:제약 위반 c <= 120": 4,
+    "G1:제약 위반 x <= 120": 4
+   },
+   "samples": [
+    {
+     "idx": 497,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg(55)]], [[angle(BCQ) = deg(85)]], [[angle(RQC) = deg(60)]]일 때, [[angle(PBC)]]의 크기를 구하시오.",
+     "a": "[[deg(80)]]"
+    },
+    {
+     "idx": 194,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg(35)]], [[angle(BCQ) = deg(80)]], [[angle(RQC) = deg(45)]]일 때, [[angle(PBC)]]의 크기를 구하시오.",
+     "a": "[[deg(70)]]"
+    },
+    {
+     "idx": 691,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg(65)]], [[angle(BCQ) = deg(75)]], [[angle(RQC) = deg(30)]]일 때, [[angle(PBC)]]의 크기를 구하시오.",
+     "a": "[[deg(110)]]"
+    }
+   ]
+  },
+  "m1-2-parallel-fold-t2": {
+   "target": 300,
+   "space": 800,
+   "ok": 300,
+   "rej": 53,
+   "by_gate": {
+    "G1:제약 위반 a != d": 34,
+    "G1:제약 위반 a != c": 11,
+    "G1:제약 위반 c <= 120": 4,
+    "G1:제약 위반 x <= 120": 4
+   },
+   "samples": [
+    {
+     "idx": 497,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(PBC) = deg(80)]], [[angle(BCQ) = deg(85)]], [[angle(RQC) = deg(60)]]일 때, [[angle(QPB)]]의 크기를 구하시오.",
+     "a": "[[deg(55)]]"
+    },
+    {
+     "idx": 194,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(PBC) = deg(70)]], [[angle(BCQ) = deg(80)]], [[angle(RQC) = deg(45)]]일 때, [[angle(QPB)]]의 크기를 구하시오.",
+     "a": "[[deg(35)]]"
+    },
+    {
+     "idx": 691,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(PBC) = deg(110)]], [[angle(BCQ) = deg(75)]], [[angle(RQC) = deg(30)]]일 때, [[angle(QPB)]]의 크기를 구하시오.",
+     "a": "[[deg(65)]]"
+    }
+   ]
+  },
+  "m1-2-parallel-fold-t3": {
+   "target": 300,
+   "space": 800,
+   "ok": 300,
+   "rej": 53,
+   "by_gate": {
+    "G1:제약 위반 a != d": 34,
+    "G1:제약 위반 a != c": 11,
+    "G1:제약 위반 c <= 120": 4,
+    "G1:제약 위반 x <= 120": 4
+   },
+   "samples": [
+    {
+     "idx": 497,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg(55)]], [[angle(PBC) = deg(80)]], [[angle(RQC) = deg(60)]]일 때, [[angle(BCQ)]]의 크기를 구하시오.",
+     "a": "[[deg(85)]]"
+    },
+    {
+     "idx": 194,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg(35)]], [[angle(PBC) = deg(70)]], [[angle(RQC) = deg(45)]]일 때, [[angle(BCQ)]]의 크기를 구하시오.",
+     "a": "[[deg(80)]]"
+    },
+    {
+     "idx": 691,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg(65)]], [[angle(PBC) = deg(110)]], [[angle(RQC) = deg(30)]]일 때, [[angle(BCQ)]]의 크기를 구하시오.",
+     "a": "[[deg(75)]]"
+    }
+   ]
+  },
+  "m1-2-parallel-fold-t4": {
+   "target": 300,
+   "space": 800,
+   "ok": 300,
+   "rej": 60,
+   "by_gate": {
+    "G1:제약 위반 a != d": 35,
+    "G1:제약 위반 ans_v != x or S_x == 0": 6,
+    "G1:제약 위반 a != c": 11,
+    "G1:제약 위반 c <= 120": 4,
+    "G1:제약 위반 x <= 120": 4
+   },
+   "samples": [
+    {
+     "idx": 497,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg(55)]], [[angle(PBC) = deg(80)]], [[angle(BCQ) = deg(85)]]일 때, [[angle(RQC)]]의 크기를 구하시오.",
+     "a": "[[deg(60)]]"
+    },
+    {
+     "idx": 194,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg(35)]], [[angle(PBC) = deg(70)]], [[angle(BCQ) = deg(80)]]일 때, [[angle(RQC)]]의 크기를 구하시오.",
+     "a": "[[deg(45)]]"
+    },
+    {
+     "idx": 691,
+     "q": "다음 그림에서 [[par(l, m)]]이고 [[angle(QPB) = deg(65)]], [[angle(PBC) = deg(110)]], [[angle(BCQ) = deg(75)]]일 때, [[angle(RQC)]]의 크기를 구하시오.",
+     "a": "[[deg(30)]]"
+    }
+   ]
+  },
+  "m1-2-parallel-fold-t5": {
+   "target": 300,
+   "space": 14,
+   "ok": 14,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림은 폭이 일정한 종이 테이프를 선분 EF를 접는 선으로 하여 접은 것이다. [[angle(DEF) = deg(52)]]일 때, [[angle(EGC)]]의 크기를 구하시오.",
+     "a": "[[deg(76)]]"
+    },
+    {
+     "idx": 9,
+     "q": "다음 그림은 폭이 일정한 종이 테이프를 선분 EF를 접는 선으로 하여 접은 것이다. [[angle(DEF) = deg(68)]]일 때, [[angle(EGC)]]의 크기를 구하시오.",
+     "a": "[[deg(44)]]"
+    },
+    {
+     "idx": 4,
+     "q": "다음 그림은 폭이 일정한 종이 테이프를 선분 EF를 접는 선으로 하여 접은 것이다. [[angle(DEF) = deg(58)]]일 때, [[angle(EGC)]]의 크기를 구하시오.",
+     "a": "[[deg(64)]]"
+    }
+   ]
+  },
+  "m1-2-parallel-fold-t6": {
+   "target": 300,
+   "space": 14,
+   "ok": 14,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림은 폭이 일정한 종이 테이프를 선분 EF를 접는 선으로 하여 접은 것이다. [[angle(EGC) = deg(76)]]일 때, [[angle(DEF)]]의 크기를 구하시오.",
+     "a": "[[deg(52)]]"
+    },
+    {
+     "idx": 9,
+     "q": "다음 그림은 폭이 일정한 종이 테이프를 선분 EF를 접는 선으로 하여 접은 것이다. [[angle(EGC) = deg(44)]]일 때, [[angle(DEF)]]의 크기를 구하시오.",
+     "a": "[[deg(68)]]"
+    },
+    {
+     "idx": 4,
+     "q": "다음 그림은 폭이 일정한 종이 테이프를 선분 EF를 접는 선으로 하여 접은 것이다. [[angle(EGC) = deg(64)]]일 때, [[angle(DEF)]]의 크기를 구하시오.",
+     "a": "[[deg(58)]]"
+    }
+   ]
+  }
+ }
+}

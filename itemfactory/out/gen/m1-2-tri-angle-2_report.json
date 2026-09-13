@@ -1,0 +1,81 @@
+{
+ "run_id": "m1-2-tri-angle-2-20260913-185120",
+ "seed_id": "m1-2-tri-angle-2",
+ "title": "삼각형의 각 2 — 세 각의 비·이등변 연쇄(3a)·두 내각의 이등분선(90° + A/2)",
+ "accepted": 408,
+ "rejected": 0,
+ "per_template": {
+  "m1-2-tri-angle-2-t1": {
+   "target": 300,
+   "space": 288,
+   "ok": 288,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(A)]] : [[angle(B)]] : [[angle(C)]] = 1 : 2 : 3일 때, [[angle(A)]]의 크기를 구하시오.",
+     "a": "[[deg(30)]]"
+    },
+    {
+     "idx": 179,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(A)]] : [[angle(B)]] : [[angle(C)]] = 4 : 2 : 6일 때, [[angle(C)]]의 크기를 구하시오.",
+     "a": "[[deg(90)]]"
+    },
+    {
+     "idx": 70,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(A)]] : [[angle(B)]] : [[angle(C)]] = 7 : 6 : 2일 때, [[angle(A)]]의 크기를 구하시오.",
+     "a": "[[deg(84)]]"
+    }
+   ]
+  },
+  "m1-2-tri-angle-2-t2": {
+   "target": 300,
+   "space": 38,
+   "ok": 38,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림에서 [[seg(AB)]] = [[seg(BC)]] = [[seg(CD)]]이고 [[angle(A) = deg(20)]]일 때, [[angle(DCE)]]의 크기를 구하시오.",
+     "a": "[[deg(60)]]"
+    },
+    {
+     "idx": 23,
+     "q": "다음 그림에서 [[seg(AB)]] = [[seg(BC)]] = [[seg(CD)]]이고 [[angle(A) = deg(26)]]일 때, [[angle(CDA)]]의 크기를 구하시오.",
+     "a": "[[deg(52)]]"
+    },
+    {
+     "idx": 8,
+     "q": "다음 그림에서 [[seg(AB)]] = [[seg(BC)]] = [[seg(CD)]]이고 [[angle(A) = deg(30)]]일 때, [[angle(DCE)]]의 크기를 구하시오.",
+     "a": "[[deg(90)]]"
+    }
+   ]
+  },
+  "m1-2-tri-angle-2-t3": {
+   "target": 300,
+   "space": 82,
+   "ok": 82,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(B)]]와 [[angle(C)]]의 이등분선의 교점을 D라 하자. [[angle(A) = deg(20)]]일 때, [[angle(BDC)]]의 크기를 구하시오.",
+     "a": "[[deg(100)]]"
+    },
+    {
+     "idx": 51,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(B)]]와 [[angle(C)]]의 이등분선의 교점을 D라 하자. [[angle(BDC) = deg(110)]]일 때, [[angle(A)]]의 크기를 구하시오.",
+     "a": "[[deg(40)]]"
+    },
+    {
+     "idx": 20,
+     "q": "다음 그림의 [[tri(ABC)]]에서 [[angle(B)]]와 [[angle(C)]]의 이등분선의 교점을 D라 하자. [[angle(A) = deg(60)]]일 때, [[angle(BDC)]]의 크기를 구하시오.",
+     "a": "[[deg(120)]]"
+    }
+   ]
+  }
+ }
+}
