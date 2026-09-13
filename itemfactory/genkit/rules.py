@@ -53,7 +53,17 @@ def cost_of(v) -> int:
     if isinstance(v, Fraction):
         if v.denominator == 1:
             return max(1, len(str(abs(v.numerator))))
-        return max(len(str(abs(v.numerator))), (v.denominator + 3) // 4)
+        c = max(len(str(abs(v.numerator))), (v.denominator + 3) // 4)
+        d = v.denominator
+        for f in (2, 5):
+            while d % f == 0:
+                d //= f
+        if d == 1:                       # 유한소수(0.3413, 1.72 …)는 소수 자릿수로도 세어 작은 쪽 — 3413/10000 이 2500 이 되는 것 방지
+            k = 0
+            while (v * 10 ** k).denominator != 1:
+                k += 1
+            c = min(c, max(1, len(str(abs(int(v * 10 ** k))))))
+        return c
     return 0
 
 

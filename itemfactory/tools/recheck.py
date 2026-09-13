@@ -1430,6 +1430,8 @@ def recompute(it):
         return _h22b(tid, q)
     if tid.startswith("h3-1-"):
         return _h31(tid, q)
+    if tid.startswith("h3-2-"):
+        return _h32(tid, q)
     if tid.startswith("h2-2-lim") or tid.startswith("h2-2-diff"):
         return _h22a(tid, q)
     if tid.startswith("m3-1-sqrt-basic"):
@@ -2272,6 +2274,165 @@ def _h31(tid, q):
         val = sp.integrate(sp.Abs(v) if m.group(3).startswith("가") else v, (t, 0, hi))
         if not val.is_number or val.has(sp.Abs): val = sp.Integral(sp.Abs(v) if m.group(3).startswith("가") else v, (t, 0, hi)).evalf(30)
         return _spv(sp.simplify(val))
+    return None
+
+
+def _pv(s):
+    """확률값 문자열 — [[frac(a,b)]] 또는 정수/소수."""
+    return _mk(s.strip())
+
+
+def _h32(tid, q):
+    """h3-2 확률과 통계 — 발문에서 다시 푼다."""
+    C = math.comb
+    if tid == "h3-2-count-t1":
+        m = re.match(r"(\d+)명의 학생이 원탁에 둘러앉는 경우의 수", q)
+        if m: return Fraction(math.factorial(int(m.group(1)) - 1))
+        m = re.match(r"(\d+)명의 학생이 원탁에 둘러앉을 때, 특정한 2명이 서로 이웃", q)
+        if m: return Fraction(2 * math.factorial(int(m.group(1)) - 2))
+        m = re.match(r"(\d+)명의 학생이 (\d+)개의 동아리 중 하나에 각각 가입", q)
+        if m: return Fraction(int(m.group(2)) ** int(m.group(1)))
+        m = re.match(r"서로 다른 (\d+)개의 문자에서 중복을 허락하여 (\d+)개를 택해 일렬로", q)
+        if m: return Fraction(int(m.group(1)) ** int(m.group(2)))
+        return None
+    if tid == "h3-2-count-t2":
+        m = re.match(r"(\d+)개의 문자 ([a-z, ]+)를 모두 일렬로", q)
+        if m:
+            letters = [c for c in m.group(2).split(", ")]; v = math.factorial(len(letters))
+            for c in set(letters): v //= math.factorial(letters.count(c))
+            return Fraction(v) if len(letters) == int(m.group(1)) else None
+        m = re.search(r"오른쪽으로 (\d+)칸, 위쪽으로 (\d+)칸", q)
+        if m: a, b = int(m.group(1)), int(m.group(2)); return Fraction(C(a + b, a))
+        return None
+    if tid == "h3-2-count-t3":
+        m = re.match(r"서로 다른 (\d+)종류의 과일 중에서 중복을 허락하여 (\d+)개", q)
+        if m: n_, r_ = int(m.group(1)), int(m.group(2)); return Fraction(C(n_ + r_ - 1, r_))
+        m = re.match(r"방정식 ([a-z + ]+) = (\d+)[을를] 만족시키는 (양의 정수|음이 아닌 정수)", q)
+        if m:
+            k = len(m.group(1).split(" + ")); s = int(m.group(2))
+            return Fraction(C(s - 1, k - 1)) if m.group(3) == "양의 정수" else Fraction(C(s + k - 1, k - 1))
+        return None
+    if tid == "h3-2-count-t4":
+        m = re.match(r"\[\[pow\(x ([+−]) (\d+), (\d+)\)\]\]의 전개식에서 (?:\[\[pow\(x,(\d+)\)\]\]|x)의 계수", q)
+        if m:
+            a = _sv(m.group(1), m.group(2)); n_ = int(m.group(3)); k = int(m.group(4) or 1); return C(n_, k) * a ** (n_ - k)
+        m = re.match(r"\[\[comb\((\d+), (\d)\)\]\] \+ \[\[comb\(\d+, \d\)\]\]", q)
+        if m: n_ = int(m.group(1)); return Fraction(2 ** n_) if m.group(2) == "0" else Fraction(2 ** (n_ - 1))
+        return None
+    if tid == "h3-2-prob-t1":
+        m = re.match(r"서로 다른 두 개의 주사위를 동시에 던질 때, (.+?)(?:일|) 확률", q)
+        if m:
+            d = m.group(1); pairs = [(i, j) for i in range(1, 7) for j in range(1, 7)]
+            mm = re.fullmatch(r"두 눈의 수의 합이 (\d+)의 배수", d)
+            if mm: f = lambda i, j: (i + j) % int(mm.group(1)) == 0  # noqa: E731
+            elif (mm := re.fullmatch(r"두 눈의 수의 합이 (\d+) 이상", d)): f = lambda i, j: i + j >= int(mm.group(1))  # noqa: E731
+            elif (mm := re.fullmatch(r"두 눈의 수의 합이 (\d+)", d)): f = lambda i, j: i + j == int(mm.group(1))  # noqa: E731
+            elif (mm := re.fullmatch(r"두 눈의 수의 곱이 (\d+)", d)): f = lambda i, j: i * j == int(mm.group(1))  # noqa: E731
+            elif d == "두 눈의 수의 곱이 홀수": f = lambda i, j: (i * j) % 2 == 1  # noqa: E731
+            elif d == "두 눈의 수가 서로 같을": f = lambda i, j: i == j  # noqa: E731
+            elif (mm := re.fullmatch(r"두 눈의 수의 차가 (\d+)", d)): f = lambda i, j: abs(i - j) == int(mm.group(1))  # noqa: E731
+            else: return None
+            return Fraction(sum(1 for i, j in pairs if f(i, j)), 36)
+        m = re.match(r"흰 공 (\d+)개와 검은 공 (\d+)개가 들어 있는 주머니에서 임의로 (\d+)개의 공을 동시에 꺼낼 때, (\d+)개 모두 흰 공일 확률", q)
+        if m: w, b, k = int(m.group(1)), int(m.group(2)), int(m.group(3)); return Fraction(C(w, k), C(w + b, k))
+        return None
+    if tid in ("h3-2-prob-t2", "h3-2-prob-t4"):
+        m = re.match(r"한 번의 시행에서 사건 A가 일어날 확률이 (\[\[.+?\]\])이다\. 이 시행을 (\d+)번 독립적으로 반복할 때, 사건 A가 적어도 한 번", q)
+        if m: p = _pv(m.group(1)); return 1 - (1 - p) ** int(m.group(2))
+        given = {k: _pv(v) for k, v in re.findall(r"\[\[prob\((.+?)\)\]\] = (\[\[.+?\]\]|\d+)(?=,|일 때)", q)}
+        ask = re.search(r"일 때, (?:\[\[prob\((.+?)\)\]\]의 값|(두 사건이 모두 일어나지 않을 확률))", q)
+        if not ask: return None
+        PA, PB = given.get("A"), given.get("B")
+        if "서로 독립" in q:
+            if ask.group(1) == "inter(A, B)": return PA * PB
+            if ask.group(1) == "B": return given["inter(A, B)"] / PA
+            if ask.group(1) == "union(A, B)": return PA + PB - PA * PB
+            if ask.group(2): return (1 - PA) * (1 - PB)
+            return None
+        if "서로 배반사건" in q: PAB = Fraction(0)
+        elif "inter(A, B)" in given: PAB = given["inter(A, B)"]
+        else: PAB = PA + PB - given["union(A, B)"]
+        PU = PA + PB - PAB
+        if ask.group(1) == "inter(A, B)": return PAB
+        if ask.group(1) == "union(A, B)": return PU
+        if ask.group(1) == "inter(comp(A), comp(B))": return 1 - PU
+        return None
+    if tid == "h3-2-prob-t3":
+        m = re.match(r"어느 학급 학생 (\d+)명 중 남학생은 (\d+)명, 여학생은 (\d+)명이다\. 안경을 쓴 남학생은 (\d+)명, 안경을 쓴 여학생은 (\d+)명이다\. 이 학급에서 임의로 뽑은 한 학생이 (.+?)일 때 (.+?)일 확률", q)
+        tot, M, F, gM, gF = (int(m.group(i)) for i in range(1, 6))
+        if M + F != tot: return None
+        cnt = {("남", "안경"): gM, ("남", "무"): M - gM, ("여", "안경"): gF, ("여", "무"): F - gF}
+        def sel(s):
+            if s == "남학생": return lambda g, e: g == "남"
+            if s == "여학생": return lambda g, e: g == "여"
+            if s == "안경을 쓴 학생": return lambda g, e: e == "안경"
+            if s == "안경을 쓰지 않은 학생": return lambda g, e: e == "무"
+            return None
+        fa, fb = sel(m.group(6)), sel(m.group(7))
+        if fa is None or fb is None: return None
+        na = sum(v for (g, e), v in cnt.items() if fa(g, e)); nab = sum(v for (g, e), v in cnt.items() if fa(g, e) and fb(g, e))
+        return Fraction(nab, na)
+    if tid == "h3-2-prob-t5":
+        m = re.match(r"한 번의 시행에서 사건 A가 일어날 확률이 (\[\[.+?\]\])이다\. 이 시행을 (\d+)번 독립적으로 반복할 때, 사건 A가 (정확히 (\d+)번|(\d+)번 이상) 일어날 확률", q)
+        p = _pv(m.group(1)); n_ = int(m.group(2))
+        if m.group(4): k = int(m.group(4)); return C(n_, k) * p ** k * (1 - p) ** (n_ - k)
+        k = int(m.group(5)); return sum(C(n_, j) * p ** j * (1 - p) ** (n_ - j) for j in range(k, n_ + 1))
+    if tid == "h3-2-stat-t1":
+        m = re.search(r"\[\[mat\(2, (\d+), X, (.+?), P\(X = x\), (.+)\)\]\]$", q); c = int(m.group(1)) - 1
+        xs = [Fraction(v) for v in m.group(2).split(", ")]; ps = [_pv(v) for v in _targs(m.group(3))]
+        if len(xs) != c or len(ps) != c or sum(ps) != 1: return None
+        E = sum(x * p for x, p in zip(xs, ps)); V = sum(x * x * p for x, p in zip(xs, ps)) - E * E
+        ask = re.search(r"\[\[(ev|var)\((.+?)\)\]\]의 값", q); fn, arg = ask.group(1), ask.group(2)
+        if arg == "X": a, b = 1, 0
+        else:
+            mm = re.fullmatch(r"(-?\d*)X(?: ([+−]) (\d+))?", arg); a = _coef(mm.group(1)); b = _sv(mm.group(2), mm.group(3)) if mm.group(2) else 0
+        return a * E + b if fn == "ev" else a * a * V
+    if tid == "h3-2-stat-t2":
+        m = re.search(r"\[\[binomd\((\d+), (.+?)\)\]\]을 따를 때, \[\[(ev|var|sd)\((.+?)\)\]\]의 값", q); n_ = int(m.group(1)); p = _pv(m.group(2)); E = n_ * p; V = n_ * p * (1 - p)
+        fn, arg = m.group(3), m.group(4)
+        if fn == "ev" and arg == "X": return E
+        if fn == "var" and arg == "X": return V
+        if fn == "sd" and arg == "X": r = _rootf(V, 2); return r if isinstance(r, Fraction) else None
+        if fn == "var" and arg == "2X + 1": return 4 * V
+        return None
+    if tid == "h3-2-stat-t3":
+        m = re.match(r"확률변수 X가 정규분포 \[\[normald\((\d+), pow\((\d+),2\)\)\]\]을 따를 때, P\((\d+) ≤ X ≤ (\d+)\)의 값", q); mu, sd, a, b = (int(m.group(i)) for i in range(1, 5))
+        z1, z2 = Fraction(a - mu, sd), Fraction(b - mu, sd)
+        tbl = {Fraction(z): Fraction(v) for z, v in re.findall(r"P\(0 ≤ Z ≤ ([\d.]+)\) = ([\d.]+)", q)}
+        def area(z):
+            if z == 0: return Fraction(0)
+            return tbl.get(abs(z))
+        A1, A2 = area(z1), area(z2)
+        if A1 is None or A2 is None: return None
+        return A1 + A2 if z1 * z2 <= 0 else abs(A2 - A1)
+    if tid == "h3-2-stat-t4":
+        m = re.match(r"정규분포 \[\[normald\((\d+), pow\((\d+),2\)\)\]\]을 따르는 모집단에서 크기가 (\d+)인 표본을 임의추출할 때, 표본평균 X̄에 대하여 (E|V|σ)\(X̄\)의 값", q); mu, sd, n_ = (int(m.group(i)) for i in range(1, 4))
+        if m.group(4) == "E": return Fraction(mu)
+        if m.group(4) == "V": return Fraction(sd * sd, n_)
+        r = _rootf(Fraction(sd * sd, n_), 2); return r if isinstance(r, Fraction) else None
+    if tid == "h3-2-stat-t5":
+        z = Fraction(re.search(r"P\(\|Z\| ≤ ([\d.]+)\)", q).group(1))
+        m = re.match(r"모표준편차가 (\d+)인 정규모집단에서 크기가 (\d+)인 표본을 임의추출하여 모평균 m을 신뢰도 (\d+)%로 추정할 때, 신뢰구간의 길이", q)
+        if m:
+            sd, n_ = int(m.group(1)), int(m.group(2)); sn = _isqrt(Fraction(n_)); return None if sn is None else 2 * z * Fraction(sd) / sn
+        m = re.match(r"모표준편차가 (\d+)인 정규모집단에서 크기가 (\d+)인 표본을 임의추출하여 얻은 표본평균이 (\d+)이다\. 모평균 m에 대한 신뢰도 (\d+)%의 신뢰구간이 a ≤ m ≤ b일 때, (a|b)의 값", q)
+        if m:
+            sd, n_, xb = int(m.group(1)), int(m.group(2)), int(m.group(3)); sn = _isqrt(Fraction(n_))
+            if sn is None: return None
+            half = z * Fraction(sd) / sn; return xb + half if m.group(5) == "b" else xb - half
+        return None
+    if tid == "h3-2-stat-t6":
+        m = re.match(r"모비율이 (\[\[.+?\]\])인 모집단에서 크기가 (\d+)인 표본을 임의추출할 때, 표본비율 p̂에 대하여 (E|V|σ)\(p̂\)의 값", q)
+        if m:
+            p = _pv(m.group(1)); n_ = int(m.group(2)); V = p * (1 - p) / n_
+            if m.group(3) == "E": return p
+            if m.group(3) == "V": return V
+            r = _rootf(V, 2); return r if isinstance(r, Fraction) else None
+        m = re.match(r"크기가 (\d+)인 표본에서 표본비율이 (\[\[.+?\]\])일 때, 모비율 p에 대한 신뢰도 95%의 신뢰구간의 길이", q)
+        if m:
+            n_ = int(m.group(1)); p = _pv(m.group(2)); r = _rootf(p * (1 - p) / n_, 2)
+            return None if not isinstance(r, Fraction) else 2 * Fraction("1.96") * r
+        return None
     return None
 
 
