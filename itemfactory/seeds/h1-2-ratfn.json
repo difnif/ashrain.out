@@ -1,0 +1,1234 @@
+{
+  "seed_id": "h1-2-ratfn",
+  "category": "함수",
+  "title": "유리함수·무리함수 — 점근선 교점·평행이동 정/역·정의역과 치역·무리함수의 평행이동",
+  "unit_id": "h1-2",
+  "concept_ids": [
+    "h1-2-19",
+    "h1-2-20"
+  ],
+  "schema_id": null,
+  "schema_name": "유리함수와 무리함수",
+  "source_item_ids": [],
+  "note": "유리함수는 y = (ax+b)/(x+c) ↔ a + (b−ac)/(x+c) 변환. 무리함수 정의역은 a의 부호를 파라미터로 나눠 부등호 방향을 행에서 읽는다.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행이동",
+        "분수식"
+      ],
+      "ops": [
+        "유리함수",
+        "무리함수"
+      ],
+      "traps": [
+        "점근선 부호",
+        "정의역 부등호 방향"
+      ],
+      "tags": [
+        "유리함수",
+        "무리함수"
+      ],
+      "id": "h1-2-ratfn-t1",
+      "title": "유리함수의 점근선 — 두 점근선의 교점",
+      "skill": "y = (ax + b)/(x + c)를 y = k/(x + c) + a 꼴로 고쳐 점근선 x = −c, y = a 읽기",
+      "variant_axis": {
+        "a": "±1~±4",
+        "b": "±1~±6",
+        "c": "±1~±5",
+        "묻는 것": "p + q / pq"
+      },
+      "discriminates": "분자를 분모로 나눠 상수를 분리하면 점근선이 (−c, a)임을 아는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              "sum",
+              "prod"
+            ]
+          }
+        }
+      ],
+      "question": "함수 y = [[frac({co(a)}x {sgn(b)}, x {sgn(c)})]]의 그래프의 두 점근선의 교점의 좌표를 (p, q)라 할 때, {ASK}의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "m",
+        "rows": {
+          "sum": {
+            "ASK": "p + q",
+            "w": 1
+          },
+          "prod": {
+            "ASK": "pq",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "kk": "b - a*c",
+        "p": "-c",
+        "ans": "w*(a - c) + (1 - w)*(-a*c)"
+      },
+      "constraints": [
+        "kk != 0",
+        "ans != 0",
+        "ans not in (a, b, c)"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "kk",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "kk == b - a*c"
+      ],
+      "sol1": "분자를 분모로 나누면 [[frac({co(a)}x {sgn(b)}, x {sgn(c)})]] = {a} + [[frac({kk}, x {sgn(c)})]]이다. 이는 y = [[frac({kk}, x)]]의 그래프를 x축 방향으로 {p}, y축 방향으로 {a}만큼 옮긴 것이므로 점근선은 x = {p}, y = {a}이다.",
+      "sol2": [
+        "y = {a} + [[frac({kk}, x {sgn(c)})]]",
+        "점근선 x = {p}, y = {a} → 교점 ({p}, {a})",
+        "{ASK} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = {a} + [[frac({kk}, x {sgn(c)})]]",
+                "hint": "상수 분리"
+              },
+              {
+                "text": "점근선 x = {p}, y = {a} → 교점 ({p}, {a})",
+                "hint": "점근선"
+              },
+              {
+                "text": "{ASK} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "분모가 0이 되는 x = {p}에서 세로 점근선, x가 커질 때 y가 가까워지는 값 {a}에서 가로 점근선이 생긴다. 따라서 {ASK} = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "점근선 x = {p}, y = {a}",
+              "{ASK} = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "y = {a} + [[frac({kk}, x {sgn(c)})]]이므로 점근선은 x = {p}, y = {a}이고 교점은 ({p}, {a})이다. 따라서 {ASK} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "점근선",
+          "points": 3,
+          "criterion": "점근선 x = {p}, y = {a}{eul(a)} 구했다.",
+          "partial": "부호가 반대면 1점."
+        },
+        {
+          "element": "값 구하기",
+          "points": 2,
+          "criterion": "{ASK} = {ans}{eul(ans)} 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "세로 점근선을 x = c로 둠(부호 반대)",
+          "on": "점근선",
+          "effect": "부분"
+        },
+        {
+          "text": "가로 점근선을 y = b로 둠",
+          "on": "점근선",
+          "effect": "불인정"
+        },
+        {
+          "text": "계산 실수",
+          "on": "값 구하기",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행이동",
+        "분수식"
+      ],
+      "ops": [
+        "유리함수",
+        "무리함수"
+      ],
+      "traps": [
+        "점근선 부호",
+        "정의역 부등호 방향"
+      ],
+      "tags": [
+        "유리함수",
+        "무리함수"
+      ],
+      "id": "h1-2-ratfn-t2",
+      "title": "유리함수의 평행이동 — y = k/x를 옮긴 식의 계수",
+      "skill": "y = k/x를 x축 m, y축 n만큼 옮기면 y = k/(x − m) + n이고, 통분하면 (nx + k − mn)/(x − m)임을 쓰기",
+      "variant_axis": {
+        "k": "±1~±6",
+        "이동": "±1~±4"
+      },
+      "discriminates": "평행이동 후 통분해 일반형의 계수를 읽는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        }
+      ],
+      "question": "함수 y = [[frac({k}, x)]]의 그래프를 x축의 방향으로 {m}만큼, y축의 방향으로 {n}만큼 평행이동한 그래프가 함수 y = [[frac(a x + b, x + c)]]의 그래프와 일치할 때, 상수 a, b, c에 대하여 a + b + c의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "a": "n",
+        "b": "k - m*n",
+        "c": "-m",
+        "ans": "n + k - m*n - m"
+      },
+      "constraints": [
+        "b != 0",
+        "ans != 0",
+        "ans not in (k, m, n)"
+      ],
+      "cost_values": [
+        "k",
+        "m",
+        "n",
+        "a",
+        "b",
+        "c",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "b == k - m*n",
+        "a + b + c == ans"
+      ],
+      "sol1": "x축 방향으로 m, y축 방향으로 n만큼 평행이동하면 x 대신 x − m, y 대신 y − n을 넣는다: y = [[frac({k}, x {sgn(c)})]] {sgn(n)}. 통분해 한 분수로 만들면 [[frac({co(a)}x {sgn(b)}, x {sgn(c)})]]이다.",
+      "sol2": [
+        "y = [[frac({k}, x {sgn(c)})]] {sgn(n)}",
+        "= [[frac({n}(x {sgn(c)}) + {pn(k)}, x {sgn(c)})]] = [[frac({co(a)}x {sgn(b)}, x {sgn(c)})]]",
+        "a = {a}, b = {b}, c = {c} → a + b + c = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = [[frac({k}, x {sgn(c)})]] {sgn(n)}",
+                "hint": "평행이동"
+              },
+              {
+                "text": "= [[frac({n}(x {sgn(c)}) + {pn(k)}, x {sgn(c)})]] = [[frac({co(a)}x {sgn(b)}, x {sgn(c)})]]",
+                "hint": "통분"
+              },
+              {
+                "text": "a = {a}, b = {b}, c = {c} → a + b + c = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "a + b + c"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "옮긴 함수의 점근선은 x = {m}, y = {n}이어야 하는데 [[frac({co(a)}x {sgn(b)}, x {sgn(c)})]]의 점근선도 x = {m}, y = {a}{ro(a)} 같다. 따라서 a + b + c = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "점근선 x = {m}, y = {n} ✓",
+              "a + b + c = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "평행이동하면 y = [[frac({k}, x {sgn(c)})]] {sgn(n)} = [[frac({co(a)}x {sgn(b)}, x {sgn(c)})]]이므로 a + b + c = {ans}이다.",
+      "rubric": [
+        {
+          "element": "평행이동·통분",
+          "points": 3,
+          "criterion": "[[frac({co(a)}x {sgn(b)}, x {sgn(c)})]]{eul(b)} 얻었다.",
+          "partial": "이동 방향 부호가 반대면 인정하지 않는다."
+        },
+        {
+          "element": "합",
+          "points": 2,
+          "criterion": "a + b + c = {ans}{eul(ans)} 구했다.",
+          "partial": "계수를 하나 잘못 읽었으면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "x 대신 x + m을 넣음",
+          "on": "평행이동·통분",
+          "effect": "불인정"
+        },
+        {
+          "text": "통분 없이 계수를 읽음",
+          "on": "평행이동·통분",
+          "effect": "부분"
+        },
+        {
+          "text": "합 계산 실수",
+          "on": "합",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행이동",
+        "분수식"
+      ],
+      "ops": [
+        "유리함수",
+        "무리함수"
+      ],
+      "traps": [
+        "점근선 부호",
+        "정의역 부등호 방향"
+      ],
+      "tags": [
+        "유리함수",
+        "무리함수"
+      ],
+      "id": "h1-2-ratfn-t3",
+      "title": "유리함수의 평행이동 (역방향) — 일반형에서 k, m, n 읽기",
+      "skill": "y = (ax + b)/(x + c)를 a + (b − ac)/(x + c)로 고쳐 y = k/x를 어떻게 옮긴 것인지 읽기",
+      "variant_axis": {
+        "a": "±1~±4",
+        "c": "±1~±5",
+        "b": "±1~±7"
+      },
+      "discriminates": "분자를 분모로 나눈 나머지가 k, 점근선이 이동량임을 아는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "question": "함수 y = [[frac({co(a)}x {sgn(b)}, x {sgn(c)})]]의 그래프는 함수 y = [[frac(k, x)]]의 그래프를 x축의 방향으로 m만큼, y축의 방향으로 n만큼 평행이동한 것이다. 상수 k, m, n에 대하여 k + m + n의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "kk": "b - a*c",
+        "m": "-c",
+        "n": "a",
+        "ans": "b - a*c - c + a"
+      },
+      "constraints": [
+        "kk != 0",
+        "ans != 0",
+        "ans not in (a, b, c)"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "kk",
+        "m",
+        "n",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "kk == b - a*c",
+        "kk + m + n == ans"
+      ],
+      "sol1": "분자를 분모로 나누면 [[frac({co(a)}x {sgn(b)}, x {sgn(c)})]] = {a} + [[frac({kk}, x {sgn(c)})]]이다. 이는 y = [[frac({kk}, x)]]를 x축 방향으로 {m}, y축 방향으로 {n}만큼 옮긴 것이므로 k = {kk}, m = {m}, n = {n}이다.",
+      "sol2": [
+        "{co(a)}x {sgn(b)} = {a}(x {sgn(c)}) {sgn(kk)}",
+        "y = [[frac({kk}, x {sgn(c)})]] {sgn(a)} → k = {kk}, m = {m}, n = {n}",
+        "k + m + n = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(a)}x {sgn(b)} = {a}(x {sgn(c)}) {sgn(kk)}",
+                "hint": "분자 나누기"
+              },
+              {
+                "text": "y = [[frac({kk}, x {sgn(c)})]] {sgn(a)} → k = {kk}, m = {m}, n = {n}",
+                "hint": "이동량 읽기"
+              },
+              {
+                "text": "k + m + n = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "k + m + n"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "y = [[frac({kk}, x)]]에 x 대신 x {sgn(c)}, y 대신 y {sgn(-a)}{eul(a)} 넣어 다시 통분하면 원래 식이 나온다. 따라서 k + m + n = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "역으로 통분 ✓",
+              "k + m + n = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "[[frac({co(a)}x {sgn(b)}, x {sgn(c)})]] = {a} + [[frac({kk}, x {sgn(c)})]]이므로 k = {kk}, m = {m}, n = {n}이고 k + m + n = {ans}이다.",
+      "rubric": [
+        {
+          "element": "상수 분리",
+          "points": 3,
+          "criterion": "y = {a} + [[frac({kk}, x {sgn(c)})]]{ro(kk)} 고쳤다.",
+          "partial": "나머지 k가 틀리면 1점."
+        },
+        {
+          "element": "이동량·합",
+          "points": 2,
+          "criterion": "k + m + n = {ans}{eul(ans)} 구했다.",
+          "partial": "m의 부호가 반대면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "m = c로 둠(부호 반대)",
+          "on": "이동량·합",
+          "effect": "부분"
+        },
+        {
+          "text": "k = b로 둠(나누지 않음)",
+          "on": "상수 분리",
+          "effect": "불인정"
+        },
+        {
+          "text": "n을 b/c로 둠",
+          "on": "상수 분리",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행이동",
+        "분수식"
+      ],
+      "ops": [
+        "유리함수",
+        "무리함수"
+      ],
+      "traps": [
+        "점근선 부호",
+        "정의역 부등호 방향"
+      ],
+      "tags": [
+        "유리함수",
+        "무리함수"
+      ],
+      "id": "h1-2-ratfn-t4",
+      "title": "무리함수의 정의역과 치역 — y = √(ax + b) + c",
+      "skill": "근호 안이 0 이상인 x의 범위가 정의역, 근호의 값이 0 이상이므로 y ≥ c가 치역임을 읽기",
+      "variant_axis": {
+        "a": "±1~±3",
+        "b": "a의 배수",
+        "c": "±1~±5"
+      },
+      "discriminates": "a < 0이면 정의역이 x ≤ −b/a로 방향이 바뀌고, 치역의 경계는 c임을 아는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "s",
+          "values": {
+            "in": [
+              "pos",
+              "neg"
+            ]
+          }
+        },
+        {
+          "name": "u",
+          "values": {
+            "int": [
+              1,
+              3
+            ]
+          }
+        },
+        {
+          "name": "t",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "question": "함수 y = [[sqrt({co(a)}x {sgn(b)})]] {sgn(c)}의 정의역이 [[setb(x, x {DIR} p)]], 치역이 [[setb(y, y ≥ q)]]일 때, 상수 p, q에 대하여 p + q의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "s",
+        "rows": {
+          "pos": {
+            "DIR": "≥",
+            "SIGN": "양수",
+            "sa": 1
+          },
+          "neg": {
+            "DIR": "≤",
+            "SIGN": "음수",
+            "sa": -1
+          }
+        }
+      },
+      "derive": {
+        "a": "sa*u",
+        "b": "sa*u*t",
+        "p": "-t",
+        "ans": "-t + c"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (a, b, c)"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "p",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a*p + b == 0"
+      ],
+      "sol1": "근호 안은 0 이상이어야 하므로 {co(a)}x {sgn(b)} ≥ 0, 즉 x {DIR} {p}{ika(p)} 정의역이다(x의 계수가 {SIGN}이므로 부등호 방향에 주의). 근호의 값은 0 이상이므로 y = [[sqrt({co(a)}x {sgn(b)})]] {sgn(c)} ≥ {c}, 치역은 y ≥ {c}이다.",
+      "sol2": [
+        "{co(a)}x {sgn(b)} ≥ 0 → x {DIR} {p}",
+        "[[sqrt({co(a)}x {sgn(b)})]] ≥ 0 → y ≥ {c}",
+        "p = {p}, q = {c} → p + q = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(a)}x {sgn(b)} ≥ 0 → x {DIR} {p}",
+                "hint": "정의역"
+              },
+              {
+                "text": "[[sqrt({co(a)}x {sgn(b)})]] ≥ 0 → y ≥ {c}",
+                "hint": "치역"
+              },
+              {
+                "text": "p = {p}, q = {c} → p + q = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "p + q"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "x = {p}{eul(p)} 넣으면 근호 안이 0이 되어 y = {c}, 즉 그래프의 시작점이 ({p}, {c})이다. 따라서 p + q = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "시작점 ({p}, {c})",
+              "p + q = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "근호 안 {co(a)}x {sgn(b)} ≥ 0에서 x {DIR} {p}, 근호의 값이 0 이상이므로 y ≥ {c}이다. 따라서 p + q = {ans}이다.",
+      "rubric": [
+        {
+          "element": "정의역",
+          "points": 3,
+          "criterion": "x {DIR} {p}{eul(p)} 구했다.",
+          "partial": "부등호 방향이 반대면 1점."
+        },
+        {
+          "element": "치역·답",
+          "points": 2,
+          "criterion": "y ≥ {c}에서 p + q = {ans}{eul(ans)} 구했다.",
+          "partial": "치역을 y ≥ 0으로 두었으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "a < 0일 때 부등호 방향을 바꾸지 않음",
+          "on": "정의역",
+          "effect": "부분"
+        },
+        {
+          "text": "치역을 y ≥ 0으로 둠",
+          "on": "치역·답",
+          "effect": "불인정"
+        },
+        {
+          "text": "정의역 경계 부호 실수",
+          "on": "정의역",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "평행이동",
+        "분수식"
+      ],
+      "ops": [
+        "유리함수",
+        "무리함수"
+      ],
+      "traps": [
+        "점근선 부호",
+        "정의역 부등호 방향"
+      ],
+      "tags": [
+        "유리함수",
+        "무리함수"
+      ],
+      "id": "h1-2-ratfn-t5",
+      "title": "무리함수의 평행이동 — y = √(ax)를 옮긴 식의 상수",
+      "skill": "y = √(ax)를 x축 m, y축 n만큼 옮기면 y = √(a(x − m)) + n = √(ax − am) + n임을 쓰기",
+      "variant_axis": {
+        "a": "±1~±3",
+        "이동": "±1~±5"
+      },
+      "discriminates": "x 대신 x − m을 근호 안에 넣고 전개해 상수를 읽는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      ],
+      "question": "함수 y = [[sqrt({co(a)}x)]]의 그래프를 x축의 방향으로 {m}만큼, y축의 방향으로 {n}만큼 평행이동한 그래프가 함수 y = [[sqrt({co(a)}x + b)]] + c의 그래프와 일치할 때, 상수 b, c에 대하여 b + c의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "b": "-a*m",
+        "c": "n",
+        "ans": "-a*m + n",
+        "nm": "-m"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (a, m, n)"
+      ],
+      "cost_values": [
+        "a",
+        "m",
+        "n",
+        "b",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "b == -a*m",
+        "b + c == ans"
+      ],
+      "sol1": "평행이동은 x 대신 x − m, y 대신 y − n을 넣는 것이다: y − {pn(n)} = [[sqrt({co(a)}(x {sgn(nm)}))]], 즉 y = [[sqrt({co(a)}x {sgn(b)})]] {sgn(n)}. 근호 안을 전개해 b를, 바깥 상수에서 c를 읽는다.",
+      "sol2": [
+        "y = [[sqrt({co(a)}(x {sgn(nm)}))]] {sgn(n)}",
+        "근호 안 전개: [[sqrt({co(a)}x {sgn(b)})]] {sgn(n)} → b = {b}, c = {c}",
+        "b + c = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "y = [[sqrt({co(a)}(x {sgn(nm)}))]] {sgn(n)}",
+                "hint": "평행이동"
+              },
+              {
+                "text": "근호 안 전개: [[sqrt({co(a)}x {sgn(b)})]] {sgn(n)} → b = {b}, c = {c}",
+                "hint": "상수 읽기"
+              },
+              {
+                "text": "b + c = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "b + c"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "옮긴 그래프의 시작점은 원래 시작점 (0, 0)을 옮긴 ({m}, {n})이어야 하는데, y = [[sqrt({co(a)}x {sgn(b)})]] {sgn(n)}의 시작점도 ({m}, {n})이다. 따라서 b + c = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "시작점 ({m}, {n}) ✓",
+              "b + c = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "평행이동하면 y = [[sqrt({co(a)}(x {sgn(nm)}))]] {sgn(n)} = [[sqrt({co(a)}x {sgn(b)})]] {sgn(n)}이므로 b = {b}, c = {c}이고 b + c = {ans}이다.",
+      "rubric": [
+        {
+          "element": "평행이동 식",
+          "points": 3,
+          "criterion": "y = [[sqrt({co(a)}x {sgn(b)})]] {sgn(n)}{eul(n)} 얻었다.",
+          "partial": "x − m 대신 x + m을 넣었으면 인정하지 않는다."
+        },
+        {
+          "element": "합",
+          "points": 2,
+          "criterion": "b + c = {ans}{eul(ans)} 구했다.",
+          "partial": "근호 안 전개 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "근호 안에 x − m 대신 x + m",
+          "on": "평행이동 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "근호 안 전개에서 a를 곱하지 않음(b = −m)",
+          "on": "평행이동 식",
+          "effect": "부분"
+        },
+        {
+          "text": "합 계산 실수",
+          "on": "합",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

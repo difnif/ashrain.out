@@ -1,0 +1,1776 @@
+{
+  "seed_id": "h1-2-func",
+  "category": "함수",
+  "title": "함수 — 일차함수 값·합성함수 값·역함수 값·합성의 역함수·함수의 개수",
+  "unit_id": "h1-2",
+  "concept_ids": [
+    "h1-2-16",
+    "h1-2-17",
+    "h1-2-18"
+  ],
+  "schema_id": null,
+  "schema_name": "함수·합성함수·역함수",
+  "source_item_ids": [],
+  "note": "역함수 값은 f(m) = k 방정식으로. 함수의 개수 행은 파이썬에서 nᵐ·nPm·m! 계산.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수",
+        "연립방정식"
+      ],
+      "ops": [
+        "함수"
+      ],
+      "traps": [
+        "합성 순서",
+        "역함수 = 1/f 오해"
+      ],
+      "tags": [
+        "함수",
+        "합성함수",
+        "역함수"
+      ],
+      "id": "h1-2-func-t1",
+      "title": "일차함수의 함숫값 — 두 값으로 f(x) 결정",
+      "skill": "f(x) = ax + b에 두 함숫값을 넣어 연립방정식으로 a, b를 정한 뒤 다른 함숫값 구하기",
+      "variant_axis": {
+        "기울기": "±1~±4",
+        "x": "−4~6"
+      },
+      "discriminates": "두 조건으로 a, b를 정하는 연립방정식을 세우고 푸는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "x1",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "x2",
+          "values": {
+            "in": [
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "name": "x3",
+          "values": {
+            "int": [
+              -4,
+              8
+            ]
+          }
+        }
+      ],
+      "question": "함수 f(x) = ax + b에 대하여 f({x1}) = {v1}, f({x2}) = {v2}일 때, f({x3})의 값을 구하시오. (단, a, b는 상수이다.)",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "v1": "a*x1 + b",
+        "v2": "a*x2 + b",
+        "ans": "a*x3 + b",
+        "dx": "x2 - x1",
+        "dv": "a*x2 - a*x1"
+      },
+      "constraints": [
+        "x1 < x2",
+        "x3 != x1",
+        "x3 != x2",
+        "ans != 0",
+        "ans not in (x1, x2, x3, v1, v2)",
+        "v1 != v2"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "x1",
+        "x2",
+        "x3",
+        "v1",
+        "v2",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "dv == a*dx",
+        "v1 == a*x1 + b"
+      ],
+      "sol1": "f({x1}) = {v1}, f({x2}) = {v2}{eul(v2)} f(x) = ax + b에 넣으면 a, b에 대한 연립방정식 {co(x1)}a + b = {v1}, {co(x2)}a + b = {v2}{ika(v2)} 된다. 두 식을 빼면 a가, 대입하면 b가 나온다.",
+      "sol2": [
+        "{co(x1)}a + b = {v1}, {co(x2)}a + b = {v2}",
+        "빼면 {co(dx)}a = {dv} → a = {a}, b = {b}",
+        "f({x3}) = {a} × {pn(x3)} {sgn(b)} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{co(x1)}a + b = {v1}, {co(x2)}a + b = {v2}",
+                "hint": "함숫값 대입"
+              },
+              {
+                "text": "빼면 {co(dx)}a = {dv} → a = {a}, b = {b}",
+                "hint": "연립방정식"
+              },
+              {
+                "text": "f({x3}) = {a} × {pn(x3)} {sgn(b)} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "f({x3})"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "f(x) = {co(a)}x {sgn(b)}에 x = {x1}, {x2}{eul(x2)} 넣으면 {v1}, {v2}{ika(v2)} 되어 조건과 맞는다. 따라서 f({x3}) = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "f(x) = {co(a)}x {sgn(b)}",
+              "f({x3}) = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{co(x1)}a + b = {v1}, {co(x2)}a + b = {v2}에서 a = {a}, b = {b}이므로 f(x) = {co(a)}x {sgn(b)}이고 f({x3}) = {ans}이다.",
+      "rubric": [
+        {
+          "element": "a, b 구하기",
+          "points": 3,
+          "criterion": "a = {a}, b = {b}{eul(b)} 구했다.",
+          "partial": "둘 중 하나만 맞으면 1점."
+        },
+        {
+          "element": "함숫값",
+          "points": 2,
+          "criterion": "f({x3}) = {ans}{eul(ans)} 구했다.",
+          "partial": "대입 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "연립방정식에서 뺄 때 부호 실수",
+          "on": "a, b 구하기",
+          "effect": "부분"
+        },
+        {
+          "text": "a와 b를 바꿔 씀",
+          "on": "a, b 구하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "대입 계산 실수",
+          "on": "함숫값",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수",
+        "연립방정식"
+      ],
+      "ops": [
+        "함수"
+      ],
+      "traps": [
+        "합성 순서",
+        "역함수 = 1/f 오해"
+      ],
+      "tags": [
+        "함수",
+        "합성함수",
+        "역함수"
+      ],
+      "id": "h1-2-func-t2",
+      "title": "합성함수의 함숫값 — (f∘g)(k), (g∘f)(k), (f∘f)(k)",
+      "skill": "(f∘g)(k) = f(g(k))이므로 안쪽 함수의 값을 먼저 구해 바깥 함수에 넣기",
+      "variant_axis": {
+        "f": "ax + b",
+        "g": "x² + c",
+        "합성": "f∘g / g∘f / f∘f",
+        "k": "−3~4"
+      },
+      "discriminates": "합성 순서(오른쪽 함수를 먼저 적용)를 지키는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              "fg",
+              "gf",
+              "ff"
+            ]
+          }
+        }
+      ],
+      "question": "두 함수 f(x) = {co(a)}x {sgn(b)}, g(x) = x² {sgn(c)}에 대하여 {ASK}({k})의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "m",
+        "rows": {
+          "fg": {
+            "ASK": "(f∘g)",
+            "INNER": "g",
+            "OUTER": "f",
+            "ORDER": "g를 먼저, f를 나중에",
+            "w1": 1,
+            "w2": 0,
+            "w3": 0
+          },
+          "gf": {
+            "ASK": "(g∘f)",
+            "INNER": "f",
+            "OUTER": "g",
+            "ORDER": "f를 먼저, g를 나중에",
+            "w1": 0,
+            "w2": 1,
+            "w3": 0
+          },
+          "ff": {
+            "ASK": "(f∘f)",
+            "INNER": "f",
+            "OUTER": "f",
+            "ORDER": "f를 두 번",
+            "w1": 0,
+            "w2": 0,
+            "w3": 1
+          }
+        }
+      },
+      "derive": {
+        "inner": "w1*(k*k + c) + (1 - w1)*(a*k + b)",
+        "ans": "w1*(a*(k*k + c) + b) + w2*((a*k + b)**2 + c) + w3*(a*(a*k + b) + b)"
+      },
+      "constraints": [
+        "ans != 0",
+        "ans not in (a, b, c, k, inner)",
+        "inner != 0",
+        "inner != k"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "k",
+        "inner",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "w1 == 0 or inner == k*k + c",
+        "w1 == 1 or inner == a*k + b"
+      ],
+      "sol1": "{ASK}({k}) = {OUTER}({INNER}({k}))이다 — {ORDER} 적용한다. 안쪽 {INNER}({k})의 값을 먼저 구하고 그 값을 {OUTER}에 넣는다.",
+      "sol2": [
+        "{ASK}({k}) = {OUTER}({INNER}({k}))",
+        "{INNER}({k}) = {inner}",
+        "{OUTER}({inner}) = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{ASK}({k}) = {OUTER}({INNER}({k}))",
+                "hint": "합성의 뜻"
+              },
+              {
+                "text": "{INNER}({k}) = {inner}",
+                "hint": "안쪽 함숫값"
+              },
+              {
+                "text": "{OUTER}({inner}) = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "{ASK}({k})"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "합성 순서를 바꾸면 값이 달라지므로 {ORDER} 적용했는지 확인한다. 따라서 {ASK}({k}) = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{INNER}({k}) = {inner} → {OUTER}({inner})",
+              "{ASK}({k}) = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{ASK}({k}) = {OUTER}({INNER}({k}))이고 {INNER}({k}) = {inner}이므로 {OUTER}({inner}) = {ans}이다.",
+      "rubric": [
+        {
+          "element": "합성 순서",
+          "points": 3,
+          "criterion": "{INNER}({k}) = {inner}{eul(inner)} 먼저 구했다.",
+          "partial": "순서를 바꿨으면 인정하지 않는다."
+        },
+        {
+          "element": "함숫값",
+          "points": 2,
+          "criterion": "{ans}{eul(ans)} 구했다.",
+          "partial": "대입 계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "(f∘g)(k)를 g(f(k))로 계산",
+          "on": "합성 순서",
+          "effect": "불인정"
+        },
+        {
+          "text": "f(x)g(x)의 곱으로 계산",
+          "on": "합성 순서",
+          "effect": "불인정"
+        },
+        {
+          "text": "제곱·부호 계산 실수",
+          "on": "함숫값",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수",
+        "연립방정식"
+      ],
+      "ops": [
+        "함수"
+      ],
+      "traps": [
+        "합성 순서",
+        "역함수 = 1/f 오해"
+      ],
+      "tags": [
+        "함수",
+        "합성함수",
+        "역함수"
+      ],
+      "id": "h1-2-func-t3",
+      "title": "역함수의 함숫값 — f⁻¹(k)",
+      "skill": "f⁻¹(k) = m ⇔ f(m) = k이므로 방정식 f(x) = k를 풀어 역함수의 값 구하기",
+      "variant_axis": {
+        "f": "ax + b (a: ±1~±4)",
+        "k": "함숫값"
+      },
+      "discriminates": "역함수의 값을 구할 때 역함수 식을 구하지 않고도 f(x) = k를 풀면 됨을 아는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -7,
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          }
+        },
+        {
+          "name": "x0",
+          "values": {
+            "in": [
+              -6,
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        }
+      ],
+      "question": "함수 f(x) = {co(a)}x {sgn(b)}에 대하여 f⁻¹({k})의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "derive": {
+        "k": "a*x0 + b",
+        "ans": "x0",
+        "nb": "-b"
+      },
+      "constraints": [
+        "k != 0",
+        "ans not in (a, b, k)",
+        "k != x0"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "k",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "a*ans + b == k"
+      ],
+      "sol1": "f⁻¹({k}) = m이라 하면 역함수의 뜻에서 f(m) = {k}이다. 즉 {co(a)}m {sgn(b)} = {k}{eul(k)} 풀면 된다.",
+      "sol2": [
+        "f⁻¹({k}) = m ⇔ f(m) = {k}",
+        "{co(a)}m {sgn(b)} = {k} → {co(a)}m = {k - b}",
+        "m = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "f⁻¹({k}) = m ⇔ f(m) = {k}",
+                "hint": "역함수의 뜻"
+              },
+              {
+                "text": "{co(a)}m {sgn(b)} = {k} → {co(a)}m = {k - b}",
+                "hint": "방정식"
+              },
+              {
+                "text": "m = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "f⁻¹({k})"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "f({ans}) = {a} × {pn(ans)} {sgn(b)} = {k}{ika(k)} 되어 f⁻¹({k}) = {ans}{ika(ans)} 맞다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "f({ans}) = {k} ✓",
+              "f⁻¹({k}) = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "f⁻¹({k}) = m이라 하면 f(m) = {k}이므로 {co(a)}m {sgn(b)} = {k}, m = {ans}이다.",
+      "rubric": [
+        {
+          "element": "역함수의 뜻",
+          "points": 3,
+          "criterion": "f(m) = {k}{ro(k)} 바꿔 세웠다.",
+          "partial": "f⁻¹을 1/f로 두었으면 인정하지 않는다."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "m = {ans}{eul(ans)} 구했다.",
+          "partial": "이항·나눗셈 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "f⁻¹(k)를 1/f(k)로 계산",
+          "on": "역함수의 뜻",
+          "effect": "불인정"
+        },
+        {
+          "text": "f(k)를 구함",
+          "on": "역함수의 뜻",
+          "effect": "불인정"
+        },
+        {
+          "text": "이항 부호 실수",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수",
+        "연립방정식"
+      ],
+      "ops": [
+        "함수"
+      ],
+      "traps": [
+        "합성 순서",
+        "역함수 = 1/f 오해"
+      ],
+      "tags": [
+        "함수",
+        "합성함수",
+        "역함수"
+      ],
+      "id": "h1-2-func-t4",
+      "title": "합성함수의 역함수의 값 — (f∘g)⁻¹(k)",
+      "skill": "(f∘g)⁻¹(k) = m ⇔ (f∘g)(m) = k이므로 합성함수의 식을 만들어 방정식 풀기",
+      "variant_axis": {
+        "f": "ax + b",
+        "g": "x + c",
+        "합성": "f∘g / g∘f"
+      },
+      "discriminates": "합성의 역함수 값을 '합성 = k'의 방정식으로 바꾸고, 합성 순서를 지키는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "in": [
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "x0",
+          "values": {
+            "in": [
+              -5,
+              -4,
+              -3,
+              -2,
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        {
+          "name": "m",
+          "values": {
+            "in": [
+              "fg",
+              "gf"
+            ]
+          }
+        }
+      ],
+      "question": "두 함수 f(x) = {co(a)}x {sgn(b)}, g(x) = x {sgn(c)}에 대하여 {ASK}({k})의 값을 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "m",
+        "rows": {
+          "fg": {
+            "ASK": "(f∘g)⁻¹",
+            "COMP": "(f∘g)(x) = f(g(x)) = f(x + c)",
+            "w": 1
+          },
+          "gf": {
+            "ASK": "(g∘f)⁻¹",
+            "COMP": "(g∘f)(x) = g(f(x)) = f(x) + c",
+            "w": 0
+          }
+        }
+      },
+      "derive": {
+        "k": "w*(a*(x0 + c) + b) + (1 - w)*(a*x0 + b + c)",
+        "ans": "x0",
+        "cc": "w*(a*c + b) + (1 - w)*(b + c)"
+      },
+      "constraints": [
+        "k != 0",
+        "ans not in (a, b, c, k)",
+        "a != 1",
+        "cc != 0"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "k",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "w == 0 or a*(ans + c) + b == k",
+        "w == 1 or a*ans + b + c == k"
+      ],
+      "sol1": "{ASK}({k}) = m이라 하면 역함수의 뜻에서 합성함수의 값이 {k}인 m을 찾으면 된다. 합성함수의 식은 {COMP} = {co(a)}x {sgn(cc)}이다.",
+      "sol2": [
+        "{ASK}({k}) = m ⇔ (합성함수)(m) = {k}",
+        "합성: {COMP} = {co(a)}x {sgn(cc)}",
+        "{co(a)}m {sgn(cc)} = {k} → m = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{ASK}({k}) = m ⇔ (합성함수)(m) = {k}",
+                "hint": "역함수의 뜻"
+              },
+              {
+                "text": "합성: {COMP} = {co(a)}x {sgn(cc)}",
+                "hint": "합성함수의 식"
+              },
+              {
+                "text": "{co(a)}m {sgn(cc)} = {k} → m = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "m"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "m = {ans}{eul(ans)} 합성함수에 넣으면 {a} × {pn(ans)} {sgn(cc)} = {k}{ika(k)} 되어 맞다. 따라서 {ASK}({k}) = {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "합성함수({ans}) = {k} ✓",
+              "{ASK}({k}) = {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{COMP} = {co(a)}x {sgn(cc)}이므로 {ASK}({k}) = m은 {co(a)}m {sgn(cc)} = {k}의 해 m = {ans}이다.",
+      "rubric": [
+        {
+          "element": "합성함수의 식",
+          "points": 3,
+          "criterion": "{COMP} = {co(a)}x {sgn(cc)}{eul(cc)} 구했다.",
+          "partial": "합성 순서를 바꿨으면 인정하지 않는다."
+        },
+        {
+          "element": "역함수 값",
+          "points": 2,
+          "criterion": "m = {ans}{eul(ans)} 구했다.",
+          "partial": "방정식 풀이 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "합성 순서를 바꿈",
+          "on": "합성함수의 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "(f∘g)⁻¹을 f⁻¹∘g⁻¹로 계산",
+          "on": "합성함수의 식",
+          "effect": "불인정"
+        },
+        {
+          "text": "방정식 풀이 실수",
+          "on": "역함수 값",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "time_limit": 100,
+      "points": 4,
+      "qtype": "short",
+      "pool_target": 300,
+      "prereq": [
+        "일차함수",
+        "연립방정식"
+      ],
+      "ops": [
+        "함수"
+      ],
+      "traps": [
+        "합성 순서",
+        "역함수 = 1/f 오해"
+      ],
+      "tags": [
+        "함수",
+        "합성함수",
+        "역함수"
+      ],
+      "id": "h1-2-func-t5",
+      "title": "함수의 개수 — 함수·상수함수·일대일함수·일대일대응",
+      "skill": "정의역의 각 원소가 택할 수 있는 함숫값의 가짓수를 곱해 함수의 개수 세기",
+      "variant_axis": {
+        "X": "원소 2~4개",
+        "Y": "원소 2~5개",
+        "종류": "함수 / 상수함수 / 일대일함수 / 일대일대응"
+      },
+      "discriminates": "함수는 nᵐ, 일대일함수는 nPm, 일대일대응은 m!임을 정의에서 이끌어내는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "f",
+          "values": {
+            "in": [
+              "2_2_all",
+              "2_3_all",
+              "2_3_const",
+              "2_3_inj",
+              "2_4_all",
+              "2_4_const",
+              "2_4_inj",
+              "2_5_all",
+              "2_5_const",
+              "2_5_inj",
+              "2_6_all",
+              "2_6_const",
+              "2_6_inj",
+              "3_2_all",
+              "3_3_all",
+              "3_3_inj",
+              "3_4_all",
+              "3_4_const",
+              "3_4_inj",
+              "3_5_all",
+              "3_5_const",
+              "3_5_inj",
+              "3_6_all",
+              "3_6_const",
+              "3_6_inj",
+              "3_bij",
+              "4_2_all",
+              "4_3_all",
+              "4_4_all",
+              "4_4_inj",
+              "4_5_all",
+              "4_5_const",
+              "4_5_inj",
+              "4_6_all",
+              "4_6_const",
+              "4_6_inj",
+              "4_bij",
+              "5_2_all",
+              "5_3_all",
+              "5_4_all",
+              "5_5_all",
+              "5_5_inj",
+              "5_6_all",
+              "5_6_const",
+              "5_6_inj",
+              "5_bij"
+            ]
+          }
+        }
+      ],
+      "question": "두 집합 X = [[set({SETX})]], Y = [[set({SETY})]]에 대하여 {DESC}{eul(DESC)} 구하시오.",
+      "answer": "{ans}",
+      "answer_alt": [],
+      "table": {
+        "key": "f",
+        "rows": {
+          "2_2_all": {
+            "SETX": "1, 2",
+            "SETY": "a, b",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 4,
+            "EXPL": "X의 원소 2개가 각각 Y의 원소 2개 중 하나를 택하므로 [[pow(2,2)]]",
+            "FORM": "[[pow(2,2)]]",
+            "NX": 2,
+            "NY": 2
+          },
+          "2_3_all": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 9,
+            "EXPL": "X의 원소 2개가 각각 Y의 원소 3개 중 하나를 택하므로 [[pow(3,2)]]",
+            "FORM": "[[pow(3,2)]]",
+            "NX": 2,
+            "NY": 3
+          },
+          "2_3_const": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c",
+            "DESC": "X에서 Y로의 상수함수의 개수",
+            "V": 3,
+            "EXPL": "함숫값 하나를 Y의 원소 3개 중에서 고르므로 3",
+            "FORM": "3",
+            "NX": 2,
+            "NY": 3
+          },
+          "2_3_inj": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 6,
+            "EXPL": "X의 원소 2개가 서로 다른 함숫값을 가지므로 [[perm(3,2)]]",
+            "FORM": "[[perm(3,2)]] = 3 × 2",
+            "NX": 2,
+            "NY": 3
+          },
+          "2_4_all": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c, d",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 16,
+            "EXPL": "X의 원소 2개가 각각 Y의 원소 4개 중 하나를 택하므로 [[pow(4,2)]]",
+            "FORM": "[[pow(4,2)]]",
+            "NX": 2,
+            "NY": 4
+          },
+          "2_4_const": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c, d",
+            "DESC": "X에서 Y로의 상수함수의 개수",
+            "V": 4,
+            "EXPL": "함숫값 하나를 Y의 원소 4개 중에서 고르므로 4",
+            "FORM": "4",
+            "NX": 2,
+            "NY": 4
+          },
+          "2_4_inj": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c, d",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 12,
+            "EXPL": "X의 원소 2개가 서로 다른 함숫값을 가지므로 [[perm(4,2)]]",
+            "FORM": "[[perm(4,2)]] = 4 × 3",
+            "NX": 2,
+            "NY": 4
+          },
+          "2_5_all": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 25,
+            "EXPL": "X의 원소 2개가 각각 Y의 원소 5개 중 하나를 택하므로 [[pow(5,2)]]",
+            "FORM": "[[pow(5,2)]]",
+            "NX": 2,
+            "NY": 5
+          },
+          "2_5_const": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 상수함수의 개수",
+            "V": 5,
+            "EXPL": "함숫값 하나를 Y의 원소 5개 중에서 고르므로 5",
+            "FORM": "5",
+            "NX": 2,
+            "NY": 5
+          },
+          "2_5_inj": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 20,
+            "EXPL": "X의 원소 2개가 서로 다른 함숫값을 가지므로 [[perm(5,2)]]",
+            "FORM": "[[perm(5,2)]] = 5 × 4",
+            "NX": 2,
+            "NY": 5
+          },
+          "2_6_all": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 36,
+            "EXPL": "X의 원소 2개가 각각 Y의 원소 6개 중 하나를 택하므로 [[pow(6,2)]]",
+            "FORM": "[[pow(6,2)]]",
+            "NX": 2,
+            "NY": 6
+          },
+          "2_6_const": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 상수함수의 개수",
+            "V": 6,
+            "EXPL": "함숫값 하나를 Y의 원소 6개 중에서 고르므로 6",
+            "FORM": "6",
+            "NX": 2,
+            "NY": 6
+          },
+          "2_6_inj": {
+            "SETX": "1, 2",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 30,
+            "EXPL": "X의 원소 2개가 서로 다른 함숫값을 가지므로 [[perm(6,2)]]",
+            "FORM": "[[perm(6,2)]] = 6 × 5",
+            "NX": 2,
+            "NY": 6
+          },
+          "3_2_all": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 8,
+            "EXPL": "X의 원소 3개가 각각 Y의 원소 2개 중 하나를 택하므로 [[pow(2,3)]]",
+            "FORM": "[[pow(2,3)]]",
+            "NX": 3,
+            "NY": 2
+          },
+          "3_3_all": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 27,
+            "EXPL": "X의 원소 3개가 각각 Y의 원소 3개 중 하나를 택하므로 [[pow(3,3)]]",
+            "FORM": "[[pow(3,3)]]",
+            "NX": 3,
+            "NY": 3
+          },
+          "3_3_inj": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 6,
+            "EXPL": "X의 원소 3개가 서로 다른 함숫값을 가지므로 [[perm(3,3)]]",
+            "FORM": "[[perm(3,3)]] = 3!",
+            "NX": 3,
+            "NY": 3
+          },
+          "3_4_all": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c, d",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 64,
+            "EXPL": "X의 원소 3개가 각각 Y의 원소 4개 중 하나를 택하므로 [[pow(4,3)]]",
+            "FORM": "[[pow(4,3)]]",
+            "NX": 3,
+            "NY": 4
+          },
+          "3_4_const": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c, d",
+            "DESC": "X에서 Y로의 상수함수의 개수",
+            "V": 4,
+            "EXPL": "함숫값 하나를 Y의 원소 4개 중에서 고르므로 4",
+            "FORM": "4",
+            "NX": 3,
+            "NY": 4
+          },
+          "3_4_inj": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c, d",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 24,
+            "EXPL": "X의 원소 3개가 서로 다른 함숫값을 가지므로 [[perm(4,3)]]",
+            "FORM": "[[perm(4,3)]] = 4 × 3 × 2",
+            "NX": 3,
+            "NY": 4
+          },
+          "3_5_all": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 125,
+            "EXPL": "X의 원소 3개가 각각 Y의 원소 5개 중 하나를 택하므로 [[pow(5,3)]]",
+            "FORM": "[[pow(5,3)]]",
+            "NX": 3,
+            "NY": 5
+          },
+          "3_5_const": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 상수함수의 개수",
+            "V": 5,
+            "EXPL": "함숫값 하나를 Y의 원소 5개 중에서 고르므로 5",
+            "FORM": "5",
+            "NX": 3,
+            "NY": 5
+          },
+          "3_5_inj": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 60,
+            "EXPL": "X의 원소 3개가 서로 다른 함숫값을 가지므로 [[perm(5,3)]]",
+            "FORM": "[[perm(5,3)]] = 5 × 4 × 3",
+            "NX": 3,
+            "NY": 5
+          },
+          "3_6_all": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 216,
+            "EXPL": "X의 원소 3개가 각각 Y의 원소 6개 중 하나를 택하므로 [[pow(6,3)]]",
+            "FORM": "[[pow(6,3)]]",
+            "NX": 3,
+            "NY": 6
+          },
+          "3_6_const": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 상수함수의 개수",
+            "V": 6,
+            "EXPL": "함숫값 하나를 Y의 원소 6개 중에서 고르므로 6",
+            "FORM": "6",
+            "NX": 3,
+            "NY": 6
+          },
+          "3_6_inj": {
+            "SETX": "1, 2, 3",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 120,
+            "EXPL": "X의 원소 3개가 서로 다른 함숫값을 가지므로 [[perm(6,3)]]",
+            "FORM": "[[perm(6,3)]] = 6 × 5 × 4",
+            "NX": 3,
+            "NY": 6
+          },
+          "3_bij": {
+            "SETX": "1, 2, 3",
+            "SETY": "1, 2, 3",
+            "DESC": "X에서 X로의 일대일대응의 개수",
+            "V": 6,
+            "EXPL": "X의 원소 3개를 자기 자신의 원소에 빠짐없이 하나씩 짝지으므로 3! = 3 × 2 × 1 = 6",
+            "FORM": "3!",
+            "NX": 3,
+            "NY": 3
+          },
+          "4_2_all": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "a, b",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 16,
+            "EXPL": "X의 원소 4개가 각각 Y의 원소 2개 중 하나를 택하므로 [[pow(2,4)]]",
+            "FORM": "[[pow(2,4)]]",
+            "NX": 4,
+            "NY": 2
+          },
+          "4_3_all": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "a, b, c",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 81,
+            "EXPL": "X의 원소 4개가 각각 Y의 원소 3개 중 하나를 택하므로 [[pow(3,4)]]",
+            "FORM": "[[pow(3,4)]]",
+            "NX": 4,
+            "NY": 3
+          },
+          "4_4_all": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "a, b, c, d",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 256,
+            "EXPL": "X의 원소 4개가 각각 Y의 원소 4개 중 하나를 택하므로 [[pow(4,4)]]",
+            "FORM": "[[pow(4,4)]]",
+            "NX": 4,
+            "NY": 4
+          },
+          "4_4_inj": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "a, b, c, d",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 24,
+            "EXPL": "X의 원소 4개가 서로 다른 함숫값을 가지므로 [[perm(4,4)]]",
+            "FORM": "[[perm(4,4)]] = 4!",
+            "NX": 4,
+            "NY": 4
+          },
+          "4_5_all": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 625,
+            "EXPL": "X의 원소 4개가 각각 Y의 원소 5개 중 하나를 택하므로 [[pow(5,4)]]",
+            "FORM": "[[pow(5,4)]]",
+            "NX": 4,
+            "NY": 5
+          },
+          "4_5_const": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 상수함수의 개수",
+            "V": 5,
+            "EXPL": "함숫값 하나를 Y의 원소 5개 중에서 고르므로 5",
+            "FORM": "5",
+            "NX": 4,
+            "NY": 5
+          },
+          "4_5_inj": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 120,
+            "EXPL": "X의 원소 4개가 서로 다른 함숫값을 가지므로 [[perm(5,4)]]",
+            "FORM": "[[perm(5,4)]] = 5 × 4 × 3 × 2",
+            "NX": 4,
+            "NY": 5
+          },
+          "4_6_all": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 1296,
+            "EXPL": "X의 원소 4개가 각각 Y의 원소 6개 중 하나를 택하므로 [[pow(6,4)]]",
+            "FORM": "[[pow(6,4)]]",
+            "NX": 4,
+            "NY": 6
+          },
+          "4_6_const": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 상수함수의 개수",
+            "V": 6,
+            "EXPL": "함숫값 하나를 Y의 원소 6개 중에서 고르므로 6",
+            "FORM": "6",
+            "NX": 4,
+            "NY": 6
+          },
+          "4_6_inj": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 360,
+            "EXPL": "X의 원소 4개가 서로 다른 함숫값을 가지므로 [[perm(6,4)]]",
+            "FORM": "[[perm(6,4)]] = 6 × 5 × 4 × 3",
+            "NX": 4,
+            "NY": 6
+          },
+          "4_bij": {
+            "SETX": "1, 2, 3, 4",
+            "SETY": "1, 2, 3, 4",
+            "DESC": "X에서 X로의 일대일대응의 개수",
+            "V": 24,
+            "EXPL": "X의 원소 4개를 자기 자신의 원소에 빠짐없이 하나씩 짝지으므로 4! = 4 × 3 × 2 × 1 = 24",
+            "FORM": "4!",
+            "NX": 4,
+            "NY": 4
+          },
+          "5_2_all": {
+            "SETX": "1, 2, 3, 4, 5",
+            "SETY": "a, b",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 32,
+            "EXPL": "X의 원소 5개가 각각 Y의 원소 2개 중 하나를 택하므로 [[pow(2,5)]]",
+            "FORM": "[[pow(2,5)]]",
+            "NX": 5,
+            "NY": 2
+          },
+          "5_3_all": {
+            "SETX": "1, 2, 3, 4, 5",
+            "SETY": "a, b, c",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 243,
+            "EXPL": "X의 원소 5개가 각각 Y의 원소 3개 중 하나를 택하므로 [[pow(3,5)]]",
+            "FORM": "[[pow(3,5)]]",
+            "NX": 5,
+            "NY": 3
+          },
+          "5_4_all": {
+            "SETX": "1, 2, 3, 4, 5",
+            "SETY": "a, b, c, d",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 1024,
+            "EXPL": "X의 원소 5개가 각각 Y의 원소 4개 중 하나를 택하므로 [[pow(4,5)]]",
+            "FORM": "[[pow(4,5)]]",
+            "NX": 5,
+            "NY": 4
+          },
+          "5_5_all": {
+            "SETX": "1, 2, 3, 4, 5",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 3125,
+            "EXPL": "X의 원소 5개가 각각 Y의 원소 5개 중 하나를 택하므로 [[pow(5,5)]]",
+            "FORM": "[[pow(5,5)]]",
+            "NX": 5,
+            "NY": 5
+          },
+          "5_5_inj": {
+            "SETX": "1, 2, 3, 4, 5",
+            "SETY": "a, b, c, d, e",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 120,
+            "EXPL": "X의 원소 5개가 서로 다른 함숫값을 가지므로 [[perm(5,5)]]",
+            "FORM": "[[perm(5,5)]] = 5!",
+            "NX": 5,
+            "NY": 5
+          },
+          "5_6_all": {
+            "SETX": "1, 2, 3, 4, 5",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 함수의 개수",
+            "V": 7776,
+            "EXPL": "X의 원소 5개가 각각 Y의 원소 6개 중 하나를 택하므로 [[pow(6,5)]]",
+            "FORM": "[[pow(6,5)]]",
+            "NX": 5,
+            "NY": 6
+          },
+          "5_6_const": {
+            "SETX": "1, 2, 3, 4, 5",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 상수함수의 개수",
+            "V": 6,
+            "EXPL": "함숫값 하나를 Y의 원소 6개 중에서 고르므로 6",
+            "FORM": "6",
+            "NX": 5,
+            "NY": 6
+          },
+          "5_6_inj": {
+            "SETX": "1, 2, 3, 4, 5",
+            "SETY": "a, b, c, d, e, f",
+            "DESC": "X에서 Y로의 일대일함수의 개수",
+            "V": 720,
+            "EXPL": "X의 원소 5개가 서로 다른 함숫값을 가지므로 [[perm(6,5)]]",
+            "FORM": "[[perm(6,5)]] = 6 × 5 × 4 × 3 × 2",
+            "NX": 5,
+            "NY": 6
+          },
+          "5_bij": {
+            "SETX": "1, 2, 3, 4, 5",
+            "SETY": "1, 2, 3, 4, 5",
+            "DESC": "X에서 X로의 일대일대응의 개수",
+            "V": 120,
+            "EXPL": "X의 원소 5개를 자기 자신의 원소에 빠짐없이 하나씩 짝지으므로 5! = 5 × 4 × 3 × 2 × 1 = 120",
+            "FORM": "5!",
+            "NX": 5,
+            "NY": 5
+          }
+        }
+      },
+      "derive": {
+        "ans": "V"
+      },
+      "cost_values": [
+        "NX",
+        "NY",
+        "ans"
+      ],
+      "answer_var": "ans",
+      "verify": [
+        "ans == V"
+      ],
+      "sol1": "함수는 정의역의 각 원소에 공역의 원소를 하나씩 대응시키는 것이다. 정의역 X의 원소 {NX}개마다 택할 수 있는 함숫값의 가짓수를 곱하면 함수의 개수가 된다. 일대일함수는 함숫값이 서로 달라야 하므로 가짓수가 하나씩 줄고, 일대일대응은 공역 전체를 빠짐없이 쓴다.",
+      "sol2": [
+        "n(X) = {NX}, n(Y) = {NY}",
+        "{EXPL}",
+        "{FORM} = {ans}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "n(X) = {NX}, n(Y) = {NY}",
+                "hint": "원소의 개수"
+              },
+              {
+                "text": "{EXPL}",
+                "hint": "가짓수 곱하기"
+              },
+              {
+                "text": "{FORM} = {ans}",
+                "marks": [
+                  {
+                    "on": "{ans}",
+                    "note": "개수"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "mark:2-0"
+          }
+        ]
+      ],
+      "sol3": "함수 하나를 실제로 적어 보면 정의역의 원소마다 함숫값을 하나씩 고르는 과정과 같음을 알 수 있다. 따라서 {DESC}{eun(DESC)} {ans}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{FORM}",
+              "답 {ans}"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "geometry": false,
+      "model_answer": "{EXPL}이므로 {FORM} = {ans}이다.",
+      "rubric": [
+        {
+          "element": "가짓수 세기",
+          "points": 3,
+          "criterion": "{FORM}{ro(FORM)} 세웠다.",
+          "partial": "함수와 일대일함수를 혼동했으면 인정하지 않는다."
+        },
+        {
+          "element": "계산",
+          "points": 2,
+          "criterion": "{ans}{eul(ans)} 구했다.",
+          "partial": "곱셈 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "pitfalls": [
+        {
+          "text": "함수의 개수를 mⁿ으로 셈(지수·밑 바꿈)",
+          "on": "가짓수 세기",
+          "effect": "불인정"
+        },
+        {
+          "text": "일대일함수를 nᵐ으로 셈",
+          "on": "가짓수 세기",
+          "effect": "불인정"
+        },
+        {
+          "text": "곱셈 실수",
+          "on": "계산",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

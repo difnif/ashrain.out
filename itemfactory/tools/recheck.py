@@ -1418,6 +1418,8 @@ def recompute(it):
         if tid == "h1-2-transform-t4":
             p, qq, r2 = std(q); m = re.search(r"x축의 방향으로 (-?\d+)만큼, y축의 방향으로 (-?\d+)만큼 평행이동한 후 (x축|y축|원점|직선 y = x)에 대하여", q)
             x2, y2 = sym[m.group(3)](p + Fraction(m.group(1)), qq + Fraction(m.group(2))); return x2 + y2
+    if tid.startswith("h1-2-set") or tid.startswith("h1-2-logic") or tid.startswith("h1-2-func") or tid.startswith("h1-2-ratfn"):
+        return _h12b(tid, q)
     if tid.startswith("m3-1-sqrt-basic"):
         if tid.startswith("m3-1-sqrt-basic-t1"):
             k = int(re.search(r"\[\[sqrt\((\d+)x\)\]\]", q).group(1)); return Fraction(_sqfree(k)[1])
@@ -1595,6 +1597,122 @@ def check_m3trig(it):
 def _sv(sign, digits):
     """'−', '3' → −3 (부호 문자 + 절댓값)"""
     return Fraction(digits) * (1 if sign == "+" else -1)
+
+
+def _sets(q):
+    """[[set(…)]] 마커를 원소 목록(문자열)으로."""
+    return [[e.strip() for e in m.split(",")] for m in re.findall(r"\[\[set\((.*?)\)\]\]", q)]
+
+
+def _lin(s):
+    """'-3x − 5' / 'x + 3' / '2x' → (a, b)"""
+    m = re.fullmatch(r"(-?\d*)x(?: ([+−]) (\d+))?", s.strip())
+    if not m: return None
+    return _coef(m.group(1)), (_sv(m.group(2), m.group(3)) if m.group(2) else Fraction(0))
+
+
+def _h12b(tid, q):
+    """h1-2 집합·명제·함수·유리무리함수 — 발문에서 다시 푼다."""
+    if tid == "h1-2-set-t1":
+        els = _sets(q)[0]; n = len(els); m = re.search(r"\]\]의 (.+?)를 구하시오", q); cond = m.group(1)
+        if cond == "부분집합의 개수": return Fraction(2 ** n)
+        if cond == "진부분집합의 개수": return Fraction(2 ** n - 1)
+        if re.match(r"\S+, \S+[을를] 모두 원소로 갖는", cond): return Fraction(2 ** (n - 2))
+        if re.match(r"\S+[은는] 원소로 갖고 \S+[은는] 원소로 갖지 않는", cond): return Fraction(2 ** (n - 2))
+        if re.match(r"\S+[을를] 원소로 갖(는|지 않는) 부분집합", cond): return Fraction(2 ** (n - 1))
+        return None
+    if tid == "h1-2-set-t2":
+        m = re.match(r"두 집합 A, B에 대하여 n\(A\) = (\d+), n\(B\) = (\d+), n\(A ([∩∪]) B\) = (\d+)일 때, n\(A ([∩∪−]) B\)의 값", q); a, b, g = Fraction(m.group(1)), Fraction(m.group(2)), Fraction(m.group(4))
+        c = g if m.group(3) == "∩" else a + b - g; u = a + b - c
+        return {"∪": u, "∩": c, "−": a - c}[m.group(5)]
+    if tid == "h1-2-set-t3":
+        m = re.match(r"어느 반 학생 (\d+)명 중에서 .+?이 (\d+)명, .+?이 (\d+)명, .+? 모두 좋아하는 학생이 (\d+)명이다\. (.+?)를 구하시오", q); N, a, b, c = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]; ask = m.group(5)
+        if "적어도 하나" in ask: return a + b - c
+        if "모두 좋아하지 않는" in ask: return N - (a + b - c)
+        if "만 좋아하는" in ask: return a - c
+        return None
+    if tid == "h1-2-set-t4":
+        A, B = [{int(e) for e in s} for s in _sets(q)[:2]]; U = set(range(1, 10)); ask = re.search(r"에 대하여 (.+?)의 모든 원소의 합", q).group(1)
+        res = {"Aᶜ ∩ B": B - A, "(A ∪ B)ᶜ": U - A - B, "A − B": A - B, "A ∩ Bᶜ": A - B, "(A ∩ B)ᶜ": U - (A & B)}.get(ask)
+        return None if res is None else Fraction(sum(res))
+    if tid == "h1-2-set-t5":
+        m = re.match(r"(\d+)의 양의 약수 전체의 집합을 A, (\d+)의 양의 약수 전체의 집합을 B라 할 때, n\(A ([∩∪−]) B\)", q)
+        if m:
+            n1, n2 = int(m.group(1)), int(m.group(2)); A = {d for d in range(1, n1 + 1) if n1 % d == 0}; B = {d for d in range(1, n2 + 1) if n2 % d == 0}
+        else:
+            m = re.match(r"(\d+) 이하의 자연수 중 (\d+)의 배수 전체의 집합을 A, (\d+)의 배수 전체의 집합을 B라 할 때, n\(A ([∩∪−]) B\)", q); lim, p, r_ = int(m.group(1)), int(m.group(2)), int(m.group(3))
+            A = {x for x in range(1, lim + 1) if x % p == 0}; B = {x for x in range(1, lim + 1) if x % r_ == 0}
+        op = m.group(m.lastindex); return Fraction(len({"∩": A & B, "∪": A | B, "−": A - B}[op]))
+    if tid == "h1-2-logic-t1":
+        m = re.match(r"(\d+) 이하의 자연수 전체의 집합 U에서 조건 p: '(.+?)'의 진리집합을 P라 할 때, (P|Pᶜ)의 (모든 원소의 합|원소의 개수)[을를] 구하시오", q); N = int(m.group(1)); cond = m.group(2); U = list(range(1, N + 1))
+        mq = re.fullmatch(r"x² − (\d+)x \+ (\d+) = 0", cond); md = re.fullmatch(r"x는 (\d+)의 약수이다", cond); ma = re.fullmatch(r"\[\[abs\(x − (\d+)\)\]\] ≤ (\d+)", cond)
+        if mq: s_, p_ = int(mq.group(1)), int(mq.group(2)); P = [x for x in U if x * x - s_ * x + p_ == 0]
+        elif md: k = int(md.group(1)); P = [x for x in U if k % x == 0]
+        elif ma: c, w = int(ma.group(1)), int(ma.group(2)); P = [x for x in U if abs(x - c) <= w]
+        else: return None
+        S = P if m.group(3) == "P" else [x for x in U if x not in P]
+        return Fraction(sum(S) if m.group(4).startswith("모든") else len(S))
+    if tid == "h1-2-logic-t2":
+        m = re.match(r"명제 '(모든|어떤) 실수 x에 대하여 x² ([+−]) (2?)kx \+ (\d+) (>|≥|<) 0이다\.'가 참이 되도록 하는 (정수 k의 개수|자연수 k의 최솟값)", q); c = int(m.group(4)); two = m.group(3) == "2"
+        if m.group(1) == "모든":
+            if m.group(5) == ">": return Fraction(sum(1 for k in range(-400, 401) if (k * k < c if two else k * k < 4 * c)))
+            return Fraction(sum(1 for k in range(-400, 401) if k * k <= c))
+        return Fraction(next(k for k in range(1, 400) if (k * k > c if two else k * k > 4 * c)))
+    if tid == "h1-2-logic-t3":
+        m = re.match(r"실수 x에 대한 두 조건 p: \[\[abs\(x ([+−]) (\d+)\)\]\] ≤ k, q: (-?\d+) ≤ x ≤ (-?\d+)에 대하여 p가 q이기 위한 (충분|필요)조건", q); a = -_sv(m.group(1), m.group(2)); lo, hi = Fraction(m.group(3)), Fraction(m.group(4))
+        d1, d2 = a - lo, hi - a
+        return min(d1, d2) if m.group(5) == "충분" else max(d1, d2)
+    if tid == "h1-2-logic-t4":
+        m = re.match(r"x > (\d+)일 때, (.+?)의 최솟값", q); p = int(m.group(1)); e = m.group(2)
+        m1 = re.fullmatch(r"(\d*)x \+ \[\[frac\((\d+), x\)\]\]", e); m2 = re.fullmatch(r"x \+ \[\[frac\((\d+), x − (\d+)\)\]\]", e); m3 = re.fullmatch(r"\[\[frac\(\(x \+ (\d+)\)\(x \+ (\d+)\), x\)\]\]", e)
+        if m1: A, B = int(m1.group(1) or "1"), int(m1.group(2)); r = _isqrt(A * B); return None if r is None else 2 * r
+        if m2: B, pp = int(m2.group(1)), int(m2.group(2)); r = _isqrt(B); return None if r is None or pp != p else pp + 2 * r
+        if m3: a, b = int(m3.group(1)), int(m3.group(2)); r = _isqrt(a * b); return None if r is None else a + b + 2 * r
+        return None
+    if tid == "h1-2-logic-t5":
+        m = re.match(r"x > 0, y > 0이고 (.+?)일 때, (.+?)의 (최솟값|최댓값)", q); cond, ask = m.group(1), m.group(2)
+        mc = re.fullmatch(r"xy = (\d+)", cond)
+        if mc:
+            c = int(mc.group(1)); ma = re.fullmatch(r"(\d*)x \+ (\d*)y", ask); A, B = int(ma.group(1) or "1"), int(ma.group(2) or "1"); r = _isqrt(A * B * c); return None if r is None else 2 * r
+        ms = re.fullmatch(r"(\d*)x \+ (\d*)y = (\d+)", cond)
+        if ms and ask == "xy":
+            A, B, s_ = int(ms.group(1) or "1"), int(ms.group(2) or "1"), int(ms.group(3)); return Fraction(s_ * s_, 4 * A * B)
+        mh = re.fullmatch(r"\[\[frac\((\d+), x\)\]\] \+ \[\[frac\((\d+), y\)\]\] = 1", cond)
+        if mh and ask == "x + y":
+            ra, rb = _isqrt(int(mh.group(1))), _isqrt(int(mh.group(2))); return None if ra is None or rb is None else (ra + rb) ** 2
+        return None
+    if tid == "h1-2-func-t1":
+        m = re.match(r"함수 f\(x\) = ax \+ b에 대하여 f\((-?\d+)\) = (-?\d+), f\((-?\d+)\) = (-?\d+)일 때, f\((-?\d+)\)의 값", q); x1, v1, x2, v2, x3 = [Fraction(m.group(i)) for i in (1, 2, 3, 4, 5)]
+        a = (v2 - v1) / (x2 - x1); b = v1 - a * x1; return a * x3 + b
+    if tid == "h1-2-func-t2":
+        m = re.match(r"두 함수 f\(x\) = (.+?), g\(x\) = x² ([+−]) (\d+)에 대하여 \((f∘g|g∘f|f∘f)\)\((-?\d+)\)의 값", q); a, b = _lin(m.group(1)); c = _sv(m.group(2), m.group(3)); k = Fraction(m.group(5))
+        f = lambda x: a * x + b; g = lambda x: x * x + c  # noqa: E731
+        return {"f∘g": f(g(k)), "g∘f": g(f(k)), "f∘f": f(f(k))}[m.group(4)]
+    if tid == "h1-2-func-t3":
+        m = re.match(r"함수 f\(x\) = (.+?)에 대하여 f⁻¹\((-?\d+)\)의 값", q); a, b = _lin(m.group(1)); k = Fraction(m.group(2)); return (k - b) / a
+    if tid == "h1-2-func-t4":
+        m = re.match(r"두 함수 f\(x\) = (.+?), g\(x\) = x ([+−]) (\d+)에 대하여 \((f∘g|g∘f)\)⁻¹\((-?\d+)\)의 값", q); a, b = _lin(m.group(1)); c = _sv(m.group(2), m.group(3)); k = Fraction(m.group(5))
+        return (k - b) / a - c if m.group(4) == "f∘g" else (k - b - c) / a
+    if tid == "h1-2-func-t5":
+        X, Y = _sets(q)[:2]; m_, n_ = len(X), len(Y); kind = re.search(r"에 대하여 X에서 (X|Y)로의 (.+?)의 개수", q).group(2)
+        return Fraction({"함수": n_ ** m_, "상수함수": n_, "일대일함수": math.perm(n_, m_) if n_ >= m_ else 0, "일대일대응": math.factorial(m_) if n_ == m_ else 0}[kind])
+    if tid == "h1-2-ratfn-t1":
+        m = re.match(r"함수 y = \[\[frac\((.+?), x ([+−]) (\d+)\)\]\]의 그래프의 두 점근선의 교점의 좌표를 \(p, q\)라 할 때, (p \+ q|pq)의 값", q); a, b = _lin(m.group(1)); c = _sv(m.group(2), m.group(3))
+        p, qq = -c, a; return p + qq if m.group(4) == "p + q" else p * qq
+    if tid == "h1-2-ratfn-t2":
+        m = re.match(r"함수 y = \[\[frac\((-?\d+), x\)\]\]의 그래프를 x축의 방향으로 (-?\d+)만큼, y축의 방향으로 (-?\d+)만큼 평행이동", q); k, mm, nn = [Fraction(m.group(i)) for i in (1, 2, 3)]
+        return nn + (k - mm * nn) - mm
+    if tid == "h1-2-ratfn-t3":
+        m = re.match(r"함수 y = \[\[frac\((.+?), x ([+−]) (\d+)\)\]\]의 그래프는 함수 y = \[\[frac\(k, x\)\]\]", q); a, b = _lin(m.group(1)); c = _sv(m.group(2), m.group(3))
+        return (b - a * c) + (-c) + a
+    if tid == "h1-2-ratfn-t4":
+        m = re.match(r"함수 y = \[\[sqrt\((.+?)\)\]\] ([+−]) (\d+)의 정의역이 \[\[setb\(x, x ([≥≤]) p\)\]\]", q); a, b = _lin(m.group(1)); c = _sv(m.group(2), m.group(3))
+        if (a > 0) != (m.group(4) == "≥"): return None
+        return -b / a + c
+    if tid == "h1-2-ratfn-t5":
+        m = re.match(r"함수 y = \[\[sqrt\((-?\d*)x\)\]\]의 그래프를 x축의 방향으로 (-?\d+)만큼, y축의 방향으로 (-?\d+)만큼 평행이동", q); a = _coef(m.group(1)); mm, nn = Fraction(m.group(2)), Fraction(m.group(3))
+        return -a * mm + nn
+    return None
 
 
 def check_hs(it):
