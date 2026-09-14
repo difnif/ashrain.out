@@ -150,7 +150,7 @@ const CSS = `
 .sf3-sub { position: absolute; padding: 5px 13px; border-radius: 12px; font-weight: 400; text-align: center;
   font-family: "EBS Hunminjeongeum Saeron", "Gowun Batang", serif; letter-spacing: .01em;
   line-height: 1.55; pointer-events: none; animation: sf3subin .35s ease; white-space: pre-line; }
-.sf3-stage.math .sf3-sub { font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; font-weight: 700; letter-spacing: 0; }
+.sf3-stage.math .sf3-sub { font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; font-weight: 600; letter-spacing: 0; }
 .sf3-stage.dark .sf3-sub { background: rgba(8,12,26,.55); color: #F2E8CE; }
 .sf3-stage.light .sf3-sub { background: rgba(255,252,242,.72); color: #4A3B25; }
 @keyframes sf3subin { from { opacity: 0; } to { opacity: 1; } }
