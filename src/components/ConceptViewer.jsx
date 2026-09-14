@@ -427,6 +427,8 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
     try {
       const [c, q] = await Promise.all([getConcept(conceptId), getAdoptedQna(conceptId)]);
       setConcept(c); setQna(q);
+      // 홈 "이어보기" 카드용 — 마지막으로 본 개념
+      if (c) { try { localStorage.setItem("ash.lastConcept", JSON.stringify({ id: c.id, title: c.title, at: Date.now() })); } catch {} }
     } catch { setErr("개념을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
   }, [conceptId]);
   useEffect(() => { load(); }, [load]);

@@ -48,6 +48,26 @@ cp -r node_modules/@mediapipe/tasks-vision/wasm public/models/wasm
 | `#/portrait` | 리브드 글라스 초상화 → 프로필 아바타 저장 |
 | `#/me` | 마이페이지 (프로필·내 정보·환경설정·계정) |
 
+### 학생앱 베타 — 문제풀이 (`#/solve/*`, 2026-09)
+상단 기능바는 **개념 / 문제풀이 / 오답노트 / 질문** 네 개. 연산·사진 힌트는 문제풀이 허브 안으로 들어갔다.
+공개(`status='live'`) 문항만 학생에게 보인다 — 생성 문항은 `#/admin/items` 에서 live 로 올려야 나온다.
+
+| 해시 | 화면 | 기록 |
+|---|---|---|
+| `#/solve` | 문제풀이 허브 (이번 주 기록·자주 나온 실수) | — |
+| `#/solve/set[/:conceptId]` | 개념별 문항 세트 풀기 → 해설·도형 애니메이션 → 결과·오답노트 저장 | `attempts` |
+| `#/solve/item/:itemId` | 문항 하나 다시 풀기 (오답노트에서) | `attempts` |
+| `#/solve/practice` | 예제·유제 개념 고르기 → `#/p/:conceptId` | `practice_progress` |
+| `#/solve/omr` | 사진 채점 — 시험지·답안 카드 인쇄(4모서리 마커) → 촬영 → CV 인식(+AI 폴백) → 확인 → 채점 | `attempts` (`set_id=omr:<code>`) |
+| `#/solve/read[/:itemId]` | 문장 해설 — 숫자·척도·단서 경계 표시, 구하는 것·주어진 조건 | — |
+| `#/solve/mark[/:itemId]` | 표시 연습 — 동그라미·밑줄·빗금 → 정답 표시와 비교 | localStorage |
+| `#/solve/essay[/:itemId]` | 서술형 자가채점 — 답안 작성/촬영 → 루브릭 자가채점 → 모범답안 | `essay_grades`(없으면 로컬) + `attempts` |
+| `#/solve/ask/:itemId` | 문항 질문하기 (QuestionChat) | `concept_qna` (`block_id=item:<id>`) |
+
+문항형 오답노트는 `wrong_notes.image_path = 'item:<test_items.id>'` 센티널로 저장한다(DDL 불필요).
+선택 마이그레이션: `supabase/2026-09_student_beta.sql` (essay_grades · attempts 관리자 열람 · v_live_item_counts).
+공용 모듈: `src/lib/items.js`(문항 로딩·attempts) · `src/lib/answers.js`(정답 판정) · `src/lib/marking.js`(표시 규칙) · `src/lib/omr/`(카드 레이아웃·인식) · `src/components/ItemQuestion.jsx`/`ItemView.jsx`(문항 렌더·풀이). 테스트: `node tests/<name>.test.mjs`.
+
 ## 구조
 ```
 supabase/schema.sql        프로필·권한·개념·QnA·아바타 버킷 (RLS 포함)

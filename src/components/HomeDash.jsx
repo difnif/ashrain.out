@@ -4,6 +4,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import { SceneEditor } from "./AnimFigure";
+import { BETA } from "../lib/beta";
+import { readLastResult } from "../lib/setplay";
+import { countOpenWrongNotes } from "../lib/wrongnotes";
 
 const CSS = `
 .hd-root { min-height: 100vh; padding: 14px 14px 60px; box-sizing: border-box;
@@ -69,7 +72,21 @@ const CSS = `
   -webkit-mask-image: linear-gradient(to right, transparent, #000 30%); }
 .hd-philo-arrow { position: absolute; right: 12px; bottom: 10px; font-size: 16px; }
 .hd-note { text-align: center; color: var(--mut); font-size: 11px; margin-top: 16px; line-height: 1.7; }
+.hd-pillar { border-width: 1.5px; border-color: var(--ac); }
+.hd-pillar .hd-t { color: var(--ac); }
+.hd-links { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+.hd-links a { color: var(--mut); font-size: 11.5px; text-decoration: none; border-bottom: 1px dotted var(--bd); }
+.hd-beta { display: inline-block; font-size: 10px; font-weight: 800; color: #fff; background: #7C3AED; border-radius: 999px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
 `;
+
+function readLastConcept() {
+  try { const v = JSON.parse(localStorage.getItem("ash.lastConcept") || "null"); return v && v.id ? v : null; } catch { return null; }
+}
+const fmtAgo = (at) => {
+  if (!at) return "";
+  const d = Math.round((Date.now() - at) / 86400000);
+  return d <= 0 ? "오늘" : d === 1 ? "어제" : `${d}일 전`;
+};
 
 const GREETS = [
   "저는 안녕 안 해요 😌", "복습은 하셨나요?", "오답노트, 열어봤나요?", "어제 배운 거 한 줄로 말해볼래요?",
@@ -199,6 +216,9 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
   const [wx, setWx] = useState(null);
   const [wxFiles, setWxFiles] = useState({});
   const [wxEdit, setWxEdit] = useState(false);
+  const [dash, setDash] = useState({ wrongN: null, qna: null, week: null, attempts: null });
+  const lastConcept = readLastConcept();
+  const lastSet = readLastResult();
   const now = new Date();
   const hi = skyOf(now.getHours())[1];
   const days = ["월", "화", "수", "목", "금", "토", "일"];
@@ -208,6 +228,18 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
       const u = data?.user; if (!u) return;
       const { data: p } = await supabase.from("profiles").select("username, role").eq("id", u.id).maybeSingle();
       setNick(p?.username || ""); setIsAdmin(p?.role === "admin");
+      // 실데이터 카드 — 오답노트 수 · 내 질문 · 이번 주 풀이
+      const since = new Date(Date.now() - 6 * 86400000); since.setHours(0, 0, 0, 0);
+      const [wrongN, qnaRes, attRes] = await Promise.all([
+        countOpenWrongNotes(u.id),
+        supabase.from("concept_qna").select("id, status").eq("asked_by", u.id).order("created_at", { ascending: false }).limit(50),
+        supabase.from("attempts").select("ts, correct").eq("user_id", u.id).gte("ts", since.toISOString()).limit(1000),
+      ]);
+      const qna = qnaRes.error ? null : (qnaRes.data || []);
+      const att = attRes.error ? [] : (attRes.data || []);
+      const week = Array(7).fill(0);
+      for (const a of att) { const d = new Date(a.ts); const i = (d.getDay() + 6) % 7; week[i] += 1; }
+      setDash({ wrongN, qna, week, attempts: att });
     });
     fetch("https://api.open-meteo.com/v1/forecast?latitude=37.66&longitude=126.83&current=temperature_2m,precipitation,weather_code,cloud_cover,wind_speed_10m")
       .then((r) => r.json()).then((j) => { if (j?.current) setWx(pickWeather(j.current)); }).catch(() => {});
@@ -226,7 +258,6 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
   useEffect(() => { loadWxFiles(); }, [loadWxFiles]);
 
   const skyImgs = wx ? [wx.base, ...wx.over].filter((k) => wxFiles[k]).map((k) => ({ k, url: wxFiles[k].url })) : [];
-  const week = [35, 55, 20, 70, 45, 85, 30];
 
   return (
     <div className={`hd-root hd-${theme}`}>
@@ -248,60 +279,74 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
         </div>
 
         <div className="hd-grid">
-          <div className="hd-card wide">
-            <span className="hd-demo">DEMO</span>
-            <p className="hd-t">▶ 이어서 학습</p>
-            <p className="hd-big">A01 · 소수와 합성수</p>
-            <div className="hd-bar"><div style={{ width: "60%" }} /></div>
-            <p className="hd-sub">단락 3/5 읽음 · 어제 저녁에 보다 멈췄어요</p>
-            <button className="hd-go" onClick={() => (location.hash = "#/c/m1-1-01")}>이어보기 →</button>
+          <div className="hd-card hd-pillar">
+            <p className="hd-t">📚 개념 학습</p>
+            {lastConcept ? (
+              <>
+                <p className="hd-big">{lastConcept.title || lastConcept.id}</p>
+                <p className="hd-sub">{fmtAgo(lastConcept.at)}에 본 개념이에요</p>
+                <button className="hd-go" onClick={() => (location.hash = `#/c/${encodeURIComponent(lastConcept.id)}`)}>이어보기 →</button>
+              </>
+            ) : (
+              <>
+                <p className="hd-big">개념부터 차근차근</p>
+                <p className="hd-sub">학년·학기별 개념 카드를 읽고 예제로 확인해요</p>
+                <button className="hd-go" onClick={() => (location.hash = "#/learn/concept")}>개념 보러 가기 →</button>
+              </>
+            )}
+          </div>
+          <div className="hd-card hd-pillar">
+            <p className="hd-t">✏️ 문제풀이{BETA.on && <span className="hd-beta">{BETA.label}</span>}</p>
+            {lastSet ? (
+              <>
+                <p className="hd-big">{lastSet.ok}/{lastSet.n} 정답</p>
+                <p className="hd-sub">{lastSet.title || lastSet.conceptId} · {fmtAgo(lastSet.at)}</p>
+              </>
+            ) : (
+              <>
+                <p className="hd-big">문항 세트 · 사진 채점 · 표시 연습</p>
+                <p className="hd-sub">풀이 기록은 오답노트로 이어져요</p>
+              </>
+            )}
+            <button className="hd-go" onClick={() => (location.hash = "#/solve")}>문제풀이 홈 →</button>
           </div>
           <div className="hd-card">
-            <span className="hd-demo">DEMO</span>
-            <p className="hd-t">🔥 연속 출석</p>
-            <p className="hd-big">12일째</p>
-            <p className="hd-sub">이번 주 5일 접속 — 최고 기록까지 3일!</p>
-          </div>
-          <div className="hd-card">
-            <span className="hd-demo">DEMO</span>
             <p className="hd-t">📕 오답노트</p>
-            <p className="hd-big">미복습 4문제</p>
-            <p className="hd-sub">정수와 유리수 2 · 소인수분해 2</p>
-          </div>
-          <div className="hd-card wide">
-            <span className="hd-demo">DEMO</span>
-            <p className="hd-t">📈 이번 주 학습 시간 <span style={{ fontWeight: 600 }}>· 합계 5시간 40분</span></p>
-            <div className="hd-week">
-              {week.map((v, i) => (
-                <div key={i} className="hd-wcol">
-                  <div className="hd-wbar" style={{ height: `${v}%`, opacity: i === (now.getDay() + 6) % 7 ? 1 : 0.5 }} />
-                  <span className="hd-wlab">{days[i]}</span>
-                </div>
-              ))}
-            </div>
+            <p className="hd-big">{dash.wrongN == null ? "…" : dash.wrongN === 0 ? "미복습 0문제" : `미복습 ${dash.wrongN}문제`}</p>
+            <p className="hd-sub">{dash.wrongN === 0 ? "틀린 문제를 저장하면 여기에 쌓여요" : "다시 풀어서 정리해요"}</p>
+            <button className="hd-go" onClick={() => (location.hash = "#/learn/wrong")}>열어보기 →</button>
           </div>
           <div className="hd-card">
-            <span className="hd-demo">DEMO</span>
-            <p className="hd-t">⚡ 연산 스피드</p>
-            <p className="hd-big">92점 · 4분 12초</p>
-            <p className="hd-sub">지난 기록보다 38초 빨라졌어요</p>
-          </div>
-          <div className="hd-card">
-            <span className="hd-demo">DEMO</span>
             <p className="hd-t">💬 내 질문</p>
-            <p className="hd-big">답변 완료 1건</p>
-            <p className="hd-sub">A01-1 약수 질문에 답이 달렸어요</p>
-            <button className="hd-go" onClick={() => (location.hash = "#/board")}>보러 가기 →</button>
+            {dash.qna == null ? <p className="hd-big">…</p> : (() => {
+              const done = dash.qna.filter((q) => q.status === "answered" || q.status === "adopted").length;
+              const wait = dash.qna.filter((q) => q.status === "pending").length;
+              return (
+                <>
+                  <p className="hd-big">{dash.qna.length === 0 ? "아직 없어요" : `답변 ${done}건`}</p>
+                  <p className="hd-sub">{dash.qna.length === 0 ? "개념 단락이나 문항에서 물어볼 수 있어요" : wait ? `답변 기다리는 중 ${wait}건` : "질문게시판에서 다른 질문도 볼 수 있어요"}</p>
+                </>
+              );
+            })()}
+            <button className="hd-go" onClick={() => (location.hash = "#/board")}>질문게시판 →</button>
           </div>
-
           <div className="hd-card wide">
-            <span className="hd-demo">DEMO</span>
-            <p className="hd-t">🏛 새 공간</p>
-            <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-              <button className="hd-go" onClick={() => (location.hash = "#/library")}>📖 서재 →</button>
-              <button className="hd-go" onClick={() => (location.hash = "#/news")}>📰 신문 →</button>
-              <button className="hd-go" onClick={() => (location.hash = "#/duty")}>🧭 조교 →</button>
-            </div>
+            <p className="hd-t">📈 이번 주 푼 문항 <span style={{ fontWeight: 600 }}>· 합계 {dash.attempts ? dash.attempts.length : "…"}개{dash.attempts && dash.attempts.length ? ` · 정답률 ${Math.round(dash.attempts.filter((a) => a.correct).length / dash.attempts.length * 100)}%` : ""}</span></p>
+            {(() => {
+              const w = dash.week || Array(7).fill(0);
+              const mx = Math.max(1, ...w);
+              return (
+                <div className="hd-week">
+                  {w.map((v, i) => (
+                    <div key={i} className="hd-wcol">
+                      <div className="hd-wbar" style={{ height: `${Math.max(4, Math.round(v / mx * 100))}%`, opacity: i === (now.getDay() + 6) % 7 ? 1 : 0.5 }} title={`${v}문항`} />
+                      <span className="hd-wlab">{days[i]}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            {dash.attempts && dash.attempts.length === 0 && <p className="hd-sub">이번 주엔 아직 기록이 없어요. 한 세트만 풀어도 그래프가 생겨요.</p>}
           </div>
           <button className="hd-philo" onClick={() => (location.hash = "#/philosophy")}>
             <p className="hd-philo-eyebrow">ASHRAIN PHILOSOPHY</p>
@@ -314,7 +359,11 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
           </button>
         </div>
 
-        <p className="hd-note">대시보드 수치는 데모예요 — 활동 기록 기능이 연결되면 실제 데이터로 채워집니다.</p>
+        <p className="hd-note">{BETA.notice}<br />불편한 점은 상단 <b>문의</b> 버튼으로 알려 주세요.</p>
+        <div className="hd-links">
+          <span style={{ color: "var(--mut)", fontSize: 11.5 }}>미리보기</span>
+          <a href="#/library">서재</a><a href="#/news">신문</a><a href="#/duty">조교</a>
+        </div>
       </div>
       {wxEdit && <SceneEditor scenes={WEATHER_SCENES} dir="weather/main" files={wxFiles}
         onClose={() => setWxEdit(false)} onSaved={() => { setWxEdit(false); loadWxFiles(); }} />}
