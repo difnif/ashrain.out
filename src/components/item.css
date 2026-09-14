@@ -1,0 +1,37 @@
+/* 문항 공용 스타일 — Rx 변수(--text --muted --surface --surface2 --border --accent --good --bad) 위에서 동작.
+   도형(figsvg)은 밝은 종이색 전제로 그려지므로 테마와 무관하게 종이 판을 깐다. */
+.fig-stage { margin: 8px 0; padding: 8px; border-radius: 10px; background: #fcfcfb; color: #111; border: 1px solid #e6e3da; overflow-x: auto; }
+.fig-stage svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.fig-stage .fig-wrap { max-width: 100%; }
+
+.iq { font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; color: var(--text, #1F2937); }
+.iq-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.iq-no { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 8px; border-radius: 999px; background: var(--accent, #0DA95F); color: #fff; font-size: 12.5px; font-weight: 800; }
+.iq-meta { font-size: 11.5px; color: var(--muted, #6B7480); display: flex; gap: 6px; flex-wrap: wrap; }
+.iq-tag { border: 1px solid var(--border, #D9DEE4); border-radius: 999px; padding: 1px 7px; }
+.iq-q { font-size: 16px; line-height: 1.65; margin: 4px 0 6px; word-break: keep-all; }
+.iq-choices { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.iq-choice { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--border, #D9DEE4); background: var(--surface, #fff); color: var(--text, #1F2937); font-size: 15px; text-align: left; cursor: pointer; width: 100%; box-sizing: border-box; }
+.iq-choice:disabled { cursor: default; }
+.iq-choice .iq-circ { font-size: 17px; color: var(--muted, #6B7480); flex: none; }
+.iq-choice.sel { border-color: var(--accent, #0DA95F); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #0DA95F) 25%, transparent); }
+.iq-choice.ok { border-color: var(--good, #16A34A); background: color-mix(in srgb, var(--good, #16A34A) 12%, var(--surface, #fff)); }
+.iq-choice.ok .iq-circ { color: var(--good, #16A34A); }
+.iq-choice.bad { border-color: var(--bad, #DC2626); background: color-mix(in srgb, var(--bad, #DC2626) 10%, var(--surface, #fff)); }
+.iq-choice.bad .iq-circ { color: var(--bad, #DC2626); }
+.iq-choice.dim { opacity: .55; }
+.iq-compact .iq-q { font-size: 14.5px; line-height: 1.55; }
+.iq-compact .fig-stage { padding: 6px; }
+.iq-print .iq-choice { border: none; padding: 2px 0; background: none; font-size: 14px; }
+
+/* 해설 (levels) */
+.isol { margin-top: 12px; border-top: 1px dashed var(--border, #D9DEE4); padding-top: 10px; font-size: 14.5px; line-height: 1.65; }
+.isol .lv { margin-bottom: 12px; position: relative; }
+.isol .lv-title { font-weight: 800; font-size: 13.5px; color: var(--accent, #0DA95F); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+.isol .lv ol { margin: 4px 0 4px 20px; padding: 0; }
+.isol .lv li { margin: 3px 0; padding: 2px 4px; border-radius: 4px; }
+.isol .lv p { margin: 3px 0; padding: 2px 4px; border-radius: 4px; }
+.isol .anim-level [data-step].anim-on { color: #d1495b; }
+.isol .ma { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface2, #F1F2F4); font-size: 13.5px; }
+.isol .ma b { font-size: 12px; color: var(--muted, #6B7480); display: block; margin-bottom: 3px; }
+.isol .answer { font-weight: 800; color: var(--good, #16A34A); margin: 4px 0 8px; }
