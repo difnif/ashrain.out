@@ -24,9 +24,10 @@ function tone(t, theme) {
 }
 
 const CSS = `
-.cv-figmode { display: flex; justify-content: flex-end; gap: 4px; margin: 10px 0 2px; }
+.cv-figmode { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin: 10px 0 2px; }
+.cv-fm-label { font-size: 12px; color: var(--mut,#8A929C); margin-right: 4px; }
 .cv-fm { border: 1px solid var(--bd,#DFE3E8); background: var(--card,#fff); color: var(--mut,#8A929C);
-  border-radius: 999px; font-size: 12.5px; font-weight: 800; padding: 6px 12px; cursor: pointer; }
+  border-radius: 999px; font-size: 12.5px; font-weight: 800; padding: 6px 13px; cursor: pointer; min-width: 36px; }
 .cv-fm.on { color: var(--ac,#0DA95F); border-color: var(--ac,#0DA95F); }
 .cv-root { min-height: 100vh; padding: 24px 12px; box-sizing: border-box;
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
@@ -452,9 +453,10 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
             <p className="cv-subtitle">{concept.subtitle}</p>
           </div>
         </header>
-        <div className="cv-figmode" role="group" aria-label="그림 설명 방식">
-          <button className={"cv-fm" + (figMode === "art" ? " on" : "")} onClick={() => pickMode("art")}>🎨 그림</button>
-          <button className={"cv-fm" + (figMode === "math" ? " on" : "")} onClick={() => pickMode("math")}>∑ 수식</button>
+        <div className="cv-figmode" role="group" aria-label="그림설명 모드">
+          <span className="cv-fm-label">그림설명 모드</span>
+          <button className={"cv-fm" + (figMode === "art" ? " on" : "")} onClick={() => pickMode("art")} title="그림 버전">A</button>
+          <button className={"cv-fm" + (figMode === "math" ? " on" : "")} onClick={() => pickMode("math")} title="수식 버전">B</button>
         </div>
         <main className="cv-main">
           {concept.blocks.map((b) => <BlockShell key={b.id} b={b} qna={byBlock(b.id)} theme={theme} conceptId={conceptId} isAdmin={isAdmin} onAsk={setChatBlock} />)}
