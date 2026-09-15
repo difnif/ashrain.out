@@ -18,7 +18,7 @@ NUM = (int, float)
 SPEC = {
     "scene":     ({"pts"}, {"segs", "circles", "marks", "shade", "labels", "axes", "nodot", "aspect_min"}),
     "numline":   ({"min", "max"}, {"points", "segments"}),
-    "coordplane":({"x", "y"}, {"points", "lines", "curves", "circles", "labels", "rise_run", "run_label", "rise_label", "arrows"}),   # rise_run: 기울기 삼각형 (SEEDSPEC·figsvg.js 와 정합, 09-09) · arrows: 벡터 화살표 {from, to, label, dash} (09-15)
+    "coordplane":({"x", "y"}, {"points", "lines", "curves", "circles", "labels", "rise_run", "run_label", "rise_label", "arrows", "equal"}),   # equal: true 면 x·y 같은 눈금(09-15) · rise_run: 기울기 삼각형 (SEEDSPEC·figsvg.js 와 정합, 09-09) · arrows: 벡터 화살표 {from, to, label, dash} (09-15)
     "funcgraph": ({"expr"}, {"domain", "y_range", "points", "labels"}),
     "tri":       ({"v"}, {"sides", "angles", "marks"}),
     "quad":      ({"v"}, {"sides", "angles", "marks", "vertices"}),

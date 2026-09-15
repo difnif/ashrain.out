@@ -1422,6 +1422,8 @@ def recompute(it):
         return _h12b(tid, q)
     if tid.startswith("h2-1-exp") or tid.startswith("h2-1-log"):
         return _h21(tid, q)
+    if tid.startswith("h3-3-solid") or tid.startswith("h3-3-conicfig") or tid.startswith("h3-3-vecfig") or tid.startswith("h2-1-trigfig"):
+        return _hf(tid, q)
     if tid.startswith("h2-1-trig"):
         return _h21t(tid, q)
     if tid.startswith("h2-1-seq"):
@@ -2737,6 +2739,122 @@ def _opts(q):
     parts = re.split(r"\s(?=[B-E]\. )", seg)
     return {p[0]: p[3:].strip().rstrip(".") for p in parts if len(p) > 3 and p[1] == "."}
 
+
+
+# ── 그림이 있는 고등부 틀(세션 5c) — 발문의 치수·좌표에서 다시 푼다 ────────────────────────────
+def _box_pts(q):
+    """'AB = w, AD = d, AE = h인 직육면체 ABCD-EFGH' → 꼭짓점 좌표 (figsvg wire 배치)."""
+    m = re.search(r"AB = (\d+), AD = (\d+), AE = (\d+)인 직육면체 ABCD-EFGH", q)
+    if not m:
+        return None
+    w, d, h = (Fraction(m.group(i)) for i in (1, 2, 3))
+    return {"A": (0, h, 0), "B": (w, h, 0), "C": (w, h, d), "D": (0, h, d), "E": (0, 0, 0), "F": (w, 0, 0), "G": (w, 0, d), "H": (0, 0, d)}
+
+
+def _v3(P, a, b):
+    return tuple(P[b][i] - P[a][i] for i in range(3))
+
+
+def _cross(u, v):
+    return (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])
+
+
+def _d3(u, v):
+    return sum(u[i] * v[i] for i in range(3))
+
+
+def _plane_n(P, name):
+    return _cross(_v3(P, name[0], name[1]), _v3(P, name[0], name[2]))
+
+
+def _hf(tid, q):
+    """h3-3-solid · h3-3-conicfig · h3-3-vecfig · h2-1-trigfig — 발문에서 다시 푼다."""
+    q = q.replace("−", "-")
+    if tid.startswith("h3-3-solid"):
+        P = _box_pts(q)
+        if P is None:
+            return None
+        m = re.search(r"선분 ([A-H])([A-H])의 길이", q)
+        if m and tid.endswith("t1"):
+            u = _v3(P, m.group(1), m.group(2)); return _sqr(_d3(u, u))
+        m = re.search(r"꼭짓점 ([A-H])와 직선 ([A-H])([A-H]) 사이의 거리", q)
+        if m:
+            X, Y, Z = m.groups(); u, v = _v3(P, Y, X), _v3(P, Y, Z)
+            return _sqr((_d3(u, u) * _d3(v, v) - _d3(u, v) ** 2) / _d3(v, v))
+        m = re.search(r"꼭짓점 ([A-H])와 평면 ([A-H]{4}) 사이의 거리", q)
+        if m:
+            X, pl = m.groups(); n = _plane_n(P, pl); u = _v3(P, pl[0], X)
+            return _sqr(Fraction(_d3(u, n) ** 2, _d3(n, n)))
+        m = re.search(r"(삼각형|사각형) ([A-H]{3,4})의 평면 ([A-H]{4}) 위로의 정사영의 넓이", q)
+        if m:
+            fig, pl = m.group(2), m.group(3)
+            const = [i for i in range(3) if len({P[v][i] for v in pl}) == 1]
+            if len(const) != 1:
+                return None
+            ij = [i for i in range(3) if i != const[0]]
+            pts = [(P[v][ij[0]], P[v][ij[1]]) for v in fig]
+            s2 = sum(pts[k][0] * pts[(k + 1) % len(pts)][1] - pts[(k + 1) % len(pts)][0] * pts[k][1] for k in range(len(pts)))
+            return abs(Fraction(s2)) / 2
+        m = re.search(r"두 평면 ([A-H]{4})[와과] ([A-H]{4})가 이루는 각의 크기를 θ라 할 때, (cos|tan) θ의 값", q)
+        if m:
+            n1, n2 = _plane_n(P, m.group(1)), _plane_n(P, m.group(2))
+            c2 = Fraction(_d3(n1, n2) ** 2, _d3(n1, n1) * _d3(n2, n2))
+            return _sqr(c2) if m.group(3) == "cos" else _sqr((1 - c2) / c2)
+        return None
+    if tid.startswith("h3-3-conicfig-t1"):
+        m = re.search(r"포물선 \[\[pow\(y,2\) = (\d+)x\]\]", q); p = Fraction(int(m.group(1)), 4)
+        pts = re.findall(r"([AB])\((-?\d+), (-?\d+)\)", q)
+        if len(pts) != 2 or any(Fraction(y) ** 2 != 4 * p * Fraction(x) for _, x, y in pts):
+            return None
+        AF, BF = (Fraction(x) + p for _, x, _y in pts)
+        if "AF + BF" in q: return AF + BF
+        if "AF × BF" in q: return AF * BF
+        if "|AF - BF|" in q: return abs(AF - BF)
+        return None
+    if tid.startswith("h3-3-conicfig-t2") or tid.startswith("h3-3-conicfig-t3"):
+        m = re.search(r"frac\(pow\(x,2\), (\d+)\) ([+-]) frac\(pow\(y,2\), (\d+)\) = 1", q); A, B = Fraction(m.group(1)), Fraction(m.group(3)); ell = m.group(2) == "+"
+        mc = re.search(r"F\((\d+), 0\), F'\(-(\d+), 0\)", q); c = Fraction(mc.group(1))
+        if ell:
+            a2, b2 = max(A, B), min(A, B)
+            if a2 - b2 != c * c: return None
+        else:
+            a2, b2 = A, B
+            if A + B != c * c: return None
+        a = _sqr(a2)
+        if a is None: return None
+        mm = re.search(r"점 P의 x좌표가 (\d+)일 때, 선분 PF의 길이", q)
+        if mm:
+            x = Fraction(mm.group(1)); y2 = b2 * (1 - x * x / a2) if ell else b2 * (x * x / a2 - 1)
+            return _sqr(y2)
+        mk = re.search(r"PF(')? = (\d+)일 때", q); k = Fraction(mk.group(2)) if mk else None
+        if "둘레의 길이" in q:
+            return 2 * a + 2 * c if ell else 2 * k + 2 * a + 2 * c
+        if mk and ("선분 PF'의 길이" in q or "선분 PF의 길이" in q):
+            return 2 * a - k if ell else k + 2 * a
+        return None
+    if tid.startswith("h3-3-vecfig"):
+        m = re.search(r"vec\(a\)\]\] = \[\[vcomp\((-?\d+), (-?\d+)\)\]\], \[\[vec\(b\)\]\] = \[\[vcomp\((-?\d+), (-?\d+)\)\]\]", q)
+        a = (Fraction(m.group(1)), Fraction(m.group(2))); b = (Fraction(m.group(3)), Fraction(m.group(4)))
+        s = (a[0] + b[0], a[1] + b[1]); dot = a[0] * b[0] + a[1] * b[1]
+        na2, nb2, ns2 = a[0] ** 2 + a[1] ** 2, b[0] ** 2 + b[1] ** 2, s[0] ** 2 + s[1] ** 2
+        if "모든 성분의 합" in q: return s[0] + s[1]
+        if "[[dot(vec(a), vec(b))]]의 값" in q: return dot
+        if "[[pow(abs(vec(a) + vec(b)), 2)]]" in q: return ns2
+        if "[[dot((vec(a) + vec(b)), (vec(a) - vec(b)))]]" in q: return na2 - nb2
+        if "[[abs(vec(a) + vec(b))]]의 값" in q: return _sqr(ns2)
+        if "[[abs(vec(a))]] cos θ의 값" in q:
+            nb = _sqr(nb2); return dot / nb if nb else None
+        if "cos θ의 값" in q:
+            na, nb = _sqr(na2), _sqr(nb2); return dot / (na * nb) if na and nb else None
+        return None
+    if tid.startswith("h2-1-trigfig"):
+        m = re.search(r"최댓값이 (-?\d+), 최솟값이 (-?\d+)이고 주기가 (.+?)일 때, 상수 a, b, c에 대하여 (.+?)의 값", q)
+        M, mn, per, ask = Fraction(m.group(1)), Fraction(m.group(2)), m.group(3), m.group(4)
+        tpi = {"π": Fraction(1), "2π": Fraction(2), "[[frac(pi, 2)]]": Fraction(1, 2), "4π": Fraction(4), "3π": Fraction(3)}.get(per)
+        if tpi is None: return None
+        a, c, b = (M - mn) / 2, (M + mn) / 2, 2 / tpi
+        return {"a + b + c": a + b + c, "abc": a * b * c, "ab": a * b, "b + c": b + c}.get(ask)
+    return None
 
 def check_letters(it):
     """보기 글자(A~E) 답 틀: 역·이·대우 / 참인 대우 / 귀류법 가정 / 산점도 상관. True/False, 해당 없으면 None."""

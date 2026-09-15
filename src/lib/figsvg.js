@@ -305,7 +305,8 @@ function fnCoordplane(a, o) {
     if (c) { pts.push({ c, t: nm }); if (nm) named[nm] = c; }
   }
   const hasCircle = arr(a.circles).length > 0 || arr(a.lines).some((l) => typeof l === "string" && /^circle\s*\(/i.test(l));
-  const f = frame(xr, yr, o, { aspect: hasCircle ? (yr[1] - yr[0]) / (xr[1] - xr[0]) : 0.78 });
+  const equal = hasCircle || a.equal === true || a.aspect === "equal";   // 09-15: equal:true 로 x·y 같은 눈금(이차곡선·벡터)
+  const f = frame(xr, yr, o, { aspect: equal ? (yr[1] - yr[0]) / (xr[1] - xr[0]) : 0.78 });
   let s = svgOpen(f.W, f.H, o) + axes(f, o, { grid: true });
   const drawSeg = (p, q, at = {}) => L(f.X(p[0]), f.Y(p[1]), f.X(q[0]), f.Y(q[1]), { stroke: o.accent, w: 1.5, ...at });
   const lineLike = [...arr(a.lines), ...arr(a.curves), ...arr(a.asymptotes)];

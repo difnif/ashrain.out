@@ -143,7 +143,7 @@
 | passing | `train` `span` `span-lbl` `arrow` `arrow-lbl` `trail` |
 | journey | `stop:i` `stop-lbl:i` `leg:i` `mover` |
 | numline | `pt:라벨` `lbl:라벨` `seg:i` |
-| coordplane | `pt:이름` `lbl:이름` `line:i` `run` `rise` `run-lbl` `rise-lbl` (`rise_run:["A","B"]` 로 기울기 삼각형) `arrow:라벨` `arrow-lbl:라벨` (`arrows:[{from, to, label, dash}]` — 벡터 화살표, 09-15) |
+| coordplane | `pt:이름` `lbl:이름` `line:i` `run` `rise` `run-lbl` `rise-lbl` (`rise_run:["A","B"]` 로 기울기 삼각형) `arrow:라벨` `arrow-lbl:라벨` (`arrows:[{from, to, label, dash}]` — 벡터 화살표, 09-15) · `"equal": true` 면 x·y 눈금 간격을 같게(이차곡선·벡터, 원이 있으면 자동) |
 | steps | `line:i` `hint:i` `mark:i-j` — 줄은 `{"text", "hint", "marks":[{"on","note"}]}` 로 덧표시 가능 |
 | bar | `row:i` `part:i-j` `part-lbl:i-j` `total:i` |
 | sector | `sector` `arc` `radius` `r-lbl` `angle-lbl` |
