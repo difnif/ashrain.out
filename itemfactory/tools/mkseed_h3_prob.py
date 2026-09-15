@@ -64,7 +64,7 @@ CB_B = {**HS, "prereq": ["순열과 조합"], "ops": ["경우의 수"], "traps":
 
 def _cb1_rows():
     out = {}
-    for n in range(4, 9):
+    for n in range(4, 11):
         v = math.factorial(n - 1)
         q = f"{n}명이 원탁에 둘러앉는 경우의 수"
         r = _row(q, v, Q=f"{n}명의 학생이 원탁에 둘러앉는 경우의 수를 구하시오.", LAW="원순열: 서로 다른 n개를 원형으로 배열하는 경우의 수는 (n − 1)!", STEP=f"({n} − 1)! = {n - 1}! = {v}", KIND="원순열")
@@ -73,8 +73,47 @@ def _cb1_rows():
         v2 = 2 * math.factorial(n - 2)
         r2 = _row(q, v2, Q=f"{n}명의 학생이 원탁에 둘러앉을 때, 특정한 2명이 서로 이웃하게 앉는 경우의 수를 구하시오.", LAW="이웃하는 2명을 한 묶음으로 보면 (n − 1)명의 원순열, 묶음 안의 순서 2!", STEP=f"({n} − 2)! × 2! = {n - 2}! × 2 = {v2}", KIND="원순열(이웃)")
         if r2: out[f"a{n}"] = r2
-    for n in range(2, 6):
-        for r_ in range(2, 5):
+        # 특정 2명이 이웃하지 않음: (n−1)! − 2(n−2)!
+        v3 = v - v2
+        r3 = _row(q, v3, Q=f"{n}명의 학생이 원탁에 둘러앉을 때, 특정한 2명이 서로 이웃하지 않게 앉는 경우의 수를 구하시오.", LAW="전체 원순열 (n − 1)!에서 두 사람이 이웃하는 경우 2 × (n − 2)!을 뺀다", STEP=f"({n} − 1)! − 2 × ({n} − 2)! = {v} − {v2} = {v3}", KIND="원순열(이웃하지 않음)")
+        if r3: out[f"n{n}"] = r3
+        # 목걸이(뒤집어 같은 것): (n−1)!/2
+        v4 = v // 2
+        r4 = _row(q, v4, Q=f"서로 다른 {n}개의 구슬을 모두 꿰어 목걸이를 만드는 경우의 수를 구하시오. (단, 뒤집어서 같은 것은 같은 것으로 본다.)", LAW="목걸이는 원순열 (n − 1)!을 뒤집어 같은 것 2가지로 나눈다", STEP=f"[[frac(fact({n - 1}), 2)]] = [[frac({v}, 2)]] = {v4}", KIND="목걸이(원순열/2)")
+        if r4: out[f"k{n}"] = r4
+        # 특정 2명이 마주 보고 앉음(n 짝수): 한 명을 고정하면 맞은편이 정해지고 나머지 (n−2)!
+        if n % 2 == 0:
+            v6 = math.factorial(n - 2)
+            r6 = _row(q, v6, Q=f"{n}명의 학생이 원탁에 둘러앉을 때, 특정한 2명이 서로 마주 보고 앉는 경우의 수를 구하시오.", LAW="한 명의 자리를 고정하면 마주 보는 자리는 하나로 정해지고, 나머지 (n − 2)명을 일렬로 배열한다", STEP=f"({n} − 2)! = {n - 2}! = {v6}", KIND="원순열(마주 보기)")
+            if r6: out[f"o{n}"] = r6
+    for kp in range(2, 7):
+        # 부부 kp 쌍이 부부끼리 이웃하게 원탁: (kp − 1)! × 2^kp
+        v = math.factorial(kp - 1) * 2 ** kp
+        q = f"부부 {kp}쌍 원탁"
+        r = _row(q, v, Q=f"부부 {kp}쌍이 원탁에 둘러앉을 때, 부부끼리 서로 이웃하게 앉는 경우의 수를 구하시오.", LAW=f"각 부부를 한 묶음으로 보면 {kp}묶음의 원순열 ({kp} − 1)!, 각 묶음 안의 순서 2!씩", STEP=f"({kp} − 1)! × [[pow(2, {kp})]] = {math.factorial(kp - 1)} × {2 ** kp} = {v}", KIND="원순열(묶음)")
+        if r: out[f"w{kp}"] = r
+        # 특정 3명이 이웃: 3! × (n−3)!
+        if n >= 5:
+            v5 = 6 * math.factorial(n - 3)
+            r5 = _row(q, v5, Q=f"{n}명의 학생이 원탁에 둘러앉을 때, 특정한 3명이 모두 서로 이웃하게 앉는 경우의 수를 구하시오.", LAW="이웃하는 3명을 한 묶음으로 보면 (n − 2)명의 원순열, 묶음 안의 순서 3!", STEP=f"({n} − 3)! × 3! = {n - 3}! × 6 = {v5}", KIND="원순열(이웃)")
+            if r5: out[f"t{n}"] = r5
+    for n in range(5, 10):
+        for r_ in (3, 4, 5):
+            if r_ >= n:
+                continue
+            v = math.comb(n, r_) * math.factorial(r_ - 1)
+            q = f"{n}명 중 {r_}명 원탁"
+            r = _row(q, v, Q=f"{n}명의 학생 중에서 {r_}명을 뽑아 원탁에 둘러앉히는 경우의 수를 구하시오.", LAW="뽑는 조합 C(n, r)에 뽑힌 r명의 원순열 (r − 1)!을 곱한다", STEP=f"[[comb({n}, {r_})]] × ({r_} − 1)! = {math.comb(n, r_)} × {math.factorial(r_ - 1)} = {v}", KIND="조합 × 원순열")
+            if r: out[f"s{n}_{r_}"] = r
+    for n in range(2, 7):
+        for r_ in range(2, 6):
+            v = n ** r_
+            q = f"숫자 {n}개로 {r_}자리 자연수 중복"
+            digs = ", ".join(str(i) for i in range(1, n + 1))
+            r = _row(q, v, Q=f"{n}개의 숫자 {digs} 중에서 중복을 허락하여 {r_}개를 택해 만들 수 있는 {r_}자리 자연수의 개수를 구하시오.", LAW=f"자리마다 {n}가지씩 고르므로 중복순열 [[pperm({n}, {r_})]]", STEP=f"[[pperm({n}, {r_})]] = [[pow({n}, {r_})]] = {v}", KIND="중복순열(자연수)")
+            if r: out[f"d{n}_{r_}"] = r
+    for n in range(2, 8):
+        for r_ in range(2, 6):
             v = n ** r_
             q = f"서로 다른 {n}개에서 중복을 허락하여 {r_}개를 택하는 순열"
             r = _row(q, v, Q=f"서로 다른 {n}개의 문자에서 중복을 허락하여 {r_}개를 택해 일렬로 나열하는 경우의 수를 구하시오.", LAW=f"중복순열: [[pperm({n}, {r_})]] = nʳ", STEP=f"[[pperm({n}, {r_})]] = [[pow({n}, {r_})]] = {v}", KIND="중복순열")
@@ -90,7 +129,7 @@ CB1_ROWS = _cb1_rows()
 
 def cb_t1():
     return T(CB, 1, CB_B, title="원순열과 중복순열",
-        skill="원순열 (n − 1)!, 중복순열 nʳ을 상황에 맞게 적용하기", axis={"원순열": "4~8명(이웃 조건 포함)", "중복순열": "n = 2~5, r = 2~4"}, disc="원형 배열에서 회전을 같은 것으로 보아 (n − 1)!로 세고, 중복 허용이면 nʳ임을 아는가", diff=2,
+        skill="원순열 (n − 1)!, 중복순열 nʳ을 상황에 맞게 적용하기", axis={"원순열": "4~10명(이웃·비이웃·3명 이웃·목걸이·뽑아서 원탁)", "중복순열": "n = 2~6, r = 2~5(문자·자연수·동아리)"}, disc="원형 배열에서 회전을 같은 것으로 보아 (n − 1)!로 세고, 중복 허용이면 nʳ임을 아는가", diff=2,
         params=[{"name": "f", "values": {"in": list(CB1_ROWS)}}], table={"key": "f", "rows": CB1_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
@@ -104,7 +143,10 @@ def cb_t1():
 
 def _cb2_rows():
     out = {}
-    words = [("aabbc", "a, a, b, b, c"), ("aaabb", "a, a, a, b, b"), ("aabcc", "a, a, b, c, c"), ("aaabc", "a, a, a, b, c"), ("aabbcc", "a, a, b, b, c, c"), ("aaaabb", "a, a, a, a, b, b"), ("aabbccd", "a, a, b, b, c, c, d"), ("aaabbc", "a, a, a, b, b, c"), ("aaaabbc", "a, a, a, a, b, b, c"), ("aabbb", "a, a, b, b, b")]
+    words = [("aabbc", "a, a, b, b, c"), ("aaabb", "a, a, a, b, b"), ("aabcc", "a, a, b, c, c"), ("aaabc", "a, a, a, b, c"), ("aabbcc", "a, a, b, b, c, c"), ("aaaabb", "a, a, a, a, b, b"), ("aabbccd", "a, a, b, b, c, c, d"), ("aaabbc", "a, a, a, b, b, c"), ("aaaabbc", "a, a, a, a, b, b, c"), ("aabbb", "a, a, b, b, b"),
+             ("aabb", "a, a, b, b"), ("aaab", "a, a, a, b"), ("aabbbc", "a, a, b, b, b, c"), ("aaabbb", "a, a, a, b, b, b"), ("aabbcd", "a, a, b, b, c, d"), ("aaabbcd", "a, a, a, b, b, c, d"), ("aabccd", "a, a, b, c, c, d"), ("abbcc", "a, b, b, c, c"), ("aaaab", "a, a, a, a, b"), ("aaabbbc", "a, a, a, b, b, b, c"),
+             ("banana", "b, a, n, a, n, a"), ("level", "l, e, v, e, l"), ("letter", "l, e, t, t, e, r"), ("coffee", "c, o, f, f, e, e"), ("google", "g, o, o, g, l, e"), ("balloon", "b, a, l, l, o, o, n"), ("success", "s, u, c, c, e, s, s"), ("little", "l, i, t, t, l, e"), ("happy", "h, a, p, p, y"), ("apple", "a, p, p, l, e"),
+             ("cheese", "c, h, e, e, s, e"), ("pepper", "p, e, p, p, e, r"), ("summer", "s, u, m, m, e, r"), ("school", "s, c, h, o, o, l"), ("tomato", "t, o, m, a, t, o"), ("bubble", "b, u, b, b, l, e"), ("puppy", "p, u, p, p, y"), ("sweet", "s, w, e, e, t"), ("mammal", "m, a, m, m, a, l"), ("dessert", "d, e, s, s, e, r, t")]
     for w, disp in words:
         n = len(w)
         cnt = {ch: w.count(ch) for ch in set(w)}
@@ -115,13 +157,22 @@ def _cb2_rows():
         q = f"{n}개의 문자 {disp}를 일렬로 나열하는 경우의 수"
         r = _row(q, v, Q=f"{n}개의 문자 {disp}를 모두 일렬로 나열하는 경우의 수를 구하시오.", LAW=f"같은 것이 있는 순열: n!/(p! q! ⋯)", STEP=f"[[frac(fact({n}), {dens})]] = {v}", KIND="같은 것이 있는 순열", N=n)
         if r: out[f"w{w}"] = r
-    for a in range(2, 6):
-        for b in range(2, 6):
+    for a in range(2, 8):
+        for b in range(2, 8):
             v = math.comb(a + b, a)
             q = f"오른쪽으로 {a}칸, 위쪽으로 {b}칸 최단 경로"
             r = _row(q, v, Q=f"바둑판 모양의 도로망에서 A 지점에서 B 지점까지 가려면 오른쪽으로 {a}칸, 위쪽으로 {b}칸 가야 한다. A에서 B까지 최단 거리로 가는 경우의 수를 구하시오.", LAW="최단 경로: 오른쪽 a개와 위쪽 b개를 나열하는 같은 것이 있는 순열 (a + b)!/(a! b!)", STEP=f"[[frac(fact({a + b}), fact({a}) fact({b}))]] = {v}", KIND="최단 경로", N=a + b)
             if r: out[f"g{a}_{b}"] = r
-    return out
+            # 경유점 P: A 에서 오른쪽 a1, 위 b1 인 지점을 거쳐 B 로
+            if a >= 3 and b >= 3:
+                for a1, b1 in ((1, 1), (a - 1, b - 1), (1, b - 1), (2, 1)):
+                    if not (0 < a1 < a and 0 < b1 < b):
+                        continue
+                    v2 = math.comb(a1 + b1, a1) * math.comb(a - a1 + b - b1, a - a1)
+                    q2 = f"오른쪽으로 {a}칸, 위쪽으로 {b}칸 최단 경로 경유 {a1} {b1}"
+                    r2 = _row(q2, v2, Q=f"바둑판 모양의 도로망에서 A 지점에서 B 지점까지 가려면 오른쪽으로 {a}칸, 위쪽으로 {b}칸 가야 한다. A에서 오른쪽으로 {a1}칸, 위쪽으로 {b1}칸 간 지점을 P라 할 때, A에서 P를 거쳐 B까지 최단 거리로 가는 경우의 수를 구하시오.", LAW="P를 거치는 최단 경로: (A → P의 경우의 수) × (P → B의 경우의 수)", STEP=f"[[frac(fact({a1 + b1}), fact({a1}) fact({b1}))]] × [[frac(fact({a - a1 + b - b1}), fact({a - a1}) fact({b - b1}))]] = {math.comb(a1 + b1, a1)} × {math.comb(a - a1 + b - b1, a - a1)} = {v2}", KIND="최단 경로(경유점)", N=a + b)
+                    if r2: out[f"g{a}_{b}_{a1}_{b1}"] = r2
+    return _pick(out, 330)
 
 
 CB2_ROWS = _cb2_rows()
@@ -129,7 +180,7 @@ CB2_ROWS = _cb2_rows()
 
 def cb_t2():
     return T(CB, 2, CB_B, title="같은 것이 있는 순열 — 문자 나열과 최단 경로",
-        skill="n!/(p! q! ⋯)으로 같은 것이 있는 순열 세기", axis={"문자": "5~7개(같은 문자 2~4개)", "최단 경로": "a, b = 2~5"}, disc="같은 것의 개수의 계승으로 나누고, 최단 경로를 문자 나열로 옮기는가", diff=2,
+        skill="n!/(p! q! ⋯)으로 같은 것이 있는 순열 세기", axis={"문자": "4~7개(같은 문자 2~4개, 영단어 포함)", "최단 경로": "a, b = 2~7, 경유점"}, disc="같은 것의 개수의 계승으로 나누고, 최단 경로를 문자 나열로 옮기는가", diff=2,
         params=[{"name": "f", "values": {"in": list(CB2_ROWS)}}], table={"key": "f", "rows": CB2_ROWS},
         derive={"ans": "VN/VD"}, cost=["N", "ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
@@ -141,26 +192,37 @@ def cb_t2():
         pitfalls=[("같은 것의 계승으로 나누지 않음", "공식", "불인정"), ("최단 경로를 a × b로 셈", "공식", "불인정"), ("계승 계산 실수", "계산", "부분")])
 
 
+VARS = ("x", "y", "z", "w", "u", "v")
+
+
 def _cb3_rows():
     out = {}
-    for n in range(2, 6):
-        for r_ in range(2, 7):
+    for n in range(2, 7):
+        for r_ in range(2, 9):
             v = math.comb(n + r_ - 1, r_)
             q = f"서로 다른 {n}개에서 중복을 허락하여 {r_}개를 택하는 조합"
             r = _row(q, v, Q=f"서로 다른 {n}종류의 과일 중에서 중복을 허락하여 {r_}개를 택하는 경우의 수를 구하시오. (단, 각 종류의 과일은 {r_}개 이상 있다.)", LAW=f"중복조합 [[hcomb({n}, {r_})]] = [[comb({n + r_ - 1}, {r_})]]", STEP=f"[[hcomb({n}, {r_})]] = [[comb({n + r_ - 1}, {r_})]] = {v}", KIND="중복조합")
             if r: out[f"h{n}_{r_}"] = r
-            if n >= 2:
-                # 방정식 x1 + ... + xn = r 의 음이 아닌 정수해: H(n, r)
-                vars_ = ", ".join(f"x{i}" for i in range(1, n + 1)) if n <= 3 else "x, y, z, w"[: 3 * n - 1] if n == 4 else "x, y, z, w, u"
-                eq = " + ".join(("x", "y", "z", "w", "u")[:n]) + f" = {r_}"
-                r2 = _row(q, v, Q=f"방정식 {eq}{_eul(r_)} 만족시키는 음이 아닌 정수 {vars_ if n <= 3 else ', '.join(('x', 'y', 'z', 'w', 'u')[:n])}의 순서쌍의 개수를 구하시오.".replace("x1, x2, x3", "x, y, z").replace("x1, x2", "x, y"), LAW=f"{r_}개의 1을 {n}개의 변수에 나누어 주는 중복조합 [[hcomb({n}, {r_})]]", STEP=f"[[hcomb({n}, {r_})]] = [[comb({n + r_ - 1}, {r_})]] = {v}", KIND="방정식의 정수해")
-                if r2: out[f"e{n}_{r_}"] = r2
-                # 양의 정수해: H(n, r − n) (r > n)
-                if r_ > n:
-                    v3 = math.comb(r_ - 1, n - 1)
-                    r3 = _row(q, v3, Q=f"방정식 {eq}{_eul(r_)} 만족시키는 양의 정수 {', '.join(('x', 'y', 'z', 'w', 'u')[:n])}의 순서쌍의 개수를 구하시오.", LAW=f"각 변수에서 1씩 빼면 음이 아닌 정수해 문제: [[hcomb({n}, {r_ - n})]]", STEP=f"[[hcomb({n}, {r_ - n})]] = [[comb({r_ - 1}, {r_ - n})]] = {v3}", KIND="방정식의 양의 정수해")
-                    if r3: out[f"f{n}_{r_}"] = r3
-    return out
+            vars_ = ", ".join(VARS[:n])
+            eq = " + ".join(VARS[:n]) + f" = {r_}"
+            # 방정식 x + y + ⋯ = r 의 음이 아닌 정수해: H(n, r)
+            r2 = _row(q, v, Q=f"방정식 {eq}{_eul(r_)} 만족시키는 음이 아닌 정수 {vars_}의 순서쌍의 개수를 구하시오.", LAW=f"{r_}개의 1을 {n}개의 변수에 나누어 주는 중복조합 [[hcomb({n}, {r_})]]", STEP=f"[[hcomb({n}, {r_})]] = [[comb({n + r_ - 1}, {r_})]] = {v}", KIND="방정식의 정수해")
+            if r2: out[f"e{n}_{r_}"] = r2
+            # 양의 정수해: H(n, r − n) = C(r − 1, n − 1) (r > n)
+            if r_ > n:
+                v3 = math.comb(r_ - 1, n - 1)
+                r3 = _row(q, v3, Q=f"방정식 {eq}{_eul(r_)} 만족시키는 양의 정수 {vars_}의 순서쌍의 개수를 구하시오.", LAW=f"각 변수에서 1씩 빼면 음이 아닌 정수해 문제: [[hcomb({n}, {r_ - n})]]", STEP=f"[[hcomb({n}, {r_ - n})]] = [[comb({r_ - 1}, {r_ - n})]] = {v3}", KIND="방정식의 양의 정수해")
+                if r3: out[f"f{n}_{r_}"] = r3
+                # 각 종류를 적어도 1개씩 포함: H(n, r − n)
+                r5 = _row(q, v3, Q=f"서로 다른 {n}종류의 과일 중에서 각 종류를 적어도 1개씩 포함하여 {r_}개를 택하는 경우의 수를 구하시오. (단, 각 종류의 과일은 {r_}개 이상 있다.)", LAW=f"먼저 종류별로 1개씩 {n}개를 택해 두고 남은 {r_ - n}개를 중복조합으로 택한다: [[hcomb({n}, {r_ - n})]]", STEP=f"[[hcomb({n}, {r_ - n})]] = [[comb({r_ - 1}, {r_ - n})]] = {v3}", KIND="중복조합(적어도 1개)")
+                if r5: out[f"a{n}_{r_}"] = r5
+            # 부등식 x + y + ⋯ ≤ r 의 음이 아닌 정수해: 여유 변수를 더해 H(n + 1, r)
+            if n <= 4:
+                v4 = math.comb(n + r_, r_)
+                ineq = " + ".join(VARS[:n]) + f" ≤ {r_}"
+                r4 = _row(q, v4, Q=f"부등식 {ineq}{_eul(r_)} 만족시키는 음이 아닌 정수 {vars_}의 순서쌍의 개수를 구하시오.", LAW=f"부족한 양을 나타내는 변수를 하나 더하면 방정식 {' + '.join(VARS[:n])} + t = {r_}의 음이 아닌 정수해: [[hcomb({n + 1}, {r_})]]", STEP=f"[[hcomb({n + 1}, {r_})]] = [[comb({n + r_}, {r_})]] = {v4}", KIND="부등식의 정수해")
+                if r4: out[f"i{n}_{r_}"] = r4
+    return _pick(out, 330)
 
 
 CB3_ROWS = _cb3_rows()
@@ -168,7 +230,7 @@ CB3_ROWS = _cb3_rows()
 
 def cb_t3():
     return T(CB, 3, CB_B, title="중복조합 — 종류 고르기와 방정식의 정수해",
-        skill="H(n, r) = C(n + r − 1, r)로 중복조합을 세고, 양의 정수해는 1씩 빼서 옮기기", axis={"n": "2~5", "r": "2~6", "형태": "과일 고르기 / 음이 아닌 정수해 / 양의 정수해"}, disc="순서 없는 중복 선택을 H로 옮기고 양의 정수 조건을 변환하는가", diff=3,
+        skill="H(n, r) = C(n + r − 1, r)로 중복조합을 세고, 양의 정수해는 1씩 빼서 옮기기", axis={"n": "2~6", "r": "2~8", "형태": "과일 고르기(적어도 1개) / 음이 아닌 정수해 / 양의 정수해 / 부등식의 정수해"}, disc="순서 없는 중복 선택을 H로 옮기고 양의 정수 조건을 변환하는가", diff=3,
         params=[{"name": "f", "values": {"in": list(CB3_ROWS)}}], table={"key": "f", "rows": CB3_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
@@ -242,8 +304,18 @@ def _pr1_rows():
     conds.append(("두 눈의 수가 서로 같음", lambda i, j: i == j))
     conds.append(("두 눈의 수의 차가 2", lambda i, j: abs(i - j) == 2))
     conds.append(("두 눈의 수의 차가 1", lambda i, j: abs(i - j) == 1))
+    conds.append(("두 눈의 수의 차가 3", lambda i, j: abs(i - j) == 3))
     for d in (2, 3, 4, 5):
         conds.append((f"두 눈의 수의 합이 {d}의 배수", lambda i, j, d=d: (i + j) % d == 0))
+    for s_ in (4, 5, 6, 7):
+        conds.append((f"두 눈의 수의 합이 {s_} 이하", lambda i, j, s_=s_: i + j <= s_))
+    conds.append(("두 눈의 수의 곱이 짝수", lambda i, j: (i * j) % 2 == 0))
+    conds.append(("두 눈의 수가 모두 홀수", lambda i, j: i % 2 == 1 and j % 2 == 1))
+    conds.append(("두 눈의 수가 모두 짝수", lambda i, j: i % 2 == 0 and j % 2 == 0))
+    for mx in (2, 3, 4, 5, 6):
+        conds.append((f"두 눈의 수 중 큰 수가 {mx}", lambda i, j, mx=mx: max(i, j) == mx))
+    for d in (3, 4, 6):
+        conds.append((f"두 눈의 수의 곱이 {d}의 배수", lambda i, j, d=d: (i * j) % d == 0))
     for desc, fn in conds:
         cnt = sum(1 for i, j in pairs if fn(i, j))
         v = Fraction(cnt, 36)
@@ -251,21 +323,32 @@ def _pr1_rows():
         phr = "두 눈의 수가 서로 같을 확률" if desc.endswith("같음") else f"{desc}일 확률"
         r = _row(q, v, Q=f"서로 다른 두 개의 주사위를 동시에 던질 때, {phr}을 구하시오.", CNT=cnt, STEP=f"전체 경우 6 × 6 = 36가지, 조건을 만족하는 경우 {cnt}가지", RES=f"[[frac({cnt}, 36)]] = {_fm(v)}", DESC=desc)
         if r: out[f"d{desc}"] = r
-    for n in (4, 5, 6):
-        for k in (2, 3):
+    for n in (4, 5, 6, 7, 8, 9):
+        for k in (2, 3, 4):
             for b in range(1, n):
                 w = n - b
                 if k > n:
                     continue
                 cnt_all = math.comb(n, k)
                 cnt_w = math.comb(w, k) if w >= k else 0
-                if cnt_w == 0:
-                    continue
-                v = Fraction(cnt_w, cnt_all)
-                q = f"흰 공 {w}개 검은 공 {b}개 {k}개 모두 흰"
-                r = _row(q, v, Q=f"흰 공 {w}개와 검은 공 {b}개가 들어 있는 주머니에서 임의로 {k}개의 공을 동시에 꺼낼 때, {k}개 모두 흰 공일 확률을 구하시오.", CNT=cnt_w, STEP=f"전체 경우 [[comb({n}, {k})]] = {cnt_all}가지, 모두 흰 공 [[comb({w}, {k})]] = {cnt_w}가지", RES=f"[[frac({cnt_w}, {cnt_all})]] = {_fm(v)}", DESC=f"{k}개 모두 흰 공")
-                if r: out[f"b{w}_{b}_{k}"] = r
-    return _pick(out, 300)
+                if cnt_w:
+                    v = Fraction(cnt_w, cnt_all)
+                    q = f"흰 공 {w}개 검은 공 {b}개 {k}개 모두 흰"
+                    r = _row(q, v, Q=f"흰 공 {w}개와 검은 공 {b}개가 들어 있는 주머니에서 임의로 {k}개의 공을 동시에 꺼낼 때, {k}개 모두 흰 공일 확률을 구하시오.", CNT=cnt_w, STEP=f"전체 경우 [[comb({n}, {k})]] = {cnt_all}가지, 모두 흰 공 [[comb({w}, {k})]] = {cnt_w}가지", RES=f"[[frac({cnt_w}, {cnt_all})]] = {_fm(v)}", DESC=f"{k}개 모두 흰 공")
+                    if r: out[f"b{w}_{b}_{k}"] = r
+                cnt_b = math.comb(b, k) if b >= k else 0
+                if cnt_b:
+                    v = Fraction(cnt_all - cnt_b, cnt_all)
+                    q = f"흰 공 {w}개 검은 공 {b}개 {k}개 적어도 하나 흰"
+                    r = _row(q, v, Q=f"흰 공 {w}개와 검은 공 {b}개가 들어 있는 주머니에서 임의로 {k}개의 공을 동시에 꺼낼 때, 흰 공이 적어도 한 개 나올 확률을 구하시오.", CNT=cnt_all - cnt_b, STEP=f"전체 경우 [[comb({n}, {k})]] = {cnt_all}가지, 여사건(모두 검은 공) [[comb({b}, {k})]] = {cnt_b}가지이므로 1 − [[frac({cnt_b}, {cnt_all})]]", RES=f"[[frac({cnt_all - cnt_b}, {cnt_all})]] = {_fm(v)}", DESC="흰 공이 적어도 한 개")
+                    if r: out[f"l{w}_{b}_{k}"] = r
+                if k == 2 and w >= 1 and b >= 1:
+                    cnt_m = w * b
+                    v = Fraction(cnt_m, cnt_all)
+                    q = f"흰 공 {w}개 검은 공 {b}개 2개 색 다름"
+                    r = _row(q, v, Q=f"흰 공 {w}개와 검은 공 {b}개가 들어 있는 주머니에서 임의로 2개의 공을 동시에 꺼낼 때, 두 공의 색이 서로 다를 확률을 구하시오.", CNT=cnt_m, STEP=f"전체 경우 [[comb({n}, 2)]] = {cnt_all}가지, 흰 공 1개와 검은 공 1개 [[comb({w}, 1)]] × [[comb({b}, 1)]] = {cnt_m}가지", RES=f"[[frac({cnt_m}, {cnt_all})]] = {_fm(v)}", DESC="두 공의 색이 서로 다름")
+                    if r: out[f"m{w}_{b}"] = r
+    return _pick(out, 330)
 
 
 PR1_ROWS = _pr1_rows()

@@ -11,6 +11,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from genkit.expr import eul as _eul  # noqa: E402
 from hsseed import HS, NZ, SEED, T, run  # noqa: E402
 
 # ═══════════════════════════════════════════════════════════════════ 1. 다항식
@@ -183,18 +185,43 @@ def cx_t2():
 
 
 CX3_ROWS = {}
-for _k in range(1, 6):
+for _k in range(1, 8):
     _n = 4 * _k
     CX3_ROWS[f"pw{_n}"] = {"EXPR": f"(1 + i)^{_n}", "n": _n, "ans": (-4) ** _k, "KEY": "(1 + i)² = 2i", "STEP1": f"(1 + i)^{_n} = ((1 + i)²)^{2 * _k} = (2i)^{2 * _k}", "STEP2": f"(2i)^{2 * _k} = 2^{2 * _k} × i^{2 * _k} = {4 ** _k} × {(-1) ** _k} = {(-4) ** _k}"}
-for _n in range(6, 41, 2):
+    CX3_ROWS[f"pm{_n}"] = {"EXPR": f"(1 − i)^{_n}", "n": _n, "ans": (-4) ** _k, "KEY": "(1 − i)² = −2i", "STEP1": f"(1 − i)^{_n} = ((1 − i)²)^{2 * _k} = (−2i)^{2 * _k}", "STEP2": f"(−2i)^{2 * _k} = 2^{2 * _k} × i^{2 * _k} = {4 ** _k} × {(-1) ** _k} = {(-4) ** _k}"}
+for _n in range(6, 61, 2):
     _v = 2 if _n % 4 == 0 else -2
+    _one = 1 if _n % 4 == 0 else -1
     CX3_ROWS[f"rt{_n}"] = {"EXPR": f"[[pow(frac(1 + i, 1 − i), {_n})]] + [[pow(frac(1 − i, 1 + i), {_n})]]", "n": _n, "ans": _v, "KEY": "(1 + i)/(1 − i) = i, (1 − i)/(1 + i) = −i",
                            "STEP1": f"i^{_n} + (−i)^{_n} = 2 × i^{_n}", "STEP2": f"{_n} = 4 × {_n // 4} + {_n % 4}이므로 i^{_n} = i^{_n % 4} = {'1' if _n % 4 == 0 else '-1'}, 값은 {_v}"}
+for _n in range(5, 40, 2):
+    # (1 + i)^n / (1 − i)^(n−2) = i^(n−2) (1 + i)² = 2 i^(n−1) → n 홀수면 ±2
+    _v = 2 if (_n - 1) % 4 == 0 else -2
+    CX3_ROWS[f"q3{_n}"] = {"EXPR": f"[[frac(pow(1 + i, {_n}), pow(1 − i, {_n - 2}))]]", "n": _n, "ans": _v, "KEY": "(1 + i)/(1 − i) = i, (1 + i)² = 2i",
+                           "STEP1": f"(1 + i)^{_n}/(1 − i)^{_n - 2} = ((1 + i)/(1 − i))^{_n - 2} × (1 + i)² = i^{_n - 2} × 2i = 2i^{_n - 1}", "STEP2": f"{_n - 1} = 4 × {(_n - 1) // 4} + {(_n - 1) % 4}이므로 i^{_n - 1} = {'1' if (_n - 1) % 4 == 0 else '-1'}, 값은 {_v}"}
+for _k in range(1, 8):
+    _n = 4 * _k
+    CX3_ROWS[f"ss{_n}"] = {"EXPR": f"(1 + i)^{_n} + (1 − i)^{_n}", "n": _n, "ans": 2 * (-4) ** _k, "KEY": "(1 + i)² = 2i, (1 − i)² = −2i",
+                           "STEP1": f"(1 + i)^{_n} + (1 − i)^{_n} = (2i)^{2 * _k} + (−2i)^{2 * _k} = 2 × (2i)^{2 * _k}", "STEP2": f"(2i)^{2 * _k} = {4 ** _k} × {(-1) ** _k} = {(-4) ** _k}이므로 값은 {2 * (-4) ** _k}"}
+for _n in range(2, 13, 2):
+    # (1 + i)^(2n) + (1 − i)^(2n) = (2i)^n + (−2i)^n = 2 × 2^n × i^n (n 짝수)
+    _v = 2 * 2 ** _n * (1 if _n % 4 == 0 else -1)
+    CX3_ROWS[f"se{_n}"] = {"EXPR": f"(1 + i)^{2 * _n} + (1 − i)^{2 * _n}", "n": 2 * _n, "ans": _v, "KEY": "(1 + i)² = 2i, (1 − i)² = −2i",
+                           "STEP1": f"(1 + i)^{2 * _n} + (1 − i)^{2 * _n} = (2i)^{_n} + (−2i)^{_n} = 2 × 2^{_n} × i^{_n} ({_n}은 짝수)", "STEP2": f"i^{_n} = {'1' if _n % 4 == 0 else '-1'}이므로 값은 2 × {2 ** _n} × {'1' if _n % 4 == 0 else '(-1)'} = {_v}"}
+for _n in range(2, 11):
+    CX3_ROWS[f"ab{_n}"] = {"EXPR": f"복소수 (1 + i)^{_n}{_eul(_n)} a + bi (a, b는 실수) 꼴로 나타낼 때, a² + b²", "n": _n, "ans": 2 ** _n, "KEY": "|(1 + i)^n|² = (|1 + i|²)^n = 2^n, 즉 a² + b² = 2^n",
+                           "STEP1": f"(1 + i)^{_n}의 켤레복소수는 (1 − i)^{_n}이므로 a² + b² = (1 + i)^{_n}(1 − i)^{_n} = ((1 + i)(1 − i))^{_n} = 2^{_n}", "STEP2": f"2^{_n} = {2 ** _n}"}
+for _n in (7, 23, 27, 43, 47):
+    CX3_ROWS[f"sm{_n}"] = {"EXPR": f"i + i² + i³ + ⋯ + [[pow(i, {_n})]]", "n": _n, "ans": -1, "KEY": "i + i² + i³ + i⁴ = i − 1 − i + 1 = 0",
+                           "STEP1": f"네 항씩 묶으면 0이므로 {_n} = 4 × {_n // 4} + 3에서 남는 세 항 i^{_n - 2} + i^{_n - 1} + i^{_n}만 남는다", "STEP2": f"i^{_n - 2} + i^{_n - 1} + i^{_n} = i + i² + i³ = i − 1 − i = −1"}
+for _n in range(2, 11):
+    CX3_ROWS[f"pr{_n}"] = {"EXPR": f"[[pow((1 + i)(1 − i), {_n})]]", "n": _n, "ans": 2 ** _n, "KEY": "(1 + i)(1 − i) = 1 − i² = 2",
+                           "STEP1": f"((1 + i)(1 − i))^{_n} = 2^{_n}", "STEP2": f"2^{_n} = {2 ** _n}"}
 
 
 def cx_t3():
     return T(CX, 3, CX_B, title="i의 거듭제곱 — (1 + i)^n, ((1 + i)/(1 − i))^n의 값",
-        skill="(1 + i)² = 2i, (1 + i)/(1 − i) = i로 바꾼 뒤 i⁴ = 1의 주기성으로 값 구하기", axis={"형태": "(1 + i)^{4k} / 몫의 거듭제곱 합", "n": "4~40"}, disc="먼저 간단한 꼴(2i, i)로 바꾸고 지수를 4로 나눈 나머지로 i^n을 정하는가", diff=3,
+        skill="(1 + i)² = 2i, (1 + i)/(1 − i) = i로 바꾼 뒤 i⁴ = 1의 주기성으로 값 구하기", axis={"형태": "(1 ± i)^{4k} / 몫의 거듭제곱(합·단독·분수꼴) / i의 거듭제곱의 합 / ((1 + i)(1 − i))ⁿ", "n": "4~60"}, disc="먼저 간단한 꼴(2i, i)로 바꾸고 지수를 4로 나눈 나머지로 i^n을 정하는가", diff=3,
         params=[{"name": "f", "values": {"in": list(CX3_ROWS)}}], table={"key": "f", "rows": CX3_ROWS},
         derive={"v": "ans"}, constraints=["ans != n"], cost=["n", "ans"], verify=["v == ans"],
         q="{EXPR}의 값을 구하시오. (단, i = [[sqrt(-1)]])", answer="{ans}",
@@ -299,25 +326,26 @@ def qd_t3():
 
 def _qd_conj(no, title, kind, root_q, root_sol, prod_f, prod_expr, qvals, extra_constraints):
     return T(QD, no, QD_B, title=title,
-        skill="켤레근도 근임을 써서 합·곱으로 a, b 구하기", axis={"p": "±1~±4", "q": qvals}, disc=f"계수가 {kind}이면 켤레근도 근임을 알고 합 2p, 곱 {prod_f}로 계수를 정하는가", diff=3,
-        params=[{"name": "p", "values": {"in": NZ(-4, 4)}}, {"name": "qv", "values": {"in": [2, 3, 5, 6, 7] if kind == "유리수" else [1, 2, 3, 4, 5]}}],
-        derive={"s": "2*p", "prod": prod_expr, "a": "-2*p", "b": prod_expr, "ans": f"-2*p + {prod_expr}"},
+        skill="켤레근도 근임을 써서 합·곱으로 a, b 구하기", axis={"p": "±1~±6", "q": qvals, "묻는 것": "a + b / ab / a − b"}, disc=f"계수가 {kind}이면 켤레근도 근임을 알고 합 2p, 곱 {prod_f}로 계수를 정하는가", diff=3,
+        params=[{"name": "p", "values": {"in": NZ(-6, 6)}}, {"name": "qv", "values": {"in": [2, 3, 5, 6, 7, 10, 11, 13] if kind == "유리수" else [1, 2, 3, 4, 5, 6, 7]}}, {"name": "k", "values": {"in": ["sum", "prod", "diff"]}}],
+        table={"key": "k", "rows": {"sum": {"ASK": "a + b", "w1": 1, "w2": 0}, "prod": {"ASK": "ab", "w1": 0, "w2": 1}, "diff": {"ASK": "a − b", "w1": 0, "w2": 0}}},
+        derive={"s": "2*p", "prod": prod_expr, "a": "-2*p", "b": prod_expr, "ans": f"w1*(-2*p + {prod_expr}) + w2*(-2*p)*({prod_expr}) + (1 - w1 - w2)*(-2*p - ({prod_expr}))"},
         constraints=["b != 0", "ans != 0", "ans not in (p, qv)"] + extra_constraints, cost=["p", "qv", "s", "prod", "ans"], verify=["a == -s", "b == prod"],
-        q=f"x에 대한 이차방정식 x² + ax + b = 0의 한 근이 {{p}} + {root_q}일 때, {kind} a, b에 대하여 a + b의 값을 구하시오.", answer="{ans}",
+        q=f"x에 대한 이차방정식 x² + ax + b = 0의 한 근이 {{p}} + {root_q}일 때, {kind} a, b에 대하여 {{ASK}}의 값을 구하시오.", answer="{ans}",
         sol1=f"계수가 {kind}인 이차방정식의 한 근이 {{p}} + {root_q}이면 다른 한 근은 켤레인 {{p}} − {root_q}이다. 두 근의 합은 {{s}}, 곱은 {prod_f} = {{prod}}이므로 근과 계수의 관계에서 a = −(합) = {{a}}, b = (곱) = {{b}}이다.",
-        sol2=[(f"다른 한 근: {{p}} − {root_q} (켤레근)", f"계수가 {kind}"), (f"합 = {{s}}, 곱 = ({{p}} + {root_q})({{p}} − {root_q}) = {{prod}}", "합차 공식"), ("a = −({s}) = {a}, b = {prod} → a + b = {ans}", None, ("{ans}", "a + b"))],
-        sol3=[f"x = {{p}} + {root_sol}{{eul(qv)}} x² {{sgt(a)}}x {{sgn(b)}}에 넣으면 0이 된다(직접 전개해 확인). 따라서 a + b = {{ans}}이다.", "x² {sgt(a)}x {sgn(b)} = 0에 근 대입 → 0 ✓", "a + b = {ans}"],
-        model=f"켤레근 {{p}} − {root_q}도 근이므로 두 근의 합은 {{s}}, 곱은 {{prod}}이다. 따라서 a = {{a}}, b = {{b}}이고 a + b = {{ans}}이다.",
-        rubric=[("켤레근", 2, f"다른 한 근이 {{p}} − {root_q}임을 밝혔다.", "근거 없이 썼으면 1점."), ("계수 구하기", 3, "합 {s}, 곱 {prod}에서 a = {a}, b = {b}{ro(b)} 구해 a + b = {ans}{eul(ans)} 답했다.", "a의 부호가 틀렸으면 1점.")],
+        sol2=[(f"다른 한 근: {{p}} − {root_q} (켤레근)", f"계수가 {kind}"), (f"합 = {{s}}, 곱 = ({{p}} + {root_q})({{p}} − {root_q}) = {{prod}}", "합차 공식"), ("a = −({s}) = {a}, b = {prod} → {ASK} = {ans}", None, ("{ans}", "{ASK}"))],
+        sol3=[f"x = {{p}} + {root_sol}{{eul(qv)}} x² {{sgt(a)}}x {{sgn(b)}}에 넣으면 0이 된다(직접 전개해 확인). 따라서 {{ASK}} = {{ans}}이다.", "x² {sgt(a)}x {sgn(b)} = 0에 근 대입 → 0 ✓", "{ASK} = {ans}"],
+        model=f"켤레근 {{p}} − {root_q}도 근이므로 두 근의 합은 {{s}}, 곱은 {{prod}}이다. 따라서 a = {{a}}, b = {{b}}이고 {{ASK}} = {{ans}}이다.",
+        rubric=[("켤레근", 2, f"다른 한 근이 {{p}} − {root_q}임을 밝혔다.", "근거 없이 썼으면 1점."), ("계수 구하기", 3, "합 {s}, 곱 {prod}에서 a = {a}, b = {b}{ro(b)} 구해 {ASK} = {ans}{eul(ans)} 답했다.", "a의 부호가 틀렸으면 1점.")],
         pitfalls=[("켤레근을 쓰지 않고 한 근만 대입해 못 풂", "켤레근", "불인정"), ("a = 합(부호 반대)으로 둠", "계수 구하기", "부분"), ("곱의 계산에서 (√q)² 또는 i² 실수", "계수 구하기", "부분")])
 
 
 def qd_t4():
-    return _qd_conj(4, "한 근이 p + √q인 유리계수 이차방정식의 계수", "유리수", "[[sqrt({qv})]]", "[[sqrt({qv})]]", "p² − q", "p*p - qv", "2·3·5·6·7", [])
+    return _qd_conj(4, "한 근이 p + √q인 유리계수 이차방정식의 계수", "유리수", "[[sqrt({qv})]]", "[[sqrt({qv})]]", "p² − q", "p*p - qv", "2·3·5·6·7·10·11·13", [])
 
 
 def qd_t6():
-    return _qd_conj(6, "한 근이 p + qi인 실계수 이차방정식의 계수", "실수", "{qv}i", "{qv}i", "p² + q²", "p*p + qv*qv", "1~5", [])
+    return _qd_conj(6, "한 근이 p + qi인 실계수 이차방정식의 계수", "실수", "{qv}i", "{qv}i", "p² + q²", "p*p + qv*qv", "1~7", [])
 
 
 def qd_t5():

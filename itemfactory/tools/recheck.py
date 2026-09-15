@@ -1268,9 +1268,27 @@ def recompute(it):
             m = re.match(r"\[\[frac\((-?\d+) ([+−]) (\d*)i, (-?\d+) ([+−]) (\d*)i\)\]\] = p \+ qi일 때, 실수 p, q에 대하여 (p \+ q|p|q)의 값", q); a, b, c, d = Fraction(m.group(1)), _sv(m.group(2), m.group(3) or "1"), Fraction(m.group(4)), _sv(m.group(5), m.group(6) or "1")
             n = c * c + d * d; pv, qv = (a * c + b * d) / n, (b * c - a * d) / n; return {"p": pv, "q": qv, "p + q": pv + qv}[m.group(7)]
         if tid == "h1-1-complex-t3":
-            m = re.match(r"\(1 \+ i\)\^(\d+)의 값", q)
+            m = re.match(r"\(1 [+−] i\)\^(\d+)의 값", q)
             if m: n = int(m.group(1)); return Fraction((-4) ** (n // 4)) if n % 4 == 0 else None
-            n = int(re.search(r"pow\(frac\(1 \+ i, 1 − i\), (\d+)\)", q).group(1)); return Fraction(2 if n % 4 == 0 else -2) if n % 2 == 0 else Fraction(0)
+            m = re.match(r"\(1 \+ i\)\^(\d+) \+ \(1 − i\)\^(\d+)의 값", q)
+            if m:
+                n = int(m.group(1)); z = complex(1, 1) ** n + complex(1, -1) ** n
+                return Fraction(round(z.real)) if abs(z.imag) < 1e-6 and abs(z.real - round(z.real)) < 1e-6 else None
+            m = re.match(r"복소수 \(1 \+ i\)\^(\d+)[을를] a \+ bi \(a, b는 실수\) 꼴로 나타낼 때, a² \+ b²의 값", q)
+            if m: return Fraction(2 ** int(m.group(1)))
+            m = re.match(r"\[\[frac\(pow\(1 \+ i, (\d+)\), pow\(1 − i, (\d+)\)\)\]\]의 값", q)
+            if m:
+                z = complex(1, 1) ** int(m.group(1)) / complex(1, -1) ** int(m.group(2))
+                return Fraction(round(z.real)) if abs(z.imag) < 1e-6 and abs(z.real - round(z.real)) < 1e-6 else None
+            m = re.match(r"i \+ i² \+ i³ \+ ⋯ \+ \[\[pow\(i, (\d+)\)\]\]의 값", q)
+            if m: n = int(m.group(1)); return {0: Fraction(0), 3: Fraction(-1)}.get(n % 4)
+            m = re.match(r"\[\[pow\(\(1 \+ i\)\(1 − i\), (\d+)\)\]\]의 값", q)
+            if m: return Fraction(2 ** int(m.group(1)))
+            m = re.match(r"\[\[pow\(frac\(1 \+ i, 1 − i\), (\d+)\)\]\] \+ \[\[pow\(frac\(1 − i, 1 \+ i\), (\d+)\)\]\]의 값", q)
+            if m: n = int(m.group(1)); return Fraction(2 if n % 4 == 0 else -2) if n % 2 == 0 else Fraction(0)
+            m = re.match(r"(?:\[\[pow\(frac\(1 [+−] i, 1 [+−] i\), (\d+)\)\]\]|\[\[frac\(pow\(1 \+ i, (\d+)\), pow\(1 − i, \d+\)\)\]\])의 값", q)
+            if m: n = int(m.group(1) or m.group(2)); return (Fraction(1) if n % 4 == 0 else Fraction(-1)) if n % 2 == 0 else None
+            return None
         if tid == "h1-1-complex-t4":
             m = re.match(r"복소수 \((-?\d+) ([+−]) (\d*)i\)\((-?\d+) \+ xi\)가 (실수|순허수)", q); a, b, c = Fraction(m.group(1)), _sv(m.group(2), m.group(3) or "1"), Fraction(m.group(4))
             return -b * c / a if m.group(5) == "실수" else a * c / b
@@ -1290,9 +1308,9 @@ def recompute(it):
             else: ns, npd = 2 * s_, 4 * pv
             return -ns + npd
         if tid in ("h1-1-quad-t4", "h1-1-quad-t6"):
-            m = re.search(r"한 근이 (-?\d+) \+ (\[\[sqrt\((\d+)\)\]\]|(\d+)i)일 때", q); pp = Fraction(m.group(1))
-            if m.group(3): qv = Fraction(m.group(3)); return -2 * pp + pp * pp - qv
-            qv = Fraction(m.group(4)); return -2 * pp + pp * pp + qv * qv
+            m = re.search(r"한 근이 (-?\d+) \+ (\[\[sqrt\((\d+)\)\]\]|(\d+)i)일 때, (?:유리수|실수) a, b에 대하여 (a \+ b|ab|a − b)의 값", q); pp = Fraction(m.group(1))
+            a = -2 * pp; b = pp * pp - Fraction(m.group(3)) if m.group(3) else pp * pp + Fraction(m.group(4)) ** 2
+            return {"a + b": a + b, "ab": a * b, "a − b": a - b}[m.group(5)]
         if tid == "h1-1-quad-t5":
             m = re.match(r"이차방정식 x² ([+−]) (\d*)x \+ k = 0의 두 근의 차가 (\d+)일 때", q); b = _sv(m.group(1), m.group(2) or "1"); d = Fraction(m.group(3)); s_ = -b; return (s_ * s_ - d * d) / 4
     if tid.startswith("h1-1-quadfn"):
@@ -1307,12 +1325,13 @@ def recompute(it):
             m = re.match(r"삼차방정식 x³ ([+−]) (\d*)x² ([+−]) (\d*)x ([+−]) (\d+) = 0의 세 근을 α, β, γ라 할 때, (.+?)의 값", q); a = _sv(m.group(1), m.group(2) or "1"); b = _sv(m.group(3), m.group(4) or "1"); c = _sv(m.group(5), m.group(6))
             s1, s2, s3 = -a, b, -c; return s1 * s1 - 2 * s2 if m.group(7).startswith("α²") else s2 / s3
         if tid == "h1-1-poly-eq-t2":
-            m = re.match(r"사차방정식 x⁴ ([+−]) (\d*)x² ([+−]) (\d+) = 0의 (모든 양의 근의 합|모든 근의 제곱의 합)", q); a = _sv(m.group(1), m.group(2) or "1"); b = _sv(m.group(3), m.group(4))
-            ts = [t_ for t_ in range(1, 60) if t_ * t_ + a * t_ + b == 0]
+            m = re.match(r"사차방정식 x⁴ ([+−]) (\d*)x² ([+−]) (\d+) = 0의 (모든 양의 근의 합|모든 근의 제곱의 합|모든 근의 절댓값의 합|모든 양의 근의 곱)", q); a = _sv(m.group(1), m.group(2) or "1"); b = _sv(m.group(3), m.group(4))
+            ts = [t_ for t_ in range(1, 120) if t_ * t_ + a * t_ + b == 0]
             if len(ts) != 2: return None
             rs = [_isqrt(t_) for t_ in ts]
             if None in rs: return None
-            return rs[0] + rs[1] if m.group(5).startswith("모든 양") else 2 * (ts[0] + ts[1])
+            k = m.group(5)
+            return rs[0] + rs[1] if k == "모든 양의 근의 합" else 2 * (rs[0] + rs[1]) if k == "모든 근의 절댓값의 합" else rs[0] * rs[1] if k == "모든 양의 근의 곱" else 2 * (ts[0] + ts[1])
         if tid == "h1-1-poly-eq-t3":
             m = re.match(r"연립방정식 y = x ([+−]) (\d+), x² \+ y² = (\d+)의 해", q); a = _sv(m.group(1), m.group(2)); b = Fraction(m.group(3))
             xs = [x for x in range(-30, 31) if 2 * x * x + 2 * a * x + a * a - b == 0]
@@ -1339,18 +1358,31 @@ def recompute(it):
             if m: return Fraction(int(m.group(1)) * int(m.group(2)) * int(m.group(3)))
             m = re.search(r"눈의 수의 합이 (\d+) 또는 (\d+)[이가] 되는", q); return Fraction(sum(1 for i in range(1, 7) for j in range(1, 7) if i + j in (int(m.group(1)), int(m.group(2)))))
         if tid == "h1-1-count-t2":
-            m = re.match(r"(\d+)명의 학생 중에서 (\d+)명을 뽑아 일렬로", q); n, r_ = int(m.group(1)), int(m.group(2)); return Fraction(math.perm(n, r_))
+            m = re.match(r"(\d+)명의 학생 중에서 (\d+)명을 뽑아 (?:일렬로|각각 서로 다른)", q) or re.match(r"1부터 (\d+)까지의 숫자가 각각 하나씩 적힌 카드 중에서 (\d+)장을 뽑아", q) or re.match(r"서로 다른 (\d+)개의 의자에 (\d+)명의 학생이", q)
+            if not m: return None
+            n, r_ = int(m.group(1)), int(m.group(2)); return Fraction(math.perm(n, r_))
         if tid == "h1-1-count-t3":
-            m = re.match(r"(\d+)명의 학생을 일렬로 세울 때, (특정 2명이 서로 이웃하도록|특정 2명이 양 끝에 서도록|특정 2명이 서로 이웃하지 않도록)", q); n = int(m.group(1)); k = m.group(2)
+            m = re.match(r"(\d+)명의 학생을 일렬로 세울 때, (특정 2명이 서로 이웃하도록|특정 2명이 양 끝에 서도록|특정 2명이 양 끝에 서지 않도록|특정 2명이 서로 이웃하지 않도록|특정 1명이 맨 앞에 서도록|특정 1명이 맨 뒤에 서도록|특정 1명이 맨 앞에 서지 않도록|특정 3명이 모두 서로 이웃하도록|특정 2명 사이에 정확히 1명이 서도록)", q); n = int(m.group(1)); k = m.group(2)
+            if k == "특정 1명이 맨 앞에 서지 않도록": return Fraction(math.factorial(n) - math.factorial(n - 1))
+            if k == "특정 2명이 양 끝에 서지 않도록": return Fraction(math.factorial(n) - 2 * math.factorial(n - 2))
+            if "맨 앞" in k or "맨 뒤" in k: return Fraction(math.factorial(n - 1))
+            if "3명" in k: return Fraction(6 * math.factorial(n - 2))
+            if "사이에" in k: return Fraction(2 * (n - 2) * math.factorial(n - 2))
             return Fraction(2 * math.factorial(n - 1) if "서로 이웃하도록" in k else 2 * math.factorial(n - 2) if "양 끝" in k else math.factorial(n) - 2 * math.factorial(n - 1))
         if tid == "h1-1-count-t4":
             m = re.match(r"(\d+)명의 학생 중에서 대표 (\d+)명", q)
             if m: return Fraction(math.comb(int(m.group(1)), int(m.group(2))))
-            m = re.match(r"남학생 (\d+)명, 여학생 (\d+)명 중에서 남학생 2명과 여학생 1명", q); return Fraction(math.comb(int(m.group(1)), 2) * int(m.group(2)))
+            m = re.match(r"남학생 (\d+)명, 여학생 (\d+)명 중에서 남학생 (\d)명과 여학생 (\d)명", q); return Fraction(math.comb(int(m.group(1)), int(m.group(3))) * math.comb(int(m.group(2)), int(m.group(4))))
         m = re.match(r"(\d+)각형의 대각선", q)
         if m: n = int(m.group(1)); return Fraction(math.comb(n, 2) - n)
-        m = re.match(r"원 위의 서로 다른 (\d+)개의 점 중 3개", q)
-        if m: return Fraction(math.comb(int(m.group(1)), 3))
+        m = re.match(r"(\d+)명이 서로 빠짐없이 한 번씩 악수", q)
+        if m: return Fraction(math.comb(int(m.group(1)), 2))
+        m = re.match(r"서로 평행한 (\d+)개의 직선과, 이들과 평행하지 않으면서 서로 평행한 (\d+)개의 직선", q)
+        if m: return Fraction(math.comb(int(m.group(1)), 2) * math.comb(int(m.group(2)), 2))
+        m = re.match(r"원 위의 서로 다른 (\d+)개의 점 중 (\d)개", q)
+        if m: return Fraction(math.comb(int(m.group(1)), int(m.group(2))))
+        m = re.match(r"(\d+)명 중에서 특정한 한 명을 제외하고 (\d+)명", q)
+        if m: return Fraction(math.comb(int(m.group(1)) - 1, int(m.group(2))))
         m = re.match(r"(\d+)명 중에서 특정한 한 명을 반드시 포함하여 (\d+)명", q); return Fraction(math.comb(int(m.group(1)) - 1, int(m.group(2)) - 1))
     if tid.startswith("h1-1-matrix"):
         M = re.findall(r"\[\[mat\(2, 2, (.+?)\)\]\]", q)
@@ -1715,6 +1747,8 @@ def _h12b(tid, q):
         return (k - b) / a - c if m.group(4) == "f∘g" else (k - b - c) / a
     if tid == "h1-2-func-t5":
         X, Y = _sets(q)[:2]; m_, n_ = len(X), len(Y); kind = re.search(r"에 대하여 X에서 (X|Y)로의 (.+?)의 개수", q).group(2)
+        if kind == "함수 f 중 f(1) = a인 함수": return Fraction(n_ ** (m_ - 1))
+        if kind == "함수 f 중 f(1) ≠ a인 함수": return Fraction((n_ - 1) * n_ ** (m_ - 1))
         return Fraction({"함수": n_ ** m_, "상수함수": n_, "일대일함수": math.perm(n_, m_) if n_ >= m_ else 0, "일대일대응": math.factorial(m_) if n_ == m_ else 0}[kind])
     if tid == "h1-2-ratfn-t1":
         m = re.match(r"함수 y = \[\[frac\((.+?), x ([+−]) (\d+)\)\]\]의 그래프의 두 점근선의 교점의 좌표를 \(p, q\)라 할 때, (p \+ q|pq)의 값", q); a, b = _lin2(m.group(1)); c = _sv(m.group(2), m.group(3))
@@ -1972,7 +2006,8 @@ def _h21t(tid, q):
             return Fraction(b * c, 2) * Fraction(round(math.sin(math.radians(A)) * 2), 2)
         m = re.match(r"삼각형 ABC에서 a = (\d+), b = (\d+), c = (\d+)일 때, cos A의 값", q); a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3)); return Fraction(b * b + c * c - a * a, 2 * b * c)
     if tid == "h2-1-trig-t7":
-        m = re.match(r"삼각형 ABC에서 sin A : sin B : sin C = (\d+) : (\d+) : (\d+)일 때, 각 C의 크기", q); x, y, z = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        m = re.match(r"삼각형 ABC에서 sin A : sin B : sin C = (\d+) : (\d+) : (\d+)일 때, 각 ([ABC])의 크기", q); a_, b_, c_ = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        x, y, z = {"C": (a_, b_, c_), "A": (b_, c_, a_), "B": (c_, a_, b_)}[m.group(4)]
         cv = (x * x + y * y - z * z) / (2 * x * y); return _ratf(math.degrees(math.acos(cv)))
     return None
 
@@ -2130,8 +2165,9 @@ def _h22b(tid, q):
         M, mn = _spv(f.subs(x, rs[0])), _spv(f.subs(x, rs[1]))
         return {"서로 다른 세 실근을 갖도록 하는 정수 k의 개수": M - mn - 1, "오직 하나의 실근을 갖도록 하는 정수 k의 최솟값": M + 1, "서로 다른 두 실근을 갖는 모든 k의 값의 합": M + mn}[m.group(2)]
     if tid == "h2-2-diffapp-t3":
-        m = re.match(r"함수 f\(x\) = x³ \+ ax² \+ (\d+)x가 (극값을 갖지 않도록 하는 정수 a의 개수|극값을 갖도록 하는 자연수 a의 최솟값)", q); b = int(m.group(1))
-        if m.group(2).startswith("극값을 갖지"): return Fraction(sum(1 for a in range(-200, 201) if a * a - 3 * b <= 0))
+        m = re.match(r"함수 f\(x\) = x³ \+ ax² \+ (\d+)x가 (극값을 갖지 않도록 하는 정수 a의 개수|극값을 갖도록 하는 자연수 a의 최솟값|극값을 갖지 않도록 하는 자연수 a의 최댓값)", q); b = int(m.group(1))
+        if m.group(2).endswith("정수 a의 개수"): return Fraction(sum(1 for a in range(-200, 201) if a * a - 3 * b <= 0))
+        if m.group(2).endswith("자연수 a의 최댓값"): return Fraction(max(a for a in range(1, 400) if a * a - 3 * b <= 0))
         return Fraction(next(a for a in range(1, 400) if a * a - 3 * b > 0))
     if tid == "h2-2-diffapp-t4":
         m = re.match(r"함수 f\(x\) = x³ \+ ax² \+ bx가 x = (-?\d+)에서 극댓값, x = (-?\d+)에서 극솟값을 가질 때, 상수 a, b에 대하여 (a \+ b|ab|a − b)의 값", q); r1, r2 = int(m.group(1)), int(m.group(2))
@@ -2147,7 +2183,18 @@ def _h22b(tid, q):
     if tid == "h2-2-diffapp-t6":
         m = re.match(r"한 변의 길이가 (\d+)인 정사각형", q)
         if m: L = int(m.group(1)); return Fraction(2 * (L // 3) ** 3) if L % 3 == 0 else None
-        m = re.match(r"두 양수 x, y에 대하여 x \+ y = (\d+)일 때, x²y의 최댓값", q); s_ = int(m.group(1)); return Fraction(4 * s_ ** 3, 27)
+        m = re.match(r"가로의 길이가 (\d+), 세로의 길이가 (\d+)인 직사각형 모양의 종이", q)
+        if m:
+            L, W = int(m.group(1)), int(m.group(2)); V = x * (L - 2 * x) * (W - 2 * x)
+            cs = [c for c in sp.solve(sp.diff(V, x), x) if c.is_real and 0 < c < Fraction(W, 2)]
+            return _spv(max(V.subs(x, c) for c in cs)) if cs else None
+        m = re.match(r"밑면이 정사각형인 직육면체의 모든 모서리의 길이의 합이 (\d+)일 때", q)
+        if m: L = Fraction(m.group(1)); return (L / 12) ** 3
+        m = re.match(r"곡선 y = -x² \+ (\d+)[와과] x축으로 둘러싸인 부분에 내접하고 한 변이 x축 위에 있는 직사각형", q)
+        if m:
+            c = int(m.group(1)); S = 2 * x * (c - x ** 2); cs = [r for r in sp.solve(sp.diff(S, x), x) if r.is_real and r > 0]
+            return _spv(max(S.subs(x, r) for r in cs))
+        m = re.match(r"두 양수 x, y에 대하여 x \+ y = (\d+)일 때, (x²y|xy²)의 최댓값", q); s_ = int(m.group(1)); return Fraction(4 * s_ ** 3, 27)
     if tid == "h2-2-integ-t1":
         m = re.match(r"함수 f\(x\)의 도함수가 f'\(x\) = (.+?)이고 f\((-?\d+)\) = (-?\d+)일 때, f\((-?\d+)\)의 값", q); fp = _polyq(m.group(1)); p, v, qq = int(m.group(2)), int(m.group(3)), int(m.group(4))
         F = sp.integrate(fp, x); C = v - F.subs(x, p); return _spv(F.subs(x, qq) + C)
@@ -2231,7 +2278,8 @@ def _h31(tid, q):
         m = re.match(r"순환소수 0\.(\d\d)", q); f = Fraction(int(m.group(1)), 99); return Fraction(f.numerator + f.denominator)
     if tid == "h3-1-seqlim-t5":
         m = re.match(r"넓이가 (\d+)인 도형 S₁에서 시작하여 (.+?)을 차례로", q); S1 = int(m.group(1)); d = m.group(2)
-        r = Fraction(1, 4) if "1/4" in d else Fraction(4, 9) if "4/9" in d else Fraction(1, 3) if "1/3" in d else Fraction(1, 2); return S1 / (1 - r)
+        mm = re.search(r"넓이가 (\d+)/(\d+)", d); r = Fraction(int(mm.group(1)), int(mm.group(2))) if mm else Fraction(1, 2) if "절반" in d else None
+        return S1 / (1 - r) if r is not None else None
     if tid in ("h3-1-diff2-t1", "h3-1-diff2-t2"):
         m = re.match(r"\[\[lim\(x, 0, (.+)\)\]\]의 값", q); return _spv(sp.limit(_sym2(m.group(1)), x, 0))
     if tid == "h3-1-diff2-t3":
@@ -2294,8 +2342,22 @@ def _h32(tid, q):
     if tid == "h3-2-count-t1":
         m = re.match(r"(\d+)명의 학생이 원탁에 둘러앉는 경우의 수", q)
         if m: return Fraction(math.factorial(int(m.group(1)) - 1))
+        m = re.match(r"(\d+)명의 학생이 원탁에 둘러앉을 때, 특정한 2명이 서로 이웃하지 않게", q)
+        if m: n_ = int(m.group(1)); return Fraction(math.factorial(n_ - 1) - 2 * math.factorial(n_ - 2))
         m = re.match(r"(\d+)명의 학생이 원탁에 둘러앉을 때, 특정한 2명이 서로 이웃", q)
         if m: return Fraction(2 * math.factorial(int(m.group(1)) - 2))
+        m = re.match(r"(\d+)명의 학생이 원탁에 둘러앉을 때, 특정한 3명이 모두 서로 이웃", q)
+        if m: return Fraction(6 * math.factorial(int(m.group(1)) - 3))
+        m = re.match(r"(\d+)명의 학생이 원탁에 둘러앉을 때, 특정한 2명이 서로 마주 보고", q)
+        if m: return Fraction(math.factorial(int(m.group(1)) - 2))
+        m = re.match(r"부부 (\d+)쌍이 원탁에 둘러앉을 때, 부부끼리 서로 이웃", q)
+        if m: kp = int(m.group(1)); return Fraction(math.factorial(kp - 1) * 2 ** kp)
+        m = re.match(r"서로 다른 (\d+)개의 구슬을 모두 꿰어 목걸이", q)
+        if m: return Fraction(math.factorial(int(m.group(1)) - 1), 2)
+        m = re.match(r"(\d+)명의 학생 중에서 (\d+)명을 뽑아 원탁", q)
+        if m: n_, r_ = int(m.group(1)), int(m.group(2)); return Fraction(C(n_, r_) * math.factorial(r_ - 1))
+        m = re.match(r"(\d+)개의 숫자 [\d, ]+ 중에서 중복을 허락하여 (\d+)개를 택해 만들 수 있는 \d+자리 자연수", q)
+        if m: return Fraction(int(m.group(1)) ** int(m.group(2)))
         m = re.match(r"(\d+)명의 학생이 (\d+)개의 동아리 중 하나에 각각 가입", q)
         if m: return Fraction(int(m.group(2)) ** int(m.group(1)))
         m = re.match(r"서로 다른 (\d+)개의 문자에서 중복을 허락하여 (\d+)개를 택해 일렬로", q)
@@ -2307,16 +2369,24 @@ def _h32(tid, q):
             letters = [c for c in m.group(2).split(", ")]; v = math.factorial(len(letters))
             for c in set(letters): v //= math.factorial(letters.count(c))
             return Fraction(v) if len(letters) == int(m.group(1)) else None
-        m = re.search(r"오른쪽으로 (\d+)칸, 위쪽으로 (\d+)칸", q)
-        if m: a, b = int(m.group(1)), int(m.group(2)); return Fraction(C(a + b, a))
+        m = re.search(r"오른쪽으로 (\d+)칸, 위쪽으로 (\d+)칸 가야 한다", q)
+        if m:
+            a, b = int(m.group(1)), int(m.group(2))
+            mm = re.search(r"A에서 오른쪽으로 (\d+)칸, 위쪽으로 (\d+)칸 간 지점을 P", q)
+            if mm: a1, b1 = int(mm.group(1)), int(mm.group(2)); return Fraction(C(a1 + b1, a1) * C(a - a1 + b - b1, a - a1))
+            return Fraction(C(a + b, a))
         return None
     if tid == "h3-2-count-t3":
         m = re.match(r"서로 다른 (\d+)종류의 과일 중에서 중복을 허락하여 (\d+)개", q)
         if m: n_, r_ = int(m.group(1)), int(m.group(2)); return Fraction(C(n_ + r_ - 1, r_))
+        m = re.match(r"서로 다른 (\d+)종류의 과일 중에서 각 종류를 적어도 1개씩 포함하여 (\d+)개", q)
+        if m: n_, r_ = int(m.group(1)), int(m.group(2)); return Fraction(C(r_ - 1, n_ - 1))
         m = re.match(r"방정식 ([a-z + ]+) = (\d+)[을를] 만족시키는 (양의 정수|음이 아닌 정수)", q)
         if m:
             k = len(m.group(1).split(" + ")); s = int(m.group(2))
             return Fraction(C(s - 1, k - 1)) if m.group(3) == "양의 정수" else Fraction(C(s + k - 1, k - 1))
+        m = re.match(r"부등식 ([a-z + ]+) ≤ (\d+)[을를] 만족시키는 음이 아닌 정수", q)
+        if m: k = len(m.group(1).split(" + ")); s = int(m.group(2)); return Fraction(C(s + k, k))
         return None
     if tid == "h3-2-count-t4":
         m = re.match(r"\[\[pow\(x ([+−]) (\d+), (\d+)\)\]\]의 전개식에서 (?:\[\[pow\(x,(\d+)\)\]\]|x)의 계수", q)
@@ -2337,10 +2407,20 @@ def _h32(tid, q):
             elif d == "두 눈의 수의 곱이 홀수": f = lambda i, j: (i * j) % 2 == 1  # noqa: E731
             elif d == "두 눈의 수가 서로 같을": f = lambda i, j: i == j  # noqa: E731
             elif (mm := re.fullmatch(r"두 눈의 수의 차가 (\d+)", d)): f = lambda i, j: abs(i - j) == int(mm.group(1))  # noqa: E731
+            elif (mm := re.fullmatch(r"두 눈의 수의 합이 (\d+) 이하", d)): f = lambda i, j: i + j <= int(mm.group(1))  # noqa: E731
+            elif (mm := re.fullmatch(r"두 눈의 수의 곱이 (\d+)의 배수", d)): f = lambda i, j: (i * j) % int(mm.group(1)) == 0  # noqa: E731
+            elif d == "두 눈의 수의 곱이 짝수": f = lambda i, j: (i * j) % 2 == 0  # noqa: E731
+            elif d == "두 눈의 수가 모두 홀수": f = lambda i, j: i % 2 == 1 and j % 2 == 1  # noqa: E731
+            elif d == "두 눈의 수가 모두 짝수": f = lambda i, j: i % 2 == 0 and j % 2 == 0  # noqa: E731
+            elif (mm := re.fullmatch(r"두 눈의 수 중 큰 수가 (\d+)", d)): f = lambda i, j: max(i, j) == int(mm.group(1))  # noqa: E731
             else: return None
             return Fraction(sum(1 for i, j in pairs if f(i, j)), 36)
         m = re.match(r"흰 공 (\d+)개와 검은 공 (\d+)개가 들어 있는 주머니에서 임의로 (\d+)개의 공을 동시에 꺼낼 때, (\d+)개 모두 흰 공일 확률", q)
         if m: w, b, k = int(m.group(1)), int(m.group(2)), int(m.group(3)); return Fraction(C(w, k), C(w + b, k))
+        m = re.match(r"흰 공 (\d+)개와 검은 공 (\d+)개가 들어 있는 주머니에서 임의로 (\d+)개의 공을 동시에 꺼낼 때, 흰 공이 적어도 한 개 나올 확률", q)
+        if m: w, b, k = int(m.group(1)), int(m.group(2)), int(m.group(3)); return 1 - Fraction(C(b, k), C(w + b, k))
+        m = re.match(r"흰 공 (\d+)개와 검은 공 (\d+)개가 들어 있는 주머니에서 임의로 2개의 공을 동시에 꺼낼 때, 두 공의 색이 서로 다를 확률", q)
+        if m: w, b = int(m.group(1)), int(m.group(2)); return Fraction(w * b, C(w + b, 2))
         return None
     if tid in ("h3-2-prob-t2", "h3-2-prob-t4"):
         m = re.match(r"한 번의 시행에서 사건 A가 일어날 확률이 (\[\[.+?\]\])이다\. 이 시행을 (\d+)번 독립적으로 반복할 때, 사건 A가 적어도 한 번", q)

@@ -6,6 +6,7 @@
 #   삼차함수는 mkseed_h2_calc1 의 CUBICS(정수 극점) 를 함께 쓴다.
 from __future__ import annotations
 
+import math
 import os
 import random
 import re
@@ -105,10 +106,10 @@ def ap_t2():
 
 def ap_t3():
     return T(AP, 3, AP_B, title="극값을 가질 조건 — f'(x) = 0의 판별식",
-        skill="삼차함수가 극값을 가지려면 f'(x) = 0이 서로 다른 두 실근을 가져야 함(D > 0)을 쓰기", axis={"f": "x³ + ax² + bx (b: 1~12)", "묻는 것": "극값을 갖지 않는 정수 a의 개수 / 극값을 갖는 자연수 a의 최솟값"}, disc="극값의 존재를 도함수의 판별식 부호로 옮기는가", diff=3,
-        params=[{"name": "b", "values": {"int": [1, 30]}}, {"name": "k", "values": {"in": ["none", "min"]}}],
-        table={"key": "k", "rows": {"none": {"ASK": "극값을 갖지 않도록 하는 정수 a의 개수", "COND": "D/4 = a² − 3b ≤ 0", "w": 1}, "min": {"ASK": "극값을 갖도록 하는 자연수 a의 최솟값", "COND": "D/4 = a² − 3b > 0", "w": 0}}},
-        derive={"b3": "3*b", "r": "floor(sqrt(3*b))", "ans": "w*(2*floor(sqrt(3*b)) + 1) + (1 - w)*(floor(sqrt(3*b)) + 1)", "exact": "floor(sqrt(3*b))*floor(sqrt(3*b)) == 3*b"},
+        skill="삼차함수가 극값을 가지려면 f'(x) = 0이 서로 다른 두 실근을 가져야 함(D > 0)을 쓰기", axis={"f": "x³ + ax² + bx (b: 1~60)", "묻는 것": "극값을 갖지 않는 정수 a의 개수 / 극값을 갖는 자연수 a의 최솟값 / 극값을 갖지 않는 자연수 a의 최댓값"}, disc="극값의 존재를 도함수의 판별식 부호로 옮기는가", diff=3,
+        params=[{"name": "b", "values": {"int": [1, 60]}}, {"name": "k", "values": {"in": ["none", "min", "nmax"]}}],
+        table={"key": "k", "rows": {"none": {"ASK": "극값을 갖지 않도록 하는 정수 a의 개수", "COND": "D/4 = a² − 3b ≤ 0", "w": 1, "w2": 0}, "min": {"ASK": "극값을 갖도록 하는 자연수 a의 최솟값", "COND": "D/4 = a² − 3b > 0", "w": 0, "w2": 0}, "nmax": {"ASK": "극값을 갖지 않도록 하는 자연수 a의 최댓값", "COND": "D/4 = a² − 3b ≤ 0", "w": 0, "w2": 1}}},
+        derive={"b3": "3*b", "r": "floor(sqrt(3*b))", "ans": "w*(2*floor(sqrt(3*b)) + 1) + w2*floor(sqrt(3*b)) + (1 - w - w2)*(floor(sqrt(3*b)) + 1)", "exact": "floor(sqrt(3*b))*floor(sqrt(3*b)) == 3*b"},
         constraints=["ans not in (b, b3)", "not exact"], cost=["b", "b3", "r", "ans"], verify=["r*r < b3", "(r + 1)*(r + 1) > b3"],
         q="함수 f(x) = x³ + ax² + {b}x가 {ASK}{eul(ASK)} 구하시오.", answer="{ans}",
         sol1="f'(x) = 3x² + 2ax + {b}이고, 삼차함수가 극값을 가지려면 f'(x) = 0이 서로 다른 두 실근을 가져야 한다(판별식 D > 0). 극값을 갖지 않으려면 D ≤ 0이다. D/4 = a² − 3 × {b} = a² − {b3}.",
@@ -122,13 +123,14 @@ def ap_t3():
 def _ap3_fix(t):
     t["table"]["rows"]["none"]["OPS"] = "≤"
     t["table"]["rows"]["min"]["OPS"] = ">"
+    t["table"]["rows"]["nmax"]["OPS"] = "≤"
     return t
 
 
 def _cubics_wide():
     out = []
-    for r1 in range(-6, 6):
-        for r2 in range(r1 + 1, 7):
+    for r1 in range(-8, 8):
+        for r2 in range(r1 + 1, 9):
             if (r1 + r2) % 2 or r1 == 0 or r2 == 0:
                 continue
             out.append((r1, r2, -3 * (r1 + r2) // 2, 3 * r1 * r2))
@@ -140,7 +142,7 @@ CUBICS_W = _cubics_wide()
 
 def ap_t4():
     return T(AP, 4, AP_B, title="극점의 위치로 계수 정하기 — x = r₁에서 극대, x = r₂에서 극소",
-        skill="f'(x) = 3(x − r₁)(x − r₂)이 되도록 계수를 정해 a, b 구하기", axis={"극점": "−4~4 (r₁ < r₂)", "묻는 것": "a + b / ab / a − b"}, disc="극점이 f'(x) = 0의 근임을 써서 f'(x)를 인수분해 꼴로 놓고 계수를 비교하는가", diff=3,
+        skill="f'(x) = 3(x − r₁)(x − r₂)이 되도록 계수를 정해 a, b 구하기", axis={"극점": "−8~8 (r₁ < r₂, 같은 홀짝)", "묻는 것": "a + b / ab / a − b"}, disc="극점이 f'(x) = 0의 근임을 써서 f'(x)를 인수분해 꼴로 놓고 계수를 비교하는가", diff=3,
         params=[{"name": "i", "values": {"in": [str(n) for n in range(len(CUBICS_W))]}}, {"name": "k", "values": {"in": ["sum", "prod", "diff"]}}],
         table=[{"key": "i", "rows": {str(n): {"R1": r1, "R2": r2, "A": p, "B": q, "DF": f"3(x {'−' if r1 > 0 else '+'} {abs(r1)})(x {'−' if r2 > 0 else '+'} {abs(r2)})"} for n, (r1, r2, p, q) in enumerate(CUBICS_W)}},
                {"key": "k", "rows": {"sum": {"ASK": "a + b", "wa": 1, "wb": 0, "wc": 0}, "prod": {"ASK": "ab", "wa": 0, "wb": 1, "wc": 0}, "diff": {"ASK": "a − b", "wa": 0, "wb": 0, "wc": 1}}}],
@@ -203,7 +205,7 @@ def ap_t5():
 
 def _ap6_rows():
     out = {}
-    for L in (6, 9, 12, 15, 18, 21, 24, 30, 36):
+    for L in range(6, 61, 3):
         k = L // 3
         v = 2 * k ** 3
         x0 = L // 6 if L % 6 == 0 else None
@@ -211,14 +213,43 @@ def _ap6_rows():
         if Fraction(v) in _nums(qtext):
             continue
         out[f"box{L}"] = {"DESC": qtext, "V": v, "SET": f"V(x) = x({L} − 2x)² (0 < x < {L // 2 if L % 2 == 0 else Fraction(L, 2)})", "DV": f"V'(x) = ({L} − 2x)² − 4x({L} − 2x) = ({L} − 2x)({L} − 6x)", "CRIT": f"V'(x) = 0에서 x = {_fm(Fraction(L, 6))} (x = {_fm(Fraction(L, 2))}{_eun(Fraction(L, 2))} 범위 밖), x = {_fm(Fraction(L, 6))}에서 극대이자 최대", "RES": f"V({_fm(Fraction(L, 6))}) = {_fm(Fraction(L, 6))} × ({_fm(Fraction(2 * L, 3))})² = {v}"}
-    for a in range(2, 13):
-        # 직사각형: 둘레 2a... 대신 y = 12 − x² 아래 내접 직사각형은 무리수 → 생략. 대신 x + y = 3a (양수) 에서 x²y 의 최댓값 = (2a)²·a = 4a³
+    for a in range(2, 21):
+        # x + y = 3a (양수) 에서 x²y 의 최댓값 = (2a)²·a = 4a³ (xy² 도 대칭으로 같음)
         v = 4 * a ** 3
         s = 3 * a
         qtext = f"두 양수 x, y에 대하여 x + y = {s}일 때, x²y의 최댓값을 구하시오."
+        if Fraction(v) not in _nums(qtext):
+            out[f"xy{a}"] = {"DESC": qtext, "V": v, "SET": f"y = {s} − x이므로 f(x) = x²({s} − x) (0 < x < {s})", "DV": f"f'(x) = {2 * s}x − 3x² = 3x({2 * a} − x)", "CRIT": f"f'(x) = 0에서 x = {2 * a} (x = 0은 범위 밖), x = {2 * a}에서 극대이자 최대", "RES": f"f({2 * a}) = {2 * a}² × {a} = {v}"}
+        qtext2 = f"두 양수 x, y에 대하여 x + y = {s}일 때, xy²의 최댓값을 구하시오."
+        if Fraction(v) not in _nums(qtext2):
+            out[f"yx{a}"] = {"DESC": qtext2, "V": v, "SET": f"y = {s} − x이므로 f(x) = x({s} − x)² (0 < x < {s})", "DV": f"f'(x) = ({s} − x)² − 2x({s} − x) = ({s} − x)({s} − 3x)", "CRIT": f"f'(x) = 0에서 x = {a} (x = {s}{_eun(s)} 범위 밖), x = {a}에서 극대이자 최대", "RES": f"f({a}) = {a} × {2 * a}² = {v}"}
+    for L, W in ((8, 5), (16, 10), (24, 15), (32, 20), (40, 25), (48, 30), (15, 7), (30, 14), (45, 21), (21, 16), (42, 32)):
+        # 직사각형 종이 L × W: V = x(L − 2x)(W − 2x), V' = 12x² − 4(L + W)x + LW = 0 의 작은 근 x0 (L² − LW + W² 가 제곱수인 것만)
+        D = L * L - L * W + W * W
+        rt = math.isqrt(D)
+        assert rt * rt == D
+        x0 = Fraction(L + W - rt, 6)
+        v = x0 * (L - 2 * x0) * (W - 2 * x0)
+        qtext = f"가로의 길이가 {L}, 세로의 길이가 {W}인 직사각형 모양의 종이의 네 귀퉁이에서 한 변의 길이가 x인 정사각형을 잘라내고 남은 부분을 접어 뚜껑이 없는 상자를 만들 때, 상자의 부피의 최댓값을 구하시오."
         if Fraction(v) in _nums(qtext):
             continue
-        out[f"xy{a}"] = {"DESC": qtext, "V": v, "SET": f"y = {s} − x이므로 f(x) = x²({s} − x) (0 < x < {s})", "DV": f"f'(x) = {2 * s}x − 3x² = 3x({2 * a} − x)", "CRIT": f"f'(x) = 0에서 x = {2 * a} (x = 0은 범위 밖), x = {2 * a}에서 극대이자 최대", "RES": f"f({2 * a}) = {2 * a}² × {a} = {v}"}
+        out[f"rbox{L}_{W}"] = {"DESC": qtext, "V": int(v) if v.denominator == 1 else float(v), "SET": f"V(x) = x({L} − 2x)({W} − 2x) (0 < x < {_fm(Fraction(W, 2))})", "DV": f"V'(x) = 12x² − {4 * (L + W)}x + {L * W} = 12(x − {_fm(x0)})(x − {_fm(Fraction(L + W + rt, 6))})", "CRIT": f"V'(x) = 0에서 x = {_fm(x0)} (x = {_fm(Fraction(L + W + rt, 6))}{_eun(Fraction(L + W + rt, 6))} 범위 밖), x = {_fm(x0)}에서 극대이자 최대", "RES": f"V({_fm(x0)}) = {_fm(x0)} × {_fm(L - 2 * x0)} × {_fm(W - 2 * x0)} = {_fm(v)}"}
+    for a in range(2, 11):
+        # 밑면이 정사각형(한 변 x)인 직육면체, 모든 모서리 길이의 합 12a → 8x + 4h = 12a, V = x²(3a − 2x), 최대는 x = a 에서 a³
+        L = 12 * a
+        v = a ** 3
+        qtext = f"밑면이 정사각형인 직육면체의 모든 모서리의 길이의 합이 {L}일 때, 이 직육면체의 부피의 최댓값을 구하시오."
+        if Fraction(v) in _nums(qtext):
+            continue
+        out[f"cub{a}"] = {"DESC": qtext, "V": v, "SET": f"밑면의 한 변을 x, 높이를 h라 하면 8x + 4h = {L}에서 h = {3 * a} − 2x이므로 V(x) = x²({3 * a} − 2x) (0 < x < {_fm(Fraction(3 * a, 2))})", "DV": f"V'(x) = {6 * a}x − 6x² = 6x({a} − x)", "CRIT": f"V'(x) = 0에서 x = {a} (x = 0은 범위 밖), x = {a}에서 극대이자 최대", "RES": f"V({a}) = {a}² × {a} = {v}"}
+    for m in range(2, 8):
+        # y = −x² + 3m² 와 x축 사이에 내접하는 직사각형(한 변이 x축 위): S = 2x(3m² − x²), 최대는 x = m 에서 4m³
+        c = 3 * m * m
+        v = 4 * m ** 3
+        qtext = f"곡선 y = -x² + {c}{_wa(c)} x축으로 둘러싸인 부분에 내접하고 한 변이 x축 위에 있는 직사각형의 넓이의 최댓값을 구하시오."
+        if Fraction(v) in _nums(qtext):
+            continue
+        out[f"rect{m}"] = {"DESC": qtext, "V": v, "SET": f"직사각형의 한 꼭짓점을 (x, {c} − x²) (0 < x < [[sqrt({c})]])이라 하면 S(x) = 2x({c} − x²) = {2 * c}x − 2x³", "DV": f"S'(x) = {2 * c} − 6x² = 6({m * m} − x²)", "CRIT": f"S'(x) = 0에서 x = {m} (x > 0), x = {m}에서 극대이자 최대", "RES": f"S({m}) = 2 × {m} × ({c} − {m * m}) = {v}"}
     return out
 
 
@@ -227,7 +258,7 @@ AP6_ROWS = _ap6_rows()
 
 def ap_t6():
     return T(AP, 6, AP_B, title="최대·최소의 활용 — 부피·곱의 최댓값",
-        skill="변수 하나의 함수로 식을 세우고 미분해 극대점이 최댓값임을 확인하기", axis={"상황": "상자의 부피 / x + y 일정할 때 x²y", "크기": "L = 6~36, 합 6~36"}, disc="정의역을 정하고 f'(x) = 0의 근 중 범위 안의 극대점에서 최댓값을 읽는가", diff=3,
+        skill="변수 하나의 함수로 식을 세우고 미분해 극대점이 최댓값임을 확인하기", axis={"상황": "정사각형·직사각형 종이 상자 / x + y 일정할 때 x²y·xy² / 모서리 합이 일정한 직육면체 / 포물선 아래 내접 직사각형", "크기": "L = 6~60, 합 6~60"}, disc="정의역을 정하고 f'(x) = 0의 근 중 범위 안의 극대점에서 최댓값을 읽는가", diff=3,
         params=[{"name": "f", "values": {"in": list(AP6_ROWS)}}], table={"key": "f", "rows": AP6_ROWS},
         derive={"ans": "V"}, cost=["ans"], verify=["ans == V"],
         q="{DESC}", answer="{ans}",
@@ -441,31 +472,50 @@ def in_t5():
 
 def _in6_rows():
     out = {}
-    for k in range(1, 5):
-        for a in range(1, 6):
+    for k in range(1, 7):
+        for a in range(1, 9):
             v = Fraction(k * a ** 3, 3)
             q = f"곡선 y = {'' if k == 1 else k}x², x축 및 직선 x = {a}{_ro(a)} 둘러싸인 부분의 넓이"
             if v in _nums(q):
                 continue
             out[f"p{k}_{a}"] = {"DESC": q, "VN": v.numerator, "VD": v.denominator, "KIND": "곡선·x축·세로선", "INT": f"[[dinteg(0, {a}, {'' if k == 1 else k}pow(x,2), x)]]", "STEP": f"0 ≤ x ≤ {a}에서 y ≥ 0이므로 넓이 = [[dinteg(0, {a}, {'' if k == 1 else k}pow(x,2), x)]] = [[frac({k}, 3)]] × [[pow({a},3)]]", "RES": f"= {_fm(v)}"}
-    for c in range(1, 7):
+    for c in range(1, 9):
         v = Fraction(4 * c ** 3, 3)
         q = f"곡선 y = x²과 직선 y = {c * c}{_ro(c * c)} 둘러싸인 부분의 넓이"
         if v in _nums(q):
             continue
         out[f"h{c}"] = {"DESC": q, "VN": v.numerator, "VD": v.denominator, "KIND": "포물선과 수평선", "INT": f"[[dinteg(-{c}, {c}, {c * c} − pow(x,2), x)]]", "STEP": f"교점 x = ±{c}; −{c} ≤ x ≤ {c}에서 직선이 위이므로 넓이 = [[dinteg(-{c}, {c}, {c * c} − pow(x,2), x)]] = 2[[dinteg(0, {c}, {c * c} − pow(x,2), x)]]", "RES": f"= 2({c * c} × {c} − [[frac(pow({c},3), 3)]]) = {_fm(v)}"}
-    for a in range(1, 6):
+    for a in range(1, 9):
         # y = x³ 과 x축, x = -a, x = a: 2·a⁴/4 = a⁴/2
         v = Fraction(a ** 4, 2)
         q = f"곡선 y = x³, x축 및 두 직선 x = -{a}, x = {a}{_ro(a)} 둘러싸인 부분의 넓이"
         if v in _nums(q):
             continue
         out[f"c{a}"] = {"DESC": q, "VN": v.numerator, "VD": v.denominator, "KIND": "기함수 — 양쪽 넓이 합", "INT": f"2[[dinteg(0, {a}, pow(x,3), x)]]", "STEP": f"−{a} ≤ x ≤ 0에서 y ≤ 0, 0 ≤ x ≤ {a}에서 y ≥ 0이므로 넓이 = 2[[dinteg(0, {a}, pow(x,3), x)]] = 2 × [[frac(pow({a},4), 4)]]", "RES": f"= {_fm(v)}"}
-    for p in range(1, 5):
-        for qv in range(p + 1, 6):
-            # y = x(x − p)(x − q)?? 3차는 넓이 복잡 → 대신 y = x² 과 y = 2px − p² + q? 생략. 두 포물선: y = x² 과 y = -x² + 2c: 교점 ±√c → c 제곱수
-            pass
-    for s in range(1, 5):
+    for a in range(1, 13):
+        # y = x² − ax 와 x축: 교점 0, a → 넓이 a³/6
+        v = Fraction(a ** 3, 6)
+        co = "" if a == 1 else str(a)
+        q = f"곡선 y = x² − {co}x와 x축으로 둘러싸인 부분의 넓이"
+        if v not in _nums(q):
+            out[f"r{a}"] = {"DESC": q, "VN": v.numerator, "VD": v.denominator, "KIND": "포물선과 x축", "INT": f"[[dinteg(0, {a}, -(pow(x,2) − {co}x), x)]]", "STEP": f"교점 x = 0, {a}; 0 ≤ x ≤ {a}에서 y ≤ 0이므로 넓이 = −[[dinteg(0, {a}, pow(x,2) − {co}x, x)]] = [[frac(pow({a},3), 6)]]", "RES": f"= {_fm(v)}"}
+        # y = x² 과 y = ax: 교점 0, a → 넓이 a³/6
+        q2 = f"곡선 y = x²과 직선 y = {'' if a == 1 else a}x로 둘러싸인 부분의 넓이"
+        if v not in _nums(q2):
+            out[f"l{a}"] = {"DESC": q2, "VN": v.numerator, "VD": v.denominator, "KIND": "포물선과 직선", "INT": f"[[dinteg(0, {a}, {'' if a == 1 else a}x − pow(x,2), x)]]", "STEP": f"교점: x² = {'' if a == 1 else a}x에서 x = 0, {a}; 0 ≤ x ≤ {a}에서 직선이 위이므로 넓이 = [[dinteg(0, {a}, {'' if a == 1 else a}x − pow(x,2), x)]] = [[frac(pow({a},3), 6)]]", "RES": f"= {_fm(v)}"}
+    for r1 in range(-3, 4):
+        for r2 in range(r1 + 2, 5):
+            # y = x² 과 y = (r1 + r2)x − r1 r2: 교점 r1, r2 → 넓이 (r2 − r1)³/6
+            m_, c_ = r1 + r2, -r1 * r2
+            if m_ == 0 or c_ == 0:
+                continue
+            v = Fraction((r2 - r1) ** 3, 6)
+            line = f"{'' if m_ == 1 else '-' if m_ == -1 else m_}x {'+' if c_ > 0 else '−'} {abs(c_)}"
+            q = f"곡선 y = x²과 직선 y = {line}{_ro(abs(c_))} 둘러싸인 부분의 넓이"
+            if v in _nums(q):
+                continue
+            out[f"s{r1}_{r2}"] = {"DESC": q, "VN": v.numerator, "VD": v.denominator, "KIND": "포물선과 직선", "INT": f"[[dinteg({r1}, {r2}, ({line}) − pow(x,2), x)]]", "STEP": f"교점: x² = {line}에서 (x {'−' if r1 > 0 else '+'} {abs(r1)})(x {'−' if r2 > 0 else '+'} {abs(r2)}) = 0, x = {r1}, {r2}; 그 사이에서 직선이 위이므로 넓이 = [[dinteg({r1}, {r2}, ({line}) − pow(x,2), x)]] = [[frac(pow({r2 - r1},3), 6)]]", "RES": f"= {_fm(v)}"}
+    for s in range(1, 7):
         c = s * s
         v = Fraction(8 * s ** 3, 3)
         q = f"두 곡선 y = x²과 y = -x² + {2 * c}{_ro(2 * c)} 둘러싸인 부분의 넓이"
@@ -480,7 +530,7 @@ IN6_ROWS = _in6_rows()
 
 def in_t6():
     return T(IN, 6, IN_B, title="넓이 — 대칭·기함수·두 곡선",
-        skill="대칭성을 이용해 절반을 2배 하거나 x축 아래 부분의 부호를 바꿔 넓이 구하기", axis={"형태": "y = kx²와 x = a / y = x²과 y = c² / y = x³ 양쪽 / 두 포물선"}, disc="x축 아래 부분은 −∫로 더하고 대칭이면 2배 하는가", diff=3,
+        skill="대칭성을 이용해 절반을 2배 하거나 x축 아래 부분의 부호를 바꿔 넓이 구하기", axis={"형태": "y = kx²와 x = a / y = x²과 y = c² / y = x³ 양쪽 / y = x² − ax와 x축 / y = x²과 직선 / 두 포물선"}, disc="x축 아래 부분은 −∫로 더하고 대칭이면 2배 하는가", diff=3,
         params=[{"name": "f", "values": {"in": list(IN6_ROWS)}}], table={"key": "f", "rows": IN6_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{DESC}를 구하시오.", answer="{ans}",

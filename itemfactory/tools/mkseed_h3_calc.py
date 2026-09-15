@@ -129,11 +129,11 @@ def sl_t1():
 
 def sl_t2():
     return T(SL, 2, SL_B, title="등비수열의 수렴 조건 — 정수 r의 개수",
-        skill="등비수열 {(r − c)/k}ⁿ이 수렴할 조건 −1 < 공비 ≤ 1을 써서 정수 r 세기", axis={"c": "−5~5", "k": "2~6", "묻는 것": "개수 / 최댓값"}, disc="수렴 조건 −1 < 공비 ≤ 1에서 1은 포함, −1은 제외임을 정확히 쓰는가", diff=2,
-        params=[{"name": "c", "values": {"int": [-5, 5]}}, {"name": "k", "values": {"int": [2, 6]}}, {"name": "s", "values": {"in": ["cnt", "max"]}}],
+        skill="등비수열 {(r − c)/k}ⁿ이 수렴할 조건 −1 < 공비 ≤ 1을 써서 정수 r 세기", axis={"c": "−7~7", "k": "2~9", "묻는 것": "개수 / 최댓값"}, disc="수렴 조건 −1 < 공비 ≤ 1에서 1은 포함, −1은 제외임을 정확히 쓰는가", diff=2,
+        params=[{"name": "c", "values": {"int": [-7, 7]}}, {"name": "k", "values": {"int": [2, 9]}}, {"name": "s", "values": {"in": ["cnt", "max"]}}],
         table={"key": "s", "rows": {"cnt": {"ASK": "정수 r의 개수", "w": 1}, "max": {"ASK": "정수 r의 최댓값", "w": 0}}},
         derive={"lo": "c - k", "hi": "c + k", "nc": "-c", "ans": "w*(2*k) + (1 - w)*(c + k)"},
-        constraints=["ans != 0", "ans not in (c, k, lo, hi)"], cost=["c", "k", "lo", "hi", "ans"], verify=["hi - lo == 2*k"],
+        constraints=["ans != 0", "ans != c", "ans != k", "ans != nc"], cost=["c", "k", "lo", "hi", "ans"], verify=["hi - lo == 2*k"],
         q="등비수열 {{[[pow(frac(r {sgn(nc)}, {k}), n)]]}}이 수렴하도록 하는 {ASK}를 구하시오.", answer="{ans}",
         sol1="등비수열 {{rⁿ}}은 −1 < r ≤ 1일 때 수렴한다(r = 1이면 1로 수렴, r = −1이면 진동). 공비 (r {sgn(nc)})/{k}에 대해 −1 < (r {sgn(nc)})/{k} ≤ 1을 풀면 {lo} < r ≤ {hi}이다.",
         sol2=[("수렴 조건: −1 < 공비 ≤ 1", "등비수열의 수렴"), ("−1 < [[frac(r {sgn(nc)}, {k})]] ≤ 1 → −{k} < r {sgn(nc)} ≤ {k} → {lo} < r ≤ {hi}", "부등식"), ("{ASK} = {ans}", None, ("{ans}", "{ASK}"))],
@@ -151,11 +151,17 @@ def _sl3_rows():
              ("frac(1, (n + 1)(n + 2))", lambda n: Fraction(1, (n + 1) * (n + 2)), "[[frac(1, n + 1)]] − [[frac(1, n + 2)]]", "[[frac(1,2)]] − [[frac(1, n + 2)]] → [[frac(1,2)]]"),
              ("frac(1, (n + 2)(n + 3))", lambda n: Fraction(1, (n + 2) * (n + 3)), "[[frac(1, n + 2)]] − [[frac(1, n + 3)]]", "[[frac(1,3)]] − [[frac(1, n + 3)]] → [[frac(1,3)]]"),
              ("frac(1, n(n + 3))", lambda n: Fraction(1, n * (n + 3)), "[[frac(1,3)]]([[frac(1, n)]] − [[frac(1, n + 3)]])", "[[frac(1,3)]](1 + [[frac(1,2)]] + [[frac(1,3)]]) → [[frac(11,18)]]"),
-             ("frac(1, (3n − 2)(3n + 1))", lambda n: Fraction(1, (3 * n - 2) * (3 * n + 1)), "[[frac(1,3)]]([[frac(1, 3n − 2)]] − [[frac(1, 3n + 1)]])", "[[frac(1,3)]](1 − [[frac(1, 3n + 1)]]) → [[frac(1,3)]]")]
-    for m in (1, 2, 3, 4, 6, 12):
+             ("frac(1, (3n − 2)(3n + 1))", lambda n: Fraction(1, (3 * n - 2) * (3 * n + 1)), "[[frac(1,3)]]([[frac(1, 3n − 2)]] − [[frac(1, 3n + 1)]])", "[[frac(1,3)]](1 − [[frac(1, 3n + 1)]]) → [[frac(1,3)]]"),
+             ("frac(1, (n + 1)(n + 3))", lambda n: Fraction(1, (n + 1) * (n + 3)), "[[frac(1,2)]]([[frac(1, n + 1)]] − [[frac(1, n + 3)]])", "[[frac(1,2)]]([[frac(1,2)]] + [[frac(1,3)]] − [[frac(1, n + 2)]] − [[frac(1, n + 3)]]) → [[frac(5,12)]]"),
+             ("frac(1, (2n + 1)(2n + 3))", lambda n: Fraction(1, (2 * n + 1) * (2 * n + 3)), "[[frac(1,2)]]([[frac(1, 2n + 1)]] − [[frac(1, 2n + 3)]])", "[[frac(1,2)]]([[frac(1,3)]] − [[frac(1, 2n + 3)]]) → [[frac(1,6)]]"),
+             ("frac(1, (n + 3)(n + 4))", lambda n: Fraction(1, (n + 3) * (n + 4)), "[[frac(1, n + 3)]] − [[frac(1, n + 4)]]", "[[frac(1,4)]] − [[frac(1, n + 4)]] → [[frac(1,4)]]"),
+             ("frac(1, (4n − 3)(4n + 1))", lambda n: Fraction(1, (4 * n - 3) * (4 * n + 1)), "[[frac(1,4)]]([[frac(1, 4n − 3)]] − [[frac(1, 4n + 1)]])", "[[frac(1,4)]](1 − [[frac(1, 4n + 1)]]) → [[frac(1,4)]]"),
+             ("frac(1, n(n + 4))", lambda n: Fraction(1, n * (n + 4)), "[[frac(1,4)]]([[frac(1, n)]] − [[frac(1, n + 4)]])", "[[frac(1,4)]](1 + [[frac(1,2)]] + [[frac(1,3)]] + [[frac(1,4)]] − ⋯) → [[frac(25,48)]]")]
+    for m in (1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 18, 20, 24, 30, 36):
         for expr, fn, part, tel in kinds:
             # 무한급수 값 = m × lim 부분합 (sympy 로 확인)
-            base = {"frac(1, n(n + 1))": Fraction(1), "frac(1, (2n − 1)(2n + 1))": Fraction(1, 2), "frac(1, n(n + 2))": Fraction(3, 4), "frac(1, (n + 1)(n + 2))": Fraction(1, 2), "frac(1, (n + 2)(n + 3))": Fraction(1, 3), "frac(1, n(n + 3))": Fraction(11, 18), "frac(1, (3n − 2)(3n + 1))": Fraction(1, 3)}[expr]
+            base = {"frac(1, n(n + 1))": Fraction(1), "frac(1, (2n − 1)(2n + 1))": Fraction(1, 2), "frac(1, n(n + 2))": Fraction(3, 4), "frac(1, (n + 1)(n + 2))": Fraction(1, 2), "frac(1, (n + 2)(n + 3))": Fraction(1, 3), "frac(1, n(n + 3))": Fraction(11, 18), "frac(1, (3n − 2)(3n + 1))": Fraction(1, 3),
+                    "frac(1, (n + 1)(n + 3))": Fraction(5, 12), "frac(1, (2n + 1)(2n + 3))": Fraction(1, 6), "frac(1, (n + 3)(n + 4))": Fraction(1, 4), "frac(1, (4n − 3)(4n + 1))": Fraction(1, 4), "frac(1, n(n + 4))": Fraction(25, 48)}[expr]
             v = m * base
             inner = expr if m == 1 else f"frac({m}, {expr[len('frac(1, '):-1]})"
             q = f"[[sum(n, 1, inf, {inner})]]"
@@ -169,7 +175,7 @@ SL3_ROWS = _sl3_rows()
 
 def sl_t3():
     return T(SL, 3, SL_B, title="급수의 합 — 부분분수와 부분합의 극한",
-        skill="일반항을 부분분수로 나눠 부분합 Sₙ을 구하고 n → ∞의 극한으로 급수의 합 구하기", axis={"일반항": "1/(n(n+1)), 1/((2n−1)(2n+1)), 1/(n(n+2)) 등 7가지 × 상수배"}, disc="급수의 합은 부분합의 극한임을 알고 소거 후 남는 항의 극한을 취하는가", diff=3,
+        skill="일반항을 부분분수로 나눠 부분합 Sₙ을 구하고 n → ∞의 극한으로 급수의 합 구하기", axis={"일반항": "1/(n(n+1)), 1/((2n−1)(2n+1)), 1/(n(n+2)) 등 12가지 × 상수배"}, disc="급수의 합은 부분합의 극한임을 알고 소거 후 남는 항의 극한을 취하는가", diff=3,
         params=[{"name": "f", "values": {"in": list(SL3_ROWS)}}], table={"key": "f", "rows": SL3_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="급수 {EXPR}의 합을 구하시오.", answer="{ans}",
@@ -232,8 +238,8 @@ def _sl4_fix(t):
 
 def _sl5_rows():
     out = {}
-    for S1 in (4, 8, 9, 12, 16, 18, 24, 27, 32, 36, 48, 64):
-        for rn, rd, desc in ((1, 2, "각 변의 중점을 이어 만든 정사각형(넓이가 절반)"), (1, 4, "각 변의 길이를 절반으로 줄인 닮은 도형(넓이가 1/4)"), (4, 9, "각 변의 길이를 2/3배로 줄인 닮은 도형(넓이가 4/9)"), (1, 3, "넓이가 1/3씩 줄어드는 도형")):
+    for S1 in (2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 25, 27, 30, 32, 36, 40, 45, 48, 50, 54, 60, 64, 72, 80, 81, 90, 96, 100):
+        for rn, rd, desc in ((1, 2, "각 변의 중점을 이어 만든 정사각형(넓이가 절반)"), (1, 4, "각 변의 길이를 절반으로 줄인 닮은 도형(넓이가 1/4)"), (4, 9, "각 변의 길이를 2/3배로 줄인 닮은 도형(넓이가 4/9)"), (1, 3, "넓이가 1/3씩 줄어드는 도형"), (1, 9, "각 변의 길이를 1/3배로 줄인 닮은 도형(넓이가 1/9)"), (9, 16, "각 변의 길이를 3/4배로 줄인 닮은 도형(넓이가 9/16)"), (2, 5, "넓이가 2/5씩 줄어드는 도형")):
             r = Fraction(rn, rd)
             v = S1 / (1 - r)
             q = f"넓이가 {S1}인 도형 S₁에서 시작하여 {desc}을 차례로 만들어 S₂, S₃, ⋯을 얻는다. 모든 도형의 넓이의 합 S₁ + S₂ + S₃ + ⋯을 구하시오."
@@ -271,8 +277,8 @@ DC_B = {**HS, "prereq": ["미분계수", "지수·로그·삼각함수"], "ops":
 
 def _dc1_rows():
     out = {}
-    for a in range(1, 7):
-        for b in range(1, 7):
+    for a in range(1, 10):
+        for b in range(1, 10):
             if a == b:
                 continue
             v = Fraction(a, b)
@@ -418,7 +424,9 @@ def dc_t3():
 def _dc4_rows():
     out = {}
     curves = [("pow(e, x)", sp.exp(X), 0), ("ln(x)", sp.log(X), 1), ("x pow(e, x)", X * sp.exp(X), 0), ("pow(e, x)(x + 1)", sp.exp(X) * (X + 1), 0), ("x ln(x)", X * sp.log(X), 1), ("sin(x) + cos(x)", sp.sin(X) + sp.cos(X), 0),
-              ("pow(e, 2x)", sp.exp(2 * X), 0), ("ln(x) + x", sp.log(X) + X, 1), ("pow(e, x) − x", sp.exp(X) - X, 0), ("frac(x, x + 1)", X / (X + 1), 0), ("frac(2x, pow(x,2) + 1)", 2 * X / (X ** 2 + 1), 0), ("ln(2x + 1)", sp.log(2 * X + 1), 0), ("ln(pow(x,2) + 1)", sp.log(X ** 2 + 1), 1), ("pow(e, x) sin(x)", sp.exp(X) * sp.sin(X), 0), ("tan(x) + 1", sp.tan(X) + 1, 0)]
+              ("pow(e, 2x)", sp.exp(2 * X), 0), ("ln(x) + x", sp.log(X) + X, 1), ("pow(e, x) − x", sp.exp(X) - X, 0), ("frac(x, x + 1)", X / (X + 1), 0), ("frac(2x, pow(x,2) + 1)", 2 * X / (X ** 2 + 1), 0), ("ln(2x + 1)", sp.log(2 * X + 1), 0), ("ln(pow(x,2) + 1)", sp.log(X ** 2 + 1), 1), ("pow(e, x) sin(x)", sp.exp(X) * sp.sin(X), 0), ("tan(x) + 1", sp.tan(X) + 1, 0),
+              ("pow(e, x) + x", sp.exp(X) + X, 0), ("pow(e, x) cos(x)", sp.exp(X) * sp.cos(X), 0), ("frac(1, x)", 1 / X, 1), ("frac(1, x + 1)", 1 / (X + 1), 0), ("sqrt(2x + 1)", sp.sqrt(2 * X + 1), 0), ("sqrt(x)", sp.sqrt(X), 4), ("frac(x, x + 2)", X / (X + 2), 0), ("pow(e, 3x)", sp.exp(3 * X), 0), ("ln(3x + 1)", sp.log(3 * X + 1), 0),
+              ("frac(pow(x,2), x + 1)", X ** 2 / (X + 1), 1), ("frac(x + 1, x − 1)", (X + 1) / (X - 1), 2), ("ln(x) + pow(x,2)", sp.log(X) + X ** 2, 1), ("frac(ln(x), x)", sp.log(X) / X, 1), ("sin(2x) + 1", sp.sin(2 * X) + 1, 0), ("cos(x) + x", sp.cos(X) + X, 0), ("ln(x) − 1", sp.log(X) - 1, 1), ("pow(e, x) − 2x", sp.exp(X) - 2 * X, 0), ("frac(1, pow(x,2))", 1 / X ** 2, 1)]
     for k in (1, 2, 3, -1, -2):
         for cs, ce, x0 in curves:
             f = k * ce
@@ -462,7 +470,7 @@ def _dc4_fix(t):
 
 def _dc5_rows():
     out = {}
-    for a in (1, 4, 9, 16, 25, 36, 49, 64):
+    for a in (1, 4, 9, 16, 25, 36, 49, 64, 81, 100):
         s = int(math.isqrt(a))
         v = 2 * s
         q = f"x > 0에서 함수 f(x) = x + [[frac({a}, x)]]의 극솟값"
@@ -472,19 +480,27 @@ def _dc5_rows():
         q2 = f"함수 f(x) = [[frac(x, pow(x,2) + {a})]]의 극댓값"
         r2 = _row(q2, v2, Q=f"함수 f(x) = [[frac(x, pow(x,2) + {a})]]의 극댓값을 구하시오.", DF=f"f'(x) = [[frac({a} − pow(x,2), pow(pow(x,2) + {a}, 2))]]", CRIT=f"f'(x) = 0에서 x = ±{s}, x = {s}에서 f'의 부호가 + → −이므로 극대", RES=f"f({s}) = [[frac({s}, {2 * a})]] = {_fm(v2)}", ASK="극댓값")
         if r2: out[f"b{a}"] = r2
-    for kk in range(1, 13):
-        v = -kk * kk
-        q = f"함수 f(x) = [[pow(e, 2x)]] − {2 * kk}[[pow(e, x)]]의 극솟값"
-        r = _row(q, v, Q=f"함수 f(x) = [[pow(e, 2x)]] − {2 * kk}[[pow(e, x)]]의 극솟값을 구하시오.", DF=f"f'(x) = 2[[pow(e, 2x)]] − {2 * kk}[[pow(e, x)]] = 2[[pow(e, x)]]([[pow(e, x)]] − {kk})", CRIT=f"f'(x) = 0에서 [[pow(e, x)]] = {kk}, 즉 x = ln {kk}; 그 좌우에서 f'의 부호가 − → +이므로 극소", RES=f"f(ln {kk}) = {kk}² − {2 * kk} × {kk} = {v}", ASK="극솟값")
-        if r: out[f"c{kk}"] = r
-    for a in (1, 4, 9, 16, 25, 36, 49):
+    for kk in range(1, 21):
+        for m in (0, 2, 5, 10):
+            v = m - kk * kk
+            tail = f" + {m}" if m else ""
+            q = f"함수 f(x) = [[pow(e, 2x)]] − {2 * kk}[[pow(e, x)]]{tail}의 극솟값"
+            r = _row(q, v, Q=f"함수 f(x) = [[pow(e, 2x)]] − {2 * kk}[[pow(e, x)]]{tail}의 극솟값을 구하시오.", DF=f"f'(x) = 2[[pow(e, 2x)]] − {2 * kk}[[pow(e, x)]] = 2[[pow(e, x)]]([[pow(e, x)]] − {kk})", CRIT=f"f'(x) = 0에서 [[pow(e, x)]] = {kk}, 즉 x = ln {kk}; 그 좌우에서 f'의 부호가 − → +이므로 극소", RES=f"f(ln {kk}) = {kk}² − {2 * kk} × {kk}{tail} = {v}", ASK="극솟값")
+            if r: out[f"c{kk}_{m}"] = r
+    for a in range(1, 13):
+        # f(x) = x²/(x − a): f' = x(x − 2a)/(x − a)², x = 2a 에서 극소 4a (x = 0 에서 극대 0)
+        v = 4 * a
+        q = f"함수 f(x) = [[frac(pow(x,2), x − {a})]]의 극솟값"
+        r = _row(q, v, Q=f"함수 f(x) = [[frac(pow(x,2), x − {a})]]의 극솟값을 구하시오.", DF=f"f'(x) = [[frac(2x(x − {a}) − pow(x,2), pow(x − {a}, 2))]] = [[frac(x(x − {2 * a}), pow(x − {a}, 2))]]", CRIT=f"f'(x) = 0에서 x = 0 또는 x = {2 * a}; x = {2 * a}의 좌우에서 f'의 부호가 − → +이므로 극소(x = 0에서는 극대)", RES=f"f({2 * a}) = [[frac({4 * a * a}, {a})]] = {v}", ASK="극솟값")
+        if r: out[f"f{a}"] = r
+    for a in (1, 4, 9, 16, 25, 36, 49, 64, 81, 100):
         s = int(math.isqrt(a))
         v = 2 * s
         q = f"x > 0에서 함수 f(x) = x² + [[frac({a}, pow(x,2))]]의 극솟값"
         r = _row(q, v, Q=f"x > 0에서 함수 f(x) = x² + [[frac({a}, pow(x,2))]]의 극솟값을 구하시오.", DF=f"f'(x) = 2x − [[frac({2 * a}, pow(x,3))]] = [[frac(2(pow(x,4) − {a}), pow(x,3))]]", CRIT=f"f'(x) = 0에서 x⁴ = {a}, x = [[sqrt({s})]] (x > 0)이고 좌우에서 f'의 부호가 − → +이므로 극소", RES=f"f([[sqrt({s})]]) = {s} + {s} = {v}", ASK="극솟값")
         if r: out[f"e{a}"] = r
-    for a in range(1, 13):
-        for b in range(1, 13):
+    for a in range(1, 17):
+        for b in range(1, 17):
             # f(x) = a x + b/x (x>0): min 2√(ab)
             s2 = a * b
             s = int(math.isqrt(s2))
@@ -502,7 +518,7 @@ DC5_ROWS = _dc5_rows()
 
 def dc_t5():
     return T(DC, 5, DC_B, title="여러 가지 함수의 극값 — 분수·지수함수",
-        skill="f'(x) = 0의 근 좌우에서 부호 변화를 확인해 극댓값·극솟값 구하기", axis={"함수": "x + a/x, x/(x² + a), e²ˣ − 2keˣ, ax + b/x", "묻는 것": "극솟값 / 극댓값"}, disc="정의역 조건(x > 0)을 지키고 부호 변화로 극대·극소를 판단하는가", diff=3,
+        skill="f'(x) = 0의 근 좌우에서 부호 변화를 확인해 극댓값·극솟값 구하기", axis={"함수": "x + a/x, x/(x² + a), e²ˣ − 2keˣ + m, x²/(x − a), x² + a/x², ax + b/x", "묻는 것": "극솟값 / 극댓값"}, disc="정의역 조건(x > 0)을 지키고 부호 변화로 극대·극소를 판단하는가", diff=3,
         params=[{"name": "f", "values": {"in": list(DC5_ROWS)}}], table={"key": "f", "rows": DC5_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
@@ -538,6 +554,15 @@ def _ic1_rows():
     items.append(("0", "frac(pi, 2)", "sin(2x)", 1, "sin 2x의 원시함수는 −½cos 2x", "[[frac(1,2)]](−cos π + cos 0) = 1"))
     items.append(("0", "frac(pi, 6)", "cos(3x)", Fraction(1, 3), "cos 3x의 원시함수는 ⅓sin 3x", "[[frac(1,3)]](sin [[frac(pi, 2)]] − sin 0) = [[frac(1,3)]]"))
     items.append(("0", "frac(pi, 3)", "sin(3x)", Fraction(2, 3), "sin 3x의 원시함수는 −⅓cos 3x", "[[frac(1,3)]](−cos π + cos 0) = [[frac(2,3)]]"))
+    for a, b in ((2, 4), (2, 8), (3, 9), (2, 6), (3, 5), (4, 10)):
+        items.append((f"ln({a})", f"ln({b})", "pow(e, x)", b - a, "eˣ의 원시함수는 eˣ", f"[[pow(e, ln({b}))]] − [[pow(e, ln({a}))]] = {b} − {a}"))
+    items.append(("e", "pow(e, 3)", "frac(1, x)", 2, "1/x의 원시함수는 ln|x|", "ln [[pow(e, 3)]] − ln e = 3 − 1 = 2"))
+    items.append(("pow(e, 2)", "pow(e, 5)", "frac(1, x)", 3, "1/x의 원시함수는 ln|x|", "ln [[pow(e, 5)]] − ln [[pow(e, 2)]] = 5 − 2 = 3"))
+    items.append(("0", "frac(pi, 6)", "cos(x)", Fraction(1, 2), "cos x의 원시함수는 sin x", "sin [[frac(pi, 6)]] − sin 0 = [[frac(1,2)]]"))
+    items.append(("0", "frac(pi, 3)", "sin(x)", Fraction(1, 2), "sin x의 원시함수는 −cos x", "−cos [[frac(pi, 3)]] + cos 0 = −[[frac(1,2)]] + 1 = [[frac(1,2)]]"))
+    items.append(("0", "frac(pi, 4)", "sin(2x)", Fraction(1, 2), "sin 2x의 원시함수는 −½cos 2x", "[[frac(1,2)]](−cos [[frac(pi, 2)]] + cos 0) = [[frac(1,2)]]"))
+    items.append(("0", "ln(2)", "pow(e, -x)", Fraction(1, 2), "e⁻ˣ의 원시함수는 −e⁻ˣ", "−[[pow(e, -ln(2))]] + 1 = −[[frac(1,2)]] + 1 = [[frac(1,2)]]"))
+    items.append(("0", "ln(4)", "pow(e, -x)", Fraction(3, 4), "e⁻ˣ의 원시함수는 −e⁻ˣ", "−[[frac(1,4)]] + 1 = [[frac(3,4)]]"))
     for lo, hi, integrand, v, law, step in items:
         for c in (1, 2, 3, 4, 5, 6):
             e2 = f"dinteg({lo}, {hi}, {_sc(c)}{integrand}, x)" if integrand[0] != "p" or c == 1 else f"dinteg({lo}, {hi}, {c} {integrand}, x)"
@@ -546,7 +571,7 @@ def _ic1_rows():
             q = f"[[{e2}]]의 값"
             r = _row(q, c * Fraction(v), EXPR=f"[[{e2}]]", LAW=law, STEP=(step if c == 1 else f"{c} × ({step})"))
             if r: out[f"i{len(out)}"] = r
-    return _pick(out, 300)
+    return _pick(out, 330)
 
 
 IC1_ROWS = _ic1_rows()
@@ -568,15 +593,28 @@ def ic_t1():
 
 def _ic2_rows():
     out = {}
-    for a in (1, 2, 3):
-        for n in (2, 3, 4):
+    for a in (1, 2, 3, 4, 5):
+        for n in (2, 3, 4, 5):
             v = Fraction((1 + a) ** (n + 1) - a ** (n + 1), n + 1)
             expr = f"dinteg(0, 1, 2x pow(pow(x,2) + {a}, {n}), x)"
             r = _row(f"[[{expr}]]", v, EXPR=f"[[{expr}]]", SUB=f"x² + {a} = t로 놓으면 2x dx = dt, x: 0 → 1일 때 t: {a} → {a + 1}", NEW=f"[[dinteg({a}, {a + 1}, pow(t, {n}), t)]]", RES=f"[[frac(1, {n + 1})]]([[pow({a + 1}, {n + 1})]] − [[pow({a}, {n + 1})]]) = {_fm(v)}")
             if r: out[f"p{a}_{n}"] = r
-    for k in (1, 2, 3, 4, 5):
+    for a in (1, 2, 3):
+        for n in (1, 2, 3):
+            v = Fraction((2 + a) ** (n + 1) - (1 + a) ** (n + 1), n + 1)
+            expr = f"dinteg(0, ln(2), pow(e, x) pow(pow(e, x) + {a}, {n}), x)"
+            r = _row(f"[[{expr}]]", v, EXPR=f"[[{expr}]]", SUB=f"eˣ + {a} = t로 놓으면 eˣ dx = dt, x: 0 → ln 2일 때 t: {1 + a} → {2 + a}", NEW=f"[[dinteg({1 + a}, {2 + a}, pow(t, {n}), t)]]", RES=f"[[frac(1, {n + 1})]]([[pow({2 + a}, {n + 1})]] − [[pow({1 + a}, {n + 1})]]) = {_fm(v)}")
+            if r: out[f"e{a}_{n}"] = r
+    for k in (1, 2, 3, 4):
         v = Fraction(1, k + 1)
-        for c in (1, 2, 3, 6):
+        for c in (1, 2, 3, 4):
+            vc = c * v
+            expr = f"dinteg(0, frac(pi, 4), {_sc(c)}pow(tan(x), {k}) pow(sec(x), 2), x)"
+            r = _row(f"[[{expr}]]", vc, EXPR=f"[[{expr}]]", SUB=f"tan x = t로 놓으면 sec²x dx = dt, x: 0 → π/4일 때 t: 0 → 1", NEW=f"{_sc(c)}[[dinteg(0, 1, pow(t, {k}), t)]]", RES=f"{c} × [[frac(1, {k + 1})]] = {_fm(vc)}")
+            if r: out[f"t{k}_{c}"] = r
+    for k in (1, 2, 3, 4, 5, 6):
+        v = Fraction(1, k + 1)
+        for c in (1, 2, 3, 4, 6, 12):
             vc = c * v
             expr = f"dinteg(1, e, {_sc(c)}frac(pow(ln(x), {k}), x), x)"
             r = _row(f"[[{expr}]]", vc, EXPR=f"[[{expr}]]", SUB=f"ln x = t로 놓으면 (1/x)dx = dt, x: 1 → e일 때 t: 0 → 1", NEW=f"{_sc(c)}[[dinteg(0, 1, pow(t, {k}), t)]]", RES=f"{c} × [[frac(1, {k + 1})]] = {_fm(vc)}")
@@ -647,26 +685,45 @@ def ic_t3():
         pitfalls=[("ln x를 v'로 잡음", "부분적분", "불인정"), ("uv − ∫u'v의 부호를 +로 둠", "부분적분", "불인정"), ("경계값 대입 실수", "계산", "부분")])
 
 
+def _pw(base, m):
+    return base if m == 1 else f"pow({base}, {m})"
+
+
 def _ic4_rows():
     out = {}
     for m in (1, 2, 3, 4):
-        for kind in ("01", "12", "02"):
+        for kind in ("01", "12", "02", "13", "03", "23"):
             if kind == "01":
-                expr = f"lim(n, inf, sum(k, 1, n, frac(pow(k, {m}), pow(n, {m + 1}))))" if m > 1 else "lim(n, inf, sum(k, 1, n, frac(k, pow(n, 2))))"
+                expr = f"lim(n, inf, sum(k, 1, n, frac({_pw('k', m)}, pow(n, {m + 1}))))"
                 v = Fraction(1, m + 1)
-                integ = f"[[dinteg(0, 1, pow(x, {m}), x)]]"
-                step = f"[[frac(1, n)]] × [[sum(k, 1, n, pow(frac(k, n), {m}))]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]"
+                integ = f"[[dinteg(0, 1, {_pw('x', m)}, x)]]"
+                step = f"[[frac(1, n)]] × [[sum(k, 1, n, {_pw('frac(k, n)', m)})]] 꼴이므로 x = k/n, dx = 1/n, 구간 [0, 1]"
             elif kind == "12":
-                expr = f"lim(n, inf, frac(1, n) sum(k, 1, n, pow(1 + frac(k, n), {m})))"
+                expr = f"lim(n, inf, frac(1, n) sum(k, 1, n, {_pw('(1 + frac(k, n))', m) if m > 1 else '(1 + frac(k, n))'}))".replace("pow((1 + frac(k, n)), ", "pow(1 + frac(k, n), ")
                 v = Fraction(2 ** (m + 1) - 1, m + 1)
-                integ = f"[[dinteg(1, 2, pow(x, {m}), x)]]"
+                integ = f"[[dinteg(1, 2, {_pw('x', m)}, x)]]"
                 step = "x = 1 + k/n, dx = 1/n, 구간 [1, 2]"
-            else:
-                expr = f"lim(n, inf, frac(2, n) sum(k, 1, n, pow(frac(2k, n), {m})))"
+            elif kind == "02":
+                expr = f"lim(n, inf, frac(2, n) sum(k, 1, n, {_pw('frac(2k, n)', m)}))"
                 v = Fraction(2 ** (m + 1), m + 1)
-                integ = f"[[dinteg(0, 2, pow(x, {m}), x)]]"
+                integ = f"[[dinteg(0, 2, {_pw('x', m)}, x)]]"
                 step = "x = 2k/n, dx = 2/n, 구간 [0, 2]"
-            for c in (1, 2, 3, 6):
+            elif kind == "13":
+                expr = f"lim(n, inf, frac(2, n) sum(k, 1, n, {_pw('(1 + frac(2k, n))', m) if m > 1 else '(1 + frac(2k, n))'}))".replace("pow((1 + frac(2k, n)), ", "pow(1 + frac(2k, n), ")
+                v = Fraction(3 ** (m + 1) - 1, m + 1)
+                integ = f"[[dinteg(1, 3, {_pw('x', m)}, x)]]"
+                step = "x = 1 + 2k/n, dx = 2/n, 구간 [1, 3]"
+            elif kind == "03":
+                expr = f"lim(n, inf, frac(3, n) sum(k, 1, n, {_pw('frac(3k, n)', m)}))"
+                v = Fraction(3 ** (m + 1), m + 1)
+                integ = f"[[dinteg(0, 3, {_pw('x', m)}, x)]]"
+                step = "x = 3k/n, dx = 3/n, 구간 [0, 3]"
+            else:
+                expr = f"lim(n, inf, frac(1, n) sum(k, 1, n, {_pw('(2 + frac(k, n))', m) if m > 1 else '(2 + frac(k, n))'}))".replace("pow((2 + frac(k, n)), ", "pow(2 + frac(k, n), ")
+                v = Fraction(3 ** (m + 1) - 2 ** (m + 1), m + 1)
+                integ = f"[[dinteg(2, 3, {_pw('x', m)}, x)]]"
+                step = "x = 2 + k/n, dx = 1/n, 구간 [2, 3]"
+            for c in (1, 2, 3, 4, 6, 12):
                 vc = c * v
                 e2 = expr if c == 1 else expr.replace("lim(n, inf, ", f"lim(n, inf, {c} ", 1)
                 r = _row(f"[[{e2}]]", vc, EXPR=f"[[{e2}]]", STEP=step, INT=(integ if c == 1 else f"{c}{integ}"), RES=f"{c} × {_fm(v)} = {_fm(vc)}" if c > 1 else f"= {_fm(v)}")
@@ -679,7 +736,7 @@ IC4_ROWS = _ic4_rows()
 
 def ic_t4():
     return T(IC, 4, IC_B, title="정적분과 급수의 합 — lim ∑ f(xₖ)Δx",
-        skill="합의 극한을 x = a + k(b − a)/n, Δx = (b − a)/n으로 읽어 정적분으로 바꾸기", axis={"f": "xᵐ (m = 1, 2, 3)", "구간": "[0, 1], [1, 2], [0, 2]", "상수배": "1~6"}, disc="k/n 꼴을 x로, 1/n 꼴을 dx로 읽어 구간을 정확히 잡는가", diff=3,
+        skill="합의 극한을 x = a + k(b − a)/n, Δx = (b − a)/n으로 읽어 정적분으로 바꾸기", axis={"f": "xᵐ (m = 1~4)", "구간": "[0, 1], [1, 2], [0, 2], [1, 3], [0, 3], [2, 3]", "상수배": "1~12"}, disc="k/n 꼴을 x로, 1/n 꼴을 dx로 읽어 구간을 정확히 잡는가", diff=3,
         params=[{"name": "f", "values": {"in": list(IC4_ROWS)}}], table={"key": "f", "rows": IC4_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{EXPR}의 값을 구하시오.", answer="{ans}",
@@ -699,8 +756,12 @@ def _ic5_rows():
              ("[[sqrt(x)]]", "x = 0, x = 4", Fraction(16, 3), "dinteg(0, 4, sqrt(x), x)", "= [[frac(2,3)]] × [[pow(4, frac(3,2))]] = [[frac(16,3)]]"), ("[[sqrt(x)]]", "x = 0, x = 9", Fraction(18), "dinteg(0, 9, sqrt(x), x)", "= [[frac(2,3)]] × 27 = 18"), ("[[sqrt(x)]]", "x = 1, x = 4", Fraction(14, 3), "dinteg(1, 4, sqrt(x), x)", "= [[frac(2,3)]](8 − 1) = [[frac(14,3)]]"),
              ("[[frac(1, pow(x,2))]]", "x = 1, x = 2", Fraction(1, 2), "dinteg(1, 2, frac(1, pow(x,2)), x)", "= −[[frac(1,2)]] + 1 = [[frac(1,2)]]"), ("[[frac(1, pow(x,2))]]", "x = 1, x = 4", Fraction(3, 4), "dinteg(1, 4, frac(1, pow(x,2)), x)", "= −[[frac(1,4)]] + 1 = [[frac(3,4)]]"), ("[[frac(1, pow(x,2))]]", "x = 2, x = 6", Fraction(1, 3), "dinteg(2, 6, frac(1, pow(x,2)), x)", "= −[[frac(1,6)]] + [[frac(1,2)]] = [[frac(1,3)]]"),
              ("[[ln(x)]]", "x = 1, x = e", Fraction(1), "dinteg(1, e, ln(x), x)", "= [x ln x − x]₁ᵉ = (e − e) − (0 − 1) = 1"), ("[[pow(e, 2x)]]", "x = 0, x = ln 2", Fraction(3, 2), "dinteg(0, ln(2), pow(e, 2x), x)", "= [[frac(1,2)]](4 − 1) = [[frac(3,2)]]"), ("[[pow(e, -x)]]", "x = 0, x = ln 2", Fraction(1, 2), "dinteg(0, ln(2), pow(e, -x), x)", "= −[[frac(1,2)]] + 1 = [[frac(1,2)]]"),
-             ("[[sin(2x)]]", "x = 0, x = [[frac(pi, 2)]]", Fraction(1), "dinteg(0, frac(pi, 2), sin(2x), x)", "= [[frac(1,2)]](−cos π + 1) = 1"), ("[[pow(sec(x), 2)]]", "x = 0, x = [[frac(pi, 4)]]", Fraction(1), "dinteg(0, frac(pi, 4), pow(sec(x), 2), x)", "= tan [[frac(pi, 4)]] − 0 = 1"), ("[[frac(2, x)]]", "x = 1, x = e", Fraction(2), "dinteg(1, e, frac(2, x), x)", "= 2 ln e = 2")]
-    for c in (1, 2, 3):
+             ("[[sin(2x)]]", "x = 0, x = [[frac(pi, 2)]]", Fraction(1), "dinteg(0, frac(pi, 2), sin(2x), x)", "= [[frac(1,2)]](−cos π + 1) = 1"), ("[[pow(sec(x), 2)]]", "x = 0, x = [[frac(pi, 4)]]", Fraction(1), "dinteg(0, frac(pi, 4), pow(sec(x), 2), x)", "= tan [[frac(pi, 4)]] − 0 = 1"), ("[[frac(2, x)]]", "x = 1, x = e", Fraction(2), "dinteg(1, e, frac(2, x), x)", "= 2 ln e = 2"),
+             ("[[pow(e, x)]]", "x = 0, x = ln 2", Fraction(1), "dinteg(0, ln(2), pow(e, x), x)", "= 2 − 1 = 1"), ("[[pow(e, x)]]", "x = ln 2, x = ln 6", Fraction(4), "dinteg(ln(2), ln(6), pow(e, x), x)", "= 6 − 2 = 4"), ("[[pow(e, x)]]", "x = 0, x = ln 4", Fraction(3), "dinteg(0, ln(4), pow(e, x), x)", "= 4 − 1 = 3"), ("[[pow(e, x)]]", "x = ln 2, x = ln 5", Fraction(3), "dinteg(ln(2), ln(5), pow(e, x), x)", "= 5 − 2 = 3"),
+             ("[[frac(1, x)]]", "x = e, x = e²", Fraction(1), "dinteg(e, pow(e, 2), frac(1, x), x)", "= 2 − 1 = 1"), ("[[cos(x)]]", "x = 0, x = π", Fraction(2), "dinteg(0, frac(pi, 2), cos(x), x) − dinteg(frac(pi, 2), pi, cos(x), x)", "= 1 + 1 = 2 (x > π/2에서 cos x < 0이므로 부호를 바꿔 더함)"), ("[[cos(x)]]", "x = 0, x = 2π", Fraction(4), "4 dinteg(0, frac(pi, 2), cos(x), x)", "= 4 × 1 = 4 (부호가 바뀌는 구간마다 절댓값)"), ("[[sin(x)]]", "x = 0, x = [[frac(pi, 2)]]", Fraction(1), "dinteg(0, frac(pi, 2), sin(x), x)", "= −cos [[frac(pi, 2)]] + cos 0 = 1"),
+             ("[[sqrt(x)]]", "x = 0, x = 1", Fraction(2, 3), "dinteg(0, 1, sqrt(x), x)", "= [[frac(2,3)]] × 1 = [[frac(2,3)]]"), ("[[sqrt(x)]]", "x = 4, x = 9", Fraction(38, 3), "dinteg(4, 9, sqrt(x), x)", "= [[frac(2,3)]](27 − 8) = [[frac(38,3)]]"), ("[[frac(1, pow(x,2))]]", "x = 1, x = 3", Fraction(2, 3), "dinteg(1, 3, frac(1, pow(x,2)), x)", "= −[[frac(1,3)]] + 1 = [[frac(2,3)]]"), ("[[pow(e, 2x)]]", "x = 0, x = ln 3", Fraction(4), "dinteg(0, ln(3), pow(e, 2x), x)", "= [[frac(1,2)]](9 − 1) = 4"),
+             ("[[pow(e, -x)]]", "x = 0, x = ln 4", Fraction(3, 4), "dinteg(0, ln(4), pow(e, -x), x)", "= −[[frac(1,4)]] + 1 = [[frac(3,4)]]"), ("[[cos(2x)]]", "x = 0, x = [[frac(pi, 4)]]", Fraction(1, 2), "dinteg(0, frac(pi, 4), cos(2x), x)", "= [[frac(1,2)]] sin [[frac(pi, 2)]] = [[frac(1,2)]]"), ("[[frac(1, sqrt(x))]]", "x = 1, x = 4", Fraction(2), "dinteg(1, 4, frac(1, sqrt(x)), x)", "= 2([[sqrt(4)]] − 1) = 2"), ("[[frac(1, sqrt(x))]]", "x = 1, x = 9", Fraction(4), "dinteg(1, 9, frac(1, sqrt(x)), x)", "= 2(3 − 1) = 4")]
+    for c in (1, 2, 3, 4, 5):
         for curve, lines, v, integ, step in items:
             vc = c * v
             cs = curve if c == 1 else f"{c}{curve}" if not curve.startswith("[[frac") else f"{c}{curve}"
@@ -715,7 +776,7 @@ IC5_ROWS = _ic5_rows()
 
 def ic_t5():
     return T(IC, 5, IC_B, title="넓이 — 지수·로그·삼각·무리함수와 x축 사이",
-        skill="구간에서 함수의 부호를 확인하고 ∫|f(x)|dx로 넓이 구하기", axis={"곡선": "eˣ, 1/x, sin x, cos x, √x, 1/x², ln x, e²ˣ, sec²x × 상수배", "구간": "ln a, eᵏ, π 등"}, disc="x축 아래 부분의 부호를 처리하고 지수·로그의 특수값을 정확히 계산하는가", diff=3,
+        skill="구간에서 함수의 부호를 확인하고 ∫|f(x)|dx로 넓이 구하기", axis={"곡선": "eˣ, 1/x, sin x, cos x, √x, 1/√x, 1/x², ln x, e²ˣ, e⁻ˣ, sec²x × 상수배(1~5)", "구간": "ln a, eᵏ, π 등"}, disc="x축 아래 부분의 부호를 처리하고 지수·로그의 특수값을 정확히 계산하는가", diff=3,
         params=[{"name": "f", "values": {"in": list(IC5_ROWS)}}], table={"key": "f", "rows": IC5_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
@@ -729,8 +790,8 @@ def ic_t5():
 
 def _ic6_rows():
     out = {}
-    for a in range(1, 6):
-        for b in range(a + 1, 7):
+    for a in range(1, 8):
+        for b in range(a + 1, 9):
             # v(t) = (t − a)(t − b) 의 3배: 3t² − 3(a+b)t + 3ab, 0 ≤ t ≤ b
             p, qv = -3 * (a + b), 3 * a * b
             vt = f"3t² {'−' if p < 0 else '+'} {abs(p)}t + {qv}"
@@ -741,7 +802,17 @@ def _ic6_rows():
                 q = f"수직선 위를 움직이는 점 P의 시각 t에서의 속도가 v(t) = {vt}일 때, {ask}"
                 r = _row(q, v, Q=f"수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = {vt}일 때, {ask}를 구하시오.", VT=vt, EXPL=expl, ASK=ask, VAL=f"{_fm(v)}")
                 if r: out[f"p{a}_{b}_{kk}"] = r
-    for c in (1, 2, 3, 4):
+    for a in range(1, 7):
+        for b in range(a + 1, 9):
+            # v(t) = 2t − 2a: t = a 에서 부호가 바뀜. 변화량 b² − 2ab, 거리 a² + (b − a)²
+            vt = f"2t − {2 * a}"
+            disp = b * b - 2 * a * b
+            dist = a * a + (b - a) ** 2
+            for kk, ask, v, expl in (("disp", f"t = 0에서 t = {b}까지 점 P의 위치의 변화량", disp, f"위치의 변화량 = [[dinteg(0, {b}, v(t), t)]] = [t² − {2 * a}t]₀^{b}"), ("dist", f"t = 0에서 t = {b}까지 점 P가 움직인 거리", dist, f"움직인 거리 = [[dinteg(0, {b}, abs(v(t)), t)]], v(t) = 2(t − {a})의 부호가 t = {a}에서 바뀌므로 [0, {a}]와 [{a}, {b}]로 나눠 절댓값을 취한다: {a}² + ({b} − {a})²")):
+                q = f"수직선 위를 움직이는 점 P의 시각 t에서의 속도가 v(t) = {vt}일 때, {ask}"
+                r = _row(q, v, Q=f"수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = {vt}일 때, {ask}를 구하시오.", VT=vt, EXPL=expl, ASK=ask, VAL=f"{_fm(v)}")
+                if r: out[f"q{a}_{b}_{kk}"] = r
+    for c in (1, 2, 3, 4, 5, 6):
         for kk, ask, v, expl, vt in (("s2", "t = 0에서 t = 2π까지 점 P가 움직인 거리", 4 * c, f"[[dinteg(0, 2pi, abs({_sc(c)}sin(t)), t)]] = 2[[dinteg(0, pi, {_sc(c)}sin(t), t)]] = 2 × {2 * c}", f"{_sc(c)}sin t"), ("s1", "t = 0에서 t = π까지 점 P의 위치의 변화량", 2 * c, f"[[dinteg(0, pi, {_sc(c)}sin(t), t)]] = {c}(−cos π + cos 0)", f"{_sc(c)}sin t"), ("c1", "t = 0에서 t = π까지 점 P가 움직인 거리", 2 * c, f"[[dinteg(0, pi, abs({_sc(c)}cos(t)), t)]] = 2[[dinteg(0, frac(pi, 2), {_sc(c)}cos(t), t)]] = 2 × {c} = {2 * c}", f"{_sc(c)}cos t")):
             q = f"속도가 v(t) = {vt}일 때, {ask}"
             r = _row(q, v, Q=f"수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = {vt}일 때, {ask}를 구하시오.", VT=vt, EXPL=expl, ASK=ask, VAL=f"{v}")
@@ -754,7 +825,7 @@ IC6_ROWS = _ic6_rows()
 
 def ic_t6():
     return T(IC, 6, IC_B, title="속도와 거리 — 위치의 변화량과 움직인 거리",
-        skill="위치의 변화량은 ∫v dt, 움직인 거리는 ∫|v| dt로 구분해 계산하기", axis={"v(t)": "3(t − a)(t − b) / c sin t / c cos t", "묻는 것": "변화량 / 거리"}, disc="속도의 부호가 바뀌는 구간을 나눠 절댓값을 취하는가", diff=3,
+        skill="위치의 변화량은 ∫v dt, 움직인 거리는 ∫|v| dt로 구분해 계산하기", axis={"v(t)": "3(t − a)(t − b) / 2t − 2a / c sin t / c cos t", "묻는 것": "변화량 / 거리"}, disc="속도의 부호가 바뀌는 구간을 나눠 절댓값을 취하는가", diff=3,
         params=[{"name": "f", "values": {"in": list(IC6_ROWS)}}], table={"key": "f", "rows": IC6_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",

@@ -39,15 +39,15 @@ def pe_t1():
 
 def pe_t2():
     return T(PE, 2, PE_B, title="복이차방정식 x⁴ + ax² + b = 0 — 실근의 합·제곱의 합",
-        skill="x² = t로 치환해 t의 이차방정식을 풀고 x로 되돌리기", axis={"t의 두 근": "p², q² (1~5)", "구하는 것": "양의 근의 합 / 모든 근의 제곱의 합"}, disc="x² = t 치환 후 t = p², q²에서 x = ±p, ±q의 네 근을 모두 찾는가", diff=3,
-        params=[{"name": "p", "values": {"int": [1, 7]}}, {"name": "q", "values": {"int": [1, 7]}}, {"name": "k", "values": {"in": ["pos", "sq"]}}],
-        table={"key": "k", "rows": {"pos": {"ASK": "모든 양의 근의 합", "w": 1}, "sq": {"ASK": "모든 근의 제곱의 합", "w": 0}}},
-        derive={"a": "-(p*p + q*q)", "b": "p*p*q*q", "p2": "p*p", "q2": "q*q", "ans": "w*(p + q) + (1 - w)*2*(p*p + q*q)"},
+        skill="x² = t로 치환해 t의 이차방정식을 풀고 x로 되돌리기", axis={"t의 두 근": "p², q² (p, q = 1~10)", "구하는 것": "양의 근의 합 / 모든 근의 제곱의 합 / 절댓값의 합 / 양의 근의 곱"}, disc="x² = t 치환 후 t = p², q²에서 x = ±p, ±q의 네 근을 모두 찾는가", diff=3,
+        params=[{"name": "p", "values": {"int": [1, 10]}}, {"name": "q", "values": {"int": [1, 10]}}, {"name": "k", "values": {"in": ["pos", "sq", "abs", "prod"]}}],
+        table={"key": "k", "rows": {"pos": {"ASK": "모든 양의 근의 합", "w1": 1, "w2": 0, "w3": 0}, "sq": {"ASK": "모든 근의 제곱의 합", "w1": 0, "w2": 0, "w3": 0}, "abs": {"ASK": "모든 근의 절댓값의 합", "w1": 0, "w2": 1, "w3": 0}, "prod": {"ASK": "모든 양의 근의 곱", "w1": 0, "w2": 0, "w3": 1}}},
+        derive={"a": "-(p*p + q*q)", "b": "p*p*q*q", "p2": "p*p", "q2": "q*q", "ans": "w1*(p + q) + w2*2*(p + q) + w3*p*q + (1 - w1 - w2 - w3)*2*(p*p + q*q)"},
         constraints=["p < q", "ans not in (a, b, p2, q2)", "ans != 0"], cost=["p", "q", "a", "b", "ans"], verify=["a == -(p2 + q2)", "b == p2*q2"],
         q="사차방정식 x⁴ {sgt(a)}x² {sgn(b)} = 0의 {ASK}을 구하시오.", answer="{ans}",
         sol1="x² = t로 놓으면 t² {sgt(a)}t {sgn(b)} = 0이고 인수분해하면 (t − {p2})(t − {q2}) = 0이다. t = x² ≥ 0이므로 x² = {p2} 또는 x² = {q2}, 즉 x = ±{p} 또는 x = ±{q}의 네 근을 얻는다.",
         sol2=[("x² = t: t² {sgt(a)}t {sgn(b)} = (t − {p2})(t − {q2}) = 0", "치환"), ("x² = {p2}, {q2} → x = ±{p}, ±{q}", "되돌리기(± 모두)"), ("{ASK} = {ans}", None, ("{ans}", "{ASK}"))],
-        sol3=["네 근 {p}, −{p}, {q}, −{q}의 합은 0, 양의 근의 합은 {p + q}, 제곱의 합은 2({p2} + {q2}) = {2*(p2 + q2)}이다. 따라서 {ASK} = {ans}이다.", "근: ±{p}, ±{q}", "{ASK} = {ans}"],
+        sol3=["네 근 {p}, −{p}, {q}, −{q}의 합은 0, 양의 근의 합은 {p + q}, 양의 근의 곱은 {p*q}, 절댓값의 합은 {2*(p + q)}, 제곱의 합은 2({p2} + {q2}) = {2*(p2 + q2)}이다. 따라서 {ASK} = {ans}이다.", "근: ±{p}, ±{q}", "{ASK} = {ans}"],
         model="x² = t로 놓으면 (t − {p2})(t − {q2}) = 0이므로 x² = {p2} 또는 x² = {q2}, 즉 x = ±{p}, ±{q}이다. 따라서 {ASK}은 {ans}이다.",
         rubric=[("치환·인수분해", 2, "x² = t로 놓아 (t − {p2})(t − {q2}) = 0을 얻었다.", "인수분해 실수면 1점."), ("근·답", 3, "네 근 ±{p}, ±{q}를 모두 구해 {ASK} {ans}{eul(ans)} 답했다.", "음의 근을 빠뜨렸으면 1점.")],
         pitfalls=[("x = ±√t에서 음의 근을 빠뜨림", "근·답", "부분"), ("t의 근을 x의 근으로 답함", "근·답", "불인정"), ("인수분해 실수", "치환·인수분해", "부분")])
@@ -241,11 +241,13 @@ def cn_t1():
 
 def cn_t2():
     return T(CN, 2, CN_B, title="순열 — n명 중 r명을 뽑아 일렬로 세우는 경우의 수",
-        skill="ₙPᵣ = n(n − 1)…(n − r + 1)로 계산하기", axis={"n": "4~8", "r": "2~4"}, disc="순서를 고려하므로 순열이며, r개의 연속 정수를 곱함을 아는가", diff=1,
-        params=[{"name": "n", "values": {"int": [4, 9]}}, {"name": "r", "values": {"int": [2, 5]}}],
+        skill="ₙPᵣ = n(n − 1)…(n − r + 1)로 계산하기", axis={"n": "4~12", "r": "2~6", "형태": "일렬로 세우기 / 서로 다른 상 / 자리 자연수 / 의자"}, disc="순서를 고려하므로 순열이며, r개의 연속 정수를 곱함을 아는가", diff=1,
+        params=[{"name": "n", "values": {"int": [4, 12]}}, {"name": "r", "values": {"int": [2, 6]}}, {"name": "k", "values": {"in": ["line", "prize", "digits", "seats"]}}],
+        table={"key": "k", "rows": {"line": {"PRE": "", "MID": "명의 학생 중에서 ", "POST": "명을 뽑아 일렬로 세우는 경우의 수", "d": 0}, "prize": {"PRE": "", "MID": "명의 학생 중에서 ", "POST": "명을 뽑아 각각 서로 다른 상을 한 개씩 주는 경우의 수", "d": 0},
+                                    "digits": {"PRE": "1부터 ", "MID": "까지의 숫자가 각각 하나씩 적힌 카드 중에서 ", "POST": "장을 뽑아 일렬로 나열하여 만들 수 있는 자연수의 개수", "d": 1}, "seats": {"PRE": "서로 다른 ", "MID": "개의 의자에 ", "POST": "명의 학생이 한 명씩 앉는 경우의 수", "d": 0}}},
         derive={"ans": "factorial(n)/factorial(n - r)", "n1": "n - 1", "nr": "n - r + 1"},
-        constraints=["r <= n - 2", "ans not in (n, r)"], cost=["n", "r", "ans"], verify=["ans*factorial(n - r) == factorial(n)"],
-        q="{n}명의 학생 중에서 {r}명을 뽑아 일렬로 세우는 경우의 수를 구하시오.", answer="{ans}",
+        constraints=["r <= n - 2", "ans not in (n, r)", "d == 0 or n <= 9"], cost=["n", "r", "ans"], verify=["ans*factorial(n - r) == factorial(n)"],
+        q="{PRE}{n}{MID}{r}{POST}를 구하시오.", answer="{ans}",
         sol1="뽑는 순서(자리)가 다르면 다른 경우이므로 순열이다. 첫 자리에 {n}명, 다음 자리에 {n1}명, … 차례로 줄어들어 {r}개의 수를 곱한다: [[perm({n}, {r})]] = {n} × {n1} × … × {nr}.",
         sol2=[("순서가 있으므로 순열 [[perm({n}, {r})]]", "자리마다 사람이 줄어듦"), ("[[perm({n}, {r})]] = {n} × {n1} × … × {nr} = {ans}", None, ("{ans}", "경우의 수"))],
         sol3=["[[perm({n}, {r})]] = {n}! ÷ ({n} − {r})! = {factorial(n)} ÷ {factorial(n - r)} = {ans}{ro(ans)} 같다. 따라서 답은 {ans}이다.", "n!/(n − r)! = {ans}", "답 {ans}"],
@@ -256,11 +258,18 @@ def cn_t2():
 
 def _cn3_rows():
     out = {}
-    for n in range(4, 9):
-        f0, f1, f2 = factorial(n), factorial(n - 1), factorial(n - 2)
+    for n in range(4, 12):
+        f0, f1, f2, f3 = factorial(n), factorial(n - 1), factorial(n - 2), factorial(n - 3)
         out[f"adj{n}"] = {"n": n, "COND": "특정 2명이 서로 이웃하도록", "LAW": "이웃한 2명을 한 묶음으로 보아 (n − 1)!을 세고, 묶음 안의 순서 2!을 곱한다", "CALC": f"({n} − 1)! × 2 = {f1} × 2 = {2 * f1}", "ans": 2 * f1, "f0": f0, "f1": f1}
         out[f"ends{n}"] = {"n": n, "COND": "특정 2명이 양 끝에 서도록", "LAW": "양 끝의 2명을 먼저 배치(2!)하고 나머지 (n − 2)명을 가운데에 세운다", "CALC": f"2 × ({n} − 2)! = 2 × {f2} = {2 * f2}", "ans": 2 * f2, "f0": f0, "f1": f1}
         out[f"nadj{n}"] = {"n": n, "COND": "특정 2명이 서로 이웃하지 않도록", "LAW": "전체 n!에서 이웃하는 경우 (n − 1)! × 2를 뺀다", "CALC": f"{n}! − ({n} − 1)! × 2 = {f0} − {2 * f1} = {f0 - 2 * f1}", "ans": f0 - 2 * f1, "f0": f0, "f1": f1}
+        out[f"first{n}"] = {"n": n, "COND": "특정 1명이 맨 앞에 서도록", "LAW": "맨 앞을 그 한 명으로 고정하고 나머지 (n − 1)명을 일렬로 세운다", "CALC": f"({n} − 1)! = {f1}", "ans": f1, "f0": f0, "f1": f1}
+        out[f"last{n}"] = {"n": n, "COND": "특정 1명이 맨 뒤에 서도록", "LAW": "맨 뒤를 그 한 명으로 고정하고 나머지 (n − 1)명을 일렬로 세운다", "CALC": f"({n} − 1)! = {f1}", "ans": f1, "f0": f0, "f1": f1}
+        out[f"nfirst{n}"] = {"n": n, "COND": "특정 1명이 맨 앞에 서지 않도록", "LAW": "전체 n!에서 그 한 명이 맨 앞에 서는 경우 (n − 1)!을 뺀다", "CALC": f"{n}! − ({n} − 1)! = {f0} − {f1} = {f0 - f1}", "ans": f0 - f1, "f0": f0, "f1": f1}
+        out[f"nends{n}"] = {"n": n, "COND": "특정 2명이 양 끝에 서지 않도록", "LAW": "전체 n!에서 두 사람이 양 끝에 서는 경우 2 × (n − 2)!을 뺀다", "CALC": f"{n}! − 2 × ({n} − 2)! = {f0} − {2 * f2} = {f0 - 2 * f2}", "ans": f0 - 2 * f2, "f0": f0, "f1": f1}
+        out[f"adj3_{n}"] = {"n": n, "COND": "특정 3명이 모두 서로 이웃하도록", "LAW": "이웃한 3명을 한 묶음으로 보아 (n − 2)!을 세고, 묶음 안의 순서 3!을 곱한다", "CALC": f"({n} − 2)! × 6 = {f2} × 6 = {6 * f2}", "ans": 6 * f2, "f0": f0, "f1": f1}
+        if n >= 5:
+            out[f"between{n}"] = {"n": n, "COND": "특정 2명 사이에 정확히 1명이 서도록", "LAW": "두 사람 사이에 설 1명을 고르고(n − 2가지) 세 사람을 한 묶음(양 끝 순서 2!)으로 보아 (n − 2)!을 곱한다", "CALC": f"({n} − 2) × 2 × ({n} − 2)! = {n - 2} × 2 × {f2} = {2 * (n - 2) * f2}", "ans": 2 * (n - 2) * f2, "f0": f0, "f1": f1}
     return out
 
 
@@ -269,7 +278,7 @@ CN3_ROWS = _cn3_rows()
 
 def cn_t3():
     return T(CN, 3, CN_B, title="조건이 있는 순열 — 이웃·양 끝·이웃하지 않음",
-        skill="이웃하는 것은 한 묶음으로, 양 끝은 먼저 배치, 이웃하지 않음은 전체에서 빼기", axis={"n": "4~7", "조건": "이웃 / 양 끝 / 이웃하지 않음"}, disc="묶음 안의 순서 2!을 곱하는가, 여사건(전체 − 이웃)으로 세는가", diff=3,
+        skill="이웃하는 것은 한 묶음으로, 양 끝은 먼저 배치, 이웃하지 않음은 전체에서 빼기", axis={"n": "4~11", "조건": "이웃 / 양 끝 / 이웃하지 않음 / 맨 앞·맨 뒤 고정 / 맨 앞 아님 / 양 끝 아님 / 3명 이웃 / 사이에 1명"}, disc="묶음 안의 순서 2!을 곱하는가, 여사건(전체 − 이웃)으로 세는가", diff=3,
         params=[{"name": "f", "values": {"in": list(CN3_ROWS)}}], table={"key": "f", "rows": CN3_ROWS},
         derive={"v": "ans"}, constraints=["ans != n"], cost=["n", "f0", "f1", "ans"], verify=["f0 == n*f1"],
         q="{n}명의 학생을 일렬로 세울 때, {COND} 세우는 경우의 수를 구하시오.", answer="{ans}",
@@ -282,12 +291,17 @@ def cn_t3():
 
 def _cn4_rows():
     out = {}
-    for n in range(5, 11):
-        for r in range(2, 5):
+    for n in range(5, 13):
+        for r in range(2, 6):
+            if r > n - 2:
+                continue
             out[f"p{n}_{r}"] = {"Q": f"{n}명의 학생 중에서 대표 {r}명을 뽑는 경우의 수", "CALC": f"[[comb({n}, {r})]] = {comb(n, r)}", "LAW": "순서가 없으므로 조합", "ans": comb(n, r), "n": n, "r": r}
-    for m in range(3, 8):
-        for w in range(2, 7):
+    for m in range(3, 9):
+        for w in range(2, 8):
             out[f"mw{m}_{w}"] = {"Q": f"남학생 {m}명, 여학생 {w}명 중에서 남학생 2명과 여학생 1명을 뽑는 경우의 수", "CALC": f"[[comb({m}, 2)]] × [[comb({w}, 1)]] = {comb(m, 2)} × {w} = {comb(m, 2) * w}", "LAW": "남·여를 각각 조합으로 뽑고 곱의 법칙", "ans": comb(m, 2) * w, "n": m, "r": w}
+            if m >= 3 and w >= 3:
+                out[f"mw2{m}_{w}"] = {"Q": f"남학생 {m}명, 여학생 {w}명 중에서 남학생 2명과 여학생 2명을 뽑는 경우의 수", "CALC": f"[[comb({m}, 2)]] × [[comb({w}, 2)]] = {comb(m, 2)} × {comb(w, 2)} = {comb(m, 2) * comb(w, 2)}", "LAW": "남·여를 각각 조합으로 뽑고 곱의 법칙", "ans": comb(m, 2) * comb(w, 2), "n": m, "r": w}
+                out[f"mw12{m}_{w}"] = {"Q": f"남학생 {m}명, 여학생 {w}명 중에서 남학생 1명과 여학생 2명을 뽑는 경우의 수", "CALC": f"[[comb({m}, 1)]] × [[comb({w}, 2)]] = {m} × {comb(w, 2)} = {m * comb(w, 2)}", "LAW": "남·여를 각각 조합으로 뽑고 곱의 법칙", "ans": m * comb(w, 2), "n": m, "r": w}
     return out
 
 
@@ -310,12 +324,24 @@ def cn_t4():
 
 def _cn5_rows():
     out = {}
-    for n in range(5, 13):
+    for n in range(5, 16):
         out[f"diag{n}"] = {"Q": f"{n}각형의 대각선의 개수", "LAW": "꼭짓점 2개를 고르는 조합에서 변의 개수를 뺀다", "CALC": f"[[comb({n}, 2)]] − {n} = {comb(n, 2)} − {n} = {comb(n, 2) - n}", "ans": comb(n, 2) - n, "n": n}
-    for n in range(5, 11):
+        out[f"shake{n}"] = {"Q": f"{n}명이 서로 빠짐없이 한 번씩 악수할 때, 악수한 총 횟수", "LAW": "두 사람을 고르는 조합(순서 없음)", "CALC": f"[[comb({n}, 2)]] = {comb(n, 2)}", "ans": comb(n, 2), "n": n}
+    for m in range(3, 8):
+        for w in range(3, 8):
+            if m > w:
+                continue
+            out[f"para{m}_{w}"] = {"Q": f"서로 평행한 {m}개의 직선과, 이들과 평행하지 않으면서 서로 평행한 {w}개의 직선이 만나서 생기는 평행사변형의 개수", "LAW": "두 방향에서 각각 직선 2개씩 고르는 조합의 곱", "CALC": f"[[comb({m}, 2)]] × [[comb({w}, 2)]] = {comb(m, 2)} × {comb(w, 2)} = {comb(m, 2) * comb(w, 2)}", "ans": comb(m, 2) * comb(w, 2), "n": m}
+    for n in range(5, 13):
         out[f"tri{n}"] = {"Q": f"원 위의 서로 다른 {n}개의 점 중 3개를 꼭짓점으로 하는 삼각형의 개수", "LAW": "어느 세 점도 한 직선 위에 있지 않으므로 3개를 고르는 조합", "CALC": f"[[comb({n}, 3)]] = {comb(n, 3)}", "ans": comb(n, 3), "n": n}
-        for r in (3, 4):
+        out[f"line{n}"] = {"Q": f"원 위의 서로 다른 {n}개의 점 중 2개를 이어 만들 수 있는 직선의 개수", "LAW": "어느 세 점도 한 직선 위에 있지 않으므로 2개를 고르는 조합", "CALC": f"[[comb({n}, 2)]] = {comb(n, 2)}", "ans": comb(n, 2), "n": n}
+        if n >= 6:
+            out[f"quad{n}"] = {"Q": f"원 위의 서로 다른 {n}개의 점 중 4개를 꼭짓점으로 하는 사각형의 개수", "LAW": "어느 세 점도 한 직선 위에 있지 않으므로 4개를 고르는 조합", "CALC": f"[[comb({n}, 4)]] = {comb(n, 4)}", "ans": comb(n, 4), "n": n}
+        for r in (3, 4, 5):
+            if r > n - 2:
+                continue
             out[f"incl{n}_{r}"] = {"Q": f"{n}명 중에서 특정한 한 명을 반드시 포함하여 {r}명을 뽑는 경우의 수", "LAW": f"그 한 명은 이미 뽑혔으므로 나머지 {n - 1}명 중 {r - 1}명을 고른다", "CALC": f"[[comb({n - 1}, {r - 1})]] = {comb(n - 1, r - 1)}", "ans": comb(n - 1, r - 1), "n": n}
+            out[f"excl{n}_{r}"] = {"Q": f"{n}명 중에서 특정한 한 명을 제외하고 {r}명을 뽑는 경우의 수", "LAW": f"그 한 명을 뺀 나머지 {n - 1}명 중 {r}명을 고른다", "CALC": f"[[comb({n - 1}, {r})]] = {comb(n - 1, r)}", "ans": comb(n - 1, r), "n": n}
     return out
 
 
@@ -324,7 +350,7 @@ CN5_ROWS = _cn5_rows()
 
 def cn_t5():
     return T(CN, 5, CN_B, title="조합의 활용 — 대각선의 개수·삼각형의 개수·특정인 포함",
-        skill="상황을 '몇 개 중 몇 개 고르기'로 바꾸고 조건(변 제외·특정인 포함)을 반영하기", axis={"형태": "대각선 / 삼각형 / 특정인 포함", "n": "5~12"}, disc="대각선은 ₙC₂에서 변 n개를 빼고, 특정인 포함은 나머지에서 r − 1명을 고름을 아는가", diff=3,
+        skill="상황을 '몇 개 중 몇 개 고르기'로 바꾸고 조건(변 제외·특정인 포함)을 반영하기", axis={"형태": "대각선·악수 / 삼각형·사각형·직선 / 평행사변형 / 특정인 포함·제외", "n": "5~15"}, disc="대각선은 ₙC₂에서 변 n개를 빼고, 특정인 포함은 나머지에서 r − 1명을 고름을 아는가", diff=3,
         params=[{"name": "f", "values": {"in": list(CN5_ROWS)}}], table={"key": "f", "rows": CN5_ROWS},
         derive={"v": "ans"}, constraints=["ans != n"], cost=["n", "ans"], verify=["ans > 0"],
         q="{Q}를 구하시오.", answer="{ans}",

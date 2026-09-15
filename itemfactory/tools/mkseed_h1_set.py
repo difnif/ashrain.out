@@ -539,13 +539,15 @@ def fn_t4():
 
 def _fn5_rows():
     out = {}
-    letters = "abcdefg"
-    for m in range(2, 6):
+    letters = "abcdefgh"
+    for m in range(2, 7):
         X = list(range(1, m + 1))
-        for n in range(2, 7):
+        for n in range(2, 9):
             Y = list(letters[:n])
             kinds = [("all", f"X에서 Y로의 함수의 개수", n ** m, f"X의 원소 {m}개가 각각 Y의 원소 {n}개 중 하나를 택하므로 [[pow({n},{m})]]", f"[[pow({n},{m})]]"),
-                     ("const", f"X에서 Y로의 상수함수의 개수", n, f"함숫값 하나를 Y의 원소 {n}개 중에서 고르므로 {n}", f"{n}")]
+                     ("const", f"X에서 Y로의 상수함수의 개수", n, f"함숫값 하나를 Y의 원소 {n}개 중에서 고르므로 {n}", f"{n}"),
+                     ("fix", f"X에서 Y로의 함수 f 중 f(1) = a인 함수의 개수", n ** (m - 1), f"f(1) = a로 정해졌고 나머지 원소 {m - 1}개가 각각 Y의 원소 {n}개 중 하나를 택하므로 [[pow({n},{m - 1})]]", f"[[pow({n},{m - 1})]]"),
+                     ("nfix", f"X에서 Y로의 함수 f 중 f(1) ≠ a인 함수의 개수", (n - 1) * n ** (m - 1), f"f(1)은 a를 뺀 {n - 1}가지, 나머지 원소 {m - 1}개는 각각 {n}가지이므로 {n - 1} × [[pow({n},{m - 1})]]", f"{n - 1} × [[pow({n},{m - 1})]]")]
             if n >= m:
                 kinds.append(("inj", f"X에서 Y로의 일대일함수의 개수", math.perm(n, m), f"X의 원소 {m}개가 서로 다른 함숫값을 가지므로 [[perm({n},{m})]]", f"[[perm({n},{m})]] = {' × '.join(str(n - i) for i in range(m))}" if n > m else f"[[perm({n},{m})]] = {n}!"))
             for kk, desc, v, expl, form in kinds:
@@ -564,7 +566,7 @@ FN5_ROWS = _fn5_rows()
 
 def fn_t5():
     return T(FN, 5, FN_B, title="함수의 개수 — 함수·상수함수·일대일함수·일대일대응",
-        skill="정의역의 각 원소가 택할 수 있는 함숫값의 가짓수를 곱해 함수의 개수 세기", axis={"X": "원소 2~4개", "Y": "원소 2~5개", "종류": "함수 / 상수함수 / 일대일함수 / 일대일대응"}, disc="함수는 nᵐ, 일대일함수는 nPm, 일대일대응은 m!임을 정의에서 이끌어내는가", diff=2,
+        skill="정의역의 각 원소가 택할 수 있는 함숫값의 가짓수를 곱해 함수의 개수 세기", axis={"X": "원소 2~6개", "Y": "원소 2~8개", "종류": "함수 / 상수함수 / f(1) = a 고정·제외 / 일대일함수 / 일대일대응"}, disc="함수는 nᵐ, 일대일함수는 nPm, 일대일대응은 m!임을 정의에서 이끌어내는가", diff=2,
         params=[{"name": "f", "values": {"in": list(FN5_ROWS)}}], table={"key": "f", "rows": FN5_ROWS},
         derive={"ans": "V"}, cost=["NX", "NY", "ans"], verify=["ans == V"],
         q="두 집합 X = [[set({SETX})]], Y = [[set({SETY})]]에 대하여 {DESC}를 구하시오.", answer="{ans}",
