@@ -7,6 +7,8 @@ import { SceneEditor } from "./AnimFigure";
 import { BETA } from "../lib/beta";
 import { readLastResult } from "../lib/setplay";
 import { countOpenWrongNotes } from "../lib/wrongnotes";
+import { CURRENCY, getBalances, onPoints } from "../lib/wallet";
+import ReviewCard from "./ReviewCard";
 
 const CSS = `
 .hd-root { min-height: 100vh; padding: 14px 14px 60px; box-sizing: border-box;
@@ -77,6 +79,13 @@ const CSS = `
 .hd-links { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
 .hd-links a { color: var(--mut); font-size: 11.5px; text-decoration: none; border-bottom: 1px dotted var(--bd); }
 .hd-beta { display: inline-block; font-size: 10px; font-weight: 800; color: #fff; background: #7C3AED; border-radius: 999px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+.hd-wallet { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; padding: 0 4px; }
+.hd-wallet .hd-coin { display: inline-flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--bd);
+  border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 800; color: var(--ink); }
+.hd-wallet .hd-coin b { color: var(--ac); font-weight: 900; }
+.hd-wallet .hd-coin.off { color: var(--mut); }
+.hd-wallet .hd-coin.off b { color: var(--mut); }
+.hd-wallet a { margin-left: auto; color: var(--mut); font-size: 11.5px; text-decoration: none; border-bottom: 1px dotted var(--bd); }
 `;
 
 function readLastConcept() {
@@ -217,6 +226,9 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
   const [wxFiles, setWxFiles] = useState({});
   const [wxEdit, setWxEdit] = useState(false);
   const [dash, setDash] = useState({ wrongN: null, qna: null, week: null, attempts: null });
+  const [uid, setUid] = useState(null);
+  const [prof, setProf] = useState(null);
+  const [bal, setBal] = useState(null);         // { ash, drop, ready } · null = 아직/실패
   const lastConcept = readLastConcept();
   const lastSet = readLastResult();
   const now = new Date();
@@ -226,8 +238,10 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       const u = data?.user; if (!u) return;
-      const { data: p } = await supabase.from("profiles").select("username, role").eq("id", u.id).maybeSingle();
-      setNick(p?.username || ""); setIsAdmin(p?.role === "admin");
+      setUid(u.id);
+      const { data: p } = await supabase.from("profiles").select("username, role, grade").eq("id", u.id).maybeSingle();
+      setNick(p?.username || ""); setIsAdmin(p?.role === "admin"); setProf(p || null);
+      getBalances().then((b) => setBal(b));
       // 실데이터 카드 — 오답노트 수 · 내 질문 · 이번 주 풀이
       const since = new Date(Date.now() - 6 * 86400000); since.setHours(0, 0, 0, 0);
       const [wrongN, qnaRes, attRes] = await Promise.all([
@@ -243,6 +257,8 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
     });
     fetch("https://api.open-meteo.com/v1/forecast?latitude=37.66&longitude=126.83&current=temperature_2m,precipitation,weather_code,cloud_cover,wind_speed_10m")
       .then((r) => r.json()).then((j) => { if (j?.current) setWx(pickWeather(j.current)); }).catch(() => {});
+    // 복습 보상·쿠폰 등록 등으로 잔액이 바뀌면 다시 읽는다
+    return onPoints(() => getBalances().then((b) => { if (b) setBal(b); }));
   }, []);
 
   const loadWxFiles = useCallback(async () => {
@@ -278,6 +294,16 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
           {isAdmin && <button className="hd-wxpen" title="날씨 이미지 업로드" onClick={() => setWxEdit(true)}>🌦✏️</button>}
         </div>
 
+        {uid && (
+          <div className="hd-wallet" title="두 포인트는 서로 바꿀 수 없어요">
+            <span className="hd-coin">{CURRENCY.ash.sym} <b>{bal ? Number(bal.ash || 0).toLocaleString() : "…"}</b></span>
+            <span className={"hd-coin" + (bal && !bal.ready ? " off" : "")}>
+              {CURRENCY.drop.sym} <b>{bal ? (bal.ready ? Number(bal.drop || 0).toLocaleString() : "준비 중") : "…"}</b>
+            </span>
+            <a href="#/me">지갑 · 내역 →</a>
+          </div>
+        )}
+
         <div className="hd-grid">
           <div className="hd-card hd-pillar">
             <p className="hd-t">📚 개념 학습</p>
@@ -309,6 +335,9 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
               </>
             )}
             <button className="hd-go" onClick={() => (location.hash = "#/solve")}>문제풀이 홈 →</button>
+          </div>
+          <div className="hd-card wide">
+            <ReviewCard uid={uid} profile={prof} />
           </div>
           <div className="hd-card">
             <p className="hd-t">📕 오답노트</p>
