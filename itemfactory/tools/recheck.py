@@ -1434,6 +1434,8 @@ def recompute(it):
         return _h32(tid, q)
     if tid.startswith("h3-3-"):
         return _h33(tid, q)
+    if tid.startswith("h2-1-induct") or tid.startswith("m3-2-scatter"):
+        return _hx(tid, q)
     if tid.startswith("h2-2-lim") or tid.startswith("h2-2-diff"):
         return _h22a(tid, q)
     if tid.startswith("m3-1-sqrt-basic"):
@@ -2680,6 +2682,123 @@ def _h33(tid, q):
     return None
 
 
+# ── 세션 5c: 보류 유형(귀납법·역/대우/귀류법·산점도) 검산 ────────────────────────────
+_SUPMAP = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹ⁿᵏ⁺⁻", "0123456789nk+-")
+
+
+def _supexpr(text):
+    """평문 식(위첨자··· 포함) → sympy. '2ⁿ − 1', 'n(n + 1)', '2ᵏ⁺¹ + 3ᵏ⁻¹', '(k + 1)³'"""
+    import sympy as sp
+    from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
+    t = text.replace("−", "-").replace("·", "*").replace("×", "*").replace("⋯", "")
+    t = re.sub(r"([⁰¹²³⁴⁵⁶⁷⁸⁹ⁿᵏ⁺⁻]+)", lambda m: "**(" + m.group(1).translate(_SUPMAP) + ")", t)
+    t = re.sub(r"\[\[(.+?)\]\]", lambda m: "(" + str(_sym2(m.group(1))) + ")", t)
+    return parse_expr(t, transformations=standard_transformations + (implicit_multiplication_application,), local_dict={"n": sp.Symbol("n"), "k": sp.Symbol("k")})
+
+
+def _lneg(s):
+    """조건의 부정 — mkseed_h_extra.neg 와 같은 규칙."""
+    rel = {">": "≤", "<": "≥", "≥": "<", "≤": ">", "=": "≠", "≠": "="}
+    m = re.fullmatch(r"(.+?) ([<>≤≥=≠]) (.+)", s)
+    if m: return f"{m.group(1)} {rel[m.group(2)]} {m.group(3)}"
+    if s.endswith("짝수"): return s[:-2] + "홀수"
+    if s.endswith("홀수"): return s[:-2] + "짝수"
+    if s.endswith(" 아니"): return s[:-4]
+    return s + ("이" if _has_jong(s[-1]) else "가") + " 아니"
+
+
+def _lsent(p, q):
+    return p + ("면 " if p.endswith("아니") else "이면 ") + q + ("다" if q.endswith("아니") else "이다")
+
+
+def _lsplit(S):
+    m = re.fullmatch(r"(.+?)(?:이면|면) (.+?)(?:이다|다)", S)
+    return (m.group(1), m.group(2)) if m else None
+
+
+_CONTRA_ASSUME = {
+    "√2는 무리수이다": "√2는 유리수이다", "√3은 무리수이다": "√3은 유리수이다", "√5는 무리수이다": "√5는 유리수이다",
+    "1 + √2는 무리수이다": "1 + √2는 유리수이다", "2√3은 무리수이다": "2√3은 유리수이다",
+    "자연수 n에 대하여 n²이 짝수이면 n은 짝수이다": "n은 홀수이다",
+    "자연수 n에 대하여 n²이 3의 배수이면 n은 3의 배수이다": "n은 3의 배수가 아니다",
+    "실수 a, b에 대하여 a + b > 0이면 a > 0 또는 b > 0이다": "a ≤ 0이고 b ≤ 0이다",
+    "실수 a, b에 대하여 ab = 0이면 a = 0 또는 b = 0이다": "a ≠ 0이고 b ≠ 0이다",
+    "소수는 무한히 많다": "소수는 유한개이다",
+    "실수 x에 대하여 x² = 2이면 x는 무리수이다": "x는 유리수이다",
+    "자연수 n에 대하여 n² + n은 홀수가 아니다": "n² + n은 홀수이다",
+    "실수 x에 대하여 x + [[frac(1, x)]] ≥ 2이면 x > 0이다 (단, x ≠ 0)": "x < 0이다",
+    "정수 a, b에 대하여 a² + b²이 홀수이면 a, b 중 하나만 홀수이다": "a, b가 모두 홀수이거나 모두 짝수이다",
+}
+
+
+def _opts(q):
+    """'A. … B. … ' 보기 → {글자: 문장}"""
+    seg = q[q.index("A. "):]
+    parts = re.split(r"\s(?=[B-E]\. )", seg)
+    return {p[0]: p[3:].strip().rstrip(".") for p in parts if len(p) > 3 and p[1] == "."}
+
+
+def check_letters(it):
+    """보기 글자(A~E) 답 틀: 역·이·대우 / 참인 대우 / 귀류법 가정 / 산점도 상관. True/False, 해당 없으면 None."""
+    tid, q, a = it["template_id"], it["question"], it["answer"]
+    if tid.startswith("h1-2-logic2-t1") or tid.startswith("h1-2-logic2-t2"):
+        m = re.match(r"명제 '(.+?)'(?:의 (역|이|대우)를|가 참일 때)", q)
+        if not m: return False
+        pq = _lsplit(m.group(1))
+        if not pq: return False
+        p, qq = pq; np_, nq = _lneg(p), _lneg(qq)
+        want = {"역": _lsent(qq, p), "이": _lsent(np_, nq), "대우": _lsent(nq, np_)}[m.group(2) or "대우"]
+        opts = _opts(q)
+        return opts.get(a) == want
+    if tid.startswith("h1-2-logic2-t3"):
+        m = re.match(r"명제 '(.+?)'를 귀류법으로", q)
+        want = _CONTRA_ASSUME.get(m.group(1)) if m else None
+        return want is not None and _opts(q).get(a) == want
+    if tid.startswith("m3-2-scatter-t1"):
+        pts = [(int(x), int(y)) for x, y in re.findall(r"\((\d+), (\d+)\)", q)]
+        n = len(pts); mx = sum(p[0] for p in pts) / n; my = sum(p[1] for p in pts) / n
+        sxy = sum((p[0] - mx) * (p[1] - my) for p in pts); sxx = sum((p[0] - mx) ** 2 for p in pts); syy = sum((p[1] - my) ** 2 for p in pts)
+        r = sxy / math.sqrt(sxx * syy) if sxx and syy else 0.0
+        want = "양의 상관관계가 있다" if r > 0.5 else "음의 상관관계가 있다" if r < -0.5 else "상관관계가 없다" if abs(r) < 0.3 else None
+        return want is not None and _opts(q).get(a) == want
+    return None
+
+
+def _hx(tid, q):
+    """h2-1-induct · m3-2-scatter 수 답 — 발문에서 다시 푼다."""
+    import sympy as sp
+    n, k = sp.symbols("n k")
+    if tid == "h2-1-induct-t1":
+        m = re.search(r"등식 (.+?) 이 성립함을", q); lhs, rhs = m.group(1).rsplit(" = ", 1); R = _supexpr(rhs)
+        f = lambda a: sp.nsimplify(R.subs(n, a + 1) - R.subs(n, a))  # noqa: E731
+        g = lambda b: sp.nsimplify(R.subs(n, b + 1))  # noqa: E731
+        mm = re.search(r"f\((\d+)\) ([+×]) g\((\d+)\)의 값", q); A, B = int(mm.group(1)), int(mm.group(3))
+        v = f(A) + g(B) if mm.group(2) == "+" else f(A) * g(B); return _spv(v)
+    if tid == "h2-1-induct-t2":
+        m = re.search(r"명제 '(.+?)[은는] (\d+)의 배수이다'", q); P = _supexpr(m.group(1))
+        mm = re.search(r"= (\d+)\(.+?\) \+ \(가\)", q); mult = int(mm.group(1)) if mm else 1
+        f = lambda a: sp.nsimplify(P.subs(n, a + 1) - mult * P.subs(n, a))  # noqa: E731
+        mm = re.search(r"f\((\d+)\)(?: \+ f\((\d+)\))?의 값", q); v = f(int(mm.group(1))) + (f(int(mm.group(2))) if mm.group(2) else 0); return _spv(v)
+    if tid == "h2-1-induct-t3":
+        m = re.search(r"부등식 (.+?) 이 성립함을", q); lhs, rhs = m.group(1).split(" > "); R = _supexpr(rhs)
+        mm = re.search(r"양변에 (.+?)[을를] 곱하면", q); c = _supexpr(mm.group(1))
+        f = lambda a: sp.nsimplify((c * R.subs(n, k)).subs(k, a) - R.subs(n, a + 1))  # noqa: E731
+        mm = re.search(r"f\((\d+)\)(?: \+ f\((\d+)\))?의 값", q); v = f(int(mm.group(1))) + (f(int(mm.group(2))) if mm.group(2) else 0); return _spv(v)
+    if tid.startswith("m3-2-scatter-t2") or tid.startswith("m3-2-scatter-t3"):
+        pts = [(int(x), int(y)) for x, y in re.findall(r"\((\d+), (\d+)\)", q)]; N = len(pts)
+        m = re.search(r"모두 (\d+)점 이상인 학생 수", q)
+        if m: a = int(m.group(1)); return Fraction(sum(1 for x, y in pts if x >= a and y >= a))
+        if re.search(r"점수가 .+? 점수보다 높은 학생 수를 구하시오", q): return Fraction(sum(1 for x, y in pts if y > x))
+        m = re.search(r"점수가 (\d+)점 미만인 학생 수", q)
+        if m: a = int(m.group(1)); return Fraction(sum(1 for x, y in pts if x < a))
+        if "점수가 같은 학생 수" in q: return Fraction(sum(1 for x, y in pts if x == y))
+        if "p − q의 값" in q: return Fraction(sum(1 for x, y in pts if y > x) - sum(1 for x, y in pts if y < x))
+        if "합이 150점 이상인 학생은 전체의 몇 %" in q: return Fraction(sum(1 for x, y in pts if x + y >= 150) * 100, N)
+        if "점수의 평균" in q: return Fraction(sum(x for x, y in pts), N)
+        return None
+    return None
+
+
 def check_hs(it):
     """고등부 문자열 답(범위) 틀. True/False, 해당 없으면 None."""
     tid, q, a = it["template_id"], it["question"], it["answer"]
@@ -3108,6 +3227,8 @@ for f in sorted(OUT.glob("*_pool.json")):
             pos = check_m3trig(it)
         if pos is None:
             pos = check_hs(it)
+        if pos is None:
+            pos = check_letters(it)
         if pos is not None:
             if not pos:
                 bad("R1-독립 검산 불일치", it, f"문자열 답 재계산 ≠ 답 {it['answer']}")
