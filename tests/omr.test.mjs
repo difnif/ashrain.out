@@ -354,7 +354,7 @@ test("newCode: 6글자 XXXX-XX · 헷갈리는 글자 없음", () => {
 });
 test("saveSet/getSet/listSets/removeSet", () => {
   store.clear();
-  const a = saveSet({ code: "K7Q2-4M", conceptId: "m1-1-01", conceptTitle: "소인수분해", items: [
+  const a = saveSet({ code: "K7Q2-4M", conceptId: "m1-1-01", conceptTitle: "소인수분해", createdAt: "2026-09-14T00:00:00Z", items: [
     { id: "u1", no: 1, kind: "choice", answer: "②", choices: ["1", "2", "3", "4", "5"], question: "다음 [[frac(1,2)]] 중 …" },
     { id: "u2", no: 2, kind: "short", answer: "[[deg(60)]]", answer_alt: ["60"] },
   ] });
