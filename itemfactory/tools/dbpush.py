@@ -64,14 +64,14 @@ def _api_error():
 
 
 # ---------------------------------------------------------------- ① 교체(draft 삭제)
-PATTERN = re.compile(r"^m[1-3]-[12]-[a-z0-9]+(?:-[a-z0-9]+)*-(?:t\d+|\*)$")   # m1-2-mean-t2 · m2-2-centroid-*
+PATTERN = re.compile(r"^[mh][1-3]-[12]-[a-z0-9]+(?:-[a-z0-9]+)*-(?:t\d+|\*)$")   # m1-2-mean-t2 · m2-2-centroid-* · h3-1-seqlim-* (09-15: 고등부 h 접두 허용)
 
 
 def parse_patterns(spec: str) -> list[str]:
     pats = [s for s in (spec or "").replace(",", " ").split() if s]
     for p in pats:
         if not PATTERN.match(p):
-            sys.exit(f"replace_templates 항목이 이상하다: {p!r} — 'm1-2-mean-t2' 또는 'm1-2-mean-*' 꼴만 받는다")
+            sys.exit(f"replace_templates 항목이 이상하다: {p!r} — 'm1-2-mean-t2' 또는 'm1-2-mean-*'(h3-1-seqlim-* 처럼 고등부 h 접두도 됨) 꼴만 받는다")
     return pats
 
 
