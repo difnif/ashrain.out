@@ -82,10 +82,10 @@ FA_BASE = {**BASE, "prereq": ["곱셈 공식", "공통인수"], "ops": ["인수�
 # t1 — 완전제곱식이 되는 조건 (□ 채우기)
 def _cs_rows():
     out = {}
-    for p in (1, 2, 3):
+    for p in (1, 2, 3, 4, 5):
         A = "x" if p == 1 else f"{p}x"
         lead = "" if p == 1 else str(p * p)
-        for q in range(1, 7):
+        for q in range(1, 10):
             for sg in ("+", "−"):
                 sq = f"({A} {sg} {q})²"
                 exp = f"{lead}x² {sg} {2 * p * q}x + {q * q}"
@@ -105,7 +105,7 @@ def fa_t1():
     return tpl(FA, 1, FA_BASE,
         title="완전제곱식이 되도록 □ 채우기 — 상수항 또는 x의 계수",
         skill="A² ± 2AB + B²의 꼴에서 두 항으로 A, B를 정하고 나머지 한 항을 만들기",
-        variant_axis={"이차항": "x²·4x²·9x²", "B": "1~6", "빈칸": "상수항 / x의 계수(양수)"},
+        variant_axis={"이차항": "x²·4x²·9x²·16x²·25x²", "B": "1~9", "빈칸": "상수항 / x의 계수(양수)"},
         difficulty=2,
         discriminates="가운데 항이 2AB(2배)임을 알고, 상수항은 B², x의 계수는 2AB로 구분해 채우는가",
         params=[{"name": "f", "values": {"in": list(CS_ROWS)}}],
@@ -656,10 +656,10 @@ def qs_t5():
 # t6 — 중근 조건 (□ 대신 k)
 def _dr_rows():
     out = {}
-    for p in (1, 2, 3):
+    for p in (1, 2, 3, 4, 5):
         A = "x" if p == 1 else f"{p}x"
         lead = "" if p == 1 else str(p * p)
-        for q in range(1, 7):
+        for q in range(1, 10):
             for sg in ("+", "−"):
                 out[f"c{p}-{q}-{sg}"] = {"EQ": f"{lead}x² {sg} {2 * p * q}x + k = 0", "ASK": "상수 k", "ans": q * q, "A": A, "B": str(q), "SQ": f"({A} {sg} {q})² = 0",
                                          "STEP": f"{lead}x² {sg} {2 * p * q}x + k = ({A})² {sg} 2 × {A} × {q} + k이므로 k = {q}² = {q * q}", "ROOT": f"x = {'-' if sg == '+' else ''}{q}" if p == 1 else f"x = {'-' if sg == '+' else ''}[[frac({q}, {p})]]"}
@@ -838,10 +838,10 @@ def qa_t1():
     return tpl(QA, 1, QA_BASE,
         title="연속한 두 자연수의 제곱의 합 — 이차방정식 세우기",
         skill="두 수를 x, x + 1로 놓고 x² + (x + 1)² = S를 정리해 풀고 자연수인 근만 택하기",
-        variant_axis={"작은 수": "2~20", "구하는 것": "큰 수 / 작은 수"},
+        variant_axis={"작은 수": "2~60", "구하는 것": "큰 수 / 작은 수"},
         difficulty=2,
         discriminates="두 수를 x, x + 1로 놓고 식을 세워 정리하며, 음수 근을 버리는가",
-        params=[{"name": "n", "values": {"int": [2, 20]}}, {"name": "ask", "values": {"in": ["big", "small"]}}],
+        params=[{"name": "n", "values": {"int": [2, 60]}}, {"name": "ask", "values": {"in": ["big", "small"]}}],
         table={"key": "ask", "rows": ASK2_ROWS},
         derive={"n1": "n + 1", "S": "n*n + (n + 1)**2", "K": "(S - 1)/2", "n1p": "n + 1", "nn": "-(n + 1)", "ans": "n + w"},
         constraints=["ans not in (S,)"],
@@ -1132,36 +1132,37 @@ def qa_t8():
     return tpl(QA, 8, {**QA_BASE, "context": "기하맥락"},
         title="대각선의 개수가 주어진 다각형 — 변의 개수",
         skill="n각형의 대각선의 개수 n(n − 3)/2 = D를 이차방정식으로 풀어 자연수 근 택하기",
-        variant_axis={"n": "5~20"},
+        variant_axis={"n": "5~40", "묻는 것": "변의 개수 / 한 꼭짓점에서 그을 수 있는 대각선의 개수 / 내각의 크기의 합"},
         difficulty=2,
         discriminates="대각선 공식을 세우고 2를 곱해 정리한 뒤 n ≥ 3인 근을 고르는가",
-        params=[{"name": "n", "values": {"int": [5, 20]}}],
-        derive={"D": "n*(n - 3)/2", "D2": "n*(n - 3)", "nn": "-(n - 3)", "n3": "n - 3", "ans": "n"},
-        constraints=["ans != D"],
+        params=[{"name": "n", "values": {"int": [5, 40]}}, {"name": "k", "values": {"in": ["edge", "vert", "angle"]}}],
+        table={"key": "k", "rows": {"edge": {"ASK": "변의 개수", "w1": 1, "w2": 0}, "vert": {"ASK": "한 꼭짓점에서 그을 수 있는 대각선의 개수", "w1": 0, "w2": 1}, "angle": {"ASK": "내각의 크기의 합(단위: °)", "w1": 0, "w2": 0}}},
+        derive={"D": "n*(n - 3)/2", "D2": "n*(n - 3)", "nn": "-(n - 3)", "n3": "n - 3", "ans": "w1*n + w2*(n - 3) + (1 - w1 - w2)*180*(n - 2)"},
+        constraints=["ans != D", "ans != n3 or w2 == 1"],
         cost_values=["n", "D", "D2", "ans"],
         answer_var="ans",
         verify=["2*D == n*(n - 3)", "D2 == 2*D"],
-        question="대각선의 총 개수가 {D}인 다각형의 변의 개수를 구하시오.",
+        question="대각선의 총 개수가 {D}인 다각형의 {ASK}를 구하시오.",
         answer="{ans}", answer_alt=[],
         sol1="n각형의 대각선의 개수는 [[frac(n(n − 3), 2)]]이다. [[frac(n(n − 3), 2)]] = {D}에서 양변에 2를 곱하면 n(n − 3) = {D2}, 즉 n² − 3n − {D2} = 0이다. 인수분해하여 n을 구하고 n ≥ 3인 자연수만 택한다.",
         sol2=[
             "[[frac(n(n − 3), 2)]] = {D} → n(n − 3) = {D2} → n² − 3n − {D2} = 0",
             "(n − {n})(n + {n3}) = 0 → n = {n} 또는 n = {nn}",
-            "n은 3 이상의 자연수이므로 n = {ans}: {ans}각형",
+            "n은 3 이상의 자연수이므로 n = {n}: {n}각형이고, {ASK}는 {ans}",
         ],
         sol2_fig=steps([
             {"text": "n(n − 3) = {D2}", "hint": "대각선 공식 × 2"},
             {"text": "(n − {n})(n + {n3}) = 0", "hint": "n² − 3n − {D2} = 0", "marks": [{"on": "(n − {n})", "note": "n = {n}"}]},
-            {"text": "변의 개수 {ans}"},
+            {"text": "{n}각형 → {ASK} {ans}"},
         ]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2)]],
-        sol3="{ans}각형의 대각선의 개수는 {n} × {n3} ÷ 2 = {D}{ro(D)} 조건과 맞는다. n = {nn}{eun(nn)} 다각형이 될 수 없다. 따라서 변의 개수는 {ans}이다.",
-        sol3_fig=steps(["{n} × {n3} ÷ 2 = {D} ✓", "변의 개수 {ans}"]),
+        sol3="{n}각형의 대각선의 개수는 {n} × {n3} ÷ 2 = {D}{ro(D)} 조건과 맞는다. n = {nn}{eun(nn)} 다각형이 될 수 없다. {n}각형에서 한 꼭짓점에서 그을 수 있는 대각선은 {n3}개, 내각의 크기의 합은 180° × ({n} − 2)이다. 따라서 {ASK}는 {ans}이다.",
+        sol3_fig=steps(["{n} × {n3} ÷ 2 = {D} ✓", "{ASK} {ans}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="n각형의 대각선의 개수는 [[frac(n(n − 3), 2)]]이므로 n(n − 3) = {D2}, 즉 n² − 3n − {D2} = 0에서 (n − {n})(n + {n3}) = 0이므로 n = {n} (n ≥ 3). 따라서 변의 개수는 {ans}이다.",
+        model_answer="n각형의 대각선의 개수는 [[frac(n(n − 3), 2)]]이므로 n(n − 3) = {D2}, 즉 n² − 3n − {D2} = 0에서 (n − {n})(n + {n3}) = 0이므로 n = {n} (n ≥ 3). 따라서 {n}각형이고 {ASK}는 {ans}이다.",
         rubric=[
             {"element": "식 세우기", "points": 2, "criterion": "[[frac(n(n − 3), 2)]] = {D}{eul(D)} 세웠다.", "partial": "2로 나누는 것을 빠뜨렸으면 인정하지 않는다."},
-            {"element": "풀이·답", "points": 3, "criterion": "n = {n}{eul(n)} 구해 변의 개수 {ans}{eul(ans)} 답했다.", "partial": "음수 근을 버리지 않았으면 2점."},
+            {"element": "풀이·답", "points": 3, "criterion": "n = {n}{eul(n)} 구해 {ASK} {ans}{eul(ans)} 답했다.", "partial": "음수 근을 버리지 않았으면 2점."},
         ],
         rubric_total=5,
     )

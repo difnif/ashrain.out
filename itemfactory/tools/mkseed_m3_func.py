@@ -422,16 +422,17 @@ def qm_t3():
     return tpl(QM, 3, {**QM_BASE, **COMMON_APPLY, "context": "기하맥락", "ops": ["이차함수"], "points": 4, "pool_target": 300},
         title="둘레의 길이가 일정한 직사각형의 넓이의 최댓값",
         skill="가로를 x로 놓아 넓이를 x의 이차함수로 나타내고 완전제곱식으로 최댓값 구하기",
-        variant_axis={"둘레": "12~100 (4의 배수)"},
+        variant_axis={"둘레": "12~160 (4의 배수)", "문장": "둘레가 주어진 직사각형 / 철사로 만든 직사각형 / 직사각형 모양의 액자"},
         difficulty=3,
         discriminates="세로를 (둘레/2 − x)로 나타내 넓이 식을 세우고, 정사각형일 때 최대임을 확인하는가",
-        params=[{"name": "k", "values": {"int": [3, 25]}}],
+        params=[{"name": "k", "values": {"int": [3, 40]}}, {"name": "c", "values": {"in": ["rect", "wire", "frame"]}}],
+        table={"key": "c", "rows": {"rect": {"PRE": "둘레의 길이가 ", "POST": " cm인 직사각형의 넓이의 최댓값"}, "wire": {"PRE": "길이가 ", "POST": " cm인 철사를 남김없이 모두 사용하여 직사각형을 만들 때, 이 직사각형의 넓이의 최댓값"}, "frame": {"PRE": "둘레의 길이가 ", "POST": " cm인 직사각형 모양의 액자를 만들 때, 액자 안쪽 직사각형의 넓이의 최댓값"}}},
         derive={"L": "4*k", "H": "2*k", "ans": "k*k"},
         constraints=["ans != L"],
         cost_values=["k", "L", "H", "ans"],
         answer_var="ans",
         verify=["L == 4*k", "H == 2*k", "ans == k*k"],
-        question="둘레의 길이가 {L} cm인 직사각형의 넓이의 최댓값을 구하시오.",
+        question="{PRE}{L}{POST}을 구하시오.",
         answer="{ans}", answer_alt=["{ans} cm²"],
         sol1="가로를 x cm라 하면 가로 + 세로 = {L} ÷ 2 = {H}이므로 세로는 ({H} − x) cm이다. 넓이 S = x({H} − x) = −x² + {H}x는 x의 이차함수이고 x²의 계수가 음수이므로 최댓값을 갖는다. 완전제곱식으로 고쳐 꼭짓점의 y좌표를 읽는다.",
         sol2=[
@@ -458,30 +459,31 @@ def qm_t3():
 
 
 # t4 — 던져 올린 물체의 최고 높이·시각
-HT_ROWS = {"h": {"ASK": "최고 높이", "UNIT": " m", "w": 1}, "t": {"ASK": "최고 높이에 도달하는 시각", "UNIT": "초", "w": 0}}
+HT_ROWS = {"h": {"ASK": "최고 높이", "UNIT": " m", "w": 1, "w3": 0}, "t": {"ASK": "최고 높이에 도달하는 시각", "UNIT": "초", "w": 0, "w3": 0}, "back": {"ASK": "다시 지면에 떨어지는 시각", "UNIT": "초", "w": 0, "w3": 1}}
+H0_ROWS = {"0": {"PLACE": "지면", "TAIL": "", "h0": 0}, "10": {"PLACE": "높이 10 m인 곳", "TAIL": " + 10", "h0": 10}, "20": {"PLACE": "높이 20 m인 곳", "TAIL": " + 20", "h0": 20}, "30": {"PLACE": "높이 30 m인 곳", "TAIL": " + 30", "h0": 30}}
 
 
 def qm_t4():
     return tpl(QM, 4, {**QM_BASE, **COMMON_APPLY, "ops": ["이차함수"], "points": 4, "pool_target": 300},
         title="던져 올린 물체의 최고 높이와 그때의 시각",
         skill="h = −5t² + vt를 완전제곱식으로 고쳐 꼭짓점 (t, h)를 읽기",
-        variant_axis={"초속": "20~120 (10의 배수)", "구하는 것": "최고 높이 / 시각"},
+        variant_axis={"초속": "20~300 (10의 배수)", "출발 높이": "0·10·20·30 m", "구하는 것": "최고 높이 / 시각 / 지면에 떨어지는 시각"},
         difficulty=3,
         discriminates="꼭짓점의 t좌표가 시각, h좌표가 최고 높이임을 구별해 답하는가",
-        params=[{"name": "k", "values": {"int": [2, 12]}}, {"name": "ask", "values": {"in": ["h", "t"]}}],
-        table={"key": "ask", "rows": HT_ROWS},
-        derive={"v": "10*k", "hmax": "5*k*k", "k2": "k*k", "ans": "w*5*k*k + (1 - w)*k"},
-        constraints=["ans != v"],
+        params=[{"name": "k", "values": {"int": [2, 30]}}, {"name": "ask", "values": {"in": ["h", "t", "back"]}}, {"name": "s0", "values": {"in": ["0", "10", "20", "30"]}}],
+        table=[{"key": "ask", "rows": HT_ROWS}, {"key": "s0", "rows": H0_ROWS}],
+        derive={"v": "10*k", "hmax": "5*k*k + h0", "k2": "k*k", "ans": "w*(5*k*k + h0) + w3*2*k + (1 - w - w3)*k"},
+        constraints=["ans != v", "w3 == 0 or h0 == 0", "ans != h0"],
         cost_values=["k", "v", "hmax", "ans"],
         answer_var="ans",
-        verify=["v == 10*k", "hmax == 5*k2", "ans == w*hmax + (1 - w)*k"],
-        question="지면에서 초속 {v} m로 똑바로 위로 던져 올린 물체의 t초 후의 높이를 h m라 하면 h = {v}t − 5t²인 관계가 성립한다. 이 물체의 {ASK}를 구하시오.",
+        verify=["v == 10*k", "hmax == 5*k2 + h0", "ans == w*hmax + w3*2*k + (1 - w - w3)*k"],
+        question="{PLACE}에서 초속 {v} m로 똑바로 위로 던져 올린 물체의 t초 후의 높이를 h m라 하면 h = {v}t − 5t²{TAIL}인 관계가 성립한다. 이 물체의 {ASK}를 구하시오.",
         answer="{ans}", answer_alt=["{ans}{UNIT}"],
-        sol1="h = −5t² + {v}t는 t의 이차함수이고 t²의 계수가 음수이므로 꼭짓점에서 최댓값(최고 높이)을 갖는다. −5로 묶어 h = −5(t² − {2*k}t) = −5(t − {k})² + {hmax}{ro(hmax)} 고치면 꼭짓점은 ({k}, {hmax}): t = {k}초일 때 최고 높이 {hmax} m이다.",
+        sol1="h = −5t² + {v}t{TAIL}는 t의 이차함수이고 t²의 계수가 음수이므로 꼭짓점에서 최댓값(최고 높이)을 갖는다. −5로 묶어 h = −5(t² − {2*k}t){TAIL} = −5(t − {k})² + {hmax}{ro(hmax)} 고치면 꼭짓점은 ({k}, {hmax}): t = {k}초일 때 최고 높이 {hmax} m이다. 지면(h = 0)에 떨어지는 시각은 h = 0을 풀어 구한다.",
         sol2=[
-            "h = −5(t² − {2*k}t) = −5(t² − {2*k}t + {k2} − {k2})",
+            "h = −5(t² − {2*k}t){TAIL} = −5(t² − {2*k}t + {k2} − {k2}){TAIL}",
             "= −5(t − {k})² + {hmax}",
-            "t = {k}초일 때 최고 높이 {hmax} m → {ASK}는 {ans}{UNIT}",
+            "t = {k}초일 때 최고 높이 {hmax} m, 지면에 떨어질 때(h = 0) t = {2*k} → {ASK}는 {ans}{UNIT}",
         ],
         sol2_fig=steps([
             {"text": "h = −5(t² − {2*k}t)", "hint": "−5로 묶기"},
@@ -489,10 +491,10 @@ def qm_t4():
             {"text": "{ASK} = {ans}{UNIT}"},
         ]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0", "mark:1-1")], [reveal(2)]],
-        sol3="t = {k}{eul(k)} 대입하면 h = {v} × {k} − 5 × {k2} = {v*k} − {hmax} = {hmax}{ro(hmax)} 맞고, 대칭성으로 t = 0과 t = {2*k}(지면)의 한가운데 t = {k}에서 최고이다. 따라서 {ASK}는 {ans}{UNIT}이다.",
-        sol3_fig=steps(["t = {k}: h = {hmax} (지면 t = 0, {2*k}의 중점)", "{ASK} = {ans}"]),
+        sol3="t = {k}{eul(k)} 대입하면 h = {v} × {k} − 5 × {k2}{TAIL} = {hmax}{ro(hmax)} 맞고, 대칭성으로 t = 0과 t = {2*k}(높이가 처음과 같아지는 시각)의 한가운데 t = {k}에서 최고이다. 따라서 {ASK}는 {ans}{UNIT}이다.",
+        sol3_fig=steps(["t = {k}: h = {hmax} (t = 0, {2*k}의 중점)", "{ASK} = {ans}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="h = −5t² + {v}t = −5(t − {k})² + {hmax}이므로 t = {k}초일 때 최고 높이 {hmax} m에 도달한다. 따라서 {ASK}는 {ans}{UNIT}이다.",
+        model_answer="h = −5t² + {v}t{TAIL} = −5(t − {k})² + {hmax}이므로 t = {k}초일 때 최고 높이 {hmax} m에 도달하고, 출발 높이로 되돌아오는 시각은 t = {2*k}이다. 따라서 {ASK}는 {ans}{UNIT}이다.",
         rubric=[
             {"element": "완전제곱식 변형", "points": 3, "criterion": "h = −5(t − {k})² + {hmax}{ro(hmax)} 고쳤다.", "partial": "−5로 묶지 않아 계수가 틀렸으면 1점."},
             {"element": "시각·높이 읽기", "points": 2, "criterion": "{ASK} {ans}{UNIT}{eul(UNIT)} 답했다.", "partial": "시각과 높이를 바꿔 답했으면 인정하지 않는다."},

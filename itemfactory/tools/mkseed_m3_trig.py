@@ -722,7 +722,7 @@ def _ta4_rows():
     out = {}
     for th in (30, 45, 60):
         c_, s_ = SPECIAL[("cos", th)], SPECIAL[("sin", th)]
-        for kc in range(1, 7):
+        for kc in range(1, 9):
             # AB = c 는 45° 면 k√2, 30°·60° 면 2k (BH·AH 가 k 배)
             if th == 45:
                 cc, cm = Fraction(kc), 2
@@ -733,7 +733,7 @@ def _ta4_rows():
             if not bh_v.rational() or (list(ah_v.t)[0] not in (1, 3)):
                 continue
             BH = bh_v.value()
-            for a in range(2, 13):
+            for a in range(2, 21):
                 if a <= BH:
                     continue
                 HC = a - BH
@@ -742,7 +742,7 @@ def _ta4_rows():
                 if ac2.denominator != 1:
                     continue
                 q, m = sqfree(int(ac2))
-                if m > 15:
+                if m > 30:
                     continue
                 AC = mk(Fraction(q), m)
                 AHt = mk(*ah)
@@ -763,7 +763,7 @@ def ta_t4():
     return tpl(TA, 4, TA_BASE,
         title="두 변과 그 끼인각이 주어진 삼각형의 나머지 한 변 — 수선을 내려 피타고라스",
         skill="한 꼭짓점에서 수선을 내려 특수각 직각삼각형으로 높이와 밑변의 일부를 구하고 나머지 직각삼각형에 피타고라스 정리 쓰기",
-        variant_axis={"∠B": "30°·45°·60°", "AB": "특수각에 맞춘 길이", "BC": "2~12"},
+        variant_axis={"∠B": "30°·45°·60°", "AB": "특수각에 맞춘 길이(k = 1~8)", "BC": "2~20"},
         difficulty=4,
         discriminates="AH = AB sin B, BH = AB cos B로 나눈 뒤 HC = BC − BH를 쓰는가(BC 전체를 밑변으로 쓰지 않는가)",
         params=[{"name": "f", "values": {"in": list(TA4_ROWS)}}],

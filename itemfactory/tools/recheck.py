@@ -1107,7 +1107,10 @@ def recompute(it):
         if tid == "m3-1-quad-apply-t8":
             D = int(re.match(r"대각선의 총 개수가 (\d+)인 다각형", q).group(1))
             for nn in range(3, 100):
-                if nn * (nn - 3) == 2 * D: return Fraction(nn)
+                if nn * (nn - 3) == 2 * D:
+                    if "한 꼭짓점에서" in q: return Fraction(nn - 3)
+                    if "내각의 크기의 합" in q: return Fraction(180 * (nn - 2))
+                    return Fraction(nn)
             return None
     if tid.startswith("m3-1-quad-func-apply"):
         if tid == "m3-1-quad-func-apply-t1":
@@ -1119,10 +1122,10 @@ def recompute(it):
             if (a < 0) != (m.group(4) == "최댓값"): return None
             return M + b * b / (4 * a)
         if tid == "m3-1-quad-func-apply-t3":
-            L = Fraction(re.match(r"둘레의 길이가 (\d+) cm인 직사각형", q).group(1)); return (L / 4) ** 2
-        m = re.match(r"지면에서 초속 (\d+) m로 .+?h = (\d+)t − 5t².+?이 물체의 (최고 높이|최고 높이에 도달하는 시각)[을를]", q); v = Fraction(m.group(1))
-        if m.group(2) != m.group(1): return None
-        return v * v / 20 if m.group(3) == "최고 높이" else v / 10
+            L = Fraction(re.match(r"(?:둘레의 길이가|길이가) (\d+) cm인", q).group(1)); return (L / 4) ** 2
+        m = re.match(r"(?:지면|높이 (\d+) m인 곳)에서 초속 (\d+) m로 .+?h = (\d+)t − 5t²(?: \+ (\d+))?인.+?이 물체의 (최고 높이|최고 높이에 도달하는 시각|다시 지면에 떨어지는 시각)[을를]", q); v = Fraction(m.group(2)); h0 = Fraction(m.group(1) or 0)
+        if m.group(3) != m.group(2) or Fraction(m.group(4) or 0) != h0: return None
+        return v * v / 20 + h0 if m.group(5) == "최고 높이" else v / 10 if m.group(5).startswith("최고") else (v / 5 if h0 == 0 else None)
     if tid.startswith("m3-1-quad-func"):
         if tid == "m3-1-quad-func-t1":
             m = re.match(r"이차함수 y = ax²의 그래프가 점 \((-?\d+), (-?\d+)\)를 지날 때, 상수 a", q); pp, qq = Fraction(m.group(1)), Fraction(m.group(2)); return qq / (pp * pp)
