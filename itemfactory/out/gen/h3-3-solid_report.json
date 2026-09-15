@@ -1,0 +1,105 @@
+{
+ "run_id": "h3-3-solid-20260915-033530",
+ "seed_id": "h3-3-solid",
+ "title": "직육면체 — 대각선·삼수선·정사영·이면각 (wire 도형)",
+ "accepted": 1200,
+ "rejected": 0,
+ "per_template": {
+  "h3-3-solid-t1": {
+   "target": 300,
+   "space": 330,
+   "ok": 300,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "그림과 같이 AB = 3, AD = 4, AE = 12인 직육면체 ABCD-EFGH에서 선분 DF의 길이를 구하시오.",
+     "a": "13"
+    },
+    {
+     "idx": 211,
+     "q": "그림과 같이 AB = 10, AD = 5, AE = 10인 직육면체 ABCD-EFGH에서 선분 AG의 길이를 구하시오.",
+     "a": "15"
+    },
+    {
+     "idx": 92,
+     "q": "그림과 같이 AB = 2, AD = 9, AE = 6인 직육면체 ABCD-EFGH에서 선분 AG의 길이를 구하시오.",
+     "a": "11"
+    }
+   ]
+  },
+  "h3-3-solid-t2": {
+   "target": 300,
+   "space": 330,
+   "ok": 300,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "그림과 같이 AB = 3, AD = 4, AE = 9인 직육면체 ABCD-EFGH에서 꼭짓점 G와 직선 AE 사이의 거리를 구하시오.",
+     "a": "5"
+    },
+    {
+     "idx": 211,
+     "q": "그림과 같이 AB = 9, AD = 12, AE = 8인 직육면체 ABCD-EFGH에서 꼭짓점 A와 직선 CG 사이의 거리를 구하시오.",
+     "a": "15"
+    },
+    {
+     "idx": 92,
+     "q": "그림과 같이 AB = 4, AD = 3, AE = 9인 직육면체 ABCD-EFGH에서 꼭짓점 B와 평면 AEGC 사이의 거리를 구하시오.",
+     "a": "[[frac(12,5)]]"
+    }
+   ]
+  },
+  "h3-3-solid-t3": {
+   "target": 300,
+   "space": 330,
+   "ok": 300,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "그림과 같이 AB = 3, AD = 2, AE = 4인 직육면체 ABCD-EFGH에서 사각형 ABGH의 평면 EFGH 위로의 정사영의 넓이를 구하시오.",
+     "a": "6"
+    },
+    {
+     "idx": 211,
+     "q": "그림과 같이 AB = 7, AD = 10, AE = 8인 직육면체 ABCD-EFGH에서 삼각형 AFG의 평면 ABCD 위로의 정사영의 넓이를 구하시오.",
+     "a": "35"
+    },
+    {
+     "idx": 92,
+     "q": "그림과 같이 AB = 9, AD = 4, AE = 5인 직육면체 ABCD-EFGH에서 사각형 AFGD의 평면 EFGH 위로의 정사영의 넓이를 구하시오.",
+     "a": "36"
+    }
+   ]
+  },
+  "h3-3-solid-t4": {
+   "target": 300,
+   "space": 330,
+   "ok": 300,
+   "rej": 0,
+   "by_gate": {},
+   "samples": [
+    {
+     "idx": 0,
+     "q": "그림과 같이 AB = 3, AD = 4, AE = 10인 직육면체 ABCD-EFGH에서 두 평면 BDHF와 ABFE가 이루는 각의 크기를 θ라 할 때, tan θ의 값을 구하시오.",
+     "a": "[[frac(4,3)]]"
+    },
+    {
+     "idx": 211,
+     "q": "그림과 같이 AB = 7, AD = 4, AE = 3인 직육면체 ABCD-EFGH에서 두 평면 ABGH와 EFGH가 이루는 각의 크기를 θ라 할 때, cos θ의 값을 구하시오.",
+     "a": "[[frac(4,5)]]"
+    },
+    {
+     "idx": 92,
+     "q": "그림과 같이 AB = 9, AD = 12, AE = 11인 직육면체 ABCD-EFGH에서 두 평면 BDHF와 ABFE가 이루는 각의 크기를 θ라 할 때, cos θ의 값을 구하시오.",
+     "a": "[[frac(3,5)]]"
+    }
+   ]
+  }
+ }
+}

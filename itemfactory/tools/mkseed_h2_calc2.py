@@ -495,10 +495,7 @@ def _in6_rows():
     for a in range(1, 13):
         # y = x² − ax 와 x축: 교점 0, a → 넓이 a³/6
         v = Fraction(a ** 3, 6)
-        co = "" if a == 1 else str(a)
-        q = f"곡선 y = x² − {co}x와 x축으로 둘러싸인 부분의 넓이"
-        if v not in _nums(q):
-            out[f"r{a}"] = {"DESC": q, "VN": v.numerator, "VD": v.denominator, "KIND": "포물선과 x축", "INT": f"[[dinteg(0, {a}, -(pow(x,2) − {co}x), x)]]", "STEP": f"교점 x = 0, {a}; 0 ≤ x ≤ {a}에서 y ≤ 0이므로 넓이 = −[[dinteg(0, {a}, pow(x,2) − {co}x, x)]] = [[frac(pow({a},3), 6)]]", "RES": f"= {_fm(v)}"}
+        # (y = x² − ax 와 x축은 integ-t5 와 문면이 겹쳐 뺐다 — DUP)
         # y = x² 과 y = ax: 교점 0, a → 넓이 a³/6
         q2 = f"곡선 y = x²과 직선 y = {'' if a == 1 else a}x로 둘러싸인 부분의 넓이"
         if v not in _nums(q2):
@@ -530,7 +527,7 @@ IN6_ROWS = _in6_rows()
 
 def in_t6():
     return T(IN, 6, IN_B, title="넓이 — 대칭·기함수·두 곡선",
-        skill="대칭성을 이용해 절반을 2배 하거나 x축 아래 부분의 부호를 바꿔 넓이 구하기", axis={"형태": "y = kx²와 x = a / y = x²과 y = c² / y = x³ 양쪽 / y = x² − ax와 x축 / y = x²과 직선 / 두 포물선"}, disc="x축 아래 부분은 −∫로 더하고 대칭이면 2배 하는가", diff=3,
+        skill="대칭성을 이용해 절반을 2배 하거나 x축 아래 부분의 부호를 바꿔 넓이 구하기", axis={"형태": "y = kx²와 x = a / y = x²과 y = c² / y = x³ 양쪽 / y = x²과 직선 / 두 포물선"}, disc="x축 아래 부분은 −∫로 더하고 대칭이면 2배 하는가", diff=3,
         params=[{"name": "f", "values": {"in": list(IN6_ROWS)}}], table={"key": "f", "rows": IN6_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{DESC}를 구하시오.", answer="{ans}",

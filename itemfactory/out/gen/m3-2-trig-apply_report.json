@@ -1,8 +1,8 @@
 {
- "run_id": "m3-2-trig-apply-20260913-234617",
+ "run_id": "m3-2-trig-apply-20260915-034051",
  "seed_id": "m3-2-trig-apply",
  "title": "삼각비의 활용 — 특수각 변의 길이·높이 측정·삼각형의 넓이·두 변 끼인각→대변·사각형의 넓이",
- "accepted": 666,
+ "accepted": 722,
  "rejected": 0,
  "per_template": {
   "m3-2-trig-apply-t1": {
@@ -79,8 +79,8 @@
   },
   "m3-2-trig-apply-t4": {
    "target": 300,
-   "space": 42,
-   "ok": 42,
+   "space": 98,
+   "ok": 98,
    "rej": 0,
    "by_gate": {},
    "samples": [
@@ -90,14 +90,14 @@
      "a": "[[sqrt(2)]]"
     },
     {
-     "idx": 29,
+     "idx": 61,
      "q": "다음 그림과 같이 [[seg(AB)]] = 4, [[seg(BC)]] = 3, [[angle(B)]] = [[deg(60)]]인 삼각형 ABC에서 [[seg(AC)]]의 길이를 구하시오.",
      "a": "[[sqrt(13)]]"
     },
     {
-     "idx": 16,
-     "q": "다음 그림과 같이 [[seg(AB)]] = [[4*sqrt(2)]], [[seg(BC)]] = 7, [[angle(B)]] = [[deg(45)]]인 삼각형 ABC에서 [[seg(AC)]]의 길이를 구하시오.",
-     "a": "5"
+     "idx": 24,
+     "q": "다음 그림과 같이 [[seg(AB)]] = [[3*sqrt(2)]], [[seg(BC)]] = 18, [[angle(B)]] = [[deg(45)]]인 삼각형 ABC에서 [[seg(AC)]]의 길이를 구하시오.",
+     "a": "[[3*sqrt(26)]]"
     }
    ]
   },
