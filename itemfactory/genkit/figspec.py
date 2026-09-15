@@ -18,7 +18,7 @@ NUM = (int, float)
 SPEC = {
     "scene":     ({"pts"}, {"segs", "circles", "marks", "shade", "labels", "axes", "nodot", "aspect_min"}),
     "numline":   ({"min", "max"}, {"points", "segments"}),
-    "coordplane":({"x", "y"}, {"points", "lines", "curves", "circles", "labels", "rise_run", "run_label", "rise_label"}),   # rise_run: 기울기 삼각형 (SEEDSPEC·figsvg.js 와 정합, 09-09)
+    "coordplane":({"x", "y"}, {"points", "lines", "curves", "circles", "labels", "rise_run", "run_label", "rise_label", "arrows"}),   # rise_run: 기울기 삼각형 (SEEDSPEC·figsvg.js 와 정합, 09-09) · arrows: 벡터 화살표 {from, to, label, dash} (09-15)
     "funcgraph": ({"expr"}, {"domain", "y_range", "points", "labels"}),
     "tri":       ({"v"}, {"sides", "angles", "marks"}),
     "quad":      ({"v"}, {"sides", "angles", "marks", "vertices"}),
@@ -33,7 +33,7 @@ SPEC = {
     "boxplot":   ({"values"}, set()),
     "solid":     ({"kind"}, {"height", "radius", "labels", "w", "h", "d"}),
     "net":       ({"kind"}, {"labels"}),
-    "wire":      ({"kind"}, {"names", "w", "h", "d"}),        # 이름 붙은 입체 골격 (위치관계) — box | triprism
+    "wire":      ({"kind"}, {"names", "w", "h", "d", "segs", "right"}),        # 이름 붙은 입체 골격 (위치관계) — box | triprism · segs: 보조 선분 "AF"|{a,b,dash,label} · right: 직각 표시 ["A","F","G"] (09-15 고등부 입체)
     "crossing":  ({"angles"}, set()),
     "parallel":  ({"angles"}, set()),
     "venn":      ({"sets"}, {"shaded"}),
@@ -165,6 +165,9 @@ def _check_args(p, fn, a):                                      # noqa: C901
             c = q.get("coord") if isinstance(q, dict) else q
             if not _coord(c):
                 e.append(f"{p}: coordplane.points[].coord는 [x, y]")
+        for g in a.get("arrows", []) or []:
+            if not (isinstance(g, dict) and "to" in g and (isinstance(g["to"], str) or _coord(g["to"])) and ("from" not in g or isinstance(g["from"], str) or _coord(g["from"]))):
+                e.append(f"{p}: coordplane.arrows[]는 {{from?: [x,y]|이름, to: [x,y]|이름, label?, dash?}}")
     elif fn == "funcgraph":
         if not isinstance(a.get("expr"), str) or not a["expr"].strip():
             e.append(f"{p}: funcgraph.expr는 식 문자열")
@@ -241,6 +244,13 @@ def _check_args(p, fn, a):                                      # noqa: C901
         for k in ("w", "h", "d"):
             if k in a and not _isnum(a[k]):
                 e.append(f"{p}: wire.{k}는 숫자")
+        for g in a.get("segs", []) or []:
+            ok = (isinstance(g, str) and len(g) == 2) or (isinstance(g, list) and len(g) == 2) or (isinstance(g, dict) and "a" in g and "b" in g)
+            if not ok:
+                e.append(f"{p}: wire.segs[]는 'AF' | ['A','F'] | {{a, b, dash?, label?}}")
+        for r in a.get("right", []) or []:
+            if not ((isinstance(r, str) and len(r) == 3) or (isinstance(r, list) and len(r) == 3)):
+                e.append(f"{p}: wire.right[]는 꼭짓점 이름 3개(가운데가 직각)")
     elif fn in ("crossing", "parallel"):
         ang = a.get("angles")
         if not (isinstance(ang, list) and ang):

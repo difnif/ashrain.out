@@ -143,7 +143,7 @@
 | passing | `train` `span` `span-lbl` `arrow` `arrow-lbl` `trail` |
 | journey | `stop:i` `stop-lbl:i` `leg:i` `mover` |
 | numline | `pt:라벨` `lbl:라벨` `seg:i` |
-| coordplane | `pt:이름` `lbl:이름` `line:i` `run` `rise` `run-lbl` `rise-lbl` (`rise_run:["A","B"]` 로 기울기 삼각형) |
+| coordplane | `pt:이름` `lbl:이름` `line:i` `run` `rise` `run-lbl` `rise-lbl` (`rise_run:["A","B"]` 로 기울기 삼각형) `arrow:라벨` `arrow-lbl:라벨` (`arrows:[{from, to, label, dash}]` — 벡터 화살표, 09-15) |
 | steps | `line:i` `hint:i` `mark:i-j` — 줄은 `{"text", "hint", "marks":[{"on","note"}]}` 로 덧표시 가능 |
 | bar | `row:i` `part:i-j` `part-lbl:i-j` `total:i` |
 | sector | `sector` `arc` `radius` `r-lbl` `angle-lbl` |
@@ -151,7 +151,7 @@
 | river | `bank:0/1` `flow` `flow-lbl` `down` `down-lbl` `down-sub` `up` `up-lbl` `up-sub` `span-lbl` `stop:i` `stop-lbl:i` |
 | mountain | `slope` `base` `peak` `base-lbl` `peak-lbl` `up` `up-lbl` `up-sub` `down` `down-lbl` `down-sub` `total-lbl` |
 | vessel | `vessel:i` `row:i` `total:i` `part:i-j` `part-lbl:i-j` |
-| wire | `edge:AB`(역순 `edge:BA` 도 맞음) `pt:A` `lbl:A` `face:ABCD`(회전·역순 전부 맞음) — 위치관계용 입체 골격 |
+| wire | `edge:AB`(역순 `edge:BA` 도 맞음) `pt:A` `lbl:A` `face:ABCD`(회전·역순 전부 맞음) `seg:AF` `seg-lbl:AF` `right:AFG` — 위치관계용 입체 골격 + 보조 선분(`segs:["AF", {a,b,dash,label}]`)·직각 표시(`right:[["A","F","G"]]`, 가운데가 직각; 09-15 고등부 입체) |
 
 ## 해설 전용 도식 (문항 본문에는 못 쓴다)
 
@@ -186,6 +186,7 @@
 (뒤에 숨은 모서리는 점선). `box` 는 윗면 A B C D(앞왼→앞오→뒤오→뒤왼)·밑면 E F G H(A 아래가 E), `triprism` 은 윗면 A B C·밑면 D E F.
 모서리 이름은 `AB BC CD DA EF FG GH HE AE BF CG DH` / `AB BC CA DE EF FD AD BE CF` 를 정규로 쓰되 애니메이션 키는 역순도 받는다.
 관계(평행·만남·꼬인 위치·포함·수직)는 식으로 파생할 수 없으므로 **표(table)** 로 굽는다 — `tools/mkseed_position.py` 참고.
+고등부 입체(09-15): `"w", "h", "d"`로 비율을 주고 `"segs": ["AF", {"a": "A", "b": "G", "dash": true}]`로 대각선·수선을, `"right": [["A","F","G"]]`로 직각 표시를 더한다(치수 라벨은 없으므로 수치는 문면에). `coordplane` 의 `"arrows": [{"from": [0,0], "to": [3,1], "label": "a"}]`는 벡터 화살표(`from` 생략 = 원점, 점 이름도 됨).
 `polygon` 의 `"diagonals": "fan"` 은 한 꼭짓점에서 대각선을 모두 그어 삼각형 n−2개를 보여 준다.
 
 ## 식 문법

@@ -322,6 +322,11 @@ def _atom(n):
     if n["t"] == "fn" and n["f"] == "op": return False          # v1.5r2: a ◎ b 는 원자가 아님 → 거듭제곱·분수·곱 안에서 괄호
     return n["t"] in ("num", "var", "const", "label", "fn", "apply", "paren")
 
+def _wrap_sum(n):
+    """v1.5 r3(JS 동형): 피적분식이 합·차이면 괄호 — ∫(x² + 1) dx"""
+    return "(" + disp(n) + ")" if n["t"] == "bin" and n.get("op") in ("+", "-") else disp(n)
+
+
 def _wrap(n):
     s = disp(n)
     return s if _atom(n) else "(" + s + ")"
@@ -445,8 +450,8 @@ def disp(n):
         return "lim[" + D(a[0]) + "→" + D(a[1]) + ("⁺" if side == "+" else "⁻" if side == "-" else "") + "] " + _wrap(a[2])
     if f == "prime": return _wrap(a[0]) + ("′" if len(a) == 1 or to_ir(a[1]) == "1" else "″")
     if f == "dydx": return "d" + D(a[0]) + "/d" + D(a[1])
-    if f == "integ": return "∫ " + D(a[0]) + " d" + D(a[1])
-    if f == "dinteg": return "∫[" + D(a[0]) + ".." + D(a[1]) + "] " + D(a[2]) + " d" + D(a[3])
+    if f == "integ": return "∫ " + _wrap_sum(a[0]) + " d" + D(a[1])
+    if f == "dinteg": return "∫[" + D(a[0]) + ".." + D(a[1]) + "] " + _wrap_sum(a[2]) + " d" + D(a[3])
     if f == "inv": return _wrap(a[0]) + "⁻¹"
     if f in ("perm", "comb", "pperm", "hcomb"):
         L = {"perm": "P", "comb": "C", "pperm": "Π", "hcomb": "H"}[f]

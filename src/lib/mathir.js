@@ -1,4 +1,4 @@
-// ashrain.out — MathIR 파서·렌더·평가기 (mathir.js, v1.5 r2 / 파이썬 itemfactory/mathir.py v1.5 r2 동형 · 09-07 renderHtml 상하 분수 표시층 추가)
+// ashrain.out — MathIR 파서·렌더·평가기 (mathir.js, v1.5 r3 / 파이썬 itemfactory/mathir.py v1.5 r2 동형 · 09-07 renderHtml 상하 분수 표시층 추가 · 09-15 r3 HTML 표시층: Σ·lim·∫ 위아래 첨자, cases 중괄호 세로, mat 행렬, dy/dx 상하)
 // 위치: src/lib/mathir.js — 앱(ItemCard·검토·코퍼스 화면)과 api/transcribeJob(러너 v2)이 공유.
 // 파이썬 itemfactory/mathir.py 와 동형 — 함수표·문법·표시 규칙을 항상 함께 수정할 것.
 // 이력: v1.0(스펙 v1.1) → v1.4 답 표기층(ㄱ~ㅎ·①~⑳ 낱말 답, '21°'→deg, 단위 꼬리, 'a = 5, b = -1' 병립, '좌변:' 접두 제거)
@@ -273,6 +273,7 @@ const over = (s, mk) => [...s].map((c) => c + mk).join("");
 const ATOM = new Set(["num","var","const","label","fn","apply","paren"]);
 const atom = (n) => !(n.t === "fn" && n.f === "op") && ATOM.has(n.t);      // v1.5r2: a ◎ b 는 원자가 아님
 const wrap = (n) => atom(n) ? disp(n) : "(" + disp(n) + ")";
+const wrapSum = (n) => (n.t === "bin" && (n.op === "+" || n.op === "-")) ? "(" + disp(n) + ")" : disp(n);   // v1.5 r3 ∫(x² + 1) dx
 const PRIMES = { 0: "", 1: "′", 2: "″", 3: "‴" };
 
 // 곱 표시 (v1.5r2 표시 수정): 병치 사슬 2ab, −5x, 2√3x 는 그대로 잇고, 숫자 앞 함수(9 × 2^(n+1))·숫자끼리·부호 등은 ' × '.
@@ -295,6 +296,10 @@ function xprod(n) {
 // renderHtml 이 그 자리표를 <span class="mf"> 구조로 바꾼다. 텍스트 규칙(toIR·파서·파이썬 mathir.py)은 건드리지 않는다.
 let _H = false;
 const FR = (a, b) => "\u0001" + a + "\u0002" + b + "\u0003";
+// v1.5 r3 — HTML 모드 전용 자리표(이스케이프 뒤 span 으로 바뀐다): 큰 연산자(Σ·lim·∫)의 위·아래 첨자, cases, mat
+const OP = (sym, lo, hi) => "\u0004" + sym + "\u0005" + lo + "\u0006" + hi + "\u0007";
+const CASES = (rows) => "\u0010" + rows.map(([e, c]) => e + "\u0012" + c).join("\u0011") + "\u0013";
+const MAT = (r, c, cells) => "\u0014" + r + "\u0015" + c + "\u0015" + cells.join("\u0016") + "\u0017";
 export function disp(n) {
   const t = n.t;
   if (t === "num") return n.v;
@@ -354,6 +359,7 @@ export function disp(n) {
     case "mat": {
       const r = Number(a[0]?.v), c = Number(a[1]?.v), cells = a.slice(2).map(D);
       if (Number.isInteger(r) && Number.isInteger(c) && cells.length === r * c) {
+        if (_H) return MAT(r, c, cells);
         const rows = [];
         for (let i = 0; i < r; i++) rows.push(cells.slice(i * c, (i + 1) * c).join(" "));
         return "(" + rows.join(" ; ") + ")";
@@ -383,12 +389,12 @@ export function disp(n) {
     case "sin": case "cos": case "tan": case "csc": case "sec": case "cot": return f + " " + wrap(a[0]);
     case "sub": { if (a.length === 3) return D(a[0]) + "[" + D(a[1]) + "," + D(a[2]) + "]";
       const ix = toIR(a[1]).replace(/ /g, ""); return D(a[0]) + (/^\d+$/.test(ix) ? subs(ix) : "_" + wrap(a[1])); }
-    case "sum": return "Σ[" + D(a[0]) + "=" + D(a[1]) + ".." + D(a[2]) + "] " + wrap(a[3]);
-    case "lim": { const side = a[3] ? (a[3].v === "+" ? "⁺" : "⁻") : ""; return "lim[" + D(a[0]) + "→" + D(a[1]) + side + "] " + wrap(a[2]); }
+    case "sum": return _H ? OP("Σ", D(a[0]) + "=" + D(a[1]), D(a[2])) + wrap(a[3]) : "Σ[" + D(a[0]) + "=" + D(a[1]) + ".." + D(a[2]) + "] " + wrap(a[3]);
+    case "lim": { const side = a[3] ? (a[3].v === "+" ? "⁺" : "⁻") : ""; return _H ? OP("lim", D(a[0]) + "→" + D(a[1]) + side, "") + wrap(a[2]) : "lim[" + D(a[0]) + "→" + D(a[1]) + side + "] " + wrap(a[2]); }
     case "prime": return wrap(a[0]) + (a.length === 1 || toIR(a[1]) === "1" ? "′" : "″");
-    case "dydx": return "d" + D(a[0]) + "/d" + D(a[1]);
-    case "integ": return "∫ " + D(a[0]) + " d" + D(a[1]);
-    case "dinteg": return "∫[" + D(a[0]) + ".." + D(a[1]) + "] " + D(a[2]) + " d" + D(a[3]);
+    case "dydx": return _H ? FR("d" + D(a[0]), "d" + D(a[1])) : "d" + D(a[0]) + "/d" + D(a[1]);
+    case "integ": return "∫ " + wrapSum(a[0]) + " d" + D(a[1]);
+    case "dinteg": return _H ? OP("∫", D(a[0]), D(a[1])) + wrapSum(a[2]) + " d" + D(a[3]) : "∫[" + D(a[0]) + ".." + D(a[1]) + "] " + wrapSum(a[2]) + " d" + D(a[3]);
     case "inv": return wrap(a[0]) + "⁻¹";
     case "perm": case "comb": case "pperm": case "hcomb": {
       const L = { perm:"P", comb:"C", pperm:"Π", hcomb:"H" }[f];
@@ -403,7 +409,10 @@ export function disp(n) {
     case "binomd": return "B(" + D(a[0]) + ", " + D(a[1]) + ")";
     case "normald": return "N(" + D(a[0]) + ", " + D(a[1]) + ")";
     // ---- v1.5
-    case "cases": { const ps = []; for (let i = 0; i < a.length; i += 2) ps.push(D(a[i]) + " (" + D(a[i + 1]) + ")"); return "{" + ps.join(" ; ") + "}"; }
+    case "cases": {
+      if (_H) { const rows = []; for (let i = 0; i < a.length; i += 2) rows.push([D(a[i]), D(a[i + 1])]); return CASES(rows); }
+      const ps = []; for (let i = 0; i < a.length; i += 2) ps.push(D(a[i]) + " (" + D(a[i + 1]) + ")"); return "{" + ps.join(" ; ") + "}";
+    }
     case "app": {
       const F = a[0];
       const head = (F.t === "var" || F.t === "label" || (F.t === "fn" && ["prime","inv","sub","iter","xbar","hat"].includes(F.f))) ? D(F) : "(" + D(F) + ")";
@@ -570,6 +579,17 @@ export const MATH_CSS = `
 .mf>.mn{padding:0 .22em .05em;border-bottom:1.5px solid currentColor}
 .mf>.md{padding:.05em .22em 0}
 .mf .mf{font-size:.9em}
+.mop{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1;margin:0 .18em 0 .06em}
+.mop>.mu,.mop>.ml{font-size:.6em;line-height:1.15;white-space:nowrap}
+.mop>.ms{font-size:1.3em;line-height:1}
+.mop.mlim>.ms{font-size:1em;line-height:1.1}
+.mc{display:inline-flex;align-items:center;vertical-align:middle;margin:0 .1em}
+.mc>.mcb{font-size:2.3em;line-height:.9;font-weight:200;margin-right:.12em}
+.mc>.mcs{display:inline-flex;flex-direction:column;align-items:flex-start;gap:.12em}
+.mcr{display:flex;gap:.9em;align-items:baseline;white-space:nowrap}
+.mcr>.mcc{font-size:.92em}
+.mm{display:inline-grid;vertical-align:middle;border-left:1.5px solid currentColor;border-right:1.5px solid currentColor;border-radius:.6em;padding:.12em .4em;column-gap:.75em;row-gap:.12em;margin:0 .12em}
+.mm>span{text-align:center;white-space:nowrap}
 `;
 const _escH = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const FRAC_HTML = (nu, de) => `<span class="mf"><span class="mn">${nu}</span><span class="md">${de}</span></span>`;
@@ -578,7 +598,21 @@ function _fracPlaceholders(escaped) {
   const re = /\u0001([^\u0001\u0002\u0003]*)\u0002([^\u0001\u0002\u0003]*)\u0003/g;
   let prev;
   do { prev = escaped; escaped = escaped.replace(re, (_, a, b) => FRAC_HTML(a, b)); } while (escaped !== prev);
-  return escaped;
+  return _blockPlaceholders(escaped);
+}
+// v1.5 r3 — 큰 연산자·cases·행렬 자리표 → span (분수 자리표를 먼저 바꾼 뒤 부른다)
+const OP_HTML = (sym, lo, hi) => `<span class="mop${sym === "lim" ? " mlim" : ""}"><span class="mu">${hi}</span><span class="ms">${sym}</span><span class="ml">${lo}</span></span>`;
+function _blockPlaceholders(s) {
+  s = s.replace(/\u0004([^\u0004-\u0007]*)\u0005([^\u0004-\u0007]*)\u0006([^\u0004-\u0007]*)\u0007/g, (_, sym, lo, hi) => OP_HTML(sym, lo, hi));
+  s = s.replace(/\u0010([^\u0010\u0013]*)\u0013/g, (_, body) => {
+    const rows = body.split("\u0011").map((r) => { const i = r.indexOf("\u0012"); const e = i < 0 ? r : r.slice(0, i), c = i < 0 ? "" : r.slice(i + 1); return `<span class="mcr"><span>${e}</span><span class="mcc">(${c})</span></span>`; });
+    return `<span class="mc"><span class="mcb">{</span><span class="mcs">${rows.join("")}</span></span>`;
+  });
+  s = s.replace(/\u0014([^\u0014\u0017]*)\u0017/g, (_, body) => {
+    const [r, c, cells] = body.split("\u0015"); const cs = (cells ?? "").split("\u0016");
+    return `<span class="mm" style="grid-template-columns:repeat(${Number(c) || 1},auto)">${cs.map((x) => `<span>${x}</span>`).join("")}</span>`;
+  });
+  return s;
 }
 // 평문 분수: 분자·분모 = (괄호묶음) | 숫자[소수][변수|π] | 변수 1글자 | [숫자]π
 const _TOK = "(?:\\([^()\\n]{1,40}\\)|\\d+(?:\\.\\d+)?[A-Za-zπ]?|[A-Za-z]|\\d*π)";

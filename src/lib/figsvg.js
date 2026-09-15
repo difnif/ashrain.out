@@ -337,6 +337,20 @@ function fnCoordplane(a, o) {
     const c = pt(g.center ?? g.c ?? [0, 0], {}), rr = num(g.r ?? g.radius, {});
     if (c && isNum(rr)) s += C(f.X(c[0]), f.Y(c[1]), Math.abs(f.X(c[0] + rr) - f.X(c[0])), { stroke: o.accent, w: 1.4 });
   }
+  // 화살표(09-15, 벡터) — arrows: [{from:[0,0]|"O", to:[3,2]|"A", label:"a", dash:true}]  키 arrow:label
+  for (const g of arr(a.arrows)) {
+    if (!g) continue;
+    const A0 = typeof g.from === "string" ? named[g.from] : pt(g.from ?? [0, 0], {});
+    const B0 = typeof g.to === "string" ? named[g.to] : pt(g.to, {});
+    if (!A0 || !B0) continue;
+    const lb = lab(g.label);
+    s += ARROW(f.X(A0[0]), f.Y(A0[1]), f.X(B0[0]), f.Y(B0[1]), { stroke: o.accent, w: 1.6, dash: g.dash ? "4 3" : null, k: `arrow:${lb || lineLike.length}` });
+    if (lb) {
+      const mx = (f.X(A0[0]) + f.X(B0[0])) / 2, my = (f.Y(A0[1]) + f.Y(B0[1])) / 2;
+      const dx = f.X(B0[0]) - f.X(A0[0]), dy = f.Y(B0[1]) - f.Y(A0[1]), ln = Math.hypot(dx, dy) || 1;
+      s += T(mx - (dy / ln) * 9, my + (dx / ln) * 9 + 4, lb, { size: 11.5, fill: o.accent, k: `arrow-lbl:${lb}` });
+    }
+  }
   for (const p of pts) {
     s += DOT(f.X(p.c[0]), f.Y(p.c[1]), { r: 3, fill: o.accent, stroke: o.accent, k: p.t ? `pt:${p.t}` : null });
     if (p.t) s += T(f.X(p.c[0]) + 6, f.Y(p.c[1]) - 6, p.t, { anchor: "start", size: 11, k: `lbl:${p.t}` });
@@ -1062,6 +1076,27 @@ function fnWire(a, o) {
     const ln = L(P[i][0], P[i][1], P[j][0], P[j][1], { w: hidden ? 1.1 : 1.5, dash: hidden ? "4 3" : "", op: hidden ? 0.7 : 0, k: `edge:${nm}` })
       .replace("<line", `<line data-ka="edge:${nm} edge:${names[j]}${names[i]}"`);
     s += ln;
+  }
+  // 보조 선분(09-15, 고등부 입체: 대각선·수선) — segs: ["AF", ["A","G"], {a:"A", b:"F", dash:true, label:"5"}]  키 seg:AF
+  for (const g of arr(a.segs)) {
+    const sp = typeof g === "string" ? [g[0], g[1]] : Array.isArray(g) ? g : [g.a, g.b];
+    const i = names.indexOf(String(sp[0] ?? "")), j = names.indexOf(String(sp[1] ?? ""));
+    if (i < 0 || j < 0 || i === j) continue;
+    const dash = (typeof g === "object" && !Array.isArray(g) && g.dash) ? "4 3" : "";
+    const nm = names[i] + names[j];
+    s += L(P[i][0], P[i][1], P[j][0], P[j][1], { stroke: o.accent, w: 1.6, dash, k: `seg:${nm}` })
+      .replace("<line", `<line data-ka="seg:${nm} seg:${names[j]}${names[i]}"`);
+    const lb = (typeof g === "object" && !Array.isArray(g)) ? lab(g.label) : "";
+    if (lb) s += T((P[i][0] + P[j][0]) / 2 + 6, (P[i][1] + P[j][1]) / 2 - 4, lb, { size: 11, fill: o.accent, anchor: "start", k: `seg-lbl:${nm}` });
+  }
+  // 직각 표시(09-15) — right: [["A","F","G"]] (꼭짓점 F에서 FA·FG 사이)  키 right:AFG
+  for (const r of arr(a.right)) {
+    const ids = [...(typeof r === "string" ? r : r.join(""))].map((ch) => names.indexOf(ch));
+    if (ids.length !== 3 || ids.some((v) => v < 0)) continue;
+    const [pa, pv, pb] = ids.map((v) => P[v]);
+    const u = norm([pa[0] - pv[0], pa[1] - pv[1]]), v = norm([pb[0] - pv[0], pb[1] - pv[1]]), m = 7;
+    const q1 = [pv[0] + u[0] * m, pv[1] + u[1] * m], q3 = [pv[0] + v[0] * m, pv[1] + v[1] * m], q2 = [q1[0] + v[0] * m, q1[1] + v[1] * m];
+    s += PATH(`M${R2(q1[0])} ${R2(q1[1])} L${R2(q2[0])} ${R2(q2[1])} L${R2(q3[0])} ${R2(q3[1])}`, { stroke: o.accent, w: 1.2, k: `right:${names[ids[0]]}${names[ids[1]]}${names[ids[2]]}` });
   }
   // 꼭짓점 라벨 — 그 점에 모이는 모서리들의 반대쪽(어느 모서리와도 겹치지 않는 방향)으로
   P.forEach((p, i) => {
