@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import AdminWrongNotes from "./AdminWrongNotes";
+import { isItemNote, itemIdOf } from "../lib/wrongnotes";
+import { fetchItemsByIds } from "../lib/items";
+import { mcLabel, isMcCode } from "../lib/misconceptions";
+import ItemQuestion from "./ItemQuestion";
 
 // ashrain.out — 오답노트 (v0.2.1)
 // 이 파일을 src/components/WrongNote.jsx 로 업로드하세요. Home.jsx(v0.2.1)가 import 합니다.
@@ -37,6 +41,12 @@ const CSS = `
 .wn-chip { border:1px solid var(--bd); background:var(--card); color:var(--mut); border-radius:999px; padding:6px 11px; font-size:12.5px; cursor:pointer; }
 .wn-chip.on { color:var(--ac); border-color:var(--ac); }
 .wn-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+.wn-shot-q { display:block; height:110px; padding:10px 10px 6px; font-size:12.5px; line-height:1.5; color:var(--ink); text-align:left;
+  overflow:hidden; background:var(--in); border-bottom:1px solid var(--bd); word-break:keep-all; }
+.wn-shot-q b { display:block; font-size:10.5px; color:var(--ac); margin-bottom:3px; letter-spacing:.3px; }
+.wn-itemcard { border:1px solid var(--bd); border-radius:12px; padding:10px 12px; margin-bottom:8px; background:var(--card); }
+.wn-go { display:inline-block; background:var(--ac); color:#fff; border:none; border-radius:999px; font-size:12.5px; font-weight:800; padding:8px 13px; cursor:pointer; margin:0 6px 6px 0; }
+.wn-go.sub { background:transparent; color:var(--ac); border:1.5px solid var(--ac); }
 .wn-shot { position:relative; border:1px solid var(--bd); border-radius:12px; overflow:hidden; background:var(--card); cursor:pointer; padding:0; text-align:left; }
 .wn-shot img { width:100%; aspect-ratio:3/4; object-fit:cover; display:block; background:rgba(0,0,0,.06); }
 .wn-shot p { margin:0; padding:7px 10px 8px; font-size:12px; color:var(--mut); }
@@ -80,6 +90,7 @@ export default function WrongNote({ uid, isAdmin, unitNames, say }) {
 
   // 목록
   const [notes, setNotes] = useState(null);
+  const [items, setItems] = useState({});      // 문항형 노트용 test_items (id → row)
   const [urls, setUrls] = useState({});
   const [flt, setFlt] = useState("all");
   const [detail, setDetail] = useState(null);
@@ -110,6 +121,13 @@ export default function WrongNote({ uid, isAdmin, unitNames, say }) {
       .eq("user_id", uid).order("created_at", { ascending: false });
     setNotes(data || []);
     signAll(data);
+    const ids = (data || []).filter(isItemNote).map(itemIdOf);
+    if (ids.length) {
+      try {
+        const rows = await fetchItemsByIds([...new Set(ids)]);
+        setItems(Object.fromEntries(rows.map((r) => [r.id, r])));
+      } catch { /* 문항을 못 읽으면 메모만 보여 준다 */ }
+    }
   }
   async function loadShared() {
     const { data } = await supabase.from("shared_wrong_notes").select("*")
@@ -119,7 +137,7 @@ export default function WrongNote({ uid, isAdmin, unitNames, say }) {
   }
   async function signAll(rows) {
     for (const r of rows || []) {
-      if (!r.image_path || urls[r.image_path]) continue;
+      if (!r.image_path || urls[r.image_path] || isItemNote(r)) continue;
       const { data } = await supabase.storage.from("notes").createSignedUrl(r.image_path, 3600);
       if (data?.signedUrl) setUrls((m) => ({ ...m, [r.image_path]: data.signedUrl }));
     }
@@ -303,7 +321,7 @@ export default function WrongNote({ uid, isAdmin, unitNames, say }) {
     if (!delArm) { setDelArm(true); return; }
     setDetail(null); setDelArm(false);
     setNotes((ns) => ns.filter((n) => n.id !== note.id));
-    await supabase.storage.from("notes").remove([note.image_path]);
+    if (!isItemNote(note)) await supabase.storage.from("notes").remove([note.image_path]);
     const { error } = await supabase.from("wrong_notes").delete().eq("id", note.id);
     say(error ? "삭제 실패: " + error.message : "삭제했어요");
   }
@@ -423,7 +441,11 @@ export default function WrongNote({ uid, isAdmin, unitNames, say }) {
             {shown.map((n) => (
               <button key={n.id} className="wn-shot" onClick={() => { setDetail(n); setMemoDraft(n.memo || ""); setDelArm(false); }}>
                 <span className="wn-badge">{STATUS[n.status]?.[0]}</span>
-                {urls[n.image_path] && <img src={urls[n.image_path]} alt="" />}
+                {isItemNote(n) ? (
+                  <span className="wn-shot-q"><b>{n.source || "문항"}</b>
+                    {items[itemIdOf(n)]?.question ? String(items[itemIdOf(n)].question).replace(/\[\[|\]\]/g, "").slice(0, 80) : (n.memo || "문항")}
+                  </span>
+                ) : (urls[n.image_path] && <img src={urls[n.image_path]} alt="" />)}
                 <p>{n.unit_id ? unitNames[n.unit_id] || n.unit_id : "단원 미지정"}{n.reason ? ` · ${REASON_LABEL[n.reason]}` : ""}</p>
               </button>
             ))}
@@ -446,7 +468,20 @@ export default function WrongNote({ uid, isAdmin, unitNames, say }) {
       {detail && (
         <div className="wn-modal-bg" onClick={() => setDetail(null)}>
           <div className="wn-modal" onClick={(e) => e.stopPropagation()}>
-            {urls[detail.image_path] && <img className="wn-img" src={urls[detail.image_path]} alt="" />}
+            {isItemNote(detail) ? (
+              <div className="wn-itemcard">
+                {items[itemIdOf(detail)]
+                  ? <ItemQuestion item={items[itemIdOf(detail)]} compact reveal />
+                  : <p className="wn-meta">{detail.memo || "지금은 볼 수 없는 문항이에요."}</p>}
+                <div style={{ marginTop: 10 }}>
+                  <button className="wn-go" onClick={() => (location.hash = `#/solve/item/${itemIdOf(detail)}?from=wrong`)}>✏️ 다시 풀기</button>
+                  <button className="wn-go sub" onClick={() => (location.hash = `#/solve/read/${itemIdOf(detail)}`)}>🔍 문장 해설</button>
+                </div>
+                {detail.tags?.filter(isMcCode).length ? (
+                  <p className="wn-meta" style={{ marginTop: 4 }}>이런 실수였어요: {detail.tags.filter(isMcCode).map(mcLabel).join(", ")}</p>
+                ) : null}
+              </div>
+            ) : (urls[detail.image_path] && <img className="wn-img" src={urls[detail.image_path]} alt="" />)}
             <p className="wn-meta">
               {detail.unit_id ? unitNames[detail.unit_id] || detail.unit_id : "단원 미지정"}
               {detail.reason ? ` · ${REASON_LABEL[detail.reason]}` : ""}

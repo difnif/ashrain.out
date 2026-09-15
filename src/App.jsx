@@ -40,6 +40,9 @@ import Duty from "./pages/Duty";
 import Gate from "./gate/Gate";
 import { rolePath, navigatePath } from "./shared/roles";
 import LogoTrigger from "./shared/LogoTrigger";
+// 학생앱 베타 — 문제풀이 허브(#/solve/*)
+import { BETA, STUDENT_NAV } from "./lib/beta";
+import SolveRouter from "./pages/solve/SolveRouter";
 const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
 const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
 
@@ -273,7 +276,7 @@ function AppRoutes() {
     location.hash = "#/guardian";
   }
 
-  const LOCKED = ["#/learn/calc", "#/learn/wrong", "#/learn/hint", "#/board", "#/p/"];
+  const LOCKED = ["#/learn/calc", "#/learn/wrong", "#/learn/hint", "#/board", "#/p/", "#/solve"];
   if (!verified && LOCKED.some((x) => hash.startsWith(x))) {
     return <VerifyGate theme={theme} prof={prof} />;
   }
@@ -328,6 +331,7 @@ function AppRoutes() {
     const sub = hash.split("/")[2];
     return <Home theme={theme} onToggleTheme={toggle} initialCat={sub || "concept"} />;
   }
+  if (hash.startsWith("#/solve")) return <Rx theme={theme}><SolveRouter hash={hash} theme={theme} /></Rx>;
   return <HomeDash theme={theme} onToggleTheme={toggle} />;
 }
 
@@ -353,10 +357,12 @@ function TopBar({ theme, onToggleTheme, hash }) {
   }, []);
   if (!me) return null;
   const light = theme !== "dark";
-  const FN = [["📚", "개념", "#/learn/concept"], ["🧮", "연산", "#/learn/calc"],
-              ["📕", "오답", "#/learn/wrong"], ["🗝️", "힌트", "#/learn/hint"], ["💬", "질문", "#/board"]];
+  // 베타 상단 기능바: 개념 / 문제풀이 / 오답노트 / 질문 (연산·힌트는 문제풀이 허브 안으로)
+  const FN = STUDENT_NAV;
   const isOn = (to) => to === "#/board" ? hash.startsWith("#/board")
-    : hash.startsWith(to) || (to === "#/learn/concept" && (hash === "#/learn" || hash === "#/learn/"));
+    : to === "#/solve" ? (hash.startsWith("#/solve") || hash.startsWith("#/p/") || hash.startsWith("#/learn/calc") || hash.startsWith("#/learn/hint"))
+    : to === "#/learn/concept" ? (hash.startsWith("#/learn/concept") || hash === "#/learn" || hash === "#/learn/" || hash.startsWith("#/c/"))
+    : hash.startsWith(to);
   return (
     <div className={"tb tb-" + theme}>
       <style>{`
@@ -373,7 +379,8 @@ function TopBar({ theme, onToggleTheme, hash }) {
           display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; padding: 0 8px; }
         .tb-btn { background: var(--card); border: 1px solid var(--bd); border-radius: 999px; color: var(--ink);
           font-size: 11.5px; font-weight: 700; padding: 7px 11px; cursor: pointer; }
-        .tb-fn { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+        .tb-fn { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .tb-beta { font-size: 10px; font-weight: 800; color: #fff; background: #7C3AED; border-radius: 999px; padding: 2px 6px; margin-left: 2px; }
         .tb-fnbtn { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 8px 0 7px;
           color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .tb-fnbtn.on { border-color: var(--ac); color: var(--ac); border-width: 1.5px; }
@@ -386,6 +393,7 @@ function TopBar({ theme, onToggleTheme, hash }) {
             right={{ tag: "모", label: "학부모", go: () => navigatePath("/jongseong") }}
             down={{ tag: "강", label: "강사", go: () => navigatePath("/seirocco") }}
             onLogoClick={() => (location.hash = "")} />
+          {BETA.on && <span className="tb-beta" title={BETA.notice}>{BETA.label}</span>}
           {dday && (
             <div className="tb-dday" title={dday.title} onClick={() => (location.hash = "")} style={{ cursor: "pointer" }}>
               {dday.days === 0 ? "D-DAY" : `D-${dday.days}`}
