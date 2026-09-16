@@ -191,6 +191,7 @@ const H_POS = { nw: { left: -7, top: -7 }, n: { left: "calc(50% - 6px)", top: -7
 const H_CUR = { nw: "nwse-resize", se: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize",
   n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize" };
 const INK = { dark: "#EFE4C8", light: "#4A3B25" };
+const PAPER = { dark: "#1B2544", light: "#F3EAD6" };
 const ACCENT = { dark: "#D9B662", light: "#8A6A2F" };
 
 /* ══════════ 마크(앱이 그리는 도형) ══════════ */
@@ -210,7 +211,9 @@ function MarkSvg({ marks, st, theme, fullH = STAGE_H }) {
         const dx = ((ms.x ?? m.x ?? 0.5) - (m.x ?? 0.5)) * S, dy = ((ms.y ?? m.y ?? fullH / 2) - (m.y ?? fullH / 2)) * S;
         const wrap = (el) => (dx || dy) ? <g key={m.id} transform={`translate(${dx} ${dy})`}>{el}</g> : el;
         if (m.mark === "dot")
-          return <circle {...k} cx={(ms.x ?? m.x) * S} cy={(ms.y ?? m.y) * S} r={(m.w || 0.02) * S / 2} fill={col} />;
+          return m.hollow
+            ? <circle {...k} cx={(ms.x ?? m.x) * S} cy={(ms.y ?? m.y) * S} r={(m.w || 0.02) * S / 2} fill={PAPER[theme]} stroke={col} strokeWidth={0.006 * S} />
+            : <circle {...k} cx={(ms.x ?? m.x) * S} cy={(ms.y ?? m.y) * S} r={(m.w || 0.02) * S / 2} fill={col} />;
         if (m.mark === "label") {
           const lines = String(m.text ?? "").split("\n");
           const fs = (m.size || 0.045) * S;
@@ -241,12 +244,12 @@ function MarkSvg({ marks, st, theme, fullH = STAGE_H }) {
         }
         if (m.mark === "poly") {
           const d = (m.pts || []).map(([x, y], i) => `${i ? "L" : "M"} ${x * S} ${y * S}`).join(" ") + " Z";
-          const fill = m.fill === "accent" ? ACCENT[theme] : m.fill === "ink" ? INK[theme] : (m.fill || "none");
+          const fill = m.fill === "accent" ? ACCENT[theme] : m.fill === "ink" ? INK[theme] : m.fill === "paper" ? PAPER[theme] : (m.fill || "none");
           return wrap(<path {...k} d={d} fill={fill} fillOpacity={m.fillOpacity ?? 0.18} stroke={col}
             strokeWidth={sw} strokeDasharray={dash} strokeLinejoin="round" />);
         }
         if (m.mark === "circle") {
-          const fill = m.fill === "accent" ? ACCENT[theme] : m.fill === "ink" ? INK[theme] : (m.fill || "none");
+          const fill = m.fill === "accent" ? ACCENT[theme] : m.fill === "ink" ? INK[theme] : m.fill === "paper" ? PAPER[theme] : (m.fill || "none");
           return wrap(<circle {...k} cx={m.cx * S} cy={m.cy * S} r={m.r * S} fill={fill} fillOpacity={m.fillOpacity ?? 0.18}
             stroke={col} strokeWidth={sw} strokeDasharray={dash} />);
         }
