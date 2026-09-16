@@ -137,6 +137,7 @@ const CSS = `
   radial-gradient(120% 130% at 50% 0%, #faf4e6 0%, #f3ead6 60%, #eadfc4 100%); border: 1px solid #ddd0b4; }
 .sf3-noise { position: absolute; inset: 0; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.sf3-area { position: absolute; left: 0; top: 0; width: 100%; overflow: hidden; } /* 3:2 본 무대 — 자막 띠로 넘치지 않게 */
 .sf3-layer { position: absolute; will-change: transform, opacity; }
 .sf3-layer img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
   transition: opacity .45s ease; pointer-events: none; -webkit-user-drag: none; }
@@ -147,7 +148,7 @@ const CSS = `
        url("/fonts/EBSHunminjeongeumSaeronR.ttf") format("truetype");
   font-weight: 400; font-display: swap;
 }
-.sf3-sub { position: absolute; padding: 5px 13px; border-radius: 12px; font-weight: 400; text-align: center;
+.sf3-sub { position: absolute; z-index: 20; padding: 5px 13px; border-radius: 12px; font-weight: 400; text-align: center;
   font-family: "EBS Hunminjeongeum Saeron", "Gowun Batang", serif; letter-spacing: .01em;
   line-height: 1.55; pointer-events: none; animation: sf3subin .35s ease; white-space: pre-line; }
 .sf3-stage.math .sf3-sub { font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; font-weight: 600; letter-spacing: 0; }
@@ -510,6 +511,7 @@ function StageSceneInner({ scene, figure, conceptId, blockId, isAdmin = false, t
             setSelId(null);
           }}>
           <div className="sf3-noise" />
+          <div className="sf3-area" style={{ height: `${(STAGE_H / fullH) * 100}%` }}>
           {imgRoots.map((L) => {
             const s = st[L.id] || {};
             const slotList = L.slots || [L.slot];
@@ -537,8 +539,8 @@ function StageSceneInner({ scene, figure, conceptId, blockId, isAdmin = false, t
                 onPointerDown={(e) => onPointerDown(e, L)}
                 onClick={(e) => { if (edit) e.stopPropagation(); }}
                 style={{
-                  left: `${(s.x - w / 2) * 100}%`, top: `${((s.y - h / 2) / fullH) * 100}%`,
-                  width: `${w * 100}%`, height: `${(h / fullH) * 100}%`,
+                  left: `${(s.x - w / 2) * 100}%`, top: `${((s.y - h / 2) / STAGE_H) * 100}%`,
+                  width: `${w * 100}%`, height: `${(h / STAGE_H) * 100}%`,
                   transformOrigin: `${pv[0] * 100}% ${pv[1] * 100}%`,
                   transform: `rotate(${rot}deg) skewX(${sk}deg) scaleX(${scl}) scaleY(${s.scale ?? 1})`,
                   opacity: s.fade, zIndex: L.z ?? 1, pointerEvents: edit ? "auto" : "none",
@@ -602,7 +604,8 @@ function StageSceneInner({ scene, figure, conceptId, blockId, isAdmin = false, t
               </div>
             );
           })}
-          <MarkSvg marks={markLayers} st={st} theme={theme} fullH={fullH} />
+          <MarkSvg marks={markLayers} st={st} theme={theme} fullH={STAGE_H} />
+          </div>
           {(() => {
             let cur = subIdx >= 0 ? subsSorted[subIdx] : null;
             if (cur && cur.d && subTime > (cur.t || 0) + cur.d) cur = null;
