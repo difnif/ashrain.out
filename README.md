@@ -48,8 +48,23 @@ cp -r node_modules/@mediapipe/tasks-vision/wasm public/models/wasm
 | `#/portrait` | 리브드 글라스 초상화 → 프로필 아바타 저장 |
 | `#/me` | 마이페이지 (프로필·내 정보·환경설정·계정) |
 
+### 학생앱 ui-v3 — 셸 (2026-09-19)
+큰 카테고리 4개는 **하단 고정 탭바**: 대시보드(`#/`) · 공부하기(`#/study`) · 학습 도구(`#/tools`) · 게시판(`#/board`).
+하위 카테고리는 **상단 고정 서브탭**(무신사식): 공부하기 = 개념 공부/연습문제/시험 보기 · 학습 도구 = 도구 8종 필터 · 게시판 = 공지/커뮤니티/질문.
+기능 화면(개념 뷰어·문항 풀이·시험·글쓰기 등)에선 탭바·서브탭이 사라지고 `FeatureBar`(⌂ 대시보드 · ← 뒤로 · 기능별 버튼)만 남는다.
+홈 복귀는 「대시보드」 탭 — 로고의 모/강 앱 전환 토글은 유지. 옛 해시는 리다이렉트: `#/learn/concept→#/study/concept`, `#/solve→#/study/practice`, `#/solve/test→#/study/exam` (딥링크 `#/solve/**` 는 그대로 동작).
+
+| 해시 | 화면 | 기록 |
+|---|---|---|
+| `#/study[/concept\|practice\|exam]` | 공부하기 허브 — 개념 목록 · 세트 시작 · 시험 8종(가볍게/실전/스페셜) | — |
+| `#/tools[/:key]` | 학습 도구 허브 — 오답노트·질문·사진 채점·사진 힌트·문장 해설·표시 연습·서술형·스피드 연산 | — |
+| `#/board[/notice\|community\|qna]` | 게시판 — 3앱(학생·강사·학부모) 공용, 역할 배지 | `posts`·`post_comments` |
+| `#/board/post/:id` · `#/board/write` | 글 상세·글쓰기 (기능 화면) | `posts` |
+| `#/learn/wrong\|hint\|calc` | 도구 리프 (FeatureBar 단독 진입) | 기존 |
+
+게시판 마이그레이션: `supabase/2026-09_boards.sql` (posts·post_comments·역할 스냅샷 트리거·RLS). 적용 전엔 "게시판 준비 중" 표시.
+
 ### 학생앱 베타 — 문제풀이 (`#/solve/*`, 2026-09)
-상단 기능바는 **개념 / 문제풀이 / 오답노트 / 질문** 네 개. 연산·사진 힌트는 문제풀이 허브 안으로 들어갔다.
 공개(`status='live'`) 문항만 학생에게 보인다 — 생성 문항은 `#/admin/items` 에서 live 로 올려야 나온다.
 
 | 해시 | 화면 | 기록 |
