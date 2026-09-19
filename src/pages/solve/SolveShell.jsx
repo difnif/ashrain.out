@@ -8,10 +8,11 @@ export function useToast() {
   return [msg, setMsg];
 }
 
-export default function SolveShell({ title, sub, back = "#/solve", right, children, toast }) {
+export default function SolveShell({ title, sub, back = "#/study/practice", right, children, toast }) {
   return (
     <div className="sv-wrap">
       <div className="sv-top">
+        <button className="sv-back" title="대시보드로" aria-label="대시보드로" onClick={() => (location.hash = "")}>⌂</button>
         {back && <button className="sv-back" onClick={() => (location.hash = back)}>← 뒤로</button>}
         <h1 className="sv-h1">{title}</h1>
         <span className="sv-sp" />

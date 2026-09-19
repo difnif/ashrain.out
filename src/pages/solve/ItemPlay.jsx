@@ -70,7 +70,7 @@ export default function ItemPlay({ conceptId, itemId, hash }) {
   if (iid) return <><style>{CSS}</style><SingleItem itemId={iid} uid={uid} hash={h} toast={toast} setToast={setToast} /></>;
   if (!cid) {
     return (
-      <SolveShell title="문제 풀기" back="#/solve" toast={toast}>
+      <SolveShell title="문제 풀기" back="#/study/practice" toast={toast}>
         <ItemPicker mode="concept" filter={{ qtypes: ["choice", "short"] }}
           hint="개념을 고르면 문항 수·유형·난이도를 정하고 바로 풀 수 있어요."
           onPickConcept={(c) => { location.hash = `#/solve/set/${c.id}`; }} />
@@ -187,7 +187,7 @@ function ConceptSet({ conceptId, uid, toast, setToast }) {
     const empty = count === 0;
     const last = readLastResult();
     return (
-      <SolveShell title="문제 풀기" back="#/solve" toast={toast}>
+      <SolveShell title="문제 풀기" back="#/study/practice" toast={toast}>
         <div className="sv-card">
           <div className="ip-title">{title}</div>
           <div className="sv-small">
@@ -235,7 +235,7 @@ function ConceptSet({ conceptId, uid, toast, setToast }) {
   if (phase === "play" && cur) {
     const done = results[idx] ? 1 : 0;
     return (
-      <SolveShell title="문제 풀기" back="#/solve" toast={toast}
+      <SolveShell title="문제 풀기" back="#/study/practice" toast={toast}
         right={<button className="sv-btn sm ghost" onClick={quit}>그만하기</button>}>
         <div className="ip-prog">
           <span className="ip-count">{idx + 1} / {items.length}</span>
@@ -251,7 +251,7 @@ function ConceptSet({ conceptId, uid, toast, setToast }) {
 
   // ── 결과 ──
   return (
-    <SolveShell title="문제 풀기" back="#/solve" toast={toast}>
+    <SolveShell title="문제 풀기" back="#/study/practice" toast={toast}>
       <div className="sv-card ip-score">
         <div className="ip-big">{sum.ok} <span className="ip-of">/ {sum.n}</span></div>
         <div className="ip-pct">정답률 {sum.pct}%</div>
@@ -306,7 +306,7 @@ function ConceptSet({ conceptId, uid, toast, setToast }) {
           <button className="sv-btn" onClick={() => start()}>같은 개념 새 세트</button>
           <button className="sv-btn" onClick={() => { location.hash = "#/solve/set"; }}>다른 개념 고르기</button>
         </div>
-        <button className="sv-btn ghost full" onClick={() => { location.hash = "#/solve"; }}>문제풀이 홈</button>
+        <button className="sv-btn ghost full" onClick={() => { location.hash = "#/study/practice"; }}>공부하기 홈</button>
       </div>
     </SolveShell>
   );
@@ -316,7 +316,7 @@ function ConceptSet({ conceptId, uid, toast, setToast }) {
 function SingleItem({ itemId, uid, hash, toast, setToast }) {
   const [item, setItem] = useState(undefined);
   const fromWrong = String(hash || "").includes("from=wrong");
-  const backTo = fromWrong ? "#/learn/wrong" : "#/solve";
+  const backTo = fromWrong ? "#/learn/wrong" : "#/study/practice";
   const [setId] = useState(() => `${fromWrong ? "replay" : "single"}:${Date.now().toString(36)}`);
 
   useEffect(() => {

@@ -167,7 +167,7 @@ export default function Omr({ sub, hash }) {
     grade: null,
   };
   return (
-    <SolveShell title="사진 채점" sub={SUB[route.view]} back={route.view === "home" ? "#/solve" : "#/solve/omr"} toast={toast}>
+    <SolveShell title="사진 채점" sub={SUB[route.view]} back={route.view === "home" ? "#/tools/omr" : "#/solve/omr"} toast={toast}>
       <style>{CSS}</style>
       {route.view === "new" && <MakeView say={say} />}
       {route.view === "grade" && <GradeView key={route.code || "_"} uid={uid} code={route.code} say={say} />}

@@ -66,14 +66,14 @@ export default function Read({ itemId }) {
 
   if (!itemId) {
     return (
-      <SolveShell title="문장 해설" sub="문제 문장을 뜯어 읽어요 — 무엇이 주어졌고, 무엇을 구하는지, 단서는 어디서 끊기는지." toast={toast}>
+      <SolveShell back="#/tools/read" title="문장 해설" sub="문제 문장을 뜯어 읽어요 — 무엇이 주어졌고, 무엇을 구하는지, 단서는 어디서 끊기는지." toast={toast}>
         <ItemPicker mode="item" hint="문항을 하나 골라 주세요. 문장을 함께 읽어 볼게요." onPickItem={(it) => { location.hash = `#/solve/read/${it.id}`; }} />
       </SolveShell>
     );
   }
 
   return (
-    <SolveShell title="문장 해설" toast={toast}
+    <SolveShell back="#/tools/read" title="문장 해설" toast={toast}
       right={<button className="sv-btn sm" onClick={() => { location.hash = "#/solve/read"; }}>다른 문항</button>}>
       <style>{CSS}</style>
       {err && <div className="sv-empty">{err}</div>}
