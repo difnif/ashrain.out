@@ -1,6 +1,8 @@
-// ashrain.out — 홈 대시보드 (v2.0)
-// sticky 유저 바 · 디데이 로고 · 날씨 이미지 시스템(베이스 18 + 오버레이 18 = 36셀)
-// 날씨: Open-Meteo → 단계 자동 선택, 히어로 우측 사다리꼴 + 디졸브, 추위는 채도·결빙 필터
+// ashrain.out — 홈 대시보드 (v3.0, ui-v3)
+// 셸(App)이 상단·하단 내비를 그린다 — 이 화면은 자기 배경 + 콘텐츠만 렌더한다 (.hd-top 제거).
+// 위는 단순(히어로·지갑·이어서 공부하기·오늘의 복습), 아래는 실데이터 카드 확장
+// (주간 그래프·오답노트·내 질문·최근 응시 시험·자주 나온 실수·디데이·철학 배너·미리보기).
+// 날씨: Open-Meteo → 단계 자동 선택, 히어로 우측 사다리꼴 + 디졸브, 추위는 채도·결빙 필터.
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import { SceneEditor } from "./AnimFigure";
@@ -8,32 +10,23 @@ import { BETA } from "../lib/beta";
 import { readLastResult } from "../lib/setplay";
 import { countOpenWrongNotes } from "../lib/wrongnotes";
 import { CURRENCY, getBalances, onPoints } from "../lib/wallet";
+import { UNIT_NAMES, summarizeAttempts } from "../lib/items";
+import { loadRunsLocal, mergeRuns, describeRun, presetOf } from "../lib/exam";
+import { mcLabel } from "../lib/misconceptions";
+import { getRecentConcepts } from "../lib/review";
 import ReviewCard from "./ReviewCard";
 
 const CSS = `
-.hd-root { min-height: 100vh; padding: 14px 14px 60px; box-sizing: border-box;
+.hd-root { min-height: 100vh; padding: 14px 14px 88px; box-sizing: border-box;
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; background: var(--bg); }
 .hd-root * { box-sizing: border-box; }
-.hd-light { --bg:#EDEFF2; --card:#fff; --bd:#DFE3E8; --ink:#1F2937; --mut:#8A929C; --ac:#0D9488; --in:#F4F6F8; }
-.hd-dark  { --bg:#0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#5EEAD4; --in:#101116; }
-.hd-wrap { max-width: 680px; margin: 0 auto; }
-.hd-top { position: sticky; top: 0; z-index: 40; background: var(--bg);
-  margin: 0 -14px 12px; padding: 10px 14px 10px; }
-.hd-row1 { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
-.hd-sp { flex: 1; }
-.hd-fn { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.hd-fnbtn { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 9px 0 8px;
-  color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.hd-fnbtn span:first-child { font-size: 16px; }
-.hd-fnbtn span:last-child { font-size: 11.5px; font-weight: 800; }
-.hd-logo { height: 30px; }
-.hd-light .hd-logo { filter: grayscale(1) brightness(0); }
-.hd-dday { min-width: 34px; height: 34px; border-radius: 999px; background: #EF4444; color: #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800; padding: 0 7px; }
-.hd-btn { background: var(--card); border: 1px solid var(--bd); border-radius: 999px; color: var(--ink);
-  font-size: 12px; font-weight: 700; padding: 8px 12px; cursor: pointer; }
+.hd-light { --bg:#EDEFF2; --card:#fff; --bd:#DFE3E8; --ink:#1F2937; --mut:#8A929C; --ac:#0D9488; --in:#F4F6F8; --bad:#DC2626; }
+.hd-dark  { --bg:#0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#5EEAD4; --in:#101116; --bad:#F87171; }
+.hd-wrap { max-width: 1200px; margin: 0 auto; }
+
+/* ── 히어로 (전체 폭) ── */
 .hd-hero { position: relative; border-radius: 20px; padding: 26px 22px 22px; color: #fff;
-  overflow: hidden; margin-bottom: 14px; box-shadow: 0 6px 22px rgba(0,0,0,.14); min-height: 150px;
+  overflow: hidden; margin-bottom: 12px; box-shadow: 0 6px 22px rgba(0,0,0,.14); min-height: 150px;
   transition: filter .6s ease, box-shadow .6s ease; }
 .hd-sky { position: absolute; right: 0; top: 0; bottom: 0; width: 50%;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 34% 100%);
@@ -46,26 +39,87 @@ const CSS = `
 .hd-hero-time { position: absolute; left: 22px; bottom: 12px; font-size: 11.5px; opacity: .8; }
 .hd-wxpen { position: absolute; right: 10px; bottom: 8px; z-index: 5; background: rgba(255,255,255,.85);
   border: none; border-radius: 8px; font-size: 12px; padding: 4px 7px; cursor: pointer; }
-.hd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-@media (max-width: 480px) { .hd-grid { grid-template-columns: 1fr; } }
-.hd-card { background: var(--card); border: 1px solid var(--bd); border-radius: 14px; padding: 14px 15px; position: relative; }
+
+/* ── 지갑 줄 (전체 폭) ── */
+.hd-wallet { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 0 4px; }
+.hd-wallet .hd-coin { display: inline-flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--bd);
+  border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 800; color: var(--ink); }
+.hd-wallet .hd-coin b { color: var(--ac); font-weight: 900; }
+.hd-wallet .hd-coin.off { color: var(--mut); }
+.hd-wallet .hd-coin.off b { color: var(--mut); }
+.hd-wallet a { margin-left: auto; color: var(--mut); font-size: 11.5px; text-decoration: none; border-bottom: 1px dotted var(--bd); }
+
+/* ── 카드 그리드: 폰 1열 → 700px 2열 → 1040px 3열 · 행 높이 정렬 ── */
+.hd-grid { display: grid; grid-template-columns: 1fr; gap: 10px; grid-auto-flow: row dense; align-items: stretch; }
+.hd-card { background: var(--card); border: 1px solid var(--bd); border-radius: 14px; padding: 14px 15px 15px;
+  position: relative; display: flex; flex-direction: column; min-width: 0; }
 .hd-card.wide { grid-column: 1 / -1; }
+@media (min-width: 700px) {
+  .hd-root { padding: 18px 20px 96px; }
+  .hd-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .hd-w2 { grid-column: span 2; }
+  .hd-hero { min-height: 170px; padding: 30px 26px 24px; }
+  .hd-hero-greet { max-width: 66%; }
+}
+@media (min-width: 1040px) { .hd-grid { grid-template-columns: repeat(3, 1fr); } }
+
 .hd-t { font-size: 12px; font-weight: 800; color: var(--mut); letter-spacing: .5px; margin: 0 0 8px; }
+.hd-thead { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; }
+.hd-thead .hd-t { margin: 0; flex: 1; min-width: 0; }
+.hd-tsub { font-size: 11.5px; font-weight: 600; color: var(--mut); white-space: nowrap; }
 .hd-big { font-size: 20px; font-weight: 800; color: var(--ink); margin: 0; }
 .hd-sub { font-size: 12px; color: var(--mut); margin: 4px 0 0; line-height: 1.6; }
 .hd-bar { height: 8px; background: var(--in); border-radius: 999px; overflow: hidden; margin: 10px 0 6px; }
 .hd-bar > div { height: 100%; background: var(--ac); border-radius: 999px; }
-.hd-go { display: inline-block; margin-top: 10px; background: transparent; border: 1.5px solid var(--ac);
+.hd-act { margin-top: auto; padding-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.hd-go { display: inline-block; background: transparent; border: 1.5px solid var(--ac);
   border-radius: 999px; color: var(--ac); font-size: 12px; font-weight: 800; padding: 7px 13px; cursor: pointer; }
-.hd-demo { position: absolute; top: 10px; right: 12px; font-size: 9.5px; font-weight: 800;
-  color: var(--mut); border: 1px solid var(--bd); border-radius: 5px; padding: 1px 5px; opacity: .8; }
-.hd-week { display: flex; align-items: flex-end; gap: 6px; height: 64px; margin-top: 8px; }
-.hd-wcol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.hd-wbar { width: 100%; background: var(--ac); border-radius: 5px 5px 2px 2px; opacity: .85; }
+.hd-empty { background: var(--in); border: 1px dashed var(--bd); border-radius: 12px; padding: 14px 12px;
+  font-size: 12.5px; color: var(--mut); line-height: 1.65; text-align: center; }
+
+/* ── 목록 행 (이어서 공부하기 · 최근 응시 · 일정) ── */
+.hd-rows { display: flex; flex-direction: column; gap: 6px; }
+.hd-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; min-width: 0;
+  background: var(--in); border: 1px solid var(--bd); border-radius: 12px; padding: 10px 12px;
+  color: var(--ink); font-family: inherit; }
+button.hd-row { cursor: pointer; }
+button.hd-row:hover { border-color: var(--ac); }
+.hd-row .ic { flex: none; font-size: 17px; }
+.hd-row .tx { flex: 1; min-width: 0; }
+.hd-row .tx b { display: block; font-size: 13.5px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hd-row .tx small { display: block; font-size: 11.5px; color: var(--mut); margin-top: 1px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hd-row .rt { flex: none; font-size: 11.5px; color: var(--mut); }
+.hd-mini { flex: none; border: 1.5px solid var(--ac); background: transparent; color: var(--ac);
+  border-radius: 999px; font-size: 11.5px; font-weight: 800; padding: 6px 11px; white-space: nowrap; }
+.hd-cont { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@media (min-width: 700px) { .hd-cont { grid-template-columns: 1fr 1fr; } }
+
+/* ── 주간 그래프 ── */
+.hd-week { display: flex; align-items: flex-end; gap: 6px; margin-top: 8px; }
+.hd-wcol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.hd-wnum { font-size: 10px; font-weight: 700; color: var(--mut); height: 12px; line-height: 12px; }
+.hd-wbar { width: 100%; max-width: 44px; background: var(--in); border: 1px solid var(--bd);
+  border-radius: 6px 6px 2px 2px; position: relative; overflow: hidden; }
+.hd-wbar > i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--ac); display: block; }
 .hd-wlab { font-size: 10px; color: var(--mut); }
+
+/* ── 실수 칩 ── */
+.hd-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.hd-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  border: 1px solid var(--bd); background: var(--in); border-radius: 999px; padding: 6px 11px;
+  font-size: 12px; font-weight: 700; color: var(--ink); }
+.hd-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hd-chip b { color: var(--bad); font-weight: 900; flex: none; }
+
+/* ── 디데이 ── */
+.hd-dbadge { flex: none; min-width: 46px; text-align: center; background: #EF4444; color: #fff;
+  border-radius: 999px; font-size: 11px; font-weight: 800; padding: 5px 8px; }
+
+/* ── 철학 배너 · 하단 ── */
 .hd-philo { grid-column: 1 / -1; position: relative; border-radius: 16px; overflow: hidden; cursor: pointer;
   background: linear-gradient(120deg, #14343B 0%, #0D9488 130%); color: #fff; padding: 20px 130px 20px 20px;
-  min-height: 108px; border: none; text-align: left; }
+  min-height: 108px; border: none; text-align: left; font-family: inherit; }
 .hd-philo-eyebrow { font-size: 10.5px; letter-spacing: 2.5px; opacity: .85; margin: 0 0 6px; font-weight: 800; }
 .hd-philo-t { font-size: 17px; font-weight: 800; margin: 0 0 6px; }
 .hd-philo-d { font-size: 12px; opacity: .9; margin: 0; line-height: 1.6; }
@@ -74,27 +128,33 @@ const CSS = `
   -webkit-mask-image: linear-gradient(to right, transparent, #000 30%); }
 .hd-philo-arrow { position: absolute; right: 12px; bottom: 10px; font-size: 16px; }
 .hd-note { text-align: center; color: var(--mut); font-size: 11px; margin-top: 16px; line-height: 1.7; }
+.hd-note a { color: var(--mut); }
 .hd-pillar { border-width: 1.5px; border-color: var(--ac); }
 .hd-pillar .hd-t { color: var(--ac); }
 .hd-links { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
 .hd-links a { color: var(--mut); font-size: 11.5px; text-decoration: none; border-bottom: 1px dotted var(--bd); }
 .hd-beta { display: inline-block; font-size: 10px; font-weight: 800; color: #fff; background: #7C3AED; border-radius: 999px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
-.hd-wallet { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; padding: 0 4px; }
-.hd-wallet .hd-coin { display: inline-flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--bd);
-  border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 800; color: var(--ink); }
-.hd-wallet .hd-coin b { color: var(--ac); font-weight: 900; }
-.hd-wallet .hd-coin.off { color: var(--mut); }
-.hd-wallet .hd-coin.off b { color: var(--mut); }
-.hd-wallet a { margin-left: auto; color: var(--mut); font-size: 11.5px; text-decoration: none; border-bottom: 1px dotted var(--bd); }
 `;
 
 function readLastConcept() {
-  try { const v = JSON.parse(localStorage.getItem("ash.lastConcept") || "null"); return v && v.id ? v : null; } catch { return null; }
+  try { const v = JSON.parse(localStorage.getItem("ash.lastConcept") || "null"); if (v && v.id) return v; } catch { /* 무시 */ }
+  const r = getRecentConcepts();               // 복습용 최근 목록({id,title,at})으로 보강
+  return r.length ? r[0] : null;
 }
 const fmtAgo = (at) => {
   if (!at) return "";
   const d = Math.round((Date.now() - at) / 86400000);
   return d <= 0 ? "오늘" : d === 1 ? "어제" : `${d}일 전`;
+};
+const fmtWhen = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const day = (x) => `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`;
+  const now = new Date(), yst = new Date(Date.now() - 86400000);
+  if (day(d) === day(now)) return "오늘";
+  if (day(d) === day(yst)) return "어제";
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 };
 
 const GREETS = [
@@ -218,14 +278,18 @@ const coldFx = (t) => {
   return fx;
 };
 
-export default function HomeDash({ theme = "light", onToggleTheme }) {
+const WEEK0 = () => Array.from({ length: 7 }, () => ({ n: 0, ok: 0 }));
+
+export default function HomeDash({ theme = "light", onToggleTheme }) { // eslint-disable-line no-unused-vars — 테마 토글은 마이페이지에서
   const [nick, setNick] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [greet] = useState(() => GREETS[Math.floor(Math.random() * GREETS.length)]);
   const [wx, setWx] = useState(null);
   const [wxFiles, setWxFiles] = useState({});
   const [wxEdit, setWxEdit] = useState(false);
-  const [dash, setDash] = useState({ wrongN: null, qna: null, week: null, attempts: null });
+  const [dash, setDash] = useState({ wrongN: null, qna: null, week: null, attempts: null, topTags: null });
+  const [runs, setRuns] = useState(null);       // null = 로딩 · [] = 없음 (test_runs + 로컬 병합)
+  const [events, setEvents] = useState(null);   // null = 로딩 · [] = 없음 ({title, days})
   const [uid, setUid] = useState(null);
   const [prof, setProf] = useState(null);
   const [bal, setBal] = useState(null);         // { ash, drop, ready } · null = 아직/실패
@@ -234,31 +298,58 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
   const now = new Date();
   const hi = skyOf(now.getHours())[1];
   const days = ["월", "화", "수", "목", "금", "토", "일"];
+  const todayIdx = (now.getDay() + 6) % 7;
 
   useEffect(() => {
+    let alive = true;
     supabase.auth.getUser().then(async ({ data }) => {
-      const u = data?.user; if (!u) return;
+      const u = data?.user;
+      if (!alive) return;
+      if (!u) { setRuns(mergeRuns([], loadRunsLocal(), 5)); return; }
       setUid(u.id);
       const { data: p } = await supabase.from("profiles").select("username, role, grade").eq("id", u.id).maybeSingle();
+      if (!alive) return;
       setNick(p?.username || ""); setIsAdmin(p?.role === "admin"); setProf(p || null);
-      getBalances().then((b) => setBal(b));
-      // 실데이터 카드 — 오답노트 수 · 내 질문 · 이번 주 풀이
+      getBalances().then((b) => { if (alive) setBal(b); });
+      // 실데이터 — 오답노트 수 · 내 질문 · 이번 주 풀이(요일·정답·실수 태그) · 최근 응시
       const since = new Date(Date.now() - 6 * 86400000); since.setHours(0, 0, 0, 0);
-      const [wrongN, qnaRes, attRes] = await Promise.all([
+      const [wrongN, qnaRes, attRes, runRes] = await Promise.all([
         countOpenWrongNotes(u.id),
         supabase.from("concept_qna").select("id, status").eq("asked_by", u.id).order("created_at", { ascending: false }).limit(50),
-        supabase.from("attempts").select("ts, correct").eq("user_id", u.id).gte("ts", since.toISOString()).limit(1000),
+        supabase.from("attempts").select("ts, correct, distractor_tag").eq("user_id", u.id).gte("ts", since.toISOString()).limit(1000),
+        supabase.from("test_runs").select("id, test_type, unit_id, n, correct_n, score, max, finished_at, meta")
+          .eq("user_id", u.id).order("finished_at", { ascending: false }).limit(10)
+          .then((r) => r, () => ({ data: null, error: true })),   // 표가 아직 없을 수 있다 → 로컬만
       ]);
+      if (!alive) return;
       const qna = qnaRes.error ? null : (qnaRes.data || []);
       const att = attRes.error ? [] : (attRes.data || []);
-      const week = Array(7).fill(0);
-      for (const a of att) { const d = new Date(a.ts); const i = (d.getDay() + 6) % 7; week[i] += 1; }
-      setDash({ wrongN, qna, week, attempts: att });
+      const week = WEEK0();
+      for (const a of att) {
+        const i = (new Date(a.ts).getDay() + 6) % 7;
+        week[i].n += 1; if (a.correct) week[i].ok += 1;
+      }
+      setDash({ wrongN, qna, week, attempts: att, topTags: summarizeAttempts(att).topTags });
+      setRuns(mergeRuns(runRes.error ? [] : (runRes.data || []), loadRunsLocal(), 5));
     });
+    // 다가오는 디데이 일정 (events.dday=true, 앞으로 2건) — 표가 없거나 실패해도 조용히 빈 상태
+    const todayStr = new Date().toISOString().slice(0, 10);
+    supabase.from("events").select("date, title").eq("dday", true).gte("date", todayStr).order("date").limit(2)
+      .then(({ data, error }) => {
+        if (!alive) return;
+        if (error) { setEvents([]); return; }
+        setEvents((data || []).map((e) => ({
+          title: e.title,
+          date: e.date,
+          days: Math.round((new Date(e.date + "T00:00:00") - new Date(todayStr + "T00:00:00")) / 86400000),
+        })));
+      })
+      .catch(() => { if (alive) setEvents([]); });
     fetch("https://api.open-meteo.com/v1/forecast?latitude=37.66&longitude=126.83&current=temperature_2m,precipitation,weather_code,cloud_cover,wind_speed_10m")
-      .then((r) => r.json()).then((j) => { if (j?.current) setWx(pickWeather(j.current)); }).catch(() => {});
+      .then((r) => r.json()).then((j) => { if (alive && j?.current) setWx(pickWeather(j.current)); }).catch(() => {});
     // 복습 보상·쿠폰 등록 등으로 잔액이 바뀌면 다시 읽는다
-    return onPoints(() => getBalances().then((b) => { if (b) setBal(b); }));
+    const off = onPoints(() => getBalances().then((b) => { if (alive && b) setBal(b); }));
+    return () => { alive = false; off(); };
   }, []);
 
   const loadWxFiles = useCallback(async () => {
@@ -274,11 +365,16 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
   useEffect(() => { loadWxFiles(); }, [loadWxFiles]);
 
   const skyImgs = wx ? [wx.base, ...wx.over].filter((k) => wxFiles[k]).map((k) => ({ k, url: wxFiles[k].url })) : [];
+  const weekSum = dash.attempts ? dash.attempts.length : null;
+  const weekOk = dash.attempts ? dash.attempts.filter((a) => a.correct).length : 0;
+  const weekRate = weekSum ? Math.round((weekOk / weekSum) * 100) : null;
 
   return (
     <div className={`hd-root hd-${theme}`}>
       <style>{CSS}</style>
       <div className="hd-wrap">
+
+        {/* ① 날씨 히어로 — 항상 전체 폭 */}
         <div className="hd-hero" style={{ background: heroGrad(wx, now.getHours()), ...coldFx(wx?.t) }}>
           {skyImgs.length > 0 && (
             <div className="hd-sky">
@@ -290,10 +386,11 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
           <p className="hd-hero-hi">{hi}</p>
           <p className="hd-hero-nick">{nick || "친구"}님</p>
           <p className="hd-hero-greet">“{greet}”</p>
-          <span className="hd-hero-time">{now.getMonth() + 1}월 {now.getDate()}일 · {days[(now.getDay() + 6) % 7]}요일</span>
+          <span className="hd-hero-time">{now.getMonth() + 1}월 {now.getDate()}일 · {days[todayIdx]}요일</span>
           {isAdmin && <button className="hd-wxpen" title="날씨 이미지 업로드" onClick={() => setWxEdit(true)}>🌦✏️</button>}
         </div>
 
+        {/* ② 지갑 줄 — 항상 전체 폭 */}
         {uid && (
           <div className="hd-wallet" title="두 포인트는 서로 바꿀 수 없어요">
             <span className="hd-coin">{CURRENCY.ash.sym} <b>{bal ? Number(bal.ash || 0).toLocaleString() : "…"}</b></span>
@@ -305,46 +402,91 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
         )}
 
         <div className="hd-grid">
-          <div className="hd-card hd-pillar">
-            <p className="hd-t">📚 개념 학습</p>
-            {lastConcept ? (
-              <>
-                <p className="hd-big">{lastConcept.title || lastConcept.id}</p>
-                <p className="hd-sub">{fmtAgo(lastConcept.at)}에 본 개념이에요</p>
-                <button className="hd-go" onClick={() => (location.hash = `#/c/${encodeURIComponent(lastConcept.id)}`)}>이어보기 →</button>
-              </>
-            ) : (
-              <>
-                <p className="hd-big">개념부터 차근차근</p>
-                <p className="hd-sub">학년·학기별 개념 카드를 읽고 예제로 확인해요</p>
-                <button className="hd-go" onClick={() => (location.hash = "#/learn/concept")}>개념 보러 가기 →</button>
-              </>
-            )}
+
+          {/* ③ 이어서 공부하기 — 마지막 개념 + 최근 세트, 한 카드 두 줄 */}
+          <div className="hd-card hd-pillar wide">
+            <p className="hd-t">▶️ 이어서 공부하기{BETA.on && <span className="hd-beta">{BETA.label}</span>}</p>
+            <div className="hd-cont">
+              {lastConcept ? (
+                <button type="button" className="hd-row" onClick={() => (location.hash = `#/c/${encodeURIComponent(lastConcept.id)}`)}>
+                  <span className="ic">📚</span>
+                  <span className="tx"><b>{lastConcept.title || lastConcept.id}</b><small>{fmtAgo(lastConcept.at)} 본 개념이에요</small></span>
+                  <span className="hd-mini">이어보기 →</span>
+                </button>
+              ) : (
+                <button type="button" className="hd-row" onClick={() => (location.hash = "#/study/concept")}>
+                  <span className="ic">📚</span>
+                  <span className="tx"><b>개념부터 차근차근</b><small>학년·학기별 개념 카드를 읽고 예제로 확인해요</small></span>
+                  <span className="hd-mini">개념 목록 →</span>
+                </button>
+              )}
+              {lastSet ? (
+                <button type="button" className="hd-row"
+                  onClick={() => (location.hash = lastSet.conceptId ? `#/solve/set/${encodeURIComponent(lastSet.conceptId)}` : "#/study/practice")}>
+                  <span className="ic">✏️</span>
+                  <span className="tx">
+                    <b>{lastSet.title || lastSet.conceptId || "최근 세트"} · {lastSet.ok}/{lastSet.n} 정답</b>
+                    <small>{fmtAgo(lastSet.at)}에 푼 세트 — 같은 개념으로 다시 풀어요</small>
+                  </span>
+                  <span className="hd-mini">새 세트 →</span>
+                </button>
+              ) : (
+                <button type="button" className="hd-row" onClick={() => (location.hash = "#/study/practice")}>
+                  <span className="ic">✏️</span>
+                  <span className="tx"><b>문항 세트로 확인</b><small>풀이 기록은 오답노트로 이어져요</small></span>
+                  <span className="hd-mini">문제풀이 →</span>
+                </button>
+              )}
+            </div>
           </div>
-          <div className="hd-card hd-pillar">
-            <p className="hd-t">✏️ 문제풀이{BETA.on && <span className="hd-beta">{BETA.label}</span>}</p>
-            {lastSet ? (
-              <>
-                <p className="hd-big">{lastSet.ok}/{lastSet.n} 정답</p>
-                <p className="hd-sub">{lastSet.title || lastSet.conceptId} · {fmtAgo(lastSet.at)}</p>
-              </>
-            ) : (
-              <>
-                <p className="hd-big">문항 세트 · 사진 채점 · 표시 연습</p>
-                <p className="hd-sub">풀이 기록은 오답노트로 이어져요</p>
-              </>
-            )}
-            <button className="hd-go" onClick={() => (location.hash = "#/solve")}>문제풀이 홈 →</button>
-          </div>
+
+          {/* ④ 오늘의 복습 */}
           <div className="hd-card wide">
             <ReviewCard uid={uid} profile={prof} />
           </div>
+
+          {/* ⑤ 이번 주 학습 그래프 + 정답률 */}
+          <div className="hd-card wide">
+            <div className="hd-thead">
+              <p className="hd-t">📈 이번 주 학습</p>
+              <span className="hd-tsub">{weekSum == null ? "…" : `합계 ${weekSum}문항${weekRate != null ? ` · 정답률 ${weekRate}%` : ""}`}</span>
+            </div>
+            {(() => {
+              const w = dash.week || WEEK0();
+              const mx = Math.max(1, ...w.map((x) => x.n));
+              return (
+                <div className="hd-week">
+                  {w.map((v, i) => (
+                    <div key={i} className="hd-wcol">
+                      <span className="hd-wnum">{v.n || ""}</span>
+                      <div className="hd-wbar" title={`${v.n}문항 · 맞힘 ${v.ok}`}
+                        style={{ height: Math.max(v.n ? 10 : 4, Math.round((v.n / mx) * 64)), opacity: i === todayIdx ? 1 : 0.6 }}>
+                        <i style={{ height: v.n ? `${Math.round((v.ok / v.n) * 100)}%` : 0 }} />
+                      </div>
+                      <span className="hd-wlab">{days[i]}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            {weekSum != null && weekSum > 0 && (
+              <>
+                <div className="hd-bar"><div style={{ width: `${weekRate}%` }} /></div>
+                <p className="hd-sub" style={{ margin: 0 }}>진한 막대가 맞힌 문항이에요 · 맞힘 {weekOk} / {weekSum}</p>
+              </>
+            )}
+            {weekSum === 0 && <p className="hd-sub">이번 주엔 아직 기록이 없어요. 한 세트만 풀어도 그래프가 생겨요.</p>}
+          </div>
+
+          {/* ⑥ 오답노트 */}
           <div className="hd-card">
             <p className="hd-t">📕 오답노트</p>
             <p className="hd-big">{dash.wrongN == null ? "…" : dash.wrongN === 0 ? "미복습 0문제" : `미복습 ${dash.wrongN}문제`}</p>
             <p className="hd-sub">{dash.wrongN === 0 ? "틀린 문제를 저장하면 여기에 쌓여요" : "다시 풀어서 정리해요"}</p>
-            <button className="hd-go" onClick={() => (location.hash = "#/learn/wrong")}>열어보기 →</button>
+            <div className="hd-act"><button className="hd-go" onClick={() => (location.hash = "#/learn/wrong")}>열어보기 →</button></div>
           </div>
+
+          {/* ⑦ 내 질문 */}
           <div className="hd-card">
             <p className="hd-t">💬 내 질문</p>
             {dash.qna == null ? <p className="hd-big">…</p> : (() => {
@@ -357,26 +499,73 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
                 </>
               );
             })()}
-            <button className="hd-go" onClick={() => (location.hash = "#/board")}>질문게시판 →</button>
+            <div className="hd-act"><button className="hd-go" onClick={() => (location.hash = "#/board/qna")}>질문게시판 →</button></div>
           </div>
-          <div className="hd-card wide">
-            <p className="hd-t">📈 이번 주 푼 문항 <span style={{ fontWeight: 600 }}>· 합계 {dash.attempts ? dash.attempts.length : "…"}개{dash.attempts && dash.attempts.length ? ` · 정답률 ${Math.round(dash.attempts.filter((a) => a.correct).length / dash.attempts.length * 100)}%` : ""}</span></p>
-            {(() => {
-              const w = dash.week || Array(7).fill(0);
-              const mx = Math.max(1, ...w);
-              return (
-                <div className="hd-week">
-                  {w.map((v, i) => (
-                    <div key={i} className="hd-wcol">
-                      <div className="hd-wbar" style={{ height: `${Math.max(4, Math.round(v / mx * 100))}%`, opacity: i === (now.getDay() + 6) % 7 ? 1 : 0.5 }} title={`${v}문항`} />
-                      <span className="hd-wlab">{days[i]}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-            {dash.attempts && dash.attempts.length === 0 && <p className="hd-sub">이번 주엔 아직 기록이 없어요. 한 세트만 풀어도 그래프가 생겨요.</p>}
+
+          {/* ⑧ 최근 응시 시험 — test_runs + 로컬 병합, 최근 5건 */}
+          <div className="hd-card hd-w2">
+            <div className="hd-thead">
+              <p className="hd-t">🧪 최근 응시 시험</p>
+              {runs && runs.length > 0 && <span className="hd-tsub">{runs.length}건</span>}
+            </div>
+            {runs === null ? <p className="hd-sub" style={{ margin: 0 }}>불러오는 중…</p>
+            : runs.length === 0 ? (
+              <div className="hd-empty">아직 응시한 시험이 없어요.<br />단원 테스트·모의고사로 실력을 확인해 봐요.</div>
+            ) : (
+              <div className="hd-rows">
+                {runs.map((r) => {
+                  const d = describeRun(r, UNIT_NAMES);
+                  return (
+                    <button key={String(r.id)} type="button" className="hd-row" onClick={() => (location.hash = d.link)}>
+                      <span className="ic">{presetOf(r.test_type)?.icon || "🧪"}</span>
+                      <span className="tx">
+                        <b>{d.name}{d.scope ? ` · ${d.scope}` : ""}</b>
+                        <small>{d.score}{d.local ? " · 기기 저장" : ""}</small>
+                      </span>
+                      <span className="rt">{fmtWhen(d.when)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div className="hd-act"><button className="hd-go" onClick={() => (location.hash = "#/study/exam")}>시험 보러 가기 →</button></div>
           </div>
+
+          {/* ⑨ 자주 나온 실수 TOP — 이번 주 attempts 오개념 태그 집계 */}
+          <div className="hd-card">
+            <p className="hd-t">🎯 자주 나온 실수 TOP</p>
+            {dash.topTags == null ? <p className="hd-sub" style={{ margin: 0 }}>불러오는 중…</p>
+            : dash.topTags.length === 0 ? (
+              <div className="hd-empty">이번 주엔 기록된 실수 패턴이 없어요.<br />문제를 풀면 자주 틀리는 이유를 짚어 드려요.</div>
+            ) : (
+              <div className="hd-chips">
+                {dash.topTags.slice(0, 5).map(([tag, cnt]) => (
+                  <span key={tag} className="hd-chip" title={tag}><span>{mcLabel(tag)}</span><b>×{cnt}</b></span>
+                ))}
+              </div>
+            )}
+            <div className="hd-act"><button className="hd-go" onClick={() => (location.hash = "#/learn/wrong")}>오답노트에서 정리 →</button></div>
+          </div>
+
+          {/* ⑩ 다가오는 일정 / 디데이 */}
+          <div className="hd-card">
+            <p className="hd-t">🗓 다가오는 일정</p>
+            {events === null ? <p className="hd-sub" style={{ margin: 0 }}>불러오는 중…</p>
+            : events.length === 0 ? (
+              <div className="hd-empty">다가오는 디데이가 없어요.<br />시험·행사가 등록되면 여기에 보여요.</div>
+            ) : (
+              <div className="hd-rows">
+                {events.map((e, i) => (
+                  <div key={i} className="hd-row">
+                    <span className="hd-dbadge">{e.days === 0 ? "D-DAY" : `D-${e.days}`}</span>
+                    <span className="tx"><b>{e.title}</b><small>{e.date}</small></span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ⑪ 철학 배너 */}
           <button className="hd-philo" onClick={() => (location.hash = "#/philosophy")}>
             <p className="hd-philo-eyebrow">ASHRAIN PHILOSOPHY</p>
             <p className="hd-philo-t">우리가 이렇게 가르치는 이유</p>
@@ -388,7 +577,8 @@ export default function HomeDash({ theme = "light", onToggleTheme }) {
           </button>
         </div>
 
-        <p className="hd-note">{BETA.notice}<br />불편한 점은 상단 <b>문의</b> 버튼으로 알려 주세요.</p>
+        {/* ⑫ 베타 안내 + 미리보기 링크 */}
+        <p className="hd-note">{BETA.notice}<br />불편한 점은 <a href={BETA.feedbackUrl} target="_blank" rel="noreferrer"><b>문의</b></a>로 알려 주세요.</p>
         <div className="hd-links">
           <span style={{ color: "var(--mut)", fontSize: 11.5 }}>미리보기</span>
           <a href="#/library">서재</a><a href="#/news">신문</a><a href="#/duty">조교</a>
