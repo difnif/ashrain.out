@@ -10,11 +10,12 @@ import { navigatePath } from "../shared/roles";
 import { BETA } from "../lib/beta";
 import { WellButton, WellSheet, useWellCfg, WELL_CSS } from "./Well";
 
+// 게시판 탭은 「기록」으로 대체(사용자 확정 2026-09-20) — 게시판은 종성 작업 때 정교화 후 재공개.
 export const TABS = [
   ["🏠", "대시보드", "#/"],
   ["📚", "공부하기", "#/study"],
   ["🧰", "학습 도구", "#/tools"],
-  ["💬", "게시판", "#/board"],
+  ["🗂", "기록", "#/records"],
 ];
 
 const SUBTABS = {
@@ -28,6 +29,7 @@ const SUBTABS = {
 export function tabOf(hash) {
   if (hash.startsWith("#/study")) return "study";
   if (hash.startsWith("#/tools")) return "tools";
+  if (hash.startsWith("#/records")) return "records";
   if (hash.startsWith("#/board")) return "board";
   return "dash";
 }
@@ -38,7 +40,7 @@ const BOARD_BROWSE = ["", "notice", "community", "qna"];
 export function shellMode(hash) {
   const h = (hash || "").split("?")[0];
   if (h === "" || h === "#" || h === "#/") return "browse";
-  if (h.startsWith("#/study") || h.startsWith("#/tools")) return "browse";
+  if (h.startsWith("#/study") || h.startsWith("#/tools") || h.startsWith("#/records")) return "browse";
   if (h.startsWith("#/board")) {
     const seg = h.replace(/^#\/board\/?/, "").split("/")[0];
     return BOARD_BROWSE.includes(seg) ? "browse" : "feature";
@@ -144,7 +146,7 @@ export function ShellTop({ theme, hash }) {
 export function TabsRow({ theme, hash, cfg, onWell, wellProps = {} }) {
   const tab = tabOf(hash);
   const onOf = (to) => (to === "#/" ? tab === "dash"
-    : to === "#/study" ? tab === "study" : to === "#/tools" ? tab === "tools" : tab === "board");
+    : to === "#/study" ? tab === "study" : to === "#/tools" ? tab === "tools" : tab === "records");
   const btn = ([ic, label, to]) => (
     <button key={to} className={"sh-tab" + (onOf(to) ? " on" : "")}
       onClick={() => (location.hash = to === "#/" ? "" : to)}>

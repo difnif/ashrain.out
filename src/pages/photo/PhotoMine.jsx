@@ -9,12 +9,28 @@ import { ProblemCard, Lights, KeepNote, EmptyArt, FEATURE_LABEL, FEATURE_ICON, f
 
 const FILTERS = [["", "전체"], ["essay", "서술형"], ["check", "풀이검사"], ["read", "문장 이해"], ["mark", "표시 연습"]];
 
-export default function PhotoMine() {
+export default function PhotoMine({ embed = false }) {
   const [toast, setToast] = useToast();
   const [feature, setFeature] = useState("");
   const [rows, setRows] = useState(null);
   const [open, setOpen] = useState(null);      // 상세 레코드
   const [sure, setSure] = useState(null);      // 'one:<id>' | 'all' — 한 번 더 묻는 중
+
+  // 기록 탭(#/records)에서는 셸이 상·하단을 그리므로 SolveShell(⌂·뒤로) 없이 본문만 낸다.
+  const Sh = ({ title, sub, back, right, children }) => embed ? (
+    <div className="sv-wrap" style={{ padding: 0, minHeight: "auto" }}>
+      {(right || (title && title !== "내 기록")) && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <b style={{ fontSize: 15.5 }}>{title}</b><span style={{ flex: 1 }} />{right}
+        </div>
+      )}
+      {sub && <p className="sv-sub" style={{ marginTop: 0 }}>{sub}</p>}
+      {children}
+      {toast && <div className="sv-toast">{toast}</div>}
+    </div>
+  ) : (
+    <SolveShell title={title} sub={sub} back={back} right={right} toast={toast}>{children}</SolveShell>
+  );
 
   const load = async () => { try { setRows(await listSessions({ feature: feature || undefined, limit: 100 })); } catch { setRows([]); } };
   useEffect(() => { setRows(null); setSure(null); load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [feature]);
@@ -25,7 +41,7 @@ export default function PhotoMine() {
   if (open) {
     const r = open;
     return (
-      <SolveShell title={FEATURE_LABEL[r.feature] || "기록"} back={null} toast={toast}
+      <Sh title={FEATURE_LABEL[r.feature] || "기록"} back={null}
         right={<button className="sv-btn sm" onClick={() => { setSure(null); setOpen(null); }}>목록</button>}>
         <div className="sv-small" style={{ marginBottom: 8 }}>{fmtWhen(r.at)}{r.grade ? ` · 문항 표현 ${GRADE_LABEL[r.grade] || r.grade}` : ""}</div>
         <ProblemCard p={{ question: r.question, figure_note: r.figure_note, unit_guess: r.unit }} thumb={r.thumb} showGrade={false} />
@@ -63,12 +79,12 @@ export default function PhotoMine() {
             <button className="sv-btn ghost" style={{ color: "var(--bad)" }} onClick={() => setSure("one:" + r.id)}>이 기록 지우기</button>
           </div>
         )}
-      </SolveShell>
+      </Sh>
     );
   }
 
   return (
-    <SolveShell title="내 기록" back="#/solve/photo" toast={toast} sub="촬영 학습 기록은 이 기기에만 남아요. 기기를 바꾸거나 브라우저 데이터를 지우면 사라져요.">
+    <Sh title="내 기록" back="#/solve/photo" sub="촬영 학습 기록은 이 기기에만 남아요. 기기를 바꾸거나 브라우저 데이터를 지우면 사라져요.">
       <div className="sv-row wrap" style={{ gap: 6, marginBottom: 12 }}>
         {FILTERS.map(([k, l]) => <button key={k} className={"sv-chip" + (feature === k ? " on" : "")} onClick={() => setFeature(k)}>{l}</button>)}
       </div>
@@ -83,7 +99,6 @@ export default function PhotoMine() {
           </div>
           <div className="ph-actions">
             <button className="sv-btn pri" onClick={() => { location.hash = "#/solve/photo/read"; }}>문제 찍으러 가기</button>
-            <button className="sv-btn" onClick={() => { location.hash = "#/solve/photo"; }}>촬영 모듈 홈으로</button>
           </div>
         </div>
       )}
@@ -111,6 +126,6 @@ export default function PhotoMine() {
           <div style={{ textAlign: "right", marginTop: 12 }}><button className="sv-btn sm ghost" onClick={() => setSure("all")}>모두 지우기</button></div>
         )
       )}
-    </SolveShell>
+    </Sh>
   );
 }
