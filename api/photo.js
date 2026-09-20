@@ -6,8 +6,10 @@
 //   · 문항 표현 등급(S/M/C)은 발문표준성 검토 v2 기준으로 판정한다. 등급·겹침·정책 → 보관 위치.
 //   · 정답을 대신 풀어 주지 않는다(approach). 채점·검사는 학생 답안에 대한 첨삭이다.
 // 환경변수: ANTHROPIC_API_KEY (필수) · SUPABASE_URL/VITE_SUPABASE_URL · SUPABASE_ANON_KEY/VITE_SUPABASE_ANON_KEY · SUPABASE_SERVICE_ROLE_KEY
-// app_settings: photo_model(기본 claude-sonnet-4-6 · 전사/등급/방침) · photo_model_grade(기본 claude-opus-4-8 · 채점/검사) · photo_retention(labels|gated|all)
+// app_settings: photo_model(기본 claude-sonnet-4-6 · 전사/등급/방침) · photo_model_grade(기본 claude-opus-4-8 · 채점/검사)
+//               · photo_model_fallback(전사 실패 시 강한 모델 — 없으면 grade 모델) · photo_retention(labels|gated|all)
 // task: scan(problem|answer|page) · approach · essay · process   — 전부 로그인 필수, 학생 자격 게이트, 일일 한도(ai_calls)
+// scan 은 retry_strong:true 를 받으면 폴백(강한) 모델로 읽는다 — 클라이언트가 1차 실패 때만 보낸다(한도 1회 추가 차감).
 
 import { createClient } from "@supabase/supabase-js";
 import { parseText } from "../src/lib/mathir.js";
@@ -100,11 +102,15 @@ ${MATHIR_SPEC}
 
 const SYS_SCAN_ANSWER = `너는 학생 손글씨 풀이(답안)를 옮겨 적는 전사기다. 사진 속 학생이 쓴 것만 줄 단위로 옮긴다. 인쇄된 문항 문장은 답안이 아니다 — 빼라.
 수식은 평문으로(√ ² ³ / × ∠ △ π 등 사용, LaTeX 금지). 줄바꿈은 학생이 줄을 바꾼 대로. 지운 흔적은 [지움]으로.
-글씨 상태도 본다(이 학생의 습관 진단에 쓴다): 크기가 너무 작은가, 난잡한가, 헷갈리는 글자(1과 7, 6과 0, x와 ×, b와 6, z와 2, 9와 q, +와 t 등)가 있는가, 줄 간격·정렬, 지운 흔적.
+글씨 상태도 본다(이 학생의 습관 진단·교정에 쓴다): 크기가 너무 작은가, 헷갈리는 글자(1과 7, 6과 0, x와 ×, b와 6, z와 2, 9와 q, +와 t 등), 줄 간격·정렬, 지운 흔적.
+학생 책임의 필기 문제는 반드시 별도 kind 로 짚는다 —
+ · messy: 글씨체가 엉망이라 알아보기 힘든 부분 · faint: 필압이 약해 너무 연한 부분
+ · scribble: 한두 단으로 가지런하지 않고 끄적거려 풀이 흐름을 따라가기 어려움 · two_column: 풀이가 좌우 두 단으로 나뉨(단 사이를 잇는 화살표가 이미 있으면 제외)
+이 네 종류는 해당 부분의 대략적 위치를 box(사진 기준 비율 좌표, 왼쪽 위 0,0 ~ 오른쪽 아래 1,1)로 함께 준다. 사진 전체가 그러면 box 는 전체를 덮게.
 
 ■ 출력 — 아래 JSON 하나만:
 {"answer":"답안 전문(줄바꿈 \\n)", "lines":[{"text":"줄 내용","kind":"eq|text|answer|other"}], "final_answer":"학생이 최종 답으로 쓴 것(없으면 null)",
- "legibility":{"score":1~5, "issues":[{"kind":"size|messy|glyph|spacing|crossout|other","note":"한 줄(예: 7 을 1 처럼 씀)"}]}, "unreadable":false}
+ "legibility":{"score":1~5, "issues":[{"kind":"size|messy|faint|glyph|spacing|crossout|scribble|two_column|other","note":"한 줄(예: 7 을 1 처럼 씀)","box":{"x":0.1,"y":0.2,"w":0.3,"h":0.1} 또는 null}]}, "unreadable":false}
 읽기 불확실한 글자는 그대로 두되 물음표를 붙이지 말고 가장 그럴듯하게 읽는다. 학생 답안이 사진에 없으면 unreadable true.`;
 
 const SYS_SCAN_PAGE = `이 이미지는 학생이 문제집 페이지에 풀이를 손으로 쓴 사진이다. 페이지 안의 "문항"과 각 문항 옆·아래의 "손글씨 풀이 영역"을 찾아 경계상자로 보고해라.
@@ -211,12 +217,19 @@ async function scanProblem(model, image, t0 = Date.now()) {
   };
 }
 
+const HW_KINDS = ["size", "messy", "faint", "glyph", "spacing", "crossout", "scribble", "two_column", "other"];
+function cleanBox(b) {
+  if (!b || ![b.x, b.y, b.w, b.h].every((v) => Number.isFinite(+v))) return null;
+  return { x: clamp01(b.x), y: clamp01(b.y), w: Math.max(0.02, clamp01(b.w)), h: Math.max(0.02, clamp01(b.h)) };
+}
 async function scanAnswer(model, image) {
   const text = await callClaude({ model, system: SYS_SCAN_ANSWER, content: [img(image), txt("이 사진의 학생 풀이를 전사해라.")], maxTokens: 2000 });
   const p = parseObj(text);
   const lines = arr(p?.lines).map((l) => ({ text: str(l?.text, 300), kind: ["eq", "text", "answer", "other"].includes(l?.kind) ? l.kind : "other" })).filter((l) => l.text);
   const answer = str(p?.answer) || lines.map((l) => l.text).join("\n");
-  const issues = arr(p?.legibility?.issues).map((i) => ({ kind: ["size", "messy", "glyph", "spacing", "crossout", "other"].includes(i?.kind) ? i.kind : "other", note: str(i?.note, 120) })).filter((i) => i.note).slice(0, 8);
+  const issues = arr(p?.legibility?.issues)
+    .map((i) => ({ kind: HW_KINDS.includes(i?.kind) ? i.kind : "other", note: str(i?.note, 120), box: cleanBox(i?.box) }))
+    .filter((i) => i.note).slice(0, 8);
   const score = Math.min(5, Math.max(1, Math.round(+p?.legibility?.score || 3)));
   return { answer, lines, final_answer: str(p?.final_answer, 120) || null, legibility: { score, issues }, unreadable: !!p?.unreadable || !answer };
 }
@@ -344,12 +357,14 @@ export default async function handler(req, res) {
     const capMsg = await checkCap(sb, uid, "photo_" + task);
     if (capMsg) return res.status(429).json({ error: capMsg });
 
-    const st = await settings(sb, ["photo_model", "photo_model_grade", "photo_retention"]);
-    const model = st.photo_model || DEFAULT_MODEL;
+    const st = await settings(sb, ["photo_model", "photo_model_grade", "photo_model_fallback", "photo_retention"]);
+    let model = st.photo_model || DEFAULT_MODEL;
     const gradeModel = st.photo_model_grade || DEFAULT_GRADE_MODEL;
     const policy = normalizePolicy(st.photo_retention);
 
     if (task === "scan") {
+      // 1차 전사가 실패했을 때만 클라이언트가 retry_strong 을 보낸다 → 강한(폴백) 모델로 다시 읽는다
+      if (body.retry_strong === true) model = st.photo_model_fallback || gradeModel;
       const mode = ["problem", "answer", "page"].includes(body.mode) ? body.mode : "problem";
       if (mode === "page") return res.status(200).json({ mode, ...(await scanPage(model, image)), model });
       if (mode === "answer") return res.status(200).json({ mode, ...(await scanAnswer(model, image)), model });

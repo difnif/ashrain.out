@@ -8,8 +8,9 @@ import MathText from "../../components/MathText";
 import { explain, trapText, FUNC_LABEL, markText } from "../../lib/marking.js";
 import { photoCall, stashCurrent } from "../../lib/photoApi";
 import { newId } from "../../lib/deviceStore";
+import { startJob } from "../../lib/photoJobs";
 import Capture from "./Capture";
-import { ProblemCard, Steps, Busy, ErrorNote, currentProblem, findSpan, cutText, saveDevice, stripMarker } from "./shared";
+import { ProblemCard, Steps, Busy, ErrorNote, currentProblem, findSpan, cutText, saveDevice, stripMarker, JobBusy, useJobTick } from "./shared";
 
 export default function PhotoRead({ useCur = false }) {
   const [toast, setToast] = useToast();
@@ -21,15 +22,29 @@ export default function PhotoRead({ useCur = false }) {
   const sid = useMemo(() => (p ? newId() : null), [p]);
   const hasCur = !!currentProblem();
 
-  // 문항이 정해지면 방침을 받아 온다
+  // 문항이 정해지면 방침을 백그라운드 잡으로 받아 온다 — 화면을 떠나도 계속되고 결과는 기록에 저장
+  const [job, setJob] = useState(null);
+  useJobTick();
   useEffect(() => {
     if (!p?.question) return;
     let alive = true;
     setAp(null); setErr(null); setBusy(true);
-    photoCall("approach", { question: p.question, figure_note: p.figure_note, choices: p.choices })
-      .then((r) => { if (!alive) return; setAp(r); saveDevice({ id: sid, feature: "read", question: p.question, figure_note: p.figure_note, unit: p.unit_guess, grade: p.std?.item_grade || null, result: { approach: r }, thumb: p.thumb || null }); })
-      .catch((e) => alive && setErr(e?.message || "방침을 받지 못했어요"))
-      .finally(() => alive && setBusy(false));
+    const snap = p;
+    const j = startJob({
+      kind: "read", title: "문장 이해하기",
+      run: async (signal) => {
+        const r = await photoCall("approach", { question: snap.question, figure_note: snap.figure_note, choices: snap.choices }, { signal });
+        await saveDevice({ id: sid, feature: "read", question: snap.question, figure_note: snap.figure_note, unit: snap.unit_guess, grade: snap.std?.item_grade || null, result: { approach: r }, thumb: snap.thumb || null });
+        return r;
+      },
+    });
+    setJob(j);
+    j.promise.then(() => {
+      if (!alive) return;
+      if (j.status === "done") setAp(j.result);
+      else if (j.status === "error") setErr(j.error);
+      setBusy(false);
+    });
     return () => { alive = false; };
   }, [p, tick, sid]);
 
@@ -57,7 +72,8 @@ export default function PhotoRead({ useCur = false }) {
     <SolveShell title="문장 이해하기" back="#/solve/photo" toast={toast}
       right={<button className="sv-btn sm" onClick={() => { setP(null); setAp(null); }}>다른 문제</button>}>
       <Steps list={["문제 찍기", "문장 읽기"]} at={1} />
-      <ReadBody p={p} ap={ap} busy={busy} err={err} onRetry={() => setTick((t) => t + 1)} onReshoot={() => { setP(null); setAp(null); }} />
+      <ReadBody p={p} ap={ap} busy={busy} err={err} onRetry={() => setTick((t) => t + 1)} onReshoot={() => { setP(null); setAp(null); }}
+        jobBusy={busy ? <JobBusy job={job} busyText="단서와 식 세우기 방침을 정리하는 중…" onCanceled={() => { setJob(null); setBusy(false); setErr("판독을 취소했어요"); }} /> : null} />
       <div className="ph-actions">
         <button className="sv-btn pri" onClick={() => { stashCurrent(p); location.hash = "#/solve/photo/mark?cur=1"; }}>이 문장으로 표시 연습</button>
         <button className="sv-btn" onClick={() => { stashCurrent(p); location.hash = "#/solve/photo/essay?cur=1"; }}>답안 찍어 채점받기</button>
@@ -79,7 +95,7 @@ function More({ ic, title, sub, children, open = false }) {
 }
 
 /** 문장 읽기 본문 — 다른 화면(표시 연습 뒤)에서도 그대로 쓴다 */
-export function ReadBody({ p, ap, busy, err, onRetry, onReshoot }) {
+export function ReadBody({ p, ap, busy, err, onRetry, onReshoot, jobBusy = null }) {
   const [picked, setPicked] = useState(null);
   const ex = useMemo(() => explain(p?.question || "", { labels: { L21_traps: ap?.traps || [] } }), [p, ap]);
   // 단서 형광펜 — AI 가 짚은 단서 문구를 문장 토큰 위에서 찾아 칠한다
@@ -117,7 +133,7 @@ export function ReadBody({ p, ap, busy, err, onRetry, onReshoot }) {
         {asking ? <MathText as="div" className="ph-ask" text={asking} /> : <div className="sv-muted">구하는 것을 딱 잘라 찾지 못했어요. 마지막 문장을 다시 읽어 보세요 — 보통 "…를 구하시오" 앞에 있어요.</div>}
       </div>
 
-      {busy && <Busy text="단서와 식 세우기 방침을 정리하는 중…" />}
+      {busy && (jobBusy || <Busy text="단서와 식 세우기 방침을 정리하는 중…" />)}
       {err && !busy && <div style={{ marginBottom: 12 }}><ErrorNote text={err} onRetry={onRetry} retryLabel="다시 받기" onShoot={onReshoot} /></div>}
 
       {/* ③ 식 세우기 — 여기까지만 */}

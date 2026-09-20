@@ -9,6 +9,7 @@ import LogoTrigger from "../shared/LogoTrigger";
 import { navigatePath } from "../shared/roles";
 import { BETA } from "../lib/beta";
 import { WellButton, WellSheet, useWellCfg, WELL_CSS } from "./Well";
+import { runningJobs, unseenJobs } from "../lib/photoJobs";
 
 // 게시판 탭은 「기록」으로 대체(사용자 확정 2026-09-20) — 게시판은 종성 작업 때 정교화 후 재공개.
 export const TABS = [
@@ -143,14 +144,15 @@ export function ShellTop({ theme, hash }) {
  * 탭줄 한 벌 — 납작한 탭 2+2 사이에 우물. 하단 고정 탭바(ShellTabs)와
  * 관리자 미리보기(#/admin/well)가 같은 모양을 쓰도록 분리해 두었다.
  */
-export function TabsRow({ theme, hash, cfg, onWell, wellProps = {} }) {
+export function TabsRow({ theme, hash, cfg, onWell, wellProps = {}, recDot = null }) {
   const tab = tabOf(hash);
   const onOf = (to) => (to === "#/" ? tab === "dash"
     : to === "#/study" ? tab === "study" : to === "#/tools" ? tab === "tools" : tab === "records");
   const btn = ([ic, label, to]) => (
     <button key={to} className={"sh-tab" + (onOf(to) ? " on" : "")}
       onClick={() => (location.hash = to === "#/" ? "" : to)}>
-      <span className="ic">{ic}</span><span className="lb">{label}</span>
+      <span className="ic">{ic}{to === "#/records" && recDot && <i className={"sh-dot " + recDot} aria-hidden="true" />}</span>
+      <span className="lb">{label}</span>
     </button>
   );
   return (
@@ -166,20 +168,40 @@ export function TabsRow({ theme, hash, cfg, onWell, wellProps = {} }) {
   );
 }
 
-/** 하단 고정 탭바 — 대시보드 · 공부하기 | ⛲ | 학습 도구 · 게시판 */
+/** 하단 고정 탭바 — 대시보드 · 공부하기 | ⛲ | 학습 도구 · 기록. 판독 잡 뱃지·완료 토스트도 여기서 */
 export function ShellTabs({ theme, hash }) {
   const [ok, setOk] = useState(() => authCache === true);
   const [sheet, setSheet] = useState(false);
+  const [, setJt] = useState(0);
+  const [jtoast, setJtoast] = useState(null);
   const cfg = useWellCfg();
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { authCache = !!data?.session; setOk(authCache); });
   }, []);
+  useEffect(() => {
+    let timer = null;
+    const on = () => setJt((t) => t + 1);
+    const onToast = (e) => {
+      setJtoast(e.detail || null);
+      clearTimeout(timer);
+      timer = setTimeout(() => setJtoast(null), 4500);
+    };
+    window.addEventListener("ash:jobs", on);
+    window.addEventListener("ash:job-toast", onToast);
+    return () => { window.removeEventListener("ash:jobs", on); window.removeEventListener("ash:job-toast", onToast); clearTimeout(timer); };
+  }, []);
   if (!ok) return null;
+  const recDot = runningJobs().length ? "run" : unseenJobs().length ? "new" : null;
   return (
     <>
       <nav className={"sh-tabs sh-" + theme} aria-label="주 메뉴">
-        <TabsRow theme={theme} hash={hash} cfg={cfg} onWell={() => setSheet(true)} />
+        <TabsRow theme={theme} hash={hash} cfg={cfg} onWell={() => setSheet(true)} recDot={recDot} />
       </nav>
+      {jtoast && (
+        <button type="button" className={"sh-jtoast sh-" + theme} onClick={() => { setJtoast(null); location.hash = "#/records"; }}>
+          <b>{jtoast.title}</b>{jtoast.body ? <span>{jtoast.body}</span> : null}
+        </button>
+      )}
       <WellSheet open={sheet} onClose={() => setSheet(false)} theme={theme} />
     </>
   );
@@ -218,7 +240,17 @@ const SH_CSS = `
   height: var(--wt-h, 52px); padding: 0 10px; }
 .sh-tab { flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 1px; color: var(--mut); cursor: pointer; padding: 3px 0 4px; font-family: inherit; }
-.sh-tab .ic { font-size: calc(17px * var(--wt-s, 1)); line-height: 1; }
+.sh-tab .ic { font-size: calc(17px * var(--wt-s, 1)); line-height: 1; position: relative; }
 .sh-tab .lb { font-size: calc(9.5px * var(--wt-s, 1)); font-weight: 800; }
 .sh-tab.on { color: var(--ac); }
+.sh-dot { position: absolute; top: -2px; right: -7px; width: 8px; height: 8px; border-radius: 999px; }
+.sh-dot.new { background: #EF4444; }
+.sh-dot.run { background: var(--ac); animation: sh-pulse 1.2s ease-in-out infinite; }
+@keyframes sh-pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.sh-jtoast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  z-index: 110; max-width: min(480px, calc(100vw - 28px)); display: flex; flex-direction: column; gap: 2px; text-align: left;
+  background: var(--card); color: var(--ink); border: 1px solid var(--bd); border-radius: 14px; padding: 10px 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25); cursor: pointer; font-family: inherit; }
+.sh-jtoast b { font-size: 13px; }
+.sh-jtoast span { font-size: 11.5px; color: var(--mut); }
 `;

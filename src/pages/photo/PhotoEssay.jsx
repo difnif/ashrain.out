@@ -2,14 +2,17 @@
 // 문제 촬영 → 문항 부분 인식 → 답안 촬영 → 답안 부분 인식(전사, 고칠 수 있음) → 채점 기준표·채점·첨삭.
 // 답안 원문은 보관 게이트 결정(retention.where)에 따라 기기 또는 서버에 남고, 결과는 항상 기기 보관소에 남는다.
 // 결과 카드는 서술형 자가채점(#/solve/essay)과 같은 시각 톤 — 큰 점수 + 막대 + 기준표 + 첨삭.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SolveShell, { useToast } from "../solve/SolveShell";
 import MathText from "../../components/MathText";
 import { trapText } from "../../lib/marking.js";
 import { photoCall, stashCurrent } from "../../lib/photoApi";
 import { newId } from "../../lib/deviceStore";
+import { startJob } from "../../lib/photoJobs";
+import { hwGuideDue, hwIssuesOf, addHwStrike, HW_ADVICE } from "../../lib/hw";
 import Capture from "./Capture";
-import { ProblemCard, Steps, Busy, KeepNote, ErrorNote, currentProblem, saveDevice } from "./shared";
+import { HwGuide, HwMarks } from "./HwGuide";
+import { ProblemCard, Steps, KeepNote, ErrorNote, currentProblem, saveDevice, JobBusy, useJobTick } from "./shared";
 
 const VERDICT = { excellent: "아주 잘 썼어요", good: "잘 썼어요", partial: "절반쯤 왔어요", weak: "다시 써 봐요" };
 const LEVEL = { full: "만점", partial: "부분", zero: "0점" };
@@ -21,36 +24,59 @@ export default function PhotoEssay({ useCur = false }) {
   const [a, setA] = useState(null);          // 답안 전사
   const [text, setText] = useState("");      // 학생이 고친 답안
   const [res, setRes] = useState(null);      // { result, std, retention }
-  const [busy, setBusy] = useState(false);
+  const [job, setJob] = useState(null);      // 채점 백그라운드 잡
   const [err, setErr] = useState(null);
+  const [guide, setGuide] = useState(false); // 촬영 전 필기 주의 팝업
+  useJobTick();
   const hasCur = !!currentProblem();
   const at = !p ? 0 : !a ? 1 : 2;
+  const busy = job?.status === "running";
+
+  // 답안 촬영 단계에 들어설 때 필기 약속 팝업 (기본 노출 · 한 달 숨김 · 5회 누적 시 재노출)
+  useEffect(() => { if (at === 1 && hwGuideDue()) setGuide(true); }, [at]);
 
   const onProblem = (r, { thumb }) => {
     const prob = { question: r.question, choices: r.choices, qtype: r.qtype, figure_note: r.figure_note, unit_guess: r.unit_guess, std: r.std, warnings: r.warnings, thumb };
     stashCurrent(prob); setP(prob);
   };
-  const onAnswer = (r, { thumb }) => { setA({ ...r, thumb }); setText(r.answer || ""); setRes(null); setErr(null); };
-
-  const grade = async () => {
-    const answer = text.trim();
-    if (!answer) { setToast("답안이 비어 있어요"); return; }
-    setBusy(true); setErr(null);
-    try {
-      const r = await photoCall("essay", { question: p.question, figure_note: p.figure_note, choices: p.choices, answer, std: p.std, unit: p.unit_guess });
-      setRes(r);
-      saveDevice({ id: newId(), feature: "essay", question: p.question, figure_note: p.figure_note, unit: p.unit_guess, grade: r.std?.item_grade || p.std?.item_grade || null, answer, result: r.result, retention: r.retention, thumb: a?.thumb || p.thumb || null });
-    } catch (e) { setErr(e?.message || "채점에 실패했어요 — 잠시 뒤 다시 시도해 주세요."); }
-    finally { setBusy(false); }
+  const onAnswer = (r, { thumb }) => {
+    if (hwIssuesOf(r).length) addHwStrike();           // 학생 책임 필기 문제 누적(이 기기)
+    setA({ ...r, thumb }); setText(r.answer || ""); setRes(null); setErr(null);
   };
 
-  const restartAnswer = () => { setA(null); setText(""); setRes(null); setErr(null); };
+  const grade = () => {
+    const answer = text.trim();
+    if (!answer) { setToast("답안이 비어 있어요"); return; }
+    setErr(null);
+    const meta = { p, thumb: a?.thumb || p.thumb || null, raw: a?.answer || "" };
+    // 백그라운드 잡 — 화면을 떠나도 채점은 계속되고, 결과는 잡 안에서 기기 보관소에 저장된다
+    const j = startJob({
+      kind: "essay", title: "서술형 채점·첨삭",
+      run: async (signal) => {
+        const r = await photoCall("essay", { question: meta.p.question, figure_note: meta.p.figure_note, choices: meta.p.choices, answer, std: meta.p.std, unit: meta.p.unit_guess }, { signal });
+        await saveDevice({ id: newId(), feature: "essay", question: meta.p.question, figure_note: meta.p.figure_note, unit: meta.p.unit_guess,
+          grade: r.std?.item_grade || meta.p.std?.item_grade || null, answer,
+          answer_raw: meta.raw && meta.raw !== answer ? meta.raw : undefined,   // 전사 원문(학생이 고쳤을 때만) — 오독 패턴 개선용, 기기에만
+          result: r.result, retention: r.retention, thumb: meta.thumb });
+        return r;
+      },
+    });
+    setJob(j);
+    j.promise.then(() => {
+      if (j.status === "done") setRes(j.result);
+      else if (j.status === "error") setErr(j.error);
+      // canceled 는 JobBusy 의 onCanceled 가 그 자리에서 처리(잡 정산을 기다리지 않는다)
+    });
+  };
+
+  const restartAnswer = () => { setA(null); setText(""); setRes(null); setErr(null); setJob(null); };
   const restartAll = () => { setP(null); restartAnswer(); };
 
   return (
     <SolveShell title="서술형 채점·첨삭" back="#/solve/photo" toast={toast}
       sub={at === 0 ? "문제를 먼저 찍고, 그다음 내가 쓴 답안을 찍어요. 기준표로 채점하고 어디를 어떻게 고칠지 알려 줘요." : undefined}
       right={p ? <button className="sv-btn sm" onClick={restartAll}>다른 문제</button> : null}>
+      {guide && <HwGuide onClose={() => setGuide(false)} />}
       <Steps list={["문제 찍기", "답안 찍기", "채점·첨삭"]} at={at} />
 
       {at === 0 && (
@@ -75,12 +101,14 @@ export default function PhotoEssay({ useCur = false }) {
       {at === 2 && !res && (
         <div className="sv-card">
           <div className="sv-sec" style={{ marginTop: 0 }}>읽어 낸 내 답안 <span className="sv-small">· 잘못 읽은 글자가 있으면 고쳐 주세요</span></div>
-          {a.thumb && <img className="ph-thumb" src={a.thumb} alt="" />}
+          {hwIssuesOf(a).length > 0
+            ? <HwMarks thumb={a.thumb} issues={a.legibility?.issues || []} />
+            : a.thumb && <img className="ph-thumb" src={a.thumb} alt="" />}
           <textarea className="ph-ta" value={text} onChange={(e) => setText(e.target.value)} disabled={busy} />
-          {a.legibility?.issues?.length > 0 && (
-            <div className="ph-chips">{a.legibility.issues.map((i, k) => <span key={k} className="ph-chip">{LEG_KIND[i.kind] || i.kind}: {i.note}</span>)}</div>
+          {(a.legibility?.issues || []).filter((i) => !HW_ADVICE[i.kind]).length > 0 && (
+            <div className="ph-chips">{a.legibility.issues.filter((i) => !HW_ADVICE[i.kind]).map((i, k) => <span key={k} className="ph-chip">{LEG_KIND[i.kind] || i.kind}: {i.note}</span>)}</div>
           )}
-          {busy && <div style={{ marginTop: 10 }}><Busy text="기준표를 세우고 채점하는 중… (20초쯤 걸려요)" /></div>}
+          {busy && <div style={{ marginTop: 10 }}><JobBusy job={job} busyText="기준표를 세우고 채점하는 중… (20~40초쯤 걸려요)" onCanceled={() => { setJob(null); setErr("판독을 취소했어요"); }} /></div>}
           {err && !busy && <div style={{ marginTop: 10 }}><ErrorNote text={err} onRetry={grade} retryLabel="다시 채점받기" onShoot={restartAnswer} shootLabel="답안 다시 찍기" /></div>}
           {!busy && !err && (
             <div className="ph-actions" style={{ marginTop: 10 }}>
