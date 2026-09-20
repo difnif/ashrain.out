@@ -1,14 +1,15 @@
 // 관리자 — 우물·탭바 편집 (#/admin/well)
 // 미리보기에서 이미지를 드러낸 채 동그란 우물을 직접 눌러 편집 모드로 들어간다.
-// 크기 슬라이더(탭바·우물 자리·이미지)와 변주 이미지 업로드를 여기서 — 저장하면 app_settings.well_ui 로 전 학생에게 적용.
+// 크기 슬라이더(탭바·우물 자리·이미지)와 기본 우물 이미지 교체를 여기서 — 저장하면 app_settings.well_ui 로 전 학생에게 적용.
+// 연출은 3가지: 맑음 = 해 그림자 · 흐림/비 = 감광 · 밤 = 중앙 조명.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import FeatureBar, { FbAct } from "../components/FeatureBar";
 import { TabsRow } from "../components/Shell";
-import { PlaceholderWell, useWellImgs, bustWellImgs } from "../components/Well";
-import { WELL_VARIANTS, WELL_DEFAULT, clampWellCfg } from "../lib/well";
+import { useWellImg, bustWellImg, WELL_BUNDLED } from "../components/Well";
+import { WELL_DEFAULT, clampWellCfg } from "../lib/well";
 
-const VCHIPS = [["", "자동(실황)"], ...WELL_VARIANTS];
+const MCHIPS = [["", "자동(실황)"], ["sun", "☀️ 맑음"], ["dim", "☁️ 흐림·비"], ["night", "🌙 밤"]];
 
 function Rg({ label, v, min, max, step = 1, unit = "", on }) {
   return (
@@ -30,13 +31,13 @@ export default function AdminWell({ theme = "light" }) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
   const [pvTheme, setPvTheme] = useState(theme);
-  const [variant, setVariant] = useState("");            // "" = 자동(실황)
+  const [mode, setMode] = useState("");                  // "" = 자동(실황) | sun | dim | night
   const [hour, setHour] = useState(() => new Date().getHours());
   const [heading, setHeading] = useState(0);
   const [bust, setBust] = useState(0);
-  const [rmAsk, setRmAsk] = useState("");                // 삭제 2단계 확인 중인 키
-  const imgs = useWellImgs(bust);
-  const fileRef = useRef({});
+  const [rmAsk, setRmAsk] = useState(false);             // 삭제 2단계 확인
+  const img = useWellImg(bust);                          // 스토리지 교체본 (없으면 번들)
+  const fileRef = useRef(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -72,36 +73,36 @@ export default function AdminWell({ theme = "light" }) {
     setBusy(false);
   };
 
-  const upload = async (key, file) => {
+  const upload = async (file) => {
     if (!file) return;
     setBusy(true);
     try {
-      const old = imgs[key]?.name;
+      const old = img?.name;
       const ext = (file.name.split(".").pop() || "png").toLowerCase();
-      if (old && old !== `${key}.${ext}`) await supabase.storage.from("figures").remove([`well/${old}`]);
+      if (old && old !== `base.${ext}`) await supabase.storage.from("figures").remove([`well/${old}`]);
       const { error } = await supabase.storage.from("figures")
-        .upload(`well/${key}.${ext}`, file, { upsert: true, contentType: file.type || "image/png" });
+        .upload(`well/base.${ext}`, file, { upsert: true, contentType: file.type || "image/png" });
       if (error) setToast("업로드 실패: " + error.message);
-      else { bustWellImgs(); setBust((b) => b + 1); setToast("올렸어요 — 배경이 투명한 정사각형 PNG가 가장 예뻐요"); }
+      else { bustWellImg(); setBust((b) => b + 1); setToast("교체했어요 — 배경이 투명한 정사각형 이미지가 가장 예뻐요"); }
     } finally { setBusy(false); }
   };
 
-  const removeImg = async (key) => {
-    const f = imgs[key]; if (!f) return;
+  const removeImg = async () => {
+    if (!img) return;
     setBusy(true);
-    const { error } = await supabase.storage.from("figures").remove([`well/${f.name}`]);
+    const { error } = await supabase.storage.from("figures").remove([`well/${img.name}`]);
     if (error) setToast("삭제 실패: " + error.message);
-    else { bustWellImgs(); setBust((b) => b + 1); setToast("지웠어요 — 이 변주는 자리그림으로 나와요"); }
-    setRmAsk(""); setBusy(false);
+    else { bustWellImg(); setBust((b) => b + 1); setToast("지웠어요 — 기본 우물 그림으로 돌아가요"); }
+    setRmAsk(false); setBusy(false);
   };
 
   const pvHash = "#/";
   const wellProps = useMemo(() => ({
     reveal: true,
-    variantOverride: variant || null,
+    modeOverride: mode || null,
     hourOverride: hour,
     headingOverride: heading,
-  }), [variant, hour, heading]);
+  }), [mode, hour, heading]);
 
   if (me === undefined) return null;
   if (me === false) {
@@ -128,8 +129,8 @@ export default function AdminWell({ theme = "light" }) {
               <button key={k} className={"aw-chip" + (pvTheme === k ? " on" : "")} onClick={() => setPvTheme(k)}>{l}</button>
             ))}
             <span className="aw-gap" />
-            {VCHIPS.map(([k, l]) => (
-              <button key={k || "auto"} className={"aw-chip" + (variant === k ? " on" : "")} onClick={() => setVariant(k)}>{l}</button>
+            {MCHIPS.map(([k, l]) => (
+              <button key={k || "auto"} className={"aw-chip" + (mode === k ? " on" : "")} onClick={() => setMode(k)}>{l}</button>
             ))}
           </div>
           <div className={`aw-stage aw-st-${pvTheme}` + (edit ? " edit" : "")}>
@@ -139,7 +140,7 @@ export default function AdminWell({ theme = "light" }) {
           <div className="aw-timeline">
             <Rg label="시각" v={hour} min={0} max={23} unit="시" on={setHour} />
             <Rg label="화면 방위" v={heading} min={0} max={359} unit="°" on={setHeading} />
-            <p className="aw-hint">해 그림자가 시각·방위에 맞춰 도는지 여기서 확인해요. 실제 앱은 실시간 시각과 (되는 기기에서) 나침반을 써요.</p>
+            <p className="aw-hint">맑음 상태에서 해 그림자가 시각·방위에 맞춰 도는지 확인해요. 실제 앱은 실시간 시각·실황과 (되는 기기에서) 나침반을 써요.</p>
           </div>
         </div>
 
@@ -165,37 +166,35 @@ export default function AdminWell({ theme = "light" }) {
         )}
 
         <div className="aw-card">
-          <p className="aw-t">변주 이미지</p>
-          <p className="aw-d">시간·날씨에 따라 우물이 갈아입는 그림들이에요. 없는 변주는 비슷한 것 → 자리그림 순서로 대신 나와요.
-            <b> 배경을 투명하게 오려낸 정사각형 PNG</b>를 올려주세요(구멍이 가운데 오게).</p>
+          <p className="aw-t">기본 우물 이미지</p>
+          <p className="aw-d">우물 그림은 <b>한 장</b>이에요(템페라 화풍 돌우물이 기본 내장). 다른 그림으로 바꾸려면
+            <b> 배경을 투명하게 오려낸 정사각형 이미지</b>(구멍이 가운데)를 올려주세요. 지우면 기본 그림으로 돌아가요.</p>
           <div className="aw-imgs">
-            {WELL_VARIANTS.map(([key, label]) => (
-              <div key={key} className="aw-img">
-                <div className="aw-thumb">
-                  {imgs[key] ? <img src={imgs[key].url} alt={label} /> : <PlaceholderWell variant={key} size={64} />}
-                </div>
-                <p className="aw-il">{label} {!imgs[key] && <em>자리그림</em>}</p>
-                <div className="aw-ib">
-                  <label className="aw-up">
-                    올리기
-                    <input ref={(el) => (fileRef.current[key] = el)} type="file" accept="image/png,image/webp,image/avif"
-                      onChange={(e) => { upload(key, e.target.files?.[0]); e.target.value = ""; }} />
-                  </label>
-                  {imgs[key] && (rmAsk === key
-                    ? <button className="aw-rm sure" onClick={() => removeImg(key)}>정말 지우기</button>
-                    : <button className="aw-rm" onClick={() => setRmAsk(key)}>지우기</button>)}
-                </div>
+            <div className="aw-img">
+              <div className="aw-thumb">
+                <img src={img ? img.url : WELL_BUNDLED} alt="기본 우물" />
               </div>
-            ))}
+              <p className="aw-il">{img ? "교체본 사용 중" : "기본 내장 그림"}</p>
+              <div className="aw-ib">
+                <label className="aw-up">
+                  교체하기
+                  <input ref={fileRef} type="file" accept="image/png,image/webp,image/avif"
+                    onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} />
+                </label>
+                {img && (rmAsk
+                  ? <button className="aw-rm sure" onClick={removeImg}>정말 지우기</button>
+                  : <button className="aw-rm" onClick={() => setRmAsk(true)}>지우기</button>)}
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="aw-card">
-          <p className="aw-t">동작 방식</p>
+          <p className="aw-t">동작 방식 — 연출 3가지</p>
           <p className="aw-d">
-            우물은 대시보드 히어로와 같은 실황(온도·강수·구름)을 봐요 — 눈 오면 눈 쌓인 우물, 비 오면 물이 차고 파동,
-            영하엔 결빙, 맑은 낮엔 맑은 물, 밤엔 깊은 어둠. 그 위에 시각대(새벽·아침·낮·노을·밤) 색 보정과
-            태양 각도 그림자가 얹혀요. 흐린 날은 해 그림자가 부드러운 기본 그림자로 바뀌어요.
+            우물은 대시보드 히어로와 같은 실황(강수·구름)과 시각만 봐요. <b>맑은 낮</b>엔 태양 각도를 계산해
+            그림자가 실시간으로 돌고(나침반 되는 기기는 폰 방향까지 반영), <b>흐리거나 비·눈</b>이면 그림자 없이
+            명도만 낮아지고, <b>밤(20시~6시)</b>엔 우물 중앙에 조명이 비치는 연출이 들어가요.
           </p>
         </div>
       </div>
@@ -242,10 +241,9 @@ const CSS = `
 .aw-tg input { accent-color: var(--awac); }
 .aw-reset { margin-top: 10px; background: none; border: 1px solid var(--awbd); border-radius: 999px; color: var(--awmut);
   font-size: 11.5px; font-weight: 700; padding: 6px 12px; cursor: pointer; font-family: inherit; }
-.aw-imgs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-@media (max-width: 430px) { .aw-imgs { grid-template-columns: 1fr 1fr; } }
-.aw-img { border: 1px solid var(--awbd); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.aw-thumb { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
+.aw-imgs { display: flex; gap: 8px; }
+.aw-img { border: 1px solid var(--awbd); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 170px; }
+.aw-thumb { width: 104px; height: 104px; display: flex; align-items: center; justify-content: center; }
 .aw-thumb img { max-width: 100%; max-height: 100%; }
 .aw-il { margin: 0; font-size: 11.5px; font-weight: 700; }
 .aw-il em { font-style: normal; color: var(--awmut); font-weight: 600; font-size: 10px; }

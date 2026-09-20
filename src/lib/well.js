@@ -1,25 +1,7 @@
-// 우물(하단 탭바 중앙 버튼) 순수 로직 — 상태 결정·설정 정리·이미지 폴백.
+// 우물(하단 탭바 중앙 버튼) 순수 로직 — 연출 상태 결정·설정 정리.
 // 렌더는 components/Well.jsx, 태양 위치는 lib/sun.js, 실황 분류는 lib/wx.js.
-
-/** 관리자 업로드 이미지 키(figures/well/<key>.*)와 표시 이름 */
-export const WELL_VARIANTS = [
-  ["water",   "맑은 물"],
-  ["dark",    "깊은 어둠"],
-  ["drizzle", "가랑비"],
-  ["rain",    "폭우"],
-  ["snow",    "눈"],
-  ["frost",   "결빙"],
-];
-
-/** 해당 변주 이미지가 없을 때 대신 쓸 순서 */
-export const WELL_FALLBACK = {
-  water:   ["dark"],
-  dark:    ["water"],
-  drizzle: ["rain", "water", "dark"],
-  rain:    ["drizzle", "water", "dark"],
-  snow:    ["frost", "dark", "water"],
-  frost:   ["snow", "dark", "water"],
-};
+// 연출은 딱 3가지(사용자 확정): 맑음 = 해 그림자 · 흐림/비 = 그림자 없이 감광 · 밤 = 중앙 조명.
+// 우물 그림은 기본 1장 — 번들(/brand/well/base.webp)이 기본, 관리자가 figures/well/base.* 업로드로 교체.
 
 /** 우물이 여는 카메라 기능들 (탭하면 바로 실행) */
 export const WELL_FEATURES = [
@@ -63,40 +45,14 @@ export function clampWellCfg(raw) {
   };
 }
 
-/** 시간대 이름 — 색 필터에 쓴다 */
-export function timeBand(h) {
-  return h < 6 ? "dawn" : h < 11 ? "morn" : h < 17 ? "day" : h < 20 ? "dusk" : "night";
-}
-
 /**
- * 실황(wx: lib/wx.js pickWeather 결과 | null)과 시각으로 우물 상태를 고른다.
- * 눈 > 비 > 결빙 > (밤이면 어둠 / 낮이면 물).
+ * 연출 상태 — 실황(wx: lib/wx.js pickWeather 결과 | null)과 시각으로 셋 중 하나.
+ *  · "night" 밤(20시~6시): 중앙 조명
+ *  · "dim"   흐리거나 비·눈: 그림자 없이 명도만 낮춤
+ *  · "sun"   맑은 낮: 태양 각도 그림자
  */
-export function wellVariant(wx, hour) {
-  if (wx?.snowy) return "snow";
-  if (wx?.rainy) return (wx.p || 0) >= 5 || +wx.base[1] >= 4 ? "rain" : "drizzle";
-  if (wx && wx.t != null && wx.t <= 0) return "frost";
-  const night = hour >= 20 || hour < 6;
-  return night ? "dark" : "water";
-}
-
-/** 이미지 맵(map[key] = url)에서 변주에 맞는 키를 폴백 순서로 찾는다 — 없으면 null(자리그림) */
-export function resolveWellImg(map, variant) {
-  if (!map) return null;
-  if (map[variant]) return variant;
-  for (const k of WELL_FALLBACK[variant] || []) if (map[k]) return k;
-  return null;
-}
-
-/** 시간대별 색 보정(CSS filter 문자열) — 이미지·자리그림 공통 */
-export function bandFilter(band, variant) {
-  const dim = variant === "dark" ? "" : " brightness(.72) saturate(.8)";
-  switch (band) {
-    case "dawn":  return "brightness(.8) saturate(.75) hue-rotate(-8deg)";
-    case "morn":  return "brightness(1.04) saturate(1.02)";
-    case "day":   return "none";
-    case "dusk":  return "brightness(.94) saturate(1.1) sepia(.18) hue-rotate(-14deg)";
-    case "night": return ("brightness(1)" + dim).trim();
-    default:      return "none";
-  }
+export function wellMode(wx, hour) {
+  if (hour >= 20 || hour < 6) return "night";
+  if (wx && (wx.rainy || wx.snowy || wx.cloudLv >= 5)) return "dim";
+  return "sun";
 }

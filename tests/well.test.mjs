@@ -1,7 +1,7 @@
-// 우물 로직 테스트 — 태양 위치·그림자·상태 결정·설정 죄기·이미지 폴백
+// 우물 로직 테스트 — 태양 위치·그림자·연출 상태(3가지)·설정 죄기
 // 실행: node tests/well.test.mjs
 import { sunPos, shadowOf } from "../src/lib/sun.js";
-import { clampWellCfg, wellVariant, timeBand, resolveWellImg, WELL_DEFAULT } from "../src/lib/well.js";
+import { clampWellCfg, wellMode, WELL_DEFAULT, WELL_FEATURES } from "../src/lib/well.js";
 import { pickWeather } from "../src/lib/wx.js";
 
 let n = 0, ok = 0;
@@ -30,19 +30,19 @@ t("해가 낮을수록 그림자가 길고 흐리다", Math.hypot(shE.dx, shE.dy
 const shH = shadowOf(noon, noon.az, 46);
 t("나침반 보정 — 화면이 해를 향하면 그림자는 화면 아래로", shH.dy > 0 && Math.abs(shH.dx) < Math.abs(shH.dy));
 
-// ── 상태 결정 (lib/wx.js 분류 결과를 그대로 먹는다) ──
+// ── 연출 상태 3가지 (사용자 확정: 맑음 그림자 / 흐림·비 감광 / 밤 조명) ──
 const W = (c) => pickWeather(c);
-t("눈 → snow", wellVariant(W({ temperature_2m: -1, precipitation: 2, weather_code: 73, cloud_cover: 90, wind_speed_10m: 2 }), 14) === "snow");
-t("장대비 → rain", wellVariant(W({ temperature_2m: 18, precipitation: 8, weather_code: 65, cloud_cover: 95, wind_speed_10m: 3 }), 14) === "rain");
-t("가랑비 → drizzle", wellVariant(W({ temperature_2m: 18, precipitation: 0.8, weather_code: 51, cloud_cover: 80, wind_speed_10m: 2 }), 14) === "drizzle");
-t("영하 맑음 → frost", wellVariant(W({ temperature_2m: -4, precipitation: 0, weather_code: 0, cloud_cover: 10, wind_speed_10m: 1 }), 14) === "frost");
-t("맑은 낮 → water", wellVariant(W({ temperature_2m: 21, precipitation: 0, weather_code: 1, cloud_cover: 20, wind_speed_10m: 2 }), 14) === "water");
-t("맑은 밤 → dark", wellVariant(W({ temperature_2m: 15, precipitation: 0, weather_code: 0, cloud_cover: 5, wind_speed_10m: 1 }), 23) === "dark");
-t("밤중 비 → rain(밤 보정은 필터가)", wellVariant(W({ temperature_2m: 15, precipitation: 6, weather_code: 63, cloud_cover: 95, wind_speed_10m: 3 }), 23) === "rain");
-t("실황 없으면 시간만으로", wellVariant(null, 3) === "dark" && wellVariant(null, 10) === "water");
-
-// ── 시간대 ──
-t("시간대 구분", timeBand(4) === "dawn" && timeBand(9) === "morn" && timeBand(13) === "day" && timeBand(18) === "dusk" && timeBand(22) === "night");
+const CLEAR = W({ temperature_2m: 21, precipitation: 0, weather_code: 1, cloud_cover: 20, wind_speed_10m: 2 });
+const RAIN = W({ temperature_2m: 18, precipitation: 8, weather_code: 65, cloud_cover: 95, wind_speed_10m: 3 });
+const SNOW = W({ temperature_2m: -1, precipitation: 2, weather_code: 73, cloud_cover: 90, wind_speed_10m: 2 });
+const OVERCAST = W({ temperature_2m: 20, precipitation: 0, weather_code: 3, cloud_cover: 92, wind_speed_10m: 2 });
+t("맑은 낮 → sun", wellMode(CLEAR, 14) === "sun");
+t("비 → dim", wellMode(RAIN, 14) === "dim");
+t("눈 → dim", wellMode(SNOW, 14) === "dim");
+t("잔뜩 흐림 → dim", wellMode(OVERCAST, 14) === "dim");
+t("밤은 날씨와 무관하게 night", wellMode(CLEAR, 23) === "night" && wellMode(RAIN, 3) === "night" && wellMode(null, 21) === "night");
+t("실황 없으면 시간만으로", wellMode(null, 10) === "sun" && wellMode(null, 5) === "night");
+t("경계 — 6시는 낮, 20시는 밤", wellMode(CLEAR, 6) === "sun" && wellMode(CLEAR, 20) === "night");
 
 // ── 설정 죄기 ──
 t("빈 값은 기본값 그대로", JSON.stringify(clampWellCfg(null)) === JSON.stringify(WELL_DEFAULT));
@@ -52,10 +52,8 @@ t("범위 밖·엉뚱한 값은 죈다", c2.btn.d === 72 && c2.btn.dy === 0 && c
 t("깨진 JSON은 기본값", JSON.stringify(clampWellCfg("{oops")) === JSON.stringify(WELL_DEFAULT));
 t("객체로 줘도 된다", clampWellCfg({ bar: { h: 60 } }).bar.h === 60);
 
-// ── 이미지 폴백 ──
-const m = { rain: 1, dark: 1 };
-t("폴백 순서", resolveWellImg(m, "drizzle") === "rain" && resolveWellImg(m, "water") === "dark"
-  && resolveWellImg({}, "water") === null && resolveWellImg(m, "rain") === "rain" && resolveWellImg(null, "rain") === null);
+// ── 런처 목록 ──
+t("카메라 기능 6종", WELL_FEATURES.length === 6 && WELL_FEATURES.every(([, , , to]) => to.startsWith("#/")));
 
 console.log(`${ok}/${n} passed`);
 if (ok !== n) process.exit(1);

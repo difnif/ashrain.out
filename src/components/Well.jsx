@@ -1,14 +1,15 @@
 // 우물 — 하단 탭바 중앙의 원형 버튼. 애쉬레인의 메인 테마.
-// 시간·실황 날씨(대시보드 히어로와 같은 신호)에 따라 우물 그림이 바뀌고,
-// 태양 각도에 맞춘 그림자(나침반 되는 기기는 실제 방위 연동), 탭하면 카메라 기능 런처가 열린다.
-// 그림이 없으면 자리그림(SVG)으로 그린다 — 관리자 업로드는 #/admin/well.
+// 그림은 기본 1장: 번들 /brand/well/base.webp (관리자가 figures/well/base.* 업로드로 교체 가능).
+// 연출은 3가지(사용자 확정): 맑은 낮 = 태양 각도 그림자(나침반 되는 기기는 실제 방위 연동) ·
+// 흐림/비 = 그림자 없이 감광 · 밤 = 중앙에 조명이 비치는 연출. 탭하면 카메라 기능 런처.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { getWx } from "../lib/wx";
 import { sunPos, shadowOf } from "../lib/sun";
-import {
-  WELL_FEATURES, WELL_DEFAULT, clampWellCfg, wellVariant, timeBand, bandFilter, resolveWellImg,
-} from "../lib/well";
+import { WELL_FEATURES, WELL_DEFAULT, clampWellCfg, wellMode } from "../lib/well";
+
+/** 번들 기본 이미지 — 템페라 화풍 돌우물 (배경 오려낸 원형 메달) */
+export const WELL_BUNDLED = "/brand/well/base.webp";
 
 /* ── 설정 (app_settings.well_ui) — localStorage 즉시 + 서버 값 갱신 ── */
 export function useWellCfg() {
@@ -32,30 +33,31 @@ export function useWellCfg() {
   return cfg;
 }
 
-/* ── 변주 이미지 (figures/well/<key>.*) — 10분 캐시 ── */
-let imgCache = null, imgAt = 0;
-export function useWellImgs(bust = 0) {
-  const [map, setMap] = useState(() => imgCache || {});
+/* ── 우물 이미지 — 스토리지 figures/well/base.* 가 있으면 그걸, 없으면 번들 (10분 캐시) ── */
+let imgCache;            // undefined 미조회 | null 없음 | { name, url }
+let imgAt = 0;
+export function useWellImg(bust = 0) {
+  const [img, setImg] = useState(() => (imgCache === undefined ? null : imgCache));
   useEffect(() => {
     let alive = true;
     (async () => {
-      if (imgCache && Date.now() - imgAt < 10 * 60e3 && !bust) { setMap(imgCache); return; }
+      if (imgCache !== undefined && Date.now() - imgAt < 10 * 60e3 && !bust) { setImg(imgCache); return; }
       try {
-        const { data } = await supabase.storage.from("figures").list("well", { limit: 60 });
-        const m = {};
-        for (const f of data || []) {
-          const key = f.name.replace(/\.[^.]+$/, "");
+        const { data } = await supabase.storage.from("figures").list("well", { limit: 20 });
+        const f = (data || []).find((x) => x.name.replace(/\.[^.]+$/, "") === "base");
+        let v = null;
+        if (f) {
           const { data: pu } = supabase.storage.from("figures").getPublicUrl(`well/${f.name}`);
-          m[key] = { name: f.name, url: pu.publicUrl + "?v=" + encodeURIComponent(f.updated_at || "") };
+          v = { name: f.name, url: pu.publicUrl + "?v=" + encodeURIComponent(f.updated_at || "") };
         }
-        if (alive) { imgCache = m; imgAt = Date.now(); setMap(m); }
-      } catch { /* 자리그림 폴백 */ }
+        if (alive) { imgCache = v; imgAt = Date.now(); setImg(v); }
+      } catch { /* 번들 폴백 */ }
     })();
     return () => { alive = false; };
   }, [bust]);
-  return map;
+  return img; // null 이면 번들 이미지를 쓴다
 }
-export function bustWellImgs() { imgCache = null; imgAt = 0; }
+export function bustWellImg() { imgCache = undefined; imgAt = 0; }
 
 /* ── 나침반 — 화면 위쪽이 향한 방위(도). 안 되면 [0, false] ── */
 export function useHeading(on) {
@@ -100,74 +102,34 @@ export function requestCompass() {
   } catch { return Promise.resolve(false); }
 }
 
-/* ── 자리그림 — 위에서 내려다본 돌우물 (원작 SVG, 변주별) ── */
+/* ── 자리그림 — 번들 이미지마저 못 불러올 때의 최후 폴백 (원작 SVG) ── */
 const STONES = Array.from({ length: 11 }, (_, i) => i * (360 / 11));
 const STONE_FILL = ["#8B8E96", "#7C7F88", "#95989F", "#84878F", "#8F929A"];
-export function PlaceholderWell({ variant = "water", size = 92 }) {
-  const wet = variant === "rain" || variant === "drizzle";
-  const rim = STONES.map((a, i) => (
-    <g key={a} transform={`rotate(${a} 50 50)`}>
-      <rect x={41.5} y={3.5} width={17} height={14.5} rx={6.2}
-        fill={STONE_FILL[i % STONE_FILL.length]} stroke={wet ? "#4A5560" : "#6A6D75"} strokeWidth=".7" />
-      {wet && <rect x={43} y={5} width={14} height={5} rx={3} fill="#B9C9D6" opacity=".28" />}
-      {(variant === "snow") && <rect x={42.5} y={2.6} width={15} height={6.5} rx={3.4} fill="#F5F9FF" stroke="#D8E4F2" strokeWidth=".5" />}
-      {(variant === "frost") && <rect x={42.5} y={3} width={15} height={4.6} rx={2.4} fill="#DDF1FA" opacity=".85" />}
-    </g>
-  ));
-  const ripples = (n, tone, w = 1.1) => Array.from({ length: n }, (_, i) => (
-    <circle key={i} cx={50} cy={50} r={8 + i * (18 / n)} fill="none" stroke={tone} strokeWidth={w} opacity={0.5 - i * 0.09} />
-  ));
-  let inner = null;
-  if (variant === "dark") inner = (<>
-    <circle cx={50} cy={50} r={30.5} fill="url(#wl-g-dark)" />
-    <path d="M 27 41 A 26 26 0 0 1 45 26" fill="none" stroke="#3D4654" strokeWidth="2.4" opacity=".55" strokeLinecap="round" />
-  </>);
-  else if (variant === "water") inner = (<>
-    <circle cx={50} cy={50} r={30.5} fill="url(#wl-g-water)" />
-    <ellipse cx={42} cy={41} rx={12} ry={6.5} fill="#DFF6FF" opacity=".2" transform="rotate(-24 42 41)" />
-    {ripples(2, "#8FDCE8", 0.9)}
-  </>);
-  else if (variant === "drizzle") inner = (<>
-    <circle cx={50} cy={50} r={30.5} fill="url(#wl-g-water)" />
-    <ellipse cx={42} cy={41} rx={11} ry={6} fill="#DFF6FF" opacity=".16" transform="rotate(-24 42 41)" />
-    {ripples(3, "#9FE3EE")}
-  </>);
-  else if (variant === "rain") inner = (<>
-    <circle cx={50} cy={50} r={32} fill="url(#wl-g-rain)" />
-    {ripples(5, "#C4EFF7", 1.2)}
-    {[[36, 38], [62, 33], [57, 60], [40, 62]].map(([x, y], i) => (
-      <circle key={i} cx={x} cy={y} r={1.4} fill="#EAFBFF" opacity=".85" />
-    ))}
-  </>);
-  else if (variant === "snow") inner = (<>
-    <circle cx={50} cy={50} r={30.5} fill="url(#wl-g-dark)" />
-    {[[38, 40, 1.3], [58, 35, 1.1], [52, 58, 1.4], [42, 55, 1], [63, 50, 1.2]].map(([x, y, r], i) => (
-      <circle key={i} cx={x} cy={y} r={r} fill="#F2F7FF" opacity=".9" />
-    ))}
-  </>);
-  else inner = (<>{/* frost */}
-    <circle cx={50} cy={50} r={30.5} fill="url(#wl-g-frost)" />
-    <path d="M35 45 L50 50 L44 63 M50 50 L66 42 M50 50 L58 61" stroke="#F4FBFF" strokeWidth="1" opacity=".7" fill="none" />
-  </>);
+export function PlaceholderWell({ size = 92 }) {
   return (
     <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
       <defs>
-        <radialGradient id="wl-g-dark" cx="50%" cy="46%"><stop offset="0%" stopColor="#0B0E13" /><stop offset="78%" stopColor="#161B23" /><stop offset="100%" stopColor="#232A35" /></radialGradient>
-        <radialGradient id="wl-g-water" cx="46%" cy="42%"><stop offset="0%" stopColor="#1D7A8C" /><stop offset="70%" stopColor="#0F4A5C" /><stop offset="100%" stopColor="#0B3644" /></radialGradient>
-        <radialGradient id="wl-g-rain" cx="48%" cy="45%"><stop offset="0%" stopColor="#2E96A8" /><stop offset="72%" stopColor="#15606F" /><stop offset="100%" stopColor="#0E4552" /></radialGradient>
-        <radialGradient id="wl-g-frost" cx="46%" cy="42%"><stop offset="0%" stopColor="#CFEAF4" /><stop offset="75%" stopColor="#8FBCCD" /><stop offset="100%" stopColor="#6E9FB3" /></radialGradient>
+        <radialGradient id="wl-g-water" cx="46%" cy="42%">
+          <stop offset="0%" stopColor="#1D7A8C" /><stop offset="70%" stopColor="#0F4A5C" /><stop offset="100%" stopColor="#0B3644" />
+        </radialGradient>
       </defs>
-      <circle cx={50} cy={50} r={46.5} fill={wet ? "#565E68" : "#63666E"} />
-      {inner}
+      <circle cx={50} cy={50} r={46.5} fill="#63666E" />
+      <circle cx={50} cy={50} r={30.5} fill="url(#wl-g-water)" />
+      <ellipse cx={42} cy={41} rx={12} ry={6.5} fill="#DFF6FF" opacity=".2" transform="rotate(-24 42 41)" />
       <circle cx={50} cy={50} r={30.5} fill="none" stroke="#2E333C" strokeWidth="1.6" opacity=".7" />
-      {rim}
+      {STONES.map((a, i) => (
+        <g key={a} transform={`rotate(${a} 50 50)`}>
+          <rect x={41.5} y={3.5} width={17} height={14.5} rx={6.2}
+            fill={STONE_FILL[i % STONE_FILL.length]} stroke="#6A6D75" strokeWidth=".7" />
+        </g>
+      ))}
     </svg>
   );
 }
 
 /* ── 우물 버튼 (탭바 중앙) ── */
 export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
-  reveal = false, variantOverride = null, hourOverride = null, headingOverride = null }) {
+  reveal = false, modeOverride = null, hourOverride = null, headingOverride = null }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
   const [wx, setWx] = useState(null);
@@ -177,7 +139,8 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
     const t = setInterval(() => getWx().then((w) => { if (a) setWx(w); }), 10 * 60e3);
     return () => { a = false; clearInterval(t); };
   }, []);
-  const imgs = useWellImgs();
+  const stImg = useWellImg();
+  const [broken, setBroken] = useState(false);
   const [heading, hdLive] = useHeading(!!cfg.fx.compass && headingOverride == null);
   const askedRef = useRef(false);
 
@@ -186,25 +149,23 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
     if (hourOverride == null) return now;
     const d = new Date(now); d.setHours(hourOverride, 30, 0, 0); return d;
   }, [now, hourOverride]);
-  const variant = variantOverride || wellVariant(wx, hour);
-  const band = timeBand(hour);
+  const mode = modeOverride || wellMode(wx, hour);
   const sun = useMemo(() => sunPos(date), [date]);
   const hd = headingOverride ?? (hdLive ? heading : 0);
-  const sunny = !wx || (!wx.rainy && !wx.snowy && wx.cloudLv <= 4);
-  const sh = cfg.fx.shadow && sunny ? shadowOf(sun, hd, cfg.btn.d) : null;
+  const sh = mode === "sun" && cfg.fx.shadow ? shadowOf(sun, hd, cfg.btn.d) : null;
 
-  const found = resolveWellImg(imgs, variant);
   const showImg = cfg.img.on || reveal;
   const d = cfg.btn.d;
   const imgD = Math.round(d * cfg.img.scale / 100);
   const btnBottom = `calc(var(--wt-h, 52px) - ${d - cfg.btn.dy}px)`;
   const sunDir = sh ? (((sun.az - hd) % 360) + 360) % 360 : null;
 
+  // 3연출: 맑음 = 해 그림자 / 흐림·비 = 감광 / 밤 = 감광 + 중앙 조명
   const filters = [];
-  const bf = bandFilter(band, variant);
-  if (bf !== "none") filters.push(bf);
+  if (mode === "dim") filters.push("brightness(.74) saturate(.85)");
+  if (mode === "night") filters.push("brightness(.8) saturate(.9)");
   if (sh) filters.push(`drop-shadow(${sh.dx}px ${sh.dy}px ${sh.blur}px rgba(15,20,30,${sh.alpha}))`);
-  else if (band === "night") filters.push("drop-shadow(0 3px 9px rgba(130,160,255,.25))");
+  else if (mode === "night") filters.push("drop-shadow(0 3px 9px rgba(130,160,255,.25))");
   else filters.push("drop-shadow(0 2px 5px rgba(15,20,30,.28))");
 
   const open = () => {
@@ -223,13 +184,15 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
           style={{ width: imgD, height: imgD, bottom: btnBottom,
             transform: `translateX(-50%) translateY(${(imgD - d) / 2 - cfg.img.dy}px)`, filter: filters.join(" ") }}>
           <div className="wl-core">
-            {found ? <img src={imgs[found].url} alt="" draggable="false" />
-              : <PlaceholderWell variant={variant} size={imgD} />}
+            {broken && !stImg ? <PlaceholderWell size={imgD} />
+              : <img src={stImg ? stImg.url : WELL_BUNDLED} alt="" draggable="false"
+                  onError={() => setBroken(true)} />}
             {sunDir != null && (
               <div className="wl-shade" style={{
-                background: `linear-gradient(${Math.round((sunDir + 180) % 360)}deg, rgba(6,10,18,${(0.16 + 0.2 * (1 - Math.min(sun.el, 75) / 75)).toFixed(2)}) 0%, rgba(6,10,18,0) 58%)`,
+                background: `linear-gradient(${Math.round((sunDir + 180) % 360)}deg, rgba(6,10,18,${(0.14 + 0.18 * (1 - Math.min(sun.el, 75) / 75)).toFixed(2)}) 0%, rgba(6,10,18,0) 58%)`,
               }} />
             )}
+            {mode === "night" && <div className="wl-lamp" />}
           </div>
         </div>
       )}
@@ -291,6 +254,8 @@ export const WELL_CSS = `
 .wl-core img, .wl-core svg { width: 100%; height: 100%; display: block; user-select: none; }
 .wl-core img { object-fit: contain; }
 .wl-shade { position: absolute; inset: 9%; border-radius: 50%; mix-blend-mode: multiply; }
+.wl-lamp { position: absolute; inset: 6%; border-radius: 50%; mix-blend-mode: screen;
+  background: radial-gradient(circle at 50% 46%, rgba(255,241,198,.55) 0%, rgba(255,236,186,.22) 34%, rgba(0,0,0,0) 62%); }
 @keyframes wl-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.022); } }
 @media (prefers-reduced-motion: reduce) { .wl-core { animation: none; } }
 
