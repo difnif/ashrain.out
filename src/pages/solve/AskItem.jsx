@@ -30,7 +30,7 @@ export default function AskItem({ itemId, theme }) {
     return () => { alive = false; };
   }, [itemId]);
 
-  const back = () => { if (history.length > 1) history.back(); else location.hash = "#/solve"; };
+  const back = () => { if (history.length > 1) history.back(); else location.hash = "#/study/practice"; };
 
   if (item === undefined) return <SolveShell title="질문하기"><div className="sv-muted">문항을 불러오는 중…</div></SolveShell>;
   if (!item) return <SolveShell title="질문하기"><div className="sv-empty">지금은 볼 수 없는 문항이에요.</div></SolveShell>;

@@ -5,9 +5,13 @@ import { qcode } from "../lib/qcode";
 import QuestionChat from "./QuestionChat";
 import { AnimScene } from "./AnimFigure";
 import { FigModeContext } from "./StageFigure";
+import ReviewMode from "./ReviewMode";
+import FeatureBar, { FbAct } from "./FeatureBar";
+import { getRecentConcepts, recentIds, pushRecentConcept } from "../lib/review";
 
-// 개념 뷰어: concepts.blocks(jsonb) 렌더링 + 채택 QnA 말풍선 + 질문 접수
-// props: conceptId, theme('light'|'dark')
+// 개념 뷰어: concepts.blocks(jsonb) 렌더링 + 채택 QnA 말풍선 + 질문 접수 + 복습 모드(Ⓓ 적립)
+// props: conceptId, theme('light'|'dark')  — #/c/<id>?review=1 이면 복습 모드로 연다
+// 그림설명 모드는 테마 귀속(다크=그림/라이트=수식) — 09-18 확정, A/B 토글 없음
 
 const TONES = {
   teal:  { l: ["#F0FDFA","#99F6E4","#0F766E","#0D9488","#CCFBF1"], d: ["#0E2B27","#1E4C44","#5EEAD4","#14B8A6","#134E48"] },
@@ -31,6 +35,7 @@ const CSS = `
 .cv-fm.on { color: var(--ac,#0DA95F); border-color: var(--ac,#0DA95F); }
 .cv-root { min-height: 100vh; padding: 24px 12px; box-sizing: border-box;
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
+.cv-root.cv-review { padding-bottom: 110px; }   /* 복습 모드 고정 하단 바가 꼬리를 가리지 않게 */
 .cv-root * { box-sizing: border-box; }
 .cv-light { background: #EDEFF2; --surface: #F8FAFC; --surface-bd: #E2E8F0; --ink: #1F2937; --mut: #94A3B8;
   --head-bg: linear-gradient(135deg, #115E59, #0F766E 55%, #134E4A); --bubble: #1E293B; --bubble-tx: #F1F5F9; }
@@ -398,26 +403,35 @@ function BlockShell({ b, qna, theme, conceptId, isAdmin, onAsk }) {
   );
 }
 
-export default function ConceptViewer({ conceptId, theme = "light" }) {
+// 해시가 #/c/<id>?review=1 이면 복습 모드로 연다 (conceptId 에 ?… 가 붙어 올 수도 있어 방어적으로 뗀다)
+const wantsReview = (raw) => /[?&]review=1/.test(String(raw ?? "")) || /[?&]review=1/.test(typeof location !== "undefined" ? location.hash : "");
+
+export default function ConceptViewer({ conceptId: rawId, theme = "light" }) {
+  const conceptId = String(rawId ?? "").split("?")[0];
   const [concept, setConcept] = useState(null);
   const [qna, setQna] = useState([]);
   const [err, setErr] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [uid, setUid] = useState(null);
   const [chatBlock, setChatBlock] = useState(null); // 질문챗이 열린 단락
   const [sibs, setSibs] = useState([]);             // 같은 학기 개념 목록 (이전/다음용)
+  const [review, setReview] = useState(() => wantsReview(rawId));   // 복습 모드 (Ⓓ Drop 적립)
+  const [recentBefore, setRecentBefore] = useState([]);              // 이 방문 전 최근 개념 (복습 순위·상한용)
   // 그림설명 모드는 테마에 귀속: 다크 = 컨셉 그림(감지과슈) / 라이트 = 수식 그림(한지)
   const figMode = theme === "dark" ? "art" : "math";
   useEffect(() => { window.scrollTo(0, 0); }, [conceptId]);
+  useEffect(() => { setReview(wantsReview(rawId)); }, [rawId]);
   useEffect(() => {
     if (!concept?.unit_id) return;
     listConcepts().then((all) => {
       setSibs(all.filter((x) => x.unit_id === concept.unit_id).sort((a, b) => a.sort_order - b.sort_order));
     }).catch(() => {});
   }, [concept?.unit_id]);
-  const goHome = (focus) => { sessionStorage.setItem("home_focus", focus); location.hash = "#/learn"; };
+  const goHome = () => { location.hash = "#/study/concept"; };
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data?.user) return;
+      setUid(data.user.id);
       const { data: prof } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
       setIsAdmin(prof?.role === "admin");
     });
@@ -427,6 +441,13 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
     try {
       const [c, q] = await Promise.all([getConcept(conceptId), getAdoptedQna(conceptId)]);
       setConcept(c); setQna(q);
+      if (c) {
+        // 홈 "이어서" 카드용 — 마지막으로 본 개념
+        try { localStorage.setItem("ash.lastConcept", JSON.stringify({ id: c.id, title: c.title, at: Date.now() })); } catch { /* 무시 */ }
+        // 복습 모드 대상 — 최근 읽은 개념 5개. 순위는 이 방문 전 목록으로 매긴다
+        setRecentBefore(recentIds(getRecentConcepts()));
+        pushRecentConcept(c.id, c.title);
+      }
     } catch { setErr("개념을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
   }, [conceptId]);
   useEffect(() => { load(); }, [load]);
@@ -435,34 +456,47 @@ export default function ConceptViewer({ conceptId, theme = "light" }) {
   if (!concept) return <div className={`cv-root cv-${theme}`}><style>{CSS}</style></div>;
 
   const byBlock = (id) => qna.filter((q) => q.block_id === id);
+  const renderBlock = (b) => <BlockShell key={b.id} b={b} qna={byBlock(b.id)} theme={theme} conceptId={conceptId} isAdmin={isAdmin} onAsk={setChatBlock} />;
+  const onReviewDone = ({ reward, drop_balance } = {}) => {
+    try { window.dispatchEvent(new CustomEvent("ash:points", { detail: { currency: "drop", delta: reward || 0, balance: drop_balance ?? null } })); } catch { /* 무시 */ }
+  };
   return (
     <FigModeContext.Provider value={figMode}>
-    <div className={`cv-root cv-${theme}`}>
+    <FeatureBar theme={theme} title={concept.title} sub={concept.unit_id.toUpperCase()} back="#/study/concept"
+      actions={<FbAct pri={!review} onClick={() => setReview((v) => !v)} title="순서대로 읽고 퀴즈를 맞히면 Ⓓ 를 받아요">
+        🔁 {review ? "복습 끄기" : "복습"}</FbAct>} />
+    <div className={`cv-root cv-${theme}${review ? " cv-review" : ""}`}>
       <style>{CSS}</style>
       <div className="cv-wrap">
         <header className="cv-cover">
           {concept.cover?.src && <img src={concept.cover.src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .45 }} />}
           <div className="cv-cover-body">
-            <button className="cv-backlist" onClick={() => goHome(concept.id)}>← 목록</button>
             <p className="cv-eyebrow">
-              <span className="cv-crumb" onClick={() => goHome(concept.unit_id)}>{concept.unit_id.toUpperCase()}</span>
+              <span className="cv-crumb" onClick={goHome}>{concept.unit_id.toUpperCase()}</span>
               {" · "}
-              <span className="cv-crumb" onClick={() => goHome(concept.id)}>개념 {String(concept.sort_order).padStart(2, "0")}</span>
+              <span className="cv-crumb" onClick={goHome}>개념 {String(concept.sort_order).padStart(2, "0")}</span>
             </p>
             <h1 className="cv-title">{concept.title}</h1>
             <p className="cv-subtitle">{concept.subtitle}</p>
           </div>
         </header>
         <main className="cv-main">
-          {concept.blocks.map((b) => <BlockShell key={b.id} b={b} qna={byBlock(b.id)} theme={theme} conceptId={conceptId} isAdmin={isAdmin} onAsk={setChatBlock} />)}
-          <a className="cv-span2" href={`#/p/${encodeURIComponent(concept.id)}`}
-            style={{ display: "block", textAlign: "center", padding: "14px 0", borderRadius: 12,
-              background: "#0D9488", color: "#fff", fontWeight: 800, fontSize: 15, textDecoration: "none" }}>
-            ✏️ 예제·유제 풀러 가기
-          </a>
-          <footer className="cv-footer cv-span2">
-            <span>물음표 ? 를 누르면 질문을 보거나 보낼 수 있어요</span><span>{concept.id}</span>
-          </footer>
+          {review ? (
+            <ReviewMode key={concept.id} concept={concept} blocks={concept.blocks} renderBlock={renderBlock} uid={uid} theme={theme}
+              recent={recentBefore} onExit={() => setReview(false)} onCompleted={onReviewDone} />
+          ) : (
+            <>
+              {concept.blocks.map(renderBlock)}
+              <a className="cv-span2" href={`#/p/${encodeURIComponent(concept.id)}`}
+                style={{ display: "block", textAlign: "center", padding: "14px 0", borderRadius: 12,
+                  background: "#0D9488", color: "#fff", fontWeight: 800, fontSize: 15, textDecoration: "none" }}>
+                ✏️ 예제·유제 풀러 가기
+              </a>
+              <footer className="cv-footer cv-span2">
+                <span>물음표 ? 를 누르면 질문을 보거나 보낼 수 있어요</span><span>{concept.id}</span>
+              </footer>
+            </>
+          )}
         </main>
       </div>
       {sibs.length > 0 && (() => {

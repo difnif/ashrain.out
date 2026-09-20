@@ -48,8 +48,34 @@ cp -r node_modules/@mediapipe/tasks-vision/wasm public/models/wasm
 | `#/portrait` | 리브드 글라스 초상화 → 프로필 아바타 저장 |
 | `#/me` | 마이페이지 (프로필·내 정보·환경설정·계정) |
 
+### 학생앱 ui-v3 — 셸 (2026-09-19)
+큰 카테고리 4개는 **하단 고정 탭바**: 대시보드(`#/`) · 공부하기(`#/study`) · 학습 도구(`#/tools`) · 게시판(`#/board`).
+하위 카테고리는 **상단 고정 서브탭**(무신사식): 공부하기 = 개념 공부/연습문제/시험 보기 · 학습 도구 = 도구 8종 필터 · 게시판 = 공지/커뮤니티/질문.
+기능 화면(개념 뷰어·문항 풀이·시험·글쓰기 등)에선 탭바·서브탭이 사라지고 `FeatureBar`(⌂ 대시보드 · ← 뒤로 · 기능별 버튼)만 남는다.
+홈 복귀는 「대시보드」 탭 — 로고의 모/강 앱 전환 토글은 유지. 옛 해시는 리다이렉트: `#/learn/concept→#/study/concept`, `#/solve→#/study/practice`, `#/solve/test→#/study/exam` (딥링크 `#/solve/**` 는 그대로 동작).
+
+| 해시 | 화면 | 기록 |
+|---|---|---|
+| `#/study[/concept\|practice\|exam]` | 공부하기 허브 — 개념 목록 · 세트 시작 · 시험 8종(가볍게/실전/스페셜) | — |
+| `#/tools[/:key]` | 학습 도구 허브 — 오답노트·질문·사진 채점·사진 힌트·문장 해설·표시 연습·서술형·스피드 연산 | — |
+| `#/board[/notice\|community\|qna]` | 게시판 — 3앱(학생·강사·학부모) 공용, 역할 배지 | `posts`·`post_comments` |
+| `#/board/post/:id` · `#/board/write` | 글 상세·글쓰기 (기능 화면) | `posts` |
+| `#/learn/wrong\|hint\|calc` | 도구 리프 (FeatureBar 단독 진입) | 기존 |
+
+게시판 마이그레이션: `supabase/2026-09_boards.sql` (posts·post_comments·역할 스냅샷 트리거·RLS). 적용 전엔 "게시판 준비 중" 표시.
+
+### 우물 — 메인 테마 (2026-09-20)
+하단 탭바 중앙의 원형 「우물」. 탭 4개는 납작하게 좌우 2+2로 벌리고 가운데에 우물이 탭바보다 크게 얹힌다.
+그림은 **기본 1장** — 번들 `public/brand/well/base.webp`(템페라 화풍 돌우물, 원형 메달 컷)이 기본이고,
+관리자가 스토리지 `figures/well/base.*` 업로드로 교체할 수 있다(지우면 번들로 복귀).
+연출은 **3가지**(확정): 맑은 낮 = 태양 각도(`src/lib/sun.js`) 그림자가 실시간으로 돈다(방향 센서 기기는 나침반 연동 —
+iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정) · 흐리거나 비·눈 = 그림자 없이 감광 · 밤(20~6시) = 중앙 조명 연출.
+실황은 대시보드 히어로와 같은 신호(`src/lib/wx.js`), 상태 결정은 `src/lib/well.js`(wellMode).
+우물을 탭하면 카메라 기능 런처: 찍어서 배우기 4종(`#/solve/photo/*`) · 사진 채점 · 사진 힌트.
+크기·이미지는 `#/admin/well` — 미리보기의 우물을 직접 눌러 편집 모드(탭바 높이·탭 크기·우물 지름·튀어나옴·이미지 배율·오프셋),
+저장은 `app_settings.well_ui`(전 학생 즉시 적용). 촬영모듈은 학습 도구의 「찍어서 배우기」 타일로도 들어간다.
+
 ### 학생앱 베타 — 문제풀이 (`#/solve/*`, 2026-09)
-상단 기능바는 **개념 / 문제풀이 / 오답노트 / 질문** 네 개. 연산·사진 힌트는 문제풀이 허브 안으로 들어갔다.
 공개(`status='live'`) 문항만 학생에게 보인다 — 생성 문항은 `#/admin/items` 에서 live 로 올려야 나온다.
 
 | 해시 | 화면 | 기록 |
@@ -82,6 +108,7 @@ supabase/seed.sql          개념 01 (소수와 합성수) + 채택 QnA
 src/lib/theme.js           라이트/다크 테마 훅
 src/lib/concepts.js        개념·QnA 데이터 접근
 src/components/            SplashAuth · Home · ConceptViewer(+ReviewMode) · ReviewCard · PointsCard · AdminQna · Signup
+src/components/Well.jsx    우물 — 탭바 중앙 버튼·런처 시트·자리그림 (lib/wx·sun·well + pages/AdminWell.jsx 편집)
 src/pages/solve/           학생앱 문제풀이 화면들 (Solve 허브 · ItemPlay · Exam · Omr · Read · Mark · Essay · AskItem)
 src/features/portrait/     ribbedGlass(필터) · facePipeline(MediaPipe) · PortraitStudio
 api/                       Vercel 서버리스 — ai(힌트·OMR·질문) · points(지갑) · review(복습 보상) · transcribeJob …

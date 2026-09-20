@@ -130,7 +130,7 @@ function EssayPicker() {
   }, []);
 
   return (
-    <SolveShell title="서술형 자가채점" back="#/solve" sub="풀이 과정을 쓰고, 채점 기준을 보며 스스로 점수를 매겨요. 훈련용 예상 점수라서 공식 성적은 아니에요.">
+    <SolveShell title="서술형 자가채점" back="#/tools/essay" sub="풀이 과정을 쓰고, 채점 기준을 보며 스스로 점수를 매겨요. 훈련용 예상 점수라서 공식 성적은 아니에요.">
       <style>{CSS}</style>
       {recent.length > 0 && (
         <div className="sv-card es-recent">
@@ -152,7 +152,7 @@ function EssayPicker() {
         <div>
           <div className="sv-empty">아직 공개된 서술형 문항이 없어요 — 곧 열려요.<br />채점 기준이 붙은 문항이 공개되면 여기서 바로 풀 수 있어요.</div>
           <div className="es-actions">
-            <button className="sv-btn" onClick={() => (location.hash = "#/solve")}>문제풀이 홈</button>
+            <button className="sv-btn" onClick={() => (location.hash = "#/study/practice")}>공부하기 홈</button>
             <button className="sv-btn ghost" onClick={() => { setN(null); countLive({ withRubric: true }).then(setN).catch(() => setN(0)); }}>다시 확인</button>
           </div>
         </div>
@@ -292,7 +292,7 @@ function EssaySolve({ itemId }) {
 
   // ── 상태별 화면 ──
   const shell = (children) => (
-    <SolveShell title="서술형 자가채점" back="#/solve" toast={toast}
+    <SolveShell title="서술형 자가채점" back="#/tools/essay" toast={toast}
       right={<button className="sv-btn sm" onClick={() => (location.hash = "#/solve/essay")}>다른 문항</button>}>
       <style>{CSS}</style>
       {children}
@@ -499,7 +499,7 @@ function EssaySolve({ itemId }) {
             )}
             <button className="sv-btn" onClick={() => askAboutItem(item)}>💬 질문하기</button>
             <button className="sv-btn pri" onClick={() => (location.hash = "#/solve/essay")}>다른 문항</button>
-            <button className="sv-btn ghost" onClick={() => (location.hash = "#/solve")}>문제풀이 홈</button>
+            <button className="sv-btn ghost" onClick={() => (location.hash = "#/study/practice")}>공부하기 홈</button>
           </div>
         </>
       )}

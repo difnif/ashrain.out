@@ -104,14 +104,14 @@ export default function Mark({ itemId }) {
 
   if (!itemId) {
     return (
-      <SolveShell title="표시 연습" sub="문장에 직접 표시해요 — 숫자에 동그라미, 척도에 밑줄, 단서가 끊기는 곳에 빗금." toast={toast}>
+      <SolveShell back="#/tools/mark" title="표시 연습" sub="문장에 직접 표시해요 — 숫자에 동그라미, 척도에 밑줄, 단서가 끊기는 곳에 빗금." toast={toast}>
         <ItemPicker mode="item" hint={busy ? "문항을 고르는 중…" : "문항을 하나 골라 주세요. 조건이 여러 개인 문장이 연습하기 좋아요."} onPickItem={pickItem} />
       </SolveShell>
     );
   }
 
   return (
-    <SolveShell title="표시 연습" toast={toast}
+    <SolveShell back="#/tools/mark" title="표시 연습" toast={toast}
       right={<button className="sv-btn sm" onClick={() => { location.hash = "#/solve/mark"; }}>다른 문항</button>}>
       <style>{CSS}</style>
       {err && <div className="sv-empty">{err}</div>}

@@ -194,7 +194,7 @@ function TypePicker({ uid, toast }) {
   }, [uid]);
 
   return (
-    <SolveShell title="시험 응시" back="#/solve" toast={toast}
+    <SolveShell title="시험 응시" back="#/study/exam" toast={toast}
       sub="유형을 고르면 범위를 정하고 바로 시작해요. 결과는 응시 기록으로 남아요.">
       <div className="ex-tiles">
         {TEST_TYPES.map((t) => (
@@ -724,7 +724,7 @@ export function Result({ preset, scope, items, run, notice, uid, toast, setToast
           <button className="sv-btn" onClick={onRetry}>같은 유형 다시</button>
           <button className="sv-btn" onClick={() => { location.hash = "#/solve/test"; }}>다른 시험</button>
         </div>
-        <button className="sv-btn ghost full" onClick={() => { location.hash = "#/solve"; }}>문제풀이 홈</button>
+        <button className="sv-btn ghost full" onClick={() => { location.hash = "#/study/exam"; }}>시험 홈</button>
       </div>
     </SolveShell>
   );

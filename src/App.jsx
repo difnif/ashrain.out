@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { useTheme } from "./lib/theme";
 import SplashAuth from "./components/SplashAuth";
-import Home from "./components/Home";
 import ConceptViewer from "./components/ConceptViewer";
 import AdminQna from "./components/AdminQna";
 import AdminConcepts from "./components/AdminConcepts";
@@ -32,17 +31,23 @@ import AdminGuardians from "./components/AdminGuardians";
 import Philosophy from "./components/Philosophy";
 import HomeDash from "./components/HomeDash";
 import AdminCalendar from "./components/AdminCalendar";
-import QnaBoard from "./components/QnaBoard";
 import Library from "./pages/Library";
 import News from "./pages/News";
 import Duty from "./pages/Duty";
 // P0 셸 — 관문·경로층 라우터
 import Gate from "./gate/Gate";
-import { rolePath, navigatePath } from "./shared/roles";
-import LogoTrigger from "./shared/LogoTrigger";
+import { rolePath } from "./shared/roles";
 // 학생앱 베타 — 문제풀이 허브(#/solve/*)
-import { BETA, STUDENT_NAV } from "./lib/beta";
 import SolveRouter from "./pages/solve/SolveRouter";
+// ui-v3 셸 — 하단 탭바 4개(대시보드·공부하기·학습 도구·게시판) + 상단 서브탭, 기능 화면은 FeatureBar
+import { ShellTop, ShellTabs, shellMode } from "./components/Shell";
+import FeatureBar from "./components/FeatureBar";
+import Study from "./pages/Study";
+import Tools from "./pages/Tools";
+import ToolLeaf from "./pages/ToolLeaf";
+import Board from "./pages/board/Board";
+// 우물 v1 — 탭바 중앙 우물(시간·날씨 테마)의 관리자 편집
+import AdminWell from "./pages/AdminWell";
 const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
 const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
 
@@ -276,7 +281,8 @@ function AppRoutes() {
     location.hash = "#/guardian";
   }
 
-  const LOCKED = ["#/learn/calc", "#/learn/wrong", "#/learn/hint", "#/board", "#/p/", "#/solve"];
+  const LOCKED = ["#/learn/calc", "#/learn/wrong", "#/learn/hint", "#/board", "#/p/", "#/solve",
+    "#/study/practice", "#/study/exam", "#/tools"];
   if (!verified && LOCKED.some((x) => hash.startsWith(x))) {
     return <VerifyGate theme={theme} prof={prof} />;
   }
@@ -286,13 +292,29 @@ function AppRoutes() {
   if (hash.startsWith("#/qr-approve")) return <Rx theme={theme}><QrApprove /></Rx>;
   if (hash.startsWith("#/find")) return <Rx theme={theme}><FindAccount /></Rx>;
   const pm = hash.match(/^#\/p\/(.+)$/);
-  if (pm) return <Rx theme={theme}><PracticeViewer conceptId={decodeURIComponent(pm[1])} /></Rx>;
+  if (pm) {
+    const cid = decodeURIComponent(pm[1].split("?")[0]);
+    return <Rx theme={theme}>
+      <FeatureBar theme={theme} title="예제·유제" sub={cid} back={`#/c/${encodeURIComponent(cid)}`} />
+      <PracticeViewer conceptId={cid} />
+    </Rx>;
+  }
   if (hash.startsWith("#/admin/practice")) return <Rx theme={theme}><AdminPractice /></Rx>;
   if (hash.startsWith("#/admin/codes")) return <Rx theme={theme}><AdminCodes /></Rx>;
   if (hash.startsWith("#/admin/users")) return <Rx theme={theme}><AdminUsers /></Rx>;
 
-  const bd = hash.match(/^#\/board(?:\/(.+))?$/);
-  if (bd) return <Rx theme={theme}><QnaBoard theme={theme} initialId={bd[1] ? decodeURIComponent(bd[1]) : null} /></Rx>;
+  if (hash.startsWith("#/board")) {
+    const sub = hash.replace(/^#\/board\/?/, "");
+    return <Rx theme={theme}><Board sub={sub} hash={hash} theme={theme} /></Rx>;
+  }
+  if (hash.startsWith("#/study")) {
+    const sub = hash.replace(/^#\/study\/?/, "");
+    return <Rx theme={theme}><Study sub={sub} theme={theme} /></Rx>;
+  }
+  if (hash.startsWith("#/tools")) {
+    const sub = hash.replace(/^#\/tools\/?/, "");
+    return <Rx theme={theme}><Tools sub={sub} theme={theme} /></Rx>;
+  }
   if (hash === "#/admin/chats") return <Rx theme={theme}><AdminChats theme={theme} /></Rx>;
   if (hash === "#/admin/images") return <Rx theme={theme}><AdminImages theme={theme} /></Rx>;
   if (hash === "#/admin/itemgen") return <Rx theme={theme}><AdminItemGen theme={theme} /></Rx>;
@@ -303,6 +325,7 @@ function AppRoutes() {
   if (hash === "#/admin/guardians") return <Rx theme={theme}><AdminGuardians /></Rx>;
   if (hash.startsWith("#/guardian")) return <Rx theme={theme}><GuardianConsent /></Rx>;
   if (hash === "#/admin/calendar") return <Rx theme={theme}><AdminCalendar theme={theme} /></Rx>;
+  if (hash === "#/admin/well") return <Rx theme={theme}><AdminWell theme={theme} /></Rx>;
   const c = hash.match(/^#\/c\/(.+)$/);
   if (c) return <ConceptViewer conceptId={decodeURIComponent(c[1])} theme={theme} />;
   if (hash.startsWith("#/portrait")) {
@@ -323,123 +346,50 @@ function AppRoutes() {
   if (hash.startsWith("#/philosophy")) return <Philosophy theme={theme} />;
   if (hash.startsWith("#/admin/qna")) return <AdminQna theme={theme} />;
   if (hash.startsWith("#/admin/concepts")) return <AdminConcepts theme={theme} />;
-  if (hash.startsWith("#/me")) return <MyPage theme={theme} onToggleTheme={toggle} />;
+  if (hash.startsWith("#/me")) return <>
+    <FeatureBar theme={theme} title="마이페이지" back="#/" />
+    <MyPage theme={theme} onToggleTheme={toggle} />
+  </>;
   if (hash.startsWith("#/library")) return <Library hash={hash} />;
   if (hash.startsWith("#/news")) return <News hash={hash} />;
   if (hash.startsWith("#/duty")) return <Duty />;
   if (hash.startsWith("#/learn")) {
-    const sub = hash.split("/")[2];
-    return <Home theme={theme} onToggleTheme={toggle} initialCat={sub || "concept"} />;
+    const sub = (hash.split("?")[0].split("/")[2] || "").trim();
+    // ui-v3: 오답노트·사진 힌트·스피드 연산은 도구함 리프(FeatureBar)로 단독 진입
+    if (sub === "wrong" || sub === "hint" || sub === "calc") return <Rx theme={theme}><ToolLeaf kind={sub} theme={theme} /></Rx>;
+    // 개념 목록은 공부하기 탭으로 (리다이렉트는 StudentApp 에서 — 여기는 안전망)
+    return <Rx theme={theme}><Study sub="concept" theme={theme} /></Rx>;
   }
   if (hash.startsWith("#/solve")) return <Rx theme={theme}><SolveRouter hash={hash} theme={theme} /></Rx>;
   return <HomeDash theme={theme} onToggleTheme={toggle} />;
 }
 
 
-// ── 전역 상단 바: 모든 페이지 상단(1행 인프라 + 2행 기능 5등분) ──
-function TopBar({ theme, onToggleTheme, hash }) {
-  const [me, setMe] = useState(null);
-  const [dday, setDday] = useState(null);
-  useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      const u = data?.user; if (!u) { setMe(false); return; }
-      const { data: p } = await supabase.from("profiles").select("role").eq("id", u.id).maybeSingle();
-      setMe({ isAdmin: p?.role === "admin" });
-    });
-    const today = new Date().toISOString().slice(0, 10);
-    supabase.from("events").select("date, title").eq("dday", true).gte("date", today)
-      .order("date").limit(1).then(({ data }) => {
-        if (data?.[0]) {
-          const d = Math.round((new Date(data[0].date + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
-          setDday({ days: d, title: data[0].title });
-        }
-      });
-  }, []);
-  if (!me) return null;
-  const light = theme !== "dark";
-  // 베타 상단 기능바: 개념 / 문제풀이 / 오답노트 / 질문 (연산·힌트는 문제풀이 허브 안으로)
-  const FN = STUDENT_NAV;
-  const isOn = (to) => to === "#/board" ? hash.startsWith("#/board")
-    : to === "#/solve" ? (hash.startsWith("#/solve") || hash.startsWith("#/p/") || hash.startsWith("#/learn/calc") || hash.startsWith("#/learn/hint"))
-    : to === "#/learn/concept" ? (hash.startsWith("#/learn/concept") || hash === "#/learn" || hash === "#/learn/" || hash.startsWith("#/c/"))
-    : hash.startsWith(to);
-  return (
-    <div className={"tb tb-" + theme}>
-      <style>{`
-        .tb { padding: 10px 14px 10px; font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
-        .tb * { box-sizing: border-box; }
-        .tb-light { background: #EDEFF2; --card:#fff; --bd:#DFE3E8; --ink:#1F2937; --mut:#8A929C; --ac:#0D9488; }
-        .tb-dark  { background: #0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#5EEAD4; }
-        .tb-in { max-width: 680px; margin: 0 auto; }
-        .tb-r1 { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
-        .tb-sp { flex: 1; }
-        .tb-logo { height: 28px; }
-        .tb-light .tb-logo { filter: grayscale(1) brightness(0); }
-        .tb-dday { min-width: 34px; height: 32px; border-radius: 999px; background: #EF4444; color: #fff;
-          display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; padding: 0 8px; }
-        .tb-btn { background: var(--card); border: 1px solid var(--bd); border-radius: 999px; color: var(--ink);
-          font-size: 11.5px; font-weight: 700; padding: 7px 11px; cursor: pointer; }
-        .tb-fn { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-        .tb-beta { font-size: 10px; font-weight: 800; color: #fff; background: #7C3AED; border-radius: 999px; padding: 2px 6px; margin-left: 2px; }
-        .tb-fnbtn { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 8px 0 7px;
-          color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .tb-fnbtn.on { border-color: var(--ac); color: var(--ac); border-width: 1.5px; }
-        .tb-fnbtn span:first-child { font-size: 15px; }
-        .tb-fnbtn span:last-child { font-size: 11px; font-weight: 800; }
-      `}</style>
-      <div className="tb-in">
-        <div className="tb-r1">
-          <LogoTrigger src="/brand/ashrain_logo.png" height={28}
-            right={{ tag: "모", label: "학부모", go: () => navigatePath("/jongseong") }}
-            down={{ tag: "강", label: "강사", go: () => navigatePath("/seirocco") }}
-            onLogoClick={() => (location.hash = "")} />
-          {BETA.on && <span className="tb-beta" title={BETA.notice}>{BETA.label}</span>}
-          {dday && (
-            <div className="tb-dday" title={dday.title} onClick={() => (location.hash = "")} style={{ cursor: "pointer" }}>
-              {dday.days === 0 ? "D-DAY" : `D-${dday.days}`}
-            </div>
-          )}
-          <span className="tb-sp" />
-          <button className="tb-btn" onClick={() => (location.hash = "#/me")}>👤 마이페이지</button>
-          <a className="tb-btn" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
-            href="https://www.instagram.com/ashrain.out" target="_blank" rel="noreferrer" title="앱 문의">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 3a6 6 0 0 0-3.7 10.7c.6.5 1 1.3 1 2.1v.2h5.4v-.2c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
-              <path d="M9.5 19h5" /><path d="M10.5 21.5h3" />
-            </svg> 문의
-          </a>
-          {onToggleTheme && <button className="tb-btn" onClick={onToggleTheme}>{theme === "dark" ? "☀️" : "🌙"}</button>}
-          {me.isAdmin && <>
-            <button className="tb-btn" onClick={() => (location.hash = "#/admin/concepts")}>📚 등록</button>
-            <button className="tb-btn" onClick={() => (location.hash = "#/admin/items")}>🔍 문항</button>
-            <button className="tb-btn" onClick={() => (location.hash = "#/admin/corpus")}>📄 자료</button>
-            <button className="tb-btn" onClick={() => (location.hash = "#/admin/qna")}>💬 검토</button>
-            <button className="tb-btn" onClick={() => (location.hash = "#/admin/chats")}>🗂 대화</button>
-            <button className="tb-btn" onClick={() => (location.hash = "#/admin/images")}>🖼 이미지</button>
-            <button className="tb-btn" onClick={() => (location.hash = "#/admin/calendar")}>🗓 일정</button>
-            <button className="tb-btn" onClick={() => (location.hash = "#/admin/guardians")}>🛡 보호자</button>
-          </>}
-        </div>
-        <div className="tb-fn">
-          {FN.map(([ic, lb, to]) => (
-            <button key={to} className={"tb-fnbtn" + (isOn(to) ? " on" : "")} onClick={() => (location.hash = to)}>
-              <span>{ic}</span><span>{lb}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── 학생앱(기존 전체) — 경로층 아래서 무수정 동작 ──
 function StudentApp() {
   const hash = useHash();
-  const { theme, toggle } = useTheme();
+  const { theme } = useTheme();
+
+  // ui-v3 리다이렉트 — 옛 허브 해시를 새 카테고리로 (딥링크·기능 화면은 그대로)
+  useEffect(() => {
+    const h = hash.split("?")[0].replace(/\/$/, "");
+    const R = {
+      "#/learn": "#/study/concept",
+      "#/learn/concept": "#/study/concept",
+      "#/solve": "#/study/practice",
+      "#/solve/practice": "#/study/practice",
+      "#/solve/test": "#/study/exam",
+    };
+    if (R[h]) location.replace(R[h]);
+    else if (h.startsWith("#/learn/concept/")) location.replace("#/study/concept");
+  }, [hash]);
+
+  const mode = shellMode(hash);
   return (
     <>
-      <TopBar theme={theme} onToggleTheme={toggle} hash={hash} />
+      {mode === "browse" && <ShellTop theme={theme} hash={hash} />}
       <AppRoutes />
+      {mode === "browse" && <ShellTabs theme={theme} hash={hash} />}
     </>
   );
 }
