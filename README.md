@@ -64,6 +64,16 @@ cp -r node_modules/@mediapipe/tasks-vision/wasm public/models/wasm
 
 게시판 마이그레이션: `supabase/2026-09_boards.sql` (posts·post_comments·역할 스냅샷 트리거·RLS). 적용 전엔 "게시판 준비 중" 표시.
 
+### 우물 — 메인 테마 (2026-09-20)
+하단 탭바 중앙의 원형 「우물」. 탭 4개는 납작하게 좌우 2+2로 벌리고 가운데에 우물이 탭바보다 크게 얹힌다.
+대시보드 히어로와 같은 실황(Open-Meteo, `src/lib/wx.js`)과 시각으로 **어둠·맑은 물·가랑비·폭우·눈·결빙** 6변주를
+갈아입고(`src/lib/well.js`), 태양 각도(`src/lib/sun.js`)에 맞춰 그림자가 실시간으로 돈다 — 흐리면 부드러운 기본 그림자,
+밤엔 달빛 글로우, 방향 센서가 되는 기기는 나침반 연동(iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정 폴백).
+우물을 탭하면 카메라 기능 런처: 찍어서 배우기 4종(`#/solve/photo/*`) · 사진 채점 · 사진 힌트.
+크기·이미지는 `#/admin/well` — 미리보기의 우물을 직접 눌러 편집 모드(탭바 높이·탭 크기·우물 지름·튀어나옴·이미지 배율·오프셋),
+저장은 `app_settings.well_ui`(전 학생 즉시 적용), 변주 이미지는 스토리지 `figures/well/<변주>.*`
+(없으면 내장 자리그림 SVG가 같은 규칙으로 동작). 촬영모듈은 학습 도구의 「찍어서 배우기」 타일로도 들어간다.
+
 ### 학생앱 베타 — 문제풀이 (`#/solve/*`, 2026-09)
 공개(`status='live'`) 문항만 학생에게 보인다 — 생성 문항은 `#/admin/items` 에서 live 로 올려야 나온다.
 
@@ -97,6 +107,7 @@ supabase/seed.sql          개념 01 (소수와 합성수) + 채택 QnA
 src/lib/theme.js           라이트/다크 테마 훅
 src/lib/concepts.js        개념·QnA 데이터 접근
 src/components/            SplashAuth · Home · ConceptViewer(+ReviewMode) · ReviewCard · PointsCard · AdminQna · Signup
+src/components/Well.jsx    우물 — 탭바 중앙 버튼·런처 시트·자리그림 (lib/wx·sun·well + pages/AdminWell.jsx 편집)
 src/pages/solve/           학생앱 문제풀이 화면들 (Solve 허브 · ItemPlay · Exam · Omr · Read · Mark · Essay · AskItem)
 src/features/portrait/     ribbedGlass(필터) · facePipeline(MediaPipe) · PortraitStudio
 api/                       Vercel 서버리스 — ai(힌트·OMR·질문) · points(지갑) · review(복습 보상) · transcribeJob …
