@@ -1,0 +1,560 @@
+From d1ecf11109db9e7a6734c7b829023a011f8eb3e6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 20 Sep 2026 20:30:27 +0000
+Subject: [PATCH] =?UTF-8?q?=ED=95=99=EC=8A=B5=20=EB=8F=84=EA=B5=AC=20?=
+ =?UTF-8?q?=EC=9E=AC=ED=8E=B8=C2=B7=EC=8B=9C=ED=97=98=20=EB=B3=B4=EA=B8=B0?=
+ =?UTF-8?q?=20=EA=B0=9C=EB=B0=9C=EC=A4=91=20=EC=A0=84=ED=99=98=20+=20?=
+ =?UTF-8?q?=EB=A1=9C=EB=94=A9=20=EA=B0=9C=EC=84=A0?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+도구 재편(사용자 확정):
+- 열림 5종(순서 고정): 서술형 채점·첨삭(사진 인식형, #/solve/photo/essay 로
+  교체) → 사진 힌트 → 문장 해설(photo) → 표시 연습(photo) → 풀이과정 검사
+- 개발 중 3종은 하단에 배지로: 오답노트 · 질문하기 · 찰칵 채점(구 사진 채점)
+- 스피드 연산 타일 삭제, 「찍어서 배우기」 묶음 해체(기능 상위 노출)
+- 서브탭·우물 런처를 같은 이름·순서로 동기화(런처에서 채점류 제외)
+- 시험 보기(#/study/exam) 전면 개발중: 유형 8종 잠금 표시, 최근 응시 숨김
+- 옛 라우트(#/solve/essay·read·mark·omr·test, #/learn/wrong·calc)는 딥링크용 유지
+
+로딩 개선:
+- 첫 화면에 불필요한 화면 33개(관리자 전부·개념 뷰어·게시판·마이페이지·
+  가입 흐름·초상화 등)를 지연 로딩으로 — 메인 번들 1,200KB→590KB
+  (gzip 368KB→184KB)
+- 상단바·탭바가 화면 전환마다 네트워크 인증을 기다리던 것을 로컬 세션+
+  모듈 캐시(역할·디데이 10분)로 바꿔 즉시 표시
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01TVPgJtxkFqu2NnXMGRKJqJ
+---
+ README.md                 |  9 ++++-
+ src/App.jsx               | 81 ++++++++++++++++++++-----------------
+ src/components/Shell.jsx  | 58 ++++++++++++++++++---------
+ src/gate/Gate.jsx         |  2 +-
+ src/lib/well.js           | 11 +++--
+ src/pages/Study.jsx       | 50 ++++++-----------------
+ src/pages/Tools.jsx       | 84 +++++++++++++++++++++++++++------------
+ src/pages/solve/Omr.jsx   |  4 +-
+ src/pages/solve/Solve.jsx |  2 +-
+ tests/well.test.mjs       |  3 +-
+ 10 files changed, 173 insertions(+), 131 deletions(-)
+
+diff --git a/README.md b/README.md
+index 54a5f3d..f6d4ddd 100644
+--- a/README.md
++++ b/README.md
+@@ -50,7 +50,12 @@ cp -r node_modules/@mediapipe/tasks-vision/wasm public/models/wasm
+ 
+ ### 학생앱 ui-v3 — 셸 (2026-09-19)
+ 큰 카테고리 4개는 **하단 고정 탭바**: 대시보드(`#/`) · 공부하기(`#/study`) · 학습 도구(`#/tools`) · 게시판(`#/board`).
+-하위 카테고리는 **상단 고정 서브탭**(무신사식): 공부하기 = 개념 공부/연습문제/시험 보기 · 학습 도구 = 도구 8종 필터 · 게시판 = 공지/커뮤니티/질문.
++하위 카테고리는 **상단 고정 서브탭**(무신사식): 공부하기 = 개념 공부/연습문제/시험 보기 · 학습 도구 = 사진 도구 5종 · 게시판 = 공지/커뮤니티/질문.
++
++**도구 재편 (2026-09-20 확정)** — 학습 도구는 열린 5종(순서대로 **서술형 채점·첨삭**(`#/solve/photo/essay`, 사진 인식형으로 교체) ·
++사진 힌트 · 문장 해설(`#/solve/photo/read`) · 표시 연습(`#/solve/photo/mark`) · 풀이과정 검사(`#/solve/photo/check`)) +
++하단 「개발 중」 3종(오답노트 · 질문하기 · **찰칵 채점**(구 사진 채점)). 스피드 연산 타일은 삭제, 「찍어서 배우기」 묶음 타일은 해체(기능이 상위로).
++**시험 보기(`#/study/exam`)는 전면 개발중** — 유형 8종을 보여주되 실행은 잠근다. 옛 라우트(`#/solve/essay`·`/read`·`/mark`·`/omr`·`/test`, `#/learn/wrong`·`/calc`)는 딥링크용으로 살아 있다.
+ 기능 화면(개념 뷰어·문항 풀이·시험·글쓰기 등)에선 탭바·서브탭이 사라지고 `FeatureBar`(⌂ 대시보드 · ← 뒤로 · 기능별 버튼)만 남는다.
+ 홈 복귀는 「대시보드」 탭 — 로고의 모/강 앱 전환 토글은 유지. 옛 해시는 리다이렉트: `#/learn/concept→#/study/concept`, `#/solve→#/study/practice`, `#/solve/test→#/study/exam` (딥링크 `#/solve/**` 는 그대로 동작).
+ 
+@@ -71,7 +76,7 @@ cp -r node_modules/@mediapipe/tasks-vision/wasm public/models/wasm
+ 연출은 **3가지**(확정): 맑은 낮 = 태양 각도(`src/lib/sun.js`) 그림자가 실시간으로 돈다(방향 센서 기기는 나침반 연동 —
+ iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정) · 흐리거나 비·눈 = 그림자 없이 감광 · 밤(20~6시) = 중앙 조명 연출.
+ 실황은 대시보드 히어로와 같은 신호(`src/lib/wx.js`), 상태 결정은 `src/lib/well.js`(wellMode).
+-우물을 탭하면 카메라 기능 런처: 찍어서 배우기 4종(`#/solve/photo/*`) · 사진 채점 · 사진 힌트.
++우물을 탭하면 사진 도구 런처(학습 도구와 동일 5종: 서술형 채점·첨삭/사진 힌트/문장 해설/표시 연습/풀이과정 검사).
+ 크기·이미지는 `#/admin/well` — 미리보기의 우물을 직접 눌러 편집 모드(탭바 높이·탭 크기·우물 지름·튀어나옴·이미지 배율·오프셋),
+ 저장은 `app_settings.well_ui`(전 학생 즉시 적용). 촬영모듈은 학습 도구의 「찍어서 배우기」 타일로도 들어간다.
+ 
+diff --git a/src/App.jsx b/src/App.jsx
+index ed760b0..4fcd329 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -2,55 +2,62 @@ import { lazy, Suspense, useEffect, useState } from "react";
+ import { supabase } from "./supabaseClient";
+ import { useTheme } from "./lib/theme";
+ import SplashAuth from "./components/SplashAuth";
+-import ConceptViewer from "./components/ConceptViewer";
+-import AdminQna from "./components/AdminQna";
+-import AdminConcepts from "./components/AdminConcepts";
+-import MyPage from "./components/MyPage";
+-import PortraitStudio from "./features/portrait/PortraitStudio";
+-// raindrop (v0.4.0)
+-import Signup from "./pages/Signup";
+-import FindAccount from "./pages/FindAccount";
+-import Onboarding from "./pages/Onboarding";
+-import TrialStart from "./pages/TrialStart";
+-import StaffJoin from "./pages/StaffJoin";
+-import QrApprove from "./pages/QrApprove";
+-import QrLogin from "./pages/QrLogin";
+-import AdminCodes from "./pages/AdminCodes";
+-import AdminUsers from "./pages/AdminUsers";
+-import PracticeViewer from "./pages/PracticeViewer";
+-import AdminPractice from "./pages/AdminPractice";
+-import AdminChats from "./components/AdminChats";
+-import AdminImages from "./components/AdminImages";
+-import AdminItemGen from "./components/AdminItemGen";
+-import AdminItemReview from "./components/AdminItemReview";
+-import AdminCorpus from "./components/AdminCorpus";
+-import AdminMonitor from "./components/AdminMonitor";
+-import AdminSchemas from "./components/AdminSchemas";
+-import GuardianConsent from "./components/GuardianConsent";
+-import AdminGuardians from "./components/AdminGuardians";
+-import Philosophy from "./components/Philosophy";
+ import HomeDash from "./components/HomeDash";
+-import AdminCalendar from "./components/AdminCalendar";
+-import Library from "./pages/Library";
+-import News from "./pages/News";
+-import Duty from "./pages/Duty";
+ // P0 셸 — 관문·경로층 라우터
+ import Gate from "./gate/Gate";
+ import { rolePath } from "./shared/roles";
+-// 학생앱 베타 — 문제풀이 허브(#/solve/*)
++// 학생앱 베타 — 문제풀이 허브(#/solve/*, 내부에서 화면별 분할)
+ import SolveRouter from "./pages/solve/SolveRouter";
+ // ui-v3 셸 — 하단 탭바 4개(대시보드·공부하기·학습 도구·게시판) + 상단 서브탭, 기능 화면은 FeatureBar
+ import { ShellTop, ShellTabs, shellMode } from "./components/Shell";
+ import FeatureBar from "./components/FeatureBar";
+ import Study from "./pages/Study";
+ import Tools from "./pages/Tools";
+-import ToolLeaf from "./pages/ToolLeaf";
+-import Board from "./pages/board/Board";
+-// 우물 v1 — 탭바 중앙 우물(시간·날씨 테마)의 관리자 편집
+-import AdminWell from "./pages/AdminWell";
++
++// ── 로딩 개선: 첫 화면에 필요 없는 것들은 전부 지연 로딩 — 메인 번들을 줄인다 ──
++const ConceptViewer = lazy(() => import("./components/ConceptViewer"));
++const MyPage = lazy(() => import("./components/MyPage"));
++const PortraitStudio = lazy(() => import("./features/portrait/PortraitStudio"));
++const Philosophy = lazy(() => import("./components/Philosophy"));
++const GuardianConsent = lazy(() => import("./components/GuardianConsent"));
++const Board = lazy(() => import("./pages/board/Board"));
++const ToolLeaf = lazy(() => import("./pages/ToolLeaf"));
++const PracticeViewer = lazy(() => import("./pages/PracticeViewer"));
++const Library = lazy(() => import("./pages/Library"));
++const News = lazy(() => import("./pages/News"));
++const Duty = lazy(() => import("./pages/Duty"));
++// raindrop (v0.4.0) — 가입·인증 흐름
++const Signup = lazy(() => import("./pages/Signup"));
++const FindAccount = lazy(() => import("./pages/FindAccount"));
++const Onboarding = lazy(() => import("./pages/Onboarding"));
++const TrialStart = lazy(() => import("./pages/TrialStart"));
++const StaffJoin = lazy(() => import("./pages/StaffJoin"));
++const QrApprove = lazy(() => import("./pages/QrApprove"));
++const QrLogin = lazy(() => import("./pages/QrLogin"));
++// 관리자 화면들 — 학생 첫 로딩과 무관
++const AdminQna = lazy(() => import("./components/AdminQna"));
++const AdminConcepts = lazy(() => import("./components/AdminConcepts"));
++const AdminCodes = lazy(() => import("./pages/AdminCodes"));
++const AdminUsers = lazy(() => import("./pages/AdminUsers"));
++const AdminPractice = lazy(() => import("./pages/AdminPractice"));
++const AdminChats = lazy(() => import("./components/AdminChats"));
++const AdminImages = lazy(() => import("./components/AdminImages"));
++const AdminItemGen = lazy(() => import("./components/AdminItemGen"));
++const AdminItemReview = lazy(() => import("./components/AdminItemReview"));
++const AdminCorpus = lazy(() => import("./components/AdminCorpus"));
++const AdminMonitor = lazy(() => import("./components/AdminMonitor"));
++const AdminSchemas = lazy(() => import("./components/AdminSchemas"));
++const AdminGuardians = lazy(() => import("./components/AdminGuardians"));
++const AdminCalendar = lazy(() => import("./components/AdminCalendar"));
++const AdminWell = lazy(() => import("./pages/AdminWell"));
+ const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
+ const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
+ 
++/** 지연 청크가 오는 동안의 얇은 자리 표시 */
++function PageFall() {
++  return <div style={{ padding: "56px 0 40px", textAlign: "center", color: "#8A929C", fontSize: 13 }}>여는 중…</div>;
++}
++
+ function useHash() {
+   const [hash, setHash] = useState(location.hash);
+   useEffect(() => {
+@@ -388,7 +395,7 @@ function StudentApp() {
+   return (
+     <>
+       {mode === "browse" && <ShellTop theme={theme} hash={hash} />}
+-      <AppRoutes />
++      <Suspense fallback={<PageFall />}><AppRoutes /></Suspense>
+       {mode === "browse" && <ShellTabs theme={theme} hash={hash} />}
+     </>
+   );
+diff --git a/src/components/Shell.jsx b/src/components/Shell.jsx
+index fdc9ed6..12158a1 100644
+--- a/src/components/Shell.jsx
++++ b/src/components/Shell.jsx
+@@ -19,9 +19,8 @@ export const TABS = [
+ 
+ const SUBTABS = {
+   study: [["개념 공부", "#/study/concept"], ["연습문제", "#/study/practice"], ["시험 보기", "#/study/exam"]],
+-  tools: [["전체", "#/tools"], ["오답노트", "#/tools/wrong"], ["질문하기", "#/tools/ask"], ["사진 채점", "#/tools/omr"],
+-          ["사진 힌트", "#/tools/hint"], ["문장 해설", "#/tools/read"], ["표시 연습", "#/tools/mark"],
+-          ["서술형", "#/tools/essay"], ["스피드 연산", "#/tools/calc"], ["찍어서 배우기", "#/tools/photo"]],
++  tools: [["전체", "#/tools"], ["서술형", "#/tools/essay"], ["사진 힌트", "#/tools/hint"],
++          ["문장 해설", "#/tools/read"], ["표시 연습", "#/tools/mark"], ["풀이 검사", "#/tools/check"]],
+   board: [["공지", "#/board/notice"], ["커뮤니티", "#/board/community"], ["질문", "#/board/qna"]],
+ };
+ 
+@@ -58,24 +57,43 @@ function subOn(hash, to, list) {
+   return (h === root || h === root + "") && to === list[0][1];
+ }
+ 
++// ── 화면 전환마다 상단·하단이 늦게 뜨지 않도록: 인증·역할·디데이를 모듈 캐시로 ──
++// getSession 은 로컬 저장소만 봐서 즉시고, 역할·디데이는 첫 조회 뒤 재사용(디데이 10분).
++let authCache = null;   // null 미확인 | true | false
++let roleCache = null;   // { isAdmin } | null
++let ddayCache;          // undefined 미조회 | null 없음 | { days, title }
++let ddayAt = 0;
++
+ /** 상단: 로고(모/강 토글 유지) · 베타 · D-day · 마이페이지 + 현재 탭의 서브탭 */
+ export function ShellTop({ theme, hash }) {
+-  const [me, setMe] = useState(null);
+-  const [dday, setDday] = useState(null);
++  const [me, setMe] = useState(() => (authCache === true ? { isAdmin: roleCache?.isAdmin || false } : authCache));
++  const [dday, setDday] = useState(() => (ddayCache === undefined ? null : ddayCache));
+   useEffect(() => {
+-    supabase.auth.getUser().then(async ({ data }) => {
+-      const u = data?.user; if (!u) { setMe(false); return; }
+-      const { data: p } = await supabase.from("profiles").select("role").eq("id", u.id).maybeSingle();
+-      setMe({ isAdmin: p?.role === "admin" });
++    let alive = true;
++    supabase.auth.getSession().then(async ({ data }) => {
++      const u = data?.session?.user;
++      authCache = !!u;
++      if (!u) { if (alive) setMe(false); return; }
++      if (alive) setMe({ isAdmin: roleCache?.isAdmin || false });
++      if (!roleCache) {
++        const { data: p } = await supabase.from("profiles").select("role").eq("id", u.id).maybeSingle();
++        roleCache = { isAdmin: p?.role === "admin" };
++        if (alive) setMe({ isAdmin: roleCache.isAdmin });
++      }
+     });
+-    const today = new Date().toISOString().slice(0, 10);
+-    supabase.from("events").select("date, title").eq("dday", true).gte("date", today)
+-      .order("date").limit(1).then(({ data }) => {
+-        if (data?.[0]) {
+-          const d = Math.round((new Date(data[0].date + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
+-          setDday({ days: d, title: data[0].title });
+-        }
+-      });
++    if (ddayCache === undefined || Date.now() - ddayAt > 10 * 60e3) {
++      const today = new Date().toISOString().slice(0, 10);
++      supabase.from("events").select("date, title").eq("dday", true).gte("date", today)
++        .order("date").limit(1).then(({ data }) => {
++          ddayAt = Date.now();
++          if (data?.[0]) {
++            const d = Math.round((new Date(data[0].date + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
++            ddayCache = { days: d, title: data[0].title };
++          } else ddayCache = null;
++          if (alive) setDday(ddayCache);
++        });
++    }
++    return () => { alive = false; };
+   }, []);
+   if (!me) return null;
+   const tab = tabOf(hash);
+@@ -148,10 +166,12 @@ export function TabsRow({ theme, hash, cfg, onWell, wellProps = {} }) {
+ 
+ /** 하단 고정 탭바 — 대시보드 · 공부하기 | ⛲ | 학습 도구 · 게시판 */
+ export function ShellTabs({ theme, hash }) {
+-  const [ok, setOk] = useState(false);
++  const [ok, setOk] = useState(() => authCache === true);
+   const [sheet, setSheet] = useState(false);
+   const cfg = useWellCfg();
+-  useEffect(() => { supabase.auth.getUser().then(({ data }) => setOk(!!data?.user)); }, []);
++  useEffect(() => {
++    supabase.auth.getSession().then(({ data }) => { authCache = !!data?.session; setOk(authCache); });
++  }, []);
+   if (!ok) return null;
+   return (
+     <>
+diff --git a/src/gate/Gate.jsx b/src/gate/Gate.jsx
+index 9b1b004..3330fb4 100644
+--- a/src/gate/Gate.jsx
++++ b/src/gate/Gate.jsx
+@@ -24,7 +24,7 @@ export default function Gate() {
+             {BETA.on && <span style={{ fontSize: 10.5, fontWeight: 800, color: "#fff", background: "#7C3AED", borderRadius: 999, padding: "2px 7px" }}>{BETA.label}</span>}
+           </div>
+           <div style={{ fontSize: 13.5, color: "var(--mut)", lineHeight: 1.6 }}>
+-            개념 카드로 배우고, 문항 세트·사진 채점·표시 연습으로 풀어요.<br />틀린 문제는 오답노트에 모여요.
++            개념 카드로 배우고, 문제를 찍어 문장 해설·표시 연습·서술형 첨삭으로 익혀요.
+           </div>
+           <div style={{ marginTop: 10, fontSize: 13, fontWeight: 800, color: "var(--ac)" }}>시작 →</div>
+         </button>
+diff --git a/src/lib/well.js b/src/lib/well.js
+index a12716e..4736eff 100644
+--- a/src/lib/well.js
++++ b/src/lib/well.js
+@@ -3,14 +3,13 @@
+ // 연출은 딱 3가지(사용자 확정): 맑음 = 해 그림자 · 흐림/비 = 그림자 없이 감광 · 밤 = 중앙 조명.
+ // 우물 그림은 기본 1장 — 번들(/brand/well/base.webp)이 기본, 관리자가 figures/well/base.* 업로드로 교체.
+ 
+-/** 우물이 여는 카메라 기능들 (탭하면 바로 실행) */
++/** 우물이 여는 사진 도구들 (탭하면 바로 실행) — 학습 도구 탭과 이름·순서 동일 */
+ export const WELL_FEATURES = [
+-  ["📖", "문장 이해하기", "문제를 찍으면 단서에 형광펜", "#/solve/photo/read"],
+-  ["✍️", "표시 연습", "어디에 표시할지 차례대로 보여줘요", "#/solve/photo/mark"],
+-  ["📝", "서술형 채점", "답안까지 찍으면 채점·첨삭", "#/solve/photo/essay"],
+-  ["🔍", "풀이과정 검사", "페이지를 찍어 풀이 습관 진단", "#/solve/photo/check"],
+-  ["🖨️", "사진 채점", "답안 카드를 찍어 자동 채점", "#/solve/omr"],
++  ["📝", "서술형 채점·첨삭", "풀이까지 찍으면 채점하고 첨삭", "#/solve/photo/essay"],
+   ["🗝️", "사진 힌트", "막힌 문제, 답 대신 첫걸음만", "#/learn/hint"],
++  ["🔍", "문장 해설", "문제를 찍으면 단서에 형광펜", "#/solve/photo/read"],
++  ["✍️", "표시 연습", "어디에 표시할지 차례대로", "#/solve/photo/mark"],
++  ["🔬", "풀이과정 검사", "페이지를 찍어 풀이 습관 진단", "#/solve/photo/check"],
+ ];
+ 
+ /** 기본 설정 — app_settings.well_ui 로 관리자가 덮어쓴다 */
+diff --git a/src/pages/Study.jsx b/src/pages/Study.jsx
+index 1a21380..b7b12de 100644
+--- a/src/pages/Study.jsx
++++ b/src/pages/Study.jsx
+@@ -6,7 +6,7 @@ import { listConcepts } from "../lib/concepts";
+ import { UNIT_NAMES, UNIT_ORDER } from "../lib/items";
+ import { readLastResult } from "../lib/setplay";
+ import { getRecentConcepts } from "../lib/review";
+-import { TEST_TYPES, describeTimer, loadRunsLocal, mergeRuns, describeRun, presetOf } from "../lib/exam";
++import { TEST_TYPES, describeTimer, presetOf } from "../lib/exam";
+ import ItemPicker from "./solve/ItemPicker";
+ import "./solve/solve.css";
+ 
+@@ -45,6 +45,13 @@ const CSS = `
+   border-radius: 12px; padding: 12px; text-align: left; color: var(--text); cursor: pointer; font-family: inherit; }
+ .st-tile .tt { font-size: 13.5px; font-weight: 800; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+ .st-tile .ds { font-size: 11px; color: var(--muted); line-height: 1.5; }
++.st-dev { opacity: .6; cursor: default; }
++.st-devb { display: inline-flex; margin-left: 6px; font-size: 9px; font-weight: 900; letter-spacing: .5px; color: #fff;
++  background: #94A3B8; border-radius: 999px; padding: 2px 7px; vertical-align: middle; }
++.st-dark .st-devb { background: #475569; }
++.st-devnote { background: var(--surface); border: 1px dashed var(--muted); border-radius: 12px;
++  padding: 12px 14px; font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-bottom: 4px; }
++.st-devnote b { color: var(--text); }
+ .st-badge { display: inline-flex; font-size: 9.5px; font-weight: 900; letter-spacing: .5px; color: #fff;
+   border-radius: 999px; padding: 2px 7px; line-height: 1.4; }
+ .st-meta { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
+@@ -131,24 +138,11 @@ const EXAM_GROUPS = [
+   ["스페셜", ["ash", "rain", "out"]],
+ ];
+ 
++// 시험 보기 전면 개발중 전환(2026-09-20, 사용자 확정) — 유형 구성은 보여주되 실행은 잠근다.
+ function ExamSub() {
+-  const [runs, setRuns] = useState(null);
+-  useEffect(() => {
+-    let alive = true;
+-    (async () => {
+-      let remote = [];
+-      try {
+-        const { data } = await supabase.from("test_runs")
+-          .select("id, test_type, unit_id, concept_ids, n, correct_n, score, max, finished_at")
+-          .order("finished_at", { ascending: false }).limit(5);
+-        remote = data || [];
+-      } catch { /* 테이블 없거나 실패 — 로컬만 */ }
+-      if (alive) setRuns(mergeRuns(remote, loadRunsLocal(), 3));
+-    })();
+-    return () => { alive = false; };
+-  }, []);
+   return (
+     <>
++      <div className="st-devnote">🚧 시험 보기는 지금 <b>개발 중</b>이에요 — 문항을 차곡차곡 쌓는 중이라, 준비되면 여기서 바로 열려요.</div>
+       {EXAM_GROUPS.map(([label, codes]) => (
+         <div key={label}>
+           <p className="st-sec">{label}</p>
+@@ -157,37 +151,19 @@ function ExamSub() {
+               const t = presetOf(code) || TEST_TYPES.find((x) => x.code === code);
+               if (!t) return null;
+               return (
+-                <button key={code} className="st-tile" onClick={() => (location.hash = t.route || `#/solve/test/${t.code}`)}>
+-                  <span className="tt">{t.icon} {t.name}
+-                    {t.badge && <span className="st-badge" style={{ background: t.badge.color }}>{t.badge.text}</span>}
+-                  </span>
++                <div key={code} className="st-tile st-dev" aria-disabled="true">
++                  <span className="tt">{t.icon} {t.name}<span className="st-devb">개발중</span></span>
+                   <span className="ds">{t.desc}</span>
+                   <span className="st-meta">
+                     {t.n > 0 && <span className="st-tag">{t.n}문항</span>}
+                     <span className="st-tag">{describeTimer(t)}</span>
+                   </span>
+-                </button>
++                </div>
+               );
+             })}
+           </div>
+         </div>
+       ))}
+-      <p className="st-sec">최근 응시</p>
+-      {runs === null ? <div className="st-empty">불러오는 중…</div>
+-        : runs.length === 0 ? <div className="st-empty">아직 응시한 시험이 없어요. 위에서 유형을 골라 시작해 보세요.</div>
+-        : (
+-          <div className="st-list">
+-            {runs.map((r) => {
+-              const d = describeRun(r, UNIT_NAMES);
+-              return (
+-                <button key={String(r.id)} className="st-item" onClick={() => (location.hash = d.link)}>
+-                  <span className="num" style={{ width: "auto", fontSize: 15 }}>{presetOf(r.test_type)?.icon || "🧪"}</span>
+-                  <span className="nm"><b>{d.name}{d.scope ? ` · ${d.scope}` : ""}</b><small>{d.score}{d.local ? " · 기기 저장" : ""}</small></span>
+-                </button>
+-              );
+-            })}
+-          </div>
+-        )}
+     </>
+   );
+ }
+diff --git a/src/pages/Tools.jsx b/src/pages/Tools.jsx
+index 9c63d47..8e571ee 100644
+--- a/src/pages/Tools.jsx
++++ b/src/pages/Tools.jsx
+@@ -1,15 +1,21 @@
+-// 학습 도구 탭 (#/tools) — 보조 기능 8종 모음 (셸이 상·하단을 그린다)
+-// sub: '' | wrong | ask | omr | hint | read | mark | essay | calc — 서브탭이 고른 도구만 크게 보여준다(무신사식 필터).
+-export const TOOLS = [
+-  { key: "wrong", ic: "📕", nm: "오답노트", ds: "틀린 문제를 모아 다시 풀고 정리해요. 세트·시험에서 틀린 문항이 자동으로 쌓여요.", to: "#/learn/wrong" },
+-  { key: "ask",   ic: "💬", nm: "질문하기", ds: "개념 단락이나 문항에서 바로 질문하고, 답변을 게시판에서 확인해요.", to: "#/board/qna" },
+-  { key: "omr",   ic: "📷", nm: "사진 채점", ds: "시험지를 뽑아 풀고 답안 카드를 찍으면 자동으로 채점돼요.", to: "#/solve/omr" },
++// 학습 도구 탭 (#/tools) — 열린 도구 5종 + 개발 중 3종(하단) (셸이 상·하단을 그린다)
++// 2026-09-20 재편(사용자 확정): 찍어서 배우기(촬영 모듈) 기능들을 상위로 꺼내고,
++// 서술형은 사진 촬영→인식→채점·첨삭(촬영 모듈)으로 교체, 스피드 연산은 삭제,
++// 오답노트·질문하기·찰칵 채점(구 사진 채점)은 개발 중으로 하단 배치.
++// sub: '' | essay | hint | read | mark | check — 서브탭이 고른 도구만 크게(무신사식 필터).
++
++export const TOOLS_OPEN = [
++  { key: "essay", ic: "📝", nm: "서술형 채점·첨삭", ds: "문제와 내 풀이를 사진으로 찍으면 알아보고, 기준표로 채점하고 첨삭까지 해줘요.", to: "#/solve/photo/essay" },
+   { key: "hint",  ic: "🗝️", nm: "사진 힌트", ds: "막힌 문제를 찍으면 답 대신 첫걸음을 알려줘요.", to: "#/learn/hint" },
+-  { key: "read",  ic: "🔍", nm: "문장 해설", ds: "문제 문장에서 숫자·척도·단서 경계를 짚고 무엇을 구하는지 정리해요.", to: "#/solve/read" },
+-  { key: "mark",  ic: "✍️", nm: "표시 연습", ds: "동그라미·밑줄·빗금으로 문제에 표시하는 습관을 연습해요.", to: "#/solve/mark" },
+-  { key: "essay", ic: "📝", nm: "서술형 자가채점", ds: "풀이를 쓰고 채점 기준표로 스스로 점수를 매겨 봐요.", to: "#/solve/essay" },
+-  { key: "calc",  ic: "🧮", nm: "스피드 연산", ds: "제한 시간 안에 연산을 푸는 훈련이에요.", to: "#/learn/calc" },
+-  { key: "photo", ic: "📸", nm: "찍어서 배우기", ds: "문제를 찍으면 문장 이해·표시 연습·서술형 채점·풀이과정 검사로 이어져요. 하단 우물을 눌러도 열려요.", to: "#/solve/photo" },
++  { key: "read",  ic: "🔍", nm: "문장 해설", ds: "문제를 찍으면 단서마다 형광펜을 긋고, 무엇을 구하는지 정리해줘요.", to: "#/solve/photo/read" },
++  { key: "mark",  ic: "✍️", nm: "표시 연습", ds: "동그라미·밑줄·빗금을 어디에 칠지 차례대로 보여주고, 직접 표시하며 연습해요.", to: "#/solve/photo/mark" },
++  { key: "check", ic: "🔬", nm: "풀이과정 검사", ds: "푼 페이지를 통째로 찍으면 연결고리·암산·실수 습관을 진단해줘요.", to: "#/solve/photo/check" },
++];
++
++export const TOOLS_DEV = [
++  { key: "wrong", ic: "📕", nm: "오답노트", ds: "틀린 문제가 자동으로 모여 다시 푸는 공간이에요." },
++  { key: "ask",   ic: "💬", nm: "질문하기", ds: "개념·문항에서 바로 질문하고 답변을 받는 기능이에요." },
++  { key: "omr",   ic: "📸", nm: "찰칵 채점", ds: "시험지를 뽑아 풀고 답안 카드를 찍으면 자동 채점되는 기능이에요." },
+ ];
+ 
+ const CSS = `
+@@ -33,29 +39,57 @@ const CSS = `
+ .tl-go { align-self: flex-start; margin-top: 8px; background: var(--accent); border: none; border-radius: 999px;
+   color: #fff; font-size: 12.5px; font-weight: 800; padding: 8px 16px; cursor: pointer; font-family: inherit; }
+ .tl-dark .tl-go { color: #08302B; }
++.tl-sec { margin: 16px 2px 8px; font-size: 12px; font-weight: 800; color: var(--muted); }
++.tl-card.dev { opacity: .62; cursor: default; }
++.tl-card.dev .nm { display: flex; align-items: center; gap: 6px; }
++.tl-devb { flex: none; font-size: 9px; font-weight: 900; letter-spacing: .5px; color: #fff; background: #94A3B8;
++  border-radius: 999px; padding: 2px 7px; }
++.tl-dark .tl-devb { background: #475569; }
+ .tl-note { font-size: 12px; color: var(--muted); margin: 10px 2px 0; line-height: 1.6; }
+ `;
+ 
++function OpenCard({ t, big = false }) {
++  return (
++    <button className={"tl-card" + (big ? " big" : "")} onClick={() => (location.hash = t.to)}>
++      <span className="ic">{t.ic}</span>
++      <span className="nm">{t.nm}</span>
++      <span className="ds">{t.ds}</span>
++      {big && <span className="tl-go">바로 시작 →</span>}
++    </button>
++  );
++}
++
++function DevCard({ t }) {
++  return (
++    <div className="tl-card dev" aria-disabled="true">
++      <span className="ic">{t.ic}</span>
++      <span className="nm">{t.nm} <span className="tl-devb">개발중</span></span>
++      <span className="ds">{t.ds}</span>
++    </div>
++  );
++}
++
+ export default function Tools({ sub = "", theme = "light" }) {
+   const key = (sub || "").split("?")[0].split("/")[0];
+-  const one = TOOLS.find((t) => t.key === key) || null;
+-  const list = one ? [one] : TOOLS;
++  const one = TOOLS_OPEN.find((t) => t.key === key) || null;
+   return (
+     <div className={`tl-root tl-${theme}`}>
+       <style>{CSS}</style>
+       <div className="tl-wrap">
+-        <div className="tl-grid">
+-          {list.map((t) => (
+-            <button key={t.key} className={"tl-card" + (one ? " big" : "")}
+-              onClick={() => (location.hash = t.to)}>
+-              <span className="ic">{t.ic}</span>
+-              <span className="nm">{t.nm}</span>
+-              <span className="ds">{t.ds}</span>
+-              {one && <span className="tl-go">바로 시작 →</span>}
+-            </button>
+-          ))}
+-        </div>
+-        {!one && <p className="tl-note">공부(개념·연습문제·시험)는 아래 「공부하기」 탭에, 여기는 공부를 돕는 도구들이에요.</p>}
++        {one ? (
++          <div className="tl-grid"><OpenCard t={one} big /></div>
++        ) : (
++          <>
++            <div className="tl-grid">
++              {TOOLS_OPEN.map((t) => <OpenCard key={t.key} t={t} />)}
++            </div>
++            <p className="tl-sec">🚧 개발 중인 기능 — 준비되면 여기서 열려요</p>
++            <div className="tl-grid">
++              {TOOLS_DEV.map((t) => <DevCard key={t.key} t={t} />)}
++            </div>
++            <p className="tl-note">하단 가운데 우물을 눌러도 사진 도구들을 바로 열 수 있어요. 공부(개념·연습문제)는 「공부하기」 탭에 있어요.</p>
++          </>
++        )}
+       </div>
+     </div>
+   );
+diff --git a/src/pages/solve/Omr.jsx b/src/pages/solve/Omr.jsx
+index 79a3f65..c83ccbe 100644
+--- a/src/pages/solve/Omr.jsx
++++ b/src/pages/solve/Omr.jsx
+@@ -1,4 +1,4 @@
+-// 사진 채점 (OMR) — 시험지 + 답안 카드 인쇄 → 칠한 카드를 사진으로 → 브라우저 인식(마커·호모그래피·버블) → 확인 → 채점
++// 찰칵 채점 (구 사진 채점, OMR) — 시험지 + 답안 카드 인쇄 → 칠한 카드를 사진으로 → 브라우저 인식(마커·호모그래피·버블) → 확인 → 채점
+ // 라우트: #/solve/omr (홈) · #/solve/omr/new (시험지 만들기) · #/solve/omr/grade[/<code>] (채점)
+ // 인식은 src/lib/omr/detect.js(순수) 가 하고, 마커를 못 찾거나 신뢰도가 낮으면 /api/ai (task "omr") 로 보조한다.
+ // 확인 화면을 거치지 않고는 채점하지 않는다 (인식은 틀릴 수 있다 — 학생이 고친 답이 최종).
+@@ -167,7 +167,7 @@ export default function Omr({ sub, hash }) {
+     grade: null,
+   };
+   return (
+-    <SolveShell title="사진 채점" sub={SUB[route.view]} back={route.view === "home" ? "#/tools/omr" : "#/solve/omr"} toast={toast}>
++    <SolveShell title="찰칵 채점" sub={SUB[route.view]} back={route.view === "home" ? "#/tools" : "#/solve/omr"} toast={toast}>
+       <style>{CSS}</style>
+       {route.view === "new" && <MakeView say={say} />}
+       {route.view === "grade" && <GradeView key={route.code || "_"} uid={uid} code={route.code} say={say} />}
+diff --git a/src/pages/solve/Solve.jsx b/src/pages/solve/Solve.jsx
+index 1ef0eb8..9018238 100644
+--- a/src/pages/solve/Solve.jsx
++++ b/src/pages/solve/Solve.jsx
+@@ -15,7 +15,7 @@ const TILES = [
+   { ic: "✏️", tt: "문제 풀기", ds: "개념을 고르고 문항 세트를 풀어요. 풀고 나면 해설과 도형 애니메이션이 열려요.", to: "#/solve/set" },
+   { ic: "📖", tt: "예제·유제", ds: "개념 카드의 예제를 한 줄씩 따라가며 풀어요.", to: "#/solve/practice" },
+   { ic: "🧪", tt: "시험 보기", ds: "개념 묶음·단원·연산·모의고사 등 8가지 시험을 시간 안에 풀고 결과를 남겨요.", to: "#/solve/test" },
+-  { ic: "📷", tt: "사진 채점", ds: "시험지를 뽑아 종이에 풀고, 답안 카드를 찍으면 채점돼요.", to: "#/solve/omr" },
++  { ic: "📸", tt: "찰칵 채점", ds: "시험지를 뽑아 종이에 풀고, 답안 카드를 찍으면 채점돼요.", to: "#/solve/omr" },
+   { ic: "🔍", tt: "문장 해설", ds: "문제 문장에서 숫자·척도·단서 경계를 짚고, 무엇을 구하는지 정리해요.", to: "#/solve/read" },
+   { ic: "✍️", tt: "표시 연습", ds: "동그라미·밑줄·빗금으로 문제에 표시하는 습관을 연습해요.", to: "#/solve/mark" },
+   { ic: "📝", tt: "서술형 자가채점", ds: "풀이를 쓰고 채점 기준표로 스스로 점수를 매겨 봐요.", to: "#/solve/essay" },
+diff --git a/tests/well.test.mjs b/tests/well.test.mjs
+index 67a12ea..5726211 100644
+--- a/tests/well.test.mjs
++++ b/tests/well.test.mjs
+@@ -53,7 +53,8 @@ t("깨진 JSON은 기본값", JSON.stringify(clampWellCfg("{oops")) === JSON.str
+ t("객체로 줘도 된다", clampWellCfg({ bar: { h: 60 } }).bar.h === 60);
+ 
+ // ── 런처 목록 ──
+-t("카메라 기능 6종", WELL_FEATURES.length === 6 && WELL_FEATURES.every(([, , , to]) => to.startsWith("#/")));
++t("사진 도구 5종(찰칵 채점은 개발중 제외)", WELL_FEATURES.length === 5 && WELL_FEATURES.every(([, , , to]) => to.startsWith("#/"))
++  && !WELL_FEATURES.some(([, , , to]) => to.includes("omr")));
+ 
+ console.log(`${ok}/${n} passed`);
+ if (ok !== n) process.exit(1);
+-- 
+2.43.0
+
