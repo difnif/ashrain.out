@@ -10,6 +10,7 @@ import { navigatePath } from "../shared/roles";
 import { BETA } from "../lib/beta";
 import { WellButton, WellSheet, useWellCfg, WELL_CSS } from "./Well";
 import { runningJobs, unseenJobs } from "../lib/photoJobs";
+import { warmStudy } from "../lib/studyCache";
 
 // 게시판 탭은 「기록」으로 대체(사용자 확정 2026-09-20) — 게시판은 종성 작업 때 정교화 후 재공개.
 export const TABS = [
@@ -178,6 +179,8 @@ export function ShellTabs({ theme, hash }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { authCache = !!data?.session; setOk(authCache); });
   }, []);
+  // 한가할 때 공부하기 화면·데이터를 미리 데워 둔다 — 첫 진입도 즉시 (세션 1회)
+  useEffect(() => { const t = setTimeout(warmStudy, 1800); return () => clearTimeout(t); }, []);
   useEffect(() => {
     let timer = null;
     const on = () => setJt((t) => t + 1);

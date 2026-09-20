@@ -37,6 +37,10 @@ export const TEST_TYPES = [
 
 export const presetOf = (code) => TEST_TYPES.find((t) => t.code === String(code || "")) || null;
 
+// 베타에 열린 시험 유형 (2026-09-21 사용자 확정: 개념 묶음·단원 테스트부터) — 나머지는 개발중 표시
+export const EXAM_OPEN = ["concept_set", "unit"];
+export const isExamOpen = (code) => EXAM_OPEN.includes(String(code || ""));
+
 /** 타이머 한 줄 설명 — "제한 시간 없음" · "총 30분" · "문항당 20초" */
 export function describeTimer(preset) {
   const t = preset?.timer;

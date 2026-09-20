@@ -50,3 +50,9 @@
 .sv-badge { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; background: var(--accent); color: #fff; vertical-align: middle; margin-left: 6px; }
 .sv-badge.beta { background: #7C3AED; }
 .sv-kbd { font-family: ui-monospace, monospace; font-size: 12px; background: var(--surface2); padding: 1px 6px; border-radius: 6px; }
+
+/* 개념·기능 검색 입력 (ItemPicker·공부하기 공용, 2026-09-21) */
+.sv-search { width: 100%; box-sizing: border-box; margin: 0 0 12px; padding: 10px 14px; font: inherit; font-size: 13.5px;
+  color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; outline: none; }
+.sv-search:focus { border-color: var(--accent); }
+.sv-search::placeholder { color: var(--muted); }

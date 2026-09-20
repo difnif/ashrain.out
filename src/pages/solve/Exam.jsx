@@ -14,12 +14,13 @@ import ItemQuestion from "../../components/ItemQuestion";
 import ItemView from "../../components/ItemView";
 import MathText from "../../components/MathText";
 import { listConcepts } from "../../lib/concepts";
-import { UNIT_NAMES, UNIT_ORDER, liveCountsByUnit, fetchLiveItems, logAttempt } from "../../lib/items";
+import { UNIT_NAMES, UNIT_ORDER, fetchLiveItems, logAttempt } from "../../lib/items";
+import { swrCounts } from "../../lib/studyCache";
 import { kindOf } from "../../lib/answers";
 import { saveItemWrongNotes } from "../../lib/wrongnotes";
 import { correctAnswerText, myAnswerText, questionPreview, fmtClock, wrongEntries } from "../../lib/setplay";
 import {
-  TEST_TYPES, presetOf, describeTimer, presetRules, fetchPlan, buildSelection,
+  TEST_TYPES, presetOf, isExamOpen, describeTimer, presetRules, fetchPlan, buildSelection,
   emptyAnswer, isAnswered, answeredCount, judgeAll, itemPoints, scoreRun, examMessage,
   fmtTimer, remainingSec, isTimerWarn, newRunId, runToRow, saveRunLocal, loadRunsLocal, mergeRuns, describeRun,
 } from "../../lib/exam";
@@ -38,6 +39,9 @@ const CSS = `
 .ex-rules { margin:0; padding-left:18px; font-size:13.5px; line-height:1.7; }
 .ex-note { font-size:12.5px; color:var(--muted); line-height:1.6; margin:10px 0 0; padding:10px 12px; border-radius:10px; background:var(--surface2); }
 .ex-units { display:flex; flex-wrap:wrap; gap:6px; }
+.ex-tile.ex-dev { opacity:.55; cursor:default; }
+.ex-devb { display:inline-flex; margin-left:6px; font-size:9px; font-weight:900; letter-spacing:.5px; color:#fff;
+  background:#94A3B8; border-radius:999px; padding:2px 7px; vertical-align:middle; }
 .ex-units .sv-chip:disabled { opacity:.45; cursor:default; }
 .ex-recent .sv-item .tx b { font-weight:800; }
 .ex-head { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; padding:8px 12px; margin:0 0 6px; background:var(--surface); border:1px solid var(--border); border-radius:12px; }
@@ -167,6 +171,14 @@ export default function Exam({ sub, hash }) {
         <div className="sv-empty">없는 시험 유형이에요.<br /><a href="#/solve/test">시험 고르기</a></div>
       </SolveShell>
     );
+  } else if (!isExamOpen(type)) {
+    body = (
+      <SolveShell title={preset.name} back="#/study/exam" toast={toast}>
+        <div className="sv-empty">🚧 {preset.icon} <b>{preset.name}</b>는 아직 개발 중이에요.<br />
+          문항을 쌓는 대로 열려요 — 지금은 개념 묶음·단원 테스트를 이용할 수 있어요.<br /><br />
+          <a href="#/study/exam">시험 보기로 돌아가기</a></div>
+      </SolveShell>
+    );
   } else if (preset.route) body = <RouteCard preset={preset} toast={toast} />;
   else body = <ExamFlow key={`${type}:${scopeId || ""}`} preset={preset} scopeId={scopeId} uid={uid} toast={toast} setToast={setToast} />;
   return <><style>{CSS}</style>{body}</>;
@@ -197,19 +209,23 @@ function TypePicker({ uid, toast }) {
     <SolveShell title="시험 응시" back="#/study/exam" toast={toast}
       sub="유형을 고르면 범위를 정하고 바로 시작해요. 결과는 응시 기록으로 남아요.">
       <div className="ex-tiles">
-        {TEST_TYPES.map((t) => (
-          <button key={t.code} className="sv-tile ex-tile" onClick={() => { location.hash = t.route || `#/solve/test/${t.code}`; }}>
-            <span className="ic">{t.icon}</span>
-            <span className="tt">{t.name}<Badge preset={t} /></span>
-            <span className="ds">{t.desc}</span>
-            <span className="ex-meta">
-              {t.n > 0 && <span className="ex-tag">{t.n}문항</span>}
-              <span className="ex-tag">{describeTimer(t)}</span>
-              <span className="ex-tag">{t.scope === "concept" ? "개념 하나" : "단원 하나"}</span>
-              {t.route && <span className="ex-tag">서술형 자가채점으로</span>}
-            </span>
-          </button>
-        ))}
+        {TEST_TYPES.map((t) => {
+          const open = isExamOpen(t.code);
+          return (
+            <button key={t.code} className={"sv-tile ex-tile" + (open ? "" : " ex-dev")} disabled={!open}
+              onClick={() => { if (open) location.hash = t.route || `#/solve/test/${t.code}`; }}>
+              <span className="ic">{t.icon}</span>
+              <span className="tt">{t.name}<Badge preset={t} />{!open && <span className="ex-devb">개발중</span>}</span>
+              <span className="ds">{t.desc}</span>
+              <span className="ex-meta">
+                {t.n > 0 && <span className="ex-tag">{t.n}문항</span>}
+                <span className="ex-tag">{describeTimer(t)}</span>
+                <span className="ex-tag">{t.scope === "concept" ? "개념 하나" : "단원 하나"}</span>
+                {t.route && <span className="ex-tag">서술형 자가채점으로</span>}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="sv-sec">최근 응시</div>
@@ -247,6 +263,30 @@ function RouteCard({ preset, toast }) {
   );
 }
 
+// 단원 칩 — 문항이 있는 단원만 기본 노출, 나머지는 「다른 학기」로 접어 둔다 (2026-09-21)
+function UnitChips({ counts, last, onPick }) {
+  const [more, setMore] = useState(false);
+  const vis = !counts || more ? UNIT_ORDER : UNIT_ORDER.filter((u) => (counts[u] || 0) > 0 || u === last);
+  const hiddenN = UNIT_ORDER.length - vis.length;
+  return (
+    <div className="ex-units">
+      {vis.map((u) => {
+        const c = counts ? counts[u] || 0 : undefined;
+        return (
+          <button key={u} className={"sv-chip" + (u === last ? " on" : "")} disabled={c === 0} onClick={() => onPick(u)}>
+            {UNIT_NAMES[u]}{c != null ? <span className="sv-small"> {c}</span> : null}
+          </button>
+        );
+      })}
+      {counts && (hiddenN > 0 || more) && (
+        <button className="sv-chip" style={{ color: "var(--muted)" }} onClick={() => setMore((m) => !m)}>
+          {more ? "접기" : `다른 학기 +${hiddenN}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── 흐름: 범위 → 확인 → 응시 → 결과 ──────────────────────────────────────────
 function ExamFlow({ preset, scopeId, uid, toast, setToast }) {
   const isConcept = preset.scope === "concept";
@@ -280,7 +320,7 @@ function ExamFlow({ preset, scopeId, uid, toast, setToast }) {
   useEffect(() => {
     if (isConcept || phase !== "scope") return;
     let alive = true;
-    liveCountsByUnit().then((c) => { if (alive) setCounts(c || {}); }).catch(() => { if (alive) setCounts({}); });
+    swrCounts({}, (v) => { if (alive) setCounts(v ? v.unit : {}); });
     return () => { alive = false; };
   }, [isConcept, phase]);
 
@@ -369,16 +409,7 @@ function ExamFlow({ preset, scopeId, uid, toast, setToast }) {
         sub={`단원을 고르면 그 단원 전체에서 ${preset.n}문항이 나와요. ${describeTimer(preset)}.`}>
         <div className="sv-card">
           <div className="sv-sec" style={{ marginTop: 0 }}>단원</div>
-          <div className="ex-units">
-            {UNIT_ORDER.map((u) => {
-              const c = counts ? counts[u] : undefined;
-              return (
-                <button key={u} className={"sv-chip" + (u === last ? " on" : "")} disabled={c === 0} onClick={() => pickScope(u)}>
-                  {UNIT_NAMES[u]}{c != null ? <span className="sv-small"> {c}</span> : null}
-                </button>
-              );
-            })}
-          </div>
+          <UnitChips counts={counts} last={last} onPick={pickScope} />
           {counts && UNIT_ORDER.every((u) => !counts[u]) && <div className="sv-empty" style={{ marginTop: 12 }}>아직 공개된 문항이 없어요.</div>}
         </div>
       </SolveShell>
