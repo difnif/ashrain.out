@@ -9,6 +9,7 @@ export const TOOLS = [
   { key: "mark",  ic: "✍️", nm: "표시 연습", ds: "동그라미·밑줄·빗금으로 문제에 표시하는 습관을 연습해요.", to: "#/solve/mark" },
   { key: "essay", ic: "📝", nm: "서술형 자가채점", ds: "풀이를 쓰고 채점 기준표로 스스로 점수를 매겨 봐요.", to: "#/solve/essay" },
   { key: "calc",  ic: "🧮", nm: "스피드 연산", ds: "제한 시간 안에 연산을 푸는 훈련이에요.", to: "#/learn/calc" },
+  { key: "photo", ic: "📸", nm: "찍어서 배우기", ds: "문제를 찍으면 문장 이해·표시 연습·서술형 채점·풀이과정 검사로 이어져요. 하단 우물을 눌러도 열려요.", to: "#/solve/photo" },
 ];
 
 const CSS = `

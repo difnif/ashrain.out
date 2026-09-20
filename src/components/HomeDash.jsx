@@ -14,6 +14,7 @@ import { UNIT_NAMES, summarizeAttempts } from "../lib/items";
 import { loadRunsLocal, mergeRuns, describeRun, presetOf } from "../lib/exam";
 import { mcLabel } from "../lib/misconceptions";
 import { getRecentConcepts } from "../lib/review";
+import { getWx } from "../lib/wx";
 import ReviewCard from "./ReviewCard";
 
 const CSS = `
@@ -241,21 +242,7 @@ const skyOf = (h) =>
   h < 20 ? ["linear-gradient(135deg,#ee9ca7 0%,#b06ab3 100%)", "노을 지는 저녁이에요"] :
            ["linear-gradient(135deg,#141e30 0%,#243b55 100%)", "차분한 밤이에요"];
 
-function pickWeather(c) {
-  const t = c.temperature_2m, p = c.precipitation || 0, code = c.weather_code,
-        cc = c.cloud_cover ?? 0, ws = c.wind_speed_10m || 0;
-  const snowy = [71, 73, 75, 77, 85, 86].includes(code);
-  const rainy = !snowy && ([51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(code) || p > 0);
-  let base;
-  if (snowy)      base = "s" + (p >= 7 ? 6 : p >= 5 ? 5 : p >= 3 ? 4 : p >= 1.5 ? 3 : p >= 0.5 ? 2 : 1);
-  else if (rainy) base = "r" + (p >= 20 ? 6 : p >= 10 ? 5 : p >= 5 ? 4 : p >= 2 ? 3 : p >= 0.5 ? 2 : 1);
-  else            base = "c" + Math.min(6, Math.max(1, Math.round(cc / 20) + 1));
-  const over = [];
-  if (t <= 5)       over.push("f" + (t <= -15 ? 6 : t <= -12 ? 5 : t <= -8 ? 4 : t <= -3 ? 3 : t <= 0 ? 2 : 1));
-  else if (t >= 26) over.push("h" + (t >= 35 ? 6 : t >= 33 ? 5 : t >= 31 ? 4 : t >= 29 ? 3 : t >= 27.5 ? 2 : 1));
-  if (ws >= 4)      over.push("w" + (ws >= 21 ? 6 : ws >= 14 ? 5 : ws >= 11 ? 4 : ws >= 8 ? 3 : ws >= 6 ? 2 : 1));
-  return { base, over, t, snowy, rainy, cloudLv: +(base[0] === "c" ? base[1] : 6) };
-}
+// 실황 분류는 lib/wx.js(pickWeather)로 옮겼다 — 우물(하단 탭바)과 같은 신호·같은 캐시를 쓴다.
 
 const heroGrad = (wx, h) => {
   if (!wx) return skyOf(h)[0];
@@ -345,8 +332,7 @@ export default function HomeDash({ theme = "light", onToggleTheme }) { // eslint
         })));
       })
       .catch(() => { if (alive) setEvents([]); });
-    fetch("https://api.open-meteo.com/v1/forecast?latitude=37.66&longitude=126.83&current=temperature_2m,precipitation,weather_code,cloud_cover,wind_speed_10m")
-      .then((r) => r.json()).then((j) => { if (alive && j?.current) setWx(pickWeather(j.current)); }).catch(() => {});
+    getWx().then((w) => { if (alive && w) setWx(w); });
     // 복습 보상·쿠폰 등록 등으로 잔액이 바뀌면 다시 읽는다
     const off = onPoints(() => getBalances().then((b) => { if (alive && b) setBal(b); }));
     return () => { alive = false; off(); };

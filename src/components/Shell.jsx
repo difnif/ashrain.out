@@ -1,4 +1,5 @@
-// 학생앱 셸 (ui-v3) — 큰 카테고리 4개는 하단 고정 탭바, 하위 카테고리는 상단 고정 서브탭(무신사식).
+// 학생앱 셸 (ui-v3 → 우물 v1) — 큰 카테고리 4개는 하단 고정 탭바, 하위 카테고리는 상단 고정 서브탭(무신사식).
+// 탭바 중앙에는 「우물」 — 시간·날씨 따라 변하는 원형 버튼(카메라 기능 런처). 크기·이미지는 #/admin/well 에서.
 // 브라우즈 화면(대시보드·공부하기·학습 도구·게시판 목록)에서만 그려지고,
 // 기능 화면(개념 뷰어·문항 풀이·시험·글쓰기 등)은 FeatureBar(⌂·←·컨텍스트 버튼)만 쓴다 — App.jsx 가 shellMode 로 가른다.
 // 홈 복귀 = 「대시보드」 탭. 로고의 모/강 앱 전환 토글은 그대로 유지(사용자 확정).
@@ -7,6 +8,7 @@ import { supabase } from "../supabaseClient";
 import LogoTrigger from "../shared/LogoTrigger";
 import { navigatePath } from "../shared/roles";
 import { BETA } from "../lib/beta";
+import { WellButton, WellSheet, useWellCfg, WELL_CSS } from "./Well";
 
 export const TABS = [
   ["🏠", "대시보드", "#/"],
@@ -19,7 +21,7 @@ const SUBTABS = {
   study: [["개념 공부", "#/study/concept"], ["연습문제", "#/study/practice"], ["시험 보기", "#/study/exam"]],
   tools: [["전체", "#/tools"], ["오답노트", "#/tools/wrong"], ["질문하기", "#/tools/ask"], ["사진 채점", "#/tools/omr"],
           ["사진 힌트", "#/tools/hint"], ["문장 해설", "#/tools/read"], ["표시 연습", "#/tools/mark"],
-          ["서술형", "#/tools/essay"], ["스피드 연산", "#/tools/calc"]],
+          ["서술형", "#/tools/essay"], ["스피드 연산", "#/tools/calc"], ["찍어서 배우기", "#/tools/photo"]],
   board: [["공지", "#/board/notice"], ["커뮤니티", "#/board/community"], ["질문", "#/board/qna"]],
 };
 
@@ -98,7 +100,7 @@ export function ShellTop({ theme, hash }) {
           <div className="sh-admin">
             {[["📚 등록", "#/admin/concepts"], ["🔍 문항", "#/admin/items"], ["📄 자료", "#/admin/corpus"],
               ["💬 검토", "#/admin/qna"], ["🗂 대화", "#/admin/chats"], ["🖼 이미지", "#/admin/images"],
-              ["🗓 일정", "#/admin/calendar"], ["🛡 보호자", "#/admin/guardians"]].map(([l, to]) => (
+              ["🗓 일정", "#/admin/calendar"], ["⛲ 우물", "#/admin/well"], ["🛡 보호자", "#/admin/guardians"]].map(([l, to]) => (
               <button key={to} className="sh-abtn" onClick={() => (location.hash = to)}>{l}</button>
             ))}
           </div>
@@ -117,26 +119,47 @@ export function ShellTop({ theme, hash }) {
   );
 }
 
-/** 하단 고정 탭바 — 대시보드 · 공부하기 · 학습 도구 · 게시판 */
-export function ShellTabs({ theme, hash }) {
-  const [ok, setOk] = useState(false);
-  useEffect(() => { supabase.auth.getUser().then(({ data }) => setOk(!!data?.user)); }, []);
-  if (!ok) return null;
+/**
+ * 탭줄 한 벌 — 납작한 탭 2+2 사이에 우물. 하단 고정 탭바(ShellTabs)와
+ * 관리자 미리보기(#/admin/well)가 같은 모양을 쓰도록 분리해 두었다.
+ */
+export function TabsRow({ theme, hash, cfg, onWell, wellProps = {} }) {
   const tab = tabOf(hash);
   const onOf = (to) => (to === "#/" ? tab === "dash"
     : to === "#/study" ? tab === "study" : to === "#/tools" ? tab === "tools" : tab === "board");
+  const btn = ([ic, label, to]) => (
+    <button key={to} className={"sh-tab" + (onOf(to) ? " on" : "")}
+      onClick={() => (location.hash = to === "#/" ? "" : to)}>
+      <span className="ic">{ic}</span><span className="lb">{label}</span>
+    </button>
+  );
   return (
-    <nav className={"sh-tabs sh-" + theme} aria-label="주 메뉴">
-      <style>{SH_CSS}</style>
+    <div className={"sh-row sh-" + theme}
+      style={{ "--wt-h": cfg.bar.h + "px", "--wt-s": cfg.bar.tab / 100 }}>
+      <style>{SH_CSS + WELL_CSS}</style>
       <div className="sh-tabs-in">
-        {TABS.map(([ic, label, to]) => (
-          <button key={to} className={"sh-tab" + (onOf(to) ? " on" : "")}
-            onClick={() => (location.hash = to === "#/" ? "" : to)}>
-            <span className="ic">{ic}</span><span className="lb">{label}</span>
-          </button>
-        ))}
+        {TABS.slice(0, 2).map(btn)}
+        <WellButton theme={theme} cfg={cfg} onOpen={onWell} {...wellProps} />
+        {TABS.slice(2).map(btn)}
       </div>
-    </nav>
+    </div>
+  );
+}
+
+/** 하단 고정 탭바 — 대시보드 · 공부하기 | ⛲ | 학습 도구 · 게시판 */
+export function ShellTabs({ theme, hash }) {
+  const [ok, setOk] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const cfg = useWellCfg();
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setOk(!!data?.user)); }, []);
+  if (!ok) return null;
+  return (
+    <>
+      <nav className={"sh-tabs sh-" + theme} aria-label="주 메뉴">
+        <TabsRow theme={theme} hash={hash} cfg={cfg} onWell={() => setSheet(true)} />
+      </nav>
+      <WellSheet open={sheet} onClose={() => setSheet(false)} theme={theme} />
+    </>
   );
 }
 
@@ -145,7 +168,7 @@ const SH_CSS = `
 .sh-dark  { --sbg:#0B0C0F; --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#5EEAD4; }
 .sh-top { position: sticky; top: 0; z-index: 70; background: var(--sbg);
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
-.sh-top * , .sh-tabs * { box-sizing: border-box; }
+.sh-top * , .sh-tabs * , .sh-row * { box-sizing: border-box; }
 .sh-in { max-width: 1200px; margin: 0 auto; padding: 8px 14px 0; }
 .sh-r1 { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; }
 .sh-light .sh-r1 img { filter: grayscale(1) brightness(0); }
@@ -168,10 +191,12 @@ const SH_CSS = `
   border-top: 1px solid var(--bd);
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;
   padding-bottom: env(safe-area-inset-bottom, 0px); }
-.sh-tabs-in { max-width: 520px; margin: 0 auto; display: flex; padding: 6px 8px 8px; }
-.sh-tab { flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  color: var(--mut); cursor: pointer; padding: 4px 0; font-family: inherit; }
-.sh-tab .ic { font-size: 19px; line-height: 1; }
-.sh-tab .lb { font-size: 10.5px; font-weight: 800; }
+.sh-row { font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
+.sh-tabs-in { max-width: 520px; margin: 0 auto; display: flex; align-items: stretch;
+  height: var(--wt-h, 52px); padding: 0 10px; }
+.sh-tab { flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 1px; color: var(--mut); cursor: pointer; padding: 3px 0 4px; font-family: inherit; }
+.sh-tab .ic { font-size: calc(17px * var(--wt-s, 1)); line-height: 1; }
+.sh-tab .lb { font-size: calc(9.5px * var(--wt-s, 1)); font-weight: 800; }
 .sh-tab.on { color: var(--ac); }
 `;

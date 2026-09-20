@@ -46,6 +46,8 @@ import Study from "./pages/Study";
 import Tools from "./pages/Tools";
 import ToolLeaf from "./pages/ToolLeaf";
 import Board from "./pages/board/Board";
+// 우물 v1 — 탭바 중앙 우물(시간·날씨 테마)의 관리자 편집
+import AdminWell from "./pages/AdminWell";
 const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
 const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
 
@@ -323,6 +325,7 @@ function AppRoutes() {
   if (hash === "#/admin/guardians") return <Rx theme={theme}><AdminGuardians /></Rx>;
   if (hash.startsWith("#/guardian")) return <Rx theme={theme}><GuardianConsent /></Rx>;
   if (hash === "#/admin/calendar") return <Rx theme={theme}><AdminCalendar theme={theme} /></Rx>;
+  if (hash === "#/admin/well") return <Rx theme={theme}><AdminWell theme={theme} /></Rx>;
   const c = hash.match(/^#\/c\/(.+)$/);
   if (c) return <ConceptViewer conceptId={decodeURIComponent(c[1])} theme={theme} />;
   if (hash.startsWith("#/portrait")) {
