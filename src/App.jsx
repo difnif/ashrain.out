@@ -21,6 +21,7 @@ const PortraitStudio = lazy(() => import("./features/portrait/PortraitStudio"));
 const Philosophy = lazy(() => import("./components/Philosophy"));
 const GuardianConsent = lazy(() => import("./components/GuardianConsent"));
 const Board = lazy(() => import("./pages/board/Board"));
+const Records = lazy(() => import("./pages/Records"));
 const ToolLeaf = lazy(() => import("./pages/ToolLeaf"));
 const PracticeViewer = lazy(() => import("./pages/PracticeViewer"));
 const Library = lazy(() => import("./pages/Library"));
@@ -289,7 +290,7 @@ function AppRoutes() {
   }
 
   const LOCKED = ["#/learn/calc", "#/learn/wrong", "#/learn/hint", "#/board", "#/p/", "#/solve",
-    "#/study/practice", "#/study/exam", "#/tools"];
+    "#/study/practice", "#/study/exam", "#/tools", "#/records"];
   if (!verified && LOCKED.some((x) => hash.startsWith(x))) {
     return <VerifyGate theme={theme} prof={prof} />;
   }
@@ -310,6 +311,8 @@ function AppRoutes() {
   if (hash.startsWith("#/admin/codes")) return <Rx theme={theme}><AdminCodes /></Rx>;
   if (hash.startsWith("#/admin/users")) return <Rx theme={theme}><AdminUsers /></Rx>;
 
+  // 기록 탭(구 게시판 자리) — 촬영 학습 기록. 게시판 라우트는 잠들어 있음(종성 때 재공개).
+  if (hash.startsWith("#/records")) return <Rx theme={theme}><Records /></Rx>;
   if (hash.startsWith("#/board")) {
     const sub = hash.replace(/^#\/board\/?/, "");
     return <Rx theme={theme}><Board sub={sub} hash={hash} theme={theme} /></Rx>;

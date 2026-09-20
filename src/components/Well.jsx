@@ -230,8 +230,7 @@ export function WellSheet({ open, onClose, theme = "light" }) {
           ))}
         </div>
         <div className="wl-links">
-          <button type="button" onClick={() => go("#/solve/photo/mine")}>🗂 내 기록</button>
-          <button type="button" onClick={() => go("#/solve/photo")}>📸 찍어서 배우기 홈</button>
+          <button type="button" onClick={() => go("#/records")}>🗂 내 기록</button>
           <span className="sp" />
           <button type="button" className="wl-close" onClick={onClose}>닫기</button>
         </div>
