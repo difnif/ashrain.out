@@ -1,6 +1,7 @@
 // 표시 연습 — #/solve/mark (문항 고르기) · #/solve/mark/<itemId>
 // 시범 탭: 규칙 키(동그라미·밑줄·빗금)와 설명.  연습 탭: 학생이 직접 표시 → 채점(scoreMarks) → 맞음·놓침·덤 표시를 색으로.
 // 채점은 1층(규칙) 표시만. 결과는 localStorage "ash.mark.results" 에 최근 50개.
+// MarkView 는 촬영 모듈(pages/photo)도 쓴다 — readHref(문장 해설 링크)·actions(채점 뒤 버튼 대체)로 DB 문항 전용 동작을 뺀다.
 import { useEffect, useMemo, useRef, useState } from "react";
 import SolveShell, { useToast } from "./SolveShell";
 import ItemPicker from "./ItemPicker";
@@ -121,7 +122,7 @@ export default function Mark({ itemId }) {
 }
 
 // ── 문항 하나: 시범 · 연습 ───────────────────────────────────────────────────
-export function MarkView({ item, setToast = () => {}, defaultTab }) {
+export function MarkView({ item, setToast = () => {}, defaultTab, readHref, actions }) {
   const [tab, setTab] = useState(() => defaultTab || (readResults().length ? "practice" : "demo"));
   const [tool, setTool] = useState("NUM");
   const [marks, setMarks] = useState([]);
@@ -228,7 +229,7 @@ export function MarkView({ item, setToast = () => {}, defaultTab }) {
           </div>
           <div className="mk-actions">
             <button className="sv-btn pri" onClick={() => { setTab("practice"); setPicked(null); }}>직접 표시해 보기</button>
-            <button className="sv-btn" onClick={() => { location.hash = `#/solve/read/${item.id}`; }}>문장 해설 보기</button>
+            <button className="sv-btn" onClick={() => { location.hash = readHref || `#/solve/read/${item.id}`; }}>문장 해설 보기</button>
           </div>
         </>
       )}
@@ -269,8 +270,12 @@ export function MarkView({ item, setToast = () => {}, defaultTab }) {
               <ResultCards result={result} keyMarks={key} tokens={tokens} prev={prev} />
               <div className="mk-actions">
                 <button className="sv-btn pri" onClick={reset}>다시 하기</button>
-                <button className="sv-btn" onClick={nextItem} disabled={busy}>{busy ? "고르는 중…" : "다른 문항"}</button>
-                <button className="sv-btn" onClick={() => { location.hash = `#/solve/item/${item.id}`; }}>이 문제 풀기</button>
+                {actions ?? (
+                  <>
+                    <button className="sv-btn" onClick={nextItem} disabled={busy}>{busy ? "고르는 중…" : "다른 문항"}</button>
+                    <button className="sv-btn" onClick={() => { location.hash = `#/solve/item/${item.id}`; }}>이 문제 풀기</button>
+                  </>
+                )}
                 <button className="sv-btn ghost" onClick={() => { setTab("demo"); setPicked(null); }}>시범 다시 보기</button>
               </div>
             </>
