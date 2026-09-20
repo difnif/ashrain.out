@@ -1,4 +1,4 @@
-// 사진 채점 (OMR) — 시험지 + 답안 카드 인쇄 → 칠한 카드를 사진으로 → 브라우저 인식(마커·호모그래피·버블) → 확인 → 채점
+// 찰칵 채점 (구 사진 채점, OMR) — 시험지 + 답안 카드 인쇄 → 칠한 카드를 사진으로 → 브라우저 인식(마커·호모그래피·버블) → 확인 → 채점
 // 라우트: #/solve/omr (홈) · #/solve/omr/new (시험지 만들기) · #/solve/omr/grade[/<code>] (채점)
 // 인식은 src/lib/omr/detect.js(순수) 가 하고, 마커를 못 찾거나 신뢰도가 낮으면 /api/ai (task "omr") 로 보조한다.
 // 확인 화면을 거치지 않고는 채점하지 않는다 (인식은 틀릴 수 있다 — 학생이 고친 답이 최종).
@@ -167,7 +167,7 @@ export default function Omr({ sub, hash }) {
     grade: null,
   };
   return (
-    <SolveShell title="사진 채점" sub={SUB[route.view]} back={route.view === "home" ? "#/tools/omr" : "#/solve/omr"} toast={toast}>
+    <SolveShell title="찰칵 채점" sub={SUB[route.view]} back={route.view === "home" ? "#/tools" : "#/solve/omr"} toast={toast}>
       <style>{CSS}</style>
       {route.view === "new" && <MakeView say={say} />}
       {route.view === "grade" && <GradeView key={route.code || "_"} uid={uid} code={route.code} say={say} />}

@@ -19,9 +19,8 @@ export const TABS = [
 
 const SUBTABS = {
   study: [["개념 공부", "#/study/concept"], ["연습문제", "#/study/practice"], ["시험 보기", "#/study/exam"]],
-  tools: [["전체", "#/tools"], ["오답노트", "#/tools/wrong"], ["질문하기", "#/tools/ask"], ["사진 채점", "#/tools/omr"],
-          ["사진 힌트", "#/tools/hint"], ["문장 해설", "#/tools/read"], ["표시 연습", "#/tools/mark"],
-          ["서술형", "#/tools/essay"], ["스피드 연산", "#/tools/calc"], ["찍어서 배우기", "#/tools/photo"]],
+  tools: [["전체", "#/tools"], ["서술형", "#/tools/essay"], ["사진 힌트", "#/tools/hint"],
+          ["문장 해설", "#/tools/read"], ["표시 연습", "#/tools/mark"], ["풀이 검사", "#/tools/check"]],
   board: [["공지", "#/board/notice"], ["커뮤니티", "#/board/community"], ["질문", "#/board/qna"]],
 };
 
@@ -58,24 +57,43 @@ function subOn(hash, to, list) {
   return (h === root || h === root + "") && to === list[0][1];
 }
 
+// ── 화면 전환마다 상단·하단이 늦게 뜨지 않도록: 인증·역할·디데이를 모듈 캐시로 ──
+// getSession 은 로컬 저장소만 봐서 즉시고, 역할·디데이는 첫 조회 뒤 재사용(디데이 10분).
+let authCache = null;   // null 미확인 | true | false
+let roleCache = null;   // { isAdmin } | null
+let ddayCache;          // undefined 미조회 | null 없음 | { days, title }
+let ddayAt = 0;
+
 /** 상단: 로고(모/강 토글 유지) · 베타 · D-day · 마이페이지 + 현재 탭의 서브탭 */
 export function ShellTop({ theme, hash }) {
-  const [me, setMe] = useState(null);
-  const [dday, setDday] = useState(null);
+  const [me, setMe] = useState(() => (authCache === true ? { isAdmin: roleCache?.isAdmin || false } : authCache));
+  const [dday, setDday] = useState(() => (ddayCache === undefined ? null : ddayCache));
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      const u = data?.user; if (!u) { setMe(false); return; }
-      const { data: p } = await supabase.from("profiles").select("role").eq("id", u.id).maybeSingle();
-      setMe({ isAdmin: p?.role === "admin" });
+    let alive = true;
+    supabase.auth.getSession().then(async ({ data }) => {
+      const u = data?.session?.user;
+      authCache = !!u;
+      if (!u) { if (alive) setMe(false); return; }
+      if (alive) setMe({ isAdmin: roleCache?.isAdmin || false });
+      if (!roleCache) {
+        const { data: p } = await supabase.from("profiles").select("role").eq("id", u.id).maybeSingle();
+        roleCache = { isAdmin: p?.role === "admin" };
+        if (alive) setMe({ isAdmin: roleCache.isAdmin });
+      }
     });
-    const today = new Date().toISOString().slice(0, 10);
-    supabase.from("events").select("date, title").eq("dday", true).gte("date", today)
-      .order("date").limit(1).then(({ data }) => {
-        if (data?.[0]) {
-          const d = Math.round((new Date(data[0].date + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
-          setDday({ days: d, title: data[0].title });
-        }
-      });
+    if (ddayCache === undefined || Date.now() - ddayAt > 10 * 60e3) {
+      const today = new Date().toISOString().slice(0, 10);
+      supabase.from("events").select("date, title").eq("dday", true).gte("date", today)
+        .order("date").limit(1).then(({ data }) => {
+          ddayAt = Date.now();
+          if (data?.[0]) {
+            const d = Math.round((new Date(data[0].date + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
+            ddayCache = { days: d, title: data[0].title };
+          } else ddayCache = null;
+          if (alive) setDday(ddayCache);
+        });
+    }
+    return () => { alive = false; };
   }, []);
   if (!me) return null;
   const tab = tabOf(hash);
@@ -148,10 +166,12 @@ export function TabsRow({ theme, hash, cfg, onWell, wellProps = {} }) {
 
 /** 하단 고정 탭바 — 대시보드 · 공부하기 | ⛲ | 학습 도구 · 게시판 */
 export function ShellTabs({ theme, hash }) {
-  const [ok, setOk] = useState(false);
+  const [ok, setOk] = useState(() => authCache === true);
   const [sheet, setSheet] = useState(false);
   const cfg = useWellCfg();
-  useEffect(() => { supabase.auth.getUser().then(({ data }) => setOk(!!data?.user)); }, []);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => { authCache = !!data?.session; setOk(authCache); });
+  }, []);
   if (!ok) return null;
   return (
     <>
