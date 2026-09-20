@@ -9,6 +9,7 @@
 //   #/solve/essay[/<itemId>]     서술형 자가채점
 //   #/solve/ask/<itemId>         문항 질문하기
 //   #/solve/test[/<type>[/<scopeId>]]  시험 보기 (개념묶음·단원·계산·상화·모의·ash·rain·out)
+//   #/solve/photo[/read|mark|essay|check|mine]  찍어서 배우기 (촬영 모듈 — pages/photo)
 import { lazy, Suspense } from "react";
 import Solve, { PracticePick } from "./Solve";
 
@@ -19,6 +20,7 @@ const Mark = lazy(() => import("./Mark"));
 const Essay = lazy(() => import("./Essay"));
 const AskItem = lazy(() => import("./AskItem"));
 const Exam = lazy(() => import("./Exam"));
+const PhotoRouter = lazy(() => import("../photo/PhotoRouter"));
 
 const clean = (s) => (s ? decodeURIComponent(s.split("?")[0]) : undefined);
 
@@ -38,6 +40,7 @@ export default function SolveRouter({ hash, theme }) {
     case "essay": el = <Essay itemId={id} />; break;
     case "ask": el = <AskItem itemId={id} theme={theme} />; break;
     case "test": el = <Exam sub={rest.join("/")} hash={hash} />; break;
+    case "photo": el = <PhotoRouter sub={rest.join("/")} hash={hash} />; break;
     default: el = <Solve />;
   }
   return <Suspense fallback={<div className="sv-wrap sv-muted">불러오는 중…</div>}>{el}</Suspense>;

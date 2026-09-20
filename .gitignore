@@ -25,3 +25,5 @@ itemfactory/legacy/
 # README·TYPES.md(유형 이름·빈도만)는 남기고 문항 본문이 든 파일만 제외.
 itemfactory/reference/**/*.json
 itemfactory/reference/**/*.txt
+tests/smoke/shots/
+tests/smoke/img/
