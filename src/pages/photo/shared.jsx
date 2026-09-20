@@ -1,4 +1,4 @@
-// 촬영 모듈 공용 조각 — 문항 카드 · 보관 안내 · 신호등 · 단계 표시 · 작은 도우미
+// 촬영 모듈 공용 조각 — 문항 카드 · 보관 안내 · 신호등 · 단계 표시 · 진행 막대 · 오류 안내 · 빈 상태 그림
 import MathText from "../../components/MathText";
 import { CIRCLED } from "../../lib/answers";
 import { UNIT_NAMES } from "../../lib/items";
@@ -9,6 +9,7 @@ export const GRADE_LABEL = { S: "표준형", M: "소폭 변형", C: "창작형" 
 export const FEATURE_LABEL = { read: "문장 이해하기", mark: "표시 연습", essay: "서술형 채점·첨삭", check: "풀이과정 검사" };
 export const FEATURE_ICON = { read: "🔍", mark: "✍️", essay: "📝", check: "🧾" };
 export const LIGHT_LABEL = { green: "좋아요", yellow: "주의", red: "고쳐요" };
+const LIGHT_GLYPH = { green: "✓", yellow: "!", red: "✕" };      // 색약이어도 알아볼 수 있게 모양+글자를 함께
 
 export { stripMarker, titleOf, findSpan, cutText, aggregateLights, CRITERIA } from "../../lib/photoText.js";
 import { titleOf, CRITERIA } from "../../lib/photoText.js";
@@ -30,7 +31,7 @@ export function currentProblem() {
   return c && typeof c.question === "string" && c.question ? c : null;
 }
 
-/** 기기 보관소에 세션 저장 (실패해도 흐름은 막지 않는다) */
+/** 기기 보관소에 세션 저장 (실패해도 흐름은 막지 않는다). 썸네일은 이 기기에만 — 서버로는 절대 가지 않는다. */
 export async function saveDevice(rec) {
   try { return await putSession({ id: rec.id || newId(), ...rec, title: rec.title || titleOf(rec.question) }); } catch { return null; }
 }
@@ -46,6 +47,68 @@ export function Steps({ list, at }) {
 
 export function Busy({ text }) {
   return <div className="ph-busy"><span className="sp" />{text}</div>;
+}
+
+/** 여러 차례 부르는 일의 진행 막대 — n/N + 지금 하는 단계 문구 */
+export function Progress({ now = 0, total = 1, label, foot }) {
+  const pct = total > 0 ? Math.min(100, Math.round((now / total) * 100)) : 0;
+  return (
+    <div className="ph-prog" role="status" aria-live="polite">
+      <div className="hd"><span className="sp" /><span className="tx">{label}</span><span className="cnt">{pct}%</span></div>
+      <div className="sv-bar"><i style={{ width: `${pct}%` }} /></div>
+      {foot && <div className="ft">{foot}</div>}
+    </div>
+  );
+}
+
+/** 하루 한도(429)에 걸린 오류인가 — api/photo 는 "오늘 사용 한도(N회)를 다 썼어요" 로 답한다 */
+export const isQuotaError = (m) => /한도|429/.test(String(m || ""));
+
+/**
+ * 오류 + 다음에 할 행동. 글상자만 남기지 않는다.
+ *   onRetry  같은 일을 다시 (없으면 버튼 안 그림)
+ *   onShoot  다시 찍기
+ */
+export function ErrorNote({ text, onRetry, retryLabel = "다시 해 보기", onShoot, shootLabel = "다시 찍기", home = true, mine = false }) {
+  const quota = isQuotaError(text);
+  return (
+    <div className="ph-oops" role="alert">
+      <div className="tt"><span className="ic">{quota ? "🌙" : "⚠"}</span><span>{quota ? "오늘 쓸 수 있는 횟수를 다 썼어요" : String(text || "잘 되지 않았어요")}</span></div>
+      <div className="ds">{quota
+        ? "내일 다시 이용할 수 있어요. 오늘 받은 결과는 내 기록에 그대로 남아 있어요."
+        : "잠시 뒤 다시 해 보거나, 더 밝은 곳에서 가까이 다시 찍어 보세요."}</div>
+      <div className="ph-actions">
+        {!quota && onShoot && <button className="sv-btn pri" onClick={onShoot}>{shootLabel}</button>}
+        {!quota && onRetry && <button className={"sv-btn" + (onShoot ? "" : " pri")} onClick={onRetry}>{retryLabel}</button>}
+        {(quota || mine) && <button className="sv-btn" onClick={() => { location.hash = "#/solve/photo/mine"; }}>내 기록 보기</button>}
+        {home && <button className={"sv-btn ghost" + (quota ? " " : " wide")} onClick={() => { location.hash = "#/solve/photo"; }}>촬영 모듈 홈으로</button>}
+      </div>
+    </div>
+  );
+}
+
+/** 빈 상태 그림 — 인라인 SVG 소품 (외부 이미지 없음) */
+export function EmptyArt({ kind = "shot", size = 84 }) {
+  const common = { width: size, height: size, viewBox: "0 0 84 84", fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", focusable: "false" };
+  if (kind === "box") {
+    return (
+      <svg {...common}>
+        <path d="M14 30 L42 20 L70 30 L42 40 Z" />
+        <path d="M14 30 v26 l28 10 V40" />
+        <path d="M70 30 v26 l-28 10" />
+        <path d="M52 16 v-6 M60 22 l5-5 M44 12 l-1-5" opacity=".55" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...common}>
+      <rect x="10" y="24" width="64" height="42" rx="8" />
+      <path d="M30 24 l5-8h14l5 8" />
+      <circle cx="42" cy="45" r="11" />
+      <path d="M37 45 l4 4 7-8" />
+      <path d="M64 33 h3" opacity=".6" />
+    </svg>
+  );
 }
 
 /** 전사된 문항 카드 — 미리보기(선택) · 문장 · 선택지 · 그림 메모 · 등급 */
@@ -82,18 +145,19 @@ export function KeepNote({ retention }) {
   return <div className="ph-keep"><span className="ic">🔒</span><span>{text}</span></div>;
 }
 
-/** 다섯 지표 신호등 */
+/** 다섯 지표 신호등 — 색 + 모양(동그라미·네모·마름모) + 글자 라벨 */
 export function Lights({ criteria, compact = false }) {
   return (
-    <div className="ph-lights">
+    <div className="ph-sigs">
       {CRITERIA.map((k) => {
         const c = criteria?.[k];
         const l = c?.light || null;
+        const lab = l ? LIGHT_LABEL[l] : "아직 없음";
         return (
-          <div key={k} className={"ph-light" + (l ? " " + l : " dim")} title={c?.why || ""}>
-            <span className="dot" />
-            <span>{k}</span>
-            {!compact && l && <span style={{ fontSize: 10.5 }}>{LIGHT_LABEL[l]}</span>}
+          <div key={k} className={"ph-sig" + (l ? " " + l : " dim")} title={c?.why || ""} aria-label={`${k} ${lab}`}>
+            <span className="dot" aria-hidden="true"><span className="gl">{LIGHT_GLYPH[l] || "·"}</span></span>
+            <span className="nm">{k}</span>
+            {!compact && l && <span className="lb">{lab}</span>}
           </div>
         );
       })}

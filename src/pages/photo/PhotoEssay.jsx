@@ -1,6 +1,7 @@
 // 서술형 채점·첨삭 — #/solve/photo/essay (촬영) · ?cur=1 (방금 찍은 문제로)
 // 문제 촬영 → 문항 부분 인식 → 답안 촬영 → 답안 부분 인식(전사, 고칠 수 있음) → 채점 기준표·채점·첨삭.
 // 답안 원문은 보관 게이트 결정(retention.where)에 따라 기기 또는 서버에 남고, 결과는 항상 기기 보관소에 남는다.
+// 결과 카드는 서술형 자가채점(#/solve/essay)과 같은 시각 톤 — 큰 점수 + 막대 + 기준표 + 첨삭.
 import { useState } from "react";
 import SolveShell, { useToast } from "../solve/SolveShell";
 import MathText from "../../components/MathText";
@@ -8,7 +9,7 @@ import { trapText } from "../../lib/marking.js";
 import { photoCall, stashCurrent } from "../../lib/photoApi";
 import { newId } from "../../lib/deviceStore";
 import Capture from "./Capture";
-import { ProblemCard, Steps, Busy, KeepNote, currentProblem, saveDevice } from "./shared";
+import { ProblemCard, Steps, Busy, KeepNote, ErrorNote, currentProblem, saveDevice } from "./shared";
 
 const VERDICT = { excellent: "아주 잘 썼어요", good: "잘 썼어요", partial: "절반쯤 왔어요", weak: "다시 써 봐요" };
 const LEVEL = { full: "만점", partial: "부분", zero: "0점" };
@@ -38,7 +39,7 @@ export default function PhotoEssay({ useCur = false }) {
     try {
       const r = await photoCall("essay", { question: p.question, figure_note: p.figure_note, choices: p.choices, answer, std: p.std, unit: p.unit_guess });
       setRes(r);
-      saveDevice({ id: newId(), feature: "essay", question: p.question, figure_note: p.figure_note, unit: p.unit_guess, grade: r.std?.item_grade || p.std?.item_grade || null, answer, result: r.result, retention: r.retention });
+      saveDevice({ id: newId(), feature: "essay", question: p.question, figure_note: p.figure_note, unit: p.unit_guess, grade: r.std?.item_grade || p.std?.item_grade || null, answer, result: r.result, retention: r.retention, thumb: a?.thumb || p.thumb || null });
     } catch (e) { setErr(e?.message || "채점에 실패했어요 — 잠시 뒤 다시 시도해 주세요."); }
     finally { setBusy(false); }
   };
@@ -80,10 +81,10 @@ export default function PhotoEssay({ useCur = false }) {
             <div className="ph-chips">{a.legibility.issues.map((i, k) => <span key={k} className="ph-chip">{LEG_KIND[i.kind] || i.kind}: {i.note}</span>)}</div>
           )}
           {busy && <div style={{ marginTop: 10 }}><Busy text="기준표를 세우고 채점하는 중… (20초쯤 걸려요)" /></div>}
-          {err && !busy && <div className="ph-err" style={{ marginTop: 10 }}>{err}</div>}
-          {!busy && (
+          {err && !busy && <div style={{ marginTop: 10 }}><ErrorNote text={err} onRetry={grade} retryLabel="다시 채점받기" onShoot={restartAnswer} shootLabel="답안 다시 찍기" /></div>}
+          {!busy && !err && (
             <div className="ph-actions" style={{ marginTop: 10 }}>
-              <button className="sv-btn pri" onClick={grade}>{err ? "다시 채점받기" : "채점·첨삭 받기"}</button>
+              <button className="sv-btn pri" onClick={grade}>채점·첨삭 받기</button>
               <button className="sv-btn" onClick={restartAnswer}>답안 다시 찍기</button>
             </div>
           )}
@@ -106,33 +107,34 @@ export default function PhotoEssay({ useCur = false }) {
   );
 }
 
-/** 채점·첨삭 결과 카드들 — 풀이과정 검사 화면도 그대로 쓴다 */
+/** 채점·첨삭 결과 카드들 — 풀이과정 검사 화면·내 기록도 그대로 쓴다 */
 export function EssayResult({ result: r, answer }) {
   if (!r) return null;
-  const pct = r.max ? r.total / r.max : 0;
-  const color = pct >= 0.9 ? "var(--good)" : pct >= 0.6 ? "var(--text)" : "var(--bad)";
+  const pct = r.max ? Math.round((r.total / r.max) * 100) : 0;
+  const color = pct >= 90 ? "var(--ph-ok-ink)" : pct >= 60 ? "var(--text)" : "var(--bad)";
   return (
     <>
       <div className="sv-card">
-        <div className="ph-score">
-          <div className="big" style={{ color }}>{r.total}<small>/ {r.max}점</small></div>
-          <div className="txt">
-            <div style={{ fontWeight: 800 }}>{VERDICT[r.verdict] || ""}</div>
-            <div className="sv-small">최종 답 {r.final_answer_ok ? <span className="sv-ok">맞음</span> : <span className="sv-bad">확인 필요</span>} · 훈련용 예상 점수예요</div>
-          </div>
+        <div className="sv-sec" style={{ marginTop: 0 }}>채점 결과</div>
+        <div className="ph-verdict">{VERDICT[r.verdict] || "채점했어요"}</div>
+        <div className="ph-total">
+          <span className="big" style={{ color }}>{r.total}</span><span className="of">/ {r.max}점</span>
+          <span className="vd" style={{ color: r.final_answer_ok ? "var(--ph-ok-ink)" : "var(--bad)" }}>{r.final_answer_ok ? "답 맞음" : "답 확인 필요"}</span>
         </div>
+        <div className="sv-bar"><i style={{ width: `${pct}%` }} /></div>
+        <div className="ph-hint">훈련용 예상 점수예요. 실제 시험의 채점과는 다를 수 있어요.</div>
         {r.praise && <div className="ph-praise" style={{ marginTop: 10 }}>👍 {r.praise}</div>}
       </div>
 
       {answer && (
-        <details className="sv-card" style={{ marginBottom: 12 }}>
-          <summary className="sv-small" style={{ cursor: "pointer" }}>내가 쓴 답안 보기</summary>
-          <MathText as="div" className="ph-ans" text={answer} style={{ marginTop: 8 }} />
+        <details className="ph-more">
+          <summary><span className="ic">📄</span><span>내가 쓴 답안 보기</span></summary>
+          <div className="bd"><MathText as="div" className="ph-ans" text={answer} /></div>
         </details>
       )}
 
       {r.rubric?.length > 0 && (
-        <div className="sv-card">
+        <div className="sv-card" style={{ marginTop: 12 }}>
           <div className="sv-sec" style={{ marginTop: 0 }}>채점 기준표</div>
           <div className="ph-rub">
             {r.rubric.map((el) => {
@@ -142,7 +144,7 @@ export function EssayResult({ result: r, answer }) {
                   <div className="h"><span className="no">{el.no}</span><span>{el.element}</span>
                     <span className={"pt " + (m?.level || "")}>{m ? `${m.got}` : "–"} / {el.points}점{m ? ` · ${LEVEL[m.level]}` : ""}</span></div>
                   <div className="crit"><MathText text={el.criterion} /></div>
-                  {m?.comment && <div className="cm">→ <MathText text={m.comment} /></div>}
+                  {m?.comment && <div className="cm"><b>한마디</b><MathText text={m.comment} /></div>}
                 </div>
               );
             })}
@@ -158,7 +160,7 @@ export function EssayResult({ result: r, answer }) {
               {c.where && <div className="w">{c.where}</div>}
               {c.wrong && <div><span className="wrong"><MathText text={c.wrong} /></span> → <span className="right"><MathText text={c.fix} /></span></div>}
               {!c.wrong && <div className="right"><MathText text={c.fix} /></div>}
-              {c.why && <div className="sv-small" style={{ marginTop: 2 }}>{c.why}</div>}
+              {c.why && <div className="sv-small" style={{ marginTop: 3 }}>{c.why}</div>}
             </div>
           ))}
         </div>

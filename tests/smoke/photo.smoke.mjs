@@ -1,6 +1,7 @@
 // 촬영 모듈 화면 스모크 — dist/ 를 띄우고 /api/photo 와 Supabase 를 모의 응답으로 대체해 네 흐름을 끝까지 눌러 본다.
-//   node tests/smoke/photo.smoke.mjs [--headed]
+//   node tests/smoke/photo.smoke.mjs [--headed] [--light]
 // 준비: `npx vite build` (dist/ 필요) · playwright(전역) + Chromium.  시험용 사진은 tests/smoke/img/*.png 를 Node 가 그린다(저장소에 넣지 않음).
+// 화면은 #/solve/photo 로 바로 들어간다 (ui-v4 셸에서 #/solve 는 #/study/practice 로 넘어간다).
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -17,12 +18,15 @@ const ROOT = path.resolve(HERE, "../..");
 const DIST = path.join(ROOT, "dist");
 const IMG = process.env.SMOKE_IMG || path.join(HERE, "img");
 const HEADED = process.argv.includes("--headed");
+const THEME = process.argv.includes("--light") ? "light" : "dark";       // 화면 확인용 — 기본은 앱 기본값(다크)
+const SHOTS = process.env.SMOKE_SHOTS || path.join(HERE, "shots");
 
 // ── 모의 /api/photo ──────────────────────────────────────────────────────────
 const Q = "둘레가 54cm인 직사각형의 가로의 길이가 세로의 길이보다 3cm 길 때, 이 직사각형의 넓이를 구하시오.";
 const STD = { elements: { 발문: "S", 조건제시: "S", 소재맥락: "M", 도형자료: "-", 지문: "-" }, item_grade: "M", sub_type: "단순 소재 대입형", reason: "정형 상황" };
 const RET = { where: "device", reason: "labels 정책 — 라벨만 저장", policy: "labels", overlap: { score: 14, level: "low", sentences: 0, words: 2, nums: 1 }, saved: true, central: false };
 const calls = [];
+let quotaMode = false;                      // true 면 서버가 429(하루 한도)로 답한다 — 오류 화면 확인용
 function mockPhoto(body) {
   calls.push(body.task + (body.mode ? ":" + body.mode : ""));
   const { task, mode } = body;
@@ -44,6 +48,7 @@ function serve() {
       if (u.pathname === "/api/photo") {
         let raw = ""; req.on("data", (c) => (raw += c)); req.on("end", () => {
           if (!/^Bearer /.test(req.headers.authorization || "")) { res.writeHead(401, { "content-type": "application/json" }); res.end(JSON.stringify({ error: "로그인이 필요해요" })); return; }
+          if (quotaMode) { res.writeHead(429, { "content-type": "application/json" }); res.end(JSON.stringify({ error: "오늘 사용 한도(20회)를 다 썼어요 — 내일 다시 이용할 수 있어요" })); return; }
           let body = {}; try { body = JSON.parse(raw); } catch { /* 빈 몸 */ }
           setTimeout(() => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(mockPhoto(body))); }, 120);
         });
@@ -84,7 +89,10 @@ async function mockSupabase(page) {
     }
     return json({});
   });
-  await page.addInitScript(([key, sess]) => { localStorage.setItem(key, JSON.stringify(sess)); }, ["sb-placeholder-auth-token", SESSION]);
+  await page.addInitScript(([key, sess, theme]) => {
+    localStorage.setItem(key, JSON.stringify(sess));
+    localStorage.setItem("ashrain-theme", theme);
+  }, ["sb-placeholder-auth-token", SESSION, THEME]);
 }
 
 // ── 스모크 ──────────────────────────────────────────────────────────────────
@@ -131,23 +139,25 @@ function ensureImages() {
   page.on("console", (m) => { if (m.type() === "error") errors.push("console: " + m.text()); });
   await mockSupabase(page);
   await page.route(/https:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com)\//, (r) => r.abort());   // 외부 폰트·CDN 은 스모크와 무관
-  const shot = async (name) => { try { await page.screenshot({ path: path.join(HERE, "shots", name + ".png"), fullPage: true }); } catch { /* */ } };
-  fs.mkdirSync(path.join(HERE, "shots"), { recursive: true });
+  const shot = async (name) => { try { await page.screenshot({ path: path.join(SHOTS, name + ".png"), fullPage: true }); } catch { /* */ } };
+  fs.mkdirSync(SHOTS, { recursive: true });
   const go = async (h) => { await page.goto(base + h); await page.waitForLoadState("networkidle"); };
   const text = async () => (await page.locator("body").innerText()).replace(/\s+/g, " ");
+  const openMore = async (title) => { await page.locator("summary", { hasText: title }).first().click(); await sleep(150); };
+  const boxRect = async (i = 0) => await page.locator(".ph-box").nth(i).boundingBox();
 
   try {
-    // A. 허브
-    await go("#/solve");
-    ok((await text()).includes("찍어서 배우기"), "허브: 문제풀이 허브에 '찍어서 배우기' 타일");
-    await page.getByText("찍어서 배우기", { exact: false }).first().click();
-    await page.waitForURL(/#\/solve\/photo$/);
+    // A. 허브 — 첫 사용 안내 · 빈 상태 · 타일 4
+    await go("#/solve/photo");
     await page.locator(".sv-h1", { hasText: "찍어서 배우기" }).waitFor({ timeout: 10000 });   // 지연 로딩 청크가 그려질 때까지
     let t = await text();
+    ok(t.includes("찍어서 배우기"), "허브: #/solve/photo 로 촬영 허브가 열림");
     ok(["문장 이해하기", "표시 연습하기", "서술형 채점·첨삭", "풀이과정 검사", "내 기록"].every((s) => t.includes(s)), "허브: 촬영 모듈 타일 4 + 내 기록");
+    ok(t.includes("처음이라면") && t.includes("문제를 찍어요"), "허브: 첫 사용 안내(세 걸음)");
+    ok(t.includes("아직 찍은 문제가 없어요") && (await page.locator(".ph-blank svg").count()) === 1, "허브: 빈 상태 그림 + 안내");
     await shot("00-hub");
 
-    // B. 문장 이해하기 — 영역 잡기(드래그) → 인식 → 방침
+    // B. 문장 이해하기 — 영역 잡기(드래그·리사이즈) → 인식 → 방침 → 접기
     await go("#/solve/photo/read");
     await page.locator('input[type=file]').first().setInputFiles(path.join(IMG, "problem.png"));
     await page.getByRole("button", { name: /일부만 읽기/ }).click();
@@ -158,22 +168,63 @@ function ensureImages() {
     await page.mouse.move(bb.x + bb.width * 0.8, bb.y + bb.height * 0.6, { steps: 8 });
     await page.mouse.up();
     ok(await page.locator(".ph-box").count() === 1, "읽기: 드래그로 영역 상자 1개");
+    // 모서리 끌기(리사이즈) — 오른쪽 아래 손잡이를 왼쪽 위로
+    ok(await page.locator(".ph-box .hdl").count() === 4, "읽기: 고른 상자에 모서리 손잡이 4개");
+    const before = await boxRect();
+    const hdl = await page.locator(".ph-box .hdl.se").boundingBox();
+    await page.mouse.move(hdl.x + hdl.width / 2, hdl.y + hdl.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(hdl.x - bb.width * 0.25, hdl.y - bb.height * 0.15, { steps: 8 });
+    await page.mouse.up();
+    const after = await boxRect();
+    ok(after.width < before.width - 20 && after.height < before.height - 5, `읽기: 모서리를 끌어 상자 크기 바꿈 (${Math.round(before.width)}→${Math.round(after.width)}px)`);
+    // 상자 몸통을 끌어 옮기기
+    const mid = await boxRect();
+    await page.mouse.move(mid.x + mid.width / 2, mid.y + mid.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(mid.x + mid.width / 2 + 30, mid.y + mid.height / 2 + 20, { steps: 6 });
+    await page.mouse.up();
+    const moved = await boxRect();
+    ok(Math.abs(moved.x - mid.x) > 10 && Math.abs(moved.width - mid.width) < 6, "읽기: 상자를 끌어 자리 옮김(크기는 그대로)");
+    // 키보드 — 화살표로 이동, Shift+화살표로 크기
+    await page.locator(".ph-stage").focus();
+    await page.keyboard.press("ArrowRight");
+    const kbMove = await boxRect();
+    ok(kbMove.x > moved.x + 2 && Math.abs(kbMove.width - moved.width) < 4, "읽기: 화살표 키로 상자 이동");
+    await page.keyboard.press("Shift+ArrowRight");
+    const kbSize = await boxRect();
+    ok(kbSize.width > kbMove.width + 2, "읽기: Shift+화살표로 상자 크기 조절");
     await page.getByRole("button", { name: "인식하기" }).click();
     await page.getByText("세울 식").waitFor({ timeout: 15000 });
     t = await text();
     ok(t.includes("구하는 것") && t.includes("직사각형의 넓이"), "읽기: 구하는 것");
     ok(t.includes("2(x + 3 + x) = 54"), "읽기: 세울 식(식 세우기까지)");
-    ok(t.includes("끊어 읽기") && t.includes("／"), "읽기: 끊어 읽기에 빗금");
     ok(await page.locator(".sm-hilite").count() > 0, "읽기: 단서 형광펜이 문장 위에 칠해짐");
     ok(await page.locator(".sm-bound").count() > 0, "읽기: 빗금(/) 표시");
     ok(t.includes("여기서부터는 직접"), "읽기: 정답 대신 멈춤 안내");
     ok(!/\b180\b/.test(t), "읽기: 정답(180)이 화면에 없음");
+    // 보조 내용은 접혀 있다 → 펼쳐서 확인
+    ok((await page.locator(".ph-cut").count()) === 0 || !(await page.locator(".ph-cut").first().isVisible()), "읽기: 끊어 읽기는 처음엔 접혀 있음");
+    await openMore("끊어 읽기");
+    ok((await page.locator(".ph-cut").first().innerText()).includes("／"), "읽기: 펼친 끊어 읽기에 빗금");
+    await openMore("단서");
+    ok(await page.locator(".ph-clues li").count() === 2, "읽기: 펼친 단서 목록 2개");
+    await openMore("조심할 것");
+    ok((await text()).includes("단위"), "읽기: 펼친 조심할 것");
     await shot("01-read");
 
-    // C. 표시 연습 — 방금 찍은 문제로 → 차례대로 → 넘어갈까요 → 직접 표시(MarkView)
+    // C. 표시 연습 — 방금 찍은 문제로 → 자동 재생 → 차례대로 → 넘어갈까요 → 직접 표시(MarkView)
     await page.getByRole("button", { name: "이 문장으로 표시 연습" }).click();
     await page.waitForURL(/photo\/mark\?cur=1/);
-    await page.getByRole("button", { name: "첫 표시 보기" }).click();
+    await page.locator(".ph-step-bar").waitFor({ timeout: 10000 });
+    ok((await page.locator(".ph-step-bar .cnt").innerText()).startsWith("0/"), "표시: 처음엔 표시가 하나도 안 보임");
+    await page.getByRole("button", { name: /자동 재생/ }).click();
+    await sleep(2200);
+    const auto = Number((await page.locator(".ph-step-bar .cnt").innerText()).split("/")[0]);
+    ok(auto >= 1, `표시: 자동 재생으로 표시가 저절로 ${auto}개 열림`);
+    await page.getByRole("button", { name: /일시정지/ }).click();
+    await sleep(1800);
+    ok(Number((await page.locator(".ph-step-bar .cnt").innerText()).split("/")[0]) === auto, "표시: 일시정지하면 더 열리지 않음");
     let guard = 0;
     while (await page.getByRole("button", { name: "다음 ▶" }).count() && guard++ < 30) await page.getByRole("button", { name: "다음 ▶" }).click();
     t = await text();
@@ -204,21 +255,26 @@ function ensureImages() {
     await page.getByText("채점 기준표").waitFor({ timeout: 15000 });
     t = await text();
     ok(t.includes("7") && t.includes("/ 8점"), "서술형: 점수 7/8");
+    ok(t.includes("잘 썼어요") && (await page.locator(".ph-total .big").count()) === 1 && (await page.locator(".sv-bar").count()) >= 1, "서술형: 결과 카드 톤(한 줄 평 + 큰 점수 + 점수 막대)");
     ok(t.includes("첨삭") && t.includes("180 cm²"), "서술형: 첨삭(고친 것)");
     ok(t.includes("이 기기에만 저장했어요"), "서술형: 보관 안내(기기)");
     await shot("03-essay");
 
-    // E. 풀이과정 검사 — 페이지 → 자동 상자 → 검사 → 신호등 → 첨삭 선택
+    // E. 풀이과정 검사 — 페이지 → 자동 상자 → 배지 팝오버 → 진행 막대 → 신호등 → 첨삭 선택
     await go("#/solve/photo/check");
     await page.locator('input[type=file]').first().setInputFiles(path.join(IMG, "page.png"));
     await page.getByText("검사하기 (2문항)").waitFor({ timeout: 15000 });
     ok(await page.locator(".ph-box").count() === 4, "검사: 자동 탐지 상자 4개(문제 2 + 풀이 2)");
-    // 상자 하나를 탭해 번호 조정 UI 가 뜨는지
-    await page.locator(".ph-box").first().click();
-    ok(await page.getByRole("button", { name: "문제↔풀이" }).count() === 1, "검사: 상자 선택 시 번호·종류 도구");
-    await page.getByRole("button", { name: "문제↔풀이" }).click();
+    // 상자 번호 배지를 탭 → 그 자리에서 고치는 팝오버
+    await page.locator(".ph-box .tag.btn").first().click();
+    ok(await page.locator(".ph-pop").count() === 1, "검사: 번호 배지를 탭하면 상자 팝오버");
+    await page.locator(".ph-pop").getByRole("button", { name: "번호 늘리기" }).click();
+    ok((await page.locator(".ph-box .tag.btn").first().innerText()).startsWith("2번"), "검사: 팝오버에서 번호 바꾸기(+)");
+    await page.locator(".ph-pop").getByRole("button", { name: "번호 줄이기" }).click();
+    ok((await page.locator(".ph-box .tag.btn").first().innerText()).startsWith("1번"), "검사: 팝오버에서 번호 바꾸기(−)");
+    await page.locator(".ph-pop").getByRole("button", { name: "내 풀이", exact: true }).click();
     ok((await text()).includes("검사하기 (1문항)"), "검사: 종류를 바꾸면 짝이 줄어듦(1문항)");
-    await page.getByRole("button", { name: "문제↔풀이" }).click();
+    await page.locator(".ph-pop").getByRole("button", { name: "문제", exact: true }).click();
     ok((await text()).includes("검사하기 (2문항)"), "검사: 되돌리면 2문항");
     // 수동으로 상자 하나 더 그리기(3번 문제) → 풀이 없으면 건너뜀 안내
     await page.getByRole("button", { name: "+ 문제 영역" }).click();
@@ -229,9 +285,13 @@ function ensureImages() {
     ok(await page.locator(".ph-box").count() === 5 && t.includes("풀이가 없는 문항 1개는 건너뛰어요"), "검사: 수동 상자 추가 + 짝 없는 문항 안내");
     await shot("04-check-edit");
     await page.getByRole("button", { name: /검사하기 \(2문항\)/ }).click();
+    await page.locator(".ph-prog").waitFor({ timeout: 10000 });
+    ok((await page.locator(".ph-prog").innerText()).includes("읽는 중"), "검사: 진행 막대에 지금 하는 단계 문구");
     await page.getByText("서술형 첨삭으로 더 볼 문항이 있나요?").waitFor({ timeout: 30000 });
     t = await text();
-    ok(t.includes("문서 전체") && (await page.locator(".ph-light.yellow").count()) >= 2, "검사: 문서 전체 신호등(노랑 포함)");
+    ok(t.includes("문서 전체") && (await page.locator(".ph-sig.yellow").count()) >= 2, "검사: 문서 전체 신호등(노랑 포함)");
+    ok((await page.locator(".ph-sig.yellow .dot .gl").first().innerText()) === "!" && (await page.locator(".ph-sig.green .dot .gl").first().innerText()) === "✓", "검사: 신호등에 색 말고 모양·글자 구분");
+    ok((await page.locator(".ph-sig").first().getAttribute("aria-label") || "").includes("충실성"), "검사: 신호등 읽어 주는 이름표");
     ok(t.includes("1번") && t.includes("2번") && t.includes("암산 부담"), "검사: 문항별 카드");
     ok(t.includes("7을 1처럼"), "검사: 글씨 습관");
     await page.locator(".ph-check input").first().check();
@@ -242,11 +302,13 @@ function ensureImages() {
     ok((await page.locator(".ph-check input").count()) === 1, "검사→첨삭: 첨삭 끝난 문항은 체크칸이 사라짐");
     await shot("05-check-result");
 
-    // F. 내 기록 — 기기 보관소
+    // F. 내 기록 — 썸네일 · 필터 · 인라인 2단계 삭제
     await go("#/solve/photo/mine");
     await page.locator(".ph-rec").first().waitFor({ timeout: 10000 });
     const n = await page.locator(".ph-rec").count();
     ok(n >= 5, `기록: 기기 보관소에 ${n}건 (읽기·표시·서술형·검사2·첨삭)`);
+    const thumbs = await page.locator(".ph-rec .th").count();
+    ok(thumbs >= 1, `기록: 목록 썸네일 ${thumbs}건`);
     await page.getByRole("button", { name: "서술형", exact: true }).click();
     await sleep(400);
     const nEssay = await page.locator(".ph-rec").count();
@@ -255,12 +317,35 @@ function ensureImages() {
     await page.getByRole("button", { name: "이 기록 지우기" }).waitFor({ timeout: 5000 });
     t = await text();
     ok(t.includes("내 답안") && t.includes("채점 기준표") && t.includes("이 기기에만 저장했어요"), "기록: 서술형 상세(답안 + 기준표 + 보관 안내)");
+    // 삭제는 창이 뜨지 않는 인라인 2단계
+    let dialog = false;
+    page.on("dialog", async (d) => { dialog = true; await d.dismiss(); });
     await page.getByRole("button", { name: "이 기록 지우기" }).click();
-    await sleep(400);
+    await page.locator(".ph-sure").waitFor({ timeout: 3000 });
+    ok((await page.locator(".ph-sure").innerText()).includes("지울까요"), "기록: 삭제는 그 자리에서 한 번 더 묻기");
+    await page.getByRole("button", { name: "아니요" }).click();
+    ok((await page.locator(".ph-sure").count()) === 0 && (await page.getByRole("button", { name: "이 기록 지우기" }).count()) === 1, "기록: 아니요 하면 그대로");
+    await page.getByRole("button", { name: "이 기록 지우기" }).click();
+    await page.getByRole("button", { name: "네, 지울게요" }).click();
+    await sleep(500);
     ok((await page.locator(".ph-rec").count()) === nEssay - 1, "기록: 삭제");
+    ok(!dialog, "기록: 창이 뜨는 confirm/alert 를 쓰지 않음");
     await shot("06-mine");
 
-    // G. 서버 호출 순서 확인 — 사진은 scan 에만, 문항 텍스트는 그 뒤 호출에만
+    // G. 오류 — 하루 한도(429)면 글상자 대신 다음에 할 행동을 준다
+    quotaMode = true;
+    await go("#/solve/photo/read");
+    await page.locator('input[type=file]').first().setInputFiles(path.join(IMG, "problem.png"));
+    await page.getByRole("button", { name: "인식하기" }).click();
+    await page.locator(".ph-oops").waitFor({ timeout: 10000 });
+    t = await text();
+    ok(t.includes("오늘 쓸 수 있는 횟수를 다 썼어요") && t.includes("내일 다시"), "오류: 한도 초과(429)는 '내일 다시' 안내");
+    ok((await page.getByRole("button", { name: "촬영 모듈 홈으로" }).count()) === 1 && (await page.getByRole("button", { name: "내 기록 보기" }).count()) === 1, "오류: 홈·내 기록으로 가는 다음 행동 버튼");
+    ok((await page.getByRole("button", { name: "인식하기" }).count()) === 0, "오류: 한도 초과면 다시 부르는 버튼을 감춤");
+    quotaMode = false;
+    await shot("07-error");
+
+    // H. 서버 호출 순서 확인 — 사진은 scan 에만, 문항 텍스트는 그 뒤 호출에만
     ok(calls.filter((c) => c.startsWith("scan")).length >= 6, `호출: scan ${calls.filter((c) => c.startsWith("scan")).length}회`);
     ok(calls.includes("approach") && calls.includes("essay") && calls.includes("process"), "호출: approach·essay·process 모두 사용");
   } catch (e) {

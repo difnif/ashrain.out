@@ -10,12 +10,13 @@ import { photoCall } from "../../lib/photoApi";
 import { newId } from "../../lib/deviceStore";
 import Capture, { RegionPicker } from "./Capture";
 import { EssayResult } from "./PhotoEssay";
-import { Steps, Busy, Lights, KeepNote, aggregateLights, thumbOf, saveDevice, titleOf, CRITERIA } from "./shared";
+import { Steps, Busy, Progress, ErrorNote, Lights, KeepNote, aggregateLights, thumbOf, saveDevice, titleOf, CRITERIA } from "./shared";
 
 const LOAD = { low: "가벼움", mid: "보통", high: "많음 — 실수 위험" };
 const HABIT = { size: "글씨 크기", messy: "난잡함", glyph: "헷갈리는 글자", align: "정렬·등호", unit: "단위", skip: "건너뜀", other: "기타" };
 const EKIND = { calc: "계산", concept: "개념", reading: "문제 해석", transcription: "옮겨 적기", sign: "부호", unit: "단위", none: "없음" };
 const ROLE = { setup: "식 세우기", transform: "변형", compute: "계산", answer: "답", other: "기타" };
+const STEPS_PER_ITEM = 3;                    // 문항당 서버 호출 3회(문제 읽기 · 풀이 읽기 · 검사)
 
 const nextNo = (boxes, kind) => {
   const used = new Set(boxes.filter((b) => b.kind === kind).map((b) => b.no));
@@ -29,7 +30,7 @@ export default function PhotoCheck() {
   const [pages, setPages] = useState([]);       // [{ id, cv, url, boxes:[{id,kind,no,box}], detecting, note }]
   const [adding, setAdding] = useState(true);   // 촬영 화면을 보이는가
   const [stage, setStage] = useState("edit");   // edit | run | result
-  const [progress, setProgress] = useState("");
+  const [prog, setProg] = useState(null);       // { step, total, label, foot }
   const [items, setItems] = useState([]);       // 검사 결과 [{ id, pageIdx, no, p, a, out, err }]
   const [picked, setPicked] = useState({});     // 첨삭 받을 문항 { [itemId]: true }
   const [essays, setEssays] = useState({});     // { [itemId]: { busy, err, res } }
@@ -63,33 +64,36 @@ export default function PhotoCheck() {
   const run = async () => {
     if (!ready.length) { setToast("문제와 답안이 짝지어진 문항이 없어요"); return; }
     setStage("run"); setItems([]); setPicked({}); setEssays({});
+    const total = ready.length * STEPS_PER_ITEM;
+    const say = (i, s, label) => setProg({ step: i * STEPS_PER_ITEM + s, total, label, foot: `${ready.length}문항 중 ${i + (s >= STEPS_PER_ITEM ? 1 : 0)}문항 끝남 · 문항마다 인식 2회와 검사 1회를 써요` });
     const out = [];
     for (let i = 0; i < ready.length; i++) {
       const pr = ready[i];
       const label = `${pages.length > 1 ? `${pr.pageIdx + 1}쪽 ` : ""}${pr.no}번`;
       const rec = { id: newId(), pageIdx: pr.pageIdx, no: pr.no, label, p: null, a: null, out: null, err: null, qthumb: null };
       try {
-        setProgress(`${label} 문제 읽는 중… (${i + 1}/${ready.length})`);
+        say(i, 0, `${label} 문제 읽는 중…`);
         const qcv = cropCanvas(pr.page.cv, pr.q.box, 0.015);
         rec.qthumb = thumbOf(qcv, 360);
         const sp = await photoCall("scan", { image: canvasToBase64(qcv, 0.85), mode: "problem" });
         if (sp.unreadable) throw new Error("문항을 읽지 못했어요 — 문제 영역을 다시 잡아 주세요");
         rec.p = { question: sp.question, choices: sp.choices, qtype: sp.qtype, figure_note: sp.figure_note, unit_guess: sp.unit_guess, std: sp.std, warnings: sp.warnings };
-        setProgress(`${label} 풀이 읽는 중… (${i + 1}/${ready.length})`);
+        say(i, 1, `${label} 풀이 읽는 중…`);
         const acv = cropCanvas(pr.page.cv, pr.a.box, 0.015);
         const sa = await photoCall("scan", { image: canvasToBase64(acv, 0.85), mode: "answer" });
         if (sa.unreadable) throw new Error("풀이를 읽지 못했어요 — 답안 영역을 다시 잡아 주세요");
         rec.a = { answer: sa.answer, lines: sa.lines, final_answer: sa.final_answer, legibility: sa.legibility, thumb: thumbOf(acv, 360) };
-        setProgress(`${label} 풀이 과정 검사 중… (${i + 1}/${ready.length})`);
+        say(i, 2, `${label} 풀이 과정 검사 중…`);
         const r = await photoCall("process", { question: rec.p.question, figure_note: rec.p.figure_note, choices: rec.p.choices, answer: rec.a.answer, lines: rec.a.lines, legibility: rec.a.legibility, std: rec.p.std, unit: rec.p.unit_guess });
         rec.out = r;
-        saveDevice({ id: rec.id, feature: "check", title: `${label} · ${titleOf(rec.p.question)}`, question: rec.p.question, figure_note: rec.p.figure_note, unit: rec.p.unit_guess, grade: r.std?.item_grade || rec.p.std?.item_grade || null, answer: rec.a.answer, result: r.result, retention: r.retention });
+        saveDevice({ id: rec.id, feature: "check", title: `${label} · ${titleOf(rec.p.question)}`, question: rec.p.question, figure_note: rec.p.figure_note, unit: rec.p.unit_guess, grade: r.std?.item_grade || rec.p.std?.item_grade || null, answer: rec.a.answer, result: r.result, retention: r.retention, thumb: rec.qthumb });
       } catch (e) {
         rec.err = e?.message || "검사 실패";
       }
+      say(i, STEPS_PER_ITEM, `${label} 끝`);
       out.push(rec); setItems(out.slice());
     }
-    setProgress(""); setStage("result");
+    setProg(null); setStage("result");
   };
 
   const gradePicked = async () => {
@@ -101,7 +105,7 @@ export default function PhotoCheck() {
       try {
         const r = await photoCall("essay", { question: it.p.question, figure_note: it.p.figure_note, choices: it.p.choices, answer: it.a.answer, std: it.p.std, unit: it.p.unit_guess });
         setEssays((es) => ({ ...es, [id]: { res: r } }));
-        saveDevice({ feature: "essay", title: `${it.label} · ${titleOf(it.p.question)}`, question: it.p.question, figure_note: it.p.figure_note, unit: it.p.unit_guess, grade: r.std?.item_grade || null, answer: it.a.answer, result: r.result, retention: r.retention });
+        saveDevice({ feature: "essay", title: `${it.label} · ${titleOf(it.p.question)}`, question: it.p.question, figure_note: it.p.figure_note, unit: it.p.unit_guess, grade: r.std?.item_grade || null, answer: it.a.answer, result: r.result, retention: r.retention, thumb: it.a?.thumb || it.qthumb || null });
       } catch (e) {
         setEssays((es) => ({ ...es, [id]: { err: e?.message || "첨삭 실패" } }));
       }
@@ -112,6 +116,7 @@ export default function PhotoCheck() {
   const okItems = items.filter((it) => it.out);
   const anyPicked = okItems.some((it) => picked[it.id]);
   const essayDone = Object.values(essays).some((e) => e?.res);
+  const backToEdit = () => { setStage("edit"); setItems([]); setEssays({}); setPicked({}); };
 
   return (
     <SolveShell title="풀이과정 검사" back="#/solve/photo" toast={toast}
@@ -151,8 +156,8 @@ export default function PhotoCheck() {
 
       {stage === "run" && (
         <div className="sv-card">
-          <Busy text={progress || "준비 중…"} />
-          <div className="sv-small" style={{ marginTop: 8 }}>{items.length} / {ready.length} 문항 끝남</div>
+          <Progress now={prog?.step || 0} total={prog?.total || ready.length * STEPS_PER_ITEM} label={prog?.label || "준비 중…"} foot={prog?.foot} />
+          <div className="sv-small" style={{ marginTop: 10 }}>{items.length} / {ready.length} 문항 끝남</div>
         </div>
       )}
 
@@ -165,8 +170,19 @@ export default function PhotoCheck() {
               <div className="ph-why">{CRITERIA.map((k) => docLights[k]?.light ? <span key={k} style={{ marginRight: 10 }}><b>{k}</b> {docLights[k].why}</span> : null)}</div>
             </div>
           )}
-          {items.map((it) => <ItemResult key={it.id} it={it} pick={!!picked[it.id]} onPick={() => setPicked((p) => ({ ...p, [it.id]: !p[it.id] }))} essay={essays[it.id]} />)}
-          {!okItems.length && <div className="sv-empty">검사한 문항이 없어요. 영역을 다시 잡아 주세요.</div>}
+          {items.map((it) => <ItemResult key={it.id} it={it} pick={!!picked[it.id]} onPick={() => setPicked((p) => ({ ...p, [it.id]: !p[it.id] }))} essay={essays[it.id]} onFix={backToEdit} />)}
+          {!okItems.length && (
+            <div className="sv-card">
+              <div className="ph-blank">
+                <div className="tt">검사한 문항이 없어요</div>
+                <div className="ds">문제 영역과 풀이 영역을 같은 번호로 잡았는지 확인하고 다시 검사해 주세요.</div>
+              </div>
+              <div className="ph-actions" style={{ marginTop: 12 }}>
+                <button className="sv-btn pri" onClick={backToEdit}>영역 다시 잡기</button>
+                <button className="sv-btn ghost" onClick={() => { location.hash = "#/solve/photo"; }}>촬영 모듈 홈으로</button>
+              </div>
+            </div>
+          )}
 
           {okItems.length > 0 && (
             <div className="sv-card" style={{ borderColor: "color-mix(in srgb, var(--accent) 45%, var(--border))" }}>
@@ -175,7 +191,7 @@ export default function PhotoCheck() {
               <div className="ph-actions">
                 <button className="sv-btn pri" onClick={gradePicked} disabled={!anyPicked || Object.values(essays).some((e) => e?.busy)}>선택한 문항 첨삭받기</button>
                 <button className="sv-btn" onClick={() => { location.hash = "#/solve/photo"; }}>{essayDone ? "끝내기" : "없어요, 끝낼래요"}</button>
-                <button className="sv-btn ghost wide" onClick={() => { setStage("edit"); setItems([]); setEssays({}); setPicked({}); }}>영역 다시 잡기</button>
+                <button className="sv-btn ghost wide" onClick={backToEdit}>영역 다시 잡기</button>
               </div>
             </div>
           )}
@@ -185,12 +201,11 @@ export default function PhotoCheck() {
   );
 }
 
-/** 페이지 한 장 — 상자 보기·그리기·번호 바꾸기·삭제 */
+/** 페이지 한 장 — 상자 보기·그리기·번호 배지 팝오버로 고치기 */
 function PageEditor({ page, idx, many, onChange, onRemove, setToast }) {
   const [mode, setMode] = useState(null);        // 'q' | 'a' | null
   const [sel, setSel] = useState(null);
   const boxes = page.boxes;
-  const selBox = boxes.find((b) => b.id === sel) || null;
   const set = (list) => onChange(list);
 
   const onDraw = (box) => {
@@ -199,15 +214,21 @@ function PageEditor({ page, idx, many, onChange, onRemove, setToast }) {
     set([...boxes, nb]); setSel(nb.id); setMode(null);
     setToast(`${nb.no}번 ${mode === "q" ? "문제" : "풀이"} 영역을 잡았어요`);
   };
-  const bump = (d) => selBox && set(boxes.map((b) => (b.id === sel ? { ...b, no: Math.max(1, b.no + d) } : b)));
-  const flip = () => selBox && set(boxes.map((b) => (b.id === sel ? { ...b, kind: b.kind === "q" ? "a" : "q" } : b)));
+  const bump = (b, d) => set(boxes.map((x) => (x.id === b.id ? { ...x, no: Math.max(1, x.no + d) } : x)));
+  const setKind = (b, kind) => { if (b.kind !== kind) set(boxes.map((x) => (x.id === b.id ? { ...x, kind } : x))); };
+  const moveBox = (b, box) => set(boxes.map((x) => (x.id === b.id ? { ...x, box } : x)));
   const del = (id) => { set(boxes.filter((b) => b.id !== id)); if (sel === id) setSel(null); };
 
   return (
     <div className="sv-card">
       <div className="sv-row" style={{ marginBottom: 8 }}>
-        <div className="sv-sec" style={{ margin: 0, flex: 1 }}>{many ? `${idx + 1}쪽` : "페이지"} <span className="sv-small">· 파랑 = 문제 · 주황 = 내 풀이</span></div>
+        <div className="sv-sec" style={{ margin: 0, flex: 1 }}>{many ? `${idx + 1}쪽` : "페이지"}</div>
         <button className="sv-btn sm ghost" onClick={onRemove}>이 페이지 빼기</button>
+      </div>
+      <div className="sv-row wrap" style={{ gap: 12, marginBottom: 8 }}>
+        <span className="ph-key"><i className="q" />문제</span>
+        <span className="ph-key"><i className="a" />내 풀이</span>
+        <span className="sv-small">번호 배지를 탭하면 그 자리에서 고쳐요</span>
       </div>
       {page.detecting && <div style={{ marginBottom: 8 }}><Busy text="문항과 풀이 자리를 찾는 중…" /></div>}
       {page.note && !page.detecting && <div className="sv-small" style={{ marginBottom: 8, color: "var(--bad)" }}>{page.note}</div>}
@@ -216,25 +237,35 @@ function PageEditor({ page, idx, many, onChange, onRemove, setToast }) {
         <button className={"sv-chip a" + (mode === "a" ? " on" : "")} onClick={() => { setMode(mode === "a" ? null : "a"); setSel(null); }}>{mode === "a" ? "풀이 영역을 드래그하세요" : "+ 풀이 영역"}</button>
         {boxes.length > 0 && <button className="sv-chip" onClick={() => { set([]); setSel(null); }}>모두 지우기</button>}
       </div>
-      <RegionPicker url={page.url} drawing={!!mode} selected={sel}
-        boxes={boxes.map((b) => ({ ...b, label: `${b.no}번 ${b.kind === "q" ? "문제" : "풀이"}`, removable: true }))}
-        onDraw={onDraw} onMiss={() => setToast("영역이 너무 작아요 — 조금 더 크게 잡아 주세요")} onTapBox={(b) => setSel(sel === b.id ? null : b.id)} onRemove={(b) => del(b.id)} />
-      {selBox && !mode && (
-        <div className="sv-row wrap" style={{ marginTop: 8, gap: 6 }}>
-          <span className="sv-small">{selBox.no}번 {selBox.kind === "q" ? "문제" : "풀이"}:</span>
-          <button className="sv-chip" onClick={() => bump(-1)}>번호 −</button>
-          <button className="sv-chip" onClick={() => bump(1)}>번호 +</button>
-          <button className="sv-chip" onClick={flip}>문제↔풀이</button>
-          <button className="sv-chip bad" onClick={() => del(selBox.id)}>삭제</button>
-        </div>
-      )}
-      {!boxes.length && !page.detecting && <div className="sv-small" style={{ marginTop: 8 }}>위 버튼을 누른 뒤 사진 위를 드래그해서 영역을 잡아요. 문제 하나에 문제 영역 1개 + 풀이 영역 1개, 같은 번호로.</div>}
+      <RegionPicker url={page.url} drawing={!!mode} selected={sel} editable
+        boxes={boxes.map((b) => ({ ...b, label: `${b.no}번 ${b.kind === "q" ? "문제" : "풀이"}` }))}
+        onDraw={onDraw} onMiss={() => setToast("영역이 너무 작아요 — 조금 더 크게 잡아 주세요")}
+        onTapBox={(b) => setSel(sel === b.id ? null : b.id)} onMoveBox={moveBox}
+        renderMenu={(b) => (
+          <div className="ph-pop-in">
+            <div className="ttl">{b.no}번 {b.kind === "q" ? "문제" : "내 풀이"} 고치기</div>
+            <div className="rw">
+              <button className="ph-pb" onClick={() => bump(b, -1)} aria-label="번호 줄이기">−</button>
+              <span className="nm">{b.no}번</span>
+              <button className="ph-pb" onClick={() => bump(b, 1)} aria-label="번호 늘리기">+</button>
+            </div>
+            <div className="rw">
+              <button className={"ph-seg q" + (b.kind === "q" ? " on" : "")} aria-pressed={b.kind === "q"} onClick={() => setKind(b, "q")}>문제</button>
+              <button className={"ph-seg a" + (b.kind === "a" ? " on" : "")} aria-pressed={b.kind === "a"} onClick={() => setKind(b, "a")}>내 풀이</button>
+            </div>
+            <div className="rw">
+              <button className="ph-pb wide bad" onClick={() => del(b.id)}>삭제</button>
+              <button className="ph-pb wide" onClick={() => setSel(null)}>닫기</button>
+            </div>
+          </div>
+        )} />
+      {!boxes.length && !page.detecting && <div className="sv-small" style={{ marginTop: 8, lineHeight: 1.6 }}>위 버튼을 누른 뒤 사진 위를 드래그해서 영역을 잡아요. 문제 하나에 문제 영역 1개 + 풀이 영역 1개, 같은 번호로.</div>}
     </div>
   );
 }
 
 /** 문항 하나의 검사 결과 카드 (+ 첨삭 선택 · 첨삭 결과) */
-function ItemResult({ it, pick, onPick, essay }) {
+function ItemResult({ it, pick, onPick, essay, onFix }) {
   const r = it.out?.result;
   return (
     <div className={"ph-item" + (pick ? " sel" : "")}>
@@ -242,7 +273,7 @@ function ItemResult({ it, pick, onPick, essay }) {
         {r && <span className={"st " + (r.final_answer_ok ? "ok" : "bad")}>{r.final_answer_ok ? "답 맞음" : "답 확인 필요"}</span>}
         {it.err && <span className="st bad">실패</span>}
       </div>
-      {it.err && <div className="ph-err">{it.err}</div>}
+      {it.err && <ErrorNote text={it.err} onShoot={onFix} shootLabel="영역 다시 잡기" home={false} />}
       {r && (
         <>
           <Lights criteria={r.criteria} compact />
@@ -266,19 +297,21 @@ function ItemResult({ it, pick, onPick, essay }) {
               <div className="sv-list">{r.habits.map((h, i) => <div key={i} className="ph-habit"><span className="k">{HABIT[h.kind] || h.kind}</span><span>{h.note}<span className="tip">→ {h.tip}</span></span></div>)}</div>
             </div>
           )}
-          <details style={{ marginTop: 10 }}>
-            <summary className="sv-small" style={{ cursor: "pointer" }}>식의 연결고리 {r.chain?.length ? `(${r.chain.length}줄)` : ""} · 읽어 낸 문제와 풀이</summary>
-            {r.chain?.length > 0 && (
-              <ul className="ph-chain" style={{ marginTop: 8 }}>
-                {r.chain.map((c, idx) => <li key={idx} className={c.ok === false ? "bad" : c.ok === true ? "ok" : ""}><span className="i">{c.i}</span><span><MathText text={c.text} /><span className="nt">{ROLE[c.role] || c.role}{c.note ? ` · ${c.note}` : ""}</span></span></li>)}
-              </ul>
-            )}
-            <div className="sv-small" style={{ marginTop: 10 }}>문제</div>
-            {it.qthumb && <img className="ph-thumb" src={it.qthumb} alt="" style={{ margin: "4px 0" }} />}
-            <MathText as="div" className="ph-q" text={it.p?.question} style={{ fontSize: 14 }} />
-            <div className="sv-small" style={{ marginTop: 10 }}>내 풀이(읽어 낸 것)</div>
-            {it.a?.thumb && <img className="ph-thumb" src={it.a.thumb} alt="" style={{ margin: "4px 0" }} />}
-            <MathText as="div" className="ph-ans" text={it.a?.answer} />
+          <details className="ph-more" style={{ marginTop: 10 }}>
+            <summary><span className="ic">🔗</span><span>식의 연결고리 {r.chain?.length ? `(${r.chain.length}줄)` : ""}</span><span className="sub">읽어 낸 문제와 풀이</span></summary>
+            <div className="bd">
+              {r.chain?.length > 0 && (
+                <ul className="ph-chain">
+                  {r.chain.map((c, idx) => <li key={idx} className={c.ok === false ? "bad" : c.ok === true ? "ok" : ""}><span className="i">{c.i}</span><span><MathText text={c.text} /><span className="nt">{ROLE[c.role] || c.role}{c.note ? ` · ${c.note}` : ""}</span></span></li>)}
+                </ul>
+              )}
+              <div className="sv-small" style={{ marginTop: 10 }}>문제</div>
+              {it.qthumb && <img className="ph-thumb" src={it.qthumb} alt="" style={{ margin: "4px 0" }} />}
+              <MathText as="div" className="ph-q" text={it.p?.question} style={{ fontSize: 14 }} />
+              <div className="sv-small" style={{ marginTop: 10 }}>내 풀이(읽어 낸 것)</div>
+              {it.a?.thumb && <img className="ph-thumb" src={it.a.thumb} alt="" style={{ margin: "4px 0" }} />}
+              <MathText as="div" className="ph-ans" text={it.a?.answer} />
+            </div>
           </details>
           <KeepNote retention={it.out.retention} />
           {!essay?.res && (
@@ -287,7 +320,7 @@ function ItemResult({ it, pick, onPick, essay }) {
               <span className="tx">{essay?.busy ? "첨삭 받는 중…" : "이 문항은 서술형 첨삭까지 받기"}</span>
             </label>
           )}
-          {essay?.err && <div className="ph-err" style={{ marginTop: 8 }}>{essay.err}</div>}
+          {essay?.err && <div style={{ marginTop: 8 }}><ErrorNote text={essay.err} home={false} /></div>}
           {essay?.res && (
             <div style={{ marginTop: 12 }}>
               <div className="sv-sec">서술형 채점·첨삭</div>
