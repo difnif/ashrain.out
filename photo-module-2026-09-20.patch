@@ -1,0 +1,3121 @@
+From bcc49f34fdc9d586ad6faf618c0aa6150049b883 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 20 Sep 2026 01:44:48 +0000
+Subject: [PATCH] =?UTF-8?q?=EC=B4=AC=EC=98=81=20=EB=AA=A8=EB=93=88=20v1=20?=
+ =?UTF-8?q?=E2=80=94=20=EB=AC=B8=EC=9E=A5=20=EC=9D=B4=ED=95=B4=ED=95=98?=
+ =?UTF-8?q?=EA=B8=B0=C2=B7=ED=91=9C=EC=8B=9C=20=EC=97=B0=EC=8A=B5=C2=B7?=
+ =?UTF-8?q?=EC=84=9C=EC=88=A0=ED=98=95=20=EC=B1=84=EC=A0=90=C2=B7=EC=B2=A8?=
+ =?UTF-8?q?=EC=82=AD=C2=B7=ED=92=80=EC=9D=B4=EA=B3=BC=EC=A0=95=20=EA=B2=80?=
+ =?UTF-8?q?=EC=82=AC=20(#/solve/photo)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+기능(사진 → 인식 → 학습), 서버 함수 api/photo.js(scan·approach·essay·process), 보관 게이트
+(src/lib/retention.js: 문항 표현 등급 S/M/C × 문항–답안 겹침 × 정책 labels|gated|all), 기기 보관소
+(IndexedDB, src/lib/deviceStore.js), 선택 마이그레이션 supabase/2026-09_photo_studio.sql
+(photo_answer_labels · photo_answers · app_settings 3키 · v_photo_label_stats).
+
+원칙: 사진·문항 본문은 서버에 저장하지 않는다. 답안 원문은 게이트가 central 일 때만 DB, 기본 정책(labels)
+에서는 라벨만. 기존 파일 변경은 Mark.jsx(MarkView props 2개)·Solve.jsx(타일)·SolveRouter.jsx(case) 뿐.
+
+검증: node tests(retention 14·photo 23·photoApi 42) · vite build · Playwright 스모크 38/38(모의 API).
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01H3ULNhSa28Vfc3rcfmFQqV
+---
+ .gitignore                        |   2 +
+ api/photo.js                      | 389 ++++++++++++++++++++++++++++++
+ src/lib/camera.js                 |  64 +++++
+ src/lib/deviceStore.js            |  73 ++++++
+ src/lib/photoApi.js               |  30 +++
+ src/lib/photoText.js              |  54 +++++
+ src/lib/retention.js              | 202 ++++++++++++++++
+ src/pages/photo/Capture.jsx       | 157 ++++++++++++
+ src/pages/photo/PhotoCheck.jsx    | 302 +++++++++++++++++++++++
+ src/pages/photo/PhotoEssay.jsx    | 176 ++++++++++++++
+ src/pages/photo/PhotoMark.jsx     | 129 ++++++++++
+ src/pages/photo/PhotoMine.jsx     |  81 +++++++
+ src/pages/photo/PhotoRead.jsx     | 155 ++++++++++++
+ src/pages/photo/PhotoRouter.jsx   |  62 +++++
+ src/pages/photo/photo.css         | 147 +++++++++++
+ src/pages/photo/shared.jsx        | 104 ++++++++
+ src/pages/solve/Mark.jsx          |  13 +-
+ src/pages/solve/Solve.jsx         |   3 +-
+ src/pages/solve/SolveRouter.jsx   |   3 +
+ supabase/2026-09_photo_studio.sql |  80 ++++++
+ tests/photo.test.mjs              |  67 +++++
+ tests/photoApi.test.mjs           | 184 ++++++++++++++
+ tests/retention.test.mjs          |  92 +++++++
+ tests/smoke/photo.smoke.mjs       | 276 +++++++++++++++++++++
+ 24 files changed, 2840 insertions(+), 5 deletions(-)
+ create mode 100644 api/photo.js
+ create mode 100644 src/lib/camera.js
+ create mode 100644 src/lib/deviceStore.js
+ create mode 100644 src/lib/photoApi.js
+ create mode 100644 src/lib/photoText.js
+ create mode 100644 src/lib/retention.js
+ create mode 100644 src/pages/photo/Capture.jsx
+ create mode 100644 src/pages/photo/PhotoCheck.jsx
+ create mode 100644 src/pages/photo/PhotoEssay.jsx
+ create mode 100644 src/pages/photo/PhotoMark.jsx
+ create mode 100644 src/pages/photo/PhotoMine.jsx
+ create mode 100644 src/pages/photo/PhotoRead.jsx
+ create mode 100644 src/pages/photo/PhotoRouter.jsx
+ create mode 100644 src/pages/photo/photo.css
+ create mode 100644 src/pages/photo/shared.jsx
+ create mode 100644 supabase/2026-09_photo_studio.sql
+ create mode 100644 tests/photo.test.mjs
+ create mode 100644 tests/photoApi.test.mjs
+ create mode 100644 tests/retention.test.mjs
+ create mode 100644 tests/smoke/photo.smoke.mjs
+
+diff --git a/.gitignore b/.gitignore
+index f61af8e..8f311ad 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -25,3 +25,5 @@ itemfactory/legacy/
+ # README·TYPES.md(유형 이름·빈도만)는 남기고 문항 본문이 든 파일만 제외.
+ itemfactory/reference/**/*.json
+ itemfactory/reference/**/*.txt
++tests/smoke/shots/
++tests/smoke/img/
+diff --git a/api/photo.js b/api/photo.js
+new file mode 100644
+index 0000000..5994a9b
+--- /dev/null
++++ b/api/photo.js
+@@ -0,0 +1,389 @@
++// ashrain.out — 촬영 학습 서버리스 함수 (api/photo.js · v1.0, 2026-09-20)
++// 학생이 찍은 문항·답안 사진을 인식하고(전사), 문장 이해·표시 연습·서술형 채점·풀이과정 검사를 돕는다.
++// 원칙
++//   · 사진과 문항 전사 텍스트는 서버에 저장하지 않는다(응답 뒤 버림). Storage 업로드 없음.
++//   · 답안 원문은 보관 게이트(src/lib/retention.js)가 'central' 이라 할 때만 DB 에 남고, 기본 정책(labels)에서는 라벨만 남는다.
++//   · 문항 표현 등급(S/M/C)은 발문표준성 검토 v2 기준으로 판정한다. 등급·겹침·정책 → 보관 위치.
++//   · 정답을 대신 풀어 주지 않는다(approach). 채점·검사는 학생 답안에 대한 첨삭이다.
++// 환경변수: ANTHROPIC_API_KEY (필수) · SUPABASE_URL/VITE_SUPABASE_URL · SUPABASE_ANON_KEY/VITE_SUPABASE_ANON_KEY · SUPABASE_SERVICE_ROLE_KEY
++// app_settings: photo_model(기본 claude-sonnet-4-6 · 전사/등급/방침) · photo_model_grade(기본 claude-opus-4-8 · 채점/검사) · photo_retention(labels|gated|all)
++// task: scan(problem|answer|page) · approach · essay · process   — 전부 로그인 필수, 학생 자격 게이트, 일일 한도(ai_calls)
++
++import { createClient } from "@supabase/supabase-js";
++import { parseText } from "../src/lib/mathir.js";
++import { overlapScore, decideRetention, buildLabels, normalizePolicy, GRADES } from "../src/lib/retention.js";
++
++export const config = { maxDuration: 60 };
++
++const DEFAULT_MODEL = "claude-sonnet-4-6";
++const DEFAULT_GRADE_MODEL = "claude-opus-4-8";
++const DAILY_CAP = { photo_scan: 40, photo_approach: 20, photo_essay: 10, photo_process: 10 };
++const MAX_IMAGE_B64 = 4_000_000;    // ≈ 3 MB (Vercel 본문 한도 4.5 MB 안쪽 · 클라이언트는 긴 변 1600px 로 줄여 보낸다)
++const MAX_TEXT = 3000;
++const MAX_LINES = 60, MAX_CHOICES = 8;
++const TRAPS = ["구하는대상혼동", "부호", "단위", "단위환산", "조건누락", "역연산", "평균오용", "제곱누락", "계산실수"];
++const EL_KEYS = ["발문", "조건제시", "소재맥락", "도형자료", "지문"];
++const TIME_BUDGET_MS = 50_000;      // maxDuration 60s 안에서 재시도·등급 판정을 건너뛰는 기준
++
++// ─────────────────────────────────────────────────────────────── 공용
++function svcClient() {
++  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
++  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
++  if (!url || !key) return null;
++  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
++}
++function kstDayStartISO() {
++  const kst = Date.now() + 9 * 3600 * 1000;
++  return new Date(Math.floor(kst / 86400000) * 86400000 - 9 * 3600 * 1000).toISOString();
++}
++async function checkCap(sb, uid, task) {
++  const cap = DAILY_CAP[task];
++  if (!cap) return null;
++  const { count } = await sb.from("ai_calls").select("*", { count: "exact", head: true })
++    .eq("user_id", uid).eq("task", task).gte("created_at", kstDayStartISO());
++  if ((count ?? 0) >= cap) return `오늘 사용 한도(${cap}회)를 다 썼어요 — 내일 다시 이용할 수 있어요`;
++  await sb.from("ai_calls").insert({ user_id: uid, task });
++  return null;
++}
++async function callClaude({ model, system, content, maxTokens = 2500 }) {
++  const r = await fetch("https://api.anthropic.com/v1/messages", {
++    method: "POST",
++    headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
++    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: "user", content }] }),
++  });
++  const j = await r.json();
++  if (!r.ok) throw new Error("AI 호출 실패: " + (j?.error?.message || r.status));
++  return (j.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
++}
++const img = (data) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } });
++const txt = (text) => ({ type: "text", text });
++function parseObj(text) {
++  const m = String(text || "").replace(/```json|```/g, "").match(/\{[\s\S]*\}/);
++  if (!m) throw new Error("AI 응답을 JSON으로 해석하지 못했어요 — 다시 시도해 주세요");
++  try { return JSON.parse(m[0]); } catch { throw new Error("AI 응답을 JSON으로 해석하지 못했어요 — 다시 시도해 주세요"); }
++}
++const str = (v, n = MAX_TEXT) => (typeof v === "string" ? v.trim().slice(0, n) : "");
++const arr = (v) => (Array.isArray(v) ? v : []);
++const clamp01 = (v) => Math.min(Math.max(+v || 0, 0), 1);
++const light = (v) => (["green", "yellow", "red"].includes(v) ? v : "yellow");
++async function settings(sb, keys) {
++  const { data } = await sb.from("app_settings").select("key, value").in("key", keys);
++  const out = {};
++  for (const r of data || []) out[r.key] = r.value;
++  return out;
++}
++/** 테이블이 아직 없을 때(마이그레이션 미적용) 나는 오류인가 */
++const missingRel = (e) => e && ["42P01", "42703", "PGRST202", "PGRST204", "PGRST205"].includes(String(e.code || ""));
++
++// ─────────────────────────────────────────────────────────────── 프롬프트
++const MATHIR_SPEC = `■ 수식 표기 — MathIR 닫힌 문법 (이 목록 밖 토큰 금지)
++- 문장 속 수식은 [[ ... ]]로 감싸고 그 안은 MathIR만. 단순 숫자·단위(3 cm, 40개)는 평문.
++- 기본: 숫자, 변수(x,a,...), + - * / = != < > <= >=, 괄호, 병치곱(2x, 3(x+1)). 유니코드 수식문자·LaTeX 금지.
++- 함수: frac(a,b) mixed(w,a,b) pow(b,e) sqrt(x) root(n,x) abs(x) recdec(pre,rep) floor(x) fact(n)
++  max min ratio(a,b[,c]) pct(x) deg(x) dms(d,m[,s]) pm | seg line ray arc angle tri quad par perp cong sim
++  point(x,y) point3 vec vcomp dot | set setb in notin subset nsubset union inter comp card imp iff neg itv(a,b,cc|co|oc|oo) conj
++  | log([b,]x) ln sin cos tan csc sec cot | sub(a,n) sum(k,a,b,f) lim(x,a,f[,+|-]) prime(f[,2]) dydx integ dinteg(a,b,f,x) inv
++  | perm comb pperm hcomb prob cprob ev var sd binomd normald | 상수 pi e i inf empty
++예: "일차방정식 [[frac(x,2) - 3 = frac(x,4) - 1]] 을 푸시오."
++자주 틀리는 치환 — 반드시 이렇게: √x→sqrt(x), ³√x→root(3,x), Σ→sum(...), π→pi, ×→*, ÷→/, ≤→<=, ≥→>=, ≠→!=, x²→pow(x,2). 유니코드 수학기호가 하나라도 남으면 실패다.
++JSON 문자열 안 백슬래시는 \\\\ 로 이스케이프.`;
++
++const SYS_SCAN_PROBLEM = `너는 수학 문항 전사기다. 학생이 찍은 사진 속 "문항 하나"를 원문 그대로 옮긴다(오탈자 포함). 머리말·페이지 번호·배점 표기([3점] 등)·문항 번호는 뺀다.
++사진에 문항이 여러 개면 가장 크게·가운데에 나온 하나만 옮기고, 잘려서 읽을 수 없으면 unreadable 을 true 로 한다.
++${MATHIR_SPEC}
++
++■ 출력 — 아래 JSON 하나만, 설명·마크다운 금지:
++{"question":"문항 본문(마커 포함)", "choices":["①의 내용","②","③","④","⑤"] 또는 null,
++ "qtype":"choice|short|essay", "figure_note":"그림·표·그래프가 있으면 그 구성을 수치까지 말로 짧게(없으면 null)",
++ "unit_guess":"m1-1|m1-2|m2-1|m2-2|m3-1|m3-2|h1-1|h1-2|h2-1|h2-2|h3-1|h3-2|h3-3 중 하나 또는 null", "unreadable":false}
++표는 figure_note 에 "표: 계급 0~10·10~20…, 도수 3·5·…" 처럼 수치를 다 적는다(풀이에 필요하다). 선택지는 있는 그대로, 없으면 null.`;
++
++const SYS_SCAN_ANSWER = `너는 학생 손글씨 풀이(답안)를 옮겨 적는 전사기다. 사진 속 학생이 쓴 것만 줄 단위로 옮긴다. 인쇄된 문항 문장은 답안이 아니다 — 빼라.
++수식은 평문으로(√ ² ³ / × ∠ △ π 등 사용, LaTeX 금지). 줄바꿈은 학생이 줄을 바꾼 대로. 지운 흔적은 [지움]으로.
++글씨 상태도 본다(이 학생의 습관 진단에 쓴다): 크기가 너무 작은가, 난잡한가, 헷갈리는 글자(1과 7, 6과 0, x와 ×, b와 6, z와 2, 9와 q, +와 t 등)가 있는가, 줄 간격·정렬, 지운 흔적.
++
++■ 출력 — 아래 JSON 하나만:
++{"answer":"답안 전문(줄바꿈 \\n)", "lines":[{"text":"줄 내용","kind":"eq|text|answer|other"}], "final_answer":"학생이 최종 답으로 쓴 것(없으면 null)",
++ "legibility":{"score":1~5, "issues":[{"kind":"size|messy|glyph|spacing|crossout|other","note":"한 줄(예: 7 을 1 처럼 씀)"}]}, "unreadable":false}
++읽기 불확실한 글자는 그대로 두되 물음표를 붙이지 말고 가장 그럴듯하게 읽는다. 학생 답안이 사진에 없으면 unreadable true.`;
++
++const SYS_SCAN_PAGE = `이 이미지는 학생이 문제집 페이지에 풀이를 손으로 쓴 사진이다. 페이지 안의 "문항"과 각 문항 옆·아래의 "손글씨 풀이 영역"을 찾아 경계상자로 보고해라.
++규칙: box 는 페이지 기준 비율 좌표 — 왼쪽 위 (0,0), 오른쪽 아래 (1,1). {"x":왼쪽,"y":위,"w":너비,"h":높이}. 문항 상자에는 번호·문장·수식·그림·보기가 전부 들어가게 넉넉히. 풀이 상자에는 그 문항의 손글씨만.
++no 는 인쇄된 문항 번호(정수), 없으면 위에서부터. 2단이면 왼쪽 위→아래, 오른쪽 위→아래 순. 머리말·페이지 번호 제외.
++출력은 아래 JSON 만: {"problems":[{"no":1,"box":{"x":0.05,"y":0.08,"w":0.42,"h":0.18}}], "answers":[{"no":1,"box":{...}}]}`;
++
++const SYS_STD = `당신은 국내 중·고등 수학 교재 관행을 잘 아는 판정자다. 문항의 "표현에 저작자의 선택의 여지가 있는가"를 다섯 요소로 나누어 등급을 매긴다. 단원·수치·아이디어의 새로움은 판정 대상이 아니다.
++요소: 발문(묻는 방식) · 조건제시(값·관계를 서술하는 방식과 순서) · 소재맥락(실생활 사물·인물·상황) · 도형자료(그림·표·그래프 구성) · 지문(앞에 붙은 서술·안내문·서사). 없는 요소는 "-".
++등급: S 표준 = 이렇게밖에 쓸 수 없는 관용 표현 / M 소폭 선택 = 구조는 표준, 소재·명칭만 교체 가능(교재가 공유하는 정형 상황: 농도·속력·요금제·나이·과부족·일의 양·톱니바퀴 등, 관용 도형에 라벨 배치) / C 창작적 = 저작자 고유의 설정·서사·단계 절차 지문, 직접 구성한 표·그래프·패턴·도식, 조건을 지문 속에 분산.
++주의: 관용 장치(번호 카드·주머니 속 공·주사위·동전·정n각형 꼭짓점·수직선 위 점)는 소재맥락 S. 경계가 애매하면 상위 등급. 문항 등급 = 요소 최고 등급.
++세부 유형(실생활 소재나 자료가 있을 때만): 단순 소재 대입형 / 상황 설정형 / 자료 해석형, 아니면 "해당 없음".
++출력은 아래 JSON 만: {"elements":{"발문":"S","조건제시":"S","소재맥락":"M","도형자료":"-","지문":"-"},"item_grade":"M","sub_type":"단순 소재 대입형","reason":"한 줄(문항 문장 인용 금지)"}`;
++
++const SYS_APPROACH = `너는 한국 중·고등 수학 학원의 "문장 이해 선생님"이다. 학생이 찍은 문항의 문장을 함께 읽고 "식을 세우는 데까지만" 돕는다.
++절대 규칙: 정답·최종 계산 결과·마지막 단계는 어떤 경우에도 쓰지 마라. 세운 식을 풀지 마라. 수식은 평문(× ÷ − ² √ a/b). 하위권 학생 대상 — 짧은 문장, 다정한 해요체.
++아래 JSON 만 출력:
++{"asking":"무엇을 구하라는지 한 문장", "clues":[{"text":"단서(문항 속 조건 그대로 짧게)","why":"이 단서가 왜 열쇠인지 한 문장"}],
++ "concept":"떠올릴 개념·공식 이름(대입 결과 금지)", "first_step":"지금 종이에 쓸 첫 한 줄(변수 두기 등)",
++ "setup":["세워야 할 식 1~2개(풀지 않음)"], "traps":["구하는대상혼동|부호|단위|단위환산|조건누락|역연산|평균오용|제곱누락|계산실수 중 이 문항에 해당하는 것만"],
++ "reading":"문장을 끊어 읽는 요령 한두 문장"}`;
++
++const SYS_ESSAY = `너는 한국 중·고등 수학 서술형 채점자다. 문항과 학생 답안을 보고 (1) 이 문항의 채점 기준표를 세우고 (2) 답안을 채점하고 (3) 첨삭한다.
++채점 기준표 규격: 총점 5~8점, 핵심 요소 2~3개(활용 문항은 식 세우기 3 · 해 구하기 3 · 답 구하기 2 = 8점이 표준형), 요소마다 수행 수준 full(정확)/partial(부분)/zero. "실수거리"는 감점표가 아니라 이 문항에서 조심해야 할 것(빠지면 논리가 끊기는 진술, 선후를 바꿔 적기 쉬운 성질, 단위·부호).
++첨삭: 틀린 곳은 어디가 왜 틀렸고 어떻게 고치는지 구체적으로. 맞았으면 더 좋게 쓰는 법 한 가지. 정답 자체를 통째로 새로 풀어 주지 말고 학생 답안을 기준으로 고쳐라. 다정한 해요체, 수식은 평문.
++아래 JSON 만 출력:
++{"rubric":[{"no":1,"element":"요소 이름","points":3,"criterion":"무엇을 쓰면 만점인지"}],
++ "marks":[{"no":1,"level":"full|partial|zero","got":3,"comment":"근거 한 줄"}],
++ "total":6,"max":8,"verdict":"excellent|good|partial|weak","final_answer_ok":true,
++ "corrections":[{"where":"답안의 어느 줄/어느 식","wrong":"학생이 쓴 것","fix":"이렇게","why":"이유"}],
++ "feedback":["한 줄 첨삭 1~3개"], "pitfall_tags":["구하는대상혼동|부호|단위|단위환산|조건누락|역연산|평균오용|제곱누락|계산실수 중 해당"], "praise":"잘한 점 한 줄"}`;
++
++const SYS_PROCESS = `너는 한국 중·고등 수학 학원의 "풀이 과정 검사관"이다. 학생이 문제 옆에 쓴 풀이(한글 설명 없이 식만 이어질 수도 있다)를 보고 식과 식 사이의 연결고리를 검사한다.
++검사 항목:
++1) 연결고리: 줄마다 앞 줄에서 어떻게 왔는지(전개·이항·대입·계산). 건너뛴 곳은 "암산"으로 본다.
++2) 암산 부담: 한 줄에서 다음 줄로 갈 때 머릿속에서 처리한 연산의 양(low/mid/high). high 면 실수 위험을 경고한다.
++3) 습관: 글씨 크기·난잡함·헷갈리는 글자(전사 시 legibility 참고)·정렬·등호 맞추기·단위 누락 같은, 실수를 부르는 습관.
++4) 오답이면 어디서 잘못됐는지 가장 그럴듯한 가설 한 줄(줄 번호 + 종류: 계산·개념·문제 해석·옮겨 적기·부호·단위)과 고치는 법.
++5) 다섯 지표를 신호등(green/yellow/red)으로: 충실성(조건·단위·근거를 빠짐없이 썼나) · 논리성(단계 연결이 타당한가) · 명료성(남이 읽어도 따라갈 수 있게 정리됐나) · 간결성(군더더기 없이 — 단, 너무 간결해 암산이 과하면 오히려 yellow/red) · 독창성(관습적 풀이 대신 나름의 접근이 있는가 — 낮아도 나쁜 게 아니니 green/yellow 만).
++다정한 해요체, 수식은 평문. 정답을 새로 풀어 주지 말고 학생 풀이를 기준으로 말해라.
++아래 JSON 만 출력:
++{"chain":[{"i":1,"text":"줄 내용 요약","role":"setup|transform|compute|answer|other","ok":true|false|null,"note":"앞 줄과의 연결 한 줄"}],
++ "mental_load":"low|mid|high","mental_note":"암산에 대한 한 줄",
++ "habits":[{"kind":"size|messy|glyph|align|unit|skip|other","note":"관찰","tip":"이렇게 고쳐요"}],
++ "error":{"found":false,"line":null,"kind":"calc|concept|reading|transcription|sign|unit|none","hypothesis":"","fix":""},
++ "criteria":{"충실성":{"light":"green","why":""},"논리성":{"light":"green","why":""},"명료성":{"light":"green","why":""},"간결성":{"light":"green","why":""},"독창성":{"light":"green","why":""}},
++ "final_answer_ok":true,"summary":"두 문장 총평","pitfall_tags":["…"]}`;
++
++// ─────────────────────────────────────────────────────────────── 태스크
++function itemContext({ question, figure_note, choices }) {
++  const parts = [`[문항]\n${str(question)}`];
++  if (str(figure_note)) parts.push(`[그림·표]\n${str(figure_note, 1200)}`);
++  const ch = arr(choices).slice(0, MAX_CHOICES).map((c, i) => `${["①", "②", "③", "④", "⑤"][i] || i + 1} ${str(c, 200)}`).filter(Boolean);
++  if (ch.length) parts.push(`[선택지]\n${ch.join("\n")}`);
++  return parts.join("\n\n");
++}
++
++/** 요소 등급 객체를 다섯 키 · S/M/C/- 값으로만 (클라이언트·모델 어느 쪽에서 와도 본문이 섞이지 않게) */
++function cleanElements(src) {
++  const el = {};
++  for (const k of EL_KEYS) { const v = String(src?.[k] || "-"); el[k] = GRADES.includes(v) ? v : "-"; }
++  return el;
++}
++const cleanTags = (v) => arr(v).map(String).filter((t) => TRAPS.includes(t)).slice(0, 6);
++
++async function gradeStd(model, question, figure_note) {
++  const text = await callClaude({ model, system: SYS_STD, content: [txt(itemContext({ question, figure_note }))], maxTokens: 400 });
++  const p = parseObj(text);
++  const el = cleanElements(p?.elements);
++  let item_grade = GRADES.includes(p?.item_grade) ? p.item_grade : null;
++  const top = Object.values(el).filter((v) => GRADES.includes(v)).sort((a, b) => GRADES.indexOf(b) - GRADES.indexOf(a))[0] || null;
++  if (top && (!item_grade || GRADES.indexOf(top) > GRADES.indexOf(item_grade))) item_grade = top;   // 문항 등급 = 요소 최고 등급
++  return { elements: el, item_grade, sub_type: str(p?.sub_type, 30) || "해당 없음", reason: str(p?.reason, 200) };
++}
++
++async function scanProblem(model, image, t0 = Date.now()) {
++  let text = await callClaude({ model, system: SYS_SCAN_PROBLEM, content: [img(image), txt("이 사진의 문항을 전사해라.")], maxTokens: 2000 });
++  let p = parseObj(text);
++  let question = str(p?.question);
++  const warnings = [];
++  if (question) {
++    const v = parseText(question);
++    if (v.errs.length && Date.now() - t0 < TIME_BUDGET_MS * 0.5) {
++      // 문법 오류 마커만 고쳐 달라고 한 번 더
++      const bad = v.errs.slice(0, 6).map((e) => `[[${e.src}]] (${e.code}${e.msg ? ": " + String(e.msg).slice(0, 80) : ""})`).join("\n");
++      try {
++        text = await callClaude({ model, system: SYS_SCAN_PROBLEM,
++          content: [img(image), txt(`앞선 전사에서 다음 마커가 MathIR 문법에 어긋났다:\n${bad}\n\n같은 문항을 문법에 맞게 다시 전사해 JSON 으로만 답해라.`)], maxTokens: 2000 });
++        const p2 = parseObj(text);
++        const q2 = str(p2?.question);
++        if (q2 && parseText(q2).errs.length < v.errs.length) { p = p2; question = q2; }
++      } catch { /* 재시도 실패는 무시 — 첫 결과를 쓴다 */ }
++    }
++    if (parseText(question).errs.length) warnings.push("수식 일부를 정확히 읽지 못했을 수 있어요");
++  }
++  const choices = arr(p?.choices).map((c) => str(c, 300)).filter(Boolean);
++  return {
++    question, choices: choices.length ? choices : null,
++    qtype: ["choice", "short", "essay"].includes(p?.qtype) ? p.qtype : (choices.length ? "choice" : "short"),
++    figure_note: str(p?.figure_note, 1200) || null,
++    unit_guess: /^[mh]\d-\d$/.test(String(p?.unit_guess || "")) ? p.unit_guess : null,
++    unreadable: !!p?.unreadable || !question,
++    warnings,
++  };
++}
++
++async function scanAnswer(model, image) {
++  const text = await callClaude({ model, system: SYS_SCAN_ANSWER, content: [img(image), txt("이 사진의 학생 풀이를 전사해라.")], maxTokens: 2000 });
++  const p = parseObj(text);
++  const lines = arr(p?.lines).map((l) => ({ text: str(l?.text, 300), kind: ["eq", "text", "answer", "other"].includes(l?.kind) ? l.kind : "other" })).filter((l) => l.text);
++  const answer = str(p?.answer) || lines.map((l) => l.text).join("\n");
++  const issues = arr(p?.legibility?.issues).map((i) => ({ kind: ["size", "messy", "glyph", "spacing", "crossout", "other"].includes(i?.kind) ? i.kind : "other", note: str(i?.note, 120) })).filter((i) => i.note).slice(0, 8);
++  const score = Math.min(5, Math.max(1, Math.round(+p?.legibility?.score || 3)));
++  return { answer, lines, final_answer: str(p?.final_answer, 120) || null, legibility: { score, issues }, unreadable: !!p?.unreadable || !answer };
++}
++
++async function scanPage(model, image) {
++  const text = await callClaude({ model, system: SYS_SCAN_PAGE, content: [img(image), txt("문항과 풀이 영역의 경계상자를 보고해라.")], maxTokens: 1500 });
++  const p = parseObj(text);
++  const fix = (list) => {
++    const rows = arr(list).filter((x) => x && Number.isFinite(+x.no) && x.box && [x.box.x, x.box.y, x.box.w, x.box.h].every((v) => Number.isFinite(+v)))
++      .map((x) => ({ no: Math.round(+x.no), box: { x: clamp01(x.box.x), y: clamp01(x.box.y), w: Math.max(0.02, clamp01(x.box.w)), h: Math.max(0.02, clamp01(x.box.h)) } }));
++    const byNo = new Map();                                   // 같은 번호가 둘이면 넓은 상자만
++    for (const r of rows) { const o = byNo.get(r.no); if (!o || r.box.w * r.box.h > o.box.w * o.box.h) byNo.set(r.no, r); }
++    return [...byNo.values()].sort((a, b) => a.no - b.no).slice(0, 30);
++  };
++  return { problems: fix(p?.problems), answers: fix(p?.answers) };
++}
++
++async function approach(model, body) {
++  const text = await callClaude({ model, system: SYS_APPROACH, content: [txt(itemContext(body))], maxTokens: 1200 });
++  const p = parseObj(text);
++  return {
++    asking: str(p?.asking, 200), clues: arr(p?.clues).map((c) => ({ text: str(c?.text, 160), why: str(c?.why, 200) })).filter((c) => c.text).slice(0, 6),
++    concept: str(p?.concept, 200), first_step: str(p?.first_step, 300), setup: arr(p?.setup).map((s) => str(s, 200)).filter(Boolean).slice(0, 3),
++    traps: cleanTags(p?.traps), reading: str(p?.reading, 300),
++  };
++}
++
++async function essay(model, body) {
++  const content = [txt(itemContext(body) + `\n\n[학생 답안]\n${str(body.answer)}`)];
++  const text = await callClaude({ model, system: SYS_ESSAY, content, maxTokens: 2200 });
++  const p = parseObj(text);
++  const rubric = arr(p?.rubric).map((r, i) => ({ no: Number.isFinite(+r?.no) ? +r.no : i + 1, element: str(r?.element, 60), points: Math.max(0, Math.round(+r?.points || 0)), criterion: str(r?.criterion, 300) })).filter((r) => r.element).slice(0, 5);
++  const marks = arr(p?.marks).map((m, i) => ({ no: Number.isFinite(+m?.no) ? +m.no : i + 1, level: ["full", "partial", "zero"].includes(m?.level) ? m.level : "partial", got: Math.max(0, +m?.got || 0), comment: str(m?.comment, 300) })).slice(0, 5);
++  const max = rubric.reduce((s, r) => s + r.points, 0) || Math.max(0, Math.round(+p?.max || 0));
++  const total = Math.min(max, marks.reduce((s, m) => s + m.got, 0) || Math.max(0, Math.round(+p?.total || 0)));
++  return {
++    rubric, marks, total, max,
++    verdict: ["excellent", "good", "partial", "weak"].includes(p?.verdict) ? p.verdict : (max && total / max >= 0.9 ? "excellent" : max && total / max >= 0.6 ? "good" : total ? "partial" : "weak"),
++    final_answer_ok: !!p?.final_answer_ok,
++    corrections: arr(p?.corrections).map((c) => ({ where: str(c?.where, 120), wrong: str(c?.wrong, 200), fix: str(c?.fix, 300), why: str(c?.why, 300) })).filter((c) => c.fix).slice(0, 6),
++    feedback: arr(p?.feedback).map((f) => str(f, 300)).filter(Boolean).slice(0, 4),
++    pitfall_tags: cleanTags(p?.pitfall_tags), praise: str(p?.praise, 200),
++  };
++}
++
++async function processCheck(model, body) {
++  const lines = arr(body.lines).slice(0, MAX_LINES).map((l, i) => `${i + 1}) ${str(l?.text, 300)}`).join("\n");
++  const leg = body.legibility ? `\n\n[글씨 상태(전사기 관찰)] 점수 ${body.legibility.score}/5 · ${arr(body.legibility.issues).map((i) => `${i.kind}: ${i.note}`).join(" · ") || "특이점 없음"}` : "";
++  const content = [txt(itemContext(body) + `\n\n[학생 풀이 — 줄 번호 순]\n${lines || str(body.answer)}${leg}`)];
++  const text = await callClaude({ model, system: SYS_PROCESS, content, maxTokens: 2500 });
++  const p = parseObj(text);
++  const CR = ["충실성", "논리성", "명료성", "간결성", "독창성"];
++  const criteria = {};
++  for (const k of CR) criteria[k] = { light: light(p?.criteria?.[k]?.light), why: str(p?.criteria?.[k]?.why, 200) };
++  return {
++    chain: arr(p?.chain).map((c, i) => ({ i: Number.isFinite(+c?.i) ? +c.i : i + 1, text: str(c?.text, 200), role: ["setup", "transform", "compute", "answer", "other"].includes(c?.role) ? c.role : "other", ok: c?.ok === true ? true : c?.ok === false ? false : null, note: str(c?.note, 200) })).slice(0, 40),
++    mental_load: ["low", "mid", "high"].includes(p?.mental_load) ? p.mental_load : "mid", mental_note: str(p?.mental_note, 300),
++    habits: arr(p?.habits).map((h) => ({ kind: ["size", "messy", "glyph", "align", "unit", "skip", "other"].includes(h?.kind) ? h.kind : "other", note: str(h?.note, 200), tip: str(h?.tip, 200) })).filter((h) => h.note).slice(0, 6),
++    error: { found: !!p?.error?.found, line: Number.isFinite(+p?.error?.line) ? +p.error.line : null, kind: ["calc", "concept", "reading", "transcription", "sign", "unit", "none"].includes(p?.error?.kind) ? p.error.kind : (p?.error?.found ? "calc" : "none"), hypothesis: str(p?.error?.hypothesis, 300), fix: str(p?.error?.fix, 300) },
++    criteria, final_answer_ok: !!p?.final_answer_ok, summary: str(p?.summary, 400), pitfall_tags: cleanTags(p?.pitfall_tags),
++  };
++}
++
++/** 보관 게이트: 라벨은 항상, 원문은 결정이 central 일 때만. 표가 없으면(마이그레이션 전) saved:false 로 조용히 */
++async function retain({ uid, feature, question, answer, std, result, policy, unit }) {
++  const overlap = overlapScore(question, answer);
++  const decision = decideRetention({ grade: std?.item_grade || null, overlap, policy });
++  const labels = buildLabels({ feature, std, overlap, result, unit });
++  const out = { where: decision.where, reason: decision.reason, policy, overlap: { score: overlap.score, level: overlap.level, sentences: overlap.sentences, words: overlap.words, nums: overlap.nums }, saved: false, central: false };
++  const db = svcClient();
++  if (!db) return out;
++  try {
++    const { data, error } = await db.from("photo_answer_labels").insert({ ...labels, user_id: uid, retention: decision.where, policy }).select("id").single();
++    if (error) throw error;
++    out.saved = true;
++    if (decision.where === "central") {
++      const { error: e2 } = await db.from("photo_answers").insert({ label_id: data.id, user_id: uid, answer_text: str(answer) });
++      if (!e2) out.central = true;
++    }
++  } catch (e) {
++    if (!missingRel(e)) out.error = "기록 저장 실패";
++  }
++  return out;
++}
++
++// ─────────────────────────────────────────────────────────────── 핸들러
++export default async function handler(req, res) {
++  if (req.method !== "POST") return res.status(405).json({ error: "POST만 지원해요" });
++  const t0 = Date.now();
++  try {
++    const auth = req.headers.authorization || "";
++    const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
++    if (!token) return res.status(401).json({ error: "로그인이 필요해요" });
++    const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
++    const anon = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
++    if (!url || !anon) return res.status(500).json({ error: "Supabase 환경변수가 없어요" });
++    const sb = createClient(url, anon, { global: { headers: { Authorization: `Bearer ${token}` } } });
++    const { data: userData, error: uErr } = await sb.auth.getUser(token);
++    if (uErr || !userData?.user) return res.status(401).json({ error: "인증 실패" });
++    const uid = userData.user.id;
++    if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: "ANTHROPIC_API_KEY가 Vercel에 설정되지 않았어요" });
++
++    const body = req.body || {};
++    const task = String(body.task || "");
++    if (!["scan", "approach", "essay", "process"].includes(task)) return res.status(400).json({ error: "알 수 없는 task: " + task });
++
++    // 학생 자격 게이트 (ai.js 와 동일)
++    const { data: prof } = await sb.from("profiles").select("role, member_code").eq("id", uid).single();
++    if (prof?.role !== "admin") {
++      if (prof?.role === "trial") return res.status(403).json({ error: "체험 계정은 개념 열람만 가능해요 — 정식 가입 후 이용할 수 있어요" });
++      if (!prof?.member_code) return res.status(403).json({ error: "AI 기능은 학원 고유번호 등록 후 열려요 — 학원에서 고유번호를 받아 등록해주세요" });
++    }
++    // 입력 검증은 한도 차감보다 먼저 (잘못된 요청이 하루치 호출을 갉아먹지 않게)
++    const image = typeof body.image === "string" ? body.image : "";
++    const question = str(body.question);
++    const answer = str(body.answer);
++    if (task === "scan") {
++      if (!image) return res.status(400).json({ error: "이미지가 없어요" });
++      if (image.length > MAX_IMAGE_B64) return res.status(413).json({ error: "사진이 너무 커요 — 다시 찍어 주세요" });
++    } else {
++      if (!question) return res.status(400).json({ error: "문항 텍스트가 없어요 — 먼저 문항을 찍어 주세요" });
++      if (task !== "approach" && !answer) return res.status(400).json({ error: "답안 텍스트가 없어요 — 먼저 답안을 찍어 주세요" });
++    }
++
++    const capMsg = await checkCap(sb, uid, "photo_" + task);
++    if (capMsg) return res.status(429).json({ error: capMsg });
++
++    const st = await settings(sb, ["photo_model", "photo_model_grade", "photo_retention"]);
++    const model = st.photo_model || DEFAULT_MODEL;
++    const gradeModel = st.photo_model_grade || DEFAULT_GRADE_MODEL;
++    const policy = normalizePolicy(st.photo_retention);
++
++    if (task === "scan") {
++      const mode = ["problem", "answer", "page"].includes(body.mode) ? body.mode : "problem";
++      if (mode === "page") return res.status(200).json({ mode, ...(await scanPage(model, image)), model });
++      if (mode === "answer") return res.status(200).json({ mode, ...(await scanAnswer(model, image)), model });
++      const scanned = await scanProblem(model, image, t0);
++      let std = null;   // 등급 판정은 시간이 남을 때만 — 없으면 게이트가 device(안전한 쪽)로 둔다
++      if (!scanned.unreadable && Date.now() - t0 < TIME_BUDGET_MS * 0.7) { try { std = await gradeStd(model, scanned.question, scanned.figure_note); } catch { std = null; } }
++      return res.status(200).json({ mode, ...scanned, std, policy, model });
++    }
++
++    const ctx = { question, figure_note: str(body.figure_note, 1200), choices: arr(body.choices).slice(0, MAX_CHOICES).map((c) => str(c, 300)) };
++
++    if (task === "approach") return res.status(200).json({ ...(await approach(model, ctx)), model });
++
++    // 클라이언트가 보낸 등급은 값만 받는다(요소 객체도 다섯 키·S/M/C 로만) — 라벨 표에 본문이 섞이지 않게
++    let std = body.std && GRADES.includes(body.std.item_grade)
++      ? { item_grade: body.std.item_grade, sub_type: str(body.std.sub_type, 30), elements: cleanElements(body.std.elements) }
++      : null;
++    if (!std) { try { std = await gradeStd(model, question, ctx.figure_note); } catch { std = null; } }
++    const unit = /^[mh]\d-\d$/.test(String(body.unit || "")) ? body.unit : null;
++
++    if (task === "essay") {
++      const result = await essay(gradeModel, { ...ctx, answer });
++      const retention = await retain({ uid, feature: "essay", question, answer, std, result, policy, unit });
++      return res.status(200).json({ result, std, retention, model: gradeModel });
++    }
++    if (task === "process") {
++      const result = await processCheck(gradeModel, { ...ctx, answer, lines: body.lines, legibility: body.legibility });
++      const retention = await retain({ uid, feature: "check", question, answer, std, result, policy, unit });
++      return res.status(200).json({ result, std, retention, model: gradeModel });
++    }
++    return res.status(400).json({ error: "알 수 없는 task" });
++  } catch (err) {
++    // 우리가 만든 메시지(AI 호출·해석 실패)만 그대로, 나머지(DB·라이브러리 오류)는 일반 문구로 — 내부 이름이 새지 않게
++    const m = String(err?.message || "");
++    return res.status(500).json({ error: /^AI /.test(m) ? m : "서버 오류가 났어요 — 잠시 뒤 다시 시도해 주세요" });
++  }
++}
+diff --git a/src/lib/camera.js b/src/lib/camera.js
+new file mode 100644
+index 0000000..9faa113
+--- /dev/null
++++ b/src/lib/camera.js
+@@ -0,0 +1,64 @@
++// ashrain.out — 촬영 모듈 공용: 사진 파일 → 캔버스(축소) → 영역 자르기 → JPEG base64
++// 사진은 서버에 올리지 않는다(Storage 업로드 없음). 서버로는 인식에 필요한 JPEG base64 만 보내고, 응답 뒤 버린다.
++
++export const MAX_SIDE = 1600;   // 긴 변 기준 축소 (문항 글씨 인식에 충분, 4G 에서 1~2초)
++
++/** File → HTMLImageElement */
++export function loadImage(file) {
++  return new Promise((resolve, reject) => {
++    const im = new Image();
++    im.onload = () => resolve(im);
++    im.onerror = () => reject(new Error("사진을 열 수 없어요"));
++    im.src = URL.createObjectURL(file);
++  });
++}
++
++/** 이미지 → 축소 캔버스 */
++export function toCanvas(im, maxSide = MAX_SIDE) {
++  const sc = Math.min(1, maxSide / Math.max(im.width, im.height));
++  const cv = document.createElement("canvas");
++  cv.width = Math.max(1, Math.round(im.width * sc));
++  cv.height = Math.max(1, Math.round(im.height * sc));
++  cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
++  try { URL.revokeObjectURL(im.src); } catch { /* data: URL 이면 무시 */ }
++  return cv;
++}
++
++/** 파일을 골라 바로 캔버스로 */
++export async function fileToCanvas(file, maxSide = MAX_SIDE) {
++  return toCanvas(await loadImage(file), maxSide);
++}
++
++/** 비율 좌표 상자 {x,y,w,h} (0~1) 를 0~1 안으로 정리 */
++export function clampBox(b) {
++  if (!b) return null;
++  const x = Math.min(Math.max(+b.x || 0, 0), 1), y = Math.min(Math.max(+b.y || 0, 0), 1);
++  const w = Math.min(Math.max(+b.w || 0, 0), 1 - x), h = Math.min(Math.max(+b.h || 0, 0), 1 - y);
++  if (w < 0.02 || h < 0.02) return null;
++  return { x, y, w, h };
++}
++
++/** 캔버스에서 비율 상자만큼 잘라 새 캔버스로 (여백 pad: 비율) */
++export function cropCanvas(cv, box, pad = 0.01) {
++  const b = clampBox(box);
++  if (!b) return cv;
++  const x0 = Math.max(0, Math.floor((b.x - pad) * cv.width)), y0 = Math.max(0, Math.floor((b.y - pad) * cv.height));
++  const x1 = Math.min(cv.width, Math.ceil((b.x + b.w + pad) * cv.width)), y1 = Math.min(cv.height, Math.ceil((b.y + b.h + pad) * cv.height));
++  const out = document.createElement("canvas");
++  out.width = Math.max(1, x1 - x0); out.height = Math.max(1, y1 - y0);
++  out.getContext("2d").drawImage(cv, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
++  return out;
++}
++
++/** 캔버스 → JPEG base64 (data: 접두 없이) */
++export function canvasToBase64(cv, quality = 0.85) {
++  return cv.toDataURL("image/jpeg", quality).split(",")[1];
++}
++export const canvasToDataUrl = (cv, quality = 0.85) => cv.toDataURL("image/jpeg", quality);
++
++/** 손가락 드래그로 잡은 화면 좌표 두 점 → 비율 상자 */
++export function boxFromPoints(p0, p1, w, h) {
++  if (!w || !h) return null;
++  const x = Math.min(p0.x, p1.x) / w, y = Math.min(p0.y, p1.y) / h;
++  return clampBox({ x, y, w: Math.abs(p1.x - p0.x) / w, h: Math.abs(p1.y - p0.y) / h });
++}
+diff --git a/src/lib/deviceStore.js b/src/lib/deviceStore.js
+new file mode 100644
+index 0000000..0259594
+--- /dev/null
++++ b/src/lib/deviceStore.js
+@@ -0,0 +1,73 @@
++// ashrain.out — 기기 보관소 (IndexedDB). 촬영 모듈의 답안 원문·첨삭 결과는 기본적으로 여기(학생 기기)에만 둔다.
++// 서버에는 라벨만 간다 (src/lib/retention.js). IndexedDB 가 없으면 localStorage 로 조용히 대체한다.
++//   레코드: { id, feature('read'|'mark'|'essay'|'check'), at(ISO), title, unit, grade, question, figure_note, answer, result, retention }
++const DB = "ash.photo", STORE = "sessions", VER = 1, LS_KEY = "ash.photo.sessions", MAX_LS = 60;
++
++function openDb() {
++  return new Promise((resolve, reject) => {
++    if (typeof indexedDB === "undefined") { resolve(null); return; }
++    const req = indexedDB.open(DB, VER);
++    req.onupgradeneeded = () => {
++      const db = req.result;
++      if (!db.objectStoreNames.contains(STORE)) {
++        const st = db.createObjectStore(STORE, { keyPath: "id" });
++        st.createIndex("at", "at"); st.createIndex("feature", "feature");
++      }
++    };
++    req.onsuccess = () => resolve(req.result);
++    req.onerror = () => resolve(null);    // 사생활 모드 등 — localStorage 로 대체
++    req.onblocked = () => resolve(null);
++  });
++}
++function tx(db, mode, fn) {
++  return new Promise((resolve, reject) => {
++    try {
++      const t = db.transaction(STORE, mode); const st = t.objectStore(STORE);
++      const out = fn(st);
++      t.oncomplete = () => resolve(out?.result ?? out);
++      t.onerror = () => reject(t.error);
++      t.onabort = () => reject(t.error || new Error("aborted"));
++    } catch (e) { reject(e); }
++  });
++}
++/** IndexedDB 가 열리긴 했는데 트랜잭션이 실패하면(저장 공간 부족·손상) null → 호출자는 localStorage 로 간다 */
++async function withDb(mode, fn) {
++  const db = await openDb();
++  if (!db) return { ok: false };
++  try { const r = await tx(db, mode, fn); return { ok: true, r }; }
++  catch { return { ok: false }; }
++  finally { try { db.close(); } catch { /* */ } }
++}
++const lsRead = () => { try { const a = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); return Array.isArray(a) ? a : []; } catch { return []; } };
++const lsWrite = (a) => { try { localStorage.setItem(LS_KEY, JSON.stringify(a.slice(0, MAX_LS))); } catch { /* 용량 초과면 포기 */ } };
++
++export const newId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
++
++/** 저장(같은 id 면 덮어씀) → id */
++export async function putSession(rec) {
++  const row = { ...rec, id: rec.id || newId(), at: rec.at || new Date().toISOString() };
++  const { ok } = await withDb("readwrite", (st) => st.put(row));
++  if (!ok) lsWrite([row, ...lsRead().filter((r) => r.id !== row.id)]);
++  return row.id;
++}
++/** 최근순 목록 (feature 로 거름, 본문은 그대로 — 기기 안이므로) */
++export async function listSessions({ feature, limit = 50 } = {}) {
++  const { ok, r } = await withDb("readonly", (st) => st.getAll());
++  let rows = ok ? r : lsRead();
++  rows = (rows || []).filter((r) => !feature || r.feature === feature);
++  rows.sort((a, b) => String(b.at).localeCompare(String(a.at)));
++  return rows.slice(0, limit);
++}
++export async function getSession(id) {
++  const { ok, r } = await withDb("readonly", (st) => st.get(id));
++  if (ok) return r || null;
++  return lsRead().find((x) => x.id === id) || null;
++}
++export async function deleteSession(id) {
++  const { ok } = await withDb("readwrite", (st) => st.delete(id));
++  if (!ok) lsWrite(lsRead().filter((r) => r.id !== id));
++}
++export async function clearSessions() {
++  const { ok } = await withDb("readwrite", (st) => st.clear());
++  if (!ok) lsWrite([]);
++}
+diff --git a/src/lib/photoApi.js b/src/lib/photoApi.js
+new file mode 100644
+index 0000000..828225f
+--- /dev/null
++++ b/src/lib/photoApi.js
+@@ -0,0 +1,30 @@
++// ashrain.out — 촬영 모듈 서버 호출 (/api/photo). 로그인 토큰을 붙여 POST, 오류는 메시지로 던진다.
++//   scan     { image, mode:'problem'|'answer'|'page', hint? }      → 전사 결과 (+ 문항이면 표준성 등급)
++//   approach { question, figure_note, choices }                     → 식 세우기까지의 방침 (정답 없음)
++//   essay    { question, figure_note, answer, std }                 → 채점·첨삭 + 보관 결정
++//   process  { question, figure_note, answer, lines, legibility, std } → 풀이과정 검사 + 보관 결정
++import { supabase } from "../supabaseClient";
++
++export async function photoCall(task, body = {}) {
++  const { data: sess } = await supabase.auth.getSession();
++  const token = sess?.session?.access_token;
++  if (!token) throw new Error("세션이 만료됐어요 — 다시 로그인해 주세요");
++  const r = await fetch("/api/photo", {
++    method: "POST",
++    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
++    body: JSON.stringify({ task, ...body }),
++  });
++  let j = null;
++  try { j = await r.json(); } catch { /* 본문 없음 */ }
++  if (!r.ok) throw new Error(j?.error || `요청 실패 (${r.status})`);
++  return j;
++}
++
++/** 여러 화면이 같은 촬영 결과를 이어 쓰도록 세션 저장소에 둔다 (탭 닫으면 사라짐) */
++const KEY = "ash.photo.current";
++export function stashCurrent(obj) {
++  try { sessionStorage.setItem(KEY, JSON.stringify(obj)); }
++  catch { try { sessionStorage.removeItem(KEY); } catch { /* */ } }   // 용량 초과면 이전 문제가 남지 않게 비운다 → 화면은 촬영 단계로
++}
++export function readCurrent() { try { const r = sessionStorage.getItem(KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
++export function clearCurrent() { try { sessionStorage.removeItem(KEY); } catch { /* */ } }
+diff --git a/src/lib/photoText.js b/src/lib/photoText.js
+new file mode 100644
+index 0000000..96ee941
+--- /dev/null
++++ b/src/lib/photoText.js
+@@ -0,0 +1,54 @@
++// ashrain.out — 촬영 모듈 순수 도우미 (DOM 없음). 단서 문구 찾기 · 끊어 읽기 문자열 · 신호등 합치기 · 제목.
++export const CRITERIA = ["충실성", "논리성", "명료성", "간결성", "독창성"];
++
++export const stripMarker = (s) => String(s || "").replace(/\[\[|\]\]/g, "");
++/** 기록 제목 — 문항 앞 40자 */
++export const titleOf = (q) => { const s = stripMarker(q).replace(/\s+/g, " ").trim(); return s.length > 40 ? s.slice(0, 40) + "…" : s; };
++
++const norm = (s) => String(s || "").replace(/\[\[|\]\]/g, "").replace(/[−–]/g, "-").replace(/\s+/g, "");
++const TAIL = /(에서는|으로는|에서|으로|보다|부터|까지|이고|이며|일때|인|은|는|이|가|을|를|의|에|로|와|과|도|만)$/;
++
++/** 단서 문구를 문장 토큰 위에서 찾는다 → {t0,t1} (공백·마커 무시, 끝 조사·문장부호는 눈감아 준다). 못 찾으면 null */
++export function findSpan(tokens, clue) {
++  const owner = []; let hay = "";
++  for (const t of tokens || []) { const n = norm(t.text); for (let k = 0; k < n.length; k++) owner.push(t.i); hay += n; }
++  let needle = norm(clue);
++  if (needle.length < 2) return null;
++  let at = hay.indexOf(needle);
++  if (at < 0) {
++    const n2 = needle.replace(/[,.:;!?。]+$/, "").replace(TAIL, "");
++    if (n2.length >= 2) { at = hay.indexOf(n2); if (at >= 0) needle = n2; }
++  }
++  if (at < 0) return null;
++  const t0 = owner[at], t1 = owner[at + needle.length - 1];
++  if (t0 == null || t1 == null) return null;
++  return { t0, t1 };
++}
++
++/** 빗금 자리마다 " ／ " 를 넣은 끊어 읽기 문자열 (마커는 그대로 두어 MathText 로 그린다) */
++export function cutText(tokens, marks) {
++  const pts = new Set((marks || []).filter((m) => m.kind === "point" && m.func === "BOUND").map((m) => m.t0));
++  const list = tokens || [];
++  let out = "";
++  for (let k = 0; k < list.length; k++) {
++    const t = list[k]; out += t.text;
++    if (!pts.has(t.i)) continue;
++    const nx = list[k + 1];
++    out += " ／" + (nx && (nx.kind === "space" || nx.kind === "newline") ? "" : " ");   // 원문 공백은 그대로, 빗금만 끼운다
++  }
++  return out.replace(/( ／ ?){2,}/g, " ／ ").replace(/ ／ ?$/, "");
++}
++
++/** 여러 문항의 신호등을 문서 하나로 — 평균 점수(초록 0 · 노랑 1 · 빨강 2): 1.2 이상 빨강, 0.4 이상 노랑 */
++export function aggregateLights(list) {
++  const rank = { green: 0, yellow: 1, red: 2 };
++  const out = {};
++  for (const k of CRITERIA) {
++    const ls = (list || []).map((r) => r?.criteria?.[k]?.light).filter((l) => l in rank);
++    if (!ls.length) { out[k] = { light: null, why: "" }; continue; }
++    const n = { green: 0, yellow: 0, red: 0 }; for (const l of ls) n[l]++;
++    const avg = ls.reduce((s, l) => s + rank[l], 0) / ls.length;
++    out[k] = { light: avg >= 1.2 ? "red" : avg >= 0.4 ? "yellow" : "green", why: `초록 ${n.green} · 노랑 ${n.yellow} · 빨강 ${n.red}` };
++  }
++  return out;
++}
+diff --git a/src/lib/retention.js b/src/lib/retention.js
+new file mode 100644
+index 0000000..d186b23
+--- /dev/null
++++ b/src/lib/retention.js
+@@ -0,0 +1,202 @@
++// ashrain.out — 촬영 답안 보관 게이트 · 순수 함수 (DOM 없음 · LLM 없음 · 결정적)
++//
++// 배경: 답안이 원 문항을 "복원할 수 있느냐"가 아니라 원 문항의 창작적 "표현이 옮겨졌느냐"가 잣대다
++// (LEGAL-판례조사-답안보관-v1). 그래서 게이트는 두 축으로 정한다.
++//   1축  문항 표현 등급 S/M/C (촬영 시 서버가 LLM 으로 판정 — 발문표준성 검토 v2 기준)
++//   2축  문항–답안 겹침 (여기서 결정적으로 계산): 조건 문장 재진술 · 긴 문자열 공유 · 소재어 재현 · 수치 재현
++// 둘을 정책(app_settings.photo_retention)에 넣어 답안 원문의 보관 위치를 정한다.
++//   labels : 서버에는 라벨만, 원문은 기기(IndexedDB)에만        ← 법률 검토 전 기본값
++//   gated  : S → 중앙 · M → 겹침 낮음이면 중앙 · C → 기기        ← Q1·Q2 회신 뒤
++//   all    : 전부 중앙 (연구용 · 쓰지 않음)
++// 서버(api/photo.js)와 클라이언트가 같은 함수를 쓴다 — 결과가 어긋나지 않게 이 파일만 고친다.
++
++export const POLICIES = ["labels", "gated", "all"];
++export const DEFAULT_POLICY = "labels";
++export const GRADES = ["S", "M", "C"];
++
++// 겹침 점수 임계값 (0~100). 복원력 v2 자료로 보정한 초기값 — 정기 표본 감사에서 조정한다.
++export const OVERLAP_LOW = 30;    // 미만이면 낮음
++export const OVERLAP_HIGH = 60;   // 이상이면 높음
++// 조건 문장 재진술로 보는 최소 길이(공백 제외 글자) · 공유 문자열 최소 길이
++export const SENT_MIN = 10;
++export const RUN_MIN = 8;
++
++// ── 정규화 ─────────────────────────────────────────────────────────────────
++const PARTICLE_TAIL = /(?:에서는|으로는|에서도|보다도|까지의|부터의|에서의|에게|에서|으로|보다|부터|까지|처럼|마다|이며|이면서|이면|이고|인지|이라|이나|만큼|가|이|은|는|을|를|의|와|과|도|로|에|만|나|인)$/;
++// 흔한 발문·기능어 — 소재어로 세지 않는다
++const STOP = new Set([
++  "구하시오", "구하여라", "구하라", "고르시오", "구하면", "구하는", "구하기", "값을", "값은", "것은", "것을", "다음", "때", "일", "이때",
++  "모두", "각각", "만족", "만족하는", "만족시키는", "대하여", "대한", "경우", "개수", "합", "차", "곱", "몫", "나머지", "최댓값", "최솟값",
++  "그림", "같이", "위", "아래", "앞", "뒤", "이상", "이하", "초과", "미만", "단", "단위", "정수", "자연수", "실수", "유리수", "무리수",
++  "함수", "방정식", "부등식", "삼각형", "사각형", "직선", "원", "점", "선분", "각", "길이", "넓이", "부피", "둘레", "높이", "반지름",
++  "두", "세", "네", "한", "수", "식", "답", "문제", "보기", "중", "옳은", "옳지", "않은", "모두", "고르면", "얼마", "몇", "이다", "있다", "없다",
++]);
++const DIGIT_RE = /[0-9]/;
++// 용언 꼴(동사·형용사 활용) — 소재어가 아니다
++const VERBISH = /(?:으면|면|는지|는가|있다|없다|이다|하다|되다|된다|한다|하여|하고|되어|되면|아서|어서|여서|니까|므로|라고|다고|이면|라면|하자|하면|한|된|되는|하는|있는|없는)$/;
++
++/** 마커([[frac(1,2)]] 등)를 평문으로 — mathir 가 없어도 동작하도록 얕게 푼다 */
++export function plainMath(s) {
++  return String(s ?? "")
++    .replace(/\[\[\s*frac\(([^,()]+),([^()]+)\)\s*\]\]/g, "$1/$2")
++    .replace(/\[\[\s*pow\(([^,()]+),([^()]+)\)\s*\]\]/g, "$1^$2")
++    .replace(/\[\[\s*sqrt\(([^()]+)\)\s*\]\]/g, "√$1")
++    .replace(/\[\[\s*deg\(([^()]+)\)\s*\]\]/g, "$1°")
++    .replace(/\[\[\s*seg\(([^()]+)\)\s*\]\]/g, "$1")
++    .replace(/\[\[\s*angle\(([^()]+)\)\s*\]\]/g, "∠$1")
++    .replace(/\[\[\s*point\(([^()]+)\)\s*\]\]/g, "($1)")
++    .replace(/\[\[|\]\]/g, "");
++}
++
++/** 비교용 정규화: 마커 풀기 · 유니코드 마이너스·공백 통일 · 소문자 */
++export function normalize(s) {
++  return plainMath(s)
++    .replace(/[−–—]/g, "-")
++    .replace(/[×·]/g, "*")
++    .replace(/\s+/g, " ")
++    .trim()
++    .toLowerCase();
++}
++const squash = (s) => normalize(s).replace(/\s+/g, "");
++
++/** 문장 나누기(공백 제외 SENT_MIN 자 이상만) */
++export function sentencesOf(s) {
++  return normalize(s)
++    .split(/(?<=[.。!?])\s+|\n+/)
++    .map((x) => x.trim())
++    .filter((x) => x.replace(/\s+/g, "").length >= SENT_MIN);
++}
++
++/** 숫자 토큰 집합 — 정수·소수·분수(a/b)·비(a:b). 문항 번호처럼 보이는 "1." 은 뺀다 */
++export function numbersOf(s) {
++  const out = new Set();
++  const t = normalize(s).replace(/^\s*\(?\d{1,2}[.)]\s/, "");
++  const re = /-?\d+(?:\.\d+)?(?:\s*[/:]\s*\d+(?:\.\d+)?)?/g;
++  let m;
++  const add = (v) => { if (/^-?\d$/.test(v) && (v === "1" || v === "2" || v === "0")) return; out.add(v); };   // 0·1·2 는 어디에나 있어 신호가 없다
++  while ((m = re.exec(t))) {
++    const v = m[0].replace(/\s+/g, "");
++    add(v);
++    if (/[/:]/.test(v)) v.split(/[/:]/).forEach(add);   // 45/500 → 45 · 500 도 같이 (분수 안의 수치가 문항의 수치다)
++  }
++  return out;
++}
++
++/** 소재어(내용 낱말) 집합 — 한글 2자 이상, 조사 떼기, 발문·기능어·숫자 제외 */
++export function contentWords(s) {
++  const out = new Set();
++  const words = normalize(s).split(/[^가-힣a-z]+/).filter(Boolean);
++  for (let w of words) {
++    if (!/^[가-힣]+$/.test(w)) continue;   // 한글로만 된 낱말만(단위 g·cm 가 붙은 조각 제외)
++    for (let k = 0; k < 2; k++) { const w2 = w.replace(PARTICLE_TAIL, ""); if (w2 === w || w2.length < 2) break; w = w2; }
++    if (w.length < 2 || STOP.has(w) || DIGIT_RE.test(w)) continue;
++    if (w.length >= 3 && VERBISH.test(w)) continue;
++    out.add(w);
++  }
++  return out;
++}
++
++/** 가장 긴 공통 부분 문자열(공백 제거 기준) — 길이와 문자열 */
++export function longestCommonRun(a, b) {
++  const x = squash(a), y = squash(b);
++  if (!x || !y) return { len: 0, text: "" };
++  let prev = new Array(y.length + 1).fill(0), best = 0, end = 0;
++  for (let i = 1; i <= x.length; i++) {
++    const cur = new Array(y.length + 1).fill(0);
++    for (let j = 1; j <= y.length; j++) {
++      if (x[i - 1] === y[j - 1]) {
++        cur[j] = prev[j - 1] + 1;
++        if (cur[j] > best) { best = cur[j]; end = i; }
++      }
++    }
++    prev = cur;
++  }
++  return { len: best, text: x.slice(end - best, end) };
++}
++
++/** 문항의 문장 가운데 답안에 그대로(공백 무시) 들어간 것 */
++export function restatedSentences(question, answer) {
++  const a = squash(answer);
++  if (!a) return [];
++  return sentencesOf(question).filter((s) => a.includes(s.replace(/\s+/g, "")));
++}
++
++/**
++ * 문항–답안 겹침. 값이 클수록 답안이 문항의 표현을 많이 옮겼다.
++ * → { score(0~100), level('low'|'mid'|'high'), sentences(재진술 문장 수), sentTotal, run(최장 공유 문자열 길이),
++ *     words(공유 소재어 수), wordTotal, wordRatio, nums(공유 수치 수), numTotal, numRatio }
++ * 가중치: 재진술 45 · 소재어 30 · 수치 25 — 수치는 풀이에 필연적으로 들어가므로 가장 가볍다(Addison-Wesley 논리로 0 은 아니다).
++ */
++export function overlapScore(question, answer) {
++  const q = String(question ?? ""), a = String(answer ?? "");
++  const sents = sentencesOf(q);
++  const restated = restatedSentences(q, a);
++  const run = longestCommonRun(q, a);
++  const qw = contentWords(q), aw = contentWords(a);
++  let words = 0; qw.forEach((w) => { if (aw.has(w)) words++; });
++  const qn = numbersOf(q), an = numbersOf(a);
++  let nums = 0; qn.forEach((v) => { if (an.has(v)) nums++; });
++  const sentRatio = sents.length ? restated.length / sents.length : 0;
++  const wordRatio = qw.size ? words / qw.size : 0;
++  const numRatio = qn.size ? nums / qn.size : 0;
++  // 긴 공유 문자열은 문장 단위로 안 잡혀도 재진술의 증거 — 재진술 비율의 하한으로 쓴다
++  const runBoost = run.len >= RUN_MIN ? Math.min(1, (run.len - RUN_MIN + 4) / 24) : 0;
++  const s = 45 * Math.max(sentRatio, runBoost * 0.6) + 30 * wordRatio + 25 * numRatio;
++  const score = Math.round(Math.min(100, s));
++  return {
++    score, level: score >= OVERLAP_HIGH ? "high" : score >= OVERLAP_LOW ? "mid" : "low",
++    sentences: restated.length, sentTotal: sents.length, run: run.len,
++    words, wordTotal: qw.size, wordRatio: +wordRatio.toFixed(3),
++    nums, numTotal: qn.size, numRatio: +numRatio.toFixed(3),
++  };
++}
++
++/** 정책 문자열 정리 — 모르는 값은 기본값 */
++export const normalizePolicy = (p) => (POLICIES.includes(String(p || "").trim()) ? String(p).trim() : DEFAULT_POLICY);
++
++/**
++ * 보관 방식 결정 → { where:'central'|'device', reason }
++ *   grade: 'S'|'M'|'C'|null(판정 실패)   overlap: overlapScore() 결과   policy: 'labels'|'gated'|'all'
++ */
++export function decideRetention({ grade, overlap, policy } = {}) {
++  const pol = normalizePolicy(policy);
++  const g = GRADES.includes(grade) ? grade : null;
++  const lvl = overlap?.level || "high";
++  if (pol === "labels") return { where: "device", reason: "정책: 라벨만 서버 보관(법률 검토 전 기본값)" };
++  if (pol === "all") return { where: "central", reason: "정책: 전부 중앙 보관" };
++  if (!g) return { where: "device", reason: "문항 등급을 판정하지 못해 기기에만 보관" };
++  if (g === "S") return { where: "central", reason: "표준(S) 문항 — 관용 표현이라 중앙 보관" };
++  if (g === "M") {
++    return lvl === "low"
++      ? { where: "central", reason: "소폭 선택(M) 문항이지만 답안이 문항 표현을 거의 옮기지 않아 중앙 보관" }
++      : { where: "device", reason: "소폭 선택(M) 문항이고 답안이 문항 표현을 옮겨 기기에만 보관" };
++  }
++  return { where: "device", reason: "창작적(C) 문항 — 기기에만 보관" };
++}
++
++/**
++ * 서버에 남기는 라벨 — 문항·답안 텍스트가 들어갈 자리가 없다.
++ * std: {item_grade, sub_type, elements}  overlap: overlapScore()  result: 기능별 결과(essay: total/max, process: criteria …)
++ */
++export function buildLabels({ feature, std, overlap, result, unit } = {}) {
++  const lights = result?.criteria
++    ? Object.fromEntries(Object.entries(result.criteria).map(([k, v]) => [k, v?.light || null]))
++    : null;
++  return {
++    feature: String(feature || ""),
++    unit_guess: unit || null,
++    std_grade: GRADES.includes(std?.item_grade) ? std.item_grade : null,
++    sub_type: std?.sub_type || null,
++    el_grades: std?.elements || null,
++    overlap_score: overlap?.score ?? null,
++    overlap_level: overlap?.level ?? null,
++    overlap_parts: overlap ? { sentences: overlap.sentences, run: overlap.run, words: overlap.words, nums: overlap.nums } : null,
++    score: Number.isFinite(+result?.total) ? +result.total : null,
++    max_score: Number.isFinite(+result?.max) ? +result.max : null,
++    verdict: result?.verdict || null,
++    lights,
++    pitfalls: Array.isArray(result?.pitfall_tags) ? result.pitfall_tags.slice(0, 12) : null,
++    error_kind: result?.error?.kind || null,
++    mental_load: result?.mental_load || null,
++  };
++}
+diff --git a/src/pages/photo/Capture.jsx b/src/pages/photo/Capture.jsx
+new file mode 100644
+index 0000000..145fc9b
+--- /dev/null
++++ b/src/pages/photo/Capture.jsx
+@@ -0,0 +1,157 @@
++// 촬영 → 미리보기(+ 드래그로 영역 잡기) → 인식(/api/photo scan). 사진은 서버에 올리지 않는다(인식용 base64 만 보내고 버림).
++//   mode     'problem' | 'answer' | 'page'
++//   region   true 면 드래그로 인식할 부분을 잘라 보낼 수 있다(선택 사항)
++//   onScan(result, { canvas, full, box, thumb })  — 인식 성공 시. result 는 서버 응답 그대로.
++//   onPicked(canvas, url)                          — 사진을 고른 직후(페이지 검사처럼 화면이 직접 다루고 싶을 때). 이때는 인식 버튼을 그리지 않는다.
++import { useRef, useState } from "react";
++import { fileToCanvas, cropCanvas, canvasToBase64, canvasToDataUrl, boxFromPoints } from "../../lib/camera";
++import { photoCall } from "../../lib/photoApi";
++import { thumbOf, Busy } from "./shared";
++
++const MODE_TEXT = {
++  problem: { label: "문제 찍기", hint: "문항 하나가 화면에 꽉 차게, 그림자 없이 찍어 주세요.", busy: "문제를 읽는 중… (10초쯤 걸려요)", bad: "문항을 읽지 못했어요 — 더 가까이, 밝게 다시 찍어 주세요." },
++  answer: { label: "답안 찍기", hint: "내가 쓴 풀이만 보이게 찍어 주세요. 문제 문장이 함께 찍혔으면 아래에서 풀이 부분만 잡아 주세요.", busy: "풀이를 읽는 중…", bad: "풀이를 읽지 못했어요 — 손글씨가 보이게 다시 찍어 주세요." },
++  page: { label: "페이지 찍기", hint: "문제집 한 페이지가 다 들어오게, 정면에서 찍어 주세요.", busy: "페이지에서 문항과 풀이 자리를 찾는 중…", bad: "페이지를 읽지 못했어요 — 다시 찍어 주세요." },
++};
++
++export default function Capture({ mode = "problem", region = false, onScan, onPicked, setToast = () => {}, label, hint, extra }) {
++  const T = MODE_TEXT[mode] || MODE_TEXT.problem;
++  const camRef = useRef(null), fileRef = useRef(null);
++  const [cv, setCv] = useState(null);
++  const [url, setUrl] = useState(null);
++  const [box, setBox] = useState(null);
++  const [busy, setBusy] = useState(false);
++  const [err, setErr] = useState(null);
++  const [drag, setDrag] = useState(false);
++  const [cut, setCut] = useState(false);
++
++  const pick = async (file) => {
++    if (!file) return;
++    if (file.type && !/^image\//.test(file.type)) { setToast("사진 파일만 올릴 수 있어요"); return; }   // 종류를 안 알려 주는 파일 선택기도 있다 → 열어 보고 판단
++    setErr(null); setBox(null); setCut(false);
++    try {
++      const c = await fileToCanvas(file);
++      const u = canvasToDataUrl(c, 0.8);
++      if (onPicked) { onPicked(c, u); return; }        // 화면이 직접 다룬다 — 여기서는 버튼만 다시 보여 준다
++      setCv(c); setUrl(u);
++    } catch { setErr("사진을 열 수 없어요 — 다른 사진으로 해 보세요."); }
++  };
++
++  const reset = () => { setCv(null); setUrl(null); setBox(null); setErr(null); setCut(false); };
++
++  const scan = async () => {
++    if (!cv || busy) return;
++    setBusy(true); setErr(null);
++    try {
++      const src = box ? cropCanvas(cv, box, 0.01) : cv;
++      const image = canvasToBase64(src, 0.85);
++      const r = await photoCall("scan", { image, mode });
++      if (r?.unreadable) { setErr(T.bad); return; }
++      onScan?.(r, { canvas: src, full: cv, box, thumb: thumbOf(src) });
++    } catch (e) {
++      setErr(e?.message || "인식에 실패했어요 — 잠시 뒤 다시 시도해 주세요.");
++    } finally { setBusy(false); }
++  };
++
++  return (
++    <div className="ph-cap">
++      <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} />
++      <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} />
++      {!cv && (
++        <>
++          <button type="button" className={"ph-big" + (drag ? " dragon" : "")} onClick={() => camRef.current?.click()}
++            onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
++            onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer?.files?.[0]); }}>
++            <span className="ic">📷</span>
++            <span>{label || T.label}</span>
++            <small>{hint || T.hint}</small>
++          </button>
++          <div className="ph-alt">
++            <button className="sv-btn sm" onClick={() => fileRef.current?.click()}>앨범에서 고르기</button>
++            {extra}
++          </div>
++          {err && <div className="ph-err" style={{ marginTop: 8 }}>{err}</div>}
++        </>
++      )}
++      {cv && !onPicked && (
++        <>
++          {region && !busy && (
++            <div className="ph-mode" style={{ justifyContent: "flex-start" }}>
++              <button className={"sv-chip" + (cut ? " on" : "")} onClick={() => setCut((v) => !v)}>✂ {cut ? "영역 잡는 중 — 사진 위를 드래그" : "일부만 읽기 (영역 잡기)"}</button>
++              {box && <button className="sv-chip" onClick={() => { setBox(null); setCut(false); }}>영역 지우기</button>}
++            </div>
++          )}
++          {region
++            ? <RegionPicker url={url} drawing={cut && !busy} boxes={box ? [{ id: "r", kind: mode === "answer" ? "a" : "q", box, label: "인식할 부분" }] : []}
++                onDraw={(b) => { setBox(b); setCut(false); }} onMiss={() => setToast("영역이 너무 작아요 — 조금 더 크게 잡아 주세요")} />
++            : <div className="ph-stage-wrap"><div className="ph-stage"><img src={url} alt="" /></div></div>}
++          {region && !busy && (
++            <div className="sv-small" style={{ margin: "8px 0 2px", textAlign: "left" }}>
++              {box ? "잡은 부분만 읽어요." : (mode === "answer" ? "문제 문장이 같이 찍혔으면 '일부만 읽기'로 풀이 부분만 잡아 주세요. 안 잡으면 사진 전체를 읽어요." : "사진에 문제가 여럿이면 '일부만 읽기'로 하나만 잡아 주세요. 안 잡으면 사진 전체를 읽어요.")}
++            </div>
++          )}
++          {busy && <div style={{ marginTop: 8 }}><Busy text={T.busy} /></div>}
++          {err && <div className="ph-err" style={{ marginTop: 8 }}>{err}</div>}
++          {!busy && (
++            <div className="ph-actions" style={{ marginTop: 10 }}>
++              <button className="sv-btn pri" onClick={scan}>{err ? "다시 인식하기" : "인식하기"}</button>
++              <button className="sv-btn" onClick={reset}>다시 찍기</button>
++            </div>
++          )}
++        </>
++      )}
++    </div>
++  );
++}
++
++/**
++ * 사진 위에 상자를 그리거나 보여 주는 화면.
++ *   url       미리보기 data URL
++ *   boxes     [{ id, kind:'q'|'a', box:{x,y,w,h}, label, removable }]
++ *   drawing   true 면 드래그로 새 상자 → onDraw(box)
++ *   onTapBox(b) · onRemove(b) · selected(id)
++ */
++export function RegionPicker({ url, boxes = [], drawing = false, onDraw, onMiss, onTapBox, onRemove, selected = null, dimOutside = false }) {
++  const ref = useRef(null);
++  const [live, setLive] = useState(null);      // 그리는 중인 상자
++  const start = useRef(null);
++
++  const pos = (e) => { const r = ref.current.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height }; };
++  const down = (e) => {
++    if (!drawing || !ref.current) return;
++    if (e.pointerType === "mouse" && e.button !== 0) return;
++    e.preventDefault();
++    try { ref.current.setPointerCapture(e.pointerId); } catch { /* 지원 안 하면 무시 */ }
++    const p = pos(e); start.current = p; setLive({ x: p.x / p.w, y: p.y / p.h, w: 0, h: 0 });
++  };
++  const move = (e) => {
++    if (!drawing || !start.current) return;
++    const p = pos(e); const s = start.current;
++    const b = boxFromPoints(s, p, p.w, p.h);
++    setLive(b || { x: Math.min(s.x, p.x) / p.w, y: Math.min(s.y, p.y) / p.h, w: Math.abs(p.x - s.x) / p.w, h: Math.abs(p.y - s.y) / p.h });
++  };
++  const up = (e) => {
++    if (!drawing || !start.current) return;
++    const p = pos(e); const b = boxFromPoints(start.current, p, p.w, p.h);
++    start.current = null; setLive(null);
++    if (b) onDraw?.(b); else onMiss?.();
++  };
++
++  const pct = (b) => ({ left: `${b.x * 100}%`, top: `${b.y * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%` });
++  return (
++    <div className="ph-stage-wrap">
++    <div ref={ref} className={"ph-stage" + (drawing ? " draw" : "")} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { start.current = null; setLive(null); }}>
++      <img src={url} alt="" draggable={false} />
++      {dimOutside && boxes.length === 0 && <div className="ph-dim" />}
++      {boxes.map((b) => (
++        <div key={b.id} className={"ph-box " + (b.kind || "q") + (selected === b.id ? " sel" : "")} style={{ ...pct(b.box), pointerEvents: drawing ? "none" : "auto", cursor: onTapBox ? "pointer" : "default" }}
++          onClick={(e) => { e.stopPropagation(); onTapBox?.(b); }}>
++          {b.label && <span className={"tag" + (b.box.y < 0.06 ? " in" : "")}>{b.label}</span>}
++          {b.removable && !drawing && <span className={"x" + (b.box.y < 0.06 ? " in" : "")} role="button" onClick={(e) => { e.stopPropagation(); onRemove?.(b); }}>✕</span>}
++        </div>
++      ))}
++      {live && live.w > 0 && live.h > 0 && <div className="ph-box live" style={pct(live)} />}
++    </div>
++    </div>
++  );
++}
+diff --git a/src/pages/photo/PhotoCheck.jsx b/src/pages/photo/PhotoCheck.jsx
+new file mode 100644
+index 0000000..9462422
+--- /dev/null
++++ b/src/pages/photo/PhotoCheck.jsx
+@@ -0,0 +1,302 @@
++// 풀이과정 검사하기 — #/solve/photo/check
++// 문제집 페이지 촬영(여러 장 가능) → 문항·풀이 영역 자동 찾기 + 드래그로 고치기 → 영역마다 인식 → 식의 연결고리·암산·글씨 습관·오류 가설
++// → 충실성·논리성·명료성·간결성·독창성 신호등(문항별·문서별) → 서술형 첨삭으로 볼 문항 고르기 → 없으면 끝, 있으면 채점·첨삭.
++import { useMemo, useState } from "react";
++import SolveShell, { useToast } from "../solve/SolveShell";
++import MathText from "../../components/MathText";
++import { trapText } from "../../lib/marking.js";
++import { cropCanvas, canvasToBase64 } from "../../lib/camera";
++import { photoCall } from "../../lib/photoApi";
++import { newId } from "../../lib/deviceStore";
++import Capture, { RegionPicker } from "./Capture";
++import { EssayResult } from "./PhotoEssay";
++import { Steps, Busy, Lights, KeepNote, aggregateLights, thumbOf, saveDevice, titleOf, CRITERIA } from "./shared";
++
++const LOAD = { low: "가벼움", mid: "보통", high: "많음 — 실수 위험" };
++const HABIT = { size: "글씨 크기", messy: "난잡함", glyph: "헷갈리는 글자", align: "정렬·등호", unit: "단위", skip: "건너뜀", other: "기타" };
++const EKIND = { calc: "계산", concept: "개념", reading: "문제 해석", transcription: "옮겨 적기", sign: "부호", unit: "단위", none: "없음" };
++const ROLE = { setup: "식 세우기", transform: "변형", compute: "계산", answer: "답", other: "기타" };
++
++const nextNo = (boxes, kind) => {
++  const used = new Set(boxes.filter((b) => b.kind === kind).map((b) => b.no));
++  const other = boxes.filter((b) => b.kind !== kind).map((b) => b.no).sort((x, y) => x - y);
++  for (const n of other) if (!used.has(n)) return n;            // 짝이 없는 번호부터
++  return (Math.max(0, ...boxes.map((b) => b.no)) || 0) + 1;
++};
++
++export default function PhotoCheck() {
++  const [toast, setToast] = useToast();
++  const [pages, setPages] = useState([]);       // [{ id, cv, url, boxes:[{id,kind,no,box}], detecting, note }]
++  const [adding, setAdding] = useState(true);   // 촬영 화면을 보이는가
++  const [stage, setStage] = useState("edit");   // edit | run | result
++  const [progress, setProgress] = useState("");
++  const [items, setItems] = useState([]);       // 검사 결과 [{ id, pageIdx, no, p, a, out, err }]
++  const [picked, setPicked] = useState({});     // 첨삭 받을 문항 { [itemId]: true }
++  const [essays, setEssays] = useState({});     // { [itemId]: { busy, err, res } }
++  const at = stage === "edit" ? (pages.length ? 1 : 0) : stage === "run" ? 2 : Object.keys(essays).length ? 3 : 2;
++
++  const updatePage = (id, fn) => setPages((ps) => ps.map((pg) => (pg.id === id ? fn(pg) : pg)));
++
++  // 페이지 사진을 고르면 바로 자동 탐지
++  const onPicked = async (cv, url) => {
++    const id = newId();
++    setPages((ps) => [...ps, { id, cv, url, boxes: [], detecting: true, note: null }]);
++    setAdding(false);
++    try {
++      const r = await photoCall("scan", { image: canvasToBase64(cv, 0.85), mode: "page" });
++      const boxes = [
++        ...(r.problems || []).map((b) => ({ id: newId(), kind: "q", no: b.no, box: b.box })),
++        ...(r.answers || []).map((b) => ({ id: newId(), kind: "a", no: b.no, box: b.box })),
++      ];
++      updatePage(id, (pg) => ({ ...pg, boxes, detecting: false, note: boxes.length ? null : "자동으로 찾지 못했어요 — 아래 버튼으로 직접 잡아 주세요." }));
++    } catch (e) {
++      updatePage(id, (pg) => ({ ...pg, detecting: false, note: (e?.message || "자동 탐지 실패") + " — 직접 잡아 주세요." }));
++    }
++  };
++
++  const pairs = useMemo(() => pages.flatMap((pg, pi) => {
++    const qs = pg.boxes.filter((b) => b.kind === "q").sort((x, y) => x.no - y.no);
++    return qs.map((q) => ({ pageIdx: pi, page: pg, no: q.no, q, a: pg.boxes.find((b) => b.kind === "a" && b.no === q.no) || null }));
++  }), [pages]);
++  const ready = pairs.filter((x) => x.a);
++
++  const run = async () => {
++    if (!ready.length) { setToast("문제와 답안이 짝지어진 문항이 없어요"); return; }
++    setStage("run"); setItems([]); setPicked({}); setEssays({});
++    const out = [];
++    for (let i = 0; i < ready.length; i++) {
++      const pr = ready[i];
++      const label = `${pages.length > 1 ? `${pr.pageIdx + 1}쪽 ` : ""}${pr.no}번`;
++      const rec = { id: newId(), pageIdx: pr.pageIdx, no: pr.no, label, p: null, a: null, out: null, err: null, qthumb: null };
++      try {
++        setProgress(`${label} 문제 읽는 중… (${i + 1}/${ready.length})`);
++        const qcv = cropCanvas(pr.page.cv, pr.q.box, 0.015);
++        rec.qthumb = thumbOf(qcv, 360);
++        const sp = await photoCall("scan", { image: canvasToBase64(qcv, 0.85), mode: "problem" });
++        if (sp.unreadable) throw new Error("문항을 읽지 못했어요 — 문제 영역을 다시 잡아 주세요");
++        rec.p = { question: sp.question, choices: sp.choices, qtype: sp.qtype, figure_note: sp.figure_note, unit_guess: sp.unit_guess, std: sp.std, warnings: sp.warnings };
++        setProgress(`${label} 풀이 읽는 중… (${i + 1}/${ready.length})`);
++        const acv = cropCanvas(pr.page.cv, pr.a.box, 0.015);
++        const sa = await photoCall("scan", { image: canvasToBase64(acv, 0.85), mode: "answer" });
++        if (sa.unreadable) throw new Error("풀이를 읽지 못했어요 — 답안 영역을 다시 잡아 주세요");
++        rec.a = { answer: sa.answer, lines: sa.lines, final_answer: sa.final_answer, legibility: sa.legibility, thumb: thumbOf(acv, 360) };
++        setProgress(`${label} 풀이 과정 검사 중… (${i + 1}/${ready.length})`);
++        const r = await photoCall("process", { question: rec.p.question, figure_note: rec.p.figure_note, choices: rec.p.choices, answer: rec.a.answer, lines: rec.a.lines, legibility: rec.a.legibility, std: rec.p.std, unit: rec.p.unit_guess });
++        rec.out = r;
++        saveDevice({ id: rec.id, feature: "check", title: `${label} · ${titleOf(rec.p.question)}`, question: rec.p.question, figure_note: rec.p.figure_note, unit: rec.p.unit_guess, grade: r.std?.item_grade || rec.p.std?.item_grade || null, answer: rec.a.answer, result: r.result, retention: r.retention });
++      } catch (e) {
++        rec.err = e?.message || "검사 실패";
++      }
++      out.push(rec); setItems(out.slice());
++    }
++    setProgress(""); setStage("result");
++  };
++
++  const gradePicked = async () => {
++    const ids = items.filter((it) => picked[it.id] && it.out && !essays[it.id]?.res).map((it) => it.id);
++    if (!ids.length) { setToast("첨삭 받을 문항을 골라 주세요"); return; }
++    for (const id of ids) {
++      const it = items.find((x) => x.id === id);
++      setEssays((es) => ({ ...es, [id]: { busy: true } }));
++      try {
++        const r = await photoCall("essay", { question: it.p.question, figure_note: it.p.figure_note, choices: it.p.choices, answer: it.a.answer, std: it.p.std, unit: it.p.unit_guess });
++        setEssays((es) => ({ ...es, [id]: { res: r } }));
++        saveDevice({ feature: "essay", title: `${it.label} · ${titleOf(it.p.question)}`, question: it.p.question, figure_note: it.p.figure_note, unit: it.p.unit_guess, grade: r.std?.item_grade || null, answer: it.a.answer, result: r.result, retention: r.retention });
++      } catch (e) {
++        setEssays((es) => ({ ...es, [id]: { err: e?.message || "첨삭 실패" } }));
++      }
++    }
++  };
++
++  const docLights = useMemo(() => aggregateLights(items.filter((it) => it.out).map((it) => it.out.result)), [items]);
++  const okItems = items.filter((it) => it.out);
++  const anyPicked = okItems.some((it) => picked[it.id]);
++  const essayDone = Object.values(essays).some((e) => e?.res);
++
++  return (
++    <SolveShell title="풀이과정 검사" back="#/solve/photo" toast={toast}
++      sub={stage === "edit" && !pages.length ? "문제집 페이지를 찍고, 문제와 내 풀이 영역을 잡아 주세요. 식이 어떻게 이어지는지, 암산이 과한지, 글씨 습관은 어떤지 신호등으로 봐요." : undefined}>
++      <Steps list={["페이지 찍기", "영역 잡기", "검사 결과", "첨삭"]} at={at} />
++
++      {stage === "edit" && (
++        <>
++          {pages.map((pg, pi) => (
++            <PageEditor key={pg.id} page={pg} idx={pi} many={pages.length > 1}
++              onChange={(boxes) => updatePage(pg.id, (x) => ({ ...x, boxes }))}
++              onRemove={() => setPages((ps) => ps.filter((x) => x.id !== pg.id))} setToast={setToast} />
++          ))}
++          {(adding || !pages.length) && (
++            <div className="sv-card">
++              {pages.length > 0 && <div className="sv-sec" style={{ marginTop: 0 }}>{pages.length + 1}쪽</div>}
++              <Capture mode="page" onPicked={onPicked} setToast={setToast} />
++              {pages.length > 0 && <button className="sv-btn sm ghost" style={{ marginTop: 8 }} onClick={() => setAdding(false)}>추가 안 할래요</button>}
++            </div>
++          )}
++          {pages.length > 0 && (
++            <div className="sv-card">
++              <div className="sv-sec" style={{ marginTop: 0 }}>검사할 문항 <span className="sv-small">· 문제와 풀이가 둘 다 잡힌 것만</span></div>
++              {ready.length
++                ? <div className="sv-small" style={{ lineHeight: 1.7 }}>{ready.map((x) => `${pages.length > 1 ? `${x.pageIdx + 1}쪽 ` : ""}${x.no}번`).join(" · ")} — {ready.length}문항</div>
++                : <div className="sv-muted">아직 없어요. 각 문항의 문제 영역과 풀이 영역을 같은 번호로 잡아 주세요.</div>}
++              {pairs.length > ready.length && <div className="sv-small" style={{ marginTop: 4, color: "var(--bad)" }}>풀이가 없는 문항 {pairs.length - ready.length}개는 건너뛰어요.</div>}
++              <div className="ph-actions" style={{ marginTop: 10 }}>
++                <button className="sv-btn pri" onClick={run} disabled={!ready.length || pages.some((x) => x.detecting)}>검사하기 ({ready.length}문항)</button>
++                {!adding && <button className="sv-btn" onClick={() => setAdding(true)}>페이지 추가</button>}
++              </div>
++              <div className="sv-small" style={{ marginTop: 8 }}>문항마다 문제·풀이 인식 2회와 검사 1회를 써요. 사진은 서버에 남지 않아요.</div>
++            </div>
++          )}
++        </>
++      )}
++
++      {stage === "run" && (
++        <div className="sv-card">
++          <Busy text={progress || "준비 중…"} />
++          <div className="sv-small" style={{ marginTop: 8 }}>{items.length} / {ready.length} 문항 끝남</div>
++        </div>
++      )}
++
++      {stage === "result" && (
++        <>
++          {okItems.length > 1 && (
++            <div className="sv-card">
++              <div className="sv-sec" style={{ marginTop: 0 }}>문서 전체 <span className="sv-small">· {okItems.length}문항</span></div>
++              <Lights criteria={docLights} />
++              <div className="ph-why">{CRITERIA.map((k) => docLights[k]?.light ? <span key={k} style={{ marginRight: 10 }}><b>{k}</b> {docLights[k].why}</span> : null)}</div>
++            </div>
++          )}
++          {items.map((it) => <ItemResult key={it.id} it={it} pick={!!picked[it.id]} onPick={() => setPicked((p) => ({ ...p, [it.id]: !p[it.id] }))} essay={essays[it.id]} />)}
++          {!okItems.length && <div className="sv-empty">검사한 문항이 없어요. 영역을 다시 잡아 주세요.</div>}
++
++          {okItems.length > 0 && (
++            <div className="sv-card" style={{ borderColor: "color-mix(in srgb, var(--accent) 45%, var(--border))" }}>
++              <div style={{ fontWeight: 800, fontSize: 15.5, marginBottom: 6 }}>서술형 첨삭으로 더 볼 문항이 있나요?</div>
++              <div className="sv-small" style={{ marginBottom: 10, lineHeight: 1.6 }}>위 카드에서 문항을 체크하면 채점 기준표로 채점하고 어디를 어떻게 고칠지 첨삭해 줘요.</div>
++              <div className="ph-actions">
++                <button className="sv-btn pri" onClick={gradePicked} disabled={!anyPicked || Object.values(essays).some((e) => e?.busy)}>선택한 문항 첨삭받기</button>
++                <button className="sv-btn" onClick={() => { location.hash = "#/solve/photo"; }}>{essayDone ? "끝내기" : "없어요, 끝낼래요"}</button>
++                <button className="sv-btn ghost wide" onClick={() => { setStage("edit"); setItems([]); setEssays({}); setPicked({}); }}>영역 다시 잡기</button>
++              </div>
++            </div>
++          )}
++        </>
++      )}
++    </SolveShell>
++  );
++}
++
++/** 페이지 한 장 — 상자 보기·그리기·번호 바꾸기·삭제 */
++function PageEditor({ page, idx, many, onChange, onRemove, setToast }) {
++  const [mode, setMode] = useState(null);        // 'q' | 'a' | null
++  const [sel, setSel] = useState(null);
++  const boxes = page.boxes;
++  const selBox = boxes.find((b) => b.id === sel) || null;
++  const set = (list) => onChange(list);
++
++  const onDraw = (box) => {
++    if (!mode) return;
++    const nb = { id: newId(), kind: mode, no: nextNo(boxes, mode), box };
++    set([...boxes, nb]); setSel(nb.id); setMode(null);
++    setToast(`${nb.no}번 ${mode === "q" ? "문제" : "풀이"} 영역을 잡았어요`);
++  };
++  const bump = (d) => selBox && set(boxes.map((b) => (b.id === sel ? { ...b, no: Math.max(1, b.no + d) } : b)));
++  const flip = () => selBox && set(boxes.map((b) => (b.id === sel ? { ...b, kind: b.kind === "q" ? "a" : "q" } : b)));
++  const del = (id) => { set(boxes.filter((b) => b.id !== id)); if (sel === id) setSel(null); };
++
++  return (
++    <div className="sv-card">
++      <div className="sv-row" style={{ marginBottom: 8 }}>
++        <div className="sv-sec" style={{ margin: 0, flex: 1 }}>{many ? `${idx + 1}쪽` : "페이지"} <span className="sv-small">· 파랑 = 문제 · 주황 = 내 풀이</span></div>
++        <button className="sv-btn sm ghost" onClick={onRemove}>이 페이지 빼기</button>
++      </div>
++      {page.detecting && <div style={{ marginBottom: 8 }}><Busy text="문항과 풀이 자리를 찾는 중…" /></div>}
++      {page.note && !page.detecting && <div className="sv-small" style={{ marginBottom: 8, color: "var(--bad)" }}>{page.note}</div>}
++      <div className="ph-mode">
++        <button className={"sv-chip q" + (mode === "q" ? " on" : "")} onClick={() => { setMode(mode === "q" ? null : "q"); setSel(null); }}>{mode === "q" ? "문제 영역을 드래그하세요" : "+ 문제 영역"}</button>
++        <button className={"sv-chip a" + (mode === "a" ? " on" : "")} onClick={() => { setMode(mode === "a" ? null : "a"); setSel(null); }}>{mode === "a" ? "풀이 영역을 드래그하세요" : "+ 풀이 영역"}</button>
++        {boxes.length > 0 && <button className="sv-chip" onClick={() => { set([]); setSel(null); }}>모두 지우기</button>}
++      </div>
++      <RegionPicker url={page.url} drawing={!!mode} selected={sel}
++        boxes={boxes.map((b) => ({ ...b, label: `${b.no}번 ${b.kind === "q" ? "문제" : "풀이"}`, removable: true }))}
++        onDraw={onDraw} onMiss={() => setToast("영역이 너무 작아요 — 조금 더 크게 잡아 주세요")} onTapBox={(b) => setSel(sel === b.id ? null : b.id)} onRemove={(b) => del(b.id)} />
++      {selBox && !mode && (
++        <div className="sv-row wrap" style={{ marginTop: 8, gap: 6 }}>
++          <span className="sv-small">{selBox.no}번 {selBox.kind === "q" ? "문제" : "풀이"}:</span>
++          <button className="sv-chip" onClick={() => bump(-1)}>번호 −</button>
++          <button className="sv-chip" onClick={() => bump(1)}>번호 +</button>
++          <button className="sv-chip" onClick={flip}>문제↔풀이</button>
++          <button className="sv-chip bad" onClick={() => del(selBox.id)}>삭제</button>
++        </div>
++      )}
++      {!boxes.length && !page.detecting && <div className="sv-small" style={{ marginTop: 8 }}>위 버튼을 누른 뒤 사진 위를 드래그해서 영역을 잡아요. 문제 하나에 문제 영역 1개 + 풀이 영역 1개, 같은 번호로.</div>}
++    </div>
++  );
++}
++
++/** 문항 하나의 검사 결과 카드 (+ 첨삭 선택 · 첨삭 결과) */
++function ItemResult({ it, pick, onPick, essay }) {
++  const r = it.out?.result;
++  return (
++    <div className={"ph-item" + (pick ? " sel" : "")}>
++      <div className="hd"><span className="no">{it.no}</span><span>{it.label}</span>
++        {r && <span className={"st " + (r.final_answer_ok ? "ok" : "bad")}>{r.final_answer_ok ? "답 맞음" : "답 확인 필요"}</span>}
++        {it.err && <span className="st bad">실패</span>}
++      </div>
++      {it.err && <div className="ph-err">{it.err}</div>}
++      {r && (
++        <>
++          <Lights criteria={r.criteria} compact />
++          <div className="ph-why" style={{ marginTop: 6 }}>{CRITERIA.map((k) => r.criteria?.[k]?.why ? <div key={k}><b>{k}</b> {r.criteria[k].why}</div> : null)}</div>
++          {r.summary && <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.65 }}><MathText text={r.summary} /></div>}
++          <div className="ph-chips">
++            <span className={"ph-chip" + (r.mental_load === "high" ? " warn" : "")}>암산 부담: {LOAD[r.mental_load] || r.mental_load}</span>
++            {r.pitfall_tags?.map((t, i) => <span key={i} className="ph-chip warn">⚠ {trapText(t)}</span>)}
++          </div>
++          {r.mental_note && <div className="sv-small" style={{ marginTop: 6, lineHeight: 1.6 }}>{r.mental_note}</div>}
++          {r.error?.found && (
++            <div className="ph-fix" style={{ marginTop: 10 }}>
++              <div className="w">어디서 틀렸을까 — {r.error.line ? `${r.error.line}번째 줄 · ` : ""}{EKIND[r.error.kind] || r.error.kind}</div>
++              {r.error.hypothesis && <div><MathText text={r.error.hypothesis} /></div>}
++              {r.error.fix && <div className="right" style={{ marginTop: 2 }}><MathText text={r.error.fix} /></div>}
++            </div>
++          )}
++          {r.habits?.length > 0 && (
++            <div style={{ marginTop: 10 }}>
++              <div className="sv-small" style={{ marginBottom: 6 }}>실수를 줄이려면</div>
++              <div className="sv-list">{r.habits.map((h, i) => <div key={i} className="ph-habit"><span className="k">{HABIT[h.kind] || h.kind}</span><span>{h.note}<span className="tip">→ {h.tip}</span></span></div>)}</div>
++            </div>
++          )}
++          <details style={{ marginTop: 10 }}>
++            <summary className="sv-small" style={{ cursor: "pointer" }}>식의 연결고리 {r.chain?.length ? `(${r.chain.length}줄)` : ""} · 읽어 낸 문제와 풀이</summary>
++            {r.chain?.length > 0 && (
++              <ul className="ph-chain" style={{ marginTop: 8 }}>
++                {r.chain.map((c, idx) => <li key={idx} className={c.ok === false ? "bad" : c.ok === true ? "ok" : ""}><span className="i">{c.i}</span><span><MathText text={c.text} /><span className="nt">{ROLE[c.role] || c.role}{c.note ? ` · ${c.note}` : ""}</span></span></li>)}
++              </ul>
++            )}
++            <div className="sv-small" style={{ marginTop: 10 }}>문제</div>
++            {it.qthumb && <img className="ph-thumb" src={it.qthumb} alt="" style={{ margin: "4px 0" }} />}
++            <MathText as="div" className="ph-q" text={it.p?.question} style={{ fontSize: 14 }} />
++            <div className="sv-small" style={{ marginTop: 10 }}>내 풀이(읽어 낸 것)</div>
++            {it.a?.thumb && <img className="ph-thumb" src={it.a.thumb} alt="" style={{ margin: "4px 0" }} />}
++            <MathText as="div" className="ph-ans" text={it.a?.answer} />
++          </details>
++          <KeepNote retention={it.out.retention} />
++          {!essay?.res && (
++            <label className={"ph-check" + (pick ? " on" : "")} style={{ marginTop: 10 }}>
++              <input type="checkbox" checked={pick} onChange={onPick} disabled={!!essay?.busy} />
++              <span className="tx">{essay?.busy ? "첨삭 받는 중…" : "이 문항은 서술형 첨삭까지 받기"}</span>
++            </label>
++          )}
++          {essay?.err && <div className="ph-err" style={{ marginTop: 8 }}>{essay.err}</div>}
++          {essay?.res && (
++            <div style={{ marginTop: 12 }}>
++              <div className="sv-sec">서술형 채점·첨삭</div>
++              <EssayResult result={essay.res.result} />
++              <KeepNote retention={essay.res.retention} />
++            </div>
++          )}
++        </>
++      )}
++    </div>
++  );
++}
+diff --git a/src/pages/photo/PhotoEssay.jsx b/src/pages/photo/PhotoEssay.jsx
+new file mode 100644
+index 0000000..ae842cc
+--- /dev/null
++++ b/src/pages/photo/PhotoEssay.jsx
+@@ -0,0 +1,176 @@
++// 서술형 채점·첨삭 — #/solve/photo/essay (촬영) · ?cur=1 (방금 찍은 문제로)
++// 문제 촬영 → 문항 부분 인식 → 답안 촬영 → 답안 부분 인식(전사, 고칠 수 있음) → 채점 기준표·채점·첨삭.
++// 답안 원문은 보관 게이트 결정(retention.where)에 따라 기기 또는 서버에 남고, 결과는 항상 기기 보관소에 남는다.
++import { useState } from "react";
++import SolveShell, { useToast } from "../solve/SolveShell";
++import MathText from "../../components/MathText";
++import { trapText } from "../../lib/marking.js";
++import { photoCall, stashCurrent } from "../../lib/photoApi";
++import { newId } from "../../lib/deviceStore";
++import Capture from "./Capture";
++import { ProblemCard, Steps, Busy, KeepNote, currentProblem, saveDevice } from "./shared";
++
++const VERDICT = { excellent: "아주 잘 썼어요", good: "잘 썼어요", partial: "절반쯤 왔어요", weak: "다시 써 봐요" };
++const LEVEL = { full: "만점", partial: "부분", zero: "0점" };
++const LEG_KIND = { size: "글씨 크기", messy: "난잡함", glyph: "헷갈리는 글자", spacing: "간격·정렬", crossout: "지운 흔적", other: "기타" };
++
++export default function PhotoEssay({ useCur = false }) {
++  const [toast, setToast] = useToast();
++  const [p, setP] = useState(() => (useCur ? currentProblem() : null));
++  const [a, setA] = useState(null);          // 답안 전사
++  const [text, setText] = useState("");      // 학생이 고친 답안
++  const [res, setRes] = useState(null);      // { result, std, retention }
++  const [busy, setBusy] = useState(false);
++  const [err, setErr] = useState(null);
++  const hasCur = !!currentProblem();
++  const at = !p ? 0 : !a ? 1 : 2;
++
++  const onProblem = (r, { thumb }) => {
++    const prob = { question: r.question, choices: r.choices, qtype: r.qtype, figure_note: r.figure_note, unit_guess: r.unit_guess, std: r.std, warnings: r.warnings, thumb };
++    stashCurrent(prob); setP(prob);
++  };
++  const onAnswer = (r, { thumb }) => { setA({ ...r, thumb }); setText(r.answer || ""); setRes(null); setErr(null); };
++
++  const grade = async () => {
++    const answer = text.trim();
++    if (!answer) { setToast("답안이 비어 있어요"); return; }
++    setBusy(true); setErr(null);
++    try {
++      const r = await photoCall("essay", { question: p.question, figure_note: p.figure_note, choices: p.choices, answer, std: p.std, unit: p.unit_guess });
++      setRes(r);
++      saveDevice({ id: newId(), feature: "essay", question: p.question, figure_note: p.figure_note, unit: p.unit_guess, grade: r.std?.item_grade || p.std?.item_grade || null, answer, result: r.result, retention: r.retention });
++    } catch (e) { setErr(e?.message || "채점에 실패했어요 — 잠시 뒤 다시 시도해 주세요."); }
++    finally { setBusy(false); }
++  };
++
++  const restartAnswer = () => { setA(null); setText(""); setRes(null); setErr(null); };
++  const restartAll = () => { setP(null); restartAnswer(); };
++
++  return (
++    <SolveShell title="서술형 채점·첨삭" back="#/solve/photo" toast={toast}
++      sub={at === 0 ? "문제를 먼저 찍고, 그다음 내가 쓴 답안을 찍어요. 기준표로 채점하고 어디를 어떻게 고칠지 알려 줘요." : undefined}
++      right={p ? <button className="sv-btn sm" onClick={restartAll}>다른 문제</button> : null}>
++      <Steps list={["문제 찍기", "답안 찍기", "채점·첨삭"]} at={at} />
++
++      {at === 0 && (
++        <>
++          <div className="sv-card">
++            <Capture mode="problem" region onScan={onProblem} setToast={setToast}
++              extra={hasCur ? <button className="sv-btn sm" onClick={() => setP(currentProblem())}>방금 찍은 문제로</button> : null} />
++          </div>
++          <p className="sv-small" style={{ lineHeight: 1.6 }}>사진은 인식에만 쓰고 서버에 남기지 않아요. 답안 원문은 기본적으로 이 기기에만 남아요.</p>
++        </>
++      )}
++
++      {at >= 1 && <ProblemCard p={p} thumb={at === 1 ? p.thumb : null} />}
++
++      {at === 1 && (
++        <div className="sv-card">
++          <div className="sv-sec" style={{ marginTop: 0 }}>내 답안</div>
++          <Capture mode="answer" region onScan={onAnswer} setToast={setToast} />
++        </div>
++      )}
++
++      {at === 2 && !res && (
++        <div className="sv-card">
++          <div className="sv-sec" style={{ marginTop: 0 }}>읽어 낸 내 답안 <span className="sv-small">· 잘못 읽은 글자가 있으면 고쳐 주세요</span></div>
++          {a.thumb && <img className="ph-thumb" src={a.thumb} alt="" />}
++          <textarea className="ph-ta" value={text} onChange={(e) => setText(e.target.value)} disabled={busy} />
++          {a.legibility?.issues?.length > 0 && (
++            <div className="ph-chips">{a.legibility.issues.map((i, k) => <span key={k} className="ph-chip">{LEG_KIND[i.kind] || i.kind}: {i.note}</span>)}</div>
++          )}
++          {busy && <div style={{ marginTop: 10 }}><Busy text="기준표를 세우고 채점하는 중… (20초쯤 걸려요)" /></div>}
++          {err && !busy && <div className="ph-err" style={{ marginTop: 10 }}>{err}</div>}
++          {!busy && (
++            <div className="ph-actions" style={{ marginTop: 10 }}>
++              <button className="sv-btn pri" onClick={grade}>{err ? "다시 채점받기" : "채점·첨삭 받기"}</button>
++              <button className="sv-btn" onClick={restartAnswer}>답안 다시 찍기</button>
++            </div>
++          )}
++        </div>
++      )}
++
++      {res && (
++        <>
++          <EssayResult result={res.result} answer={text} />
++          <KeepNote retention={res.retention} />
++          <div className="ph-actions" style={{ marginTop: 12 }}>
++            <button className="sv-btn pri" onClick={restartAll}>다른 문제 찍기</button>
++            <button className="sv-btn" onClick={restartAnswer}>같은 문제, 답안 다시 쓰기</button>
++            <button className="sv-btn" onClick={() => { stashCurrent(p); location.hash = "#/solve/photo/read?cur=1"; }}>이 문제 문장 이해하기</button>
++            <button className="sv-btn ghost" onClick={() => { location.hash = "#/solve/photo/mine"; }}>내 기록</button>
++          </div>
++        </>
++      )}
++    </SolveShell>
++  );
++}
++
++/** 채점·첨삭 결과 카드들 — 풀이과정 검사 화면도 그대로 쓴다 */
++export function EssayResult({ result: r, answer }) {
++  if (!r) return null;
++  const pct = r.max ? r.total / r.max : 0;
++  const color = pct >= 0.9 ? "var(--good)" : pct >= 0.6 ? "var(--text)" : "var(--bad)";
++  return (
++    <>
++      <div className="sv-card">
++        <div className="ph-score">
++          <div className="big" style={{ color }}>{r.total}<small>/ {r.max}점</small></div>
++          <div className="txt">
++            <div style={{ fontWeight: 800 }}>{VERDICT[r.verdict] || ""}</div>
++            <div className="sv-small">최종 답 {r.final_answer_ok ? <span className="sv-ok">맞음</span> : <span className="sv-bad">확인 필요</span>} · 훈련용 예상 점수예요</div>
++          </div>
++        </div>
++        {r.praise && <div className="ph-praise" style={{ marginTop: 10 }}>👍 {r.praise}</div>}
++      </div>
++
++      {answer && (
++        <details className="sv-card" style={{ marginBottom: 12 }}>
++          <summary className="sv-small" style={{ cursor: "pointer" }}>내가 쓴 답안 보기</summary>
++          <MathText as="div" className="ph-ans" text={answer} style={{ marginTop: 8 }} />
++        </details>
++      )}
++
++      {r.rubric?.length > 0 && (
++        <div className="sv-card">
++          <div className="sv-sec" style={{ marginTop: 0 }}>채점 기준표</div>
++          <div className="ph-rub">
++            {r.rubric.map((el) => {
++              const m = (r.marks || []).find((x) => x.no === el.no) || null;
++              return (
++                <div key={el.no} className="el">
++                  <div className="h"><span className="no">{el.no}</span><span>{el.element}</span>
++                    <span className={"pt " + (m?.level || "")}>{m ? `${m.got}` : "–"} / {el.points}점{m ? ` · ${LEVEL[m.level]}` : ""}</span></div>
++                  <div className="crit"><MathText text={el.criterion} /></div>
++                  {m?.comment && <div className="cm">→ <MathText text={m.comment} /></div>}
++                </div>
++              );
++            })}
++          </div>
++        </div>
++      )}
++
++      {r.corrections?.length > 0 && (
++        <div className="sv-card">
++          <div className="sv-sec" style={{ marginTop: 0 }}>첨삭 <span className="sv-small">· 어디를 어떻게</span></div>
++          {r.corrections.map((c, i) => (
++            <div key={i} className="ph-fix">
++              {c.where && <div className="w">{c.where}</div>}
++              {c.wrong && <div><span className="wrong"><MathText text={c.wrong} /></span> → <span className="right"><MathText text={c.fix} /></span></div>}
++              {!c.wrong && <div className="right"><MathText text={c.fix} /></div>}
++              {c.why && <div className="sv-small" style={{ marginTop: 2 }}>{c.why}</div>}
++            </div>
++          ))}
++        </div>
++      )}
++
++      {(r.feedback?.length > 0 || r.pitfall_tags?.length > 0) && (
++        <div className="sv-card">
++          <div className="sv-sec" style={{ marginTop: 0 }}>한 줄 첨삭</div>
++          {r.feedback?.length > 0 && <ul className="ph-ul">{r.feedback.map((f, i) => <li key={i}><MathText text={f} /></li>)}</ul>}
++          {r.pitfall_tags?.length > 0 && <div className="ph-chips">{r.pitfall_tags.map((t, i) => <span key={i} className="ph-chip warn">⚠ {trapText(t)}</span>)}</div>}
++        </div>
++      )}
++    </>
++  );
++}
+diff --git a/src/pages/photo/PhotoMark.jsx b/src/pages/photo/PhotoMark.jsx
+new file mode 100644
+index 0000000..0b6560d
+--- /dev/null
++++ b/src/pages/photo/PhotoMark.jsx
+@@ -0,0 +1,129 @@
++// 표시 연습하기 — #/solve/photo/mark (촬영) · ?cur=1 (방금 찍은 문제로)
++// 사진 → 문항 전사 → 규칙 표시를 "차례대로" 하나씩 보여 준다(동그라미·밑줄·빗금·물결) → 문장 이해하기로 넘어갈지 고른다.
++// 직접 표시해 보기(연습·채점)는 기존 MarkView 를 그대로 쓴다. LLM 은 전사에만 쓴다.
++import { useEffect, useMemo, useState } from "react";
++import SolveShell, { useToast } from "../solve/SolveShell";
++import SentenceMarks, { MarkLegend } from "../solve/SentenceMarks";
++import { MarkView } from "../solve/Mark";
++import { explain, FUNC_LABEL, markText, TIER1 } from "../../lib/marking.js";
++import { stashCurrent } from "../../lib/photoApi";
++import { newId } from "../../lib/deviceStore";
++import Capture from "./Capture";
++import { ProblemCard, Steps, currentProblem, saveDevice, stripMarker } from "./shared";
++
++const ORDER = { NUM: 0, SCALE: 1, BOUND: 2, DIST: 3 };
++
++/** 보여 줄 순서 — 문장 순서대로, 같은 자리면 동그라미→밑줄→빗금. 마지막에 구하는 것(물결). */
++function sequence(ex) {
++  const list = ex.marks.filter((m) => TIER1.includes(m.func)).slice()
++    .sort((a, b) => a.t0 - b.t0 || (ORDER[a.func] ?? 9) - (ORDER[b.func] ?? 9));
++  if (ex.askingRange) list.push({ kind: "span", t0: ex.askingRange[0], t1: ex.askingRange[1], func: "DIST", tier: 2, required: false, note: "구하는 것 — 마지막에 이걸 구했는지 꼭 확인해요" });
++  return list;
++}
++
++export default function PhotoMark({ useCur = false }) {
++  const [toast, setToast] = useToast();
++  const [p, setP] = useState(() => (useCur ? currentProblem() : null));
++  const [k, setK] = useState(0);                 // 보여 준 표시 수
++  const [mode, setMode] = useState("show");      // show | practice
++  const sid = useMemo(() => newId(), [p]);           // 문제마다 새 기록 id
++  const hasCur = !!currentProblem();
++
++  const ex = useMemo(() => explain(p?.question || ""), [p]);
++  const seq = useMemo(() => sequence(ex), [ex]);
++  const shown = seq.slice(0, k);
++  const last = k > 0 ? seq[k - 1] : null;
++  const done = k >= seq.length;
++  const item = useMemo(() => ({ id: "photo:" + sid, question: p?.question || "", figure: null }), [sid, p]);   // MarkView 메모 키
++
++  useEffect(() => { setK(0); setMode("show"); }, [p]);
++  useEffect(() => {
++    if (!p?.question) return;
++    saveDevice({ id: sid, feature: "mark", question: p.question, figure_note: p.figure_note, unit: p.unit_guess, grade: p.std?.item_grade || null, result: { marks: seq.length } });
++  }, [p, sid, seq.length]);
++
++  const onScan = (r, { thumb }) => {
++    const prob = { question: r.question, choices: r.choices, qtype: r.qtype, figure_note: r.figure_note, unit_guess: r.unit_guess, std: r.std, warnings: r.warnings, thumb };
++    stashCurrent(prob);
++    setP(prob);
++  };
++
++  if (!p) {
++    return (
++      <SolveShell title="표시 연습하기" back="#/solve/photo" toast={toast}
++        sub="문제를 찍으면 어디에 동그라미·밑줄·물결·빗금을 칠지 차례대로 보여 줘요. 그다음 문장 이해하기로 이어져요.">
++        <Steps list={["문제 찍기", "차례대로 보기", "문장 이해하기"]} at={0} />
++        <div className="sv-card">
++          <Capture mode="problem" region onScan={onScan} setToast={setToast}
++            extra={hasCur ? <button className="sv-btn sm" onClick={() => setP(currentProblem())}>방금 찍은 문제로</button> : null} />
++        </div>
++        <p className="sv-small" style={{ lineHeight: 1.6 }}>사진은 인식에만 쓰고 서버에 남기지 않아요.</p>
++      </SolveShell>
++    );
++  }
++
++  if (mode === "practice") {
++    return (
++      <SolveShell title="표시 연습하기" back="#/solve/photo" toast={toast}
++        right={<button className="sv-btn sm" onClick={() => setMode("show")}>차례대로 다시</button>}>
++        <Steps list={["문제 찍기", "차례대로 보기", "문장 이해하기"]} at={1} />
++        <MarkView item={item} setToast={setToast} defaultTab="practice" readHref="#/solve/photo/read?cur=1"
++          actions={<>
++            <button className="sv-btn" onClick={() => { stashCurrent(p); location.hash = "#/solve/photo/read?cur=1"; }}>문장 이해하기로</button>
++            <button className="sv-btn" onClick={() => setP(null)}>다른 문제 찍기</button>
++          </>} />
++      </SolveShell>
++    );
++  }
++
++  return (
++    <SolveShell title="표시 연습하기" back="#/solve/photo" toast={toast}
++      right={<button className="sv-btn sm" onClick={() => setP(null)}>다른 문제</button>}>
++      <Steps list={["문제 찍기", "차례대로 보기", "문장 이해하기"]} at={1} />
++      <div className="sv-card">
++        <div className="sv-sec" style={{ marginTop: 0 }}>이렇게 표시해요 <span className="sv-small">· {seq.length ? `${Math.min(k, seq.length)} / ${seq.length}` : "표시할 것이 없어요"}</span></div>
++        <SentenceMarks tokens={ex.tokens} marks={shown} />
++        {last && (
++          <div className="ph-step-note">
++            <b>{last.func === "DIST" ? "물결" : FUNC_LABEL[last.func] || last.func}</b>
++            <span>{stripMarker(markText(last, ex.tokens)) ? `${stripMarker(markText(last, ex.tokens))} — ` : ""}{last.note || "단서예요."}</span>
++          </div>
++        )}
++        {!seq.length && <div className="sv-muted" style={{ marginTop: 8 }}>이 문장은 짧아서 규칙으로 잡히는 표시가 없어요. 문장 이해하기로 바로 넘어가도 좋아요.</div>}
++        {seq.length > 0 && (
++          <div className="ph-step-bar">
++            <button className="sv-btn" onClick={() => setK((v) => Math.max(0, v - 1))} disabled={k === 0}>◀ 이전</button>
++            <span className="cnt">{Math.min(k, seq.length)}/{seq.length}</span>
++            {!done
++              ? <button className="sv-btn pri" onClick={() => setK((v) => Math.min(seq.length, v + 1))}>{k === 0 ? "첫 표시 보기" : "다음 ▶"}</button>
++              : <button className="sv-btn" onClick={() => setK(0)}>처음부터</button>}
++          </div>
++        )}
++        {seq.length > 1 && !done && <div style={{ textAlign: "right", marginTop: 6 }}><button className="sv-btn sm ghost" onClick={() => setK(seq.length)}>한 번에 보기</button></div>}
++      </div>
++
++      <div className="sv-card">
++        <div className="sv-sec" style={{ marginTop: 0 }}>표시 읽는 법</div>
++        <MarkLegend />
++        <div className="sm-wrap sm-legend" style={{ padding: 0, marginTop: 4 }}><span><span className="sm-t sm-dist">구하는 것</span> 물결 = 마지막에 확인할 것</span></div>
++      </div>
++
++      <details className="sv-card" style={{ marginBottom: 12 }}>
++        <summary className="sv-small" style={{ cursor: "pointer" }}>원문 그대로 보기 · 찍은 사진</summary>
++        <ProblemCard p={p} thumb={p.thumb} title="읽어 낸 문항" />
++      </details>
++
++      {(done || !seq.length) && (
++        <div className="sv-card" style={{ borderColor: "color-mix(in srgb, var(--accent) 45%, var(--border))" }}>
++          <div style={{ fontWeight: 800, fontSize: 15.5, marginBottom: 10 }}>문장 이해하기로 넘어갈까요?</div>
++          <div className="sv-small" style={{ marginBottom: 10, lineHeight: 1.6 }}>단서에 형광펜을 치고, 무엇을 구하는지·어떤 식을 세울지까지 함께 읽어요.</div>
++          <div className="ph-actions">
++            <button className="sv-btn pri" onClick={() => { stashCurrent(p); location.hash = "#/solve/photo/read?cur=1"; }}>네, 문장 이해하기로</button>
++            {seq.length > 0 && <button className="sv-btn" onClick={() => setMode("practice")}>아니요, 직접 표시해 볼래요</button>}
++            <button className="sv-btn ghost wide" onClick={() => setP(null)}>다른 문제 찍기</button>
++          </div>
++        </div>
++      )}
++    </SolveShell>
++  );
++}
+diff --git a/src/pages/photo/PhotoMine.jsx b/src/pages/photo/PhotoMine.jsx
+new file mode 100644
+index 0000000..eb82b91
+--- /dev/null
++++ b/src/pages/photo/PhotoMine.jsx
+@@ -0,0 +1,81 @@
++// 내 기록 — #/solve/photo/mine  (이 기기의 IndexedDB 에 남은 촬영 학습 기록. 서버에는 라벨만 있으므로 여기서만 원문을 볼 수 있다)
++import { useEffect, useState } from "react";
++import SolveShell, { useToast } from "../solve/SolveShell";
++import MathText from "../../components/MathText";
++import { listSessions, getSession, deleteSession, clearSessions } from "../../lib/deviceStore";
++import { EssayResult } from "./PhotoEssay";
++import { ProblemCard, Lights, KeepNote, FEATURE_LABEL, FEATURE_ICON, fmtWhen, GRADE_LABEL } from "./shared";
++
++const FILTERS = [["", "전체"], ["essay", "서술형"], ["check", "풀이검사"], ["read", "문장 이해"], ["mark", "표시 연습"]];
++
++export default function PhotoMine() {
++  const [toast, setToast] = useToast();
++  const [feature, setFeature] = useState("");
++  const [rows, setRows] = useState(null);
++  const [open, setOpen] = useState(null);      // 상세 레코드
++
++  const load = async () => { try { setRows(await listSessions({ feature: feature || undefined, limit: 100 })); } catch { setRows([]); } };
++  useEffect(() => { setRows(null); load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [feature]);
++
++  const remove = async (id) => { try { await deleteSession(id); setToast("지웠어요"); } catch { setToast("지우지 못했어요"); } setOpen(null); load(); };
++  const clearAll = async () => { if (!confirm("이 기기의 촬영 학습 기록을 모두 지울까요?")) return; try { await clearSessions(); } catch { setToast("지우지 못했어요"); } setOpen(null); load(); };
++
++  if (open) {
++    const r = open;
++    return (
++      <SolveShell title={FEATURE_LABEL[r.feature] || "기록"} back={null} toast={toast}
++        right={<button className="sv-btn sm" onClick={() => setOpen(null)}>목록</button>}>
++        <div className="sv-small" style={{ marginBottom: 8 }}>{fmtWhen(r.at)}{r.grade ? ` · 문항 표현 ${GRADE_LABEL[r.grade] || r.grade}` : ""}</div>
++        <ProblemCard p={{ question: r.question, figure_note: r.figure_note, unit_guess: r.unit }} showGrade={false} />
++        {r.answer && (
++          <div className="sv-card">
++            <div className="sv-sec" style={{ marginTop: 0 }}>내 답안</div>
++            <MathText as="div" className="ph-ans" text={r.answer} />
++          </div>
++        )}
++        {r.feature === "essay" && <EssayResult result={r.result} />}
++        {r.feature === "check" && r.result && (
++          <div className="sv-card">
++            <div className="sv-sec" style={{ marginTop: 0 }}>신호등</div>
++            <Lights criteria={r.result.criteria} />
++            {r.result.summary && <div style={{ marginTop: 10, fontSize: 14, lineHeight: 1.65 }}><MathText text={r.result.summary} /></div>}
++          </div>
++        )}
++        {r.feature === "read" && r.result?.approach && (
++          <div className="sv-card">
++            <div className="sv-sec" style={{ marginTop: 0 }}>구하는 것 · 세울 식</div>
++            {r.result.approach.asking && <MathText as="div" className="ph-ask" text={r.result.approach.asking} />}
++            {r.result.approach.setup?.length > 0 && <div className="ph-setup" style={{ marginTop: 8 }}>{r.result.approach.setup.map((s, i) => <MathText key={i} as="div" text={s} />)}</div>}
++          </div>
++        )}
++        <KeepNote retention={r.retention} />
++        <div className="ph-actions" style={{ marginTop: 12 }}>
++          <button className="sv-btn" onClick={() => setOpen(null)}>목록으로</button>
++          <button className="sv-btn ghost" style={{ color: "var(--bad)" }} onClick={() => remove(r.id)}>이 기록 지우기</button>
++        </div>
++      </SolveShell>
++    );
++  }
++
++  return (
++    <SolveShell title="내 기록" back="#/solve/photo" toast={toast} sub="촬영 학습 기록은 이 기기에만 남아요. 기기를 바꾸거나 브라우저 데이터를 지우면 사라져요.">
++      <div className="sv-row wrap" style={{ gap: 6, marginBottom: 12 }}>
++        {FILTERS.map(([k, l]) => <button key={k} className={"sv-chip" + (feature === k ? " on" : "")} onClick={() => setFeature(k)}>{l}</button>)}
++      </div>
++      {rows === null && <div className="sv-muted">불러오는 중…</div>}
++      {rows && !rows.length && <div className="sv-empty">아직 기록이 없어요. 문제를 찍어 보세요.</div>}
++      {rows && rows.length > 0 && (
++        <div className="sv-list">
++          {rows.map((r) => (
++            <button key={r.id} className="ph-rec" onClick={async () => { let full = null; try { full = await getSession(r.id); } catch { /* 목록 행으로 대신 */ } setOpen(full || r); }}>
++              <span className="ic">{FEATURE_ICON[r.feature] || "📄"}</span>
++              <span className="tx"><div className="tt">{r.title || "(제목 없음)"}</div><div className="dt">{FEATURE_LABEL[r.feature] || r.feature} · {fmtWhen(r.at)}</div></span>
++              <span className="rt">{r.feature === "essay" && r.result ? `${r.result.total}/${r.result.max}` : r.feature === "check" && r.result ? (r.result.final_answer_ok ? "✓" : "✗") : ""}</span>
++            </button>
++          ))}
++        </div>
++      )}
++      {rows && rows.length > 0 && <div style={{ textAlign: "right", marginTop: 12 }}><button className="sv-btn sm ghost" onClick={clearAll}>모두 지우기</button></div>}
++    </SolveShell>
++  );
++}
+diff --git a/src/pages/photo/PhotoRead.jsx b/src/pages/photo/PhotoRead.jsx
+new file mode 100644
+index 0000000..118c43f
+--- /dev/null
++++ b/src/pages/photo/PhotoRead.jsx
+@@ -0,0 +1,155 @@
++// 문장 이해하기 — #/solve/photo/read (촬영) · #/solve/photo/read?cur=1 (방금 찍은 문제로)
++// 사진 → 문항 전사 → 규칙 표시(동그라미·밑줄·빗금 "/") + AI 방침(단서 형광펜 · 구하는 것 · 개념 · 첫 줄 · 세울 식)까지만. 정답은 없다.
++import { useEffect, useMemo, useState } from "react";
++import SolveShell, { useToast } from "../solve/SolveShell";
++import SentenceMarks, { MarkLegend } from "../solve/SentenceMarks";
++import MathText from "../../components/MathText";
++import { explain, trapText, FUNC_LABEL, markText } from "../../lib/marking.js";
++import { photoCall, stashCurrent } from "../../lib/photoApi";
++import { newId } from "../../lib/deviceStore";
++import Capture from "./Capture";
++import { ProblemCard, Steps, Busy, currentProblem, findSpan, cutText, saveDevice, stripMarker } from "./shared";
++
++export default function PhotoRead({ useCur = false }) {
++  const [toast, setToast] = useToast();
++  const [p, setP] = useState(() => (useCur ? currentProblem() : null));
++  const [ap, setAp] = useState(null);
++  const [busy, setBusy] = useState(false);
++  const [err, setErr] = useState(null);
++  const [tick, setTick] = useState(0);
++  const sid = useMemo(() => (p ? newId() : null), [p]);
++  const hasCur = !!currentProblem();
++
++  // 문항이 정해지면 방침을 받아 온다
++  useEffect(() => {
++    if (!p?.question) return;
++    let alive = true;
++    setAp(null); setErr(null); setBusy(true);
++    photoCall("approach", { question: p.question, figure_note: p.figure_note, choices: p.choices })
++      .then((r) => { if (!alive) return; setAp(r); saveDevice({ id: sid, feature: "read", question: p.question, figure_note: p.figure_note, unit: p.unit_guess, grade: p.std?.item_grade || null, result: { approach: r } }); })
++      .catch((e) => alive && setErr(e?.message || "방침을 받지 못했어요"))
++      .finally(() => alive && setBusy(false));
++    return () => { alive = false; };
++  }, [p, tick, sid]);
++
++  const onScan = (r, { thumb }) => {
++    const prob = { question: r.question, choices: r.choices, qtype: r.qtype, figure_note: r.figure_note, unit_guess: r.unit_guess, std: r.std, warnings: r.warnings, thumb };
++    stashCurrent(prob);
++    setP(prob);
++  };
++
++  if (!p) {
++    return (
++      <SolveShell title="문장 이해하기" back="#/solve/photo" toast={toast}
++        sub="문제를 찍으면 단서에 형광펜을 치고, 끊어 읽으면서 식을 세우는 데까지만 함께 해요. 답은 직접 구해요.">
++        <Steps list={["문제 찍기", "문장 읽기"]} at={0} />
++        <div className="sv-card">
++          <Capture mode="problem" region onScan={onScan} setToast={setToast}
++            extra={hasCur ? <button className="sv-btn sm" onClick={() => setP(currentProblem())}>방금 찍은 문제로</button> : null} />
++        </div>
++        <p className="sv-small" style={{ lineHeight: 1.6 }}>사진은 인식에만 쓰고 서버에 남기지 않아요.</p>
++      </SolveShell>
++    );
++  }
++
++  return (
++    <SolveShell title="문장 이해하기" back="#/solve/photo" toast={toast}
++      right={<button className="sv-btn sm" onClick={() => { setP(null); setAp(null); }}>다른 문제</button>}>
++      <Steps list={["문제 찍기", "문장 읽기"]} at={1} />
++      <ReadBody p={p} ap={ap} busy={busy} err={err} onRetry={() => setTick((t) => t + 1)} />
++      <div className="ph-actions">
++        <button className="sv-btn pri" onClick={() => { stashCurrent(p); location.hash = "#/solve/photo/mark?cur=1"; }}>이 문장으로 표시 연습</button>
++        <button className="sv-btn" onClick={() => { stashCurrent(p); location.hash = "#/solve/photo/essay?cur=1"; }}>답안 찍어 채점받기</button>
++        <button className="sv-btn" onClick={() => { setP(null); setAp(null); }}>다른 문제 찍기</button>
++        <button className="sv-btn ghost" onClick={() => { location.hash = "#/solve/photo/mine"; }}>내 기록</button>
++      </div>
++    </SolveShell>
++  );
++}
++
++/** 문장 읽기 본문 — 다른 화면(표시 연습 뒤)에서도 그대로 쓴다 */
++export function ReadBody({ p, ap, busy, err, onRetry }) {
++  const [picked, setPicked] = useState(null);
++  const ex = useMemo(() => explain(p?.question || "", { labels: { L21_traps: ap?.traps || [] } }), [p, ap]);
++  // 단서 형광펜 — AI 가 짚은 단서 문구를 문장 토큰 위에서 찾아 칠한다
++  const clueMarks = useMemo(() => {
++    const out = [];
++    (ap?.clues || []).forEach((c, i) => {
++      const sp = findSpan(ex.tokens, c.text);
++      if (sp) out.push({ kind: "span", t0: sp.t0, t1: sp.t1, func: "HILITE", tier: 2, required: false, note: `단서 ${i + 1} — ${c.why || ""}` });
++    });
++    return out;
++  }, [ap, ex]);
++  const marks = useMemo(() => [...clueMarks, ...ex.marks], [clueMarks, ex]);
++  const cut = useMemo(() => cutText(ex.tokens, ex.marks), [ex]);
++  const asking = ap?.asking || ex.asking;
++  const traps = ap ? (ap.traps || []).map(trapText) : ex.traps;
++
++  return (
++    <>
++      <div className="sv-card">
++        <div className="sv-sec" style={{ marginTop: 0 }}>문제 문장 <span className="sv-small">· 표시를 탭하면 설명이 나와요</span></div>
++        <SentenceMarks tokens={ex.tokens} marks={marks} onMarkTap={(m) => setPicked(m)} />
++        {picked && (
++          <div className="ph-step-note">
++            <b>{picked.func === "HILITE" ? "형광펜" : FUNC_LABEL[picked.func] || picked.func}</b>
++            <span>{stripMarker(markText(picked, ex.tokens)) ? `${stripMarker(markText(picked, ex.tokens))} — ` : ""}{picked.note || "단서예요."}</span>
++          </div>
++        )}
++        <div style={{ marginTop: 8 }}><MarkLegend tier2={marks.some((m) => m.func === "EMPH")} /></div>
++        {clueMarks.length > 0 && <div className="sv-small" style={{ marginTop: 4 }}><span className="ph-hl">노란 형광펜</span> = 풀이의 열쇠가 되는 단서</div>}
++        <details style={{ marginTop: 8 }}>
++          <summary className="sv-small" style={{ cursor: "pointer" }}>원문 그대로 보기 · 찍은 사진</summary>
++          <ProblemCard p={p} thumb={p.thumb} title="읽어 낸 문항" />
++        </details>
++      </div>
++
++      <div className="sv-card">
++        <div className="sv-sec" style={{ marginTop: 0 }}>끊어 읽기 <span className="sv-small">· 빗금(／)에서 한 번 쉬어요</span></div>
++        <MathText as="div" className="ph-cut" text={cut} />
++        {ap?.reading && <div className="sv-small" style={{ marginTop: 8, lineHeight: 1.6 }}>{ap.reading}</div>}
++      </div>
++
++      <div className="sv-card">
++        <div className="sv-sec" style={{ marginTop: 0 }}>구하는 것</div>
++        {asking ? <MathText as="div" className="ph-ask" text={asking} /> : <div className="sv-muted">구하는 것을 딱 잘라 찾지 못했어요. 마지막 문장을 다시 읽어 보세요 — 보통 "…를 구하시오" 앞에 있어요.</div>}
++      </div>
++
++      {busy && <Busy text="단서와 식 세우기 방침을 정리하는 중…" />}
++      {err && !busy && (
++        <div className="sv-card">
++          <div className="ph-err">{err}</div>
++          <button className="sv-btn full" style={{ marginTop: 8 }} onClick={onRetry}>다시 받기</button>
++        </div>
++      )}
++
++      {ap && (
++        <>
++          <div className="sv-card">
++            <div className="sv-sec" style={{ marginTop: 0 }}>단서 <span className="sv-small">· 왜 열쇠인지</span></div>
++            {ap.clues?.length
++              ? <ul className="ph-clues">{ap.clues.map((c, i) => <li key={i}><span className="no">{i + 1}</span><span><MathText text={c.text} /><span className="why">{c.why}</span></span></li>)}</ul>
++              : <div className="sv-muted">따로 짚을 단서가 없어요 — 문장 전체가 조건이에요.</div>}
++          </div>
++          <div className="sv-card">
++            <div className="sv-sec" style={{ marginTop: 0 }}>여기까지 함께 — 식 세우기</div>
++            {ap.concept && <div className="ph-setup" style={{ marginBottom: 8 }}><div className="lb">떠올릴 개념</div><MathText text={ap.concept} /></div>}
++            {ap.first_step && <div className="ph-setup" style={{ marginBottom: 8 }}><div className="lb">종이에 쓸 첫 줄</div><MathText text={ap.first_step} /></div>}
++            {ap.setup?.length > 0 && (
++              <div className="ph-setup"><div className="lb">세울 식</div>
++                {ap.setup.map((s, i) => <MathText key={i} as="div" text={s} />)}
++              </div>
++            )}
++            <div className="ph-stop">✋ 여기서부터는 직접! 세운 식을 풀고 답을 구하는 건 네 몫이에요. 다 풀었으면 답안을 찍어 채점받을 수 있어요.</div>
++          </div>
++          {traps.length > 0 && (
++            <div className="sv-card">
++              <div className="sv-sec" style={{ marginTop: 0 }}>이 문제에서 조심할 것</div>
++              <div className="ph-chips">{traps.map((t, i) => <span key={i} className="ph-chip warn">⚠ {t}</span>)}</div>
++            </div>
++          )}
++        </>
++      )}
++    </>
++  );
++}
+diff --git a/src/pages/photo/PhotoRouter.jsx b/src/pages/photo/PhotoRouter.jsx
+new file mode 100644
+index 0000000..93aa696
+--- /dev/null
++++ b/src/pages/photo/PhotoRouter.jsx
+@@ -0,0 +1,62 @@
++// 촬영 모듈 — #/solve/photo/* (SolveRouter 가 case "photo" 로 넘긴다)
++//   #/solve/photo            허브 (네 기능 + 내 기록)
++//   #/solve/photo/read       문장 이해하기   (?cur=1: 방금 찍은 문제로)
++//   #/solve/photo/mark       표시 연습하기   (?cur=1)
++//   #/solve/photo/essay      서술형 채점·첨삭 (?cur=1)
++//   #/solve/photo/check      풀이과정 검사
++//   #/solve/photo/mine       내 기록 (이 기기)
++// 원칙: 사진·문항 문장은 서버에 저장하지 않는다. 답안 원문은 보관 게이트(app_settings.photo_retention)에 따라 기기/서버.
++import { lazy, Suspense } from "react";
++import SolveShell from "../solve/SolveShell";
++import "./photo.css";
++
++const PhotoRead = lazy(() => import("./PhotoRead"));
++const PhotoMark = lazy(() => import("./PhotoMark"));
++const PhotoEssay = lazy(() => import("./PhotoEssay"));
++const PhotoCheck = lazy(() => import("./PhotoCheck"));
++const PhotoMine = lazy(() => import("./PhotoMine"));
++
++const TILES = [
++  { ic: "🔍", tt: "문장 이해하기", ds: "문제를 찍으면 단서에 형광펜을 치고 끊어 읽으며, 식을 세우는 데까지만 함께 해요.", to: "#/solve/photo/read" },
++  { ic: "✍️", tt: "표시 연습하기", ds: "동그라미·밑줄·물결·빗금을 어디에 칠지 차례대로 보여 주고, 문장 이해하기로 이어져요.", to: "#/solve/photo/mark" },
++  { ic: "📝", tt: "서술형 채점·첨삭", ds: "문제와 내 답안을 찍으면 채점 기준표로 채점하고 어디를 어떻게 고칠지 알려 줘요.", to: "#/solve/photo/essay" },
++  { ic: "🧾", tt: "풀이과정 검사", ds: "문제집 페이지를 찍고 영역을 잡으면 식의 연결·암산·글씨 습관을 신호등으로 봐요.", to: "#/solve/photo/check" },
++];
++
++export default function PhotoRouter({ sub = "", hash = "" }) {
++  const seg = (sub || "").split("?")[0].split("/")[0];
++  const q = new URLSearchParams((hash.split("?")[1] || ""));
++  const useCur = q.get("cur") === "1";
++  let el;
++  switch (seg) {
++    case "read": el = <PhotoRead key={hash} useCur={useCur} />; break;
++    case "mark": el = <PhotoMark key={hash} useCur={useCur} />; break;
++    case "essay": el = <PhotoEssay key={hash} useCur={useCur} />; break;
++    case "check": el = <PhotoCheck />; break;
++    case "mine": el = <PhotoMine />; break;
++    default: el = <PhotoHub />;
++  }
++  return <Suspense fallback={<div className="sv-wrap sv-muted">불러오는 중…</div>}>{el}</Suspense>;
++}
++
++export function PhotoHub() {
++  return (
++    <SolveShell title="찍어서 배우기" sub="문제를 찍으면 문장 읽기부터 채점·첨삭까지. 사진은 서버에 남지 않아요.">
++      <div className="sv-grid2">
++        {TILES.map((t) => (
++          <button key={t.to} className="sv-tile" onClick={() => { location.hash = t.to; }}>
++            <span className="ic">{t.ic}</span><span className="tt">{t.tt}</span><span className="ds">{t.ds}</span>
++          </button>
++        ))}
++      </div>
++      <div className="sv-sec">기록</div>
++      <button className="sv-item" onClick={() => { location.hash = "#/solve/photo/mine"; }}>
++        <span className="no">🗂️</span><span className="tx">내 기록 — 이 기기에 남은 답안과 첨삭 결과</span><span className="rt">열기</span>
++      </button>
++      <p className="sv-small" style={{ marginTop: 14, lineHeight: 1.7 }}>
++        사진과 문제 문장은 인식에만 쓰고 서버에 저장하지 않아요. 답안 원문과 첨삭 결과는 이 기기에 남고, 서버에는 점수·유형 같은 라벨만 남아요.
++        문항 표현이 표준형인 경우에만(설정에 따라) 답안이 학습 기록으로 저장될 수 있어요.
++      </p>
++    </SolveShell>
++  );
++}
+diff --git a/src/pages/photo/photo.css b/src/pages/photo/photo.css
+new file mode 100644
+index 0000000..ed72599
+--- /dev/null
++++ b/src/pages/photo/photo.css
+@@ -0,0 +1,147 @@
++/* 촬영 모듈(#/solve/photo/*) 공용 스타일 — solve.css 의 sv-* 키트 위에서 동작 */
++.ph-steps { display: flex; gap: 6px; margin: 0 0 12px; }
++.ph-steps span { flex: 1; text-align: center; font-size: 11.5px; font-weight: 800; color: var(--muted); padding: 6px 4px; border-radius: 999px; background: var(--surface2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
++.ph-steps span.on { background: var(--accent); color: #fff; }
++.ph-steps span.done { background: color-mix(in srgb, var(--good) 18%, var(--surface2)); color: var(--good); }
++
++.ph-cap { text-align: center; }
++.ph-cap .ph-big { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 150px; border: 2px dashed var(--border); border-radius: 16px; background: var(--surface2); color: var(--text); cursor: pointer; font-weight: 800; font-size: 15px; }
++.ph-cap .ph-big .ic { font-size: 34px; }
++.ph-cap .ph-big small { font-size: 12px; color: var(--muted); font-weight: 600; }
++.ph-cap .ph-big.dragon { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface2)); }
++.ph-alt { margin-top: 8px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
++
++.ph-stage-wrap { text-align: center; }
++.ph-stage { position: relative; display: inline-block; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: #111; user-select: none; -webkit-user-select: none; vertical-align: top; }
++.ph-stage img { display: block; max-width: 100%; max-height: 62vh; width: auto; height: auto; pointer-events: none; -webkit-user-drag: none; }
++.ph-stage.draw { cursor: crosshair; touch-action: none; }
++.ph-box { position: absolute; border: 2px solid var(--ph-c, #339AF0); background: color-mix(in srgb, var(--ph-c, #339AF0) 9%, transparent); border-radius: 4px; box-sizing: border-box; }
++.ph-box.q { --ph-c: #339AF0; }
++.ph-box.a { --ph-c: #F59F00; }
++.ph-box.live { --ph-c: #FFF; border-style: dashed; background: rgba(255,255,255,.12); }
++.ph-box.sel { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ph-c) 55%, transparent); }
++.ph-box .tag { position: absolute; left: -2px; top: -2px; transform: translateY(-100%); font-size: 11px; font-weight: 900; color: #fff; background: var(--ph-c, #339AF0); padding: 1px 6px; border-radius: 6px 6px 6px 0; white-space: nowrap; }
++.ph-box .tag.in { transform: none; border-radius: 0 0 6px 0; }
++.ph-box .x { position: absolute; right: -2px; top: -2px; transform: translate(0, -100%); font-size: 11px; font-weight: 900; color: #fff; background: rgba(0,0,0,.65); padding: 1px 6px; border-radius: 6px; cursor: pointer; }
++.ph-box .x.in { transform: none; }
++.ph-dim { position: absolute; inset: 0; background: rgba(0,0,0,.28); pointer-events: none; }
++
++.ph-thumb { display: block; max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--border); background: #fff; margin: 0 auto 8px; }
++.ph-q { font-size: 16px; line-height: 1.75; word-break: keep-all; overflow-wrap: anywhere; }
++.ph-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: 11.5px; color: var(--muted); }
++.ph-meta .tag { border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; }
++.ph-choices { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--muted); }
++.ph-choices .c { display: flex; gap: 8px; align-items: baseline; }
++.ph-fig { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--surface2); font-size: 13px; line-height: 1.6; color: var(--muted); }
++
++.ph-busy { display: flex; align-items: center; gap: 10px; padding: 14px 12px; border-radius: 12px; background: var(--surface2); font-size: 14px; font-weight: 700; }
++.ph-busy .sp { width: 18px; height: 18px; border-radius: 999px; border: 3px solid var(--border); border-top-color: var(--accent); animation: ph-spin .8s linear infinite; flex: none; }
++@keyframes ph-spin { to { transform: rotate(360deg); } }
++.ph-err { padding: 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--bad) 45%, var(--border)); color: var(--bad); font-size: 13.5px; line-height: 1.6; font-weight: 700; }
++
++.ph-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
++@media (max-width: 420px) { .ph-actions { grid-template-columns: 1fr; } }
++.ph-actions .wide { grid-column: 1 / -1; }
++
++.ph-ask { font-size: 17px; font-weight: 800; line-height: 1.6; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); }
++.ph-clues { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
++.ph-clues li { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; line-height: 1.6; }
++.ph-clues .no { flex: none; min-width: 24px; height: 24px; border-radius: 999px; background: #FFF3BF; color: #7A5C00; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; margin-top: 2px; }
++.ph-clues .why { display: block; font-size: 12.5px; color: var(--muted); }
++.ph-hl { background: #FFE97A; color: #3B2F00; padding: 0 3px; border-radius: 4px; font-weight: 700; }
++.ph-cut { font-size: 15.5px; line-height: 1.9; word-break: keep-all; overflow-wrap: anywhere; }
++.ph-setup { padding: 10px 12px; border-radius: 12px; background: var(--surface2); font-size: 15px; line-height: 1.7; }
++.ph-setup .lb { font-size: 11.5px; font-weight: 800; color: var(--muted); margin-bottom: 2px; }
++.ph-stop { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border)); font-size: 13px; line-height: 1.6; color: var(--muted); }
++.ph-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
++.ph-chip { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); }
++.ph-chip.warn { border-color: color-mix(in srgb, var(--bad) 50%, var(--border)); }
++
++/* 표시 연습 — 차례대로 */
++.ph-step-note { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: var(--surface2); font-size: 14px; line-height: 1.6; }
++.ph-step-note b { display: inline-block; margin-right: 6px; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); }
++.ph-step-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
++.ph-step-bar .sv-btn { flex: 1; }
++.ph-step-bar .cnt { flex: none; font-size: 12.5px; color: var(--muted); font-weight: 700; min-width: 48px; text-align: center; }
++.sm-wrap .sm-hilite { background: #FFE97A; color: #3B2F00; border-radius: 0; }
++.sm-wrap .sm-hilite-s { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
++.sm-wrap .sm-hilite-e { border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
++.sm-wrap .sm-hilite.sm-num { border-color: #D9480F; }
++
++/* 답안·채점 */
++.ph-ans { white-space: pre-wrap; line-height: 1.7; font-size: 15px; padding: 10px 12px; border-radius: 12px; background: var(--surface2); word-break: break-word; font-family: inherit; }
++.ph-ta { width: 100%; min-height: 140px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 15px; line-height: 1.7; resize: vertical; font-family: inherit; }
++.ph-ta:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
++.ph-score { display: flex; align-items: center; gap: 14px; }
++.ph-score .big { font-size: 40px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
++.ph-score .big small { font-size: 16px; font-weight: 800; color: var(--muted); margin-left: 2px; }
++.ph-score .txt { font-size: 14px; line-height: 1.6; }
++.ph-rub { display: flex; flex-direction: column; }
++.ph-rub .el { padding: 10px 0; border-top: 1px solid var(--border); }
++.ph-rub .el:first-child { border-top: none; padding-top: 0; }
++.ph-rub .h { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14.5px; }
++.ph-rub .h .no { flex: none; min-width: 22px; height: 22px; border-radius: 999px; background: var(--surface2); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
++.ph-rub .h .pt { margin-left: auto; flex: none; font-size: 13px; font-weight: 800; }
++.ph-rub .h .pt.full { color: var(--good); }
++.ph-rub .h .pt.partial { color: var(--accent); }
++.ph-rub .h .pt.zero { color: var(--bad); }
++.ph-rub .crit { font-size: 13.5px; line-height: 1.6; color: var(--muted); margin-top: 4px; }
++.ph-rub .cm { font-size: 13.5px; line-height: 1.6; margin-top: 4px; }
++.ph-fix { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); font-size: 14px; line-height: 1.65; }
++.ph-fix + .ph-fix { margin-top: 8px; }
++.ph-fix .w { font-size: 12px; color: var(--muted); font-weight: 800; }
++.ph-fix .wrong { color: var(--bad); text-decoration: line-through; text-decoration-thickness: 2px; }
++.ph-fix .right { color: var(--good); font-weight: 800; }
++.ph-ul { margin: 0; padding-left: 18px; font-size: 14.5px; line-height: 1.7; }
++.ph-praise { padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--good) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--good) 35%, var(--border)); font-size: 14px; line-height: 1.6; }
++.ph-keep { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--surface2); font-size: 12.5px; line-height: 1.6; color: var(--muted); }
++.ph-keep .ic { flex: none; font-size: 16px; }
++
++/* 신호등 */
++.ph-lights { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
++@media (max-width: 420px) { .ph-lights { grid-template-columns: repeat(5, 1fr); } }
++.ph-light { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px; border-radius: 12px; background: var(--surface2); font-size: 11.5px; font-weight: 800; color: var(--muted); }
++.ph-light .dot { width: 18px; height: 18px; border-radius: 999px; background: #ADB5BD; box-shadow: inset 0 0 0 2px rgba(0,0,0,.08); }
++.ph-light.green .dot { background: #2F9E44; } .ph-light.green { color: #2B8A3E; }
++.ph-light.yellow .dot { background: #F59F00; } .ph-light.yellow { color: #B26E00; }
++.ph-light.red .dot { background: #E03131; } .ph-light.red { color: #C92A2A; }
++.ph-light.dim { opacity: .5; }
++.ph-why { margin-top: 8px; font-size: 13px; line-height: 1.6; color: var(--muted); }
++.ph-why b { color: var(--text); }
++.ph-chain { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
++.ph-chain li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.6; padding: 6px 8px; border-radius: 10px; background: var(--surface2); }
++.ph-chain .i { flex: none; min-width: 22px; height: 22px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 900; background: var(--surface); border: 1px solid var(--border); }
++.ph-chain li.bad .i { border-color: var(--bad); color: var(--bad); }
++.ph-chain li.ok .i { border-color: var(--good); color: var(--good); }
++.ph-chain .nt { display: block; font-size: 12.5px; color: var(--muted); }
++.ph-habit { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.6; }
++.ph-habit .k { flex: none; font-size: 11.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); margin-top: 3px; white-space: nowrap; }
++.ph-habit .tip { display: block; font-size: 12.5px; color: var(--muted); }
++.ph-item { border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 10px; background: var(--surface); }
++.ph-item.sel { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
++.ph-item .hd { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14.5px; margin-bottom: 8px; }
++.ph-item .hd .no { flex: none; min-width: 26px; height: 26px; border-radius: 999px; background: var(--surface2); display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; }
++.ph-item .hd .st { margin-left: auto; font-size: 12px; font-weight: 800; }
++.ph-item .hd .st.ok { color: var(--good); } .ph-item .hd .st.bad { color: var(--bad); }
++.ph-check { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); cursor: pointer; }
++.ph-check.on { border-color: var(--accent); }
++.ph-check input { width: 20px; height: 20px; margin: 0; flex: none; accent-color: var(--accent); }
++.ph-check .tx { flex: 1; font-size: 14px; line-height: 1.5; }
++.ph-pairs { display: flex; flex-direction: column; gap: 6px; }
++.ph-pair { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-size: 13.5px; }
++.ph-pair .no { flex: none; min-width: 24px; height: 24px; border-radius: 999px; background: var(--surface2); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
++.ph-pair .q, .ph-pair .a { font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; color: #fff; }
++.ph-pair .q { background: #339AF0; } .ph-pair .a { background: #F59F00; }
++.ph-pair .q.off, .ph-pair .a.off { background: var(--surface3); color: var(--muted); }
++.ph-pair .sp { flex: 1; }
++.ph-mode { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
++.ph-mode .sv-chip.q.on { border-color: #339AF0; color: #1971C2; }
++.ph-mode .sv-chip.a.on { border-color: #F59F00; color: #B26E00; }
++
++/* 내 기록 */
++.ph-rec { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--text); text-align: left; width: 100%; }
++.ph-rec .ic { flex: none; font-size: 18px; }
++.ph-rec .tx { flex: 1; min-width: 0; }
++.ph-rec .tt { font-size: 14px; line-height: 1.45; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
++.ph-rec .dt { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
++.ph-rec .rt { flex: none; font-size: 12.5px; font-weight: 800; }
+diff --git a/src/pages/photo/shared.jsx b/src/pages/photo/shared.jsx
+new file mode 100644
+index 0000000..d89ee6b
+--- /dev/null
++++ b/src/pages/photo/shared.jsx
+@@ -0,0 +1,104 @@
++// 촬영 모듈 공용 조각 — 문항 카드 · 보관 안내 · 신호등 · 단계 표시 · 작은 도우미
++import MathText from "../../components/MathText";
++import { CIRCLED } from "../../lib/answers";
++import { UNIT_NAMES } from "../../lib/items";
++import { putSession, newId } from "../../lib/deviceStore";
++import { readCurrent } from "../../lib/photoApi";
++
++export const GRADE_LABEL = { S: "표준형", M: "소폭 변형", C: "창작형" };
++export const FEATURE_LABEL = { read: "문장 이해하기", mark: "표시 연습", essay: "서술형 채점·첨삭", check: "풀이과정 검사" };
++export const FEATURE_ICON = { read: "🔍", mark: "✍️", essay: "📝", check: "🧾" };
++export const LIGHT_LABEL = { green: "좋아요", yellow: "주의", red: "고쳐요" };
++
++export { stripMarker, titleOf, findSpan, cutText, aggregateLights, CRITERIA } from "../../lib/photoText.js";
++import { titleOf, CRITERIA } from "../../lib/photoText.js";
++
++/** 캔버스 → 작은 미리보기(data URL, 긴 변 480) — sessionStorage 에 넣어도 될 크기 */
++export function thumbOf(cv, maxSide = 480) {
++  try {
++    const sc = Math.min(1, maxSide / Math.max(cv.width, cv.height));
++    const t = document.createElement("canvas");
++    t.width = Math.max(1, Math.round(cv.width * sc)); t.height = Math.max(1, Math.round(cv.height * sc));
++    t.getContext("2d").drawImage(cv, 0, 0, t.width, t.height);
++    return t.toDataURL("image/jpeg", 0.7);
++  } catch { return null; }
++}
++
++/** 방금 찍은 문항(다른 화면에서 넘어온 것)이 있으면 돌려준다 */
++export function currentProblem() {
++  const c = readCurrent();
++  return c && typeof c.question === "string" && c.question ? c : null;
++}
++
++/** 기기 보관소에 세션 저장 (실패해도 흐름은 막지 않는다) */
++export async function saveDevice(rec) {
++  try { return await putSession({ id: rec.id || newId(), ...rec, title: rec.title || titleOf(rec.question) }); } catch { return null; }
++}
++
++/** 촬영 흐름 단계 표시 */
++export function Steps({ list, at }) {
++  return (
++    <div className="ph-steps">
++      {list.map((s, i) => <span key={s} className={i === at ? "on" : i < at ? "done" : ""}>{i + 1}. {s}</span>)}
++    </div>
++  );
++}
++
++export function Busy({ text }) {
++  return <div className="ph-busy"><span className="sp" />{text}</div>;
++}
++
++/** 전사된 문항 카드 — 미리보기(선택) · 문장 · 선택지 · 그림 메모 · 등급 */
++export function ProblemCard({ p, thumb, title = "찍은 문제", children, showGrade = true }) {
++  if (!p) return null;
++  return (
++    <div className="sv-card">
++      <div className="sv-sec" style={{ marginTop: 0 }}>{title}</div>
++      {thumb && <img className="ph-thumb" src={thumb} alt="" />}
++      <MathText as="div" className="ph-q" text={p.question} />
++      {Array.isArray(p.choices) && p.choices.length > 0 && (
++        <div className="ph-choices">{p.choices.map((c, i) => <div key={i} className="c"><span>{CIRCLED[i] || i + 1}</span><MathText text={c} /></div>)}</div>
++      )}
++      {p.figure_note && <div className="ph-fig">그림·표: {p.figure_note}</div>}
++      <div className="ph-meta">
++        {p.unit_guess && UNIT_NAMES[p.unit_guess] && <span className="tag">{UNIT_NAMES[p.unit_guess]}</span>}
++        {p.qtype && <span className="tag">{p.qtype === "choice" ? "선택형" : p.qtype === "essay" ? "서술형" : "단답형"}</span>}
++        {showGrade && p.std?.item_grade && <span className="tag" title={p.std.reason || ""}>문항 표현 {GRADE_LABEL[p.std.item_grade]}</span>}
++        {Array.isArray(p.warnings) && p.warnings.map((w, i) => <span key={i} className="tag" style={{ color: "var(--bad)" }}>⚠ {w}</span>)}
++      </div>
++      {children}
++    </div>
++  );
++}
++
++/** 보관 위치 안내 — 답안 원문이 어디 남았는지 학생에게 있는 그대로 */
++export function KeepNote({ retention }) {
++  if (!retention) return null;
++  const where = retention.where;
++  let text;
++  if (where === "central" && retention.central) text = "이 답안은 학습 기록(서버)에도 저장됐어요 — 문항 표현이 표준형이라 답안을 남겨도 괜찮은 경우예요.";
++  else if (retention.error) text = "서버 기록 저장은 실패했지만 결과는 이 기기에 남겼어요.";
++  else text = "답안 원문은 이 기기에만 저장했어요. 서버에는 점수·유형 같은 라벨만 남아요.";
++  return <div className="ph-keep"><span className="ic">🔒</span><span>{text}</span></div>;
++}
++
++/** 다섯 지표 신호등 */
++export function Lights({ criteria, compact = false }) {
++  return (
++    <div className="ph-lights">
++      {CRITERIA.map((k) => {
++        const c = criteria?.[k];
++        const l = c?.light || null;
++        return (
++          <div key={k} className={"ph-light" + (l ? " " + l : " dim")} title={c?.why || ""}>
++            <span className="dot" />
++            <span>{k}</span>
++            {!compact && l && <span style={{ fontSize: 10.5 }}>{LIGHT_LABEL[l]}</span>}
++          </div>
++        );
++      })}
++    </div>
++  );
++}
++
++export const fmtWhen = (iso) => { try { const d = new Date(iso); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; } catch { return ""; } };
+diff --git a/src/pages/solve/Mark.jsx b/src/pages/solve/Mark.jsx
+index efc4525..ae81f2a 100644
+--- a/src/pages/solve/Mark.jsx
++++ b/src/pages/solve/Mark.jsx
+@@ -1,6 +1,7 @@
+ // 표시 연습 — #/solve/mark (문항 고르기) · #/solve/mark/<itemId>
+ // 시범 탭: 규칙 키(동그라미·밑줄·빗금)와 설명.  연습 탭: 학생이 직접 표시 → 채점(scoreMarks) → 맞음·놓침·덤 표시를 색으로.
+ // 채점은 1층(규칙) 표시만. 결과는 localStorage "ash.mark.results" 에 최근 50개.
++// MarkView 는 촬영 모듈(pages/photo)도 쓴다 — readHref(문장 해설 링크)·actions(채점 뒤 버튼 대체)로 DB 문항 전용 동작을 뺀다.
+ import { useEffect, useMemo, useRef, useState } from "react";
+ import SolveShell, { useToast } from "./SolveShell";
+ import ItemPicker from "./ItemPicker";
+@@ -121,7 +122,7 @@ export default function Mark({ itemId }) {
+ }
+ 
+ // ── 문항 하나: 시범 · 연습 ───────────────────────────────────────────────────
+-export function MarkView({ item, setToast = () => {}, defaultTab }) {
++export function MarkView({ item, setToast = () => {}, defaultTab, readHref, actions }) {
+   const [tab, setTab] = useState(() => defaultTab || (readResults().length ? "practice" : "demo"));
+   const [tool, setTool] = useState("NUM");
+   const [marks, setMarks] = useState([]);
+@@ -228,7 +229,7 @@ export function MarkView({ item, setToast = () => {}, defaultTab }) {
+           </div>
+           <div className="mk-actions">
+             <button className="sv-btn pri" onClick={() => { setTab("practice"); setPicked(null); }}>직접 표시해 보기</button>
+-            <button className="sv-btn" onClick={() => { location.hash = `#/solve/read/${item.id}`; }}>문장 해설 보기</button>
++            <button className="sv-btn" onClick={() => { location.hash = readHref || `#/solve/read/${item.id}`; }}>문장 해설 보기</button>
+           </div>
+         </>
+       )}
+@@ -269,8 +270,12 @@ export function MarkView({ item, setToast = () => {}, defaultTab }) {
+               <ResultCards result={result} keyMarks={key} tokens={tokens} prev={prev} />
+               <div className="mk-actions">
+                 <button className="sv-btn pri" onClick={reset}>다시 하기</button>
+-                <button className="sv-btn" onClick={nextItem} disabled={busy}>{busy ? "고르는 중…" : "다른 문항"}</button>
+-                <button className="sv-btn" onClick={() => { location.hash = `#/solve/item/${item.id}`; }}>이 문제 풀기</button>
++                {actions ?? (
++                  <>
++                    <button className="sv-btn" onClick={nextItem} disabled={busy}>{busy ? "고르는 중…" : "다른 문항"}</button>
++                    <button className="sv-btn" onClick={() => { location.hash = `#/solve/item/${item.id}`; }}>이 문제 풀기</button>
++                  </>
++                )}
+                 <button className="sv-btn ghost" onClick={() => { setTab("demo"); setPicked(null); }}>시범 다시 보기</button>
+               </div>
+             </>
+diff --git a/src/pages/solve/Solve.jsx b/src/pages/solve/Solve.jsx
+index de065e2..1ef0eb8 100644
+--- a/src/pages/solve/Solve.jsx
++++ b/src/pages/solve/Solve.jsx
+@@ -1,5 +1,5 @@
+ // 문제풀이 허브 (#/solve) — 학생앱 베타의 두 기둥 중 하나.
+-// 개념별 문항 세트 · 예제·유제 · 시험 보기 · 사진 채점(OMR) · 문장 해설 · 표시 연습 · 서술형 자가채점 · 사진 힌트 · 스피드 연산
++// 개념별 문항 세트 · 예제·유제 · 시험 보기 · 사진 채점(OMR) · 문장 해설 · 표시 연습 · 서술형 자가채점 · 찍어서 배우기(촬영 모듈) · 사진 힌트 · 스피드 연산
+ import { useEffect, useState } from "react";
+ import { supabase } from "../../supabaseClient";
+ import { BETA } from "../../lib/beta";
+@@ -19,6 +19,7 @@ const TILES = [
+   { ic: "🔍", tt: "문장 해설", ds: "문제 문장에서 숫자·척도·단서 경계를 짚고, 무엇을 구하는지 정리해요.", to: "#/solve/read" },
+   { ic: "✍️", tt: "표시 연습", ds: "동그라미·밑줄·빗금으로 문제에 표시하는 습관을 연습해요.", to: "#/solve/mark" },
+   { ic: "📝", tt: "서술형 자가채점", ds: "풀이를 쓰고 채점 기준표로 스스로 점수를 매겨 봐요.", to: "#/solve/essay" },
++  { ic: "📸", tt: "찍어서 배우기", ds: "문제를 찍으면 문장 이해·표시 연습·서술형 첨삭·풀이과정 검사까지. 사진은 서버에 남지 않아요.", to: "#/solve/photo" },
+   { ic: "🗝️", tt: "사진 힌트", ds: "막힌 문제를 찍으면 답 대신 첫걸음을 알려줘요.", to: "#/learn/hint" },
+   { ic: "🧮", tt: "스피드 연산", ds: "제한 시간 안에 연산을 푸는 훈련이에요.", to: "#/learn/calc", key: "calc" },
+ ];
+diff --git a/src/pages/solve/SolveRouter.jsx b/src/pages/solve/SolveRouter.jsx
+index 1764a8e..67c48c4 100644
+--- a/src/pages/solve/SolveRouter.jsx
++++ b/src/pages/solve/SolveRouter.jsx
+@@ -9,6 +9,7 @@
+ //   #/solve/essay[/<itemId>]     서술형 자가채점
+ //   #/solve/ask/<itemId>         문항 질문하기
+ //   #/solve/test[/<type>[/<scopeId>]]  시험 보기 (개념묶음·단원·계산·상화·모의·ash·rain·out)
++//   #/solve/photo[/read|mark|essay|check|mine]  찍어서 배우기 (촬영 모듈 — pages/photo)
+ import { lazy, Suspense } from "react";
+ import Solve, { PracticePick } from "./Solve";
+ 
+@@ -19,6 +20,7 @@ const Mark = lazy(() => import("./Mark"));
+ const Essay = lazy(() => import("./Essay"));
+ const AskItem = lazy(() => import("./AskItem"));
+ const Exam = lazy(() => import("./Exam"));
++const PhotoRouter = lazy(() => import("../photo/PhotoRouter"));
+ 
+ const clean = (s) => (s ? decodeURIComponent(s.split("?")[0]) : undefined);
+ 
+@@ -38,6 +40,7 @@ export default function SolveRouter({ hash, theme }) {
+     case "essay": el = <Essay itemId={id} />; break;
+     case "ask": el = <AskItem itemId={id} theme={theme} />; break;
+     case "test": el = <Exam sub={rest.join("/")} hash={hash} />; break;
++    case "photo": el = <PhotoRouter sub={rest.join("/")} hash={hash} />; break;
+     default: el = <Solve />;
+   }
+   return <Suspense fallback={<div className="sv-wrap sv-muted">불러오는 중…</div>}>{el}</Suspense>;
+diff --git a/supabase/2026-09_photo_studio.sql b/supabase/2026-09_photo_studio.sql
+new file mode 100644
+index 0000000..99b1b1e
+--- /dev/null
++++ b/supabase/2026-09_photo_studio.sql
+@@ -0,0 +1,80 @@
++-- ashrain.out — 촬영 모듈 (2026-09) 선택 마이그레이션
++-- 앱은 이 파일 없이도 동작한다: 표가 없으면 api/photo.js 가 라벨 저장을 조용히 건너뛰고(saved:false) 결과는 학생 기기에만 남는다.
++-- SQL Editor 에서 이 파일을 그대로 실행하면
++--   · 서술형 채점·풀이과정 검사 결과의 "라벨"이 쌓인다 (photo_answer_labels — 본문 없음, 순서·시각 없음)
++--   · 보관 게이트가 central 이라 판정한 답안 원문만 따로 쌓인다 (photo_answers — 기본 정책 labels 에서는 한 건도 생기지 않음)
++--   · 정책 스위치 app_settings.photo_retention 이 'labels' 로 놓인다 (labels|gated|all — 근거: LEGAL-판례조사-답안보관-v1)
++-- 원칙: 두 표 모두 서비스 롤(서버)만 쓰고, 학생은 자기 행만 읽는다. 문항 본문·사진은 어디에도 저장하지 않는다.
++-- 편집저작물 방어를 위해 라벨 표에는 created_at(초 단위 시각)·문항 번호·출처를 두지 않는다 — 날짜(created_day)만 둔다.
++
++-- ── 1. 라벨 표 (텍스트 없음) ────────────────────────────────────────────
++create table if not exists public.photo_answer_labels (
++  id             uuid primary key default gen_random_uuid(),
++  user_id        uuid not null references auth.users(id) on delete cascade,
++  feature        text not null check (feature in ('essay','check')),      -- essay 서술형 채점 · check 풀이과정 검사
++  unit_guess     text,                                                    -- m1-1 … h3-3 (전사기 추정)
++  std_grade      text check (std_grade in ('S','M','C')),                 -- 문항 표현 등급 (발문표준성 v2 기준)
++  sub_type       text,                                                    -- 단순 소재 대입형 · 상황 설정형 · 자료 해석형 · 해당 없음
++  el_grades      jsonb,                                                   -- {발문,조건제시,소재맥락,도형자료,지문}
++  overlap_score  integer,                                                 -- 문항–답안 겹침 0~100
++  overlap_level  text check (overlap_level in ('low','mid','high')),
++  overlap_parts  jsonb,                                                   -- {sentences, run, words, nums}
++  score          numeric,                                                 -- 채점 총점 (essay)
++  max_score      numeric,
++  verdict        text,                                                    -- excellent|good|partial|weak (essay)
++  lights         jsonb,                                                   -- {충실성,논리성,명료성,간결성,독창성} → green|yellow|red (check)
++  pitfalls       text[],                                                  -- 실수거리 태그
++  error_kind     text,                                                    -- calc|concept|reading|transcription|sign|unit|none (check)
++  mental_load    text,                                                    -- low|mid|high (check)
++  retention      text not null check (retention in ('central','device')), -- 게이트 결정
++  policy         text not null default 'labels' check (policy in ('labels','gated','all')),
++  created_day    date not null default (now() at time zone 'Asia/Seoul')::date   -- 시각이 아닌 날짜만(KST) — 순서 정보 최소화
++);
++comment on table public.photo_answer_labels is '촬영 모듈 라벨 — 문항·답안 본문 없음. 학습 통계·개인화용. 표현 등급×겹침 게이트 결과(retention)를 함께 기록.';
++create index if not exists photo_answer_labels_user_day on public.photo_answer_labels (user_id, created_day desc);
++create index if not exists photo_answer_labels_unit on public.photo_answer_labels (unit_guess, std_grade);
++
++alter table public.photo_answer_labels enable row level security;
++drop policy if exists photo_answer_labels_own_select on public.photo_answer_labels;
++drop policy if exists photo_answer_labels_admin_select on public.photo_answer_labels;
++create policy photo_answer_labels_own_select on public.photo_answer_labels for select to authenticated using (auth.uid() = user_id);
++create policy photo_answer_labels_admin_select on public.photo_answer_labels for select to authenticated using (is_admin());
++-- insert/update/delete 정책 없음 → 서비스 롤(api/photo.js)만 쓴다.
++
++-- ── 2. 답안 원문 표 (게이트가 central 일 때만) ──────────────────────────
++create table if not exists public.photo_answers (
++  id           uuid primary key default gen_random_uuid(),
++  label_id     uuid not null references public.photo_answer_labels(id) on delete cascade,
++  user_id      uuid not null references auth.users(id) on delete cascade,
++  answer_text  text not null                                              -- 학생 답안 전사 원문 (문항 본문은 없음)
++);
++comment on table public.photo_answers is '촬영 모듈 답안 원문 — 보관 게이트(표현 등급 S, 또는 M+겹침 low)가 central 이라 한 답안만. 문항 본문·사진 없음.';
++create index if not exists photo_answers_user on public.photo_answers (user_id);
++create index if not exists photo_answers_label on public.photo_answers (label_id);
++
++alter table public.photo_answers enable row level security;
++drop policy if exists photo_answers_own_select on public.photo_answers;
++drop policy if exists photo_answers_admin_select on public.photo_answers;
++create policy photo_answers_own_select on public.photo_answers for select to authenticated using (auth.uid() = user_id);
++create policy photo_answers_admin_select on public.photo_answers for select to authenticated using (is_admin());
++-- insert/update/delete 정책 없음 → 서비스 롤만.
++
++-- ── 3. 정책·모델 스위치 (있으면 건드리지 않음) ───────────────────────────
++insert into public.app_settings (key, value) values
++  ('photo_retention',   'labels'),            -- labels: 원문 저장 안 함 · gated: S·M(low) 만 central · all: 전부 central(테스트 전용)
++  ('photo_model',       'claude-sonnet-4-6'), -- 전사·등급·문장 이해
++  ('photo_model_grade', 'claude-opus-4-8')    -- 채점·풀이과정 검사
++on conflict (key) do nothing;
++
++-- ── 4. 통계용 뷰 — 단원×등급×보관 위치별 건수 (security_invoker: RLS 그대로 → 학생은 자기 것, 관리자는 전체) ──
++create or replace view public.v_photo_label_stats with (security_invoker = true) as
++select unit_guess, std_grade, feature, retention, count(*)::int as n,
++       round(avg(overlap_score))::int as avg_overlap,
++       round(avg(case when max_score > 0 then score / max_score end) * 100)::int as avg_pct
++from public.photo_answer_labels
++group by unit_guess, std_grade, feature, retention;
++grant select on public.v_photo_label_stats to authenticated;
++
++-- 되돌리기 (필요 시 수동):
++--   drop view if exists public.v_photo_label_stats; drop table if exists public.photo_answers; drop table if exists public.photo_answer_labels;
++--   delete from public.app_settings where key in ('photo_retention','photo_model','photo_model_grade');
+diff --git a/tests/photo.test.mjs b/tests/photo.test.mjs
+new file mode 100644
+index 0000000..bf1b92f
+--- /dev/null
++++ b/tests/photo.test.mjs
+@@ -0,0 +1,67 @@
++// node tests/photo.test.mjs — 촬영 모듈 순수 도우미 (src/lib/photoText.js)
++import { tokenize, explain } from "../src/lib/marking.js";
++import { findSpan, cutText, aggregateLights, titleOf, stripMarker } from "../src/lib/photoText.js";
++
++let pass = 0, fail = 0;
++const ok = (cond, name) => { if (cond) { pass++; console.log("ok   -", name); } else { fail++; console.log("FAIL -", name); } };
++const eq = (a, b, name) => { const s = JSON.stringify(a) === JSON.stringify(b); if (!s) console.log("   got", JSON.stringify(a), "want", JSON.stringify(b)); ok(s, name); };
++const rangeText = (tokens, sp) => tokens.slice(sp.t0, sp.t1 + 1).map((t) => t.text).join("");
++
++const Q = "둘레가 54cm인 직사각형의 가로의 길이가 세로의 길이보다 3cm 길 때, 이 직사각형의 넓이를 구하시오.";
++const tokens = tokenize(Q);
++
++// findSpan — 그대로 · 띄어쓰기 다름 · 끝 조사 다름 · 못 찾음
++{
++  const a = findSpan(tokens, "둘레가 54cm");
++  ok(a && rangeText(tokens, a) === "둘레가 54cm", "findSpan: 문구 그대로");
++  const b = findSpan(tokens, "둘레가54cm인");
++  ok(b && rangeText(tokens, b).replace(/\s/g, "") === "둘레가54cm인", "findSpan: 띄어쓰기 무시");
++  const c = findSpan(tokens, "가로의 길이가 세로의 길이보다 3cm 길다");
++  ok(c === null || rangeText(tokens, c).includes("3cm"), "findSpan: 어미가 다르면 못 찾거나(=null) 앞부분만");
++  const d = findSpan(tokens, "직사각형의 넓이를");
++  ok(d && rangeText(tokens, d).startsWith("직사각형의 넓이"), "findSpan: 끝 조사 떼고 찾기");
++  eq(findSpan(tokens, "원의 반지름"), null, "findSpan: 없는 문구는 null");
++  eq(findSpan(tokens, "가"), null, "findSpan: 한 글자는 null");
++  eq(findSpan([], "둘레"), null, "findSpan: 토큰 없음");
++}
++
++// findSpan — 마커 안 수식도 찾는다
++{
++  const q2 = "일차방정식 [[frac(x,2) - 3 = frac(x,4) - 1]] 을 푸시오.";
++  const t2 = tokenize(q2);
++  const s = findSpan(t2, "frac(x,2) - 3 = frac(x,4) - 1");
++  ok(s && rangeText(t2, s).includes("frac(x,2)"), "findSpan: 마커 속 수식(마커 없이 물어도)");
++}
++
++// cutText — 빗금 자리에 ／
++{
++  const ex = explain(Q);
++  const cut = cutText(ex.tokens, ex.marks);
++  ok(cut.includes("／"), "cutText: 빗금이 들어간다");
++  eq(cut.replace(/ ／ ?/g, (m, off) => (cut[off + m.length] === " " ? "" : " ")).replace(/  /g, " "), Q, "cutText: 빗금을 빼면 원문과 같다");
++  ok(!/／\s*$/.test(cut), "cutText: 끝에 빗금이 남지 않는다");
++  eq(cutText(tokens, []), Q, "cutText: 표시가 없으면 원문");
++}
++
++// aggregateLights — 평균 규칙
++{
++  const mk = (l) => ({ criteria: { 충실성: { light: l }, 논리성: { light: l }, 명료성: { light: l }, 간결성: { light: l }, 독창성: { light: l } } });
++  eq(aggregateLights([mk("green")]).충실성.light, "green", "aggregate: 하나면 그대로(초록)");
++  eq(aggregateLights([mk("red")]).논리성.light, "red", "aggregate: 하나면 그대로(빨강)");
++  eq(aggregateLights([mk("green"), mk("green"), mk("yellow")]).명료성.light, "green", "aggregate: 초·초·노 → 초록");
++  eq(aggregateLights([mk("green"), mk("yellow"), mk("yellow")]).간결성.light, "yellow", "aggregate: 초·노·노 → 노랑");
++  eq(aggregateLights([mk("red"), mk("red"), mk("green")]).독창성.light, "red", "aggregate: 빨·빨·초 → 빨강");
++  eq(aggregateLights([mk("green"), mk("green"), mk("red")]).독창성.light, "yellow", "aggregate: 초·초·빨 → 노랑");
++  eq(aggregateLights([]).충실성, { light: null, why: "" }, "aggregate: 비면 null");
++  eq(aggregateLights([{ criteria: { 충실성: { light: "purple" } } }]).충실성.light, null, "aggregate: 이상한 값은 무시");
++}
++
++// titleOf · stripMarker
++{
++  eq(titleOf("  [[frac(1,2)]] 을   더하시오 "), "frac(1,2) 을 더하시오", "titleOf: 마커·공백 정리");
++  ok(titleOf("가".repeat(60)).length === 41, "titleOf: 40자 + …");
++  eq(stripMarker("[[x]]"), "x", "stripMarker");
++}
++
++console.log(`\n${pass}/${pass + fail} passed`);
++if (fail) process.exit(1);
+diff --git a/tests/photoApi.test.mjs b/tests/photoApi.test.mjs
+new file mode 100644
+index 0000000..3c1bef5
+--- /dev/null
++++ b/tests/photoApi.test.mjs
+@@ -0,0 +1,184 @@
++// node tests/photoApi.test.mjs — api/photo.js 핸들러를 가짜 fetch(Anthropic + Supabase REST/Auth)로 끝까지 돌려 본다.
++// 실제 키·네트워크 없음. 검사: 인증·자격 게이트·한도·태스크 분기·응답 정리·보관 게이트(라벨/원문 insert)·표 없을 때의 조용한 실패.
++process.env.SUPABASE_URL = "http://sb.local";
++process.env.SUPABASE_ANON_KEY = "anon";
++process.env.SUPABASE_SERVICE_ROLE_KEY = "service";
++process.env.ANTHROPIC_API_KEY = "sk-test";
++
++const { default: handler } = await import("../api/photo.js");
++
++let pass = 0, fail = 0;
++const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else { fail++; console.log("FAIL -", name); } };
++
++// ── 가짜 서버 상태 ────────────────────────────────────────────────────────────
++const state = { profile: { role: "student", member_code: "X" }, calls: {}, settings: {}, labels: [], answers: [], labelsTableMissing: false, ai: [] };
++const Q = "둘레가 54cm인 직사각형의 가로의 길이가 세로의 길이보다 3cm 길 때, 이 직사각형의 넓이를 구하시오.";
++
++function aiReply(system, userText) {
++  state.ai.push(system.slice(0, 20));
++  let obj;
++  if (system.startsWith("너는 수학 문항 전사기")) obj = userText.includes("문법에 어긋났다")
++    ? { question: Q, choices: null, qtype: "short", figure_note: null, unit_guess: "m1-1", unreadable: false }
++    : { question: state.badFirst ? "넓이가 [[frac(1,2]] 인 …" : Q, choices: ["1", "2"], qtype: "choice", figure_note: "표: 계급 0~10", unit_guess: "m1-1", unreadable: false };
++  else if (system.startsWith("너는 학생 손글씨")) obj = { answer: "x=세로\n2(x+3+x)=54\nx=12\n답 180", lines: [{ text: "x=세로", kind: "text" }, { text: "2(x+3+x)=54", kind: "eq" }, { text: "x=12", kind: "eq" }, { text: "답 180", kind: "answer" }], final_answer: "180", legibility: { score: 9, issues: [{ kind: "weird", note: "7을 1처럼" }] }, unreadable: false };
++  else if (system.startsWith("이 이미지는 학생이 문제집")) obj = { problems: [{ no: 1, box: { x: 0.1, y: 0.1, w: 0.5, h: 0.3 } }, { no: "x", box: {} }], answers: [{ no: 1, box: { x: 1.5, y: -1, w: 0.01, h: 0.5 } }] };
++  else if (system.startsWith("당신은 국내 중·고등 수학 교재")) obj = { elements: { 발문: "S", 조건제시: "S", 소재맥락: state.grade || "S", 도형자료: "-", 지문: "Z" }, item_grade: "S", sub_type: "단순 소재 대입형", reason: "정형" };
++  else if (system.startsWith("너는 한국 중·고등 수학 학원의 \"문장 이해")) obj = { asking: "넓이", clues: [{ text: "둘레가 54cm", why: "합" }], concept: "둘레", first_step: "x 두기", setup: ["2(x+3+x)=54"], traps: ["단위", "없는태그"], reading: "끊어" };
++  else if (system.startsWith("너는 한국 중·고등 수학 서술형 채점자")) obj = { rubric: [{ no: 1, element: "식", points: 3, criterion: "c" }, { no: 2, element: "답", points: 2, criterion: "c" }], marks: [{ no: 1, level: "full", got: 3, comment: "" }, { no: 2, level: "zero", got: 0, comment: "" }], total: 99, max: 5, verdict: "weird", final_answer_ok: true, corrections: [{ where: "w", wrong: "180", fix: "180 cm²", why: "" }], feedback: ["f"], pitfall_tags: ["단위"], praise: "p" };
++  else if (system.startsWith("너는 한국 중·고등 수학 학원의 \"풀이 과정")) obj = { chain: [{ i: 1, text: "x=세로", role: "setup", ok: true, note: "" }], mental_load: "high", mental_note: "m", habits: [{ kind: "glyph", note: "7", tip: "t" }], error: { found: true, line: 3, kind: "calc", hypothesis: "h", fix: "f" }, criteria: { 충실성: { light: "green" }, 논리성: { light: "purple" } }, final_answer_ok: false, summary: "s", pitfall_tags: [] };
++  else obj = {};
++  return "```json\n" + JSON.stringify(obj) + "\n```";
++}
++
++const hdr = (init, name) => { const h = init.headers; if (!h) return ""; if (h instanceof Headers) return h.get(name) || ""; const k = Object.keys(h).find((x) => x.toLowerCase() === name.toLowerCase()); return k ? h[k] : ""; };
++globalThis.fetch = async (url, init = {}) => {
++  const u = String(url); const method = (init.method || "GET").toUpperCase();
++  const wantObj = hdr(init, "accept").includes("pgrst.object");
++  const json = (obj, status = 200, headers = {}) => new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json", ...headers } });
++  if (u.startsWith("https://api.anthropic.com/")) {
++    const body = JSON.parse(init.body);
++    const userText = body.messages[0].content.filter((b) => b.type === "text").map((b) => b.text).join("\n");
++    if (body.messages[0].content.some((b) => b.type === "image") && !/^[A-Za-z0-9+/=]+$/.test(body.messages[0].content.find((b) => b.type === "image").source.data)) return json({ error: { message: "bad image" } }, 400);
++    return json({ content: [{ type: "text", text: aiReply(body.system, userText) }] });
++  }
++  if (u.includes("/auth/v1/user")) return hdr(init, "authorization") === "Bearer good"
++    ? json({ id: "u1", aud: "authenticated", role: "authenticated", email: "t@x" }) : json({ message: "bad jwt" }, 401);
++  if (u.includes("/rest/v1/profiles")) { const row = { role: state.profile.role, member_code: state.profile.member_code }; return json(wantObj ? row : [row]); }
++  if (u.includes("/rest/v1/ai_calls")) {   // task 별로 센다 (HEAD: ?task=eq.<x> · POST: body.task)
++    if (method === "HEAD") { const t = decodeURIComponent((u.match(/task=eq\.([^&]+)/) || [])[1] || ""); return new Response("", { status: 200, headers: { "content-range": `*/${state.calls[t] || 0}` } }); }
++    const t = JSON.parse(init.body).task; state.calls[t] = (state.calls[t] || 0) + 1; return json([], 201);
++  }
++  if (u.includes("/rest/v1/app_settings")) return json(Object.entries(state.settings).map(([key, value]) => ({ key, value })));
++  if (u.includes("/rest/v1/photo_answer_labels")) {
++    if (state.labelsTableMissing) return json({ code: "PGRST205", message: "Could not find the table" }, 404);
++    const row = JSON.parse(init.body); state.labels.push(row); const out = { id: "L" + state.labels.length }; return json(wantObj ? out : [out], 201);
++  }
++  if (u.includes("/rest/v1/photo_answers")) { state.answers.push(JSON.parse(init.body)); return json([], 201); }
++  return json({ message: "unmocked " + u }, 500);
++};
++
++async function call(body, token = "good") {
++  const res = { code: 200, body: null, status(c) { this.code = c; return this; }, json(b) { this.body = b; return this; } };
++  await handler({ method: "POST", headers: token ? { authorization: "Bearer " + token } : {}, body }, res);
++  return res;
++}
++const IMG = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AVN//2Q==";
++
++// ── 인증·자격·한도 ────────────────────────────────────────────────────────────
++{
++  let r = await call({ task: "approach", question: Q }, null);
++  ok(r.code === 401, "토큰 없음 → 401");
++  r = await call({ task: "approach", question: Q }, "bad");
++  ok(r.code === 401, "잘못된 토큰 → 401");
++  r = await call({ task: "nope" });
++  ok(r.code === 400 && /task/.test(r.body.error), "모르는 task → 400");
++  state.profile = { role: "trial", member_code: null };
++  r = await call({ task: "approach", question: Q });
++  ok(r.code === 403 && /체험/.test(r.body.error), "체험 계정 → 403");
++  state.profile = { role: "student", member_code: null };
++  r = await call({ task: "approach", question: Q });
++  ok(r.code === 403 && /고유번호/.test(r.body.error), "고유번호 없음 → 403");
++  state.profile = { role: "student", member_code: "X" };
++  state.calls = { photo_approach: 20 };
++  r = await call({ task: "approach", question: Q });
++  ok(r.code === 429 && /한도/.test(r.body.error), "일일 한도(approach 20) → 429");
++  state.calls = { photo_approach: 19 };
++  r = await call({ task: "approach", question: Q });
++  ok(r.code === 200 && state.calls.photo_approach === 20, "한도 직전은 통과 + 호출 기록(호출 전에 남김)");
++  state.calls = {};
++  const r2 = await call({ method: "GET" });
++  ok(true, "(GET 은 405 — 핸들러 첫 줄) " + (await (async () => { const res = { code: 0, status(c) { this.code = c; return this; }, json() { return this; } }; await handler({ method: "GET", headers: {} }, res); return res.code === 405; })()));
++}
++
++// ── scan: problem (등급 포함) · 문법 오류 재시도 · answer · page ─────────────────
++{
++  state.ai = []; state.badFirst = true;
++  let r = await call({ task: "scan", mode: "problem", image: IMG });
++  ok(r.code === 200 && r.body.question === Q, "scan problem: 문법 오류 마커 → 재전사로 고침");
++  ok(state.ai.filter((s) => s.startsWith("너는 수학 문항")).length === 2, "scan problem: 전사 2회(재시도 1회)");
++  ok(r.body.std?.item_grade === "S" && r.body.std.elements.지문 === "-", "scan problem: 표준성 등급 S · 이상한 요소값은 '-'");
++  ok(r.body.qtype === "short" && r.body.choices === null && r.body.unit_guess === "m1-1" && r.body.policy === "labels", "scan problem: 정리된 필드 + 기본 정책 labels");
++  ok(!("image" in r.body) && !JSON.stringify(r.body).includes(IMG.slice(0, 30)), "scan problem: 응답에 사진 없음");
++  state.badFirst = false; state.grade = "C";
++  r = await call({ task: "scan", mode: "problem", image: IMG });
++  ok(r.body.std?.item_grade === "C" && r.body.warnings.length === 0, "scan problem: 요소 최고 등급 C 가 문항 등급(모델 item_grade S 무시)");
++  ok(r.body.choices?.length === 2 && r.body.qtype === "choice" && r.body.figure_note.startsWith("표:"), "scan problem: 선택지·그림 메모");
++  r = await call({ task: "scan", mode: "problem", image: "" });
++  ok(r.code === 400, "scan: 이미지 없음 → 400");
++  r = await call({ task: "scan", mode: "problem", image: "x".repeat(6_000_001) });
++  ok(r.code === 413, "scan: 너무 큰 이미지 → 413");
++  r = await call({ task: "scan", mode: "answer", image: IMG });
++  ok(r.code === 200 && r.body.lines.length === 4 && r.body.final_answer === "180", "scan answer: 줄·최종 답");
++  ok(r.body.legibility.score === 5 && r.body.legibility.issues[0].kind === "other", "scan answer: 가독성 점수 1~5 로 자르고 모르는 kind 는 other");
++  r = await call({ task: "scan", mode: "page", image: IMG });
++  ok(r.code === 200 && r.body.problems.length === 1 && r.body.answers.length === 1, "scan page: 깨진 상자는 버림");
++  const a = r.body.answers[0].box;
++  ok(a.x === 1 && a.y === 0 && a.w >= 0.02, "scan page: 상자 좌표 0~1 로 정리");
++}
++
++// ── approach ─────────────────────────────────────────────────────────────────
++{
++  const r = await call({ task: "approach", question: Q, figure_note: "표", choices: ["a"] });
++  ok(r.code === 200 && r.body.setup[0] === "2(x+3+x)=54" && r.body.traps.length === 1 && r.body.traps[0] === "단위", "approach: 식 세우기 + 모르는 함정 태그 제거");
++  const r2 = await call({ task: "approach", question: "" });
++  ok(r2.code === 400, "approach: 문항 없음 → 400");
++}
++
++// ── essay + 보관 게이트 ──────────────────────────────────────────────────────
++{
++  state.labels = []; state.answers = []; state.settings = {};
++  let r = await call({ task: "essay", question: Q, answer: "x=세로\n2(x+3+x)=54\nx=12\n답 180", std: { item_grade: "S", sub_type: "단순 소재 대입형", elements: {} }, unit: "m1-1" });
++  ok(r.code === 200 && r.body.result.total === 3 && r.body.result.max === 5 && r.body.result.verdict === "good", "essay: 점수는 기준표 합으로 다시 계산(99 무시) · verdict 보정");
++  ok(r.body.retention.where === "device" && r.body.retention.policy === "labels" && r.body.retention.saved && !r.body.retention.central, "essay: 기본 정책 labels → 라벨만(device)");
++  ok(state.labels.length === 1 && state.labels[0].feature === "essay" && state.labels[0].std_grade === "S" && state.labels[0].unit_guess === "m1-1" && !("answer_text" in state.labels[0]) && !("question" in state.labels[0]), "essay: 라벨 행에 본문 없음");
++  ok(state.answers.length === 0, "essay: labels 정책에서 원문 표 insert 없음");
++  ok(typeof state.labels[0].overlap_score === "number" && ["low", "mid", "high"].includes(state.labels[0].overlap_level), "essay: 겹침 점수·수준 기록");
++
++  state.settings = { photo_retention: "gated" };
++  r = await call({ task: "essay", question: Q, answer: "x=세로\n2(x+3+x)=54\nx=12\n답 180", std: { item_grade: "S" } });
++  ok(r.body.retention.where === "central" && r.body.retention.central && state.answers.length === 1 && state.answers[0].label_id === "L2" && state.answers[0].answer_text.includes("2(x+3+x)=54"), "essay: gated + S → 원문 central 저장(label_id 연결)");
++  r = await call({ task: "essay", question: Q, answer: "답 180", std: { item_grade: "C" } });
++  ok(r.body.retention.where === "device" && state.answers.length === 1, "essay: gated + C → device");
++  r = await call({ task: "essay", question: Q, answer: "답 180", std: { item_grade: "M" } });
++  ok(r.body.retention.where === "central" && state.answers.length === 2, "essay: gated + M + 겹침 low → central");
++  r = await call({ task: "essay", question: Q, answer: Q + "\n" + Q, std: { item_grade: "M" } });
++  ok(r.body.retention.where === "device" && r.body.retention.overlap.level !== "low", "essay: gated + M + 문항 재진술(겹침 높음) → device");
++  r = await call({ task: "essay", question: Q, answer: "답 180", std: { item_grade: "ZZ" } });
++  ok(r.body.std?.item_grade === "C" && state.ai.some((s) => s.startsWith("당신은 국내")), "essay: 등급이 없으면 서버가 다시 판정(요소 최고 등급 C)");
++
++  state.settings = { photo_retention: "all" };
++  r = await call({ task: "essay", question: Q, answer: "답 180", std: { item_grade: "C" } });
++  ok(r.body.retention.where === "central", "essay: all 정책 → C 도 central(테스트용)");
++  state.settings = { photo_retention: "weird" };
++  r = await call({ task: "essay", question: Q, answer: "답 180", std: { item_grade: "S" } });
++  ok(r.body.retention.policy === "labels" && r.body.retention.where === "device", "essay: 모르는 정책값 → labels");
++
++  state.labelsTableMissing = true;
++  r = await call({ task: "essay", question: Q, answer: "답 180", std: { item_grade: "S" } });
++  ok(r.code === 200 && r.body.retention.saved === false && !r.body.retention.error, "essay: 표가 없으면(마이그레이션 전) 조용히 saved:false");
++  state.labelsTableMissing = false;
++  r = await call({ task: "essay", question: Q, answer: "" });
++  ok(r.code === 400, "essay: 답안 없음 → 400");
++}
++
++// ── process ──────────────────────────────────────────────────────────────────
++{
++  state.settings = {}; state.labels = [];
++  const r = await call({ task: "process", question: Q, answer: "x=세로", lines: [{ text: "x=세로" }], legibility: { score: 3, issues: [] }, std: { item_grade: "M" }, unit: "zz" });
++  ok(r.code === 200 && r.body.result.mental_load === "high" && r.body.result.error.found && r.body.result.error.line === 3, "process: 암산·오류 가설");
++  const c = r.body.result.criteria;
++  ok(c.충실성.light === "green" && c.논리성.light === "yellow" && c.독창성.light === "yellow" && Object.keys(c).length === 5, "process: 다섯 지표 채움 · 이상한 색은 yellow");
++  ok(state.labels.length === 1 && state.labels[0].feature === "check" && state.labels[0].lights.충실성 === "green" && state.labels[0].error_kind === "calc" && state.labels[0].mental_load === "high" && state.labels[0].unit_guess === null, "process: 라벨(신호등·오류 종류·암산) · 이상한 단원은 null");
++  ok(state.labels[0].retention === "device" && state.labels[0].policy === "labels" && state.labels[0].user_id === "u1", "process: 보관 결정·정책·user_id");
++}
++
++// ── 모델 키 ──────────────────────────────────────────────────────────────────
++{
++  state.settings = { photo_model: "m-scan", photo_model_grade: "m-grade" }; state.calls = {};
++  const r1 = await call({ task: "approach", question: Q });
++  const r2 = await call({ task: "essay", question: Q, answer: "답", std: { item_grade: "S" } });
++  ok(r1.body.model === "m-scan" && r2.body.model === "m-grade", "app_settings.photo_model / photo_model_grade 로 모델 바꿈");
++}
++
++console.log(`\n${pass}/${pass + fail} passed`);
++if (fail) process.exit(1);
+diff --git a/tests/retention.test.mjs b/tests/retention.test.mjs
+new file mode 100644
+index 0000000..6e8e71d
+--- /dev/null
++++ b/tests/retention.test.mjs
+@@ -0,0 +1,92 @@
++// node tests/retention.test.mjs — 촬영 답안 보관 게이트(src/lib/retention.js) 검사. 실패 시 exit 1.
++import assert from "node:assert/strict";
++import {
++  plainMath, normalize, sentencesOf, numbersOf, contentWords, longestCommonRun, restatedSentences,
++  overlapScore, decideRetention, buildLabels, normalizePolicy, OVERLAP_LOW, OVERLAP_HIGH,
++} from "../src/lib/retention.js";
++
++let n = 0, failed = 0;
++function test(name, fn) {
++  n++;
++  try { fn(); console.log("ok   -", name); }
++  catch (e) { failed++; console.log("FAIL -", name); console.log("      " + String(e.message || e).split("\n").join("\n      ")); }
++}
++
++const Q1 = "소금물 300 g에 소금 45 g이 녹아 있다. 여기에 물 200 g을 더 넣으면 소금물의 농도는 몇 %가 되는지 구하시오.";
++const A1_ROUGH = "45/(300+200) × 100 = 45/500 × 100 = 9 ∴ 9%";
++const A1_NEAT = "소금물 300 g에 소금 45 g이 녹아 있다. 물 200 g을 더 넣으면 소금물은 500 g이 되므로 농도는 45/500 × 100 = 9(%)이다.";
++const A1_OTHER = "x + y = 10, 2x − y = 5 → x = 5, y = 5";
++
++test("plainMath: 마커를 평문으로", () => {
++  assert.equal(plainMath("[[frac(1,2)]] + [[pow(x,2)]] = [[deg(90)]]"), "1/2 + x^2 = 90°");
++  assert.equal(plainMath("[[seg(AB)]] 와 [[angle(ABC)]]"), "AB 와 ∠ABC");
++});
++test("normalize: 마이너스·공백 통일", () => {
++  assert.equal(normalize("x −  3  = −5"), "x - 3 = -5");
++});
++test("sentencesOf: 10자 이상 문장만", () => {
++  const s = sentencesOf(Q1);
++  assert.equal(s.length, 2);
++});
++test("numbersOf: 0·1·2 는 제외, 분수·비 포함", () => {
++  const s = numbersOf("2개의 주사위, 확률 1/6, 비 3:4, 값 12.5, 답 1");
++  assert.ok(s.has("1/6") && s.has("3:4") && s.has("12.5"));
++  assert.ok(!s.has("1") && !s.has("2"));
++});
++test("contentWords: 조사 떼고 기능어 제외", () => {
++  const w = contentWords(Q1);
++  assert.ok(w.has("소금물") && w.has("소금") && w.has("농도"));
++  assert.ok(!w.has("구하시오") && !w.has("몇"));
++});
++test("longestCommonRun: 공백 무시 최장 공유 문자열", () => {
++  const r = longestCommonRun("소금물 300 g에 소금", "물 200 g을 넣으면 소금물300g에소금이");
++  assert.ok(r.len >= 9, "len " + r.len);
++});
++test("restatedSentences: 정연 답안은 첫 문장을 재진술", () => {
++  assert.equal(restatedSentences(Q1, A1_NEAT).length, 1);
++  assert.equal(restatedSentences(Q1, A1_ROUGH).length, 0);
++});
++test("overlapScore: 거친 < 정연, 무관 답안은 낮음", () => {
++  const r = overlapScore(Q1, A1_ROUGH), nn = overlapScore(Q1, A1_NEAT), o = overlapScore(Q1, A1_OTHER);
++  assert.ok(r.score < nn.score, `${r.score} < ${nn.score}`);
++  assert.equal(o.level, "low");
++  assert.equal(nn.level, "high", "neat " + nn.score);
++  assert.ok(r.score >= 0 && r.score <= 100);
++  assert.equal(r.sentences, 0); assert.equal(nn.sentences, 1);
++  assert.ok(r.nums >= 2, "shared nums " + r.nums);
++});
++test("overlapScore: 빈 입력은 0", () => {
++  const z = overlapScore("", "");
++  assert.equal(z.score, 0); assert.equal(z.level, "low");
++});
++test("decideRetention: labels 정책은 항상 기기", () => {
++  for (const g of ["S", "M", "C", null])
++    assert.equal(decideRetention({ grade: g, overlap: { level: "low" }, policy: "labels" }).where, "device");
++});
++test("decideRetention: gated 매트릭스", () => {
++  const lo = { level: "low" }, hi = { level: "high" }, mid = { level: "mid" };
++  assert.equal(decideRetention({ grade: "S", overlap: hi, policy: "gated" }).where, "central");
++  assert.equal(decideRetention({ grade: "M", overlap: lo, policy: "gated" }).where, "central");
++  assert.equal(decideRetention({ grade: "M", overlap: mid, policy: "gated" }).where, "device");
++  assert.equal(decideRetention({ grade: "M", overlap: hi, policy: "gated" }).where, "device");
++  assert.equal(decideRetention({ grade: "C", overlap: lo, policy: "gated" }).where, "device");
++  assert.equal(decideRetention({ grade: null, overlap: lo, policy: "gated" }).where, "device");
++});
++test("decideRetention: all 은 중앙, 모르는 정책은 기본값(labels)", () => {
++  assert.equal(decideRetention({ grade: "C", overlap: { level: "high" }, policy: "all" }).where, "central");
++  assert.equal(normalizePolicy("whatever"), "labels");
++  assert.equal(decideRetention({ grade: "S", overlap: { level: "low" }, policy: "whatever" }).where, "device");
++});
++test("buildLabels: 텍스트 없이 라벨만", () => {
++  const ov = overlapScore(Q1, A1_ROUGH);
++  const lab = buildLabels({ feature: "essay", std: { item_grade: "M", sub_type: "단순 소재 대입형", elements: { 발문: "S" }, unit: "m1-1" }, overlap: ov,
++    result: { total: 6, max: 8, verdict: "ok", pitfall_tags: ["단위"], criteria: { 충실성: { light: "green" } } } });
++  assert.equal(lab.std_grade, "M"); assert.equal(lab.score, 6); assert.equal(lab.lights.충실성, "green");
++  assert.equal(lab.overlap_score, ov.score);
++  const json = JSON.stringify(lab);
++  assert.ok(!json.includes("소금물") && !json.includes("45/"), "라벨에 본문이 섞임");
++});
++test("임계값 상수는 순서가 맞다", () => { assert.ok(OVERLAP_LOW < OVERLAP_HIGH); });
++
++console.log(`\n${n - failed}/${n} passed`);
++if (failed) process.exit(1);
+diff --git a/tests/smoke/photo.smoke.mjs b/tests/smoke/photo.smoke.mjs
+new file mode 100644
+index 0000000..dde0c41
+--- /dev/null
++++ b/tests/smoke/photo.smoke.mjs
+@@ -0,0 +1,276 @@
++// 촬영 모듈 화면 스모크 — dist/ 를 띄우고 /api/photo 와 Supabase 를 모의 응답으로 대체해 네 흐름을 끝까지 눌러 본다.
++//   node tests/smoke/photo.smoke.mjs [--headed]
++// 준비: `npx vite build` (dist/ 필요) · playwright(전역) + Chromium.  시험용 사진은 tests/smoke/img/*.png 를 Node 가 그린다(저장소에 넣지 않음).
++import http from "node:http";
++import fs from "node:fs";
++import path from "node:path";
++import { createRequire } from "node:module";
++import { fileURLToPath } from "node:url";
++
++const require = createRequire(import.meta.url);
++let chromium;
++try { ({ chromium } = require("playwright")); }
++catch { ({ chromium } = require("/home/claude/.npm-global/lib/node_modules/playwright")); }
++
++const HERE = path.dirname(fileURLToPath(import.meta.url));
++const ROOT = path.resolve(HERE, "../..");
++const DIST = path.join(ROOT, "dist");
++const IMG = process.env.SMOKE_IMG || path.join(HERE, "img");
++const HEADED = process.argv.includes("--headed");
++
++// ── 모의 /api/photo ──────────────────────────────────────────────────────────
++const Q = "둘레가 54cm인 직사각형의 가로의 길이가 세로의 길이보다 3cm 길 때, 이 직사각형의 넓이를 구하시오.";
++const STD = { elements: { 발문: "S", 조건제시: "S", 소재맥락: "M", 도형자료: "-", 지문: "-" }, item_grade: "M", sub_type: "단순 소재 대입형", reason: "정형 상황" };
++const RET = { where: "device", reason: "labels 정책 — 라벨만 저장", policy: "labels", overlap: { score: 14, level: "low", sentences: 0, words: 2, nums: 1 }, saved: true, central: false };
++const calls = [];
++function mockPhoto(body) {
++  calls.push(body.task + (body.mode ? ":" + body.mode : ""));
++  const { task, mode } = body;
++  if (task === "scan" && mode === "problem") return { mode, question: Q, choices: null, qtype: "short", figure_note: null, unit_guess: "m1-1", unreadable: false, warnings: [], std: STD, policy: "labels", model: "mock" };
++  if (task === "scan" && mode === "answer") return { mode, answer: "x = 세로\n2(x+3+x) = 54\n4x + 6 = 54\nx = 12\n넓이 = 15 × 12 = 180", lines: [{ text: "x = 세로", kind: "text" }, { text: "2(x+3+x) = 54", kind: "eq" }, { text: "4x + 6 = 54", kind: "eq" }, { text: "x = 12", kind: "eq" }, { text: "넓이 = 15 × 12 = 180", kind: "answer" }], final_answer: "180", legibility: { score: 3, issues: [{ kind: "glyph", note: "7을 1처럼 씀" }] }, unreadable: false, model: "mock" };
++  if (task === "scan" && mode === "page") return { mode, problems: [{ no: 1, box: { x: 0.04, y: 0.04, w: 0.45, h: 0.4 } }, { no: 2, box: { x: 0.04, y: 0.5, w: 0.45, h: 0.4 } }], answers: [{ no: 1, box: { x: 0.52, y: 0.04, w: 0.44, h: 0.4 } }, { no: 2, box: { x: 0.52, y: 0.5, w: 0.44, h: 0.4 } }], model: "mock" };
++  if (task === "approach") return { asking: "직사각형의 넓이", clues: [{ text: "둘레가 54cm", why: "둘레로 가로+세로의 합을 알 수 있어요" }, { text: "가로의 길이가 세로의 길이보다 3cm 길", why: "가로를 세로로 나타낼 수 있어요" }], concept: "직사각형의 둘레 = 2 × (가로 + 세로)", first_step: "세로를 x cm 라고 두기", setup: ["2(x + 3 + x) = 54"], traps: ["구하는대상혼동", "단위"], reading: "쉼표에서 한 번 끊고, 마지막 문장에서 무엇을 구하는지 확인해요.", model: "mock" };
++  if (task === "essay") return { result: { rubric: [{ no: 1, element: "식 세우기", points: 3, criterion: "세로를 x로 두고 둘레 식을 세운다" }, { no: 2, element: "해 구하기", points: 3, criterion: "x = 12 를 구한다" }, { no: 3, element: "답 구하기", points: 2, criterion: "넓이 180 cm² 를 단위와 함께 쓴다" }], marks: [{ no: 1, level: "full", got: 3, comment: "식이 정확해요" }, { no: 2, level: "full", got: 3, comment: "풀이 과정이 이어져요" }, { no: 3, level: "partial", got: 1, comment: "단위가 빠졌어요" }], total: 7, max: 8, verdict: "good", final_answer_ok: true, corrections: [{ where: "마지막 줄", wrong: "180", fix: "180 cm²", why: "넓이는 단위까지 써야 해요" }], feedback: ["가로를 x+3 이라고 쓴 이유를 한 줄 적으면 더 좋아요"], pitfall_tags: ["단위"], praise: "둘레 식을 바로 세운 점이 좋아요" }, std: STD, retention: RET, model: "mock" };
++  if (task === "process") return { result: { chain: [{ i: 1, text: "x = 세로", role: "setup", ok: true, note: "변수 두기" }, { i: 2, text: "2(x+3+x) = 54", role: "setup", ok: true, note: "둘레 식" }, { i: 3, text: "4x + 6 = 54", role: "transform", ok: true, note: "전개" }, { i: 4, text: "x = 12", role: "compute", ok: true, note: "이항과 나눗셈을 한 번에 — 암산" }, { i: 5, text: "넓이 = 15 × 12 = 180", role: "answer", ok: true, note: "가로 15 를 대입" }], mental_load: "mid", mental_note: "4x = 48 을 건너뛰었어요", habits: [{ kind: "glyph", note: "7을 1처럼 써요", tip: "7에 가로획을 살짝 더해요" }], error: { found: false, line: null, kind: "none", hypothesis: "", fix: "" }, criteria: { 충실성: { light: "yellow", why: "단위가 빠졌어요" }, 논리성: { light: "green", why: "단계가 이어져요" }, 명료성: { light: "green", why: "" }, 간결성: { light: "yellow", why: "암산이 한 곳" }, 독창성: { light: "green", why: "" } }, final_answer_ok: true, summary: "식은 잘 이어졌어요. 단위와 4x = 48 한 줄만 더 쓰면 완벽해요.", pitfall_tags: ["단위"] }, std: STD, retention: RET, model: "mock" };
++  return { error: "unknown " + task };
++}
++
++// ── 정적 서버 (dist + SPA fallback + /api/photo) ─────────────────────────────
++const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json" };
++function serve() {
++  return new Promise((resolve) => {
++    const srv = http.createServer((req, res) => {
++      const u = new URL(req.url, "http://x");
++      if (u.pathname === "/api/photo") {
++        let raw = ""; req.on("data", (c) => (raw += c)); req.on("end", () => {
++          if (!/^Bearer /.test(req.headers.authorization || "")) { res.writeHead(401, { "content-type": "application/json" }); res.end(JSON.stringify({ error: "로그인이 필요해요" })); return; }
++          let body = {}; try { body = JSON.parse(raw); } catch { /* 빈 몸 */ }
++          setTimeout(() => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(mockPhoto(body))); }, 120);
++        });
++        return;
++      }
++      let f = path.join(DIST, decodeURIComponent(u.pathname));
++      if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) f = path.join(DIST, "index.html");
++      res.writeHead(200, { "content-type": MIME[path.extname(f)] || "application/octet-stream" });
++      fs.createReadStream(f).pipe(res);
++    });
++    srv.listen(0, "127.0.0.1", () => resolve({ srv, port: srv.address().port }));
++  });
++}
++
++// ── Supabase 모의 (auth · rest) ───────────────────────────────────────────────
++const b64u = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
++const USER = { id: "00000000-0000-4000-8000-000000000001", aud: "authenticated", role: "authenticated", email: "smoke@example.com", app_metadata: { provider: "email", providers: ["email"] }, user_metadata: {}, factors: [], created_at: "2026-01-01T00:00:00Z" };
++const JWT = `${b64u({ alg: "HS256", typ: "JWT" })}.${b64u({ sub: USER.id, aud: "authenticated", role: "authenticated", email: USER.email, exp: 9999999999, iat: 1700000000, aal: "aal1", amr: [{ method: "password", timestamp: 1700000000 }], app_metadata: USER.app_metadata, user_metadata: {}, session_id: "s1" })}.sig`;
++const SESSION = { access_token: JWT, token_type: "bearer", expires_in: 3600, expires_at: 9999999999, refresh_token: "r1", user: USER };
++const PROFILE = { role: "student", member_code: "SMOKE", trial_expires_at: null, merged_into: null, phone_verified: true, is_minor: false, birth_date: "2011-03-01", settings: {} };
++
++async function mockSupabase(page) {
++  await page.route("https://placeholder.supabase.co/**", (route) => {
++    const req = route.request(); const u = new URL(req.url()); const accept = req.headers()["accept"] || "";
++    const json = (obj, headers = {}) => route.fulfill({ status: 200, contentType: "application/json", headers, body: JSON.stringify(obj) });
++    if (u.pathname.startsWith("/auth/v1/user")) return json(USER);
++    if (u.pathname.startsWith("/auth/v1/token")) return json(SESSION);
++    if (u.pathname.startsWith("/auth/v1/factors")) return json([]);
++    if (u.pathname.startsWith("/auth/v1/")) return json({});
++    if (u.pathname.startsWith("/rest/v1/")) {
++      const table = u.pathname.replace("/rest/v1/", "").split("/")[0];
++      if (req.method() === "HEAD") return route.fulfill({ status: 200, headers: { "content-range": "*/0" }, body: "" });
++      const wantObj = accept.includes("pgrst.object");
++      if (table === "profiles") return json(wantObj ? { id: USER.id, ...PROFILE } : [{ id: USER.id, ...PROFILE }]);
++      if (table === "app_settings") return json([]);
++      if (req.method() === "POST") return json(wantObj ? {} : []);
++      return json(wantObj ? null : [], { "content-range": "0-0/0" });
++    }
++    return json({});
++  });
++  await page.addInitScript(([key, sess]) => { localStorage.setItem(key, JSON.stringify(sess)); }, ["sb-placeholder-auth-token", SESSION]);
++}
++
++// ── 스모크 ──────────────────────────────────────────────────────────────────
++let pass = 0, fail = 0;
++const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else { fail++; console.log("FAIL -", name); } };
++const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
++
++// ── 시험용 사진 — 흰 바탕에 검은 선 몇 개 (내용은 상관없다, 서버가 모의이므로). 외부 의존 없이 PNG 를 직접 만든다.
++function png(w, h, draw) {
++  const zlib = require("node:zlib");
++  const px = Buffer.alloc(w * h * 3, 255);
++  draw((x, y) => { if (x >= 0 && y >= 0 && x < w && y < h) { const i = (y * w + x) * 3; px[i] = px[i + 1] = px[i + 2] = 0; } });
++  const raw = Buffer.alloc((w * 3 + 1) * h);
++  for (let y = 0; y < h; y++) { raw[y * (w * 3 + 1)] = 0; px.copy(raw, y * (w * 3 + 1) + 1, y * w * 3, (y + 1) * w * 3); }
++  const crcTable = [...Array(256)].map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
++  const crc = (buf) => { let c = 0xffffffff; for (const b of buf) c = crcTable[(c ^ b) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
++  const chunk = (type, data) => { const len = Buffer.alloc(4); len.writeUInt32BE(data.length); const td = Buffer.concat([Buffer.from(type), data]); const c = Buffer.alloc(4); c.writeUInt32BE(crc(td)); return Buffer.concat([len, td, c]); };
++  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
++  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
++}
++function ensureImages() {
++  fs.mkdirSync(IMG, { recursive: true });
++  const specs = { problem: [900, 500, 3], answer: [900, 700, 5], page: [1200, 1600, 12] };
++  for (const [n, [w, h, lines]] of Object.entries(specs)) {
++    const f = path.join(IMG, n + ".png");
++    if (fs.existsSync(f)) continue;
++    fs.writeFileSync(f, png(w, h, (dot) => {
++      for (let x = 10; x < w - 10; x++) { dot(x, 10); dot(x, h - 11); }
++      for (let y = 10; y < h - 10; y++) { dot(10, y); dot(w - 11, y); }
++      for (let l = 0; l < lines; l++) { const y = 40 + l * Math.floor((h - 80) / lines); for (let x = 30; x < w * 0.6; x++) for (let t = 0; t < 3; t++) dot(x, y + t); }   // 글줄 흉내
++    }));
++  }
++}
++
++(async () => {
++  ensureImages();
++  const { srv, port } = await serve();
++  const base = `http://127.0.0.1:${port}/`;
++  const browser = await chromium.launch({ headless: !HEADED });
++  const ctx = await browser.newContext({ viewport: { width: 420, height: 860 }, deviceScaleFactor: 2, hasTouch: false });
++  const page = await ctx.newPage();
++  const errors = [];
++  page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
++  page.on("console", (m) => { if (m.type() === "error") errors.push("console: " + m.text()); });
++  await mockSupabase(page);
++  await page.route(/https:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com)\//, (r) => r.abort());   // 외부 폰트·CDN 은 스모크와 무관
++  const shot = async (name) => { try { await page.screenshot({ path: path.join(HERE, "shots", name + ".png"), fullPage: true }); } catch { /* */ } };
++  fs.mkdirSync(path.join(HERE, "shots"), { recursive: true });
++  const go = async (h) => { await page.goto(base + h); await page.waitForLoadState("networkidle"); };
++  const text = async () => (await page.locator("body").innerText()).replace(/\s+/g, " ");
++
++  try {
++    // A. 허브
++    await go("#/solve");
++    ok((await text()).includes("찍어서 배우기"), "허브: 문제풀이 허브에 '찍어서 배우기' 타일");
++    await page.getByText("찍어서 배우기", { exact: false }).first().click();
++    await page.waitForURL(/#\/solve\/photo$/);
++    await page.locator(".sv-h1", { hasText: "찍어서 배우기" }).waitFor({ timeout: 10000 });   // 지연 로딩 청크가 그려질 때까지
++    let t = await text();
++    ok(["문장 이해하기", "표시 연습하기", "서술형 채점·첨삭", "풀이과정 검사", "내 기록"].every((s) => t.includes(s)), "허브: 촬영 모듈 타일 4 + 내 기록");
++    await shot("00-hub");
++
++    // B. 문장 이해하기 — 영역 잡기(드래그) → 인식 → 방침
++    await go("#/solve/photo/read");
++    await page.locator('input[type=file]').first().setInputFiles(path.join(IMG, "problem.png"));
++    await page.getByRole("button", { name: /일부만 읽기/ }).click();
++    const stage = page.locator(".ph-stage");
++    const bb = await stage.boundingBox();
++    await page.mouse.move(bb.x + bb.width * 0.1, bb.y + bb.height * 0.1);
++    await page.mouse.down();
++    await page.mouse.move(bb.x + bb.width * 0.8, bb.y + bb.height * 0.6, { steps: 8 });
++    await page.mouse.up();
++    ok(await page.locator(".ph-box").count() === 1, "읽기: 드래그로 영역 상자 1개");
++    await page.getByRole("button", { name: "인식하기" }).click();
++    await page.getByText("세울 식").waitFor({ timeout: 15000 });
++    t = await text();
++    ok(t.includes("구하는 것") && t.includes("직사각형의 넓이"), "읽기: 구하는 것");
++    ok(t.includes("2(x + 3 + x) = 54"), "읽기: 세울 식(식 세우기까지)");
++    ok(t.includes("끊어 읽기") && t.includes("／"), "읽기: 끊어 읽기에 빗금");
++    ok(await page.locator(".sm-hilite").count() > 0, "읽기: 단서 형광펜이 문장 위에 칠해짐");
++    ok(await page.locator(".sm-bound").count() > 0, "읽기: 빗금(/) 표시");
++    ok(t.includes("여기서부터는 직접"), "읽기: 정답 대신 멈춤 안내");
++    ok(!/\b180\b/.test(t), "읽기: 정답(180)이 화면에 없음");
++    await shot("01-read");
++
++    // C. 표시 연습 — 방금 찍은 문제로 → 차례대로 → 넘어갈까요 → 직접 표시(MarkView)
++    await page.getByRole("button", { name: "이 문장으로 표시 연습" }).click();
++    await page.waitForURL(/photo\/mark\?cur=1/);
++    await page.getByRole("button", { name: "첫 표시 보기" }).click();
++    let guard = 0;
++    while (await page.getByRole("button", { name: "다음 ▶" }).count() && guard++ < 30) await page.getByRole("button", { name: "다음 ▶" }).click();
++    t = await text();
++    ok(t.includes("문장 이해하기로 넘어갈까요?"), "표시: 차례대로 다 보면 '문장 이해하기로 넘어갈까요?'");
++    ok(await page.locator(".sm-dist").count() > 0, "표시: 구하는 것에 물결");
++    await shot("02-mark");
++    await page.getByRole("button", { name: "아니요, 직접 표시해 볼래요" }).click();
++    ok(await page.getByRole("button", { name: "채점" }).count() === 1, "표시: 직접 표시(연습 탭)로 전환");
++    await page.getByRole("button", { name: "채점" }).click();
++    t = await text();
++    ok(/\d+점/.test(t) && !t.includes("다른 문항") && !t.includes("이 문제 풀기"), "표시: 채점 뒤 DB 문항용 버튼 없음(사진 문항)");
++    ok(t.includes("문장 이해하기로"), "표시: 채점 뒤 문장 이해하기 버튼");
++    await page.getByRole("button", { name: "문장 이해하기로" }).click();
++    await page.waitForURL(/photo\/read\?cur=1/);
++    await page.getByText("세울 식").waitFor({ timeout: 15000 });
++    ok(true, "표시→읽기: 방금 찍은 문제로 바로 이어짐(재촬영 없음)");
++
++    // D. 서술형 채점·첨삭 — 방금 찍은 문제 → 답안 촬영 → 채점
++    await go("#/solve/photo/essay?cur=1");
++    t = await text();
++    ok(t.includes("내 답안") && t.includes("2. 답안 찍기"), "서술형: 문제 단계 건너뛰고 답안 단계");
++    await page.locator('input[type=file]').first().setInputFiles(path.join(IMG, "answer.png"));
++    await page.getByRole("button", { name: "인식하기" }).click();
++    await page.locator("textarea.ph-ta").waitFor({ timeout: 15000 });
++    ok((await page.locator("textarea.ph-ta").inputValue()).includes("2(x+3+x) = 54"), "서술형: 전사된 답안이 편집칸에");
++    await page.locator("textarea.ph-ta").fill((await page.locator("textarea.ph-ta").inputValue()) + " cm²");
++    await page.getByRole("button", { name: "채점·첨삭 받기" }).click();
++    await page.getByText("채점 기준표").waitFor({ timeout: 15000 });
++    t = await text();
++    ok(t.includes("7") && t.includes("/ 8점"), "서술형: 점수 7/8");
++    ok(t.includes("첨삭") && t.includes("180 cm²"), "서술형: 첨삭(고친 것)");
++    ok(t.includes("이 기기에만 저장했어요"), "서술형: 보관 안내(기기)");
++    await shot("03-essay");
++
++    // E. 풀이과정 검사 — 페이지 → 자동 상자 → 검사 → 신호등 → 첨삭 선택
++    await go("#/solve/photo/check");
++    await page.locator('input[type=file]').first().setInputFiles(path.join(IMG, "page.png"));
++    await page.getByText("검사하기 (2문항)").waitFor({ timeout: 15000 });
++    ok(await page.locator(".ph-box").count() === 4, "검사: 자동 탐지 상자 4개(문제 2 + 풀이 2)");
++    // 상자 하나를 탭해 번호 조정 UI 가 뜨는지
++    await page.locator(".ph-box").first().click();
++    ok(await page.getByRole("button", { name: "문제↔풀이" }).count() === 1, "검사: 상자 선택 시 번호·종류 도구");
++    await page.getByRole("button", { name: "문제↔풀이" }).click();
++    ok((await text()).includes("검사하기 (1문항)"), "검사: 종류를 바꾸면 짝이 줄어듦(1문항)");
++    await page.getByRole("button", { name: "문제↔풀이" }).click();
++    ok((await text()).includes("검사하기 (2문항)"), "검사: 되돌리면 2문항");
++    // 수동으로 상자 하나 더 그리기(3번 문제) → 풀이 없으면 건너뜀 안내
++    await page.getByRole("button", { name: "+ 문제 영역" }).click();
++    const st2 = page.locator(".ph-stage"); const b2 = await st2.boundingBox();
++    await page.mouse.move(b2.x + 10, b2.y + b2.height * 0.92); await page.mouse.down();
++    await page.mouse.move(b2.x + b2.width * 0.5, b2.y + b2.height * 0.99, { steps: 6 }); await page.mouse.up();
++    t = await text();
++    ok(await page.locator(".ph-box").count() === 5 && t.includes("풀이가 없는 문항 1개는 건너뛰어요"), "검사: 수동 상자 추가 + 짝 없는 문항 안내");
++    await shot("04-check-edit");
++    await page.getByRole("button", { name: /검사하기 \(2문항\)/ }).click();
++    await page.getByText("서술형 첨삭으로 더 볼 문항이 있나요?").waitFor({ timeout: 30000 });
++    t = await text();
++    ok(t.includes("문서 전체") && (await page.locator(".ph-light.yellow").count()) >= 2, "검사: 문서 전체 신호등(노랑 포함)");
++    ok(t.includes("1번") && t.includes("2번") && t.includes("암산 부담"), "검사: 문항별 카드");
++    ok(t.includes("7을 1처럼"), "검사: 글씨 습관");
++    await page.locator(".ph-check input").first().check();
++    await page.getByRole("button", { name: "선택한 문항 첨삭받기" }).click();
++    await page.locator(".ph-item .ph-rub").first().waitFor({ timeout: 15000 });
++    t = await text();
++    ok(t.includes("/ 8점") && t.includes("서술형 채점·첨삭"), "검사→첨삭: 선택 문항 서술형 첨삭 결과");
++    ok((await page.locator(".ph-check input").count()) === 1, "검사→첨삭: 첨삭 끝난 문항은 체크칸이 사라짐");
++    await shot("05-check-result");
++
++    // F. 내 기록 — 기기 보관소
++    await go("#/solve/photo/mine");
++    await page.locator(".ph-rec").first().waitFor({ timeout: 10000 });
++    const n = await page.locator(".ph-rec").count();
++    ok(n >= 5, `기록: 기기 보관소에 ${n}건 (읽기·표시·서술형·검사2·첨삭)`);
++    await page.getByRole("button", { name: "서술형", exact: true }).click();
++    await sleep(400);
++    const nEssay = await page.locator(".ph-rec").count();
++    ok(nEssay === 2, `기록: 서술형 필터 ${nEssay}건 (서술형 화면 1 + 검사→첨삭 1)`);
++    await page.locator(".ph-rec").first().click();
++    await page.getByRole("button", { name: "이 기록 지우기" }).waitFor({ timeout: 5000 });
++    t = await text();
++    ok(t.includes("내 답안") && t.includes("채점 기준표") && t.includes("이 기기에만 저장했어요"), "기록: 서술형 상세(답안 + 기준표 + 보관 안내)");
++    await page.getByRole("button", { name: "이 기록 지우기" }).click();
++    await sleep(400);
++    ok((await page.locator(".ph-rec").count()) === nEssay - 1, "기록: 삭제");
++    await shot("06-mine");
++
++    // G. 서버 호출 순서 확인 — 사진은 scan 에만, 문항 텍스트는 그 뒤 호출에만
++    ok(calls.filter((c) => c.startsWith("scan")).length >= 6, `호출: scan ${calls.filter((c) => c.startsWith("scan")).length}회`);
++    ok(calls.includes("approach") && calls.includes("essay") && calls.includes("process"), "호출: approach·essay·process 모두 사용");
++  } catch (e) {
++    fail++; console.log("FAIL - 예외:", e?.message || e);
++    await shot("99-error");
++  }
++
++  const realErrors = errors.filter((e) => !/favicon|manifest|\.env|VITE_SUPABASE|Failed to load resource|ERR_TUNNEL|ERR_FAILED|net::/.test(e));
++  ok(realErrors.length === 0, `콘솔 오류 0건${realErrors.length ? " — " + realErrors.slice(0, 3).join(" | ") : ""}`);
++  await browser.close(); srv.close();
++  console.log(`\n${pass}/${pass + fail} passed`);
++  process.exit(fail ? 1 : 0);
++})();
+-- 
+2.43.0
+
