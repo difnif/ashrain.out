@@ -24,7 +24,7 @@ export default function Gate() {
             {BETA.on && <span style={{ fontSize: 10.5, fontWeight: 800, color: "#fff", background: "#7C3AED", borderRadius: 999, padding: "2px 7px" }}>{BETA.label}</span>}
           </div>
           <div style={{ fontSize: 13.5, color: "var(--mut)", lineHeight: 1.6 }}>
-            개념 카드로 배우고, 문항 세트·사진 채점·표시 연습으로 풀어요.<br />틀린 문제는 오답노트에 모여요.
+            개념 카드로 배우고, 문제를 찍어 문장 해설·표시 연습·서술형 첨삭으로 익혀요.
           </div>
           <div style={{ marginTop: 10, fontSize: 13, fontWeight: 800, color: "var(--ac)" }}>시작 →</div>
         </button>

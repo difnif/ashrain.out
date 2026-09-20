@@ -6,7 +6,7 @@ import { listConcepts } from "../lib/concepts";
 import { UNIT_NAMES, UNIT_ORDER } from "../lib/items";
 import { readLastResult } from "../lib/setplay";
 import { getRecentConcepts } from "../lib/review";
-import { TEST_TYPES, describeTimer, loadRunsLocal, mergeRuns, describeRun, presetOf } from "../lib/exam";
+import { TEST_TYPES, describeTimer, presetOf } from "../lib/exam";
 import ItemPicker from "./solve/ItemPicker";
 import "./solve/solve.css";
 
@@ -45,6 +45,13 @@ const CSS = `
   border-radius: 12px; padding: 12px; text-align: left; color: var(--text); cursor: pointer; font-family: inherit; }
 .st-tile .tt { font-size: 13.5px; font-weight: 800; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .st-tile .ds { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.st-dev { opacity: .6; cursor: default; }
+.st-devb { display: inline-flex; margin-left: 6px; font-size: 9px; font-weight: 900; letter-spacing: .5px; color: #fff;
+  background: #94A3B8; border-radius: 999px; padding: 2px 7px; vertical-align: middle; }
+.st-dark .st-devb { background: #475569; }
+.st-devnote { background: var(--surface); border: 1px dashed var(--muted); border-radius: 12px;
+  padding: 12px 14px; font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-bottom: 4px; }
+.st-devnote b { color: var(--text); }
 .st-badge { display: inline-flex; font-size: 9.5px; font-weight: 900; letter-spacing: .5px; color: #fff;
   border-radius: 999px; padding: 2px 7px; line-height: 1.4; }
 .st-meta { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
@@ -131,24 +138,11 @@ const EXAM_GROUPS = [
   ["스페셜", ["ash", "rain", "out"]],
 ];
 
+// 시험 보기 전면 개발중 전환(2026-09-20, 사용자 확정) — 유형 구성은 보여주되 실행은 잠근다.
 function ExamSub() {
-  const [runs, setRuns] = useState(null);
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      let remote = [];
-      try {
-        const { data } = await supabase.from("test_runs")
-          .select("id, test_type, unit_id, concept_ids, n, correct_n, score, max, finished_at")
-          .order("finished_at", { ascending: false }).limit(5);
-        remote = data || [];
-      } catch { /* 테이블 없거나 실패 — 로컬만 */ }
-      if (alive) setRuns(mergeRuns(remote, loadRunsLocal(), 3));
-    })();
-    return () => { alive = false; };
-  }, []);
   return (
     <>
+      <div className="st-devnote">🚧 시험 보기는 지금 <b>개발 중</b>이에요 — 문항을 차곡차곡 쌓는 중이라, 준비되면 여기서 바로 열려요.</div>
       {EXAM_GROUPS.map(([label, codes]) => (
         <div key={label}>
           <p className="st-sec">{label}</p>
@@ -157,37 +151,19 @@ function ExamSub() {
               const t = presetOf(code) || TEST_TYPES.find((x) => x.code === code);
               if (!t) return null;
               return (
-                <button key={code} className="st-tile" onClick={() => (location.hash = t.route || `#/solve/test/${t.code}`)}>
-                  <span className="tt">{t.icon} {t.name}
-                    {t.badge && <span className="st-badge" style={{ background: t.badge.color }}>{t.badge.text}</span>}
-                  </span>
+                <div key={code} className="st-tile st-dev" aria-disabled="true">
+                  <span className="tt">{t.icon} {t.name}<span className="st-devb">개발중</span></span>
                   <span className="ds">{t.desc}</span>
                   <span className="st-meta">
                     {t.n > 0 && <span className="st-tag">{t.n}문항</span>}
                     <span className="st-tag">{describeTimer(t)}</span>
                   </span>
-                </button>
+                </div>
               );
             })}
           </div>
         </div>
       ))}
-      <p className="st-sec">최근 응시</p>
-      {runs === null ? <div className="st-empty">불러오는 중…</div>
-        : runs.length === 0 ? <div className="st-empty">아직 응시한 시험이 없어요. 위에서 유형을 골라 시작해 보세요.</div>
-        : (
-          <div className="st-list">
-            {runs.map((r) => {
-              const d = describeRun(r, UNIT_NAMES);
-              return (
-                <button key={String(r.id)} className="st-item" onClick={() => (location.hash = d.link)}>
-                  <span className="num" style={{ width: "auto", fontSize: 15 }}>{presetOf(r.test_type)?.icon || "🧪"}</span>
-                  <span className="nm"><b>{d.name}{d.scope ? ` · ${d.scope}` : ""}</b><small>{d.score}{d.local ? " · 기기 저장" : ""}</small></span>
-                </button>
-              );
-            })}
-          </div>
-        )}
     </>
   );
 }

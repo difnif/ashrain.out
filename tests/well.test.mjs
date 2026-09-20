@@ -53,7 +53,8 @@ t("깨진 JSON은 기본값", JSON.stringify(clampWellCfg("{oops")) === JSON.str
 t("객체로 줘도 된다", clampWellCfg({ bar: { h: 60 } }).bar.h === 60);
 
 // ── 런처 목록 ──
-t("카메라 기능 6종", WELL_FEATURES.length === 6 && WELL_FEATURES.every(([, , , to]) => to.startsWith("#/")));
+t("사진 도구 5종(찰칵 채점은 개발중 제외)", WELL_FEATURES.length === 5 && WELL_FEATURES.every(([, , , to]) => to.startsWith("#/"))
+  && !WELL_FEATURES.some(([, , , to]) => to.includes("omr")));
 
 console.log(`${ok}/${n} passed`);
 if (ok !== n) process.exit(1);

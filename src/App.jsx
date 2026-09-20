@@ -2,54 +2,61 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { useTheme } from "./lib/theme";
 import SplashAuth from "./components/SplashAuth";
-import ConceptViewer from "./components/ConceptViewer";
-import AdminQna from "./components/AdminQna";
-import AdminConcepts from "./components/AdminConcepts";
-import MyPage from "./components/MyPage";
-import PortraitStudio from "./features/portrait/PortraitStudio";
-// raindrop (v0.4.0)
-import Signup from "./pages/Signup";
-import FindAccount from "./pages/FindAccount";
-import Onboarding from "./pages/Onboarding";
-import TrialStart from "./pages/TrialStart";
-import StaffJoin from "./pages/StaffJoin";
-import QrApprove from "./pages/QrApprove";
-import QrLogin from "./pages/QrLogin";
-import AdminCodes from "./pages/AdminCodes";
-import AdminUsers from "./pages/AdminUsers";
-import PracticeViewer from "./pages/PracticeViewer";
-import AdminPractice from "./pages/AdminPractice";
-import AdminChats from "./components/AdminChats";
-import AdminImages from "./components/AdminImages";
-import AdminItemGen from "./components/AdminItemGen";
-import AdminItemReview from "./components/AdminItemReview";
-import AdminCorpus from "./components/AdminCorpus";
-import AdminMonitor from "./components/AdminMonitor";
-import AdminSchemas from "./components/AdminSchemas";
-import GuardianConsent from "./components/GuardianConsent";
-import AdminGuardians from "./components/AdminGuardians";
-import Philosophy from "./components/Philosophy";
 import HomeDash from "./components/HomeDash";
-import AdminCalendar from "./components/AdminCalendar";
-import Library from "./pages/Library";
-import News from "./pages/News";
-import Duty from "./pages/Duty";
 // P0 셸 — 관문·경로층 라우터
 import Gate from "./gate/Gate";
 import { rolePath } from "./shared/roles";
-// 학생앱 베타 — 문제풀이 허브(#/solve/*)
+// 학생앱 베타 — 문제풀이 허브(#/solve/*, 내부에서 화면별 분할)
 import SolveRouter from "./pages/solve/SolveRouter";
 // ui-v3 셸 — 하단 탭바 4개(대시보드·공부하기·학습 도구·게시판) + 상단 서브탭, 기능 화면은 FeatureBar
 import { ShellTop, ShellTabs, shellMode } from "./components/Shell";
 import FeatureBar from "./components/FeatureBar";
 import Study from "./pages/Study";
 import Tools from "./pages/Tools";
-import ToolLeaf from "./pages/ToolLeaf";
-import Board from "./pages/board/Board";
-// 우물 v1 — 탭바 중앙 우물(시간·날씨 테마)의 관리자 편집
-import AdminWell from "./pages/AdminWell";
+
+// ── 로딩 개선: 첫 화면에 필요 없는 것들은 전부 지연 로딩 — 메인 번들을 줄인다 ──
+const ConceptViewer = lazy(() => import("./components/ConceptViewer"));
+const MyPage = lazy(() => import("./components/MyPage"));
+const PortraitStudio = lazy(() => import("./features/portrait/PortraitStudio"));
+const Philosophy = lazy(() => import("./components/Philosophy"));
+const GuardianConsent = lazy(() => import("./components/GuardianConsent"));
+const Board = lazy(() => import("./pages/board/Board"));
+const ToolLeaf = lazy(() => import("./pages/ToolLeaf"));
+const PracticeViewer = lazy(() => import("./pages/PracticeViewer"));
+const Library = lazy(() => import("./pages/Library"));
+const News = lazy(() => import("./pages/News"));
+const Duty = lazy(() => import("./pages/Duty"));
+// raindrop (v0.4.0) — 가입·인증 흐름
+const Signup = lazy(() => import("./pages/Signup"));
+const FindAccount = lazy(() => import("./pages/FindAccount"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const TrialStart = lazy(() => import("./pages/TrialStart"));
+const StaffJoin = lazy(() => import("./pages/StaffJoin"));
+const QrApprove = lazy(() => import("./pages/QrApprove"));
+const QrLogin = lazy(() => import("./pages/QrLogin"));
+// 관리자 화면들 — 학생 첫 로딩과 무관
+const AdminQna = lazy(() => import("./components/AdminQna"));
+const AdminConcepts = lazy(() => import("./components/AdminConcepts"));
+const AdminCodes = lazy(() => import("./pages/AdminCodes"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const AdminPractice = lazy(() => import("./pages/AdminPractice"));
+const AdminChats = lazy(() => import("./components/AdminChats"));
+const AdminImages = lazy(() => import("./components/AdminImages"));
+const AdminItemGen = lazy(() => import("./components/AdminItemGen"));
+const AdminItemReview = lazy(() => import("./components/AdminItemReview"));
+const AdminCorpus = lazy(() => import("./components/AdminCorpus"));
+const AdminMonitor = lazy(() => import("./components/AdminMonitor"));
+const AdminSchemas = lazy(() => import("./components/AdminSchemas"));
+const AdminGuardians = lazy(() => import("./components/AdminGuardians"));
+const AdminCalendar = lazy(() => import("./components/AdminCalendar"));
+const AdminWell = lazy(() => import("./pages/AdminWell"));
 const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
 const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
+
+/** 지연 청크가 오는 동안의 얇은 자리 표시 */
+function PageFall() {
+  return <div style={{ padding: "56px 0 40px", textAlign: "center", color: "#8A929C", fontSize: 13 }}>여는 중…</div>;
+}
 
 function useHash() {
   const [hash, setHash] = useState(location.hash);
@@ -388,7 +395,7 @@ function StudentApp() {
   return (
     <>
       {mode === "browse" && <ShellTop theme={theme} hash={hash} />}
-      <AppRoutes />
+      <Suspense fallback={<PageFall />}><AppRoutes /></Suspense>
       {mode === "browse" && <ShellTabs theme={theme} hash={hash} />}
     </>
   );
