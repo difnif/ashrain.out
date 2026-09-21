@@ -84,6 +84,16 @@ async function mockSupabase(page) {
     if (u.pathname.startsWith("/rest/v1/")) {
       const table = u.pathname.replace("/rest/v1/", "").split("/")[0];
       const wantObj = accept.includes("pgrst.object");
+      if (u.pathname === "/rest/v1/rpc/live_counts") {                     // 서버 집계 함수 (supabase/2026-09_live_counts.sql)
+        if (process.env.SMOKE_NO_RPC) return route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ code: "PGRST202", message: "function not found" }) });   // 마이그레이션 전 폴백 확인용
+        let body = {}; try { body = JSON.parse(req.postData() || "{}"); } catch { /* */ }
+        let list = ITEMS.slice();
+        if (Array.isArray(body.p_qtypes) && body.p_qtypes.length) list = list.filter((it) => body.p_qtypes.includes(it.qtype));
+        if (body.p_difficulty) list = list.filter((it) => it.difficulty === body.p_difficulty);
+        const unit = {}, concept = {};
+        for (const it of list) { unit[it.unit_id] = (unit[it.unit_id] || 0) + 1; for (const c of it.concept_ids) concept[c] = (concept[c] || 0) + 1; }
+        return json({ unit, concept });
+      }
       if (table === "test_items") {
         const list = filterItems(u);
         if (process.env.SMOKE_DEBUG) console.log("  ↳", req.method(), u.search, "→", list.length);
@@ -140,7 +150,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await m11.waitFor();
     await page.waitForFunction(() => [...document.querySelectorAll(".ex-units .sv-chip")].some((b) => /중1-1\s*\d+/.test(b.textContent)), null, { timeout: 15000 });
     ok(/중1-1\s*72/.test(await m11.innerText()), "A3 학기 칩에 공개 문항 수 (중1-1 72)");
-    ok(await page.locator(".ex-units .sv-chip", { hasText: "고3-1" }).isDisabled(), "A4 문항 없는 학기 칩은 비활성");
+    ok((await page.locator(".ex-units .sv-chip", { hasText: "고3-1" }).count()) === 0 && (await page.locator(".ex-units .sv-chip", { hasText: "다른 학기" }).count()) === 1, "A4 문항 없는 학기는 「다른 학기」 뒤로");
+    await page.locator(".ex-units .sv-chip", { hasText: "다른 학기" }).click();
+    ok(await page.locator(".ex-units .sv-chip", { hasText: "고3-1" }).isDisabled(), "A5 펼치면 문항 없는 학기 칩은 비활성");
 
     // B. 학기 → 단원 목록 (수·준비 중·학기 전체)
     await m11.click();
@@ -208,17 +220,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.waitForFunction(() => location.hash === "#/solve/test/unit/m1-2", null, { timeout: 15000 });
     ok(true, "F2 학기 전체 줄 → 학기 id 주소");
 
-    // G. 다른 유형(ash·mock)도 같은 범위 고르기
+    // G. 개발중 유형(모의고사 등)은 러너 대신 안내 (2026-09-21 개념 묶음·단원 테스트만 개방)
     await go("#/solve/test/mock");
-    await page.locator(".ex-units .sv-chip", { hasText: "중1-1" }).waitFor({ timeout: 15000 });
-    await page.waitForFunction(() => [...document.querySelectorAll(".ex-units .sv-chip")].some((b) => /중1-1\s*\d+/.test(b.textContent)), null, { timeout: 15000 });
-    await page.locator(".ex-units .sv-chip", { hasText: "중1-1" }).click();
-    await page.locator(".ex-chapters .sv-item").first().waitFor({ timeout: 15000 });
-    ok((await page.locator(".ex-chapters .sv-item").count()) === 5, "G1 모의고사도 학기 → 단원 목록");
-    await page.locator(".ex-chapters .sv-item").first().click();                // 소인수분해 (m1-1~0)
-    await page.waitForFunction(() => location.hash === "#/solve/test/mock/m1-1~0", null, { timeout: 15000 });
-    await page.locator(".sv-btn.pri", { hasText: "시작" }).waitFor({ timeout: 15000 });
-    ok(/중1-1 · 소인수분해/.test(await text()), "G2 모의고사 확인 카드에 단원");
+    await page.waitForFunction(() => /개발 중이에요/.test(document.body.innerText), null, { timeout: 15000 });
+    ok((await page.locator(".ex-units").count()) === 0, "G1 모의고사는 개발중 안내 — 범위 고르기 없음");
 
     // H. 개념 묶음은 그대로 개념 고르기
     await go("#/solve/test/concept_set");
