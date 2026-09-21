@@ -53,9 +53,111 @@ def ans_val(it):
 
 
 # ── ① 독립 검산 — 발문에서 수를 읽어 다시 푼다 ─────────────────────────────
+SUPD = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789")             # 위첨자 지수 → 숫자
+
+
 def recompute(it):
     tid, q = it["template_id"], it["question"]
     n = nums(q)
+    # ── 09-21 중1 빈 개념 채우기 (mkseed_m1_gaps.py) — 발문에서 수를 다시 읽어 재계산
+    if tid.startswith("m1-1-power-t1"):
+        m = re.match(r"(\d+)([⁰¹²³⁴⁵⁶⁷⁸⁹]+)의 값", q); return Fraction(int(m.group(1)) ** int(m.group(2).translate(SUPD)))
+    if tid.startswith("m1-1-power-t2"):
+        m = re.match(r"(.+?)[을를] 거듭제곱을 사용하여 나타내면 (\d+)ᵃ × (\d+)ᵇ", q)
+        fac = m.group(1).split(" × "); a, b = fac.count(m.group(2)), fac.count(m.group(3))
+        return Fraction(a + b if "a + b" in q else a * b)
+    if tid.startswith("m1-1-power-t3"):
+        m = re.match(r"(\d+)ⁿ = (\d+)일 때", q)
+        if m:
+            a, N = int(m.group(1)), int(m.group(2)); k = 0; v = 1
+            while v < N: v *= a; k += 1
+            return Fraction(k) if v == N else None
+        m = re.match(r"x([⁰¹²³⁴⁵⁶⁷⁸⁹]+) = (\d+)일 때", q); nn, N = int(m.group(1).translate(SUPD)), int(m.group(2))
+        a = round(N ** (1 / nn)); return Fraction(a) if a ** nn == N else None
+    if tid.startswith("m1-1-sign-number-t2"):
+        m = re.search(r"오른쪽으로 (\d+)만큼, 점 B는 원점의 왼쪽으로 (\d+)만큼", q); return Fraction(int(m.group(1)) - int(m.group(2)))
+    if tid.startswith("m1-1-int-rational-t2"):
+        m = re.match(r"(-?\d+)[와과] (-?\d+) 사이에 있는 정수", q); return Fraction(int(m.group(2)) - int(m.group(1)) - 1)
+    if tid.startswith("m1-1-int-rational-t3"):
+        m = re.match(r"(-?\d+) 이상 (-?\d+) 이하인 정수", q); return Fraction(int(m.group(2)) - int(m.group(1)) + 1)
+    if tid.startswith("m1-1-ineq-sign-t"):
+        m = re.match(r"x는 (-?\d+) (이상|초과|보다 크고|보다 작지 않고) (-?\d+) (이하인|미만인|보다 크지 않은|보다 작은) 수", q)
+        a, b = int(m.group(1)), int(m.group(3)); lo = a if m.group(2) in ("이상", "보다 작지 않고") else a + 1; hi = b if m.group(4) in ("이하인", "보다 크지 않은") else b - 1
+        return Fraction(hi - lo + 1) if "몇 개" in q else Fraction(sum(range(lo, hi + 1)))
+    if tid.startswith("m1-1-rational-apply-t1"):
+        m = re.search(r"영하 (\d+) ℃.*?(\d+) ℃ 올랐고.*?(\d+) ℃ 내려갔다", q); return Fraction(-int(m.group(1)) + int(m.group(2)) - int(m.group(3)))
+    if tid.startswith("m1-1-rational-apply-t2"):
+        m = re.search(r"두 수 (-?\d+)[와과] (-?\d+)[을를] 나타내는", q); return Fraction(abs(int(m.group(1)) - int(m.group(2))))
+    if tid.startswith("m1-1-rational-apply-t3"):
+        m = re.search(r"(\d+)문제를 푸는 게임에서 한 문제를 맞히면 (\d+)점을 얻고 틀리면 (\d+)점을 잃는다.*?(\d+)문제를 맞히고", q)
+        nn, p, qq, w = (int(x) for x in m.groups()); return Fraction(p * w - qq * (nn - w))
+    if tid.startswith("m1-1-omit-sign-t1"):
+        head = q.split("곱셈 기호")[0]; v = 1
+        for x in re.findall(r"-?\d+", head): v *= int(x)
+        return Fraction(v)
+    if tid.startswith("m1-1-omit-sign-t2") or tid.startswith("m1-1-omit-sign-t6"):
+        m = re.search(r"÷ (\d+) ÷ (\d+)", q); return Fraction(int(m.group(1)) * int(m.group(2)))
+    if tid.startswith("m1-1-omit-sign-t3"):
+        m = re.match(r"a = (-?\d+)일 때, (\d+)a²", q); a, k = int(m.group(1)), int(m.group(2)); return Fraction(k * a * a)
+    if tid.startswith("m1-1-omit-sign-t4"):
+        m = re.match(r"a = (-?\d+)일 때, \((\d+)a\)²", q); a, k = int(m.group(1)), int(m.group(2)); return Fraction((k * a) ** 2)
+    if tid.startswith("m1-1-omit-sign-t5"):
+        m = re.match(r"a = (-?\d+)일 때, (\d+)a \+ (\d+)", q); a, k, mm = (int(x) for x in m.groups()); return Fraction(k * a + mm)
+    if tid.startswith("m1-1-eq-property-t1"):
+        m = re.search(r"(\d+)x ([+−]) (\d+) = (-?\d+)", q); a, sg, b, c = int(m.group(1)), m.group(2), int(m.group(3)), int(m.group(4))
+        return Fraction(c - (b if sg == "+" else -b), a)
+    if tid.startswith("m1-1-eq-property-t2"):
+        m = re.search(r"x/(\d+) ([+−]) (\d+) = (-?\d+)", q); a, sg, b, c = int(m.group(1)), m.group(2), int(m.group(3)), int(m.group(4))
+        return Fraction(a * (c - (b if sg == "+" else -b)))
+    if tid.startswith("m1-1-graph-t1"):
+        m = re.search(r"(\d+)분 후의 높이는 (\d+) cm였다. 물을 넣기 시작한 지 (\d+)분 후", q); T, H, t = (int(x) for x in m.groups()); return Fraction(H * t, T)
+    if tid.startswith("m1-1-sign-number-t1"):
+        m = re.search(r"(?:영하|해저|지출|손해|서쪽으로|)\s*(\d+)\s*(?:℃|m|원|km|명)", q.split("나타낼 때,")[1]); return Fraction(-int(m.group(1)))
+    if tid.startswith("m1-1-order-t3"):
+        m = re.match(r"두 수 (-?\d+)[와과] (-?\d+)에 대하여", q); x, y = int(m.group(1)), int(m.group(2)); return Fraction(abs(x - y))
+    if tid.startswith("m1-1-order-t2"):
+        head = q.split("작은 것부터")[0]
+        vals = []                                                 # 분수 마커 [[frac(a,b)]] 는 값으로 바꾼다
+        for tok in [t.strip() for t in head.split(",  ")]:
+            tok = tok.replace("다섯 수", "").strip()
+            m = re.fullmatch(r"\[\[(-?)frac\((\d+),(\d+)\)\]\](?:을|를)?", tok)
+            if m:
+                vals.append(Fraction(int(m.group(2)), int(m.group(3))) * (-1 if m.group(1) else 1)); continue
+            m = re.fullmatch(r"(-?\d+(?:\.\d+)?)(?:을|를)?", tok)
+            if m:
+                vals.append(Fraction(m.group(1)))
+        return max(vals) - min(vals) if len(vals) == 5 else None
+    if tid.startswith("m1-1-graph-t2") or tid.startswith("m1-1-order-t1") or tid.startswith("m1-1-sign-number-t3") or tid.startswith("m1-1-int-rational-t1"):
+        return "skip"                                             # 답이 그림·목록·부등식인 유형 — 문면만으로 수치 재계산 불가
+    # ── 09-21 중1-2·중3-1 빈 개념 (mkseed_m1_gaps2.py)
+    if tid.startswith("m1-2-congruent-t1"):
+        m = re.search(r"∠[A-F] = \[\[deg\((\d+)\)\]\], ∠[A-F] = \[\[deg\((\d+)\)\]\]", q); return Fraction(180 - int(m.group(1)) - int(m.group(2)))
+    if tid.startswith("m1-2-congruent-t2"):
+        m = re.search(r"= (\d+) cm, [A-F]{2} = (\d+) cm, [A-F]{2} = (\d+) cm", q); return Fraction(sum(int(x) for x in m.groups()))
+    if tid.startswith("m1-2-congruent-t3"):
+        m = re.search(r"둘레의 길이가 (\d+) cm이다. AB = (\d+) cm, BC = (\d+) cm", q); P, a, b = (int(x) for x in m.groups()); return Fraction(P - a - b)
+    if tid.startswith("m1-2-revolution-t1"):
+        m = re.search(r"반지름의 길이가 (\d+) cm, 높이가 (\d+) cm인 (원기둥|원뿔)", q); r, h = int(m.group(1)), int(m.group(2)); return Fraction((2 if m.group(3) == "원기둥" else 1) * r * h)
+    if tid.startswith("m1-2-revolution-t2") or tid.startswith("m1-2-revolution-t4"):
+        m = re.search(r"반지름의 길이가 (\d+) cm", q); r = int(m.group(1)); return Fraction(r * r)            # π 계수
+    if tid.startswith("m1-2-revolution-t3"):
+        m = re.search(r"AB = (\d+) cm, BC = (\d+) cm", q); h, r = int(m.group(1)), int(m.group(2)); return Fraction(r * r * h, 3)   # π 계수
+    if tid.startswith("m1-2-histogram-t3"):
+        m = re.search(r"학생 (\d+)명의.*?계급의 크기가 (\d+)", q); return Fraction(int(m.group(1)) * int(m.group(2)))
+    if tid.startswith("m3-1-quad-build-t1") or tid.startswith("m3-1-quad-build-t4"):
+        m = re.search(r"두 근이 (-?\d+), (-?\d+)이고 x²의 계수가 (\d+)인", q); p, qq, a = (int(x) for x in m.groups())
+        b, c = -a * (p + qq), a * p * qq; ask = re.search(r"때, (b \+ c|b|c)의 값", q).group(1)
+        return Fraction({"b": b, "c": c, "b + c": b + c}[ask])
+    if tid.startswith("m3-1-quad-build-t2") or tid.startswith("m3-1-quad-build-t5"):
+        m = re.search(r"x = (-?\d+)[을를] 중근으로 갖고 x²의 계수가 (\d+)인", q); p, a = int(m.group(1)), int(m.group(2))
+        b, c = -2 * a * p, a * p * p; ask = re.search(r"때, (b|c)의 값", q).group(1); return Fraction({"b": b, "c": c}[ask])
+    if tid.startswith("m3-1-quad-build-t3"):
+        m = re.search(r"두 근 (-?\d+), (-?\d+)[을를] 얻었고.*?두 근 (-?\d+), (-?\d+)[을를] 얻었다", q); p1, q1, p2, q2 = (int(x) for x in m.groups())
+        c, b = p1 * q1, -(p2 + q2)
+        roots = [x for x in range(-30, 31) if x * x + b * x + c == 0]
+        return Fraction(max(roots)) if len(roots) == 2 else None
+    if tid.startswith("m1-2-stemleaf-") or tid.startswith("m1-2-histogram-t1") or tid.startswith("m1-2-histogram-t2"):
+        return "skip"                                             # 자료가 그림에 있다
     if tid.startswith("m1-1-numline-mid-t1") or tid.startswith("m1-1-numline-mid-t3"):
         a, b = n[0], n[1]; return (a + b) / 2
     if tid.startswith("m1-1-numline-mid-t2"):

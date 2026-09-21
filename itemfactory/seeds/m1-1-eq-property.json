@@ -1,0 +1,447 @@
+{
+  "seed_id": "m1-1-eq-property",
+  "category": "연산",
+  "title": "등식의 성질 — 성질을 이용해 방정식 풀기",
+  "unit_id": "m1-1",
+  "concept_ids": [
+    "m1-1-25"
+  ],
+  "schema_id": null,
+  "schema_name": "등식의 성질",
+  "source_item_ids": [],
+  "note": "'양변에 같은 수' 를 명시한 단계 해설. ax + b = c 와 x/a + b = c 두 꼴.",
+  "geometry": false,
+  "templates": [
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "방정식"
+      ],
+      "traps": [
+        "부호",
+        "역연산"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 200,
+      "prereq": [
+        "등식",
+        "문자와 식"
+      ],
+      "tags": [
+        "등식의 성질",
+        "방정식"
+      ],
+      "title": "등식의 성질로 ax + b = c 풀기 — 양변에 같은 수를 더하고(빼고) 같은 수로 나누기",
+      "skill": "등식의 양변에 같은 수를 더하거나 빼고, 0이 아닌 같은 수로 나누어도 등식이 성립함을 이용해 일차방정식의 해 구하기",
+      "variant_axis": {
+        "계수": "a 2~9",
+        "상수": "b −12~12",
+        "해": "−8~8"
+      },
+      "discriminates": "'양변에 같은 수를 더하거나 빼기 → 양변을 같은 수로 나누기'의 순서로 등식의 성질을 적용하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              -12,
+              12
+            ]
+          }
+        },
+        {
+          "name": "x",
+          "values": {
+            "int": [
+              -8,
+              8
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "c": "a*x + b",
+        "nb": "-b",
+        "ax": "a*x"
+      },
+      "constraints": [
+        "b != 0",
+        "x != 0",
+        "c != 0",
+        "abs(c) <= 60"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "x"
+      ],
+      "answer_var": "x",
+      "verify": [
+        "a*ans + b == c",
+        "ans*a == ax"
+      ],
+      "question": "등식의 성질을 이용하여 방정식 {a}x {sgn(b)} = {c}{eul(c)} 푸시오.",
+      "answer": "{x}",
+      "answer_alt": [
+        "x = {x}"
+      ],
+      "sol1": "등식의 양변에 같은 수를 더하거나 빼도, 0이 아닌 같은 수를 곱하거나 나누어도 등식은 성립한다. 먼저 상수항 {b}{eul(b)} 없애기 위해 양변에 {nb}{eul(nb)} 더하고(즉 {b}{eul(b)} 빼고), 그다음 x의 계수 {a}{ro(a)} 양변을 나눈다.",
+      "sol2": [
+        "양변에 {nb}{eul(nb)} 더하면 {a}x {sgn(b)} {sgn(nb)} = {c} {sgn(nb)}",
+        "정리하면 {a}x = {ax}",
+        "양변을 {a}{ro(a)} 나누면 x = {x}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{a}x {sgn(b)} = {c}",
+                "hint": "상수항부터 없앤다"
+              },
+              {
+                "text": "{a}x = {ax}",
+                "hint": "양변에 {nb}{eul(nb)} 더함",
+                "marks": [
+                  {
+                    "on": "{ax}",
+                    "note": "양변에 같은 수"
+                  }
+                ]
+              },
+              {
+                "text": "x = {x}",
+                "hint": "양변을 {a}{ro(a)} 나눔"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
+          }
+        ]
+      ],
+      "sol3": "x = {x}{eul(x)} 원래 등식에 대입하면 {a} × ({x}) {sgn(b)} = {c}{ro(c)} 양변이 같다. 따라서 해는 x = {x}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{a} × ({x}) {sgn(b)} = {c}  ✓"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ]
+      ],
+      "model_answer": "양변에 {nb}{eul(nb)} 더하면 {a}x = {ax}이고, 양변을 {a}{ro(a)} 나누면 x = {x}이다.",
+      "rubric": [
+        {
+          "element": "상수항 없애기",
+          "points": 3,
+          "criterion": "양변에 같은 수 {nb}{eul(nb)} 더해 {a}x = {ax}{eul(ax)} 얻었다.",
+          "partial": "한쪽 변에만 더했으면 인정하지 않는다."
+        },
+        {
+          "element": "계수로 나누기",
+          "points": 2,
+          "criterion": "양변을 {a}{ro(a)} 나누어 x = {x}{eul(x)} 얻었다.",
+          "partial": "계수를 빼거나 곱했으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "해 x = {x}{eul(x)} 답했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-1-eq-property-t1",
+      "pitfalls": [
+        {
+          "text": "양변에 같은 수를 더하지 않고 한쪽에만 더함",
+          "on": "상수항",
+          "effect": "불인정"
+        },
+        {
+          "text": "계수를 나누지 않고 빼서 x 를 구함",
+          "on": "계수로 나누기",
+          "effect": "불인정"
+        },
+        {
+          "text": "상수항을 옮길 때 부호를 바꾸지 않음",
+          "on": "상수항",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "절차수행",
+      "context": "무맥락",
+      "ops": [
+        "방정식"
+      ],
+      "traps": [
+        "부호",
+        "역연산"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 200,
+      "prereq": [
+        "등식",
+        "문자와 식"
+      ],
+      "tags": [
+        "등식의 성질",
+        "방정식"
+      ],
+      "title": "등식의 성질로 x/a + b = c 풀기 — 양변에서 빼고 같은 수를 곱하기",
+      "skill": "분모가 있는 방정식에서 양변에 같은 수를 빼고 같은 수를 곱해 해를 구하기",
+      "variant_axis": {
+        "분모": "2~9",
+        "상수": "−9~9",
+        "해": "분모의 배수"
+      },
+      "discriminates": "양변을 같은 수로 곱할 때 상수항까지 함께 곱하지 않도록 먼저 상수항을 옮기는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              -9,
+              9
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "values": {
+            "int": [
+              -7,
+              7
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "x": "a*q",
+        "c": "q + b",
+        "nb": "-b",
+        "cb": "c - b"
+      },
+      "constraints": [
+        "b != 0",
+        "q != 0",
+        "c != 0",
+        "abs(x) <= 60"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "x"
+      ],
+      "answer_var": "x",
+      "verify": [
+        "ans/a + b == c",
+        "ans == a*q"
+      ],
+      "question": "등식의 성질을 이용하여 방정식 x/{a} {sgn(b)} = {c}{eul(c)} 푸시오.",
+      "answer": "{x}",
+      "answer_alt": [
+        "x = {x}"
+      ],
+      "sol1": "양변에 같은 수를 더하거나 빼고, 같은 수를 곱해도 등식은 성립한다. 먼저 양변에 {nb}{eul(nb)} 더해 상수항을 없앤 뒤, 분모 {a}{eul(a)} 없애기 위해 양변에 {a}{eul(a)} 곱한다. 곱하기 전에 상수항을 먼저 옮기는 것이 실수를 줄인다.",
+      "sol2": [
+        "양변에 {nb}{eul(nb)} 더하면 x/{a} = {cb}",
+        "양변에 {a}{eul(a)} 곱하면 x = {cb} × {a}",
+        "따라서 x = {x}"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "x/{a} {sgn(b)} = {c}",
+                "hint": "상수항부터"
+              },
+              {
+                "text": "x/{a} = {cb}",
+                "hint": "양변에 {nb}{eul(nb)} 더함"
+              },
+              {
+                "text": "x = {cb} × {a} = {x}",
+                "hint": "양변에 {a}{eul(a)} 곱함",
+                "marks": [
+                  {
+                    "on": "× {a}",
+                    "note": "양변 모두에"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ]
+      ],
+      "sol3": "x = {x}{eul(x)} 대입하면 {x} ÷ {a} {sgn(b)} = {q} {sgn(b)} = {c}{ro(c)} 양변이 같다. 따라서 해는 x = {x}이다.",
+      "sol3_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              "{x} ÷ {a} {sgn(b)} = {c}  ✓"
+            ]
+          }
+        }
+      ],
+      "sol3_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          }
+        ]
+      ],
+      "model_answer": "양변에 {nb}{eul(nb)} 더하면 x/{a} = {cb}이고, 양변에 {a}{eul(a)} 곱하면 x = {x}이다.",
+      "rubric": [
+        {
+          "element": "상수항 없애기",
+          "points": 3,
+          "criterion": "양변에 {nb}{eul(nb)} 더해 x/{a} = {cb}{eul(cb)} 얻었다.",
+          "partial": "한쪽 변에만 더했으면 인정하지 않는다."
+        },
+        {
+          "element": "같은 수 곱하기",
+          "points": 2,
+          "criterion": "양변에 {a}{eul(a)} 곱해 x = {x}{eul(x)} 얻었다.",
+          "partial": "상수항을 옮기기 전에 곱하면서 상수항에는 곱하지 않았으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "해 x = {x}{eul(x)} 답했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-1-eq-property-t2",
+      "pitfalls": [
+        {
+          "text": "상수항을 옮기기 전에 양변에 곱하면서 상수항에는 곱하지 않음",
+          "on": "같은 수 곱하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "양변에 곱하는 대신 나눔",
+          "on": "같은 수 곱하기",
+          "effect": "불인정"
+        },
+        {
+          "text": "상수항을 옮길 때 부호를 바꾸지 않음",
+          "on": "상수항",
+          "effect": "부분"
+        }
+      ]
+    }
+  ]
+}

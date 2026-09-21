@@ -1,0 +1,1629 @@
+{
+  "seed_id": "m1-2-congruent",
+  "category": "도형",
+  "title": "삼각형의 합동 — 대응각·둘레·남은 변",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-06"
+  ],
+  "schema_id": null,
+  "schema_name": "삼각형의 합동 — 대응각·대응변",
+  "source_item_ids": [],
+  "note": "합동인 두 삼각형의 대응 관계(A↔D, B↔E, C↔F)를 꼭짓점 순서로 읽는 훈련. 답이 문면의 각·변과 겹치지 않는 축만 골랐다. 대응각 틀은 그림 라벨이 달라 변주별로 t1·t4·t5.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "사칙"
+      ],
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 200,
+      "prereq": [
+        "삼각형의 내각의 합",
+        "합동의 뜻"
+      ],
+      "tags": [
+        "합동",
+        "대응각",
+        "대응변"
+      ],
+      "title": "합동인 두 삼각형의 대응각 — 세 번째 각을 내각의 합으로 구해 옮기기",
+      "skill": "△ABC ≡ △DEF 에서 대응각의 크기가 같음을 알고, 주어지지 않은 각을 내각의 합 180°로 구한 뒤 대응각으로 옮기기",
+      "variant_axis": {
+        "주어진 각": "∠A·∠B / ∠B·∠C / ∠A·∠C",
+        "묻는 각": "∠F / ∠D / ∠E"
+      },
+      "discriminates": "꼭짓점의 순서로 대응각을 바르게 찾고(A↔D, B↔E, C↔F), 없는 각은 180°에서 두 각을 빼서 구하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "AB_F"
+            ]
+          }
+        },
+        {
+          "name": "i",
+          "values": {
+            "int": [
+              5,
+              21
+            ]
+          }
+        },
+        {
+          "name": "j",
+          "values": {
+            "int": [
+              5,
+              21
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "k",
+        "rows": {
+          "AB_F": {
+            "G1": "A",
+            "G2": "B",
+            "ASK": "F",
+            "CORR": "C",
+            "OTH1": "D",
+            "OTH2": "E",
+            "wAx": 1,
+            "wAy": 0,
+            "wBx": 0,
+            "wBy": 1,
+            "wBz": 0,
+            "wAz": 0
+          },
+          "BC_D": {
+            "G1": "B",
+            "G2": "C",
+            "ASK": "D",
+            "CORR": "A",
+            "OTH1": "E",
+            "OTH2": "F",
+            "wAx": 0,
+            "wAy": 0,
+            "wBx": 1,
+            "wBy": 0,
+            "wBz": 0,
+            "wAz": 1
+          },
+          "AC_E": {
+            "G1": "A",
+            "G2": "C",
+            "ASK": "E",
+            "CORR": "B",
+            "OTH1": "D",
+            "OTH2": "F",
+            "wAx": 1,
+            "wAy": 0,
+            "wBx": 0,
+            "wBy": 0,
+            "wBz": 1,
+            "wAz": 0
+          }
+        }
+      },
+      "derive": {
+        "x": "5*i",
+        "y": "5*j",
+        "z": "180 - 5*i - 5*j",
+        "aA": "wAx*5*i + wAy*5*j + wAz*(180 - 5*i - 5*j)",
+        "aB": "wBx*5*i + wBy*5*j + wBz*(180 - 5*i - 5*j)",
+        "aC": "180 - (wAx*5*i + wAy*5*j + wAz*(180 - 5*i - 5*j)) - (wBx*5*i + wBy*5*j + wBz*(180 - 5*i - 5*j))",
+        "bl": "sin(aB*pi/180)/sin(aC*pi/180)",
+        "cx": "bl*cos(aA*pi/180)",
+        "cy": "bl*sin(aA*pi/180)",
+        "X": "10*cx",
+        "Y": "10*cy",
+        "s": "min(1, floor(cy/1.25))",
+        "dx": "15*s",
+        "dy": "-(10*cy + 4)*(1 - s)"
+      },
+      "constraints": [
+        "z != x",
+        "z != y",
+        "x != y",
+        "aA >= 25",
+        "aB >= 25",
+        "aC >= 25",
+        "aA <= 105",
+        "aB <= 105",
+        "aC <= 105"
+      ],
+      "cost_values": [
+        "x",
+        "y",
+        "z"
+      ],
+      "answer_var": "z",
+      "verify": [
+        "x + y + ans == 180",
+        "ans > 0",
+        "aA + aB + aC == 180"
+      ],
+      "question": "다음 그림에서 △ABC ≡ △DEF이고 ∠{G1} = [[deg({x})]], ∠{G2} = [[deg({y})]]일 때, ∠{ASK}의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                10,
+                0
+              ],
+              "C": [
+                "{X}",
+                "{Y}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{dx + 10}",
+                "{dy}"
+              ],
+              "F": [
+                "{X + dx}",
+                "{Y + dy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "D",
+                "F"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "B",
+                  "to": "C",
+                  "label": "{x}°"
+                },
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "label": "{y}°"
+                },
+                {
+                  "at": "F",
+                  "from": "D",
+                  "to": "E",
+                  "label": "?"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({z})]]",
+      "answer_alt": [
+        "{z}"
+      ],
+      "sol1": "합동인 두 도형은 대응하는 각의 크기가 서로 같다. △ABC ≡ △DEF에서 꼭짓점 순서대로 A↔D, B↔E, C↔F가 대응하므로 ∠{ASK}{eun(ASK)} ∠{CORR}{wa(CORR)} 같다. ∠{CORR}{eun(CORR)} 주어지지 않았으니 삼각형의 세 내각의 합이 180°임을 써서 먼저 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                10,
+                0
+              ],
+              "C": [
+                "{X}",
+                "{Y}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{dx + 10}",
+                "{dy}"
+              ],
+              "F": [
+                "{X + dx}",
+                "{Y + dy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "D",
+                "F"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "B",
+                  "to": "C",
+                  "label": "{x}°"
+                },
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "label": "{y}°"
+                },
+                {
+                  "at": "F",
+                  "from": "D",
+                  "to": "E",
+                  "label": "?"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:{CORR}",
+              "arc:{ASK}"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "∠{CORR} = 180° − ∠{G1} − ∠{G2} = 180° − [[deg({x})]] − [[deg({y})]] = [[deg({z})]]",
+        "대응각이므로 ∠{ASK} = ∠{CORR} = [[deg({z})]]"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠{CORR} = 180° − {x}° − {y}° = {z}°",
+                "hint": "세 내각의 합 180°"
+              },
+              {
+                "text": "∠{ASK} = ∠{CORR} = {z}°",
+                "hint": "A↔D, B↔E, C↔F",
+                "marks": [
+                  {
+                    "on": "∠{ASK}",
+                    "note": "대응각은 순서로 찾는다"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "sol_check": "△DEF의 세 각 ∠{OTH1}, ∠{OTH2}, ∠{ASK}도 대응각이므로 {x}°, {y}°, {z}°이고 합이 180°다. 답은 [[deg({z})]]다.",
+      "model_answer": "∠{CORR} = 180° − {x}° − {y}° = {z}°이고, △ABC ≡ △DEF에서 ∠{ASK}의 대응각은 ∠{CORR}이므로 ∠{ASK} = {z}°이다.",
+      "rubric": [
+        {
+          "element": "남은 각 구하기",
+          "points": 2,
+          "criterion": "내각의 합을 써서 ∠{CORR} = {z}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        },
+        {
+          "element": "대응각 찾기",
+          "points": 3,
+          "criterion": "꼭짓점 순서로 ∠{ASK}의 대응각이 ∠{CORR}임을 밝혔다.",
+          "partial": "다른 각과 대응시켰으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{ASK} = {z}°를 답했다.",
+          "partial": "주어진 각을 그대로 답했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-congruent-t1",
+      "pitfalls": [
+        {
+          "text": "대응각을 글자 순서가 아니라 크기 순으로 짝지음",
+          "on": "대응각",
+          "effect": "불인정"
+        },
+        {
+          "text": "180°에서 한 각만 빼서 남은 각을 구함",
+          "on": "남은 각",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "사칙"
+      ],
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 200,
+      "prereq": [
+        "삼각형의 내각의 합",
+        "합동의 뜻"
+      ],
+      "tags": [
+        "합동",
+        "대응각",
+        "대응변"
+      ],
+      "title": "합동인 두 삼각형의 대응각 — 세 번째 각을 내각의 합으로 구해 옮기기",
+      "skill": "△ABC ≡ △DEF 에서 대응각의 크기가 같음을 알고, 주어지지 않은 각을 내각의 합 180°로 구한 뒤 대응각으로 옮기기",
+      "variant_axis": {
+        "주어진 각": "∠A·∠B / ∠B·∠C / ∠A·∠C",
+        "묻는 각": "∠F / ∠D / ∠E"
+      },
+      "discriminates": "꼭짓점의 순서로 대응각을 바르게 찾고(A↔D, B↔E, C↔F), 없는 각은 180°에서 두 각을 빼서 구하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "BC_D"
+            ]
+          }
+        },
+        {
+          "name": "i",
+          "values": {
+            "int": [
+              5,
+              21
+            ]
+          }
+        },
+        {
+          "name": "j",
+          "values": {
+            "int": [
+              5,
+              21
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "k",
+        "rows": {
+          "AB_F": {
+            "G1": "A",
+            "G2": "B",
+            "ASK": "F",
+            "CORR": "C",
+            "OTH1": "D",
+            "OTH2": "E",
+            "wAx": 1,
+            "wAy": 0,
+            "wBx": 0,
+            "wBy": 1,
+            "wBz": 0,
+            "wAz": 0
+          },
+          "BC_D": {
+            "G1": "B",
+            "G2": "C",
+            "ASK": "D",
+            "CORR": "A",
+            "OTH1": "E",
+            "OTH2": "F",
+            "wAx": 0,
+            "wAy": 0,
+            "wBx": 1,
+            "wBy": 0,
+            "wBz": 0,
+            "wAz": 1
+          },
+          "AC_E": {
+            "G1": "A",
+            "G2": "C",
+            "ASK": "E",
+            "CORR": "B",
+            "OTH1": "D",
+            "OTH2": "F",
+            "wAx": 1,
+            "wAy": 0,
+            "wBx": 0,
+            "wBy": 0,
+            "wBz": 1,
+            "wAz": 0
+          }
+        }
+      },
+      "derive": {
+        "x": "5*i",
+        "y": "5*j",
+        "z": "180 - 5*i - 5*j",
+        "aA": "wAx*5*i + wAy*5*j + wAz*(180 - 5*i - 5*j)",
+        "aB": "wBx*5*i + wBy*5*j + wBz*(180 - 5*i - 5*j)",
+        "aC": "180 - (wAx*5*i + wAy*5*j + wAz*(180 - 5*i - 5*j)) - (wBx*5*i + wBy*5*j + wBz*(180 - 5*i - 5*j))",
+        "bl": "sin(aB*pi/180)/sin(aC*pi/180)",
+        "cx": "bl*cos(aA*pi/180)",
+        "cy": "bl*sin(aA*pi/180)",
+        "X": "10*cx",
+        "Y": "10*cy",
+        "s": "min(1, floor(cy/1.25))",
+        "dx": "15*s",
+        "dy": "-(10*cy + 4)*(1 - s)"
+      },
+      "constraints": [
+        "z != x",
+        "z != y",
+        "x != y",
+        "aA >= 25",
+        "aB >= 25",
+        "aC >= 25",
+        "aA <= 105",
+        "aB <= 105",
+        "aC <= 105"
+      ],
+      "cost_values": [
+        "x",
+        "y",
+        "z"
+      ],
+      "answer_var": "z",
+      "verify": [
+        "x + y + ans == 180",
+        "ans > 0",
+        "aA + aB + aC == 180"
+      ],
+      "question": "다음 그림에서 △ABC ≡ △DEF이고 ∠{G1} = [[deg({x})]], ∠{G2} = [[deg({y})]]일 때, ∠{ASK}의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                10,
+                0
+              ],
+              "C": [
+                "{X}",
+                "{Y}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{dx + 10}",
+                "{dy}"
+              ],
+              "F": [
+                "{X + dx}",
+                "{Y + dy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "D",
+                "F"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "label": "{x}°"
+                },
+                {
+                  "at": "C",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{y}°"
+                },
+                {
+                  "at": "D",
+                  "from": "E",
+                  "to": "F",
+                  "label": "?"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({z})]]",
+      "answer_alt": [
+        "{z}"
+      ],
+      "sol1": "합동인 두 도형은 대응하는 각의 크기가 서로 같다. △ABC ≡ △DEF에서 꼭짓점 순서대로 A↔D, B↔E, C↔F가 대응하므로 ∠{ASK}{eun(ASK)} ∠{CORR}{wa(CORR)} 같다. ∠{CORR}{eun(CORR)} 주어지지 않았으니 삼각형의 세 내각의 합이 180°임을 써서 먼저 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                10,
+                0
+              ],
+              "C": [
+                "{X}",
+                "{Y}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{dx + 10}",
+                "{dy}"
+              ],
+              "F": [
+                "{X + dx}",
+                "{Y + dy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "D",
+                "F"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "B",
+                  "from": "C",
+                  "to": "A",
+                  "label": "{x}°"
+                },
+                {
+                  "at": "C",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{y}°"
+                },
+                {
+                  "at": "D",
+                  "from": "E",
+                  "to": "F",
+                  "label": "?"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:{CORR}",
+              "arc:{ASK}"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "∠{CORR} = 180° − ∠{G1} − ∠{G2} = 180° − [[deg({x})]] − [[deg({y})]] = [[deg({z})]]",
+        "대응각이므로 ∠{ASK} = ∠{CORR} = [[deg({z})]]"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠{CORR} = 180° − {x}° − {y}° = {z}°",
+                "hint": "세 내각의 합 180°"
+              },
+              {
+                "text": "∠{ASK} = ∠{CORR} = {z}°",
+                "hint": "A↔D, B↔E, C↔F",
+                "marks": [
+                  {
+                    "on": "∠{ASK}",
+                    "note": "대응각은 순서로 찾는다"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "sol_check": "△DEF의 세 각 ∠{OTH1}, ∠{OTH2}, ∠{ASK}도 대응각이므로 {x}°, {y}°, {z}°이고 합이 180°다. 답은 [[deg({z})]]다.",
+      "model_answer": "∠{CORR} = 180° − {x}° − {y}° = {z}°이고, △ABC ≡ △DEF에서 ∠{ASK}의 대응각은 ∠{CORR}이므로 ∠{ASK} = {z}°이다.",
+      "rubric": [
+        {
+          "element": "남은 각 구하기",
+          "points": 2,
+          "criterion": "내각의 합을 써서 ∠{CORR} = {z}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        },
+        {
+          "element": "대응각 찾기",
+          "points": 3,
+          "criterion": "꼭짓점 순서로 ∠{ASK}의 대응각이 ∠{CORR}임을 밝혔다.",
+          "partial": "다른 각과 대응시켰으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{ASK} = {z}°를 답했다.",
+          "partial": "주어진 각을 그대로 답했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-congruent-t4",
+      "pitfalls": [
+        {
+          "text": "대응각을 글자 순서가 아니라 크기 순으로 짝지음",
+          "on": "대응각",
+          "effect": "불인정"
+        },
+        {
+          "text": "180°에서 한 각만 빼서 남은 각을 구함",
+          "on": "남은 각",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "각도",
+        "사칙"
+      ],
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 200,
+      "prereq": [
+        "삼각형의 내각의 합",
+        "합동의 뜻"
+      ],
+      "tags": [
+        "합동",
+        "대응각",
+        "대응변"
+      ],
+      "title": "합동인 두 삼각형의 대응각 — 세 번째 각을 내각의 합으로 구해 옮기기",
+      "skill": "△ABC ≡ △DEF 에서 대응각의 크기가 같음을 알고, 주어지지 않은 각을 내각의 합 180°로 구한 뒤 대응각으로 옮기기",
+      "variant_axis": {
+        "주어진 각": "∠A·∠B / ∠B·∠C / ∠A·∠C",
+        "묻는 각": "∠F / ∠D / ∠E"
+      },
+      "discriminates": "꼭짓점의 순서로 대응각을 바르게 찾고(A↔D, B↔E, C↔F), 없는 각은 180°에서 두 각을 빼서 구하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "AC_E"
+            ]
+          }
+        },
+        {
+          "name": "i",
+          "values": {
+            "int": [
+              5,
+              21
+            ]
+          }
+        },
+        {
+          "name": "j",
+          "values": {
+            "int": [
+              5,
+              21
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "k",
+        "rows": {
+          "AB_F": {
+            "G1": "A",
+            "G2": "B",
+            "ASK": "F",
+            "CORR": "C",
+            "OTH1": "D",
+            "OTH2": "E",
+            "wAx": 1,
+            "wAy": 0,
+            "wBx": 0,
+            "wBy": 1,
+            "wBz": 0,
+            "wAz": 0
+          },
+          "BC_D": {
+            "G1": "B",
+            "G2": "C",
+            "ASK": "D",
+            "CORR": "A",
+            "OTH1": "E",
+            "OTH2": "F",
+            "wAx": 0,
+            "wAy": 0,
+            "wBx": 1,
+            "wBy": 0,
+            "wBz": 0,
+            "wAz": 1
+          },
+          "AC_E": {
+            "G1": "A",
+            "G2": "C",
+            "ASK": "E",
+            "CORR": "B",
+            "OTH1": "D",
+            "OTH2": "F",
+            "wAx": 1,
+            "wAy": 0,
+            "wBx": 0,
+            "wBy": 0,
+            "wBz": 1,
+            "wAz": 0
+          }
+        }
+      },
+      "derive": {
+        "x": "5*i",
+        "y": "5*j",
+        "z": "180 - 5*i - 5*j",
+        "aA": "wAx*5*i + wAy*5*j + wAz*(180 - 5*i - 5*j)",
+        "aB": "wBx*5*i + wBy*5*j + wBz*(180 - 5*i - 5*j)",
+        "aC": "180 - (wAx*5*i + wAy*5*j + wAz*(180 - 5*i - 5*j)) - (wBx*5*i + wBy*5*j + wBz*(180 - 5*i - 5*j))",
+        "bl": "sin(aB*pi/180)/sin(aC*pi/180)",
+        "cx": "bl*cos(aA*pi/180)",
+        "cy": "bl*sin(aA*pi/180)",
+        "X": "10*cx",
+        "Y": "10*cy",
+        "s": "min(1, floor(cy/1.25))",
+        "dx": "15*s",
+        "dy": "-(10*cy + 4)*(1 - s)"
+      },
+      "constraints": [
+        "z != x",
+        "z != y",
+        "x != y",
+        "aA >= 25",
+        "aB >= 25",
+        "aC >= 25",
+        "aA <= 105",
+        "aB <= 105",
+        "aC <= 105"
+      ],
+      "cost_values": [
+        "x",
+        "y",
+        "z"
+      ],
+      "answer_var": "z",
+      "verify": [
+        "x + y + ans == 180",
+        "ans > 0",
+        "aA + aB + aC == 180"
+      ],
+      "question": "다음 그림에서 △ABC ≡ △DEF이고 ∠{G1} = [[deg({x})]], ∠{G2} = [[deg({y})]]일 때, ∠{ASK}의 크기를 구하시오.",
+      "figure": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                10,
+                0
+              ],
+              "C": [
+                "{X}",
+                "{Y}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{dx + 10}",
+                "{dy}"
+              ],
+              "F": [
+                "{X + dx}",
+                "{Y + dy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "D",
+                "F"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "B",
+                  "to": "C",
+                  "label": "{x}°"
+                },
+                {
+                  "at": "C",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{y}°"
+                },
+                {
+                  "at": "E",
+                  "from": "F",
+                  "to": "D",
+                  "label": "?"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "answer": "[[deg({z})]]",
+      "answer_alt": [
+        "{z}"
+      ],
+      "sol1": "합동인 두 도형은 대응하는 각의 크기가 서로 같다. △ABC ≡ △DEF에서 꼭짓점 순서대로 A↔D, B↔E, C↔F가 대응하므로 ∠{ASK}{eun(ASK)} ∠{CORR}{wa(CORR)} 같다. ∠{CORR}{eun(CORR)} 주어지지 않았으니 삼각형의 세 내각의 합이 180°임을 써서 먼저 구한다.",
+      "sol1_fig": [
+        {
+          "fn": "scene",
+          "args": {
+            "pts": {
+              "A": [
+                0,
+                0
+              ],
+              "B": [
+                10,
+                0
+              ],
+              "C": [
+                "{X}",
+                "{Y}"
+              ],
+              "D": [
+                "{dx}",
+                "{dy}"
+              ],
+              "E": [
+                "{dx + 10}",
+                "{dy}"
+              ],
+              "F": [
+                "{X + dx}",
+                "{Y + dy}"
+              ]
+            },
+            "segs": [
+              [
+                "A",
+                "B"
+              ],
+              [
+                "B",
+                "C"
+              ],
+              [
+                "A",
+                "C"
+              ],
+              [
+                "D",
+                "E"
+              ],
+              [
+                "E",
+                "F"
+              ],
+              [
+                "D",
+                "F"
+              ]
+            ],
+            "marks": {
+              "arc": [
+                {
+                  "at": "A",
+                  "from": "B",
+                  "to": "C",
+                  "label": "{x}°"
+                },
+                {
+                  "at": "C",
+                  "from": "A",
+                  "to": "B",
+                  "label": "{y}°"
+                },
+                {
+                  "at": "E",
+                  "from": "F",
+                  "to": "D",
+                  "label": "?"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "arc:{CORR}",
+              "arc:{ASK}"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "∠{CORR} = 180° − ∠{G1} − ∠{G2} = 180° − [[deg({x})]] − [[deg({y})]] = [[deg({z})]]",
+        "대응각이므로 ∠{ASK} = ∠{CORR} = [[deg({z})]]"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "∠{CORR} = 180° − {x}° − {y}° = {z}°",
+                "hint": "세 내각의 합 180°"
+              },
+              {
+                "text": "∠{ASK} = ∠{CORR} = {z}°",
+                "hint": "A↔D, B↔E, C↔F",
+                "marks": [
+                  {
+                    "on": "∠{ASK}",
+                    "note": "대응각은 순서로 찾는다"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ]
+      ],
+      "sol_check": "△DEF의 세 각 ∠{OTH1}, ∠{OTH2}, ∠{ASK}도 대응각이므로 {x}°, {y}°, {z}°이고 합이 180°다. 답은 [[deg({z})]]다.",
+      "model_answer": "∠{CORR} = 180° − {x}° − {y}° = {z}°이고, △ABC ≡ △DEF에서 ∠{ASK}의 대응각은 ∠{CORR}이므로 ∠{ASK} = {z}°이다.",
+      "rubric": [
+        {
+          "element": "남은 각 구하기",
+          "points": 2,
+          "criterion": "내각의 합을 써서 ∠{CORR} = {z}°를 구했다.",
+          "partial": "계산 실수면 1점."
+        },
+        {
+          "element": "대응각 찾기",
+          "points": 3,
+          "criterion": "꼭짓점 순서로 ∠{ASK}의 대응각이 ∠{CORR}임을 밝혔다.",
+          "partial": "다른 각과 대응시켰으면 인정하지 않는다."
+        },
+        {
+          "element": "답 구하기",
+          "points": 2,
+          "criterion": "∠{ASK} = {z}°를 답했다.",
+          "partial": "주어진 각을 그대로 답했으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-congruent-t5",
+      "pitfalls": [
+        {
+          "text": "대응각을 글자 순서가 아니라 크기 순으로 짝지음",
+          "on": "대응각",
+          "effect": "불인정"
+        },
+        {
+          "text": "180°에서 한 각만 빼서 남은 각을 구함",
+          "on": "남은 각",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "사칙"
+      ],
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 200,
+      "prereq": [
+        "삼각형의 내각의 합",
+        "합동의 뜻"
+      ],
+      "tags": [
+        "합동",
+        "대응각",
+        "대응변"
+      ],
+      "title": "합동인 두 삼각형에서 대응변을 찾아 둘레 구하기",
+      "skill": "△ABC ≡ △DEF 에서 다른 삼각형의 변이 어느 변과 대응하는지 찾아 둘레의 길이를 구하기",
+      "variant_axis": {
+        "주어진 변": "두 변은 △ABC, 한 변은 △DEF",
+        "대응": "DF↔AC / EF↔BC / DE↔AB"
+      },
+      "discriminates": "꼭짓점 순서로 대응변을 찾아(DF는 AC와 같다) 둘레에 넣는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "ab_bc_df",
+              "ab_ca_ef",
+              "bc_ca_de"
+            ]
+          }
+        },
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              3,
+              12
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              3,
+              12
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "int": [
+              3,
+              12
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "k",
+        "rows": {
+          "ab_bc_df": {
+            "S1": "AB",
+            "S2": "BC",
+            "S3": "DF",
+            "S3C": "AC"
+          },
+          "ab_ca_ef": {
+            "S1": "AB",
+            "S2": "CA",
+            "S3": "EF",
+            "S3C": "BC"
+          },
+          "bc_ca_de": {
+            "S1": "BC",
+            "S2": "CA",
+            "S3": "DE",
+            "S3C": "AB"
+          }
+        }
+      },
+      "derive": {
+        "P": "a + b + c"
+      },
+      "constraints": [
+        "a + b > c",
+        "b + c > a",
+        "c + a > b",
+        "P != a",
+        "P != b",
+        "P != c",
+        "a != b",
+        "b != c",
+        "a != c"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "c",
+        "P"
+      ],
+      "answer_var": "P",
+      "verify": [
+        "ans == a + b + c",
+        "a + b > c"
+      ],
+      "question": "△ABC ≡ △DEF이고 {S1} = {a} cm, {S2} = {b} cm, {S3} = {c} cm일 때, △ABC의 둘레의 길이를 구하시오.",
+      "answer": "{P}",
+      "answer_alt": [
+        "{P} cm",
+        "{P}cm"
+      ],
+      "sol1": "합동인 두 삼각형은 대응하는 변의 길이가 같다. △ABC ≡ △DEF에서 A↔D, B↔E, C↔F이므로 {S3}{eun(S3)} △ABC의 {S3C}{wa(S3C)} 대응한다. 그러면 △ABC의 세 변을 모두 알 수 있다.",
+      "sol2": [
+        "{S3C} = {S3} = {c} cm (대응변)",
+        "둘레 = {S1} + {S2} + {S3C} = {a} + {b} + {c} = {P} (cm)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "{S3C} = {S3} = {c}",
+                "hint": "A↔D, B↔E, C↔F",
+                "marks": [
+                  {
+                    "on": "{S3C}",
+                    "note": "글자 순서로 대응변"
+                  }
+                ]
+              },
+              {
+                "text": "{a} + {b} + {c} = {P}",
+                "hint": "세 변의 합"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:0",
+              "mark:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "hint:1"
+          }
+        ]
+      ],
+      "sol_check": "△DEF의 둘레도 대응변의 합이라 {P} cm로 같다. 답은 {P} cm다.",
+      "model_answer": "△ABC ≡ △DEF에서 {S3C}의 대응변은 {S3}이므로 {S3C} = {c} cm이다. 따라서 △ABC의 둘레는 {a} + {b} + {c} = {P} (cm)이다.",
+      "rubric": [
+        {
+          "element": "대응변 찾기",
+          "points": 3,
+          "criterion": "{S3C} = {S3} = {c} cm임을 밝혔다.",
+          "partial": "다른 변과 대응시켰으면 인정하지 않는다."
+        },
+        {
+          "element": "둘레 구하기",
+          "points": 2,
+          "criterion": "{a} + {b} + {c} = {P} (cm)를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-2-congruent-t2",
+      "pitfalls": [
+        {
+          "text": "DF 를 AB 나 BC 와 대응시킴",
+          "on": "대응변",
+          "effect": "불인정"
+        },
+        {
+          "text": "둘레에 세 변 중 두 변만 더함",
+          "on": "둘레",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "사칙"
+      ],
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 200,
+      "prereq": [
+        "삼각형의 내각의 합",
+        "합동의 뜻"
+      ],
+      "tags": [
+        "합동",
+        "대응각",
+        "대응변"
+      ],
+      "title": "둘레가 주어진 합동인 삼각형에서 남은 한 변의 길이 구하기",
+      "skill": "합동인 두 삼각형의 둘레가 같음을 이용해 알려지지 않은 변의 길이를 구하기",
+      "variant_axis": {
+        "둘레": "12~40 cm",
+        "주어진 두 변": "3~15 cm"
+      },
+      "discriminates": "합동이면 둘레가 같음을 근거로 세우고, 둘레에서 두 변을 빼서 남은 변을 구하는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "a",
+          "values": {
+            "int": [
+              3,
+              15
+            ]
+          }
+        },
+        {
+          "name": "b",
+          "values": {
+            "int": [
+              3,
+              15
+            ]
+          }
+        },
+        {
+          "name": "c",
+          "values": {
+            "int": [
+              3,
+              15
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "P": "a + b + c"
+      },
+      "constraints": [
+        "a + b > c",
+        "b + c > a",
+        "c + a > b",
+        "a != b",
+        "b != c",
+        "a != c",
+        "c != P - a",
+        "c != P - b"
+      ],
+      "cost_values": [
+        "a",
+        "b",
+        "P",
+        "c"
+      ],
+      "answer_var": "c",
+      "verify": [
+        "a + b + ans == P",
+        "ans > 0",
+        "a + b > ans"
+      ],
+      "question": "△ABC ≡ △DEF이고 △DEF의 둘레의 길이가 {P} cm이다. AB = {a} cm, BC = {b} cm일 때, AC의 길이를 구하시오.",
+      "answer": "{c}",
+      "answer_alt": [
+        "{c} cm",
+        "{c}cm"
+      ],
+      "sol1": "합동인 두 삼각형은 대응변의 길이가 모두 같으므로 둘레도 같다. 따라서 △ABC의 둘레도 {P} cm이고, 여기서 아는 두 변을 빼면 AC가 나온다.",
+      "sol2": [
+        "△ABC의 둘레 = △DEF의 둘레 = {P} cm",
+        "AC = {P} − {a} − {b} = {c} (cm)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "둘레(△ABC) = 둘레(△DEF) = {P}",
+                "hint": "합동 → 대응변이 모두 같다"
+              },
+              {
+                "text": "AC = {P} − {a} − {b} = {c}",
+                "marks": [
+                  {
+                    "on": "{c}",
+                    "note": "두 변을 모두 뺀다"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "sol_check": "{a} + {b} + {c} = {P}{ro(P)} 둘레와 맞고, 가장 긴 변이 나머지 두 변의 합보다 짧아 삼각형이 된다. 답은 {c} cm다.",
+      "model_answer": "합동인 두 삼각형은 둘레가 같으므로 △ABC의 둘레는 {P} cm이다. 따라서 AC = {P} − {a} − {b} = {c} (cm)이다.",
+      "rubric": [
+        {
+          "element": "둘레가 같음",
+          "points": 3,
+          "criterion": "합동이므로 △ABC의 둘레도 {P} cm임을 밝혔다.",
+          "partial": "근거 없이 값만 썼으면 1점."
+        },
+        {
+          "element": "남은 변 구하기",
+          "points": 2,
+          "criterion": "AC = {P} − {a} − {b} = {c} (cm)를 구했다.",
+          "partial": "한 변만 뺐으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-2-congruent-t3",
+      "pitfalls": [
+        {
+          "text": "합동이면 둘레가 같다는 근거를 쓰지 않음",
+          "on": "둘레가 같음",
+          "effect": "부분"
+        },
+        {
+          "text": "둘레에서 한 변만 뺌",
+          "on": "남은 변",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}
