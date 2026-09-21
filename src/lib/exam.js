@@ -11,7 +11,7 @@ import { distractorTag } from "./misconceptions.js";
 
 // ── 시험 유형 프리셋 ──────────────────────────────────────────────────────────
 // timer.kind: total(총 제한) | item(문항당 제한) | none.  timer.soft: 시간이 끝나도 제출 전까지 계속 풀 수 있음(경고만)
-// scope: concept(개념 하나) | unit(단원 하나)
+// scope: concept(개념 하나) | unit(학기 하나 — 응시 때는 학기 안의 단원 하나(chapter)나 학기 전체를 고른다)
 // pointsMode: count(정답 수) | points(배점 합) | scaled100(배점 합을 100점 만점으로 환산)
 // difficultyMax: 이 난이도 이하를 우선 출제.  mixed: 난이도 1~5 를 고루 출제.  order: "difficulty" 면 쉬운 문항부터
 // route: 자체 러너 없이 다른 화면으로 보낸다 (산과 시험 → 서술형 자가채점)
@@ -64,7 +64,7 @@ export function presetRules(preset) {
   else out.push("맞힌 문항 수가 점수예요.");
   if (preset.difficultyMax) out.push(`난이도 ${preset.difficultyMax} 이하의 문항을 우선 출제해요.`);
   if (preset.mixed) out.push("난이도 1~5 를 고루 섞어 출제해요.");
-  if (preset.scope === "unit") out.push("단원 전체의 개념에서 골고루 나와요.");
+  if (preset.scope === "unit") out.push("고른 단원(또는 학기 전체)의 개념에서 골고루 나와요.");
   return out;
 }
 
@@ -74,15 +74,33 @@ export const SELECT_BY_TEST_TYPE = false;
 export const DEFAULT_QTYPES = ["choice", "short"];
 
 /**
+ * 범위 → fetchLiveItems 필터.
+ *   concept: { conceptId }
+ *   chapter(학기 안의 단원): { unitId, conceptIds }  — 단원에 드는 개념 id 들(chapters.js conceptIdsInChapter)로 거른다.
+ *            conceptIds 가 비면 학기 전체로 물러난다.
+ *   unit(학기 전체): { unitId }
+ */
+export function scopeFilter(scope = {}) {
+  if (!scope) return {};
+  if (scope.kind === "concept") return { conceptId: scope.id };
+  if (scope.kind === "chapter") {
+    const ids = Array.isArray(scope.conceptIds) ? scope.conceptIds.filter(Boolean) : [];
+    const unitId = scope.unitId || String(scope.id || "").split("~")[0] || undefined;
+    return ids.length ? { unitId, conceptIds: ids } : { unitId };
+  }
+  return { unitId: scope.unitId || scope.id };
+}
+
+/**
  * 시험 하나를 위한 fetchLiveItems 옵션 목록 (우선순위 순).
- *   scope: { kind: "unit"|"concept", id }
+ *   scope: { kind: "unit"|"chapter"|"concept", id, unitId?, conceptIds? }  (scopeFilter 참고)
  *   stage "primary" 는 항상, "fill" 은 primary 를 합쳐도 n 에 모자랄 때만 부른다.
  * 출제 풀 규칙은 이 함수 한 곳에서만 정한다.
  */
 export function fetchPlan(preset, scope = {}) {
   if (!preset || !(preset.n > 0)) return [];
   const n = preset.n;
-  const base = scope?.kind === "concept" ? { conceptId: scope.id } : { unitId: scope?.id };
+  const base = scopeFilter(scope);
   const qtypes = Array.isArray(preset.qtypes) && preset.qtypes.length ? preset.qtypes.slice() : DEFAULT_QTYPES.slice();
   const plans = [];
   if (preset.difficultyMax) {
@@ -298,7 +316,7 @@ const uniq = (list) => [...new Set((list || []).filter((x) => x != null && x !==
 
 /**
  * test_runs 행 만들기.
- *   ctx: { unitId, conceptId, scopeTitle, startedAt(ms), finishedAt(ms), elapsedSec?, timedOut?, overtimeSec?, short?, runId? }
+ *   ctx: { unitId, conceptId, chapterId?("m1-1~2"), scopeTitle, startedAt(ms), finishedAt(ms), elapsedSec?, timedOut?, overtimeSec?, short?, runId? }
  *   results: judgeAll() 결과 (빽빽한 배열)
  */
 export function runToRow(uid, preset, ctx = {}, results = []) {
@@ -330,7 +348,9 @@ export function runToRow(uid, preset, ctx = {}, results = []) {
     meta: {
       timer,
       preset: { code: preset?.code, name: preset?.name, n: preset?.n, scope: preset?.scope, pointsMode: preset?.pointsMode || "count" },
-      scope: { kind: ctx.conceptId ? "concept" : "unit", id: ctx.conceptId || unitId || null, title: ctx.scopeTitle || null },
+      scope: ctx.conceptId ? { kind: "concept", id: ctx.conceptId, title: ctx.scopeTitle || null }
+        : ctx.chapterId ? { kind: "chapter", id: ctx.chapterId, title: ctx.scopeTitle || null, unit_id: unitId }
+        : { kind: "unit", id: unitId || null, title: ctx.scopeTitle || null },
       short: Math.max(0, Number(ctx.short) || 0),
       run_id: ctx.runId || null,
       ...(preset?.pointsMode === "scaled100" ? { raw: s.raw, raw_max: s.rawMax } : {}),

@@ -35,9 +35,10 @@ export function diversify(items, n, perTpl = 2) {
   return out;
 }
 
-function applyFilters(q, { conceptId, unitId, qtypes, withRubric, difficulty, withFigure } = {}) {
+function applyFilters(q, { conceptId, conceptIds, unitId, qtypes, withRubric, difficulty, withFigure } = {}) {
   q = q.eq("status", "live");
   if (conceptId) q = q.contains("concept_ids", [conceptId]);
+  else if (Array.isArray(conceptIds) && conceptIds.length) q = q.overlaps("concept_ids", conceptIds);   // 단원(개념 묶음) 범위
   if (unitId) q = q.eq("unit_id", unitId);
   if (Array.isArray(qtypes) && qtypes.length) q = q.in("qtype", qtypes);
   if (withRubric) q = q.not("solution->rubric", "is", null);
@@ -48,7 +49,7 @@ function applyFilters(q, { conceptId, unitId, qtypes, withRubric, difficulty, wi
 
 /**
  * 공개(live) 문항 n개 — 무작위 표본 + 템플릿 다양성.
- * opts: { conceptId, unitId, qtypes:["choice","short"], withRubric, withFigure, difficulty, n=10, pool=80 }
+ * opts: { conceptId | conceptIds[], unitId, qtypes:["choice","short"], withRubric, withFigure, difficulty, n=10, pool=80 }
  */
 export async function fetchLiveItems(opts = {}) {
   const n = opts.n ?? 10, pool = Math.max(opts.pool ?? 80, n * 4);
