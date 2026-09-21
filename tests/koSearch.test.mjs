@@ -1,6 +1,6 @@
 // node tests/koSearch.test.mjs — 한글 검색(부분일치·초성) + 문항 수 집계
 import { koMatch, koFilter, choOf } from "../src/lib/koSearch.js";
-import { tallyCounts } from "../src/lib/studyCache.js";
+import { tallyCounts, rpcArgs, fromRpc } from "../src/lib/studyCache.js";
 
 let pass = 0, fail = 0;
 const ok = (c, name) => { if (c) { pass++; } else { fail++; console.log("FAIL -", name); } };
@@ -46,6 +46,15 @@ const t = tallyCounts([
 ok(t.unit["m1-1"] === 2 && t.unit["m1-2"] === 2, "단원별 수");
 ok(t.concept["m1-1-11"] === 2 && t.concept["m1-1-12"] === 1 && t.concept["m1-2-01"] === 1, "개념별 수(복수 개념 문항 포함)");
 ok(Object.keys(t.unit).length === 2, "null 단원은 빠짐");
+
+// live_counts 함수 인자·응답 (supabase/2026-09_live_counts.sql)
+ok(JSON.stringify(rpcArgs({})) === JSON.stringify({ p_qtypes: null, p_with_rubric: false, p_with_figure: false, p_difficulty: null }), "rpcArgs 기본");
+ok(JSON.stringify(rpcArgs({ qtypes: ["choice", "short"], withRubric: true, difficulty: 2 })) === JSON.stringify({ p_qtypes: ["choice", "short"], p_with_rubric: true, p_with_figure: false, p_difficulty: 2 }), "rpcArgs 필터");
+ok(rpcArgs({ qtypes: [] }).p_qtypes === null, "빈 문항형 목록은 null");
+const r = fromRpc({ unit: { "m1-1": 3 }, concept: { "m1-1-01": 2 } });
+ok(r && r.unit["m1-1"] === 3 && r.concept["m1-1-01"] === 2, "fromRpc 모양");
+ok(fromRpc({ unit: { "m1-1": 1 } }).concept && Object.keys(fromRpc({ unit: { "m1-1": 1 } }).concept).length === 0, "concept 없으면 빈 객체");
+ok(fromRpc(null) === null && fromRpc([]) === null && fromRpc({}) === null && fromRpc("x") === null, "모양 아니면 null");
 
 console.log(`${pass}/${pass + fail} passed`);
 if (fail) process.exit(1);

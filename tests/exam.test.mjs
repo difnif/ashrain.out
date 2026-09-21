@@ -1,7 +1,7 @@
 // node tests/exam.test.mjs — 시험 응시 순수 도우미(src/lib/exam.js) 검사
 import assert from "node:assert/strict";
 import {
-  TEST_TYPES, presetOf, describeTimer, presetRules, SELECT_BY_TEST_TYPE, DEFAULT_QTYPES, fetchPlan,
+  TEST_TYPES, presetOf, describeTimer, presetRules, SELECT_BY_TEST_TYPE, DEFAULT_QTYPES, scopeFilter, fetchPlan,
   dedupeById, shuffleWith, diversify, prefers, buildSelection,
   emptyAnswer, isAnswered, answeredCount, judgeAll, itemPoints, scoreRun, scoreText, examMessage,
   fmtTimer, remainingSec, isTimerWarn,
@@ -85,6 +85,20 @@ test("fetchPlan: 기본은 fetch 1회, calc 는 난이도 1·2 + 채움, ash 는
   assert.ok(!("testType" in u[0]));
   assert.deepEqual(fetchPlan(presetOf("sangwa"), { kind: "unit", id: "m1-1" }), []);
   assert.deepEqual(fetchPlan(null), []);
+});
+
+test("scopeFilter / fetchPlan: 단원(chapter) 범위는 학기 + 개념 id 묶음, 개념이 비면 학기 전체", () => {
+  assert.deepEqual(scopeFilter({ kind: "concept", id: "m1-1-03" }), { conceptId: "m1-1-03" });
+  assert.deepEqual(scopeFilter({ kind: "unit", id: "m1-1" }), { unitId: "m1-1" });
+  assert.deepEqual(scopeFilter({ kind: "chapter", id: "m1-1~1", unitId: "m1-1", conceptIds: ["m1-1-09", "m1-1-10", null] }), { unitId: "m1-1", conceptIds: ["m1-1-09", "m1-1-10"] });
+  assert.deepEqual(scopeFilter({ kind: "chapter", id: "m2-1~0", conceptIds: ["m2-1-01"] }), { unitId: "m2-1", conceptIds: ["m2-1-01"] });   // unitId 는 id 에서
+  assert.deepEqual(scopeFilter({ kind: "chapter", id: "m1-1~1", unitId: "m1-1", conceptIds: [] }), { unitId: "m1-1" });
+  assert.deepEqual(scopeFilter(null), {});
+  const ch = fetchPlan(presetOf("unit"), { kind: "chapter", id: "m1-1~1", unitId: "m1-1", conceptIds: ["m1-1-09", "m1-1-10"] });
+  assert.equal(ch.length, 1);
+  assert.deepEqual(ch[0], { unitId: "m1-1", conceptIds: ["m1-1-09", "m1-1-10"], qtypes: DEFAULT_QTYPES, n: 20, pool: 60, stage: "primary" });
+  const ash = fetchPlan(presetOf("ash"), { kind: "chapter", id: "m2-1~2", unitId: "m2-1", conceptIds: ["m2-1-16"] });
+  assert.ok(ash.every((p) => p.unitId === "m2-1" && p.conceptIds.length === 1));
 });
 
 // ── 문항 선발 ──
@@ -295,6 +309,13 @@ test("runToRow: test_runs 행 모양", () => {
   assert.equal(r3.n, 0);
   assert.deepEqual(r3.item_ids, []);
   assert.equal(r3.unit_id, null);
+  // 단원(chapter) 범위 — meta.scope 에 단원 id 와 학기
+  const r4 = runToRow("u", presetOf("unit"), { unitId: "m1-1", chapterId: "m1-1~1", scopeTitle: "중1-1 · 정수와 유리수" }, rs);
+  assert.equal(r4.unit_id, "m1-1");
+  assert.deepEqual(r4.meta.scope, { kind: "chapter", id: "m1-1~1", title: "중1-1 · 정수와 유리수", unit_id: "m1-1" });
+  const d4 = describeRun({ ...r4, id: 9, finished_at: "2026-09-21T00:00:00Z" }, { "m1-1": "중1-1" });
+  assert.equal(d4.scope, "중1-1 · 정수와 유리수");
+  assert.equal(d4.link, "#/solve/test/unit/m1-1~1");
 });
 
 test("saveRunLocal / loadRunsLocal: 최근 30건, 최신이 앞, 저장소 없어도 조용히", () => {

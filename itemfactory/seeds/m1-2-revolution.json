@@ -1,0 +1,843 @@
+{
+  "seed_id": "m1-2-revolution",
+  "category": "도형",
+  "title": "회전체 — 단면·회전체의 부피",
+  "unit_id": "m1-2",
+  "concept_ids": [
+    "m1-2-13"
+  ],
+  "schema_id": null,
+  "schema_name": "회전체의 단면",
+  "source_item_ids": [],
+  "note": "회전축을 품은 단면(직사각형·이등변삼각형), 축에 수직인 단면(원), 직각삼각형의 회전체(원뿔). 원뿔 부피는 회전체 개념과 잇는 자리.",
+  "geometry": true,
+  "templates": [
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "넓이"
+      ],
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 200,
+      "prereq": [
+        "원기둥·원뿔·구",
+        "직사각형·삼각형의 넓이"
+      ],
+      "tags": [
+        "회전체",
+        "단면"
+      ],
+      "title": "회전축을 포함하는 평면으로 자른 단면의 넓이 — 원기둥은 직사각형, 원뿔은 이등변삼각형",
+      "skill": "회전체를 회전축을 품은 평면으로 자르면 원기둥은 직사각형, 원뿔은 이등변삼각형이 됨을 알고 그 넓이를 구하기 (지름을 써야 함)",
+      "variant_axis": {
+        "입체": "원기둥 / 원뿔",
+        "반지름": "2~9",
+        "높이": "3~12"
+      },
+      "discriminates": "단면의 가로(밑변)가 반지름이 아니라 지름 2r 임을 아는가",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "cyl",
+              "cone"
+            ]
+          }
+        },
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              3,
+              12
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "k",
+        "rows": {
+          "cyl": {
+            "KIND": "cylinder",
+            "KW": "원기둥",
+            "SEC": "직사각형",
+            "f": 2,
+            "FORM": "(2 × 반지름) × 높이",
+            "SRC": "가로가 지름 2r, 세로가 높이 h"
+          },
+          "cone": {
+            "KIND": "cone",
+            "KW": "원뿔",
+            "SEC": "이등변삼각형",
+            "f": 1,
+            "FORM": "(2 × 반지름) × 높이 ÷ 2",
+            "SRC": "밑변이 지름 2r, 높이가 h"
+          }
+        }
+      },
+      "derive": {
+        "d": "2*r",
+        "S": "f*r*h",
+        "wrong": "f*r*h/2"
+      },
+      "constraints": [
+        "S != r",
+        "S != h",
+        "S != d",
+        "r != h"
+      ],
+      "cost_values": [
+        "r",
+        "h",
+        "S"
+      ],
+      "answer_var": "S",
+      "verify": [
+        "ans == f*r*h",
+        "d == 2*r"
+      ],
+      "question": "밑면의 반지름의 길이가 {r} cm, 높이가 {h} cm인 {KW}{eul(KW)} 회전축을 포함하는 평면으로 자를 때 생기는 단면의 넓이를 구하시오.",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "{KIND}",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "answer": "{S}",
+      "answer_alt": [
+        "{S} cm²",
+        "{S}cm²"
+      ],
+      "sol1": "{KW}{eun(KW)} 회전축을 품은 평면으로 자르면 단면은 {SEC}이다. {SRC}이므로 가로(밑변)에는 반지름이 아니라 지름을 써야 한다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "{KIND}",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "height",
+              "h-lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "단면의 밑변(가로) = 지름 = 2 × {r} = {d} (cm), 높이 = {h} cm",
+        "단면({SEC})의 넓이 = {FORM} = {S} (cm²)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "가로(밑변) = 2 × {r} = {d}",
+                "hint": "지름!",
+                "marks": [
+                  {
+                    "on": "{d}",
+                    "note": "반지름 {r}{ika(r)} 아니다"
+                  }
+                ]
+              },
+              {
+                "text": "넓이 = {FORM} = {S}"
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:0",
+              "mark:0-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          }
+        ]
+      ],
+      "sol_check": "반지름을 그대로 쓰면 {wrong} cm²가 나오는데 이는 단면의 절반이다. 답은 {S} cm²다.",
+      "model_answer": "{KW}{eul(KW)} 회전축을 포함하는 평면으로 자른 단면은 {SEC}이고, 그 가로(밑변)는 지름 {d} cm, 높이는 {h} cm이다. 따라서 넓이는 {FORM} = {S} (cm²)이다.",
+      "rubric": [
+        {
+          "element": "단면의 모양",
+          "points": 2,
+          "criterion": "단면이 {SEC}임을 밝혔다.",
+          "partial": "모양을 잘못 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "단면의 치수",
+          "points": 3,
+          "criterion": "가로(밑변)가 지름 {d} cm, 높이가 {h} cm임을 썼다.",
+          "partial": "반지름을 그대로 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "넓이 구하기",
+          "points": 2,
+          "criterion": "넓이 {S} cm²를 구했다.",
+          "partial": "계산 실수면 1점."
+        }
+      ],
+      "rubric_total": 7,
+      "id": "m1-2-revolution-t1",
+      "pitfalls": [
+        {
+          "text": "단면의 가로(밑변)에 지름이 아니라 반지름을 씀",
+          "on": "단면의 치수",
+          "effect": "불인정"
+        },
+        {
+          "text": "원뿔의 단면(삼각형) 넓이에서 ÷ 2 를 빠뜨림",
+          "on": "넓이",
+          "effect": "부분"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "넓이"
+      ],
+      "traps": [
+        "제곱누락"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 200,
+      "prereq": [
+        "원기둥·원뿔·구",
+        "직사각형·삼각형의 넓이"
+      ],
+      "tags": [
+        "회전체",
+        "단면"
+      ],
+      "title": "회전축에 수직인 평면(구는 중심을 지나는 평면)으로 자른 단면 — 원의 넓이 (원기둥)",
+      "skill": "원기둥을 축에 수직으로, 구를 중심을 지나게 자르면 단면이 반지름이 같은 원임을 알고 넓이 πr²을 구하기",
+      "variant_axis": {
+        "입체": "원기둥 / 구",
+        "반지름": "2~12"
+      },
+      "discriminates": "단면이 원임을 알고 넓이에 π와 반지름의 제곱을 쓰는가 (원주 2πr 과 혼동하지 않는가)",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              4,
+              12
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "cyl"
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "k",
+        "rows": {
+          "cyl": {
+            "KIND": "cylinder",
+            "KW": "원기둥",
+            "PL": "회전축에 수직인 평면",
+            "HAS_H": 1
+          },
+          "sph": {
+            "KIND": "sphere",
+            "KW": "구",
+            "PL": "중심을 지나는 평면",
+            "HAS_H": 0
+          }
+        }
+      },
+      "derive": {
+        "k2": "r*r",
+        "wrong": "2*r"
+      },
+      "constraints": [
+        "k2 != r",
+        "(HAS_H == 0) or (h != r)",
+        "(HAS_H == 1) or (h == 4)"
+      ],
+      "cost_values": [
+        "r",
+        "k2"
+      ],
+      "answer_var": "k2",
+      "verify": [
+        "ans == r*r",
+        "ans > wrong or r == 2"
+      ],
+      "question": "밑면의 반지름의 길이가 {r} cm, 높이가 {h} cm인 원기둥을 회전축에 수직인 평면으로 자를 때 생기는 단면의 넓이를 구하시오.",
+      "answer": "[[{k2} * pi]]",
+      "answer_alt": [
+        "[[{k2} * pi]] cm²",
+        "{k2}π"
+      ],
+      "sol1": "{KW}{eul(KW)} {PL}{ro(PL)} 자르면 단면은 반지름의 길이가 {r} cm인 원이다. 원의 넓이는 π × (반지름)²이다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "{KIND}",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "단면은 반지름이 {r} cm인 원",
+        "넓이 = π × {r}² = {k2}π (cm²)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "단면 = 반지름 {r}인 원",
+                "hint": "{PL}"
+              },
+              {
+                "text": "π × {r}² = {k2}π",
+                "marks": [
+                  {
+                    "on": "{r}²",
+                    "note": "제곱을 빠뜨리지 말 것"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "sol_check": "원주 2π × {r} = {wrong}π와 혼동하기 쉽다. 넓이는 π × {r} × {r} = {k2}π (cm²)다.",
+      "model_answer": "{KW}{eul(KW)} {PL}{ro(PL)} 자른 단면은 반지름의 길이가 {r} cm인 원이므로 넓이는 π × {r}² = {k2}π (cm²)이다.",
+      "rubric": [
+        {
+          "element": "단면의 모양",
+          "points": 2,
+          "criterion": "단면이 반지름 {r} cm인 원임을 밝혔다.",
+          "partial": "모양만 맞고 반지름을 잘못 썼으면 1점."
+        },
+        {
+          "element": "넓이 구하기",
+          "points": 3,
+          "criterion": "π × {r}² = {k2}π (cm²)를 구했다.",
+          "partial": "제곱을 빠뜨렸으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-2-revolution-t2",
+      "figure": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cylinder",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "pitfalls": [
+        {
+          "text": "원의 넓이에서 반지름의 제곱을 빠뜨림 (πr)",
+          "on": "넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "원주 2πr 을 넓이로 씀",
+          "on": "넓이",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "넓이"
+      ],
+      "traps": [
+        "제곱누락"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 4,
+      "pool_target": 200,
+      "prereq": [
+        "원기둥·원뿔·구",
+        "직사각형·삼각형의 넓이"
+      ],
+      "tags": [
+        "회전체",
+        "단면"
+      ],
+      "title": "회전축에 수직인 평면(구는 중심을 지나는 평면)으로 자른 단면 — 원의 넓이 (구)",
+      "skill": "원기둥을 축에 수직으로, 구를 중심을 지나게 자르면 단면이 반지름이 같은 원임을 알고 넓이 πr²을 구하기",
+      "variant_axis": {
+        "입체": "원기둥 / 구",
+        "반지름": "2~12"
+      },
+      "discriminates": "단면이 원임을 알고 넓이에 π와 반지름의 제곱을 쓰는가 (원주 2πr 과 혼동하지 않는가)",
+      "difficulty": 2,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              12
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              4,
+              12
+            ]
+          }
+        },
+        {
+          "name": "k",
+          "values": {
+            "in": [
+              "sph"
+            ]
+          }
+        }
+      ],
+      "table": {
+        "key": "k",
+        "rows": {
+          "cyl": {
+            "KIND": "cylinder",
+            "KW": "원기둥",
+            "PL": "회전축에 수직인 평면",
+            "HAS_H": 1
+          },
+          "sph": {
+            "KIND": "sphere",
+            "KW": "구",
+            "PL": "중심을 지나는 평면",
+            "HAS_H": 0
+          }
+        }
+      },
+      "derive": {
+        "k2": "r*r",
+        "wrong": "2*r"
+      },
+      "constraints": [
+        "k2 != r",
+        "(HAS_H == 0) or (h != r)",
+        "(HAS_H == 1) or (h == 4)"
+      ],
+      "cost_values": [
+        "r",
+        "k2"
+      ],
+      "answer_var": "k2",
+      "verify": [
+        "ans == r*r",
+        "ans > wrong or r == 2"
+      ],
+      "question": "반지름의 길이가 {r} cm인 구를 중심을 지나는 평면으로 자를 때 생기는 단면의 넓이를 구하시오.",
+      "answer": "[[{k2} * pi]]",
+      "answer_alt": [
+        "[[{k2} * pi]] cm²",
+        "{k2}π"
+      ],
+      "sol1": "{KW}{eul(KW)} {PL}{ro(PL)} 자르면 단면은 반지름의 길이가 {r} cm인 원이다. 원의 넓이는 π × (반지름)²이다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "sphere",
+            "radius": "{r}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ]
+      ],
+      "sol2": [
+        "단면은 반지름이 {r} cm인 원",
+        "넓이 = π × {r}² = {k2}π (cm²)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "단면 = 반지름 {r}인 원",
+                "hint": "{PL}"
+              },
+              {
+                "text": "π × {r}² = {k2}π",
+                "marks": [
+                  {
+                    "on": "{r}²",
+                    "note": "제곱을 빠뜨리지 말 것"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "sol_check": "원주 2π × {r} = {wrong}π와 혼동하기 쉽다. 넓이는 π × {r} × {r} = {k2}π (cm²)다.",
+      "model_answer": "{KW}{eul(KW)} {PL}{ro(PL)} 자른 단면은 반지름의 길이가 {r} cm인 원이므로 넓이는 π × {r}² = {k2}π (cm²)이다.",
+      "rubric": [
+        {
+          "element": "단면의 모양",
+          "points": 2,
+          "criterion": "단면이 반지름 {r} cm인 원임을 밝혔다.",
+          "partial": "모양만 맞고 반지름을 잘못 썼으면 1점."
+        },
+        {
+          "element": "넓이 구하기",
+          "points": 3,
+          "criterion": "π × {r}² = {k2}π (cm²)를 구했다.",
+          "partial": "제곱을 빠뜨렸으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-2-revolution-t4",
+      "figure": null,
+      "pitfalls": [
+        {
+          "text": "원의 넓이에서 반지름의 제곱을 빠뜨림 (πr)",
+          "on": "넓이",
+          "effect": "불인정"
+        },
+        {
+          "text": "구의 겉넓이 4πr² 을 단면의 넓이로 씀",
+          "on": "넓이",
+          "effect": "불인정"
+        }
+      ]
+    },
+    {
+      "process": "추론",
+      "context": "기하맥락",
+      "ops": [
+        "부피"
+      ],
+      "traps": [
+        "구하는대상혼동"
+      ],
+      "qtype": "short",
+      "time_limit": 90,
+      "points": 5,
+      "pool_target": 200,
+      "prereq": [
+        "원뿔의 부피",
+        "회전체"
+      ],
+      "tags": [
+        "회전체",
+        "단면"
+      ],
+      "title": "직각삼각형을 한 바퀴 돌려 만든 회전체(원뿔)의 부피",
+      "skill": "직각삼각형을 직각을 낀 한 변을 축으로 회전시키면 원뿔이 생김을 알고, 밑면의 반지름과 높이를 찾아 부피 (1/3)πr²h 를 구하기",
+      "variant_axis": {
+        "밑변(반지름)": "2~9",
+        "높이": "3~12"
+      },
+      "discriminates": "회전축이 된 변이 높이, 다른 변이 밑면의 반지름이 됨을 알고 1/3 을 빠뜨리지 않는가",
+      "difficulty": 3,
+      "params": [
+        {
+          "name": "r",
+          "values": {
+            "int": [
+              2,
+              9
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "values": {
+            "int": [
+              3,
+              12
+            ]
+          }
+        }
+      ],
+      "derive": {
+        "kv": "r*r*h/3",
+        "kc": "r*r*h"
+      },
+      "constraints": [
+        "(r*r*h) % 3 == 0",
+        "kv != r",
+        "kv != h",
+        "r != h"
+      ],
+      "cost_values": [
+        "r",
+        "h",
+        "kv"
+      ],
+      "answer_var": "kv",
+      "verify": [
+        "3*ans == r*r*h",
+        "ans > 0"
+      ],
+      "question": "∠B = 90°이고 AB = {h} cm, BC = {r} cm인 직각삼각형 ABC를 변 AB를 회전축으로 하여 한 바퀴 돌릴 때 생기는 회전체의 부피를 구하시오.",
+      "answer": "[[{kv} * pi]]",
+      "answer_alt": [
+        "[[{kv} * pi]] cm³",
+        "{kv}π"
+      ],
+      "sol1": "직각삼각형을 직각을 낀 변 AB를 축으로 돌리면 원뿔이 된다. 축이 된 AB가 원뿔의 높이, 축과 수직인 BC가 밑면의 반지름이다.",
+      "sol1_fig": [
+        {
+          "fn": "solid",
+          "args": {
+            "kind": "cone",
+            "radius": "{r}",
+            "height": "{h}"
+          }
+        }
+      ],
+      "sol1_anim": [
+        [
+          {
+            "act": "hl",
+            "k": [
+              "radius",
+              "r-lbl"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "hl",
+            "k": [
+              "height",
+              "h-lbl"
+            ],
+            "keep": true
+          }
+        ]
+      ],
+      "sol2": [
+        "회전체 = 밑면의 반지름 {r} cm, 높이 {h} cm인 원뿔",
+        "부피 = [[frac(1,3)]] × π × {r}² × {h} = {kv}π (cm³)"
+      ],
+      "sol2_fig": [
+        {
+          "fn": "steps",
+          "args": {
+            "lines": [
+              {
+                "text": "반지름 = BC = {r}, 높이 = AB = {h}",
+                "hint": "축이 된 변이 높이"
+              },
+              {
+                "text": "[[frac(1,3)]] × π × {r}² × {h} = {kv}π",
+                "marks": [
+                  {
+                    "on": "[[frac(1,3)]]",
+                    "note": "뿔은 1/3"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sol2_anim": [
+        [
+          {
+            "act": "reveal",
+            "k": "line:0"
+          },
+          {
+            "act": "hl",
+            "k": "hint:0"
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:1"
+          },
+          {
+            "act": "hl",
+            "k": "mark:1-0"
+          }
+        ]
+      ],
+      "sol_check": "1/3을 빠뜨리면 원기둥의 부피 {kc}π가 나온다 — 답이 아니다. 답은 {kv}π cm³다.",
+      "model_answer": "변 AB를 축으로 돌리면 밑면의 반지름이 {r} cm, 높이가 {h} cm인 원뿔이 생기므로 부피는 [[frac(1,3)]] × π × {r}² × {h} = {kv}π (cm³)이다.",
+      "rubric": [
+        {
+          "element": "회전체 파악",
+          "points": 3,
+          "criterion": "원뿔이 생기고 반지름이 {r} cm, 높이가 {h} cm임을 밝혔다.",
+          "partial": "반지름과 높이를 바꿔 썼으면 인정하지 않는다."
+        },
+        {
+          "element": "부피 구하기",
+          "points": 2,
+          "criterion": "[[frac(1,3)]] × π × {r}² × {h} = {kv}π (cm³)를 구했다.",
+          "partial": "1/3을 빠뜨렸으면 인정하지 않는다."
+        }
+      ],
+      "rubric_total": 5,
+      "id": "m1-2-revolution-t3",
+      "pitfalls": [
+        {
+          "text": "회전축이 된 변을 반지름으로 잘못 봄 (반지름·높이 뒤바뀜)",
+          "on": "회전체 파악",
+          "effect": "불인정"
+        },
+        {
+          "text": "원뿔의 부피에서 1/3 을 빠뜨림",
+          "on": "부피",
+          "effect": "불인정"
+        }
+      ]
+    }
+  ]
+}

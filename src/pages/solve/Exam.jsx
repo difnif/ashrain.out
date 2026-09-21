@@ -1,7 +1,8 @@
 // 시험 응시 (#/solve/test) — 8가지 시험 유형(개념 묶음 · 단원 · 연산 · 산과 · 모의고사 · Ash · Rain · Out)
 //   #/solve/test                    유형 고르기 (타일 8개) + 최근 응시
-//   #/solve/test/<type>             범위 고르기(개념 또는 단원) → 확인 카드 → 응시 → 결과
+//   #/solve/test/<type>             범위 고르기(개념 하나 · 또는 학기 → 단원 하나/학기 전체) → 확인 카드 → 응시 → 결과
 //   #/solve/test/<type>/<scopeId>   범위가 정해진 채로 확인 카드부터 (최근 응시에서 다시 보기)
+//                                   scopeId: 개념 id(m1-1-03) · 학기 id(m1-1 = 학기 전체) · 단원 id(m1-1~1, chapters.js)
 //   산과(sangwa) 는 러너 없이 #/solve/essay 로 보낸다.
 // props: { sub, hash }  (SolveRouter: #/solve/test* → <Exam sub hash/>)
 // 기록: attempts(logAttempt, set_id "test:<type>:<base36>") + test_runs(없으면 localStorage "ash.test.runs", 최근 30건)
@@ -14,13 +15,14 @@ import ItemQuestion from "../../components/ItemQuestion";
 import ItemView from "../../components/ItemView";
 import MathText from "../../components/MathText";
 import { listConcepts } from "../../lib/concepts";
-import { UNIT_NAMES, UNIT_ORDER, fetchLiveItems, logAttempt } from "../../lib/items";
+import { chaptersOf, chapterId, parseChapterId, conceptIdsInChapter } from "../../lib/chapters";
+import { UNIT_NAMES, UNIT_ORDER, countLive, fetchLiveItems, logAttempt } from "../../lib/items";
 import { swrCounts } from "../../lib/studyCache";
 import { kindOf } from "../../lib/answers";
 import { saveItemWrongNotes } from "../../lib/wrongnotes";
 import { correctAnswerText, myAnswerText, questionPreview, fmtClock, wrongEntries } from "../../lib/setplay";
 import {
-  TEST_TYPES, presetOf, isExamOpen, describeTimer, presetRules, fetchPlan, buildSelection,
+  TEST_TYPES, DEFAULT_QTYPES, presetOf, isExamOpen, describeTimer, presetRules, fetchPlan, buildSelection,
   emptyAnswer, isAnswered, answeredCount, judgeAll, itemPoints, scoreRun, examMessage,
   fmtTimer, remainingSec, isTimerWarn, newRunId, runToRow, saveRunLocal, loadRunsLocal, mergeRuns, describeRun,
 } from "../../lib/exam";
@@ -111,6 +113,35 @@ function conceptsOnce() {
   return _conceptsP;
 }
 const toTop = () => { try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* 무시 */ } };
+
+/** 학기 전체 범위 */
+const unitScope = (u) => ({ kind: "unit", id: u, title: UNIT_NAMES[u] || u, unitId: u });
+/** 단원 범위 — concepts(listConcepts 결과)로 단원의 개념 id 를 채운다. 단원 id 가 아니면 null */
+function chapterScope(id, concepts) {
+  const ch = parseChapterId(id);
+  if (!ch) return null;
+  const conceptIds = conceptIdsInChapter(concepts, ch.unitId, ch.idx);
+  return { kind: "chapter", id, unitId: ch.unitId, idx: ch.idx, title: `${UNIT_NAMES[ch.unitId] || ch.unitId} · ${ch.title}`, chapterTitle: ch.title, conceptIds };
+}
+
+/** 학기별 단원 문항 수 { [chapterId]: n } — 세션 동안 캐시 (프리셋 문항형 기준) */
+const _chapterCounts = {};
+async function chapterCountsOf(unitId, qtypes) {
+  const key = `${unitId}|${(qtypes || []).join(",")}`;
+  if (_chapterCounts[key]) return _chapterCounts[key];
+  const concepts = await conceptsOnce();
+  const pairs = await Promise.all(chaptersOf(unitId).map(async (_, i) => {
+    const conceptIds = conceptIdsInChapter(concepts, unitId, i);
+    let n = 0;
+    if (conceptIds.length) { try { n = await countLive({ unitId, conceptIds, qtypes }); } catch { n = 0; } }
+    return [chapterId(unitId, i), n];
+  }));
+  const out = Object.fromEntries(pairs);
+  if ((concepts || []).length) _chapterCounts[key] = out;   // 개념 목록을 못 받았으면(전부 0) 캐시하지 않는다
+  return out;
+}
+
+let _lastExamUnit = null;   // 범위 다시 고르기 때 학기를 기억 (세션 동안)
 const dec = (v) => { if (!v) return null; try { return decodeURIComponent(v); } catch { return v; } };
 const fmtDate = (iso) => {
   const t = iso ? new Date(iso) : null;
@@ -273,7 +304,7 @@ function UnitChips({ counts, last, onPick }) {
       {vis.map((u) => {
         const c = counts ? counts[u] || 0 : undefined;
         return (
-          <button key={u} className={"sv-chip" + (u === last ? " on" : "")} disabled={c === 0} onClick={() => onPick(u)}>
+          <button key={u} className={"sv-chip" + (u === last ? " on" : "")} disabled={c === 0} aria-pressed={u === last} onClick={() => onPick(u)}>
             {UNIT_NAMES[u]}{c != null ? <span className="sv-small"> {c}</span> : null}
           </button>
         );
@@ -290,12 +321,17 @@ function UnitChips({ counts, last, onPick }) {
 // ── 흐름: 범위 → 확인 → 응시 → 결과 ──────────────────────────────────────────
 function ExamFlow({ preset, scopeId, uid, toast, setToast }) {
   const isConcept = preset.scope === "concept";
-  const [scope, setScope] = useState(() => (
-    !isConcept && scopeId && UNIT_NAMES[scopeId] ? { kind: "unit", id: scopeId, title: UNIT_NAMES[scopeId], unitId: scopeId } : null
-  ));
-  const [resolving, setResolving] = useState(() => isConcept && !!scopeId);
+  const qtypes = Array.isArray(preset.qtypes) && preset.qtypes.length ? preset.qtypes : DEFAULT_QTYPES;
+  // 학기 id 는 바로 범위가 된다. 개념 id·단원 id 는 개념 목록을 받은 뒤 확정한다(resolving)
+  const [scope, setScope] = useState(() => (!isConcept && scopeId && UNIT_NAMES[scopeId] ? unitScope(scopeId) : null));
+  const [resolving, setResolving] = useState(() => !!scopeId && (isConcept || !!parseChapterId(scopeId)));
   const [phase, setPhase] = useState(() => (scope ? "confirm" : "scope"));   // scope | confirm | loading | play | result
   const [counts, setCounts] = useState(null);
+  const [unit, setUnit] = useState(() => {              // 범위 고르기에서 고른 학기
+    if (_lastExamUnit) return _lastExamUnit;
+    try { const u = localStorage.getItem("ash.solve.unit"); return u && UNIT_NAMES[u] ? u : null; } catch { return null; }
+  });
+  const [chCounts, setChCounts] = useState(null);       // 고른 학기의 단원별 문항 수
   const [items, setItems] = useState([]);
   const [notice, setNotice] = useState(null);
   const [err, setErr] = useState(null);
@@ -303,20 +339,25 @@ function ExamFlow({ preset, scopeId, uid, toast, setToast }) {
   const uidRef = useRef(uid);
   uidRef.current = uid;
 
-  // 개념 범위 딥링크 → 개념 제목 찾기
+  // 개념·단원 범위 딥링크 → 개념 목록으로 제목(과 단원의 개념 id 들) 확정
   useEffect(() => {
-    if (!isConcept || !scopeId) return;
+    if (!scopeId || (!isConcept && !parseChapterId(scopeId))) return;
     let alive = true;
     conceptsOnce().then((list) => {
       if (!alive) return;
-      const c = (list || []).find((x) => x.id === scopeId);
-      if (c) { setScope({ kind: "concept", id: c.id, title: c.title, unitId: c.unit_id }); setPhase("confirm"); }
+      if (isConcept) {
+        const c = (list || []).find((x) => x.id === scopeId);
+        if (c) { setScope({ kind: "concept", id: c.id, title: c.title, unitId: c.unit_id }); setPhase("confirm"); }
+      } else {
+        const s = chapterScope(scopeId, list);
+        if (s) { setScope(s); setPhase("confirm"); }
+      }
       setResolving(false);
     });
     return () => { alive = false; };
   }, [isConcept, scopeId]);
 
-  // 단원별 공개 문항 수 (단원 고르기)
+  // 학기별 공개 문항 수 (학기 고르기)
   useEffect(() => {
     if (isConcept || phase !== "scope") return;
     let alive = true;
@@ -324,9 +365,20 @@ function ExamFlow({ preset, scopeId, uid, toast, setToast }) {
     return () => { alive = false; };
   }, [isConcept, phase]);
 
+  // 고른 학기의 단원별 문항 수 (단원 고르기)
+  useEffect(() => {
+    if (isConcept || phase !== "scope" || !unit) return;
+    let alive = true;
+    setChCounts(null);
+    chapterCountsOf(unit, qtypes).then((c) => { if (alive) setChCounts(c || {}); }).catch(() => { if (alive) setChCounts({}); });
+    return () => { alive = false; };
+  }, [isConcept, phase, unit]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => { toTop(); }, [phase]);
+  useEffect(() => { if (scope?.unitId) _lastExamUnit = scope.unitId; }, [scope]);   // 범위 다시 고르기 때 같은 학기부터
 
   const pickScope = (id) => { location.hash = `#/solve/test/${preset.code}/${encodeURIComponent(id)}`; };
+  const pickUnit = (u) => { _lastExamUnit = u; setUnit(u); };
   const rechoose = () => { location.hash = `#/solve/test/${preset.code}`; };
 
   /** 출제 계획대로 문항을 모아 시험을 시작한다 */
@@ -360,6 +412,7 @@ function ExamFlow({ preset, scopeId, uid, toast, setToast }) {
     const ctx = {
       unitId: scope.unitId || (scope.kind === "unit" ? scope.id : null),
       conceptId: scope.kind === "concept" ? scope.id : null,
+      chapterId: scope.kind === "chapter" ? scope.id : null,
       scopeTitle: scope.title, startedAt, finishedAt, timedOut, overtimeSec,
       short: Math.max(0, preset.n - items.length), runId,
     };
@@ -402,16 +455,44 @@ function ExamFlow({ preset, scopeId, uid, toast, setToast }) {
         </SolveShell>
       );
     }
-    let last = null;
-    try { last = localStorage.getItem("ash.solve.unit"); } catch { /* 무시 */ }
+    const chapters = unit ? chaptersOf(unit) : [];
+    const unitTotal = counts && unit ? counts[unit] : undefined;
+    const chSum = chCounts ? Object.values(chCounts).reduce((s, n) => s + (n || 0), 0) : null;
     return (
       <SolveShell title={preset.name} back="#/solve/test" toast={toast}
-        sub={`단원을 고르면 그 단원 전체에서 ${preset.n}문항이 나와요. ${describeTimer(preset)}.`}>
+        sub={`학기를 고른 다음 단원 하나(또는 학기 전체)를 고르면 그 범위에서 ${preset.n}문항이 나와요. ${describeTimer(preset)}.`}>
         <div className="sv-card">
-          <div className="sv-sec" style={{ marginTop: 0 }}>단원</div>
-          <UnitChips counts={counts} last={last} onPick={pickScope} />
+          <div className="sv-sec" style={{ marginTop: 0 }}>학기</div>
+          <UnitChips counts={counts} last={unit} onPick={pickUnit} />
           {counts && UNIT_ORDER.every((u) => !counts[u]) && <div className="sv-empty" style={{ marginTop: 12 }}>아직 공개된 문항이 없어요.</div>}
         </div>
+
+        {unit && (
+          <div className="sv-card ex-chapters">
+            <div className="sv-sec" style={{ marginTop: 0 }}>{UNIT_NAMES[unit]} 단원</div>
+            {unitTotal === 0 ? <div className="sv-empty">이 학기에는 아직 공개된 문항이 없어요.</div> : (
+              <div className="sv-list">
+                {chapters.map(([title, from, to], i) => {
+                  const id = chapterId(unit, i);
+                  const n = chCounts ? chCounts[id] : undefined;
+                  const dis = n === 0;
+                  return (
+                    <button key={id} className="sv-item" style={dis ? { opacity: .5 } : undefined} disabled={dis} onClick={() => pickScope(id)}>
+                      <span className="no">{i + 1}</span>
+                      <span className="tx">{title}<span className="sv-small"> · 개념 {from}~{to}</span></span>
+                      <span className="rt">{n == null ? "…" : n === 0 ? "준비 중" : `${n}문항`}</span>
+                    </button>
+                  );
+                })}
+                <button className="sv-item" disabled={unitTotal === 0 || chSum === 0} style={chSum === 0 ? { opacity: .5 } : undefined} onClick={() => pickScope(unit)}>
+                  <span className="no">전</span>
+                  <span className="tx"><b>{UNIT_NAMES[unit]} 전체</b><span className="sv-small"> · 모든 단원에서 골고루</span></span>
+                  <span className="rt">{unitTotal == null ? "…" : unitTotal === 0 ? "준비 중" : `${unitTotal}문항`}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </SolveShell>
     );
   }
