@@ -241,7 +241,7 @@ const SH_CSS = `
 .sh-row { font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
 .sh-tabs-in { max-width: 520px; margin: 0 auto; display: flex; align-items: stretch;
   height: var(--wt-h, 52px); padding: 0 10px; }
-.sh-tab { flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center;
+.sh-tab { -webkit-tap-highlight-color: transparent; flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 1px; color: var(--mut); cursor: pointer; padding: 3px 0 4px; font-family: inherit; }
 .sh-tab .ic { font-size: calc(17px * var(--wt-s, 1)); line-height: 1; position: relative; }
 .sh-tab .lb { font-size: calc(9.5px * var(--wt-s, 1)); font-weight: 800; }
