@@ -1,4 +1,4 @@
-// ashrain.out — MathIR 파서·렌더·평가기 (mathir.js, v1.5 r3 / 파이썬 itemfactory/mathir.py v1.5 r2 동형 · 09-07 renderHtml 상하 분수 표시층 추가 · 09-15 r3 HTML 표시층: Σ·lim·∫ 위아래 첨자, cases 중괄호 세로, mat 행렬, dy/dx 상하)
+// ashrain.out — MathIR 파서·렌더·평가기 (mathir.js, v1.5 r3 / 파이썬 itemfactory/mathir.py v1.5 r2 동형 · 09-07 renderHtml 상하 분수 표시층 추가 · 09-15 r3 HTML 표시층: Σ·lim·∫ 위아래 첨자, cases 중괄호 세로, mat 행렬, dy/dx 상하 · 09-21 괄호 규칙 rebracket: 묶음 괄호 ( ) → { } → [ ], 연산자 뒤 양수 괄호 벗김)
 // 위치: src/lib/mathir.js — 앱(ItemCard·검토·코퍼스 화면)과 api/transcribeJob(러너 v2)이 공유.
 // 파이썬 itemfactory/mathir.py 와 동형 — 함수표·문법·표시 규칙을 항상 함께 수정할 것.
 // 이력: v1.0(스펙 v1.1) → v1.4 답 표기층(ㄱ~ㅎ·①~⑳ 낱말 답, '21°'→deg, 단위 꼬리, 'a = 5, b = -1' 병립, '좌변:' 접두 제거)
@@ -625,6 +625,69 @@ function _plainFracs(raw) {
     return pre + FRAC_HTML(_escH(_strip(nu)), _escH(_strip(de)));
   });
 }
+// ---------------------------------------------------------------- 괄호 규칙 (09-21, Park)
+// 교과서 표기: 묶음 괄호는 안쪽부터 소괄호 ( ) → 중괄호 { } → 대괄호 [ ]. 연산자 뒤에 양수만 든 괄호는 벗긴다.
+//   (x − (-4))(x − (-3))  →  {x − (-4)}{x − (-3)}        ((-9) + 13) ÷ 2  →  {(-9) + 13} ÷ 2
+//   (x − (3))(x − (5))    →  (x − 3)(x − 5)               2 × (4)          →  2 × 4
+// 생성 문항의 본문·해설은 소괄호만 쓰므로(마커 문법이 ( ) 뿐) 표시할 때 바꾼다 — 마커 [[…]] 안은 건드리지 않는다.
+// 소괄호로 남기는 것(묶음이 아닌 괄호): 함수·기호 표기 f(x)·f′(x)·sin²(x)·log₂(x)·P(A ∩ B)·√(…), 순서쌍·좌표·구간 (a, b),
+//   문장 속 괄호(한글이 들거나 한글 바로 뒤), 관계식이 든 괄호 (1 − (-6) = 7). 이런 괄호 안의 묶음은 안쪽에서 새로 센다.
+//   다만 바깥 묶음의 깊이를 셀 때는 이것들도 한 겹으로 친다 — (E(X))² → {E(X)}².
+const _ID_TAIL = /([A-Za-zα-ωΑ-Ω]+)[²³′'⁻¹₀-₉ᵃ-ᶻ]*$/;                 // 괄호 앞 이름(+첨자·프라임 꼬리)
+const _SETLIKE = /^[A-Z]ᶜ?$|[∪∩]|ᶜ$/;                                   // A · A ∪ B · (A ∪ B)ᶜ — n(…)의 집합 기수
+const _OP_TAIL = /(?:[+\-−×·÷/=*]|\()\s*$/;                             // 연산자·여는 괄호 뒤 → 양수 괄호 벗김
+const _REL = /[=≠<>≤≥⇔⇒→↔]/;
+const _POS = /^\+?\d+(?:\.\d+)?$/;
+// 함수·기호 표기인가 — f(x)·f′(x)·sin²(x)·log₂(x)·P(A)·E(X)·√(…)·n(A ∪ B). 한 글자 소문자(x·n·k…)는 계수로 본다: x(x + 1), n{2a + (n − 1)d}
+function _isFn(before, inner) {
+  if (/√$/.test(before)) return true;
+  const m = before.match(_ID_TAIL);
+  if (!m) return false;
+  const name = m[1];
+  if (name.length > 1 || /[A-ZΑ-Ω]/.test(name) || /^[fgh]$/.test(name)) return true;
+  return _SETLIKE.test(inner.trim());
+}
+function _topLevelHas(inner, re) {                 // 안쪽 괄호를 건너뛰고 겉 층에서만 찾는다
+  let d = 0;
+  for (const c of inner) {
+    if (c === "(") d++;
+    else if (c === ")") d--;
+    else if (d === 0 && re.test(c)) return true;
+  }
+  return false;
+}
+export function rebracket(text) {
+  const s = String(text ?? "");
+  if (s.indexOf("(") < 0) return s;
+  const root = { children: [] }, stack = [root];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === "(") { const nd = { open: i, close: -1, children: [] }; stack[stack.length - 1].children.push(nd); stack.push(nd); }
+    else if (c === ")") { if (stack.length === 1) return s; stack.pop().close = i; }
+  }
+  if (stack.length !== 1) return s;                // 짝이 안 맞으면 손대지 않는다 (마커에 걸쳐 열린 괄호 등)
+  const rep = new Map();
+  const visit = (nd) => {
+    nd.children.forEach(visit);
+    if (nd === root) return;
+    const inner = s.slice(nd.open + 1, nd.close), before = s.slice(Math.max(0, nd.open - 8), nd.open);
+    const depth = nd.children.reduce((m, c) => Math.max(m, c.contrib), 0);
+    if (_POS.test(inner.trim()) && _OP_TAIL.test(before)) { rep.set(nd.open, ""); rep.set(nd.close, ""); nd.contrib = 0; return; }
+    if (/\^$/.test(before)) { nd.contrib = 0; return; }        // 2^(1/3) — 지수 표기의 괄호는 묶음으로 세지 않는다
+    nd.contrib = depth + 1;
+    const grouping = !_isFn(before, inner) && !/[가-힣]$/.test(before) && !/[가-힣]/.test(inner)
+      && !_topLevelHas(inner, /,/) && !_topLevelHas(inner, _REL);
+    if (!grouping || depth === 0) return;
+    const [o, cl] = depth === 1 ? ["{", "}"] : ["[", "]"];
+    rep.set(nd.open, o); rep.set(nd.close, cl);
+  };
+  visit(root);
+  if (!rep.size) return s;
+  let out = "";
+  for (let i = 0; i < s.length; i++) out += rep.has(i) ? rep.get(i) : s[i];
+  return out;
+}
+
 export function renderHtml(text) {
   const segs = parseText(String(text ?? "")).segs;
   _H = true;
@@ -632,7 +695,7 @@ export function renderHtml(text) {
   try {
     for (const s of segs) {
       if (s.kind === "ir") out += _fracPlaceholders(_escH(disp(s.node)));
-      else out += _plainFracs(_escH(s.raw));
+      else out += _plainFracs(_escH(rebracket(s.raw)));
     }
   } finally { _H = false; }
   return out;

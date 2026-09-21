@@ -597,18 +597,18 @@ def qb_t1():
         verify=["a*p*p + b*p + c == 0", "a*q*q + b*q + c == 0", "ans == w1*b + w2*c"],
         question="두 근이 {p}, {q}이고 x²의 계수가 {a}인 이차방정식을 {a}x² + bx + c = 0 꼴로 나타낼 때, {QT}의 값을 구하시오." if False else None,   # a=1 일 때 "1x²" 을 피하려 qb_t1_fix
         answer="{ans}", answer_alt=[],
-        sol1="두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − ({p})) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
-        sol2=["{co(a)}(x − ({p}))(x − ({q})) = 0", "전개하면 {co(a)}(x² − ({s})x + ({m})) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
-        sol2_fig=steps([{"text": "{co(a)}(x − ({p}))(x − ({q})) = 0", "hint": "근 p → 인수 (x − p)", "marks": [{"on": "({p})", "note": "음수 근이면 부호가 바뀐다"}]},
+        sol1="두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − {pn(p)}) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
+        sol2=["{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0", "전개하면 {co(a)}(x² − {pn(s)}x + {pn(m)}) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
+        sol2_fig=steps([{"text": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0", "hint": "근 p → 인수 (x − p)", "marks": [{"on": "{pn(p)}", "note": "음수 근이면 부호가 바뀐다"}]},
                         {"text": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0", "hint": "a 를 모든 항에 곱한다"},
                         {"text": "b = {b}, c = {c} → {QT} = {ans}"}]),
         sol2_anim=[[reveal(0), hl("hint:0", "mark:0-0")], [reveal(1), hl("hint:1")], [reveal(2)]],
-        sol3="x = {p}{eul(p)} 대입하면 {co(a)}({p})² {sgn(b)} × ({p}) {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",
+        sol3="x = {p}{eul(p)} 대입하면 {pn(p)}² {sgn(b)} × {pn(p)} {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",   # a≥2 는 qb_t1_split 에서 'a ×' 를 붙인다
         sol3_fig=steps(["x = {p} 대입 → 0  ✓", "x = {q} 대입 → 0  ✓"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − ({p}))(x − ({q})) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
+        model_answer="두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})(x − {pn(q)}) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
         rubric=[
-            {"element": "인수 만들기", "points": 3, "criterion": "{co(a)}(x − ({p}))(x − ({q})) = 0 꼴로 세웠다.", "partial": "근의 부호를 바꿔 인수를 만들었으면 인정하지 않는다."},
+            {"element": "인수 만들기", "points": 3, "criterion": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0 꼴로 세웠다.", "partial": "근의 부호를 바꿔 인수를 만들었으면 인정하지 않는다."},
             {"element": "전개", "points": 2, "criterion": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0으로 전개했다.", "partial": "a 를 한 항에만 곱했으면 1점."},
             {"element": "답 구하기", "points": 2, "criterion": "{QT} = {ans}{eul(ans)} 구했다.", "partial": "다른 계수를 답했으면 인정하지 않는다."},
         ],
@@ -626,6 +626,10 @@ def qb_t1_split(t):
         u["params"] = [p for p in t["params"] if p["name"] != "a"] + [{"name": "a", "values": {"in": avals}}]
         u["question"] = q
         u["title"] = t["title"] + (" (x² 의 계수 1)" if no == 1 else " (x² 의 계수 2·3)")
+        if no == 4:   # 대입 검산: 2 × (-4)² … (양수 근이면 2 × 4² — 괄호 없이)
+            u["sol3"] = t["sol3"].replace("대입하면 {pn(p)}²", "대입하면 {a} × {pn(p)}²")
+        else:         # 계수 1 이면 전개식에 괄호가 필요 없다: (x² − 3x + 2) = 0 → x² − 3x + 2 = 0
+            u["sol2"] = [x.replace("{co(a)}(x² − {pn(s)}x + {pn(m)}) = 0", "x² − {pn(s)}x + {pn(m)} = 0") for x in t["sol2"]]
         out.append(u)
     return out
 
@@ -647,17 +651,17 @@ def qb_t2():
         question=None,   # qb_t2_split
         answer="{ans}", answer_alt=[],
         sol1="중근 x = p 를 갖는 이차방정식은 (x − p)² 을 인수로 갖는다. 따라서 x²의 계수가 a 이면 a(x − p)² = 0 이고, 완전제곱식을 전개하면 b 와 c 가 나온다.",
-        sol2=["{co(a)}(x − ({p}))² = 0", "전개하면 {co(a)}(x² − 2 × ({p})x + ({p})²) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
-        sol2_fig=steps([{"text": "{co(a)}(x − ({p}))² = 0", "hint": "중근 → 같은 인수 두 번"},
+        sol2=["{co(a)}(x − {pn(p)})² = 0", "전개하면 {co(a)}(x² − 2 × {pn(p)}x + {pn(p)}²) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
+        sol2_fig=steps([{"text": "{co(a)}(x − {pn(p)})² = 0", "hint": "중근 → 같은 인수 두 번"},
                         {"text": "(x − p)² = x² − 2px + p²", "hint": "완전제곱식", "marks": [{"on": "2px", "note": "가운데 항은 2배"}]},
                         {"text": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0 → {QT} = {ans}"}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2)]],
         sol3="중근을 가지므로 b² − 4ac = 0이 되어야 하는데, 실제로 b² − 4ac = {b*b} − {4*a*c} = 0이다. 답은 {ans}이다.",
         sol3_fig=steps(["b² − 4ac = {b*b} − {4*a*c} = 0  ✓"]),
         sol3_anim=[[reveal(0)]],
-        model_answer="중근이 {p}이고 x²의 계수가 {a}이므로 {co(a)}(x − ({p}))² = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 {QT} = {ans}이다.",
+        model_answer="중근이 {p}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})² = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 {QT} = {ans}이다.",
         rubric=[
-            {"element": "완전제곱 꼴 세우기", "points": 3, "criterion": "{co(a)}(x − ({p}))² = 0 으로 세웠다.", "partial": "(x − p) 를 한 번만 썼으면 인정하지 않는다."},
+            {"element": "완전제곱 꼴 세우기", "points": 3, "criterion": "{co(a)}(x − {pn(p)})² = 0 으로 세웠다.", "partial": "(x − p) 를 한 번만 썼으면 인정하지 않는다."},
             {"element": "전개", "points": 2, "criterion": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0 으로 전개했다.", "partial": "가운데 항의 2배를 빠뜨렸으면 1점."},
             {"element": "답 구하기", "points": 2, "criterion": "{QT} = {ans}{eul(ans)} 구했다.", "partial": "다른 계수를 답했으면 인정하지 않는다."},
         ],
@@ -674,6 +678,8 @@ def qb_t2_split(t):
         u["params"] = [p for p in t["params"] if p["name"] != "a"] + [{"name": "a", "values": {"in": avals}}]
         u["question"] = q
         u["title"] = t["title"] + (" (x² 의 계수 1)" if no == 2 else " (x² 의 계수 2·3)")
+        if no == 2:   # 계수 1 이면 전개식에 괄호가 필요 없다
+            u["sol2"] = [x.replace("{co(a)}(x² − 2 × {pn(p)}x + {pn(p)}²) = 0", "x² − 2 × {pn(p)}x + {pn(p)}² = 0") for x in t["sol2"]]
         out.append(u)
     return out
 
@@ -730,16 +736,16 @@ def qb_t3():
         question="이차방정식 x² + bx + c = 0을 푸는데, 민수는 x의 계수를 잘못 보고 풀어 두 근 {p1}, {q1}을 얻었고, 지연이는 상수항을 잘못 보고 풀어 두 근 {p2}, {q2}를 얻었다. 이 이차방정식의 옳은 두 근 중 큰 근을 구하시오.",
         answer="{ans}", answer_alt=[],
         sol1="x의 계수를 잘못 본 민수는 상수항 c는 맞게 보았으므로 민수의 두 근의 곱이 c다. 상수항을 잘못 본 지연이는 x의 계수 b는 맞게 보았으므로 지연이의 두 근의 합이 −b다. 이렇게 b, c를 복원해 원래 방정식을 풀면 된다.",
-        sol2=["민수: (x − ({p1}))(x − ({q1})) = 0 → 상수항 c = ({p1}) × ({q1}) = {cc}", "지연: (x − ({p2}))(x − ({q2})) = 0 → x의 계수 b = −(({p2}) + ({q2})) = {bb}",
-              "원래 방정식 x² {sgt(bb)}x {sgn(cc)} = 0 → (x − ({r}))(x − ({s})) = 0 → x = {r} 또는 x = {s}, 큰 근은 {s}"],
-        sol2_fig=steps([{"text": "c = ({p1}) × ({q1}) = {cc}", "hint": "x 의 계수를 잘못 봄 → 상수항은 맞음"},
-                        {"text": "b = −(({p2}) + ({q2})) = {bb}", "hint": "상수항을 잘못 봄 → x 의 계수는 맞음", "marks": [{"on": "−", "note": "합의 부호를 바꾼다"}]},
+        sol2=["민수: (x − {pn(p1)})(x − {pn(q1)}) = 0 → 상수항 c = {pn(p1)} × {pn(q1)} = {cc}", "지연: (x − {pn(p2)})(x − {pn(q2)}) = 0 → x의 계수 b = −({pn(p2)} + {pn(q2)}) = {bb}",
+              "원래 방정식 x² {sgt(bb)}x {sgn(cc)} = 0 → (x − {pn(r)})(x − {pn(s)}) = 0 → x = {r} 또는 x = {s}, 큰 근은 {s}"],
+        sol2_fig=steps([{"text": "c = {pn(p1)} × {pn(q1)} = {cc}", "hint": "x 의 계수를 잘못 봄 → 상수항은 맞음"},
+                        {"text": "b = −({pn(p2)} + {pn(q2)}) = {bb}", "hint": "상수항을 잘못 봄 → x 의 계수는 맞음", "marks": [{"on": "−", "note": "합의 부호를 바꾼다"}]},
                         {"text": "x² {sgt(bb)}x {sgn(cc)} = 0 → x = {r}, {s}"}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2)]],
         sol3="옳은 두 근 {r}, {s}의 합은 {r + s}, 곱은 {cc}이므로 지연이의 두 근의 합 {p2} + {pn(q2)} = {r + s}, 민수의 두 근의 곱 {p1} × {pn(q1)} = {cc}{wa(cc)} 각각 같다. 큰 근은 {s}이다.",
         sol3_fig=steps(["합: {p2} + {pn(q2)} = {r} + {pn(s)} = {r + s}", "곱: {p1} × {pn(q1)} = {r} × {pn(s)} = {cc}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="민수는 상수항을 맞게 보았으므로 c = ({p1}) × ({q1}) = {cc}이고, 지연이는 x의 계수를 맞게 보았으므로 b = −(({p2}) + ({q2})) = {bb}이다. 따라서 원래 방정식은 x² {sgt(bb)}x {sgn(cc)} = 0이고 (x − ({r}))(x − ({s})) = 0에서 옳은 두 근은 {r}, {s}이므로 큰 근은 {s}이다.",
+        model_answer="민수는 상수항을 맞게 보았으므로 c = {pn(p1)} × {pn(q1)} = {cc}이고, 지연이는 x의 계수를 맞게 보았으므로 b = −({pn(p2)} + {pn(q2)}) = {bb}이다. 따라서 원래 방정식은 x² {sgt(bb)}x {sgn(cc)} = 0이고 (x − {pn(r)})(x − {pn(s)}) = 0에서 옳은 두 근은 {r}, {s}이므로 큰 근은 {s}이다.",
         rubric=[
             {"element": "상수항 복원", "points": 3, "criterion": "민수의 두 근의 곱으로 c = {cc}{eul(cc)} 구했다.", "partial": "누구의 근을 써야 하는지 바꿨으면 인정하지 않는다."},
             {"element": "x 의 계수 복원", "points": 3, "criterion": "지연이의 두 근의 합으로 b = {bb}{eul(bb)} 구했다.", "partial": "합의 부호를 바꾸지 않았으면 1점."},
