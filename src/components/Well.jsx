@@ -245,6 +245,8 @@ export const WELL_CSS = `
   border-radius: 50%; cursor: pointer; z-index: 3; padding: 0; font-family: inherit;
   background: var(--card); border: 1.5px dashed var(--mut); color: var(--mut);
   display: flex; align-items: center; justify-content: center; }
+/* 탭할 때 모바일 브라우저가 씌우는 사각형 하이라이트 제거 (우물은 원형이라 특히 티가 난다) */
+.wl-btn, .wl-dim, .wl-item, .wl-links button { -webkit-tap-highlight-color: transparent; }
 .wl-btn .wl-dot { font-size: calc(var(--wl-d, 46px) * .44); line-height: 1; }
 .wl-btn.ghost { background: none; border-color: transparent; color: transparent; }
 .wl-btn:active { transform: translateX(-50%) scale(.96); }
