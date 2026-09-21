@@ -31,7 +31,7 @@ function mockPhoto(body) {
   calls.push(body.task + (body.mode ? ":" + body.mode : ""));
   const { task, mode } = body;
   if (task === "scan" && mode === "problem") return { mode, question: Q, choices: null, qtype: "short", figure_note: null, unit_guess: "m1-1", unreadable: false, warnings: [], std: STD, policy: "labels", model: "mock" };
-  if (task === "scan" && mode === "answer") return { mode, answer: "x = 세로\n2(x+3+x) = 54\n4x + 6 = 54\nx = 12\n넓이 = 15 × 12 = 180", lines: [{ text: "x = 세로", kind: "text" }, { text: "2(x+3+x) = 54", kind: "eq" }, { text: "4x + 6 = 54", kind: "eq" }, { text: "x = 12", kind: "eq" }, { text: "넓이 = 15 × 12 = 180", kind: "answer" }], final_answer: "180", legibility: { score: 3, issues: [{ kind: "glyph", note: "7을 1처럼 씀" }] }, unreadable: false, model: "mock" };
+  if (task === "scan" && mode === "answer") return { mode, answer: "x = 세로\n2(x+3+x) = 54\n4x + 6 = 54\nx = 12\n넓이 = 15 × 12 = 180", lines: [{ text: "x = 세로", kind: "text" }, { text: "2(x+3+x) = 54", kind: "eq" }, { text: "4x + 6 = 54", kind: "eq" }, { text: "x = 12", kind: "eq" }, { text: "넓이 = 15 × 12 = 180", kind: "answer" }], final_answer: "180", legibility: { score: 3, issues: [{ kind: "glyph", note: "7을 1처럼 씀" }, { kind: "two_column", note: "풀이가 좌우 두 단으로 나뉘었어요", box: { x: 0.06, y: 0.12, w: 0.88, h: 0.55 } }] }, unreadable: false, model: "mock" };
   if (task === "scan" && mode === "page") return { mode, problems: [{ no: 1, box: { x: 0.04, y: 0.04, w: 0.45, h: 0.4 } }, { no: 2, box: { x: 0.04, y: 0.5, w: 0.45, h: 0.4 } }], answers: [{ no: 1, box: { x: 0.52, y: 0.04, w: 0.44, h: 0.4 } }, { no: 2, box: { x: 0.52, y: 0.5, w: 0.44, h: 0.4 } }], model: "mock" };
   if (task === "approach") return { asking: "직사각형의 넓이", clues: [{ text: "둘레가 54cm", why: "둘레로 가로+세로의 합을 알 수 있어요" }, { text: "가로의 길이가 세로의 길이보다 3cm 길", why: "가로를 세로로 나타낼 수 있어요" }], concept: "직사각형의 둘레 = 2 × (가로 + 세로)", first_step: "세로를 x cm 라고 두기", setup: ["2(x + 3 + x) = 54"], traps: ["구하는대상혼동", "단위"], reading: "쉼표에서 한 번 끊고, 마지막 문장에서 무엇을 구하는지 확인해요.", model: "mock" };
   if (task === "essay") return { result: { rubric: [{ no: 1, element: "식 세우기", points: 3, criterion: "세로를 x로 두고 둘레 식을 세운다" }, { no: 2, element: "해 구하기", points: 3, criterion: "x = 12 를 구한다" }, { no: 3, element: "답 구하기", points: 2, criterion: "넓이 180 cm² 를 단위와 함께 쓴다" }], marks: [{ no: 1, level: "full", got: 3, comment: "식이 정확해요" }, { no: 2, level: "full", got: 3, comment: "풀이 과정이 이어져요" }, { no: 3, level: "partial", got: 1, comment: "단위가 빠졌어요" }], total: 7, max: 8, verdict: "good", final_answer_ok: true, corrections: [{ where: "마지막 줄", wrong: "180", fix: "180 cm²", why: "넓이는 단위까지 써야 해요" }], feedback: ["가로를 x+3 이라고 쓴 이유를 한 줄 적으면 더 좋아요"], pitfall_tags: ["단위"], praise: "둘레 식을 바로 세운 점이 좋아요" }, std: STD, retention: RET, model: "mock" };
@@ -92,6 +92,7 @@ async function mockSupabase(page) {
   await page.addInitScript(([key, sess, theme]) => {
     localStorage.setItem(key, JSON.stringify(sess));
     localStorage.setItem("ashrain-theme", theme);
+    localStorage.setItem("ash.hw.muteUntil", "9999999999999");   // 필기 팝업은 H 절에서 따로 검사 — 그 전 흐름을 막지 않게
   }, ["sb-placeholder-auth-token", SESSION, THEME]);
 }
 
@@ -250,8 +251,20 @@ function ensureImages() {
     await page.getByRole("button", { name: "인식하기" }).click();
     await page.locator("textarea.ph-ta").waitFor({ timeout: 15000 });
     ok((await page.locator("textarea.ph-ta").inputValue()).includes("2(x+3+x) = 54"), "서술형: 전사된 답안이 편집칸에");
+    t = await text();
+    ok((await page.locator(".ph-hwm .hl").count()) >= 1 && t.includes("화살표"), "서술형: 필기 문제(두 단)를 사진 위 형광펜 + 화살표 지도 문구");
+    await shot("03a-hwmarks");
     await page.locator("textarea.ph-ta").fill((await page.locator("textarea.ph-ta").inputValue()) + " cm²");
+    // 백그라운드 잡 — 채점 중 자리 비우기·판독 취소 (느린 서버를 흉내)
+    await page.route("**/api/photo", async (route) => { await sleep(900); await route.continue(); });
     await page.getByRole("button", { name: "채점·첨삭 받기" }).click();
+    await page.getByRole("button", { name: /자리 비우기/ }).waitFor({ timeout: 6000 });
+    ok((await page.getByRole("button", { name: "판독 취소" }).count()) === 1, "서술형: 채점 중 「자리 비우기」·「판독 취소」 버튼");
+    await page.getByRole("button", { name: "판독 취소" }).click();
+    await page.getByText("판독을 취소했어요").waitFor({ timeout: 6000 });
+    ok(true, "서술형: 판독 취소가 요청을 중단");
+    await page.unroute("**/api/photo");
+    await page.getByRole("button", { name: "다시 채점받기" }).click();
     await page.getByText("채점 기준표").waitFor({ timeout: 15000 });
     t = await text();
     ok(t.includes("7") && t.includes("/ 8점"), "서술형: 점수 7/8");
@@ -345,7 +358,28 @@ function ensureImages() {
     quotaMode = false;
     await shot("07-error");
 
-    // H. 서버 호출 순서 확인 — 사진은 scan 에만, 문항 텍스트는 그 뒤 호출에만
+    // H. 필기 약속 팝업 — 기본 노출 · 알겠어요 · 한 달 숨김 · 5회 누적 재노출
+    // go() 는 전체 리로드라 addInitScript 가 muteUntil 을 도로 심는다 → 해시 내비게이션으로 들어간다
+    await go("#/solve/photo");
+    await page.evaluate(() => { localStorage.removeItem("ash.hw.muteUntil"); localStorage.setItem("ash.hw.strikes", "0"); sessionStorage.removeItem("ash.hw.seen"); location.hash = "#/solve/photo/essay?cur=1"; });
+    await page.locator(".ph-hwg").waitFor({ timeout: 8000 });
+    t = await text();
+    ok(t.includes("필기 약속") && t.includes("화살표"), "필기 팝업: 촬영 전 약속 4가지(두 단→화살표 포함)");
+    ok((await page.getByRole("button", { name: "한 달 동안 보지 않기" }).count()) === 1, "필기 팝업: 한 달 보지 않기 옵션");
+    await page.getByRole("button", { name: "알겠어요" }).click();
+    await sleep(200);
+    ok((await page.locator(".ph-hwg").count()) === 0, "필기 팝업: 알겠어요로 닫힘");
+    await page.evaluate(() => { localStorage.setItem("ash.hw.muteUntil", "9999999999999"); localStorage.setItem("ash.hw.strikes", "5"); sessionStorage.removeItem("ash.hw.seen"); location.hash = "#/solve/photo"; });
+    await sleep(300);
+    await page.evaluate(() => { location.hash = "#/solve/photo/essay?cur=1"; });
+    await page.locator(".ph-hwg").waitFor({ timeout: 8000 });
+    ok((await text()).includes("5번"), "필기 팝업: 5회 누적이면 한 달 숨김 중에도 재노출");
+    await shot("08-hwguide");
+    await page.getByRole("button", { name: "알겠어요" }).click();
+    await sleep(200);
+    ok((await page.evaluate(() => localStorage.getItem("ash.hw.strikes"))) === "0", "필기 팝업: 확인하면 누적 리셋");
+
+    // I. 서버 호출 순서 확인 — 사진은 scan 에만, 문항 텍스트는 그 뒤 호출에만
     ok(calls.filter((c) => c.startsWith("scan")).length >= 6, `호출: scan ${calls.filter((c) => c.startsWith("scan")).length}회`);
     ok(calls.includes("approach") && calls.includes("essay") && calls.includes("process"), "호출: approach·essay·process 모두 사용");
   } catch (e) {

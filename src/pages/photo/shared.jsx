@@ -1,9 +1,11 @@
-// 촬영 모듈 공용 조각 — 문항 카드 · 보관 안내 · 신호등 · 단계 표시 · 진행 막대 · 오류 안내 · 빈 상태 그림
+// 촬영 모듈 공용 조각 — 문항 카드 · 보관 안내 · 신호등 · 단계 표시 · 진행 막대 · 오류 안내 · 빈 상태 그림 · 잡(백그라운드) 안내
+import { useEffect, useState } from "react";
 import MathText from "../../components/MathText";
 import { CIRCLED } from "../../lib/answers";
 import { UNIT_NAMES } from "../../lib/items";
 import { putSession, newId } from "../../lib/deviceStore";
 import { readCurrent } from "../../lib/photoApi";
+import { cancelJob, askNotifyPermission } from "../../lib/photoJobs";
 
 export const GRADE_LABEL = { S: "표준형", M: "소폭 변형", C: "창작형" };
 export const FEATURE_LABEL = { read: "문장 이해하기", mark: "표시 연습", essay: "서술형 채점·첨삭", check: "풀이과정 검사" };
@@ -57,6 +59,37 @@ export function Progress({ now = 0, total = 1, label, foot }) {
       <div className="hd"><span className="sp" /><span className="tx">{label}</span><span className="cnt">{pct}%</span></div>
       <div className="sv-bar"><i style={{ width: `${pct}%` }} /></div>
       {foot && <div className="ft">{foot}</div>}
+    </div>
+  );
+}
+
+/** 잡 상태가 바뀔 때 다시 그리기 — 화면이 백그라운드 잡의 progress/status 를 따라가게 */
+export function useJobTick() {
+  const [, setT] = useState(0);
+  useEffect(() => {
+    const on = () => setT((t) => t + 1);
+    window.addEventListener("ash:jobs", on);
+    return () => window.removeEventListener("ash:jobs", on);
+  }, []);
+}
+
+/**
+ * 백그라운드 잡 대기 화면 — 진행 표시 + 「자리 비우기」(작업은 계속, 끝나면 알림) + 「판독 취소」.
+ * 자리를 비워도 결과는 잡 안에서 기기 보관소에 저장된다. 창을 완전히 닫으면 멈춘다(서버 무저장 원칙).
+ */
+export function JobBusy({ job, busyText = "판독하는 중…", onCanceled }) {
+  if (!job) return null;
+  const pr = job.progress;
+  return (
+    <div>
+      {pr ? <Progress now={pr.step} total={pr.total} label={pr.label} foot={pr.foot} /> : <Busy text={busyText} />}
+      <div className="ph-jobrow">
+        <button className="sv-btn sm" onClick={() => { askNotifyPermission(); location.hash = ""; }}>🏠 자리 비우기 — 끝나면 알려 드려요</button>
+        <button className="sv-btn sm ghost" onClick={() => { cancelJob(job.id); onCanceled?.(); }}>판독 취소</button>
+      </div>
+      <div className="sv-small" style={{ marginTop: 6, lineHeight: 1.6 }}>
+        다른 화면에 다녀와도 작업은 계속되고, 끝나면 알려 드려요(결과는 기록 탭에). 브라우저를 완전히 닫으면 멈춰요. 취소해도 오늘 사용 횟수는 이미 차감돼요.
+      </div>
     </div>
   );
 }

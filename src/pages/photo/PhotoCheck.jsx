@@ -6,11 +6,14 @@ import SolveShell, { useToast } from "../solve/SolveShell";
 import MathText from "../../components/MathText";
 import { trapText } from "../../lib/marking.js";
 import { cropCanvas, canvasToBase64 } from "../../lib/camera";
-import { photoCall } from "../../lib/photoApi";
+import { photoCall, scanCall } from "../../lib/photoApi";
 import { newId } from "../../lib/deviceStore";
+import { startJob } from "../../lib/photoJobs";
+import { hwGuideDue, hwIssuesOf, addHwStrike } from "../../lib/hw";
 import Capture, { RegionPicker } from "./Capture";
+import { HwGuide, HwMarks } from "./HwGuide";
 import { EssayResult } from "./PhotoEssay";
-import { Steps, Busy, Progress, ErrorNote, Lights, KeepNote, aggregateLights, thumbOf, saveDevice, titleOf, CRITERIA } from "./shared";
+import { Steps, Busy, ErrorNote, Lights, KeepNote, aggregateLights, thumbOf, saveDevice, titleOf, CRITERIA, JobBusy, useJobTick } from "./shared";
 
 const LOAD = { low: "가벼움", mid: "보통", high: "많음 — 실수 위험" };
 const HABIT = { size: "글씨 크기", messy: "난잡함", glyph: "헷갈리는 글자", align: "정렬·등호", unit: "단위", skip: "건너뜀", other: "기타" };
@@ -30,10 +33,13 @@ export default function PhotoCheck() {
   const [pages, setPages] = useState([]);       // [{ id, cv, url, boxes:[{id,kind,no,box}], detecting, note }]
   const [adding, setAdding] = useState(true);   // 촬영 화면을 보이는가
   const [stage, setStage] = useState("edit");   // edit | run | result
-  const [prog, setProg] = useState(null);       // { step, total, label, foot }
   const [items, setItems] = useState([]);       // 검사 결과 [{ id, pageIdx, no, p, a, out, err }]
   const [picked, setPicked] = useState({});     // 첨삭 받을 문항 { [itemId]: true }
   const [essays, setEssays] = useState({});     // { [itemId]: { busy, err, res } }
+  const [job, setJob] = useState(null);         // 검사 백그라운드 잡
+  const [ejob, setEjob] = useState(null);       // 첨삭 백그라운드 잡
+  const [guide, setGuide] = useState(() => hwGuideDue());   // 촬영 전 필기 약속 팝업
+  useJobTick();
   const at = stage === "edit" ? (pages.length ? 1 : 0) : stage === "run" ? 2 : Object.keys(essays).length ? 3 : 2;
 
   const updatePage = (id, fn) => setPages((ps) => ps.map((pg) => (pg.id === id ? fn(pg) : pg)));
@@ -61,55 +67,95 @@ export default function PhotoCheck() {
   }), [pages]);
   const ready = pairs.filter((x) => x.a);
 
-  const run = async () => {
+  // 검사 — 백그라운드 잡. 화면을 떠나도 문항별로 계속 돌고, 끝난 문항은 그때그때 기록에 저장된다.
+  const run = () => {
     if (!ready.length) { setToast("문제와 답안이 짝지어진 문항이 없어요"); return; }
     setStage("run"); setItems([]); setPicked({}); setEssays({});
-    const total = ready.length * STEPS_PER_ITEM;
-    const say = (i, s, label) => setProg({ step: i * STEPS_PER_ITEM + s, total, label, foot: `${ready.length}문항 중 ${i + (s >= STEPS_PER_ITEM ? 1 : 0)}문항 끝남 · 문항마다 인식 2회와 검사 1회를 써요` });
-    const out = [];
-    for (let i = 0; i < ready.length; i++) {
-      const pr = ready[i];
-      const label = `${pages.length > 1 ? `${pr.pageIdx + 1}쪽 ` : ""}${pr.no}번`;
-      const rec = { id: newId(), pageIdx: pr.pageIdx, no: pr.no, label, p: null, a: null, out: null, err: null, qthumb: null };
-      try {
-        say(i, 0, `${label} 문제 읽는 중…`);
-        const qcv = cropCanvas(pr.page.cv, pr.q.box, 0.015);
-        rec.qthumb = thumbOf(qcv, 360);
-        const sp = await photoCall("scan", { image: canvasToBase64(qcv, 0.85), mode: "problem" });
-        if (sp.unreadable) throw new Error("문항을 읽지 못했어요 — 문제 영역을 다시 잡아 주세요");
-        rec.p = { question: sp.question, choices: sp.choices, qtype: sp.qtype, figure_note: sp.figure_note, unit_guess: sp.unit_guess, std: sp.std, warnings: sp.warnings };
-        say(i, 1, `${label} 풀이 읽는 중…`);
-        const acv = cropCanvas(pr.page.cv, pr.a.box, 0.015);
-        const sa = await photoCall("scan", { image: canvasToBase64(acv, 0.85), mode: "answer" });
-        if (sa.unreadable) throw new Error("풀이를 읽지 못했어요 — 답안 영역을 다시 잡아 주세요");
-        rec.a = { answer: sa.answer, lines: sa.lines, final_answer: sa.final_answer, legibility: sa.legibility, thumb: thumbOf(acv, 360) };
-        say(i, 2, `${label} 풀이 과정 검사 중…`);
-        const r = await photoCall("process", { question: rec.p.question, figure_note: rec.p.figure_note, choices: rec.p.choices, answer: rec.a.answer, lines: rec.a.lines, legibility: rec.a.legibility, std: rec.p.std, unit: rec.p.unit_guess });
-        rec.out = r;
-        saveDevice({ id: rec.id, feature: "check", title: `${label} · ${titleOf(rec.p.question)}`, question: rec.p.question, figure_note: rec.p.figure_note, unit: rec.p.unit_guess, grade: r.std?.item_grade || rec.p.std?.item_grade || null, answer: rec.a.answer, result: r.result, retention: r.retention, thumb: rec.qthumb });
-      } catch (e) {
-        rec.err = e?.message || "검사 실패";
-      }
-      say(i, STEPS_PER_ITEM, `${label} 끝`);
-      out.push(rec); setItems(out.slice());
-    }
-    setProg(null); setStage("result");
+    const snap = ready.map((pr) => ({ pageIdx: pr.pageIdx, no: pr.no, cv: pr.page.cv, qbox: pr.q.box, abox: pr.a.box }));
+    const many = pages.length > 1;
+    const total = snap.length * STEPS_PER_ITEM;
+    const j = startJob({
+      kind: "check", title: `풀이과정 검사 (${snap.length}문항)`,
+      run: async (signal, setP) => {
+        const say = (i, s, label) => setP({ step: i * STEPS_PER_ITEM + s, total, label, foot: `${snap.length}문항 중 ${i + (s >= STEPS_PER_ITEM ? 1 : 0)}문항 끝남 · 문항마다 인식 2회와 검사 1회를 써요` });
+        const out = [];
+        for (let i = 0; i < snap.length; i++) {
+          if (signal.aborted) break;
+          const pr = snap[i];
+          const label = `${many ? `${pr.pageIdx + 1}쪽 ` : ""}${pr.no}번`;
+          const rec = { id: newId(), pageIdx: pr.pageIdx, no: pr.no, label, p: null, a: null, out: null, err: null, qthumb: null };
+          try {
+            say(i, 0, `${label} 문제 읽는 중…`);
+            const qcv = cropCanvas(pr.cv, pr.qbox, 0.015);
+            rec.qthumb = thumbOf(qcv, 360);
+            const sp = await scanCall({ image: canvasToBase64(qcv, 0.85), mode: "problem" }, { signal });
+            if (sp.unreadable) throw new Error("문항을 읽지 못했어요 — 문제 영역을 다시 잡아 주세요");
+            rec.p = { question: sp.question, choices: sp.choices, qtype: sp.qtype, figure_note: sp.figure_note, unit_guess: sp.unit_guess, std: sp.std, warnings: sp.warnings };
+            say(i, 1, `${label} 풀이 읽는 중…`);
+            const acv = cropCanvas(pr.cv, pr.abox, 0.015);
+            const sa = await scanCall({ image: canvasToBase64(acv, 0.85), mode: "answer" }, { signal });
+            if (sa.unreadable) throw new Error("풀이를 읽지 못했어요 — 답안 영역을 다시 잡아 주세요");
+            if (hwIssuesOf(sa).length) addHwStrike();     // 필기 문제 누적(이 기기)
+            rec.a = { answer: sa.answer, lines: sa.lines, final_answer: sa.final_answer, legibility: sa.legibility, thumb: thumbOf(acv, 360) };
+            say(i, 2, `${label} 풀이 과정 검사 중…`);
+            const r = await photoCall("process", { question: rec.p.question, figure_note: rec.p.figure_note, choices: rec.p.choices, answer: rec.a.answer, lines: rec.a.lines, legibility: rec.a.legibility, std: rec.p.std, unit: rec.p.unit_guess }, { signal });
+            rec.out = r;
+            await saveDevice({ id: rec.id, feature: "check", title: `${label} · ${titleOf(rec.p.question)}`, question: rec.p.question, figure_note: rec.p.figure_note, unit: rec.p.unit_guess, grade: r.std?.item_grade || rec.p.std?.item_grade || null, answer: rec.a.answer, result: r.result, retention: r.retention, thumb: rec.qthumb });
+          } catch (e) {
+            if (signal.aborted) break;
+            rec.err = e?.message || "검사 실패";
+          }
+          say(i, STEPS_PER_ITEM, `${label} 끝`);
+          out.push(rec);
+        }
+        return out;
+      },
+    });
+    setJob(j);
+    j.promise.then(() => {
+      setItems(j.result || []);
+      setJob(null);
+      if (j.status === "canceled") { setStage("edit"); setToast("검사를 취소했어요 — 이미 끝난 문항은 기록에 저장돼 있어요"); }
+      else setStage("result");
+    });
   };
 
-  const gradePicked = async () => {
-    const ids = items.filter((it) => picked[it.id] && it.out && !essays[it.id]?.res).map((it) => it.id);
-    if (!ids.length) { setToast("첨삭 받을 문항을 골라 주세요"); return; }
-    for (const id of ids) {
-      const it = items.find((x) => x.id === id);
-      setEssays((es) => ({ ...es, [id]: { busy: true } }));
-      try {
-        const r = await photoCall("essay", { question: it.p.question, figure_note: it.p.figure_note, choices: it.p.choices, answer: it.a.answer, std: it.p.std, unit: it.p.unit_guess });
-        setEssays((es) => ({ ...es, [id]: { res: r } }));
-        saveDevice({ feature: "essay", title: `${it.label} · ${titleOf(it.p.question)}`, question: it.p.question, figure_note: it.p.figure_note, unit: it.p.unit_guess, grade: r.std?.item_grade || null, answer: it.a.answer, result: r.result, retention: r.retention, thumb: it.a?.thumb || it.qthumb || null });
-      } catch (e) {
-        setEssays((es) => ({ ...es, [id]: { err: e?.message || "첨삭 실패" } }));
-      }
-    }
+  // 선택 문항 첨삭 — 역시 백그라운드 잡
+  const gradePicked = () => {
+    const targets = items.filter((it) => picked[it.id] && it.out && !essays[it.id]?.res);
+    if (!targets.length) { setToast("첨삭 받을 문항을 골라 주세요"); return; }
+    const j = startJob({
+      kind: "essay", title: `서술형 첨삭 (${targets.length}문항)`,
+      run: async (signal, setP) => {
+        const acc = {};
+        for (let i = 0; i < targets.length; i++) {
+          if (signal.aborted) break;
+          const it = targets[i];
+          setP({ step: i, total: targets.length, label: `${it.label} 첨삭 중…`, foot: `${targets.length}문항 중 ${i}문항 끝남` });
+          setEssays((es) => ({ ...es, [it.id]: { busy: true } }));
+          try {
+            const r = await photoCall("essay", { question: it.p.question, figure_note: it.p.figure_note, choices: it.p.choices, answer: it.a.answer, std: it.p.std, unit: it.p.unit_guess }, { signal });
+            acc[it.id] = { res: r };
+            await saveDevice({ feature: "essay", title: `${it.label} · ${titleOf(it.p.question)}`, question: it.p.question, figure_note: it.p.figure_note, unit: it.p.unit_guess, grade: r.std?.item_grade || null, answer: it.a.answer, result: r.result, retention: r.retention, thumb: it.a?.thumb || it.qthumb || null });
+          } catch (e) {
+            if (signal.aborted) { delete acc[it.id]; break; }
+            acc[it.id] = { err: e?.message || "첨삭 실패" };
+          }
+          setEssays((es) => ({ ...es, [it.id]: acc[it.id] }));
+        }
+        return acc;
+      },
+    });
+    setEjob(j);
+    j.promise.then(() => {
+      setEssays((es) => {
+        const next = { ...es };
+        for (const [id, v] of Object.entries(j.result || {})) next[id] = v;
+        for (const [id, v] of Object.entries(next)) if (v?.busy) delete next[id];   // 취소로 busy 로 남은 것 정리
+        return next;
+      });
+      setEjob(null);
+    });
   };
 
   const docLights = useMemo(() => aggregateLights(items.filter((it) => it.out).map((it) => it.out.result)), [items]);
@@ -121,6 +167,7 @@ export default function PhotoCheck() {
   return (
     <SolveShell title="풀이과정 검사" back="#/solve/photo" toast={toast}
       sub={stage === "edit" && !pages.length ? "문제집 페이지를 찍고, 문제와 내 풀이 영역을 잡아 주세요. 식이 어떻게 이어지는지, 암산이 과한지, 글씨 습관은 어떤지 신호등으로 봐요." : undefined}>
+      {guide && <HwGuide onClose={() => setGuide(false)} />}
       <Steps list={["페이지 찍기", "영역 잡기", "검사 결과", "첨삭"]} at={at} />
 
       {stage === "edit" && (
@@ -156,8 +203,7 @@ export default function PhotoCheck() {
 
       {stage === "run" && (
         <div className="sv-card">
-          <Progress now={prog?.step || 0} total={prog?.total || ready.length * STEPS_PER_ITEM} label={prog?.label || "준비 중…"} foot={prog?.foot} />
-          <div className="sv-small" style={{ marginTop: 10 }}>{items.length} / {ready.length} 문항 끝남</div>
+          <JobBusy job={job} busyText="검사를 준비하는 중…" />
         </div>
       )}
 
@@ -189,10 +235,11 @@ export default function PhotoCheck() {
               <div style={{ fontWeight: 800, fontSize: 15.5, marginBottom: 6 }}>서술형 첨삭으로 더 볼 문항이 있나요?</div>
               <div className="sv-small" style={{ marginBottom: 10, lineHeight: 1.6 }}>위 카드에서 문항을 체크하면 채점 기준표로 채점하고 어디를 어떻게 고칠지 첨삭해 줘요.</div>
               <div className="ph-actions">
-                <button className="sv-btn pri" onClick={gradePicked} disabled={!anyPicked || Object.values(essays).some((e) => e?.busy)}>선택한 문항 첨삭받기</button>
-                <button className="sv-btn" onClick={() => { location.hash = "#/solve/photo"; }}>{essayDone ? "끝내기" : "없어요, 끝낼래요"}</button>
+                <button className="sv-btn pri" onClick={gradePicked} disabled={!anyPicked || !!ejob}>선택한 문항 첨삭받기</button>
+                <button className="sv-btn" onClick={() => { location.hash = "#/records"; }}>{essayDone ? "끝내기" : "없어요, 끝낼래요"}</button>
                 <button className="sv-btn ghost wide" onClick={backToEdit}>영역 다시 잡기</button>
               </div>
+              {ejob && <div style={{ marginTop: 10 }}><JobBusy job={ejob} busyText="첨삭을 준비하는 중…" /></div>}
             </div>
           )}
         </>
@@ -309,7 +356,9 @@ function ItemResult({ it, pick, onPick, essay, onFix }) {
               {it.qthumb && <img className="ph-thumb" src={it.qthumb} alt="" style={{ margin: "4px 0" }} />}
               <MathText as="div" className="ph-q" text={it.p?.question} style={{ fontSize: 14 }} />
               <div className="sv-small" style={{ marginTop: 10 }}>내 풀이(읽어 낸 것)</div>
-              {it.a?.thumb && <img className="ph-thumb" src={it.a.thumb} alt="" style={{ margin: "4px 0" }} />}
+              {it.a?.thumb && (hwIssuesOf(it.a).length
+                ? <HwMarks thumb={it.a.thumb} issues={it.a.legibility?.issues || []} />
+                : <img className="ph-thumb" src={it.a.thumb} alt="" style={{ margin: "4px 0" }} />)}
               <MathText as="div" className="ph-ans" text={it.a?.answer} />
             </div>
           </details>

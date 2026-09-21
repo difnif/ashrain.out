@@ -5,19 +5,45 @@
 //   process  { question, figure_note, answer, lines, legibility, std } → 풀이과정 검사 + 보관 결정
 import { supabase } from "../supabaseClient";
 
-export async function photoCall(task, body = {}) {
+export async function photoCall(task, body = {}, { signal } = {}) {
   const { data: sess } = await supabase.auth.getSession();
   const token = sess?.session?.access_token;
   if (!token) throw new Error("세션이 만료됐어요 — 다시 로그인해 주세요");
-  const r = await fetch("/api/photo", {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-    body: JSON.stringify({ task, ...body }),
-  });
+  let r;
+  try {
+    r = await fetch("/api/photo", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({ task, ...body }),
+      signal,
+    });
+  } catch (e) {
+    if (e?.name === "AbortError") throw new Error("판독을 취소했어요");
+    throw e;
+  }
   let j = null;
   try { j = await r.json(); } catch { /* 본문 없음 */ }
   if (!r.ok) throw new Error(j?.error || `요청 실패 (${r.status})`);
   return j;
+}
+
+/**
+ * 전사 호출 + 수율 폴백 — 1차(빠른 모델)가 못 읽었거나 수식 경고가 남으면
+ * retry_strong 으로 강한 모델 1회 재시도(한도 1회 추가 차감). 더 나은 쪽을 돌려준다.
+ */
+export async function scanCall(body, { signal } = {}) {
+  const first = await photoCall("scan", body, { signal });
+  const bad = first?.unreadable || (body.mode !== "page" && (first?.warnings?.length || 0) > 0);
+  if (!bad || body.retry_strong) return first;
+  try {
+    const second = await photoCall("scan", { ...body, retry_strong: true }, { signal });
+    if (second?.unreadable) return first.unreadable ? second : first;
+    if (first?.unreadable) return second;
+    return (second?.warnings?.length || 0) <= (first?.warnings?.length || 0) ? second : first;
+  } catch (e) {
+    if (String(e?.message).includes("취소")) throw e;
+    return first;   // 폴백 실패(한도 등)면 1차 결과로
+  }
 }
 
 /** 여러 화면이 같은 촬영 결과를 이어 쓰도록 세션 저장소에 둔다 (탭 닫으면 사라짐) */

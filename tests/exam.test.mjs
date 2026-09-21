@@ -6,6 +6,7 @@ import {
   emptyAnswer, isAnswered, answeredCount, judgeAll, itemPoints, scoreRun, scoreText, examMessage,
   fmtTimer, remainingSec, isTimerWarn,
   newRunId, runToRow, RUNS_KEY, RUNS_KEEP, loadRunsLocal, saveRunLocal, mergeRuns, describeRun,
+  EXAM_OPEN, isExamOpen,
 } from "../src/lib/exam.js";
 
 let n = 0, failed = 0;
@@ -357,6 +358,15 @@ test("describeRun: 이름·범위·점수·링크", () => {
   assert.equal(x.score, "0 / 0");
   assert.equal(x.link, "#/solve/test/weird");
   assert.equal(describeRun(null).name, "시험");
+});
+
+test("베타 개방 유형 — 개념 묶음·단원 테스트만 열림 (2026-09-21 확정)", () => {
+  assert.deepEqual(EXAM_OPEN, ["concept_set", "unit"]);
+  assert.equal(isExamOpen("concept_set"), true);
+  assert.equal(isExamOpen("unit"), true);
+  for (const t of TEST_TYPES) if (!EXAM_OPEN.includes(t.code)) assert.equal(isExamOpen(t.code), false);
+  assert.equal(isExamOpen(""), false);
+  assert.equal(isExamOpen(null), false);
 });
 
 console.log(`\n${n - failed}/${n} passed`);

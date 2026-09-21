@@ -5,7 +5,7 @@
 //   onPicked(canvas, url)                          — 사진을 고른 직후(페이지 검사처럼 화면이 직접 다루고 싶을 때). 이때는 인식 버튼을 그리지 않는다.
 import { useRef, useState } from "react";
 import { fileToCanvas, cropCanvas, canvasToBase64, canvasToDataUrl, boxFromPoints, clampBox } from "../../lib/camera";
-import { photoCall } from "../../lib/photoApi";
+import { scanCall } from "../../lib/photoApi";
 import { thumbOf, Busy, ErrorNote } from "./shared";
 
 const MODE_TEXT = {
@@ -45,7 +45,7 @@ export default function Capture({ mode = "problem", region = false, onScan, onPi
     try {
       const src = box ? cropCanvas(cv, box, 0.01) : cv;
       const image = canvasToBase64(src, 0.85);
-      const r = await photoCall("scan", { image, mode });
+      const r = await scanCall({ image, mode });   // 1차 실패 시 강한 모델로 한 번 더(수율 폴백)
       if (r?.unreadable) { setErr(T.bad); return; }
       onScan?.(r, { canvas: src, full: cv, box, thumb: thumbOf(src) });
     } catch (e) {

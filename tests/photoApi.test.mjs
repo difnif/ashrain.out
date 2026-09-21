@@ -20,7 +20,7 @@ function aiReply(system, userText) {
   if (system.startsWith("너는 수학 문항 전사기")) obj = userText.includes("문법에 어긋났다")
     ? { question: Q, choices: null, qtype: "short", figure_note: null, unit_guess: "m1-1", unreadable: false }
     : { question: state.badFirst ? "넓이가 [[frac(1,2]] 인 …" : Q, choices: ["1", "2"], qtype: "choice", figure_note: "표: 계급 0~10", unit_guess: "m1-1", unreadable: false };
-  else if (system.startsWith("너는 학생 손글씨")) obj = { answer: "x=세로\n2(x+3+x)=54\nx=12\n답 180", lines: [{ text: "x=세로", kind: "text" }, { text: "2(x+3+x)=54", kind: "eq" }, { text: "x=12", kind: "eq" }, { text: "답 180", kind: "answer" }], final_answer: "180", legibility: { score: 9, issues: [{ kind: "weird", note: "7을 1처럼" }] }, unreadable: false };
+  else if (system.startsWith("너는 학생 손글씨")) obj = { answer: "x=세로\n2(x+3+x)=54\nx=12\n답 180", lines: [{ text: "x=세로", kind: "text" }, { text: "2(x+3+x)=54", kind: "eq" }, { text: "x=12", kind: "eq" }, { text: "답 180", kind: "answer" }], final_answer: "180", legibility: { score: 9, issues: [{ kind: "weird", note: "7을 1처럼" }, { kind: "two_column", note: "풀이가 두 단", box: { x: 0.5, y: -0.2, w: 2, h: 0.3 } }, { kind: "faint", note: "연하게 씀" }] }, unreadable: false };
   else if (system.startsWith("이 이미지는 학생이 문제집")) obj = { problems: [{ no: 1, box: { x: 0.1, y: 0.1, w: 0.5, h: 0.3 } }, { no: "x", box: {} }], answers: [{ no: 1, box: { x: 1.5, y: -1, w: 0.01, h: 0.5 } }] };
   else if (system.startsWith("당신은 국내 중·고등 수학 교재")) obj = { elements: { 발문: "S", 조건제시: "S", 소재맥락: state.grade || "S", 도형자료: "-", 지문: "Z" }, item_grade: "S", sub_type: "단순 소재 대입형", reason: "정형" };
   else if (system.startsWith("너는 한국 중·고등 수학 학원의 \"문장 이해")) obj = { asking: "넓이", clues: [{ text: "둘레가 54cm", why: "합" }], concept: "둘레", first_step: "x 두기", setup: ["2(x+3+x)=54"], traps: ["단위", "없는태그"], reading: "끊어" };
@@ -178,6 +178,23 @@ const IMG = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8
   const r1 = await call({ task: "approach", question: Q });
   const r2 = await call({ task: "essay", question: Q, answer: "답", std: { item_grade: "S" } });
   ok(r1.body.model === "m-scan" && r2.body.model === "m-grade", "app_settings.photo_model / photo_model_grade 로 모델 바꿈");
+}
+
+// ── 수율 폴백(retry_strong) · 필기 지도 kind/box 정리 ────────────────────────
+{
+  state.settings = { photo_model: "m-scan", photo_model_grade: "m-grade", photo_model_fallback: "m-fb" }; state.calls = {};
+  let r = await call({ task: "scan", mode: "problem", image: IMG, retry_strong: true });
+  ok(r.body.model === "m-fb", "scan retry_strong: photo_model_fallback 모델로 읽음");
+  state.settings = { photo_model: "m-scan", photo_model_grade: "m-grade" };
+  r = await call({ task: "scan", mode: "problem", image: IMG, retry_strong: true });
+  ok(r.body.model === "m-grade", "retry_strong: 폴백 키가 없으면 채점 모델로");
+  r = await call({ task: "scan", mode: "answer", image: IMG });
+  const iss = r.body.legibility.issues;
+  ok(iss.some((i) => i.kind === "two_column") && iss.some((i) => i.kind === "faint"), "scan answer: 필기 지도 kind(two_column·faint) 통과");
+  const tc = iss.find((i) => i.kind === "two_column");
+  ok(!!tc.box && tc.box.x === 0.5 && tc.box.y === 0 && tc.box.w === 1 && tc.box.h === 0.3, "필기 box 를 비율 좌표(0~1)로 죔");
+  ok(!iss.find((i) => i.kind === "weird") && iss.some((i) => i.kind === "other"), "모르는 kind 는 여전히 other");
+  state.settings = {};
 }
 
 console.log(`\n${pass}/${pass + fail} passed`);

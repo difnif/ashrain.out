@@ -1,12 +1,12 @@
 // 공부하기 탭 (#/study) — 서브탭: 개념 공부 · 연습문제 · 시험 보기 (셸이 상·하단을 그린다)
 // sub: '' | 'concept' | 'practice' | 'exam'  (''=concept)
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../supabaseClient";
-import { listConcepts } from "../lib/concepts";
 import { UNIT_NAMES, UNIT_ORDER } from "../lib/items";
 import { readLastResult } from "../lib/setplay";
 import { getRecentConcepts } from "../lib/review";
-import { TEST_TYPES, describeTimer, presetOf } from "../lib/exam";
+import { TEST_TYPES, describeTimer, presetOf, isExamOpen } from "../lib/exam";
+import { swrConcepts } from "../lib/studyCache";
+import { koFilter } from "../lib/koSearch";
 import ItemPicker from "./solve/ItemPicker";
 import "./solve/solve.css";
 
@@ -65,15 +65,17 @@ function readLastConcept() {
   return r[0] || null;
 }
 
-/* ── 개념 공부: 학기 고르고 개념 목록 ── */
+/* ── 개념 공부: 학기 고르고 개념 목록 (+검색) — 목록·수는 studyCache 로 즉시 그린다 ── */
 function ConceptSub() {
   const [all, setAll] = useState(null);
+  const [q, setQ] = useState("");
+  const [moreU, setMoreU] = useState(false);
   const last = useMemo(readLastConcept, []);
   const [unit, setUnit] = useState(() => {
     try { return localStorage.getItem("ash.study.unit") || (last?.id ? last.id.split("-").slice(0, 2).join("-") : "m1-1"); }
     catch { return "m1-1"; }
   });
-  useEffect(() => { listConcepts().then(setAll).catch(() => setAll([])); }, []);
+  useEffect(() => { let ok = true; swrConcepts((v) => { if (ok) setAll(v || []); }); return () => { ok = false; }; }, []);
   const pick = (u) => { setUnit(u); try { localStorage.setItem("ash.study.unit", u); } catch { /* 무시 */ } };
   const byUnit = useMemo(() => {
     const m = {};
@@ -82,28 +84,51 @@ function ConceptSub() {
     return m;
   }, [all]);
   const rows = byUnit[unit] || [];
+  // 개념이 등록된 학기만 기본 노출 — 나머지는 「다른 학기」로
+  const visUnits = all === null || moreU ? UNIT_ORDER : UNIT_ORDER.filter((u) => u === unit || (byUnit[u] || []).length > 0);
+  const hiddenN = UNIT_ORDER.length - visUnits.length;
+  // 검색 — 학기 무관 전체 개념에서 (이름·부제·학기명, 초성 지원)
+  const found = useMemo(() => {
+    if (!q.trim()) return null;
+    const list = (all || []).slice().sort((a, b) => UNIT_ORDER.indexOf(a.unit_id) - UNIT_ORDER.indexOf(b.unit_id) || (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    return koFilter(list, q, (c) => [c.title, c.subtitle, UNIT_NAMES[c.unit_id]], 30);
+  }, [all, q]);
+
+  const item = (c, withUnit) => (
+    <button key={c.id} className="st-item" onClick={() => (location.hash = `#/c/${encodeURIComponent(c.id)}`)}>
+      <span className="num">{String(c.sort_order ?? "").padStart(2, "0")}</span>
+      <span className="nm"><b>{c.title}</b>{(c.subtitle || withUnit) && <small>{withUnit ? `${UNIT_NAMES[c.unit_id] || c.unit_id}${c.subtitle ? " · " : ""}` : ""}{c.subtitle || ""}</small>}</span>
+      {last?.id === c.id && <span className="tag">이어보기</span>}
+    </button>
+  );
+
   return (
     <>
-      <div className="st-chips">
-        {UNIT_ORDER.map((u) => (
-          <button key={u} className={"st-chip" + (u === unit ? " on" : "")} onClick={() => pick(u)}>
-            {UNIT_NAMES[u] || u}{byUnit[u] ? <small>{byUnit[u].length}</small> : null}
-          </button>
-        ))}
-      </div>
-      {all === null ? <div className="st-empty">개념을 불러오는 중…</div>
-        : rows.length === 0 ? <div className="st-empty">이 학기에는 아직 등록된 개념이 없어요.</div>
-        : (
-          <div className="st-list">
-            {rows.map((c) => (
-              <button key={c.id} className="st-item" onClick={() => (location.hash = `#/c/${encodeURIComponent(c.id)}`)}>
-                <span className="num">{String(c.sort_order ?? "").padStart(2, "0")}</span>
-                <span className="nm"><b>{c.title}</b>{c.subtitle && <small>{c.subtitle}</small>}</span>
-                {last?.id === c.id && <span className="tag">이어보기</span>}
+      <input className="sv-search" type="search" value={q} onChange={(e) => setQ(e.target.value)}
+        placeholder="개념 검색 — 이름이나 초성(ㅈㅅ)으로 바로 찾기" aria-label="개념 검색" enterKeyHint="search" />
+      {found !== null ? (
+        found.length === 0
+          ? <div className="st-empty">「{q.trim()}」에 맞는 개념이 없어요. 철자를 바꾸거나 초성으로 찾아보세요.</div>
+          : <div className="st-list">{found.map((c) => item(c, true))}</div>
+      ) : (
+        <>
+          <div className="st-chips">
+            {visUnits.map((u) => (
+              <button key={u} className={"st-chip" + (u === unit ? " on" : "")} onClick={() => pick(u)}>
+                {UNIT_NAMES[u] || u}{byUnit[u] ? <small>{byUnit[u].length}</small> : null}
               </button>
             ))}
+            {all !== null && (hiddenN > 0 || moreU) && (
+              <button className="st-chip" style={{ color: "var(--muted)" }} onClick={() => setMoreU((m) => !m)}>
+                {moreU ? "접기" : `다른 학기 +${hiddenN}`}
+              </button>
+            )}
           </div>
-        )}
+          {all === null ? <div className="st-empty">개념을 불러오는 중…</div>
+            : rows.length === 0 ? <div className="st-empty">이 학기에는 아직 등록된 개념이 없어요.</div>
+            : <div className="st-list">{rows.map((c) => item(c, false))}</div>}
+        </>
+      )}
       <p className="st-sec" style={{ fontWeight: 600 }}>예제·유제는 각 개념 카드 안에서 바로 이어져요. 복습 모드(Ⓓ 적립)는 개념 화면의 🔁 버튼.</p>
     </>
   );
@@ -138,11 +163,11 @@ const EXAM_GROUPS = [
   ["스페셜", ["ash", "rain", "out"]],
 ];
 
-// 시험 보기 전면 개발중 전환(2026-09-20, 사용자 확정) — 유형 구성은 보여주되 실행은 잠근다.
+// 시험 보기 부분 개방(2026-09-21, 사용자 확정) — 개념 묶음·단원 테스트는 열고, 나머지는 개발중 표시.
 function ExamSub() {
   return (
     <>
-      <div className="st-devnote">🚧 시험 보기는 지금 <b>개발 중</b>이에요 — 문항을 차곡차곡 쌓는 중이라, 준비되면 여기서 바로 열려요.</div>
+      <div className="st-devnote">🧩 <b>개념 묶음</b>과 📘 <b>단원 테스트</b>부터 열었어요 — 나머지 유형은 문항을 쌓는 대로 차례차례 열려요.</div>
       {EXAM_GROUPS.map(([label, codes]) => (
         <div key={label}>
           <p className="st-sec">{label}</p>
@@ -150,15 +175,21 @@ function ExamSub() {
             {codes.map((code) => {
               const t = presetOf(code) || TEST_TYPES.find((x) => x.code === code);
               if (!t) return null;
-              return (
-                <div key={code} className="st-tile st-dev" aria-disabled="true">
-                  <span className="tt">{t.icon} {t.name}<span className="st-devb">개발중</span></span>
+              const open = isExamOpen(code);
+              const body = (
+                <>
+                  <span className="tt">{t.icon} {t.name}{!open && <span className="st-devb">개발중</span>}</span>
                   <span className="ds">{t.desc}</span>
                   <span className="st-meta">
                     {t.n > 0 && <span className="st-tag">{t.n}문항</span>}
                     <span className="st-tag">{describeTimer(t)}</span>
                   </span>
-                </div>
+                </>
+              );
+              return open ? (
+                <button key={code} className="st-tile" onClick={() => (location.hash = `#/solve/test/${code}`)}>{body}</button>
+              ) : (
+                <div key={code} className="st-tile st-dev" aria-disabled="true">{body}</div>
               );
             })}
           </div>

@@ -34,6 +34,13 @@ export default function PhotoMine({ embed = false }) {
 
   const load = async () => { try { setRows(await listSessions({ feature: feature || undefined, limit: 100 })); } catch { setRows([]); } };
   useEffect(() => { setRows(null); setSure(null); load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [feature]);
+  // 백그라운드 판독이 끝나면 목록을 다시 읽는다 (기록 탭에 앉아 있는 동안 결과가 도착하는 경우)
+  useEffect(() => {
+    const on = () => load();
+    window.addEventListener("ash:jobs", on);
+    return () => window.removeEventListener("ash:jobs", on);
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [feature]);
 
   const remove = async (id) => { try { await deleteSession(id); setToast("지웠어요"); } catch { setToast("지우지 못했어요"); } setSure(null); setOpen(null); load(); };
   const clearAll = async () => { try { await clearSessions(); setToast("모두 지웠어요"); } catch { setToast("지우지 못했어요"); } setSure(null); setOpen(null); load(); };
