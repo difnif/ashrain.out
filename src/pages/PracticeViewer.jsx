@@ -1,24 +1,29 @@
-// src/pages/PracticeViewer.jsx — 예제·유제 단계식 해설 v2 (해시 라우트: #/p/<conceptId>)
+// src/pages/PracticeViewer.jsx — 예제·유제 v3 (해시 라우트: #/p/<conceptId>)
+//
+// 흐름 (2026-09-21 확정):
+//   예제  문제 → 해설(단계식) → 답 표시.  답 입력 없음. 해설을 끝까지 보면 해결로 기록.
+//   유제  문제 → 답 입력(한 번) → 맞든 틀리든 해설(단계식) → 답 표시 → 다음 문제.  맞히면 해결로 기록, 틀리면 "다시 풀어 보기".
+//   입력 칸 힌트는 표기 방식만 (src/lib/practice.js inputHint) — 세트 JSON 의 placeholder 예시는 쓰지 않는다.
 //
 // 세트 JSON 규격 (practice_sets.problems):
 // {
 //   "id": "p01", "level": "기본"|"표준"|"상", "kind": "예제"|"유제",
 //   "review": ["소인수분해"],
 //   "text": [ {"t":"문장 조각"}, {"br":true}, ... ], // {{2/3}} 토큰 → 세로 분수 / {"br":true} → 줄바꿈
-//   "svg": "<svg ...>", 
-//   "choices": ["㉠", "㉠, ㉡", ...],             // 있으면 객관식 — 답은 번호로
+//   "svg": "<svg ...>",
+//   "choices": ["㉠", "㉠, ㉡", ...],             // 있으면 객관식 — 답은 번호로 (보기를 눌러도 됨)
 //   "steps": [ { "hl":[..], "svgHl":[..], "svgCls":[..], "note":"...", "expr":"식" | ["줄1","= 줄2"] } ],
-//   "methods": [ {"title":"방법1","steps":[...]}, ... ],   // 여러 방법: 전부 봐야 답 입력 열림
-//   "answer": { "label":"답", "accept":["8"], "placeholder":"", 
-//               "unit":"원",                      // 단위 누락 시 주황 경고
+//   "methods": [ {"title":"방법1","steps":[...]}, ... ],   // 여러 방법: 전부 봐야 끝
+//   "answer": { "label":"답", "accept":["8"], "placeholder":"",   // placeholder 는 예시를 뗀 안내문만 쓴다
+//               "unit":"원",                      // 단위 누락 시 주황 경고 (시도로 치지 않음)
 //               "format":"fraction" }             // 분자/분모 두 칸 입력 (정확 일치 판정)
 // }
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/authx";
+import { CIRC, practiceKind, normAns, isCorrect, unitMissing, inputHint, displayAnswer, practicePhase } from "../lib/practice";
 
 const HL = ["#FFF3A3", "#B9F0C8", "#BFDFFF", "#F5C9F0", "#FFD9B3"];
 const HL_INK = "#1F2430";
-const CIRC = ["①", "②", "③", "④", "⑤", "⑥"];
 
 // ---------- 리치 텍스트: {{a/b}} → 세로 분수 ----------
 function rich(str) {
@@ -37,34 +42,6 @@ function rich(str) {
   });
 }
 
-// ---------- 답 판정 ----------
-function normAns(s) {
-  let t = String(s ?? "").replace(/\s+/g, "")
-    .replace(/−/g, "-").replace(/×/g, "x").replace(/÷/g, "/")
-    .replace(/[，]/g, ",").toLowerCase();
-  CIRC.forEach((c, i) => { t = t.replace(new RegExp(c, "g"), String(i + 1)); });
-  return t;
-}
-function numVal(s) {
-  const t = normAns(s);
-  if (/^-?\d+(\.\d+)?$/.test(t)) return parseFloat(t);
-  const m = t.match(/^(-?\d+)\/(\d+)$/);
-  if (m && +m[2] !== 0) return +m[1] / +m[2];
-  return null;
-}
-function isCorrect(input, accept, { exact = false } = {}) {
-  const inN = normAns(input);
-  if (!inN) return false;
-  for (const a of accept || []) {
-    if (inN === normAns(a)) return true;
-    if (!exact) {
-      const va = numVal(a), vi = numVal(input);
-      if (va !== null && vi !== null && Math.abs(va - vi) < 1e-9) return true;
-    }
-  }
-  return false;
-}
-
 export default function PracticeViewer({ conceptId }) {
   const [set, setSet] = useState(undefined);
   const [uid, setUid] = useState(null);
@@ -72,13 +49,13 @@ export default function PracticeViewer({ conceptId }) {
   const [pi, setPi] = useState(0);
   const [mi, setMi] = useState(0);
   const [stepByM, setStepByM] = useState({});     // 방법별 공개 단계 수
+  const [attempts, setAttempts] = useState({});   // 유제 시도 { [pid]: { result:"ok"|"no", input } } — 세션 동안
   const [ans, setAns] = useState("");
   const [ansN, setAnsN] = useState("");           // 분수 분자
   const [ansD, setAnsD] = useState("");           // 분수 분모
   const [flash, setFlash] = useState("");         // ok | no | warn
   const [warnMsg, setWarnMsg] = useState("");
   const [shake, setShake] = useState(false);
-  const [justSolved, setJustSolved] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -99,7 +76,13 @@ export default function PracticeViewer({ conceptId }) {
 
   const problems = set?.problems || [];
   const p = problems[pi];
+  const kind = practiceKind(p);
+  const isExample = kind === "예제";
   const isFraction = p?.answer?.format === "fraction";
+  const hasChoices = (p?.choices?.length || 0) > 0;
+  const attempt = p ? attempts[p.id] || null : null;
+  const doneThis = !!p && solved.includes(p.id);
+  const phase = practicePhase(p, { attempt, solved: doneThis });   // answer | explain
 
   // 방법 통합: methods 없으면 steps를 단일 방법으로
   const methodsArr = useMemo(() => {
@@ -109,11 +92,10 @@ export default function PracticeViewer({ conceptId }) {
   const multi = (p?.methods?.length || 0) > 1;
   const curSteps = methodsArr[mi]?.steps || [];
   const shownCount = stepByM[mi] || 0;
-  const shown = curSteps.slice(0, shownCount);
+  const shown = phase === "explain" ? curSteps.slice(0, shownCount) : [];
   const methodDone = (i) => (stepByM[i] || 0) >= (methodsArr[i]?.steps.length || 0);
-  const allDone = methodsArr.length > 0 && methodsArr.every((_, i) => methodDone(i));
+  const allDone = phase === "explain" && methodsArr.length > 0 && methodsArr.every((_, i) => methodDone(i));
   const nextUndone = methodsArr.findIndex((_, i) => !methodDone(i));
-  const doneThis = p && solved.includes(p.id);
   const cleared = problems.length > 0 && problems.every((x) => solved.includes(x.id));
   const isLast = pi === problems.length - 1;
 
@@ -132,7 +114,7 @@ export default function PracticeViewer({ conceptId }) {
   const goProblem = (i) => {
     setPi(i); setMi(0); setStepByM({});
     setAns(""); setAnsN(""); setAnsD("");
-    setWarnMsg(""); setJustSolved(false);
+    setWarnMsg("");
   };
 
   const saveProgress = async (newSolved) => {
@@ -144,34 +126,60 @@ export default function PracticeViewer({ conceptId }) {
       updated_at: new Date().toISOString(),
     });
   };
+  const markSolved = (pid) => {
+    if (solved.includes(pid)) return;
+    const ns = [...solved, pid];
+    setSolved(ns);
+    saveProgress(ns);
+  };
+
+  // 예제: 해설을 끝까지 보면 해결
+  useEffect(() => {
+    if (p && isExample && allDone && !doneThis) markSolved(p.id);
+  }, [p, isExample, allDone, doneThis]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 유제: 답 칸이 열리면 포커스
+  useEffect(() => {
+    if (phase === "answer" && !hasChoices) { const t = setTimeout(() => inputRef.current?.focus(), 0); return () => clearTimeout(t); }
+  }, [phase, hasChoices, pi]);
 
   const leave = () => {
     if (window.history.length > 1) window.history.back();
     else window.location.hash = "#/";
   };
 
+  /** 유제 답 확인 — 한 번만. 단위만 빠진 건 시도로 치지 않고 다시 쓰게 한다 */
   const submit = () => {
-    if (!p || flash) return;
+    if (!p || flash || phase !== "answer") return;
     const a = p.answer || {};
-    const input = isFraction ? `${ansN}/${ansD}` : ans;
+    const input = isFraction ? `${ansN}/${ansD}` : (inputRef.current?.value ?? ans);   // 입력 직후 눌러도 최신 값
+    if (!normAns(input) || (isFraction && (!ansN.trim() || !ansD.trim()))) {
+      setShake(true); setTimeout(() => { setShake(false); inputRef.current?.focus(); }, 450);
+      return;
+    }
     if (isCorrect(input, a.accept, { exact: isFraction })) {
       setFlash("ok"); setWarnMsg("");
-      const ns = solved.includes(p.id) ? solved : [...solved, p.id];
-      setSolved(ns); setJustSolved(true);
-      saveProgress(ns);
+      setAttempts((m) => ({ ...m, [p.id]: { result: "ok", input } }));
+      markSolved(p.id);
       setTimeout(() => setFlash(""), 700);
       return;
     }
-    // 단위 누락 경고 (값은 맞는데 단위만 빠진 경우)
-    if (a.unit && !normAns(input).includes(normAns(a.unit)) &&
-        isCorrect(input + a.unit, a.accept)) {
+    if (!isFraction && unitMissing(input, a)) {
       setFlash("warn");
-      setWarnMsg(`⚠ 단위가 빠졌어요! '${(a.accept?.[0] || "")}'처럼 단위까지 써주세요.`);
+      setWarnMsg(`⚠ 단위가 빠졌어요. ${a.unit} 까지 붙여서 다시 써 주세요.`);
       setTimeout(() => { setFlash(""); inputRef.current?.focus(); }, 800);
       return;
     }
     setFlash("no"); setShake(true); setWarnMsg("");
-    setTimeout(() => { setFlash(""); setShake(false); inputRef.current?.focus(); }, 550);
+    setAttempts((m) => ({ ...m, [p.id]: { result: "no", input } }));
+    setTimeout(() => { setFlash(""); setShake(false); }, 550);
+  };
+
+  /** 틀린 유제 다시 풀기 — 시도를 지우고 해설을 접는다 */
+  const retry = () => {
+    if (!p) return;
+    setAttempts((m) => { const c = { ...m }; delete c[p.id]; return c; });
+    setMi(0); setStepByM({}); setAns(""); setAnsN(""); setAnsD(""); setWarnMsg("");
   };
 
   const svgHtml = useMemo(() => {
@@ -196,7 +204,15 @@ export default function PracticeViewer({ conceptId }) {
     );
   }
 
-  const solvedInput = justSolved || doneThis;
+  const answerObj = p.answer || {};
+  const hint = inputHint(answerObj, { hasChoices, nChoices: p.choices?.length || 0 });
+  const finalAnswer = displayAnswer(answerObj, { hasChoices });
+  const correctChoice = hasChoices ? Number(normAns(answerObj.accept?.[0])) : null;   // 1부터
+  const chosen = hasChoices ? Number(normAns(attempt ? attempt.input : ans)) : null;
+  const wrong = attempt?.result === "no";
+  const nextBtn = isLast || cleared
+    ? <button className="pv-btn pv-btn-main" onClick={leave}>🎉 학습 완료 →</button>
+    : <button className="pv-btn pv-btn-main" onClick={() => goProblem(pi + 1)}>다음 문제 →</button>;
 
   return (
     <div className="pv-wrap"><Style />
@@ -216,19 +232,23 @@ export default function PracticeViewer({ conceptId }) {
       )}
 
       <div className="pv-nav">
-        {problems.map((x, i) => (
-          <button key={x.id}
-            className={"pv-chip" + (i === pi ? " on" : "") + (solved.includes(x.id) ? " done" : "")}
-            onClick={() => goProblem(i)}>
-            {solved.includes(x.id) ? "✓" : i + 1}
-          </button>
-        ))}
+        {problems.map((x, i) => {
+          const a = attempts[x.id];
+          const done = solved.includes(x.id);
+          return (
+            <button key={x.id}
+              className={"pv-chip" + (i === pi ? " on" : "") + (done ? " done" : "") + (!done && a?.result === "no" ? " miss" : "")}
+              onClick={() => goProblem(i)}>
+              {done ? "✓" : a?.result === "no" ? "✗" : i + 1}
+            </button>
+          );
+        })}
       </div>
 
       <div className="pv-card">
         <div className="pv-meta">
           <span className={"pv-lv lv-" + (p.level || "기본")}>{p.level || "기본"}</span>
-          <span className="pv-kind">{p.kind || "유제"} {pi + 1}</span>
+          <span className="pv-kind">{kind} {pi + 1}</span>
           {(p.review || []).map((r) => <span className="pv-review" key={r}>🔁 {r}</span>)}
         </div>
 
@@ -244,13 +264,23 @@ export default function PracticeViewer({ conceptId }) {
           ))}
         </p>
 
-        {p.choices?.length > 0 && (
-          <div className="pv-choices">
-            {p.choices.map((c, i) => (
-              <div className="pv-choice" key={i}>
-                <b>{CIRC[i]}</b> {rich(c)}
-              </div>
-            ))}
+        {hasChoices && (
+          <div className={"pv-choices" + (phase === "answer" ? " pick" : "")} role={phase === "answer" ? "radiogroup" : undefined}>
+            {p.choices.map((c, i) => {
+              const no = i + 1;
+              const cls = "pv-choice"
+                + (phase === "answer" && chosen === no ? " on" : "")
+                + (phase === "explain" && (allDone || attempt?.result === "ok") && correctChoice === no ? " ok" : "")   // 정답 보기는 해설이 끝난 뒤에
+                + (phase === "explain" && wrong && chosen === no ? " bad" : "");
+              return phase === "answer" ? (
+                <button type="button" className={cls} key={i} role="radio" aria-checked={chosen === no}
+                  onClick={() => { setAns(String(no)); setWarnMsg(""); }}>
+                  <b>{CIRC[i]}</b> {rich(c)}
+                </button>
+              ) : (
+                <div className={cls} key={i}><b>{CIRC[i]}</b> {rich(c)}</div>
+              );
+            })}
           </div>
         )}
 
@@ -258,92 +288,106 @@ export default function PracticeViewer({ conceptId }) {
           <div className={["pv-svg", ...svgCls].join(" ")} dangerouslySetInnerHTML={{ __html: svgHtml }} />
         )}
 
-        {multi && (
-          <div className="pv-tabs">
-            {methodsArr.map((m, i) => (
-              <button key={i} className={"pv-tab" + (i === mi ? " on" : "") + (methodDone(i) ? " ok" : "")}
-                onClick={() => setMi(i)}>
-                {methodDone(i) ? "✓ " : ""}{m.title || `방법 ${i + 1}`}
-              </button>
-            ))}
-          </div>
-        )}
-        {p.methods?.length === 1 && <p className="pv-mtitle">{p.methods[0].title}</p>}
-
-        <div className="pv-steps">
-          {shown.map((st, i) => (
-            <div className="pv-step" key={i}>
-              <span className="pv-dot" style={{ background: HL[i % HL.length] }} />
-              <div className="pv-step-body">
-                {st.note && <p className="pv-note">{rich(st.note)}</p>}
-                {st.expr && (
-                  <div className="pv-expr">
-                    {(Array.isArray(st.expr) ? st.expr : [st.expr]).map((line, li) => (
-                      <div className="pv-expr-line" key={li}>{rich(line)}</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {!allDone ? (
-          shownCount < curSteps.length ? (
-            <button className="pv-btn pv-btn-main"
-              onClick={() => setStepByM((s) => ({ ...s, [mi]: shownCount + 1 }))}>
-              {shownCount === 0 ? (multi ? `${methodsArr[mi].title || `방법 ${mi + 1}`} 시작하기` : "해설 시작하기") : "다음 단계 →"}
-              <span className="pv-prog"> {shownCount}/{curSteps.length}</span>
-            </button>
-          ) : (
-            <button className="pv-btn pv-btn-main" onClick={() => setMi(nextUndone)}>
-              {methodsArr[nextUndone]?.title || `방법 ${nextUndone + 1}`} 보기 →
-              <span className="pv-prog"> (모든 방법을 봐야 답을 입력할 수 있어요)</span>
-            </button>
-          )
-        ) : (
+        {/* ── 유제: 답 먼저 ── */}
+        {!isExample && (
           <div className="pv-answer">
-            <label className="pv-alabel">{p.answer?.label || "답"}</label>
+            <label className="pv-alabel">{answerObj.label || "답"}</label>
             <div className="pv-arow">
               {isFraction ? (
-                <div className={"pv-fracin" + (shake ? " shake" : "") + (solvedInput ? " ok" : "")}>
+                <div className={"pv-fracin" + (shake ? " shake" : "") + (attempt?.result === "ok" || (doneThis && !attempt) ? " ok" : "") + (wrong ? " bad" : "")}>
                   <input ref={inputRef} className="pv-fr-in" inputMode="numeric"
-                    value={solvedInput ? (p.answer.accept?.[0] || "").split("/")[0] : ansN}
-                    disabled={solvedInput}
+                    value={attempt ? attempt.input.split("/")[0] : doneThis ? (answerObj.accept?.[0] || "").split("/")[0] : ansN}
+                    disabled={phase !== "answer"}
                     onChange={(e) => setAnsN(e.target.value)} placeholder="분자" />
                   <div className="pv-fr-bar" />
                   <input className="pv-fr-in" inputMode="numeric"
-                    value={solvedInput ? (p.answer.accept?.[0] || "").split("/")[1] : ansD}
-                    disabled={solvedInput}
+                    value={attempt ? attempt.input.split("/")[1] : doneThis ? (answerObj.accept?.[0] || "").split("/")[1] : ansD}
+                    disabled={phase !== "answer"}
                     onChange={(e) => setAnsD(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && submit()} placeholder="분모" />
                 </div>
               ) : (
                 <input ref={inputRef}
-                  className={"pv-input" + (shake ? " shake" : "") + (solvedInput ? " ok" : "") + (flash === "warn" ? " warn" : "")}
-                  value={solvedInput ? (p.answer?.accept?.[0] ?? ans) : ans}
-                  disabled={solvedInput}
+                  className={"pv-input" + (shake ? " shake" : "") + (attempt?.result === "ok" || (doneThis && !attempt) ? " ok" : "") + (wrong ? " bad" : "") + (flash === "warn" ? " warn" : "")}
+                  value={attempt ? attempt.input : doneThis ? (answerObj.accept?.[0] ?? "") : ans}
+                  disabled={phase !== "answer"}
+                  inputMode={hasChoices ? "numeric" : "text"}
                   onChange={(e) => { setAns(e.target.value); setWarnMsg(""); }}
                   onKeyDown={(e) => e.key === "Enter" && submit()}
-                  placeholder={p.answer?.placeholder || "직접 계산해서 입력"} />
+                  placeholder={hint} aria-label={answerObj.label || "답"} />
               )}
-              {solvedInput ? (
-                isLast || cleared ? (
-                  <button className="pv-btn pv-btn-main" onClick={leave}>🎉 학습 완료 →</button>
-                ) : (
-                  <button className="pv-btn pv-btn-main" onClick={() => goProblem(pi + 1)}>다음 문제 →</button>
-                )
-              ) : (
-                <button className="pv-btn pv-btn-main" onClick={submit}>확인</button>
-              )}
+              {phase === "answer" && <button className="pv-btn pv-btn-main" onClick={submit}>확인</button>}
             </div>
             {warnMsg && <p className="pv-warnmsg">{warnMsg}</p>}
-            {solvedInput && (
-              <p className="pv-okmsg">정답! 잘 이해했어요 👏
-                {(isLast || cleared) && <button className="pv-again" onClick={() => goProblem(0)}>다시 풀기</button>}
-              </p>
-            )}
+            {attempt?.result === "ok" && <p className="pv-okmsg">정답! 해설로 풀이를 확인해요 👏</p>}
+            {wrong && <p className="pv-nomsg">아쉬워요. 해설을 본 다음 다시 풀어 볼 수 있어요.</p>}
           </div>
+        )}
+
+        {/* ── 해설 (예제는 바로, 유제는 답 뒤에) ── */}
+        {phase === "explain" && (
+          <>
+            {multi && (
+              <div className="pv-tabs">
+                {methodsArr.map((m, i) => (
+                  <button key={i} className={"pv-tab" + (i === mi ? " on" : "") + (methodDone(i) ? " ok" : "")}
+                    onClick={() => setMi(i)}>
+                    {methodDone(i) ? "✓ " : ""}{m.title || `방법 ${i + 1}`}
+                  </button>
+                ))}
+              </div>
+            )}
+            {p.methods?.length === 1 && <p className="pv-mtitle">{p.methods[0].title}</p>}
+
+            <div className="pv-steps">
+              {shown.map((st, i) => (
+                <div className="pv-step" key={i}>
+                  <span className="pv-dot" style={{ background: HL[i % HL.length] }} />
+                  <div className="pv-step-body">
+                    {st.note && <p className="pv-note">{rich(st.note)}</p>}
+                    {st.expr && (
+                      <div className="pv-expr">
+                        {(Array.isArray(st.expr) ? st.expr : [st.expr]).map((line, li) => (
+                          <div className="pv-expr-line" key={li}>{rich(line)}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {!allDone ? (
+              shownCount < curSteps.length ? (
+                <button className="pv-btn pv-btn-main"
+                  onClick={() => setStepByM((s) => ({ ...s, [mi]: shownCount + 1 }))}>
+                  {shownCount === 0 ? (multi ? `${methodsArr[mi].title || `방법 ${mi + 1}`} 시작하기` : "해설 시작하기") : "다음 단계 →"}
+                  <span className="pv-prog"> {shownCount}/{curSteps.length}</span>
+                </button>
+              ) : (
+                <button className="pv-btn pv-btn-main" onClick={() => setMi(nextUndone)}>
+                  {methodsArr[nextUndone]?.title || `방법 ${nextUndone + 1}`} 보기 →
+                  <span className="pv-prog"> (다른 방법도 보면 끝나요)</span>
+                </button>
+              )
+            ) : (
+              <div className="pv-final">
+                <div className="pv-final-row">
+                  <span className="pv-alabel">{answerObj.label || "답"}</span>
+                  <b className="pv-final-ans">{finalAnswer ? rich(finalAnswer) : "—"}</b>
+                  {wrong && <span className="pv-final-mine">내 답 <s>{hasChoices && Number.isInteger(chosen) && CIRC[chosen - 1] ? CIRC[chosen - 1] : attempt.input}</s></span>}
+                </div>
+                {isExample
+                  ? <p className="pv-okmsg">풀이를 끝까지 봤어요 👏</p>
+                  : wrong ? null : <p className="pv-okmsg">잘 이해했어요 👏</p>}
+                <div className="pv-actions">
+                  {wrong && <button className="pv-btn" onClick={retry}>다시 풀어 보기</button>}
+                  {nextBtn}
+                </div>
+                {(isLast || cleared) && <button className="pv-again" onClick={() => goProblem(0)}>처음부터 다시 보기</button>}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -374,6 +418,7 @@ function Style() {
         background:var(--surface,#fff);color:var(--muted,#6b7280);font-size:13px;font-weight:700}
       .pv-chip.on{border-color:var(--accent,#0DA95F);color:var(--text,#111);box-shadow:0 0 0 2px var(--accent,#0DA95F) inset}
       .pv-chip.done{background:var(--accent,#0DA95F);border-color:var(--accent,#0DA95F);color:#fff}
+      .pv-chip.miss{border-color:var(--bad,#dc2626);color:var(--bad,#dc2626)}
       .pv-card{background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:16px;padding:16px}
       .pv-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
       .pv-lv{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px}
@@ -385,7 +430,13 @@ function Style() {
       .pv-seg{border-radius:5px;padding:1px 2px;transition:background .35s}
       .pv-choices{display:flex;flex-direction:column;gap:6px;margin:8px 0 4px;
         border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:12px 14px}
-      .pv-choice{font-size:15px;line-height:1.6}
+      .pv-choice{font-size:15px;line-height:1.6;text-align:left;color:inherit;background:none;border:1px solid transparent;
+        border-radius:9px;padding:4px 8px;margin:0 -8px;font:inherit}
+      .pv-choices.pick .pv-choice{cursor:pointer}
+      .pv-choices.pick .pv-choice:hover{background:var(--surface2,#f4f6f8)}
+      .pv-choice.on{border-color:var(--accent,#0DA95F);background:rgba(13,169,95,.10)}
+      .pv-choice.ok{border-color:var(--good,#16a34a);background:rgba(22,163,74,.10)}
+      .pv-choice.bad{border-color:var(--bad,#dc2626);background:rgba(220,38,38,.08);text-decoration:line-through}
       .pv-choice b{margin-right:6px}
       .pv-svg{margin:10px 0 4px;text-align:center;color:var(--text,#1c1c1e)}
       .pv-svg svg{max-width:100%;height:auto}
@@ -426,6 +477,7 @@ function Style() {
         border:1.5px solid var(--border,#d6d9de);background:var(--surface,#fff);color:var(--text,#111);outline:none}
       .pv-input:focus{border-color:var(--accent,#0DA95F)}
       .pv-input.ok{border-color:var(--good,#16a34a);background:rgba(22,163,74,.08)}
+      .pv-input.bad,.pv-fracin.bad{border-color:var(--bad,#dc2626);background:rgba(220,38,38,.06)}
       .pv-input.warn{border-color:#F59E0B!important}
       .pv-input.shake,.pv-fracin.shake{animation:pvShake .45s}
       .pv-input.shake{border-color:var(--bad,#dc2626)!important}
@@ -440,8 +492,15 @@ function Style() {
       .pv-fr-bar{width:96px;height:2px;background:var(--text,#1F2937);border-radius:2px}
       .pv-arow .pv-btn-main{width:auto;margin-top:0;flex-shrink:0}
       .pv-okmsg{margin:8px 0 0;font-size:13.5px;color:var(--good,#16a34a);font-weight:700;display:flex;align-items:center;gap:10px}
-      .pv-again{background:none;border:none;color:var(--muted,#8a8f98);font-size:12px;text-decoration:underline;cursor:pointer;padding:0}
+      .pv-nomsg{margin:8px 0 0;font-size:13.5px;color:var(--bad,#dc2626);font-weight:700}
+      .pv-again{background:none;border:none;color:var(--muted,#8a8f98);font-size:12px;text-decoration:underline;cursor:pointer;padding:0;margin-top:10px}
       .pv-warnmsg{margin:8px 0 0;font-size:13px;color:#D97706;font-weight:700}
+      .pv-final{margin-top:12px;border-top:1px dashed var(--border,#e5e7eb);padding-top:12px}
+      .pv-final-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+      .pv-final-ans{font-size:20px;font-weight:900;color:var(--good,#16a34a)}
+      .pv-final-mine{font-size:13px;color:var(--muted,#6b7280)}
+      .pv-actions{display:flex;gap:8px;margin-top:10px;align-items:stretch}
+      .pv-actions .pv-btn{flex:1;margin-top:0}
       .pv-empty{text-align:center;color:var(--muted,#8a8f98);margin:60px 0 16px}
     `}</style>
   );
