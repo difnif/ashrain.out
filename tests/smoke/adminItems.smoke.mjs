@@ -155,16 +155,17 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
   const text = async () => (await page.locator("body").innerText()).replace(/\s+/g, " ");
 
   try {
-    // A. 목록 — 가벼운 열만, 건수는 HEAD 로 따로
+    // A. 목록 — 가벼운 열만 · 틀 순서 · 넓은 필터에서는 건수를 세지 않는다(RLS 시간 초과 회피)
     await page.goto(base + "#/admin/items");
     await page.locator(".irv-item").first().waitFor({ timeout: 20000 });
-    await page.waitForFunction(() => /\d+건 · draft \d+/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
+    await page.waitForFunction(() => /틀 \d+개 · draft \d+/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
     let t = await text();
-    ok(/2312건 · draft 2300 \/ live 12/.test(t), "A1 머리말 건수 — 전체 2312 · draft 2300 · live 12");
+    ok(/전체 틀 2개 · draft 2300 \/ live 12/.test(t), "A1 머리말은 틀별 집계에서 — 전체 틀 2개 · draft 2300 / live 12");
     ok(!/불러오기 실패/.test(t), "A2 실패 문구 없음");
     const listReq = log.find((l) => l.m === "GET" && /select=/.test(l.q) && /offset=/.test(l.q));
-    ok(listReq && !/solution|figure/.test(decodeURIComponent(listReq.q)) && /limit=50/.test(listReq.q), "A3 목록 조회는 해설·그림 열 없이 50건씩");
-    ok(log.filter((l) => l.m === "HEAD").length >= 2, "A4 건수는 HEAD 요청으로");
+    ok(listReq && !/solution|figure/.test(decodeURIComponent(listReq.q)) && /limit=51/.test(listReq.q), "A3 목록 조회는 해설·그림 열 없이 51건(다음 쪽 유무 확인용)");
+    ok(listReq && /order=template_id[.,]/.test(decodeURIComponent(listReq.q)), "A4a 정렬은 틀 순서(template_id, param_index)");
+    ok(log.filter((l) => l.m === "HEAD").length === 0, "A4b 넓은 필터에서는 건수 질의를 하지 않는다");
     ok((await page.locator(".irv-item").count()) === 50, "A5 한 쪽 50건");
     ok(/이차방정식 문제/.test(t) && !/\[\[/.test(await page.locator(".irv-q").first().innerText()), "A6 목록 제목에 마커 기호 없음");
 
@@ -179,8 +180,8 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
     ok(/\{x − \(-3\)\}\{x − \(-1\)\} = 0/.test(dt), "B2 해설의 겹괄호가 { } 로 (괄호 규칙)");
     ok((await det.locator(".mf").count()) >= 1, "B3 [[frac]] 마커는 상하 분수로");
     ok(/채점기준 · 7점/.test(dt) && /인수 만들기/.test(dt), "B4 채점기준표 표시");
-    ok((await det.locator(".iq").count()) === 1 && /두 근이 -3, -1인/.test(dt), "B5 문항 본문은 ItemQuestion 으로");
-    ok(/정답: 4/.test(dt), "B6 정답 표시");
+    ok((await det.locator(".iq").count()) === 1 && /거듭제곱 문제 0/.test(dt), "B5 문항 본문은 ItemQuestion 으로 (틀 순서상 첫 줄은 m1-1-power-t1)");
+    ok(/정답: 8/.test(dt), "B6 정답 표시");
     await shot("admin-items-open");
 
     // D. 틀별 보기 — 집계 함수로 틀 목록, draft 있는 틀만, 문항 보기 → 틀 필터, 틀 하나 전환
@@ -200,6 +201,7 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
     const filt = log.slice(before3).find((l) => l.m === "GET" && /offset=/.test(l.q));
     ok(filt && /template_id=eq\.m3-1-quad-build-t1/.test(filt.q) && /concept_ids=cs\./.test(filt.q), "D5 문항 보기 → 개념·틀 필터로 목록 조회");
     ok(/틀 m3-1-quad-build-t1 ×/.test(await text()), "D6 틀 필터 칩 표시");
+    ok(log.slice(before3).some((l) => l.m === "HEAD"), "D6a 좁은 필터(틀 지정)에서는 정확한 건수를 센다");
     await page.locator("button.irv-chip", { hasText: "틀별" }).click();
     await page.locator(".irv-tpl").first().waitFor({ timeout: 15000 });
     ok(!log.slice(before3).some((l) => l.m === "RPC"), "D7 다시 열어도 집계는 다시 세지 않는다(캐시)");
@@ -217,7 +219,7 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
     await page.locator("button.irv-chip.on", { hasText: "틀 m3-1-quad-build-t1 ×" }).click();
     await page.locator("select").nth(1).selectOption("all");
     await page.locator("select").nth(0).selectOption("all");
-    await page.waitForFunction(() => /2312건 · draft 2307/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
+    await page.waitForFunction(() => /전체 틀 2개 · draft 2307/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
 
     // C. 일괄 전환 — 1,000건씩 세 번, 완료 문구 (draft 2307 = 2300 + 7)
     const before2 = log.length;
@@ -230,7 +232,7 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
     t = await text();
     ok(/2307건 → live 완료/.test(t), "C4 완료 문구");
     await page.waitForFunction(() => /draft 0 \/ live 2312/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
-    ok(/2312건 · draft 0 \/ live 2312/.test(await text()), "C5 머리말 건수 갱신");
+    ok(/전체 틀 2개 · draft 0 \/ live 2312/.test(await text()), "C5 머리말 건수 갱신(집계 다시 셈)");
 
     ok(errors.length === 0, "Z 콘솔·페이지 오류 없음" + (errors.length ? ` — ${errors.slice(0, 3).join(" | ")}` : ""));
   } catch (e) {

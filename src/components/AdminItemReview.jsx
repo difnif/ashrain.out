@@ -7,6 +7,12 @@
 // v1.2 (09-22): 「틀별 보기」 — 검토는 틀 단위로 한다(같은 틀은 숫자만 다르다). 틀마다 개념·draft/live 수·표본 발문·이 틀이 재는 것을
 //   한 줄로 보여 주고 [문항 보기]·[draft → live]·[live → draft] 를 바로 누른다. 집계는 supabase/2026-09_template_stats.sql 의
 //   admin_template_stats() (없으면 안내만). 틀 필터도 이 목록에서 채운다(item_templates 표에는 시드 틀이 없다).
+// v1.3 (09-22): 넓은 필터에서 또 시간 초과가 나던 것 — 원인은 행 수가 아니라 **RLS**. 관리자 정책이 (is_admin() OR status='live') 라
+//   훑는 행마다 함수를 부르며 전체 훑기가 되어, 138k 행 세기가 6초+ 였다(EXPLAIN 확인). 그래서
+//   ① 목록 정렬을 created_at 역순 → template_id·param_index 로 (ti_template 색인 + 증분 정렬 → 116 ms, 검토 순서로도 이쪽이 낫다)
+//   ② 넓은 필터에서는 건수를 세지 않고 틀별 집계(admin_template_stats)에서 가져온다 — 정확하고 캐시된다
+//   ③ 쪽 나누기는 총 건수 대신 PAGE+1 행을 받아 다음 쪽 유무로 (총 건수 질의 자체를 없앴다)
+//   ④ 「틀별」도 50개씩 쪽 나누기 (Park, 09-22)
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
@@ -74,8 +80,9 @@ export default function AdminItemReview() {
 
   // 목록
   const [rows, setRows] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [nDraft, setNDraft] = useState(0);
+  const [total, setTotal] = useState(null);      // 좁은 필터에서만 정확히 센다 (null = 세지 않음)
+  const [nDraft, setNDraft] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(0);
   const [open, setOpen] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -88,6 +95,7 @@ export default function AdminItemReview() {
   const [tUnit, setTUnit] = useState("all");
   const [tOnlyDraft, setTOnlyDraft] = useState(true);
   const [tSearch, setTSearch] = useState("");
+  const [tPage, setTPage] = useState(0);
 
   useEffect(() => { (async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -127,9 +135,19 @@ export default function AdminItemReview() {
       || String(a.concept_id).localeCompare(String(b.concept_id)) || tplNo(a.template_id) - tplNo(b.template_id) || a.template_id.localeCompare(b.template_id));
     setStats(rows);
   }
-  useEffect(() => { if (me === "admin" && view === "tpls" && stats === null) loadStats(); },
+  useEffect(() => { if (me === "admin" && stats === null) loadStats(); },   // 머리말 건수·틀 필터에도 쓰인다
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [me, view]);
+    [me, view, stats]);
+
+  useEffect(() => { setTPage(0); }, [tUnit, tOnlyDraft, tSearch, stats]);
+
+  // 넓은 필터의 머리말 건수 — 틀별 집계에서 (학기 필터만 반영; 정확하고 캐시된다)
+  const wideCount = useMemo(() => {
+    if (!stats) return null;
+    const m = stats.filter((r) => (unit === "all" || r.unit_id === unit));
+    return { tpl: m.length, draft: m.reduce((a, r) => a + r.n_draft, 0), live: m.reduce((a, r) => a + r.n_live, 0) };
+  }, [stats, unit]);
+
 
   const tplRows = useMemo(() => {
     if (!stats) return [];
@@ -181,18 +199,29 @@ export default function AdminItemReview() {
     return q;
   }
 
+  // 좁은 필터(개념·틀·검색)에서만 건수를 센다 — 넓은 필터의 count 는 RLS 때문에 전체 훑기가 되어 8초 제한에 걸린다
+  const narrow = cid !== "all" || tpl !== "all" || !!searchQ;
+
   async function load(p = page, keepMsg = false) {
     setBusy(true); if (!keepMsg) setMsg("");
-    const [list, tot, dr] = await Promise.all([
+    const jobs = [
       applyFilters(supabase.from("test_items").select(LIST_COLS))
-        .order("created_at", { ascending: false }).order("id").range(p * PAGE, p * PAGE + PAGE - 1),
-      applyFilters(supabase.from("test_items").select("id", { count: "exact", head: true })),
-      applyFilters(supabase.from("test_items").select("id", { count: "exact", head: true })).eq("status", "draft"),
-    ]);
+        .order("template_id").order("param_index").range(p * PAGE, p * PAGE + PAGE),   // PAGE+1 행 — 다음 쪽 유무
+    ];
+    if (narrow) {
+      jobs.push(applyFilters(supabase.from("test_items").select("id", { count: "exact", head: true })));
+      jobs.push(applyFilters(supabase.from("test_items").select("id", { count: "exact", head: true })).eq("status", "draft"));
+    }
+    const [list, tot, dr] = await Promise.all(jobs);
     setBusy(false);
-    const error = list.error || tot.error || dr.error;
+    const error = list.error || tot?.error || dr?.error;
     if (error) { setMsg("불러오기 실패: " + error.message); return; }
-    setRows(list.data || []); setTotal(tot.count || 0); setNDraft(dr.count || 0); setOpen(null);
+    const got = list.data || [];
+    setHasMore(got.length > PAGE);
+    setRows(got.slice(0, PAGE));
+    setTotal(narrow ? (tot?.count ?? 0) : null);
+    setNDraft(narrow ? (dr?.count ?? 0) : null);
+    setOpen(null);
   }
 
   // 펼칠 때 해설·그림을 받아 행에 붙인다 (한 번만)
@@ -235,7 +264,7 @@ export default function AdminItemReview() {
     });
     const { error } = await supabase.from("test_items").delete().eq("id", it.id);
     if (error) { setMsg("삭제 실패: " + error.message); return; }
-    setRows((r) => r.filter((x) => x.id !== it.id)); setTotal((t) => t - 1);
+    setRows((r) => r.filter((x) => x.id !== it.id)); setTotal((t) => (t == null ? t : t - 1));
   }
 
   async function bulkStatus(from, to) {
@@ -266,9 +295,9 @@ export default function AdminItemReview() {
   if (me === null) return <div className="irv-wrap">확인 중…</div>;
   if (me === "no") return <div className="irv-wrap">관리자 전용 페이지입니다.</div>;
 
-  const pages = Math.max(1, Math.ceil(total / PAGE));
-
   const tSum = tplRows.reduce((a, r) => ({ d: a.d + r.n_draft, l: a.l + r.n_live }), { d: 0, l: 0 });
+  const tPages = Math.max(1, Math.ceil(tplRows.length / PAGE));
+  const tShown = tplRows.slice(tPage * PAGE, tPage * PAGE + PAGE);   // 한 쪽에 50틀 — 190개를 한 번에 그리면 무겁다
   const tUnits = stats ? [...new Set(stats.map((r) => r.unit_id))].sort((a, b) => unitRank(a) - unitRank(b)) : [];
 
   if (view === "tpls") {
@@ -277,7 +306,7 @@ export default function AdminItemReview() {
       <div className="irv-wrap">
         <style>{CSS}</style>
         <div className="irv-head">
-          <h2>문항 검토 <span className="irv-sub">틀 {tplRows.length}개 · draft {tSum.d} / live {tSum.l}</span></h2>
+          <h2>문항 검토 <span className="irv-sub">틀 {tplRows.length}개 · draft {tSum.d} / live {tSum.l}{tPages > 1 ? ` · ${tPage + 1}/${tPages} 쪽` : ""}</span></h2>
           <div className="irv-bulk">
             <button className="irv-chip" onClick={() => setView("items")}>문항</button>
             <button className="irv-chip on">틀별</button>
@@ -296,9 +325,9 @@ export default function AdminItemReview() {
         {stats === null && !statsErr && <p className="irv-empty">틀별로 세는 중…</p>}
         {statsErr && <p className="irv-msg">{statsErr}</p>}
         <div className="irv-tpls">
-          {tplRows.map((r) => {
+          {tShown.map((r) => {
             const head = r.concept_id !== lastCid; lastCid = r.concept_id;
-            const cRows = head ? tplRows.filter((x) => x.concept_id === r.concept_id) : null;
+            const cRows = head ? tShown.filter((x) => x.concept_id === r.concept_id) : null;
             return (
               <div key={r.template_id}>
                 {head && (
@@ -330,6 +359,13 @@ export default function AdminItemReview() {
           })}
           {stats && !tplRows.length && <p className="irv-empty">조건에 맞는 틀이 없습니다.</p>}
         </div>
+        {tPages > 1 && (
+          <div className="irv-pager">
+            <button className="irv-btn" disabled={tPage === 0} onClick={() => { setTPage(tPage - 1); window.scrollTo(0, 0); }}>‹</button>
+            <span>{tPage + 1} / {tPages} 쪽</span>
+            <button className="irv-btn" disabled={tPage + 1 >= tPages} onClick={() => { setTPage(tPage + 1); window.scrollTo(0, 0); }}>›</button>
+          </div>
+        )}
       </div>
     );
   }
@@ -338,7 +374,9 @@ export default function AdminItemReview() {
     <div className="irv-wrap">
       <style>{CSS}</style>
       <div className="irv-head">
-        <h2>문항 검토 <span className="irv-sub">{total}건 · draft {nDraft} / live {total - nDraft}</span></h2>
+        <h2>문항 검토 <span className="irv-sub">{narrow
+          ? `${total ?? "…"}건 · draft ${nDraft ?? "…"} / live ${total == null || nDraft == null ? "…" : total - nDraft}`
+          : wideCount ? `${unit === "all" ? "전체" : unitLabel(unit)} 틀 ${wideCount.tpl}개 · draft ${wideCount.draft} / live ${wideCount.live}` : "세는 중…"}</span></h2>
         <div className="irv-bulk">
           <button className="irv-chip on">문항</button>
           <button className="irv-chip" onClick={() => setView("tpls")}>틀별</button>
@@ -442,9 +480,9 @@ export default function AdminItemReview() {
       </div>
 
       <div className="irv-pager">
-        <button className="irv-btn" disabled={page === 0} onClick={() => { setPage(page - 1); load(page - 1); }}>‹</button>
-        <span>{page + 1} / {pages}</span>
-        <button className="irv-btn" disabled={page + 1 >= pages} onClick={() => { setPage(page + 1); load(page + 1); }}>›</button>
+        <button className="irv-btn" disabled={page === 0 || busy} onClick={() => { setPage(page - 1); load(page - 1); }}>‹</button>
+        <span>{page + 1}{narrow && total != null ? ` / ${Math.max(1, Math.ceil(total / PAGE))}` : ""} 쪽</span>
+        <button className="irv-btn" disabled={!hasMore || busy} onClick={() => { setPage(page + 1); load(page + 1); }}>›</button>
       </div>
     </div>
   );
