@@ -1,0 +1,1260 @@
+From 59375c92d311f3845877d32199d30ac966db60cd Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 21 Sep 2026 23:46:52 +0000
+Subject: [PATCH] =?UTF-8?q?=EA=B4=84=ED=98=B8=20=EA=B7=9C=EC=B9=99(?=
+ =?UTF-8?q?=EC=86=8C=E2=86=92=EC=A4=91=E2=86=92=EB=8C=80,=20=EC=96=91?=
+ =?UTF-8?q?=EC=88=98=20=EA=B4=84=ED=98=B8=20=EC=97=86=EC=9D=8C)=EC=9D=84?=
+ =?UTF-8?q?=20=ED=91=9C=EC=8B=9C=EC=B8=B5=EC=97=90=20+=20=EB=AC=B8?=
+ =?UTF-8?q?=ED=95=AD=20=EA=B2=80=ED=86=A0=20=ED=8E=98=EC=9D=B4=EC=A7=80=20?=
+ =?UTF-8?q?=EC=8B=9C=EA=B0=84=20=EC=B4=88=EA=B3=BC=20=EC=88=98=EC=A0=95?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+표시층 (src/lib/mathir.js rebracket, renderHtml)
+  · 교과서 표기: 묶음 괄호는 안쪽부터 ( ) → { } → [ ], 연산자 뒤 양수만 든 괄호는 벗긴다
+      (x − (-4))(x − (-3)) = 0 → {x − (-4)}{x − (-3)} = 0 · ((-9) + 13) ÷ 2 → {(-9) + 13} ÷ 2 · 2 × (4) → 2 × 4
+  · 마커 [[…]] 밖 평문에만 적용 — 문항·보기·해설·판서(steps)·관리자 검토 화면 모두. 등록된 문항(live 6천 건·draft 3천 건, 틀 50여 개)이 재생성 없이 고쳐진다
+  · 소괄호로 두는 것: 함수·기호 표기 f(x)·f′(x)·sin²(x)·log₂(x)·P(A ∪ B)·n(A)·√(…), 순서쌍·좌표·구간, 문장 속 괄호, 관계식이 든 괄호, 지수 표기 2^(1/3).
+    안쪽 묶음은 새로 세고, 바깥 깊이엔 한 겹으로 친다 — {E(X)}², {f(q) − f(p)}/(q − p). 한 글자 소문자 뒤는 계수 — n{2a + (n − 1)d}/2
+  · tests/rebracket.test.mjs (8) — DB 해설 표본 400건으로 결과 확인
+
+문항 검토 #/admin/items (AdminItemReview v1.1)
+  · "불러오기 실패: canceling statement due to statement timeout" — select * + 정확한 건수 + created_at 정렬을 한 문장으로 해서
+    138k 행에서 DB 8초 제한에 걸리던 것. 목록은 가벼운 열만 50건(해설·그림은 펼칠 때), 건수는 HEAD 로 따로(22 ms), 성공하면 실패 문구를 지운다
+  · 문항·보기·정답·해설·그림·채점기준을 학생이 보는 그대로(ItemQuestion·MathText·도형·괄호 규칙) 표시
+  · 「필터 전체 draft → live」는 1,000건씩 나눠 전환(한 문장 UPDATE 도 8초 제한에 걸릴 수 있다) · 전환 뒤 공부하기 캐시 비움
+  · tests/smoke/adminItems.smoke.mjs (18)
+
+시드 (원천 수정 — 양수를 괄호로 싸던 곳을 pn() 으로)
+  · m3-1-quad-build t1~t5: (x − (3)) → (x − 3), 2 × (4) → 2 × 4, 계수 1 이면 전개식 괄호 없이, 대입 검산 2 × (-4)²
+  · m1-1-order t3 · ineq-sign t1 · rational-apply t2·t3 · omit-sign t3~t5 · eq-property t1
+  · 건수 변화 없음(6시드 3,302건) · recheck·audit 깨끗. item_key 가 같아 push-items 자동 실행은 건너뛰므로 replace_templates 로 draft 교체가 필요
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01H3ULNhSa28Vfc3rcfmFQqV
+---
+ itemfactory/seeds/m1-1-eq-property.json    |   4 +-
+ itemfactory/seeds/m1-1-ineq-sign.json      |   4 +-
+ itemfactory/seeds/m1-1-omit-sign.json      |  12 +-
+ itemfactory/seeds/m1-1-order.json          |  10 +-
+ itemfactory/seeds/m1-1-rational-apply.json |  18 +-
+ itemfactory/seeds/m3-1-quad-build.json     |  64 +++----
+ itemfactory/tools/mkseed_m1_gaps.py        |  36 ++--
+ itemfactory/tools/mkseed_m1_gaps2.py       |  36 ++--
+ src/components/AdminItemReview.jsx         | 125 ++++++++++----
+ src/lib/mathir.js                          |  67 ++++++-
+ tests/rebracket.test.mjs                   |  91 ++++++++++
+ tests/smoke/adminItems.smoke.mjs           | 192 +++++++++++++++++++++
+ 12 files changed, 531 insertions(+), 128 deletions(-)
+ create mode 100644 tests/rebracket.test.mjs
+ create mode 100644 tests/smoke/adminItems.smoke.mjs
+
+diff --git a/itemfactory/seeds/m1-1-eq-property.json b/itemfactory/seeds/m1-1-eq-property.json
+index b803517..365a59f 100644
+--- a/itemfactory/seeds/m1-1-eq-property.json
++++ b/itemfactory/seeds/m1-1-eq-property.json
+@@ -167,13 +167,13 @@
+           }
+         ]
+       ],
+-      "sol3": "x = {x}{eul(x)} 원래 등식에 대입하면 {a} × ({x}) {sgn(b)} = {c}{ro(c)} 양변이 같다. 따라서 해는 x = {x}이다.",
++      "sol3": "x = {x}{eul(x)} 원래 등식에 대입하면 {a} × {pn(x)} {sgn(b)} = {c}{ro(c)} 양변이 같다. 따라서 해는 x = {x}이다.",
+       "sol3_fig": [
+         {
+           "fn": "steps",
+           "args": {
+             "lines": [
+-              "{a} × ({x}) {sgn(b)} = {c}  ✓"
++              "{a} × {pn(x)} {sgn(b)} = {c}  ✓"
+             ]
+           }
+         }
+diff --git a/itemfactory/seeds/m1-1-ineq-sign.json b/itemfactory/seeds/m1-1-ineq-sign.json
+index 560ed2e..14672f6 100644
+--- a/itemfactory/seeds/m1-1-ineq-sign.json
++++ b/itemfactory/seeds/m1-1-ineq-sign.json
+@@ -159,7 +159,7 @@
+       "sol2": [
+         "조건을 부등호로 나타내면 {a} {SA} x {SB} {b}",
+         "이 범위의 정수는 {lo}부터 {hi}까지",
+-        "따라서 정수 x는 {hi} − ({lo}) + 1 = {ans}개"
++        "따라서 정수 x는 {hi} − {pn(lo)} + 1 = {ans}개"
+       ],
+       "sol2_fig": [
+         {
+@@ -184,7 +184,7 @@
+                 "text": "정수 x: {lo}, …, {hi}"
+               },
+               {
+-                "text": "개수: {hi} − ({lo}) + 1 = {ans}"
++                "text": "개수: {hi} − {pn(lo)} + 1 = {ans}"
+               }
+             ]
+           }
+diff --git a/itemfactory/seeds/m1-1-omit-sign.json b/itemfactory/seeds/m1-1-omit-sign.json
+index b747815..a2a603a 100644
+--- a/itemfactory/seeds/m1-1-omit-sign.json
++++ b/itemfactory/seeds/m1-1-omit-sign.json
+@@ -6121,10 +6121,10 @@
+                 "hint": "제곱이 붙는 범위가 다르다"
+               },
+               {
+-                "text": "a = ({a}) 대입",
++                "text": "a = {pn(a)} 대입",
+                 "marks": [
+                   {
+-                    "on": "({a})",
++                    "on": "{pn(a)}",
+                     "note": "음수는 괄호"
+                   }
+                 ]
+@@ -6340,10 +6340,10 @@
+                 "hint": "제곱이 붙는 범위가 다르다"
+               },
+               {
+-                "text": "a = ({a}) 대입",
++                "text": "a = {pn(a)} 대입",
+                 "marks": [
+                   {
+-                    "on": "({a})",
++                    "on": "{pn(a)}",
+                     "note": "음수는 괄호"
+                   }
+                 ]
+@@ -6567,10 +6567,10 @@
+                 "hint": "제곱이 붙는 범위가 다르다"
+               },
+               {
+-                "text": "a = ({a}) 대입",
++                "text": "a = {pn(a)} 대입",
+                 "marks": [
+                   {
+-                    "on": "({a})",
++                    "on": "{pn(a)}",
+                     "note": "음수는 괄호"
+                   }
+                 ]
+diff --git a/itemfactory/seeds/m1-1-order.json b/itemfactory/seeds/m1-1-order.json
+index ab43475..a1645de 100644
+--- a/itemfactory/seeds/m1-1-order.json
++++ b/itemfactory/seeds/m1-1-order.json
+@@ -2216,7 +2216,7 @@
+       "sol2": [
+         "|{na}| = {a}, |{nb}| = {b}이고 {a} < {b}",
+         "절댓값이 큰 {nb}{ika(nb)} 더 작다 → {nb} < {na}",
+-        "큰 수 − 작은 수 = {na} − ({nb}) = {ans}"
++        "큰 수 − 작은 수 = {na} − {pn(nb)} = {ans}"
+       ],
+       "sol2_fig": [
+         {
+@@ -2255,14 +2255,14 @@
+         ],
+         []
+       ],
+-      "sol3": "수직선에서 {nb}{eun(nb)} {na}보다 왼쪽에 있으므로 {nb} < {na}{ika(na)} 맞고, 두 점 사이의 거리가 {h}이므로 {na} − ({nb}) = {ans}이다.",
++      "sol3": "수직선에서 {nb}{eun(nb)} {na}보다 왼쪽에 있으므로 {nb} < {na}{ika(na)} 맞고, 두 점 사이의 거리가 {h}이므로 {na} − {pn(nb)} = {ans}이다.",
+       "sol3_fig": [
+         {
+           "fn": "steps",
+           "args": {
+             "lines": [
+               "{nb} < {na}",
+-              "{na} − ({nb}) = {ans}"
++              "{na} − {pn(nb)} = {ans}"
+             ]
+           }
+         }
+@@ -2281,7 +2281,7 @@
+           }
+         ]
+       ],
+-      "model_answer": "|{na}| = {a} < {b} = |{nb}|이므로 절댓값이 큰 {nb}{ika(nb)} 더 작다. 즉 {nb} < {na}이고, 큰 수에서 작은 수를 빼면 {na} − ({nb}) = {ans}이다.",
++      "model_answer": "|{na}| = {a} < {b} = |{nb}|이므로 절댓값이 큰 {nb}{ika(nb)} 더 작다. 즉 {nb} < {na}이고, 큰 수에서 작은 수를 빼면 {na} − {pn(nb)} = {ans}이다.",
+       "rubric": [
+         {
+           "element": "절댓값 비교",
+@@ -2298,7 +2298,7 @@
+         {
+           "element": "답 구하기",
+           "points": 2,
+-          "criterion": "{na} − ({nb}) = {ans}{eul(ans)} 구했다.",
++          "criterion": "{na} − {pn(nb)} = {ans}{eul(ans)} 구했다.",
+           "partial": "차의 부호가 틀렸으면 1점."
+         }
+       ],
+diff --git a/itemfactory/seeds/m1-1-rational-apply.json b/itemfactory/seeds/m1-1-rational-apply.json
+index 5042f75..ae728e4 100644
+--- a/itemfactory/seeds/m1-1-rational-apply.json
++++ b/itemfactory/seeds/m1-1-rational-apply.json
+@@ -370,7 +370,7 @@
+       "sol1": "수직선에서 두 점 사이의 거리는 오른쪽 수(큰 수)에서 왼쪽 수(작은 수)를 뺀 값이다. 음수를 뺄 때는 부호에 주의한다.",
+       "sol2": [
+         "두 수 중 큰 수는 {big}, 작은 수는 {small}",
+-        "거리 = (큰 수) − (작은 수) = {big} − ({small}) = {ans}"
++        "거리 = (큰 수) − (작은 수) = {big} − {pn(small)} = {ans}"
+       ],
+       "sol2_fig": [
+         {
+@@ -382,10 +382,10 @@
+                 "hint": "수직선에서 오른쪽이 큰 수"
+               },
+               {
+-                "text": "{big} − ({small}) = {ans}",
++                "text": "{big} − {pn(small)} = {ans}",
+                 "marks": [
+                   {
+-                    "on": "({small})",
++                    "on": "{pn(small)}",
+                     "note": "음수를 빼면 더하는 것"
+                   }
+                 ]
+@@ -450,7 +450,7 @@
+           }
+         ]
+       ],
+-      "model_answer": "두 수 중 큰 수는 {big}, 작은 수는 {small}이므로 두 점 사이의 거리는 {big} − ({small}) = {ans}이다.",
++      "model_answer": "두 수 중 큰 수는 {big}, 작은 수는 {small}이므로 두 점 사이의 거리는 {big} − {pn(small)} = {ans}이다.",
+       "rubric": [
+         {
+           "element": "큰 수·작은 수 정하기",
+@@ -461,7 +461,7 @@
+         {
+           "element": "거리 구하기",
+           "points": 3,
+-          "criterion": "{big} − ({small}) = {ans}{ro(ans)} 계산했다.",
++          "criterion": "{big} − {pn(small)} = {ans}{ro(ans)} 계산했다.",
+           "partial": "음수를 빼는 부호 처리를 틀렸으면 1점."
+         }
+       ],
+@@ -581,7 +581,7 @@
+       "sol2": [
+         "틀린 문제 수: {n} − {w} = {l} (문제)",
+         "얻은 점수: (+{p}) × {w} = {gain}, 잃은 점수: (−{q}) × {l} = {loss}",
+-        "최종 점수: {gain} + ({loss}) = {ans} (점)"
++        "최종 점수: {gain} + {pn(loss)} = {ans} (점)"
+       ],
+       "sol2_fig": [
+         {
+@@ -597,7 +597,7 @@
+                 "hint": "잃은 점수는 음수"
+               },
+               {
+-                "text": "{gain} + ({loss}) = {ans}",
++                "text": "{gain} + {pn(loss)} = {ans}",
+                 "marks": [
+                   {
+                     "on": "{ans}",
+@@ -660,7 +660,7 @@
+           }
+         ]
+       ],
+-      "model_answer": "틀린 문제는 {n} − {w} = {l}문제이다. 얻은 점수는 (+{p}) × {w} = {gain}(점), 잃은 점수는 (−{q}) × {l} = {loss}(점)이므로 최종 점수는 {gain} + ({loss}) = {ans}(점)이다.",
++      "model_answer": "틀린 문제는 {n} − {w} = {l}문제이다. 얻은 점수는 (+{p}) × {w} = {gain}(점), 잃은 점수는 (−{q}) × {l} = {loss}(점)이므로 최종 점수는 {gain} + {pn(loss)} = {ans}(점)이다.",
+       "rubric": [
+         {
+           "element": "식 세우기",
+@@ -671,7 +671,7 @@
+         {
+           "element": "해 구하기",
+           "points": 3,
+-          "criterion": "{gain} + ({loss}) = {ans}{eul(ans)} 계산했다.",
++          "criterion": "{gain} + {pn(loss)} = {ans}{eul(ans)} 계산했다.",
+           "partial": "부호 실수면 1점."
+         },
+         {
+diff --git a/itemfactory/seeds/m3-1-quad-build.json b/itemfactory/seeds/m3-1-quad-build.json
+index 32ef5d1..bccf0d0 100644
+--- a/itemfactory/seeds/m3-1-quad-build.json
++++ b/itemfactory/seeds/m3-1-quad-build.json
+@@ -132,10 +132,10 @@
+       "question": "두 근이 {p}, {q}이고 x²의 계수가 1인 이차방정식을 x² + bx + c = 0 꼴로 나타낼 때, {QT}의 값을 구하시오.",
+       "answer": "{ans}",
+       "answer_alt": [],
+-      "sol1": "두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − ({p})) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
++      "sol1": "두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − {pn(p)}) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
+       "sol2": [
+-        "{co(a)}(x − ({p}))(x − ({q})) = 0",
+-        "전개하면 {co(a)}(x² − ({s})x + ({m})) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
++        "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0",
++        "전개하면 x² − {pn(s)}x + {pn(m)} = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
+         "따라서 b = {b}, c = {c}이고 {QT} = {ans}"
+       ],
+       "sol2_fig": [
+@@ -144,11 +144,11 @@
+           "args": {
+             "lines": [
+               {
+-                "text": "{co(a)}(x − ({p}))(x − ({q})) = 0",
++                "text": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0",
+                 "hint": "근 p → 인수 (x − p)",
+                 "marks": [
+                   {
+-                    "on": "({p})",
++                    "on": "{pn(p)}",
+                     "note": "음수 근이면 부호가 바뀐다"
+                   }
+                 ]
+@@ -195,7 +195,7 @@
+           }
+         ]
+       ],
+-      "sol3": "x = {p}{eul(p)} 대입하면 {co(a)}({p})² {sgn(b)} × ({p}) {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",
++      "sol3": "x = {p}{eul(p)} 대입하면 {pn(p)}² {sgn(b)} × {pn(p)} {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",
+       "sol3_fig": [
+         {
+           "fn": "steps",
+@@ -221,12 +221,12 @@
+           }
+         ]
+       ],
+-      "model_answer": "두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − ({p}))(x − ({q})) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
++      "model_answer": "두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})(x − {pn(q)}) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
+       "rubric": [
+         {
+           "element": "인수 만들기",
+           "points": 3,
+-          "criterion": "{co(a)}(x − ({p}))(x − ({q})) = 0 꼴로 세웠다.",
++          "criterion": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0 꼴로 세웠다.",
+           "partial": "근의 부호를 바꿔 인수를 만들었으면 인정하지 않는다."
+         },
+         {
+@@ -378,10 +378,10 @@
+       "question": "두 근이 {p}, {q}이고 x²의 계수가 {a}인 이차방정식을 {a}x² + bx + c = 0 꼴로 나타낼 때, {QT}의 값을 구하시오.",
+       "answer": "{ans}",
+       "answer_alt": [],
+-      "sol1": "두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − ({p})) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
++      "sol1": "두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − {pn(p)}) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
+       "sol2": [
+-        "{co(a)}(x − ({p}))(x − ({q})) = 0",
+-        "전개하면 {co(a)}(x² − ({s})x + ({m})) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
++        "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0",
++        "전개하면 {co(a)}(x² − {pn(s)}x + {pn(m)}) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
+         "따라서 b = {b}, c = {c}이고 {QT} = {ans}"
+       ],
+       "sol2_fig": [
+@@ -390,11 +390,11 @@
+           "args": {
+             "lines": [
+               {
+-                "text": "{co(a)}(x − ({p}))(x − ({q})) = 0",
++                "text": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0",
+                 "hint": "근 p → 인수 (x − p)",
+                 "marks": [
+                   {
+-                    "on": "({p})",
++                    "on": "{pn(p)}",
+                     "note": "음수 근이면 부호가 바뀐다"
+                   }
+                 ]
+@@ -441,7 +441,7 @@
+           }
+         ]
+       ],
+-      "sol3": "x = {p}{eul(p)} 대입하면 {co(a)}({p})² {sgn(b)} × ({p}) {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",
++      "sol3": "x = {p}{eul(p)} 대입하면 {a} × {pn(p)}² {sgn(b)} × {pn(p)} {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",
+       "sol3_fig": [
+         {
+           "fn": "steps",
+@@ -467,12 +467,12 @@
+           }
+         ]
+       ],
+-      "model_answer": "두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − ({p}))(x − ({q})) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
++      "model_answer": "두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})(x − {pn(q)}) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
+       "rubric": [
+         {
+           "element": "인수 만들기",
+           "points": 3,
+-          "criterion": "{co(a)}(x − ({p}))(x − ({q})) = 0 꼴로 세웠다.",
++          "criterion": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0 꼴로 세웠다.",
+           "partial": "근의 부호를 바꿔 인수를 만들었으면 인정하지 않는다."
+         },
+         {
+@@ -605,8 +605,8 @@
+       "answer_alt": [],
+       "sol1": "중근 x = p 를 갖는 이차방정식은 (x − p)² 을 인수로 갖는다. 따라서 x²의 계수가 a 이면 a(x − p)² = 0 이고, 완전제곱식을 전개하면 b 와 c 가 나온다.",
+       "sol2": [
+-        "{co(a)}(x − ({p}))² = 0",
+-        "전개하면 {co(a)}(x² − 2 × ({p})x + ({p})²) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
++        "{co(a)}(x − {pn(p)})² = 0",
++        "전개하면 x² − 2 × {pn(p)}x + {pn(p)}² = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
+         "따라서 b = {b}, c = {c}이고 {QT} = {ans}"
+       ],
+       "sol2_fig": [
+@@ -615,7 +615,7 @@
+           "args": {
+             "lines": [
+               {
+-                "text": "{co(a)}(x − ({p}))² = 0",
++                "text": "{co(a)}(x − {pn(p)})² = 0",
+                 "hint": "중근 → 같은 인수 두 번"
+               },
+               {
+@@ -685,12 +685,12 @@
+           }
+         ]
+       ],
+-      "model_answer": "중근이 {p}이고 x²의 계수가 {a}이므로 {co(a)}(x − ({p}))² = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 {QT} = {ans}이다.",
++      "model_answer": "중근이 {p}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})² = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 {QT} = {ans}이다.",
+       "rubric": [
+         {
+           "element": "완전제곱 꼴 세우기",
+           "points": 3,
+-          "criterion": "{co(a)}(x − ({p}))² = 0 으로 세웠다.",
++          "criterion": "{co(a)}(x − {pn(p)})² = 0 으로 세웠다.",
+           "partial": "(x − p) 를 한 번만 썼으면 인정하지 않는다."
+         },
+         {
+@@ -824,8 +824,8 @@
+       "answer_alt": [],
+       "sol1": "중근 x = p 를 갖는 이차방정식은 (x − p)² 을 인수로 갖는다. 따라서 x²의 계수가 a 이면 a(x − p)² = 0 이고, 완전제곱식을 전개하면 b 와 c 가 나온다.",
+       "sol2": [
+-        "{co(a)}(x − ({p}))² = 0",
+-        "전개하면 {co(a)}(x² − 2 × ({p})x + ({p})²) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
++        "{co(a)}(x − {pn(p)})² = 0",
++        "전개하면 {co(a)}(x² − 2 × {pn(p)}x + {pn(p)}²) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
+         "따라서 b = {b}, c = {c}이고 {QT} = {ans}"
+       ],
+       "sol2_fig": [
+@@ -834,7 +834,7 @@
+           "args": {
+             "lines": [
+               {
+-                "text": "{co(a)}(x − ({p}))² = 0",
++                "text": "{co(a)}(x − {pn(p)})² = 0",
+                 "hint": "중근 → 같은 인수 두 번"
+               },
+               {
+@@ -904,12 +904,12 @@
+           }
+         ]
+       ],
+-      "model_answer": "중근이 {p}이고 x²의 계수가 {a}이므로 {co(a)}(x − ({p}))² = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 {QT} = {ans}이다.",
++      "model_answer": "중근이 {p}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})² = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 {QT} = {ans}이다.",
+       "rubric": [
+         {
+           "element": "완전제곱 꼴 세우기",
+           "points": 3,
+-          "criterion": "{co(a)}(x − ({p}))² = 0 으로 세웠다.",
++          "criterion": "{co(a)}(x − {pn(p)})² = 0 으로 세웠다.",
+           "partial": "(x − p) 를 한 번만 썼으면 인정하지 않는다."
+         },
+         {
+@@ -5409,9 +5409,9 @@
+       "answer_alt": [],
+       "sol1": "x의 계수를 잘못 본 민수는 상수항 c는 맞게 보았으므로 민수의 두 근의 곱이 c다. 상수항을 잘못 본 지연이는 x의 계수 b는 맞게 보았으므로 지연이의 두 근의 합이 −b다. 이렇게 b, c를 복원해 원래 방정식을 풀면 된다.",
+       "sol2": [
+-        "민수: (x − ({p1}))(x − ({q1})) = 0 → 상수항 c = ({p1}) × ({q1}) = {cc}",
+-        "지연: (x − ({p2}))(x − ({q2})) = 0 → x의 계수 b = −(({p2}) + ({q2})) = {bb}",
+-        "원래 방정식 x² {sgt(bb)}x {sgn(cc)} = 0 → (x − ({r}))(x − ({s})) = 0 → x = {r} 또는 x = {s}, 큰 근은 {s}"
++        "민수: (x − {pn(p1)})(x − {pn(q1)}) = 0 → 상수항 c = {pn(p1)} × {pn(q1)} = {cc}",
++        "지연: (x − {pn(p2)})(x − {pn(q2)}) = 0 → x의 계수 b = −({pn(p2)} + {pn(q2)}) = {bb}",
++        "원래 방정식 x² {sgt(bb)}x {sgn(cc)} = 0 → (x − {pn(r)})(x − {pn(s)}) = 0 → x = {r} 또는 x = {s}, 큰 근은 {s}"
+       ],
+       "sol2_fig": [
+         {
+@@ -5419,11 +5419,11 @@
+           "args": {
+             "lines": [
+               {
+-                "text": "c = ({p1}) × ({q1}) = {cc}",
++                "text": "c = {pn(p1)} × {pn(q1)} = {cc}",
+                 "hint": "x 의 계수를 잘못 봄 → 상수항은 맞음"
+               },
+               {
+-                "text": "b = −(({p2}) + ({q2})) = {bb}",
++                "text": "b = −({pn(p2)} + {pn(q2)}) = {bb}",
+                 "hint": "상수항을 잘못 봄 → x 의 계수는 맞음",
+                 "marks": [
+                   {
+@@ -5496,7 +5496,7 @@
+           }
+         ]
+       ],
+-      "model_answer": "민수는 상수항을 맞게 보았으므로 c = ({p1}) × ({q1}) = {cc}이고, 지연이는 x의 계수를 맞게 보았으므로 b = −(({p2}) + ({q2})) = {bb}이다. 따라서 원래 방정식은 x² {sgt(bb)}x {sgn(cc)} = 0이고 (x − ({r}))(x − ({s})) = 0에서 옳은 두 근은 {r}, {s}이므로 큰 근은 {s}이다.",
++      "model_answer": "민수는 상수항을 맞게 보았으므로 c = {pn(p1)} × {pn(q1)} = {cc}이고, 지연이는 x의 계수를 맞게 보았으므로 b = −({pn(p2)} + {pn(q2)}) = {bb}이다. 따라서 원래 방정식은 x² {sgt(bb)}x {sgn(cc)} = 0이고 (x − {pn(r)})(x − {pn(s)}) = 0에서 옳은 두 근은 {r}, {s}이므로 큰 근은 {s}이다.",
+       "rubric": [
+         {
+           "element": "상수항 복원",
+diff --git a/itemfactory/tools/mkseed_m1_gaps.py b/itemfactory/tools/mkseed_m1_gaps.py
+index 4f32be8..51749b8 100644
+--- a/itemfactory/tools/mkseed_m1_gaps.py
++++ b/itemfactory/tools/mkseed_m1_gaps.py
+@@ -662,17 +662,17 @@ def od_t3():
+         question="두 수 {na}{wa(na)} {nb}에 대하여 큰 수에서 작은 수를 뺀 값을 구하시오.",
+         answer="{ans}", answer_alt=[],
+         sol1="두 음수를 비교할 때는 절댓값을 본다. 절댓값이 큰 음수는 수직선에서 0으로부터 더 멀리 왼쪽에 있으므로 더 작다. |{nb}| = {b}{ika(b)} |{na}| = {a}보다 크므로 {nb}{ika(nb)} 더 작고, 큰 수 {na}에서 작은 수 {nb}{eul(nb)} 뺀다.",
+-        sol2=["|{na}| = {a}, |{nb}| = {b}이고 {a} < {b}", "절댓값이 큰 {nb}{ika(nb)} 더 작다 → {nb} < {na}", "큰 수 − 작은 수 = {na} − ({nb}) = {ans}"],
++        sol2=["|{na}| = {a}, |{nb}| = {b}이고 {a} < {b}", "절댓값이 큰 {nb}{ika(nb)} 더 작다 → {nb} < {na}", "큰 수 − 작은 수 = {na} − {pn(nb)} = {ans}"],
+         sol2_fig=numline("{-b-2}", 2, [{"x": "{-a}", "label": "A"}, {"x": "{-b}", "label": "B"}]),
+         sol2_anim=[[hl("pt:A", "pt:B")], [hl("pt:B")], []],
+-        sol3="수직선에서 {nb}{eun(nb)} {na}보다 왼쪽에 있으므로 {nb} < {na}{ika(na)} 맞고, 두 점 사이의 거리가 {h}이므로 {na} − ({nb}) = {ans}이다.",
+-        sol3_fig=steps(["{nb} < {na}", "{na} − ({nb}) = {ans}"]),
++        sol3="수직선에서 {nb}{eun(nb)} {na}보다 왼쪽에 있으므로 {nb} < {na}{ika(na)} 맞고, 두 점 사이의 거리가 {h}이므로 {na} − {pn(nb)} = {ans}이다.",
++        sol3_fig=steps(["{nb} < {na}", "{na} − {pn(nb)} = {ans}"]),
+         sol3_anim=[[reveal(0)], [reveal(1)]],
+-        model_answer="|{na}| = {a} < {b} = |{nb}|이므로 절댓값이 큰 {nb}{ika(nb)} 더 작다. 즉 {nb} < {na}이고, 큰 수에서 작은 수를 빼면 {na} − ({nb}) = {ans}이다.",
++        model_answer="|{na}| = {a} < {b} = |{nb}|이므로 절댓값이 큰 {nb}{ika(nb)} 더 작다. 즉 {nb} < {na}이고, 큰 수에서 작은 수를 빼면 {na} − {pn(nb)} = {ans}이다.",
+         rubric=[
+             {"element": "절댓값 비교", "points": 2, "criterion": "|{na}| = {a}, |{nb}| = {b}{eul(b)} 비교했다.", "partial": "절댓값을 잘못 썼으면 인정하지 않는다."},
+             {"element": "대소 판단", "points": 3, "criterion": "절댓값이 큰 음수가 더 작음을 써서 {nb} < {na}{ro(na)} 판단했다.", "partial": "부등호 방향이 반대면 인정하지 않는다."},
+-            {"element": "답 구하기", "points": 2, "criterion": "{na} − ({nb}) = {ans}{eul(ans)} 구했다.", "partial": "차의 부호가 틀렸으면 1점."},
++            {"element": "답 구하기", "points": 2, "criterion": "{na} − {pn(nb)} = {ans}{eul(ans)} 구했다.", "partial": "차의 부호가 틀렸으면 1점."},
+         ],
+         rubric_total=7,
+     )
+@@ -708,10 +708,10 @@ def is_t1():
+         question="x는 {a} {PH} {b} {PH2} 수이다. 이 조건을 만족하는 정수 x는 모두 몇 개인지 구하시오.",
+         answer="{ans}", answer_alt=["{ans}개"],
+         sol1="'이상·이하·크지 않다·작지 않다'는 그 수를 포함하므로 ≤, ≥를 쓰고, '초과·미만·크다·작다'는 포함하지 않으므로 <, >를 쓴다. 조건을 부등호로 옮긴 뒤 그 범위의 정수를 센다.",
+-        sol2=["조건을 부등호로 나타내면 {a} {SA} x {SB} {b}", "이 범위의 정수는 {lo}부터 {hi}까지", "따라서 정수 x는 {hi} − ({lo}) + 1 = {ans}개"],
++        sol2=["조건을 부등호로 나타내면 {a} {SA} x {SB} {b}", "이 범위의 정수는 {lo}부터 {hi}까지", "따라서 정수 x는 {hi} − {pn(lo)} + 1 = {ans}개"],
+         sol2_fig=steps([{"text": "{a} {SA} x {SB} {b}", "hint": "포함하면 ≤, 포함하지 않으면 <", "marks": [{"on": "{SA}", "note": "'{PH}'"}, {"on": "{SB}", "note": "'{PH2}'"}]},
+                         {"text": "정수 x: {lo}, …, {hi}"},
+-                        {"text": "개수: {hi} − ({lo}) + 1 = {ans}"}]),
++                        {"text": "개수: {hi} − {pn(lo)} + 1 = {ans}"}]),
+         sol2_anim=[[reveal(0), hl("hint:0", "mark:0-0", "mark:0-1")], [reveal(1)], [reveal(2)]],
+         sol3="수직선에 {a}부터 {b}까지 그리고 양 끝을 포함하는지(●) 않는지(○) 표시해 세어 보면 {lo}부터 {hi}까지 {ans}개다.",
+         sol3_fig=numline("{a-1}", "{b+1}", [{"x": "{a}", "label": "a"}, {"x": "{b}", "label": "b"}], [{"from": "{lo}", "to": "{hi}"}]),
+@@ -816,16 +816,16 @@ def ra_t2():
+         figure=numline("{min(a, b) - 2}", "{max(a, b) + 2}", [{"x": "{a}", "label": "A"}, {"x": "{b}", "label": "B"}]),
+         answer="{ans}", answer_alt=[],
+         sol1="수직선에서 두 점 사이의 거리는 오른쪽 수(큰 수)에서 왼쪽 수(작은 수)를 뺀 값이다. 음수를 뺄 때는 부호에 주의한다.",
+-        sol2=["두 수 중 큰 수는 {big}, 작은 수는 {small}", "거리 = (큰 수) − (작은 수) = {big} − ({small}) = {ans}"],
+-        sol2_fig=steps([{"text": "{small} < {big}", "hint": "수직선에서 오른쪽이 큰 수"}, {"text": "{big} − ({small}) = {ans}", "marks": [{"on": "({small})", "note": "음수를 빼면 더하는 것"}]}]),
++        sol2=["두 수 중 큰 수는 {big}, 작은 수는 {small}", "거리 = (큰 수) − (작은 수) = {big} − {pn(small)} = {ans}"],
++        sol2_fig=steps([{"text": "{small} < {big}", "hint": "수직선에서 오른쪽이 큰 수"}, {"text": "{big} − {pn(small)} = {ans}", "marks": [{"on": "{pn(small)}", "note": "음수를 빼면 더하는 것"}]}]),
+         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")]],
+         sol3="{small}에서 오른쪽으로 {ans}칸 가면 {big}에 닿으므로 두 점 사이의 거리는 {ans}이다.",
+         sol3_fig=numline("{min(a, b) - 2}", "{max(a, b) + 2}", [{"x": "{a}", "label": "A"}, {"x": "{b}", "label": "B"}], [{"from": "{small}", "to": "{big}"}]),
+         sol3_anim=[[hl("seg:0")]],
+-        model_answer="두 수 중 큰 수는 {big}, 작은 수는 {small}이므로 두 점 사이의 거리는 {big} − ({small}) = {ans}이다.",
++        model_answer="두 수 중 큰 수는 {big}, 작은 수는 {small}이므로 두 점 사이의 거리는 {big} − {pn(small)} = {ans}이다.",
+         rubric=[
+             {"element": "큰 수·작은 수 정하기", "points": 2, "criterion": "{small} < {big}{ro(big)} 판단했다.", "partial": "대소를 뒤집었으면 인정하지 않는다."},
+-            {"element": "거리 구하기", "points": 3, "criterion": "{big} − ({small}) = {ans}{ro(ans)} 계산했다.", "partial": "음수를 빼는 부호 처리를 틀렸으면 1점."},
++            {"element": "거리 구하기", "points": 3, "criterion": "{big} − {pn(small)} = {ans}{ro(ans)} 계산했다.", "partial": "음수를 빼는 부호 처리를 틀렸으면 1점."},
+         ],
+         rubric_total=5,
+     )
+@@ -847,16 +847,16 @@ def ra_t3():
+         question="{n}문제를 푸는 게임에서 한 문제를 맞히면 {p}점을 얻고 틀리면 {q}점을 잃는다. 0점에서 시작하여 {w}문제를 맞히고 나머지를 모두 틀렸을 때, 최종 점수를 구하시오.",
+         answer="{ans}", answer_alt=["{ans}점"],
+         sol1="얻은 점수는 +, 잃은 점수는 −로 나타낸다. 맞힌 문제 수에 {p}{eul(p)} 곱해 얻은 점수를, 틀린 문제 수에 (−{q})를 곱해 잃은 점수를 구한 뒤 더한다.",
+-        sol2=["틀린 문제 수: {n} − {w} = {l} (문제)", "얻은 점수: (+{p}) × {w} = {gain}, 잃은 점수: (−{q}) × {l} = {loss}", "최종 점수: {gain} + ({loss}) = {ans} (점)"],
+-        sol2_fig=steps([{"text": "틀린 문제: {n} − {w} = {l}", "hint": "나머지"}, {"text": "(+{p}) × {w} = {gain},  (−{q}) × {l} = {loss}", "hint": "잃은 점수는 음수"}, {"text": "{gain} + ({loss}) = {ans}", "marks": [{"on": "{ans}", "note": "부호 확인"}]}]),
++        sol2=["틀린 문제 수: {n} − {w} = {l} (문제)", "얻은 점수: (+{p}) × {w} = {gain}, 잃은 점수: (−{q}) × {l} = {loss}", "최종 점수: {gain} + {pn(loss)} = {ans} (점)"],
++        sol2_fig=steps([{"text": "틀린 문제: {n} − {w} = {l}", "hint": "나머지"}, {"text": "(+{p}) × {w} = {gain},  (−{q}) × {l} = {loss}", "hint": "잃은 점수는 음수"}, {"text": "{gain} + {pn(loss)} = {ans}", "marks": [{"on": "{ans}", "note": "부호 확인"}]}]),
+         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")], [reveal(2), hl("mark:2-0")]],
+         sol3="얻은 {gain}점에서 잃은 {q} × {l} = {abs(loss)}점을 빼면 {ans}점이므로 계산이 맞다. 최종 점수는 {ans}점이다.",
+         sol3_fig=steps(["{gain} − {abs(loss)} = {ans}"]),
+         sol3_anim=[[reveal(0)]],
+-        model_answer="틀린 문제는 {n} − {w} = {l}문제이다. 얻은 점수는 (+{p}) × {w} = {gain}(점), 잃은 점수는 (−{q}) × {l} = {loss}(점)이므로 최종 점수는 {gain} + ({loss}) = {ans}(점)이다.",
++        model_answer="틀린 문제는 {n} − {w} = {l}문제이다. 얻은 점수는 (+{p}) × {w} = {gain}(점), 잃은 점수는 (−{q}) × {l} = {loss}(점)이므로 최종 점수는 {gain} + {pn(loss)} = {ans}(점)이다.",
+         rubric=[
+             {"element": "식 세우기", "points": 3, "criterion": "얻은 점수 (+{p}) × {w}, 잃은 점수 (−{q}) × {l}{ro(l)} 나타냈다.", "partial": "틀린 문제 수를 잘못 구했으면 1점."},
+-            {"element": "해 구하기", "points": 3, "criterion": "{gain} + ({loss}) = {ans}{eul(ans)} 계산했다.", "partial": "부호 실수면 1점."},
++            {"element": "해 구하기", "points": 3, "criterion": "{gain} + {pn(loss)} = {ans}{eul(ans)} 계산했다.", "partial": "부호 실수면 1점."},
+             {"element": "답 구하기", "points": 2, "criterion": "최종 점수 {ans}점을 답했다.", "partial": "얻은 점수만 답했으면 인정하지 않는다."},
+         ],
+         rubric_total=8,
+@@ -1000,7 +1000,7 @@ def os_t3():
+         sol1="기호가 생략된 식은 원래의 곱셈·나눗셈으로 되돌려 읽는다. {k}a²은 {k} × a × a이고 ({k}a)²은 ({k} × a) × ({k} × a)이며, 문자에 음수를 대입할 때는 반드시 괄호를 쓴다.",
+         sol2=["식의 뜻을 되살린다: {k}a² = {k} × a × a,  ({k}a)² = ({k} × a)²,  {k}a + {m} = {k} × a + {m}", "a = {a}{eul(a)} 괄호를 써서 대입한다", "계산하면 구하는 값은 {ans}"],
+         sol2_fig=steps([{"text": "{k}a² = {k} × a × a  /  ({k}a)² = ({k} × a) × ({k} × a)", "hint": "제곱이 붙는 범위가 다르다"},
+-                        {"text": "a = ({a}) 대입", "marks": [{"on": "({a})", "note": "음수는 괄호"}]},
++                        {"text": "a = {pn(a)} 대입", "marks": [{"on": "{pn(a)}", "note": "음수는 괄호"}]},
+                         {"text": "값 = {ans}"}]),
+         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")], [reveal(2)]],
+         sol3="세 식의 값을 모두 구해 보면 {k}a² = {v1}, ({k}a)² = {v2}, {k}a + {m} = {v3}{ro(v3)} 서로 다르다. 묻는 식의 값은 {ans}이다.",
+@@ -1056,8 +1056,8 @@ def ep_t1():
+                         {"text": "{a}x = {ax}", "hint": "양변에 {nb}{eul(nb)} 더함", "marks": [{"on": "{ax}", "note": "양변에 같은 수"}]},
+                         {"text": "x = {x}", "hint": "양변을 {a}로 나눔"}]),
+         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2), hl("hint:2")]],
+-        sol3="x = {x}{eul(x)} 원래 등식에 대입하면 {a} × ({x}) {sgn(b)} = {c}{ro(c)} 양변이 같다. 따라서 해는 x = {x}이다.",
+-        sol3_fig=steps(["{a} × ({x}) {sgn(b)} = {c}  ✓"]),
++        sol3="x = {x}{eul(x)} 원래 등식에 대입하면 {a} × {pn(x)} {sgn(b)} = {c}{ro(c)} 양변이 같다. 따라서 해는 x = {x}이다.",
++        sol3_fig=steps(["{a} × {pn(x)} {sgn(b)} = {c}  ✓"]),
+         sol3_anim=[[reveal(0)]],
+         model_answer="양변에 {nb}{eul(nb)} 더하면 {a}x = {ax}이고, 양변을 {a}로 나누면 x = {x}이다.",
+         rubric=[
+diff --git a/itemfactory/tools/mkseed_m1_gaps2.py b/itemfactory/tools/mkseed_m1_gaps2.py
+index 0b7c2b0..87cc701 100644
+--- a/itemfactory/tools/mkseed_m1_gaps2.py
++++ b/itemfactory/tools/mkseed_m1_gaps2.py
+@@ -597,18 +597,18 @@ def qb_t1():
+         verify=["a*p*p + b*p + c == 0", "a*q*q + b*q + c == 0", "ans == w1*b + w2*c"],
+         question="두 근이 {p}, {q}이고 x²의 계수가 {a}인 이차방정식을 {a}x² + bx + c = 0 꼴로 나타낼 때, {QT}의 값을 구하시오." if False else None,   # a=1 일 때 "1x²" 을 피하려 qb_t1_fix
+         answer="{ans}", answer_alt=[],
+-        sol1="두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − ({p})) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
+-        sol2=["{co(a)}(x − ({p}))(x − ({q})) = 0", "전개하면 {co(a)}(x² − ({s})x + ({m})) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
+-        sol2_fig=steps([{"text": "{co(a)}(x − ({p}))(x − ({q})) = 0", "hint": "근 p → 인수 (x − p)", "marks": [{"on": "({p})", "note": "음수 근이면 부호가 바뀐다"}]},
++        sol1="두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − {pn(p)}) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
++        sol2=["{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0", "전개하면 {co(a)}(x² − {pn(s)}x + {pn(m)}) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
++        sol2_fig=steps([{"text": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0", "hint": "근 p → 인수 (x − p)", "marks": [{"on": "{pn(p)}", "note": "음수 근이면 부호가 바뀐다"}]},
+                         {"text": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0", "hint": "a 를 모든 항에 곱한다"},
+                         {"text": "b = {b}, c = {c} → {QT} = {ans}"}]),
+         sol2_anim=[[reveal(0), hl("hint:0", "mark:0-0")], [reveal(1), hl("hint:1")], [reveal(2)]],
+-        sol3="x = {p}{eul(p)} 대입하면 {co(a)}({p})² {sgn(b)} × ({p}) {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",
++        sol3="x = {p}{eul(p)} 대입하면 {pn(p)}² {sgn(b)} × {pn(p)} {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",   # a≥2 는 qb_t1_split 에서 'a ×' 를 붙인다
+         sol3_fig=steps(["x = {p} 대입 → 0  ✓", "x = {q} 대입 → 0  ✓"]),
+         sol3_anim=[[reveal(0)], [reveal(1)]],
+-        model_answer="두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − ({p}))(x − ({q})) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
++        model_answer="두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})(x − {pn(q)}) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
+         rubric=[
+-            {"element": "인수 만들기", "points": 3, "criterion": "{co(a)}(x − ({p}))(x − ({q})) = 0 꼴로 세웠다.", "partial": "근의 부호를 바꿔 인수를 만들었으면 인정하지 않는다."},
++            {"element": "인수 만들기", "points": 3, "criterion": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0 꼴로 세웠다.", "partial": "근의 부호를 바꿔 인수를 만들었으면 인정하지 않는다."},
+             {"element": "전개", "points": 2, "criterion": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0으로 전개했다.", "partial": "a 를 한 항에만 곱했으면 1점."},
+             {"element": "답 구하기", "points": 2, "criterion": "{QT} = {ans}{eul(ans)} 구했다.", "partial": "다른 계수를 답했으면 인정하지 않는다."},
+         ],
+@@ -626,6 +626,10 @@ def qb_t1_split(t):
+         u["params"] = [p for p in t["params"] if p["name"] != "a"] + [{"name": "a", "values": {"in": avals}}]
+         u["question"] = q
+         u["title"] = t["title"] + (" (x² 의 계수 1)" if no == 1 else " (x² 의 계수 2·3)")
++        if no == 4:   # 대입 검산: 2 × (-4)² … (양수 근이면 2 × 4² — 괄호 없이)
++            u["sol3"] = t["sol3"].replace("대입하면 {pn(p)}²", "대입하면 {a} × {pn(p)}²")
++        else:         # 계수 1 이면 전개식에 괄호가 필요 없다: (x² − 3x + 2) = 0 → x² − 3x + 2 = 0
++            u["sol2"] = [x.replace("{co(a)}(x² − {pn(s)}x + {pn(m)}) = 0", "x² − {pn(s)}x + {pn(m)} = 0") for x in t["sol2"]]
+         out.append(u)
+     return out
+ 
+@@ -647,17 +651,17 @@ def qb_t2():
+         question=None,   # qb_t2_split
+         answer="{ans}", answer_alt=[],
+         sol1="중근 x = p 를 갖는 이차방정식은 (x − p)² 을 인수로 갖는다. 따라서 x²의 계수가 a 이면 a(x − p)² = 0 이고, 완전제곱식을 전개하면 b 와 c 가 나온다.",
+-        sol2=["{co(a)}(x − ({p}))² = 0", "전개하면 {co(a)}(x² − 2 × ({p})x + ({p})²) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
+-        sol2_fig=steps([{"text": "{co(a)}(x − ({p}))² = 0", "hint": "중근 → 같은 인수 두 번"},
++        sol2=["{co(a)}(x − {pn(p)})² = 0", "전개하면 {co(a)}(x² − 2 × {pn(p)}x + {pn(p)}²) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
++        sol2_fig=steps([{"text": "{co(a)}(x − {pn(p)})² = 0", "hint": "중근 → 같은 인수 두 번"},
+                         {"text": "(x − p)² = x² − 2px + p²", "hint": "완전제곱식", "marks": [{"on": "2px", "note": "가운데 항은 2배"}]},
+                         {"text": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0 → {QT} = {ans}"}]),
+         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2)]],
+         sol3="중근을 가지므로 b² − 4ac = 0이 되어야 하는데, 실제로 b² − 4ac = {b*b} − {4*a*c} = 0이다. 답은 {ans}이다.",
+         sol3_fig=steps(["b² − 4ac = {b*b} − {4*a*c} = 0  ✓"]),
+         sol3_anim=[[reveal(0)]],
+-        model_answer="중근이 {p}이고 x²의 계수가 {a}이므로 {co(a)}(x − ({p}))² = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 {QT} = {ans}이다.",
++        model_answer="중근이 {p}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})² = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 {QT} = {ans}이다.",
+         rubric=[
+-            {"element": "완전제곱 꼴 세우기", "points": 3, "criterion": "{co(a)}(x − ({p}))² = 0 으로 세웠다.", "partial": "(x − p) 를 한 번만 썼으면 인정하지 않는다."},
++            {"element": "완전제곱 꼴 세우기", "points": 3, "criterion": "{co(a)}(x − {pn(p)})² = 0 으로 세웠다.", "partial": "(x − p) 를 한 번만 썼으면 인정하지 않는다."},
+             {"element": "전개", "points": 2, "criterion": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0 으로 전개했다.", "partial": "가운데 항의 2배를 빠뜨렸으면 1점."},
+             {"element": "답 구하기", "points": 2, "criterion": "{QT} = {ans}{eul(ans)} 구했다.", "partial": "다른 계수를 답했으면 인정하지 않는다."},
+         ],
+@@ -674,6 +678,8 @@ def qb_t2_split(t):
+         u["params"] = [p for p in t["params"] if p["name"] != "a"] + [{"name": "a", "values": {"in": avals}}]
+         u["question"] = q
+         u["title"] = t["title"] + (" (x² 의 계수 1)" if no == 2 else " (x² 의 계수 2·3)")
++        if no == 2:   # 계수 1 이면 전개식에 괄호가 필요 없다
++            u["sol2"] = [x.replace("{co(a)}(x² − 2 × {pn(p)}x + {pn(p)}²) = 0", "x² − 2 × {pn(p)}x + {pn(p)}² = 0") for x in t["sol2"]]
+         out.append(u)
+     return out
+ 
+@@ -730,16 +736,16 @@ def qb_t3():
+         question="이차방정식 x² + bx + c = 0을 푸는데, 민수는 x의 계수를 잘못 보고 풀어 두 근 {p1}, {q1}을 얻었고, 지연이는 상수항을 잘못 보고 풀어 두 근 {p2}, {q2}를 얻었다. 이 이차방정식의 옳은 두 근 중 큰 근을 구하시오.",
+         answer="{ans}", answer_alt=[],
+         sol1="x의 계수를 잘못 본 민수는 상수항 c는 맞게 보았으므로 민수의 두 근의 곱이 c다. 상수항을 잘못 본 지연이는 x의 계수 b는 맞게 보았으므로 지연이의 두 근의 합이 −b다. 이렇게 b, c를 복원해 원래 방정식을 풀면 된다.",
+-        sol2=["민수: (x − ({p1}))(x − ({q1})) = 0 → 상수항 c = ({p1}) × ({q1}) = {cc}", "지연: (x − ({p2}))(x − ({q2})) = 0 → x의 계수 b = −(({p2}) + ({q2})) = {bb}",
+-              "원래 방정식 x² {sgt(bb)}x {sgn(cc)} = 0 → (x − ({r}))(x − ({s})) = 0 → x = {r} 또는 x = {s}, 큰 근은 {s}"],
+-        sol2_fig=steps([{"text": "c = ({p1}) × ({q1}) = {cc}", "hint": "x 의 계수를 잘못 봄 → 상수항은 맞음"},
+-                        {"text": "b = −(({p2}) + ({q2})) = {bb}", "hint": "상수항을 잘못 봄 → x 의 계수는 맞음", "marks": [{"on": "−", "note": "합의 부호를 바꾼다"}]},
++        sol2=["민수: (x − {pn(p1)})(x − {pn(q1)}) = 0 → 상수항 c = {pn(p1)} × {pn(q1)} = {cc}", "지연: (x − {pn(p2)})(x − {pn(q2)}) = 0 → x의 계수 b = −({pn(p2)} + {pn(q2)}) = {bb}",
++              "원래 방정식 x² {sgt(bb)}x {sgn(cc)} = 0 → (x − {pn(r)})(x − {pn(s)}) = 0 → x = {r} 또는 x = {s}, 큰 근은 {s}"],
++        sol2_fig=steps([{"text": "c = {pn(p1)} × {pn(q1)} = {cc}", "hint": "x 의 계수를 잘못 봄 → 상수항은 맞음"},
++                        {"text": "b = −({pn(p2)} + {pn(q2)}) = {bb}", "hint": "상수항을 잘못 봄 → x 의 계수는 맞음", "marks": [{"on": "−", "note": "합의 부호를 바꾼다"}]},
+                         {"text": "x² {sgt(bb)}x {sgn(cc)} = 0 → x = {r}, {s}"}]),
+         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2)]],
+         sol3="옳은 두 근 {r}, {s}의 합은 {r + s}, 곱은 {cc}이므로 지연이의 두 근의 합 {p2} + {pn(q2)} = {r + s}, 민수의 두 근의 곱 {p1} × {pn(q1)} = {cc}{wa(cc)} 각각 같다. 큰 근은 {s}이다.",
+         sol3_fig=steps(["합: {p2} + {pn(q2)} = {r} + {pn(s)} = {r + s}", "곱: {p1} × {pn(q1)} = {r} × {pn(s)} = {cc}"]),
+         sol3_anim=[[reveal(0)], [reveal(1)]],
+-        model_answer="민수는 상수항을 맞게 보았으므로 c = ({p1}) × ({q1}) = {cc}이고, 지연이는 x의 계수를 맞게 보았으므로 b = −(({p2}) + ({q2})) = {bb}이다. 따라서 원래 방정식은 x² {sgt(bb)}x {sgn(cc)} = 0이고 (x − ({r}))(x − ({s})) = 0에서 옳은 두 근은 {r}, {s}이므로 큰 근은 {s}이다.",
++        model_answer="민수는 상수항을 맞게 보았으므로 c = {pn(p1)} × {pn(q1)} = {cc}이고, 지연이는 x의 계수를 맞게 보았으므로 b = −({pn(p2)} + {pn(q2)}) = {bb}이다. 따라서 원래 방정식은 x² {sgt(bb)}x {sgn(cc)} = 0이고 (x − {pn(r)})(x − {pn(s)}) = 0에서 옳은 두 근은 {r}, {s}이므로 큰 근은 {s}이다.",
+         rubric=[
+             {"element": "상수항 복원", "points": 3, "criterion": "민수의 두 근의 곱으로 c = {cc}{eul(cc)} 구했다.", "partial": "누구의 근을 써야 하는지 바꿨으면 인정하지 않는다."},
+             {"element": "x 의 계수 복원", "points": 3, "criterion": "지연이의 두 근의 합으로 b = {bb}{eul(bb)} 구했다.", "partial": "합의 부호를 바꾸지 않았으면 1점."},
+diff --git a/src/components/AdminItemReview.jsx b/src/components/AdminItemReview.jsx
+index 9bef87e..e97e184 100644
+--- a/src/components/AdminItemReview.jsx
++++ b/src/components/AdminItemReview.jsx
+@@ -1,14 +1,46 @@
+-// ashrain.out — 문항 전수 검토 (AdminItemReview v1.0, 관리자 전용, #/admin/items)
++// ashrain.out — 문항 전수 검토 (AdminItemReview v1.1, 관리자 전용, #/admin/items)
+ // 목적: 생성·등록된 test_items 전체를 필터로 훑고, 펼쳐 보고, live/draft 전환·삭제·수정필요 표시.
+ // 삭제는 item_rejects에 사유(manual)로 기록 후 제거 — E-10 "폐기 이유는 남긴다".
++// v1.1 (09-21): ① 목록은 가벼운 열만 받고(해설·그림은 펼칠 때) 건수는 따로 센다 — 예전엔 select * + 정확한 건수 + 정렬을
++//   한 문장으로 해서 138k 행에서 DB 의 8초 제한에 걸렸다("canceling statement due to statement timeout").
++//   ② 문항·보기·정답·해설·그림을 학생이 보는 그대로(MathText·도형·괄호 규칙) 보여 준다. ③ 일괄 전환은 1,000건씩 나눠 한다.
+ 
+ import { useEffect, useMemo, useState } from "react";
+ import { supabase } from "../supabaseClient";
++import ItemQuestion from "./ItemQuestion";
++import MathText, { mathHtml } from "./MathText";
++import { figureHtml } from "./ItemFigure";
++import { solutionLevels } from "../lib/items";
++import { bustStudyCache } from "../lib/studyCache";
+ 
+ const PAGE = 50;
++// 목록에 필요한 열만 — solution·figure(jsonb, 행당 수 KB)는 펼칠 때 따로 받는다
++const LIST_COLS = "id,test_type,unit_id,concept_ids,qtype,difficulty,question,choices,answer,answer_alt,tags,source,status,gen_meta,created_at,template_id,param_index,content_key,struct_key";
++const BULK = 1000;
++const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
++
++/** 해설(levels 또는 outline/steps/check) → HTML — ItemView 와 같은 마크업(.isol .lv) */
++function solutionHtml(item) {
++  const levels = solutionLevels(item);
++  const html = levels.map((lv, i) => {
++    const l = lv && typeof lv === "object" ? lv : {};
++    const steps = Array.isArray(l.steps) ? l.steps.filter((x) => x != null && String(x).trim() !== "") : [];
++    const text = steps.length ? "" : String(l.text ?? "").trim();
++    const fig = figureHtml(l.figure, 320);
++    const title = l.title || ["방침", "전개", "확인"][i] || `${i + 1}단계`;
++    if (!fig && !steps.length && !text) return "";
++    return `<div class="lv"><div class="lv-title">${esc(title)}</div>${fig ? `<div class="fig-stage">${fig}</div>` : ""}`
++      + (steps.length ? `<ol>${steps.map((x) => `<li>${mathHtml(x)}</li>`).join("")}</ol>` : `<p>${mathHtml(text)}</p>`) + `</div>`;
++  }).join("");
++  const rub = item?.solution?.rubric;
++  const items = Array.isArray(rub?.items) ? rub.items : [];
++  if (!items.length) return html;
++  const rows = items.map((r) => `<tr><td>${esc(r.element)}<span class="irv-pt">${esc(r.points)}점</span></td><td>${mathHtml(r.criterion)}${r.partial ? `<span class="irv-partial">${mathHtml(r.partial)}</span>` : ""}</td></tr>`).join("");
++  const pits = Array.isArray(rub.checks) ? rub.checks.map((c) => `<li>${mathHtml(c.text)}${c.effect ? ` <span class="irv-eff">(${esc(c.effect)})</span>` : ""}</li>`).join("") : "";
++  return html + `<div class="lv"><div class="lv-title">채점기준${rub.total != null ? ` · ${esc(rub.total)}점` : ""}</div><table class="irv-rubric"><tbody>${rows}</tbody></table>${pits ? `<ul class="irv-pits">${pits}</ul>` : ""}</div>`;
++}
+ const D_COLOR = { 1: "#16a34a", 2: "#0d9488", 3: "#d97706", 4: "#ea580c", 5: "#dc2626" };
+ const D_NAME = { 1: "하", 2: "중하", 3: "중", 4: "중상", 5: "상" };
+-const CIRC = ["①", "②", "③", "④", "⑤"];
+ 
+ function unitLabel(u) {
+   if (!u) return u;
+@@ -78,18 +110,28 @@ export default function AdminItemReview() {
+     return q;
+   }
+ 
+-  async function load(p = page) {
+-    setBusy(true);
+-    const { data, count, error } = await applyFilters(
+-      supabase.from("test_items").select("*", { count: "exact" }))
+-      .order("created_at", { ascending: false }).order("id")
+-      .range(p * PAGE, p * PAGE + PAGE - 1);
+-    const { count: dc } = await applyFilters(
+-      supabase.from("test_items").select("id", { count: "exact", head: true }))
+-      .eq("status", "draft");
++  async function load(p = page, keepMsg = false) {
++    setBusy(true); if (!keepMsg) setMsg("");
++    const [list, tot, dr] = await Promise.all([
++      applyFilters(supabase.from("test_items").select(LIST_COLS))
++        .order("created_at", { ascending: false }).order("id").range(p * PAGE, p * PAGE + PAGE - 1),
++      applyFilters(supabase.from("test_items").select("id", { count: "exact", head: true })),
++      applyFilters(supabase.from("test_items").select("id", { count: "exact", head: true })).eq("status", "draft"),
++    ]);
+     setBusy(false);
++    const error = list.error || tot.error || dr.error;
+     if (error) { setMsg("불러오기 실패: " + error.message); return; }
+-    setRows(data || []); setTotal(count || 0); setNDraft(dc || 0); setOpen(null);
++    setRows(list.data || []); setTotal(tot.count || 0); setNDraft(dr.count || 0); setOpen(null);
++  }
++
++  // 펼칠 때 해설·그림을 받아 행에 붙인다 (한 번만)
++  async function openItem(it) {
++    if (open === it.id) { setOpen(null); return; }
++    setOpen(it.id);
++    if (it._full) return;
++    const { data, error } = await supabase.from("test_items").select("solution,figure").eq("id", it.id).single();
++    if (error) { setMsg("해설 불러오기 실패: " + error.message); return; }
++    setRows((r) => r.map((x) => (x.id === it.id ? { ...x, ...data, _full: true } : x)));
+   }
+ 
+   useEffect(() => { if (me === "admin") { setPage(0); load(0); } },
+@@ -100,6 +142,7 @@ export default function AdminItemReview() {
+     const { error } = await supabase.from("test_items").update({ status: s }).eq("id", it.id);
+     if (error) { setMsg("상태 변경 실패: " + error.message); return; }
+     setRows((r) => r.map((x) => (x.id === it.id ? { ...x, status: s } : x)));
++    bustStudyCache();
+   }
+ 
+   async function toggleFix(it) {
+@@ -131,11 +174,21 @@ export default function AdminItemReview() {
+     if (!count) { setMsg(`${from} 상태인 문항이 없습니다.`); return; }
+     if (!window.confirm(`현재 필터의 ${from} ${count}건을 ${to}로 전환할까요?`)) return;
+     setBusy(true);
+-    const { error } = await applyFilters(
+-      supabase.from("test_items").update({ status: to })).eq("status", from);
++    let done = 0, lastFirst = null;
++    while (done < count) {
++      const { data, error } = await applyFilters(supabase.from("test_items").select("id")).eq("status", from).order("id").limit(BULK);
++      if (error) { setMsg(`일괄 전환 실패(${done}건까지 됨): ` + error.message); break; }
++      if (!data?.length) break;
++      if (data[0].id === lastFirst) { setMsg(`일괄 전환이 진행되지 않습니다(${done}건까지 됨) — 권한을 확인하세요`); break; }
++      lastFirst = data[0].id;
++      const { error: e2 } = await supabase.from("test_items").update({ status: to }).in("id", data.map((r) => r.id));
++      if (e2) { setMsg(`일괄 전환 실패(${done}건까지 됨): ` + e2.message); break; }
++      done += data.length; setMsg(`전환 중 ${done} / ${count}`);
++    }
+     setBusy(false);
+-    if (error) { setMsg("일괄 전환 실패: " + error.message); return; }
+-    setMsg(`${count}건 → ${to} 완료`); load(page);
++    if (done >= count) setMsg(`${done}건 → ${to} 완료`);
++    bustStudyCache();
++    load(page, true);
+   }
+ 
+   if (me === null) return <div className="irv-wrap">확인 중…</div>;
+@@ -210,29 +263,24 @@ export default function AdminItemReview() {
+           const fix = (it.tags || []).includes("needs_fix");
+           return (
+             <div key={it.id} className={"irv-item" + (isOpen ? " open" : "")}>
+-              <div className="irv-row" onClick={() => setOpen(isOpen ? null : it.id)}>
++              <div className="irv-row" onClick={() => openItem(it)}>
+                 <span className="irv-d" style={{ background: D_COLOR[it.difficulty] || "#64748b" }}>{it.difficulty}</span>
+                 <span className="irv-tag">{it.qtype}</span>
+                 <span className={"irv-tag st-" + it.status}>{it.status}</span>
+                 {g.tpl && <span className="irv-tag tpl">{String(g.tpl).replace(it.concept_ids?.[0] + "-", "")}</span>}
+                 {fix && <span className="irv-tag fixed">수정필요</span>}
+-                <span className="irv-q">{(it.question || "").split("\n")[0]}</span>
++                <span className="irv-q">{(it.question || "").replace(/\[\[|\]\]/g, "").split("\n")[0]}</span>
+               </div>
+               {isOpen && (
+                 <div className="irv-detail">
+-                  <p className="irv-question">{it.question}</p>
+-                  {it.qtype === "choice" && (it.choices || []).map((c, i) => (
+-                    <p key={i} className={"irv-choice" + (c === it.answer ? " ans" : "")}>{CIRC[i]} {c}</p>
+-                  ))}
+-                  <p className="irv-ans">정답: <b>{it.answer}</b>
++                  <ItemQuestion item={it} reveal={true} figWidth={320} />
++                  <p className="irv-ans">정답: <b><MathText text={it.answer} /></b>
+                     {(it.answer_alt || []).length > 0 && <span className="irv-alt">  (허용: {it.answer_alt.join(", ")})</span>}</p>
+-                  {it.solution && (
+-                    <div className="irv-sol">
+-                      <p className="irv-sol-o">{it.solution.outline}</p>
+-                      {(it.solution.steps || []).map((s, i) => <p key={i} className="irv-sol-s">{i + 1}. {s}</p>)}
+-                      <p className="irv-sol-c">검산 — {it.solution.check}</p>
+-                    </div>
+-                  )}
++                  {it._full
++                    ? (it.solution
++                      ? <div className="isol irv-sol" dangerouslySetInnerHTML={{ __html: solutionHtml(it) }} />
++                      : <p className="irv-nosol">해설 없음</p>)
++                    : <p className="irv-nosol">해설 불러오는 중…</p>}
+                   <p className="irv-meta">
+                     {(it.concept_ids || []).join(", ")} · {g.tpl}#{g.idx} · {it.source} · {g.site || "-"} · {String(it.created_at).slice(0, 16).replace("T", " ")}
+                   </p>
+@@ -261,7 +309,16 @@ export default function AdminItemReview() {
+ }
+ 
+ const CSS = `
+-.irv-wrap{max-width:860px;margin:0 auto;padding:16px 14px 60px;color:#1e293b}
++.irv-wrap{max-width:860px;margin:0 auto;padding:16px 14px 60px;color:#1e293b;--ink:#1e293b;--muted:#64748b;--border:#e2e8f0;--surface:#fff;--surface2:#f8fafc;--accent:#0f766e}
++.irv-detail .iq{margin-top:4px}
++.irv-nosol{font-size:13px;color:#64748b;margin:8px 0}
++.irv-rubric{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
++.irv-rubric td{border-top:1px solid #e2e8f0;padding:6px 4px;vertical-align:top}
++.irv-rubric td:first-child{white-space:nowrap;font-weight:700;width:28%}
++.irv-rubric .irv-pt{display:block;font-weight:400;color:#64748b;font-size:11.5px}
++.irv-rubric .irv-partial{display:block;color:#64748b;font-size:11.5px;margin-top:2px}
++.irv-pits{margin:6px 0 0 18px;padding:0;font-size:12.5px;color:#475569}
++.irv-pits .irv-eff{color:#b45309}
+ .irv-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+ .irv-head h2{margin:6px 0;font-size:20px}
+ .irv-sub{font-size:13px;color:#64748b;font-weight:400;margin-left:8px}
+@@ -291,15 +348,9 @@ const CSS = `
+ .irv-tag.fixed{color:#b45309;border-color:#fcd34d;background:#fffbeb}
+ .irv-q{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .irv-detail{padding:4px 12px 12px;border-top:1px dashed #e2e8f0}
+-.irv-question{white-space:pre-line;font-size:14.5px;margin:8px 0}
+-.irv-choice{margin:2px 0;font-size:14px}
+-.irv-choice.ans{font-weight:700;color:#15803d}
+ .irv-ans{margin:8px 0 4px;font-size:13.5px}
+ .irv-alt{color:#64748b;font-size:12.5px}
+ .irv-sol{background:#f8fafc;border-radius:8px;padding:8px 10px;margin:6px 0}
+-.irv-sol-o{font-weight:700;font-size:13px;margin:0 0 4px}
+-.irv-sol-s{margin:2px 0;font-size:13px;white-space:pre-line}
+-.irv-sol-c{margin:4px 0 0;font-size:12.5px;color:#475569}
+ .irv-meta{font-size:11.5px;color:#94a3b8;margin:6px 0}
+ .irv-actions{display:flex;gap:6px}
+ .irv-empty{text-align:center;color:#94a3b8;padding:30px 0}
+diff --git a/src/lib/mathir.js b/src/lib/mathir.js
+index a237f29..295edcb 100644
+--- a/src/lib/mathir.js
++++ b/src/lib/mathir.js
+@@ -1,4 +1,4 @@
+-// ashrain.out — MathIR 파서·렌더·평가기 (mathir.js, v1.5 r3 / 파이썬 itemfactory/mathir.py v1.5 r2 동형 · 09-07 renderHtml 상하 분수 표시층 추가 · 09-15 r3 HTML 표시층: Σ·lim·∫ 위아래 첨자, cases 중괄호 세로, mat 행렬, dy/dx 상하)
++// ashrain.out — MathIR 파서·렌더·평가기 (mathir.js, v1.5 r3 / 파이썬 itemfactory/mathir.py v1.5 r2 동형 · 09-07 renderHtml 상하 분수 표시층 추가 · 09-15 r3 HTML 표시층: Σ·lim·∫ 위아래 첨자, cases 중괄호 세로, mat 행렬, dy/dx 상하 · 09-21 괄호 규칙 rebracket: 묶음 괄호 ( ) → { } → [ ], 연산자 뒤 양수 괄호 벗김)
+ // 위치: src/lib/mathir.js — 앱(ItemCard·검토·코퍼스 화면)과 api/transcribeJob(러너 v2)이 공유.
+ // 파이썬 itemfactory/mathir.py 와 동형 — 함수표·문법·표시 규칙을 항상 함께 수정할 것.
+ // 이력: v1.0(스펙 v1.1) → v1.4 답 표기층(ㄱ~ㅎ·①~⑳ 낱말 답, '21°'→deg, 단위 꼬리, 'a = 5, b = -1' 병립, '좌변:' 접두 제거)
+@@ -625,6 +625,69 @@ function _plainFracs(raw) {
+     return pre + FRAC_HTML(_escH(_strip(nu)), _escH(_strip(de)));
+   });
+ }
++// ---------------------------------------------------------------- 괄호 규칙 (09-21, Park)
++// 교과서 표기: 묶음 괄호는 안쪽부터 소괄호 ( ) → 중괄호 { } → 대괄호 [ ]. 연산자 뒤에 양수만 든 괄호는 벗긴다.
++//   (x − (-4))(x − (-3))  →  {x − (-4)}{x − (-3)}        ((-9) + 13) ÷ 2  →  {(-9) + 13} ÷ 2
++//   (x − (3))(x − (5))    →  (x − 3)(x − 5)               2 × (4)          →  2 × 4
++// 생성 문항의 본문·해설은 소괄호만 쓰므로(마커 문법이 ( ) 뿐) 표시할 때 바꾼다 — 마커 [[…]] 안은 건드리지 않는다.
++// 소괄호로 남기는 것(묶음이 아닌 괄호): 함수·기호 표기 f(x)·f′(x)·sin²(x)·log₂(x)·P(A ∩ B)·√(…), 순서쌍·좌표·구간 (a, b),
++//   문장 속 괄호(한글이 들거나 한글 바로 뒤), 관계식이 든 괄호 (1 − (-6) = 7). 이런 괄호 안의 묶음은 안쪽에서 새로 센다.
++//   다만 바깥 묶음의 깊이를 셀 때는 이것들도 한 겹으로 친다 — (E(X))² → {E(X)}².
++const _ID_TAIL = /([A-Za-zα-ωΑ-Ω]+)[²³′'⁻¹₀-₉ᵃ-ᶻ]*$/;                 // 괄호 앞 이름(+첨자·프라임 꼬리)
++const _SETLIKE = /^[A-Z]ᶜ?$|[∪∩]|ᶜ$/;                                   // A · A ∪ B · (A ∪ B)ᶜ — n(…)의 집합 기수
++const _OP_TAIL = /(?:[+\-−×·÷/=*]|\()\s*$/;                             // 연산자·여는 괄호 뒤 → 양수 괄호 벗김
++const _REL = /[=≠<>≤≥⇔⇒→↔]/;
++const _POS = /^\+?\d+(?:\.\d+)?$/;
++// 함수·기호 표기인가 — f(x)·f′(x)·sin²(x)·log₂(x)·P(A)·E(X)·√(…)·n(A ∪ B). 한 글자 소문자(x·n·k…)는 계수로 본다: x(x + 1), n{2a + (n − 1)d}
++function _isFn(before, inner) {
++  if (/√$/.test(before)) return true;
++  const m = before.match(_ID_TAIL);
++  if (!m) return false;
++  const name = m[1];
++  if (name.length > 1 || /[A-ZΑ-Ω]/.test(name) || /^[fgh]$/.test(name)) return true;
++  return _SETLIKE.test(inner.trim());
++}
++function _topLevelHas(inner, re) {                 // 안쪽 괄호를 건너뛰고 겉 층에서만 찾는다
++  let d = 0;
++  for (const c of inner) {
++    if (c === "(") d++;
++    else if (c === ")") d--;
++    else if (d === 0 && re.test(c)) return true;
++  }
++  return false;
++}
++export function rebracket(text) {
++  const s = String(text ?? "");
++  if (s.indexOf("(") < 0) return s;
++  const root = { children: [] }, stack = [root];
++  for (let i = 0; i < s.length; i++) {
++    const c = s[i];
++    if (c === "(") { const nd = { open: i, close: -1, children: [] }; stack[stack.length - 1].children.push(nd); stack.push(nd); }
++    else if (c === ")") { if (stack.length === 1) return s; stack.pop().close = i; }
++  }
++  if (stack.length !== 1) return s;                // 짝이 안 맞으면 손대지 않는다 (마커에 걸쳐 열린 괄호 등)
++  const rep = new Map();
++  const visit = (nd) => {
++    nd.children.forEach(visit);
++    if (nd === root) return;
++    const inner = s.slice(nd.open + 1, nd.close), before = s.slice(Math.max(0, nd.open - 8), nd.open);
++    const depth = nd.children.reduce((m, c) => Math.max(m, c.contrib), 0);
++    if (_POS.test(inner.trim()) && _OP_TAIL.test(before)) { rep.set(nd.open, ""); rep.set(nd.close, ""); nd.contrib = 0; return; }
++    if (/\^$/.test(before)) { nd.contrib = 0; return; }        // 2^(1/3) — 지수 표기의 괄호는 묶음으로 세지 않는다
++    nd.contrib = depth + 1;
++    const grouping = !_isFn(before, inner) && !/[가-힣]$/.test(before) && !/[가-힣]/.test(inner)
++      && !_topLevelHas(inner, /,/) && !_topLevelHas(inner, _REL);
++    if (!grouping || depth === 0) return;
++    const [o, cl] = depth === 1 ? ["{", "}"] : ["[", "]"];
++    rep.set(nd.open, o); rep.set(nd.close, cl);
++  };
++  visit(root);
++  if (!rep.size) return s;
++  let out = "";
++  for (let i = 0; i < s.length; i++) out += rep.has(i) ? rep.get(i) : s[i];
++  return out;
++}
++
+ export function renderHtml(text) {
+   const segs = parseText(String(text ?? "")).segs;
+   _H = true;
+@@ -632,7 +695,7 @@ export function renderHtml(text) {
+   try {
+     for (const s of segs) {
+       if (s.kind === "ir") out += _fracPlaceholders(_escH(disp(s.node)));
+-      else out += _plainFracs(_escH(s.raw));
++      else out += _plainFracs(_escH(rebracket(s.raw)));
+     }
+   } finally { _H = false; }
+   return out;
+diff --git a/tests/rebracket.test.mjs b/tests/rebracket.test.mjs
+new file mode 100644
+index 0000000..7fdabe8
+--- /dev/null
++++ b/tests/rebracket.test.mjs
+@@ -0,0 +1,91 @@
++// node tests/rebracket.test.mjs — 괄호 규칙(mathir.rebracket / renderHtml) 검사
++import assert from "node:assert/strict";
++import { rebracket, renderHtml } from "../src/lib/mathir.js";
++
++let n = 0, failed = 0;
++function test(name, fn) {
++  n++;
++  try { fn(); console.log("ok   -", name); }
++  catch (e) { failed++; console.log("FAIL -", name); console.log("      " + String(e?.message || e).split("\n").join("\n      ")); }
++}
++const eq = (a, b) => assert.equal(rebracket(a), b);
++
++test("묶음 괄호 한 겹은 그대로", () => {
++  eq("(x − 3)(x − 5) = 0", "(x − 3)(x − 5) = 0");
++  eq("2(x + 1) − 3(x − 2)", "2(x + 1) − 3(x − 2)");
++  eq("(-5) × (-3) = 15", "(-5) × (-3) = 15");
++  eq("괄호 없음", "괄호 없음");
++});
++
++test("두 겹은 바깥이 중괄호, 세 겹은 대괄호", () => {
++  eq("(x − (-4))(x − (-3)) = 0", "{x − (-4)}{x − (-3)} = 0");
++  eq("((-9) + 13) ÷ 2 = 2", "{(-9) + 13} ÷ 2 = 2");
++  eq("(-10 + (-2)) ÷ 2", "{-10 + (-2)} ÷ 2");
++  eq("y − (-1) = 2(x − (-6))", "y − (-1) = 2{x − (-6)}");
++  eq("(③ × (-4)) − (④ × 2)", "{③ × (-4)} − (④ × 2)");
++  eq("(3² + 1² + (-2)² + (-3)²) ÷ 4", "{3² + 1² + (-2)² + (-3)²} ÷ 4");
++  eq("((1 + i)/(1 − i))^15", "{(1 + i)/(1 − i)}^15");
++  eq("(((-2) + 3) × 4 − 1) ÷ 2", "[{(-2) + 3} × 4 − 1] ÷ 2");
++  eq("(-31 − (-7))/(7 − 1)", "{-31 − (-7)}/(7 − 1)");
++});
++
++test("연산자 뒤 양수만 든 괄호는 벗기고, 벗긴 괄호는 겹으로 세지 않는다", () => {
++  eq("(x − (3))(x − (5)) = 0", "(x − 3)(x − 5) = 0");
++  eq("2(x − (-6))(x − (4)) = 0", "2{x − (-6)}(x − 4) = 0");
++  eq("x² − 2 × (4)x + 16", "x² − 2 × 4x + 16");
++  eq("-1 × (5) + (2) × (-4)", "-1 × 5 + 2 × (-4)");
++  eq("(x − (4))² = 0", "(x − 4)² = 0");
++  eq("(1) 첫째 조건", "(1) 첫째 조건");           // 번호 매김은 연산자 뒤가 아니다
++  eq("f(2) = 5", "f(2) = 5");                    // 함수값
++});
++
++test("함수·기호 표기는 소괄호로 두고, 그 안의 묶음만 새로 센다", () => {
++  eq("f(f(2)) = 9", "f(f(2)) = 9");
++  eq("n((A ∪ B)ᶜ) = n(U) − n(A ∪ B)", "n((A ∪ B)ᶜ) = n(U) − n(A ∪ B)");
++  eq("P((A ∪ B)ᶜ) = 1 − P(A ∪ B)", "P((A ∪ B)ᶜ) = 1 − P(A ∪ B)");
++  eq("√((16 − 1)² + (7 − (-1))²) = 17", "√((16 − 1)² + {7 − (-1)}²) = 17");
++  eq("2sin²(x/2)", "2sin²(x/2)");
++  eq("f′(x₀) (f(x₀) = y₀)", "f′(x₀) (f(x₀) = y₀)");
++  eq("f((x − (-1))²)", "f({x − (-1)}²)");
++  eq("(E(X))² 과 (f(x))²", "{E(X)}² 과 {f(x)}²");
++  eq("log₂(x + 1)", "log₂(x + 1)");
++  eq("(f(q) − f(p))/(q − p)", "{f(q) − f(p)}/(q − p)");
++  eq("Sₙ = n(2a + (n − 1)d)/2", "Sₙ = n{2a + (n − 1)d}/2");      // 한 글자 소문자는 계수
++  eq("x(x − (-1)) = 0", "x{x − (-1)} = 0");
++  eq("n! ÷ (r!(n − r)!)", "n! ÷ {r!(n − r)!}");
++  eq("(5^(1/3))⁶ = 25", "(5^(1/3))⁶ = 25");                       // 지수 표기 괄호는 겹으로 안 센다
++  eq("B(n, p), N(m, σ²)", "B(n, p), N(m, σ²)");
++});
++
++test("여는 괄호 바로 안의 양수 괄호도 벗긴다", () => {
++  eq("b = −((0) + (1)) = -1", "b = −(0 + 1) = -1");
++  eq("b = −((-3) + (15)) = -12", "b = −{(-3) + 15} = -12");
++});
++
++test("순서쌍·좌표·구간과 문장 속 괄호는 그대로", () => {
++  eq("(4 + (-3), -2) = (1, -2)", "(4 + (-3), -2) = (1, -2)");
++  eq("(21, -2 × (-1) − 1) = (21, 1)", "(21, -2 × (-1) − 1) = (21, 1)");
++  eq("(-5 + (2), -3 + (5)) = (-3, 2)", "(-5 + 2, -3 + 5) = (-3, 2)");
++  eq("x = 1은 -6보다 7만큼 크고(1 − (-6) = 7), y는", "x = 1은 -6보다 7만큼 크고(1 − (-6) = 7), y는");
++  eq("(계수 -9 ÷ (-3) = 3)", "(계수 -9 ÷ (-3) = 3)");
++  eq("(√((-3)²)를 -3으로 쓰면 틀린다)", "(√((-3)²)를 -3으로 쓰면 틀린다)");
++  eq("(예: 처음 두 항 1 + (-2))", "(예: 처음 두 항 1 + (-2))");
++  eq("(4(x + 2) + 19 = 2x + 1)", "(4(x + 2) + 19 = 2x + 1)");
++});
++
++test("짝이 안 맞으면 손대지 않는다", () => {
++  eq("(x − (-1)", "(x − (-1)");
++  eq("x − (-1))", "x − (-1))");
++});
++
++test("renderHtml 이 마커 밖 평문에만 적용한다", () => {
++  const h = renderHtml("(x − (-4))(x − (-3)) = 0 → [[frac(1, 2)]] × (a − (b − 1))");
++  assert.ok(h.includes("{x − (-4)}{x − (-3)} = 0"), h);
++  assert.ok(h.includes('class="mf"'), h);
++  assert.ok(h.includes("{a − (b − 1)}"), h);
++  assert.ok(!renderHtml("[[frac((a + (b − 1)), 2)]]").includes("{"), "마커 안은 그대로");
++  assert.equal(renderHtml("(30 − x)/6 = 5").includes('class="mf"'), true, "한 겹 괄호 평문 분수는 여전히 상하로");
++});
++
++console.log(`\n${n - failed}/${n} 통과`);
++if (failed) process.exit(1);
+diff --git a/tests/smoke/adminItems.smoke.mjs b/tests/smoke/adminItems.smoke.mjs
+new file mode 100644
+index 0000000..bfe8651
+--- /dev/null
++++ b/tests/smoke/adminItems.smoke.mjs
+@@ -0,0 +1,192 @@
++// 문항 검토(#/admin/items) 스모크 — 가벼운 목록 조회 · 펼칠 때 해설 받기 · 학생과 같은 표시(괄호 규칙) · 1,000건씩 일괄 전환.
++//   node tests/smoke/adminItems.smoke.mjs [--headed]
++// 준비: `npx vite build` (dist/ 필요) · playwright(전역) + Chromium.
++import http from "node:http";
++import fs from "node:fs";
++import path from "node:path";
++import { createRequire } from "node:module";
++import { fileURLToPath } from "node:url";
++
++const require = createRequire(import.meta.url);
++let chromium;
++try { ({ chromium } = require("playwright")); }
++catch { ({ chromium } = require("/home/claude/.npm-global/lib/node_modules/playwright")); }
++
++const HERE = path.dirname(fileURLToPath(import.meta.url));
++const ROOT = path.resolve(HERE, "../..");
++const DIST = path.join(ROOT, "dist");
++const HEADED = process.argv.includes("--headed");
++const SHOTS = process.env.SMOKE_SHOTS || path.join(HERE, "shots");
++
++// ── 모의 데이터: draft 2,300건(1,000건씩 세 번 전환되도록) + live 5건 ──
++const ITEMS = [];
++const SOL = { levels: [
++  { level: 1, title: "방침", text: "두 근이 p, q 이면 (x − p)(x − q) = 0 이다." },
++  { level: 2, title: "전개", steps: ["(x − (-3))(x − (-1)) = 0", "전개하면 x² − (-4)x + 3 = 0", "따라서 b = [[frac(4, 1)]]"] },
++  { level: 3, title: "확인", text: "x = -3을 대입하면 (-3)² + 4 × (-3) + 3 = 0" },
++], rubric: { total: 7, items: [{ element: "인수 만들기", points: 3, criterion: "(x − (-3))(x − (-1)) = 0 꼴로 세웠다." }] } };
++for (let i = 0; i < 2305; i++) ITEMS.push({
++  id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`, test_type: "concept_set", unit_id: "m3-1", concept_ids: ["m3-1-20"], qtype: "short", difficulty: 3,
++  question: `이차방정식 문제 ${i}: 두 근이 -3, -1인 이차방정식 x² + bx + c = 0 에서 b는?`, choices: null, answer: "4", answer_alt: [], tags: [], source: "seed",
++  status: i < 2300 ? "draft" : "live", gen_meta: { tpl: "m3-1-quad-build-t1", idx: i }, created_at: `2026-09-21T14:${String(i % 60).padStart(2, "0")}:00Z`,
++  template_id: "m3-1-quad-build-t1", param_index: i, content_key: `ck${i}`, struct_key: "sk", solution: SOL,
++  figure: i === 0 ? [{ fn: "steps", args: { lines: [{ text: "(x − (-3))(x − (-1)) = 0" }] } }] : null,
++});
++const CONCEPTS = [{ id: "m3-1-20", unit_id: "m3-1", title: "이차방정식 구하기", sort_order: 20 }];
++const log = [];                                                       // 요청 기록
++
++function applyFilters(u) {
++  let list = ITEMS.slice();
++  for (const [k, v] of u.searchParams) {
++    if (["select", "order", "limit", "offset"].includes(k)) continue;
++    if (v.startsWith("eq.")) list = list.filter((it) => String(it[k]) === v.slice(3));
++    else if (v.startsWith("in.")) { const set = v.slice(4, -1).split(",").map((s) => s.replace(/^"|"$/g, "")); list = list.filter((it) => set.includes(String(it[k]))); }
++    else if (v.startsWith("cs.")) { const one = v.replace(/^cs\.\{"?|"?\}$/g, ""); list = list.filter((it) => (it[k] || []).includes(one)); }
++  }
++  const order = u.searchParams.get("order");
++  if (order) {
++    const keys = order.split(",").map((o) => { const [c, d] = o.split("."); return [c, d === "desc" ? -1 : 1]; });
++    list.sort((a, b) => { for (const [c, d] of keys) { if (a[c] < b[c]) return -d; if (a[c] > b[c]) return d; } return 0; });
++  }
++  return list;
++}
++function project(row, select) {
++  if (!select || select === "*") return row;
++  const out = {};
++  for (const c of select.split(",")) if (c in row) out[c] = row[c];
++  return out;
++}
++
++// ── 정적 서버 ──
++const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json" };
++function serve() {
++  return new Promise((resolve) => {
++    const srv = http.createServer((req, res) => {
++      const u = new URL(req.url, "http://x");
++      let f = path.join(DIST, decodeURIComponent(u.pathname));
++      if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) f = path.join(DIST, "index.html");
++      res.writeHead(200, { "content-type": MIME[path.extname(f)] || "application/octet-stream" });
++      fs.createReadStream(f).pipe(res);
++    });
++    srv.listen(0, "127.0.0.1", () => resolve({ srv, port: srv.address().port }));
++  });
++}
++
++// ── Supabase 모의 (관리자) ──
++const b64u = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
++const USER = { id: "00000000-0000-4000-8000-000000000001", aud: "authenticated", role: "authenticated", email: "smoke@example.com", app_metadata: { provider: "email", providers: ["email"] }, user_metadata: {}, factors: [], created_at: "2026-01-01T00:00:00Z" };
++const JWT = `${b64u({ alg: "HS256", typ: "JWT" })}.${b64u({ sub: USER.id, aud: "authenticated", role: "authenticated", email: USER.email, exp: 9999999999, iat: 1700000000, aal: "aal1", amr: [{ method: "password", timestamp: 1700000000 }], app_metadata: USER.app_metadata, user_metadata: {}, session_id: "s1" })}.sig`;
++const SESSION = { access_token: JWT, token_type: "bearer", expires_in: 3600, expires_at: 9999999999, refresh_token: "r1", user: USER };
++const PROFILE = { role: "admin", member_code: "SMOKE", trial_expires_at: null, merged_into: null, phone_verified: true, is_minor: false, birth_date: "1990-03-01", settings: {} };
++
++async function mockSupabase(page) {
++  await page.route("https://placeholder.supabase.co/**", (route) => {
++    const req = route.request(); const u = new URL(req.url()); const accept = req.headers()["accept"] || "";
++    const json = (obj, headers = {}) => route.fulfill({ status: 200, contentType: "application/json", headers, body: JSON.stringify(obj) });
++    if (u.pathname.startsWith("/auth/v1/user")) return json(USER);
++    if (u.pathname.startsWith("/auth/v1/token")) return json(SESSION);
++    if (u.pathname.startsWith("/auth/v1/")) return json({});
++    if (u.pathname.startsWith("/rest/v1/")) {
++      const table = u.pathname.replace("/rest/v1/", "").split("/")[0];
++      const wantObj = accept.includes("pgrst.object");
++      if (table === "test_items") {
++        log.push({ m: req.method(), q: u.search });
++        const list = applyFilters(u);
++        if (req.method() === "HEAD") return route.fulfill({ status: 200, headers: { "content-range": `*/${list.length}`, "access-control-expose-headers": "content-range" }, body: "" });
++        if (req.method() === "PATCH") {
++          let body = {}; try { body = JSON.parse(req.postData() || "{}"); } catch { /* */ }
++          for (const it of list) Object.assign(it, body);
++          return json([]);
++        }
++        const off = Number(u.searchParams.get("offset") || 0), lim = Number(u.searchParams.get("limit") || 1000);
++        const sel = u.searchParams.get("select");
++        const rows = list.slice(off, off + lim).map((r) => project(r, sel));
++        return json(wantObj ? rows[0] ?? null : rows, { "content-range": `${off}-${off + rows.length}/${list.length}` });
++      }
++      if (table === "concepts") return json(CONCEPTS);
++      if (table === "item_templates") return json([]);
++      if (req.method() === "HEAD") return route.fulfill({ status: 200, headers: { "content-range": "*/0", "access-control-expose-headers": "content-range" }, body: "" });
++      if (table === "profiles") return json(wantObj ? { id: USER.id, ...PROFILE } : [{ id: USER.id, ...PROFILE }]);
++      if (table === "app_settings") return json([]);
++      if (req.method() === "POST") return json(wantObj ? {} : []);
++      return json(wantObj ? null : [], { "content-range": "0-0/0" });
++    }
++    return json({});
++  });
++  await page.addInitScript(([key, sess]) => {
++    localStorage.setItem(key, JSON.stringify(sess));
++    localStorage.setItem("ashrain-theme", "light");
++  }, ["sb-placeholder-auth-token", SESSION]);
++}
++
++let pass = 0, fail = 0;
++const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else { fail++; console.log("FAIL -", name); } };
++
++(async () => {
++  const { srv, port } = await serve();
++  const base = `http://127.0.0.1:${port}/`;
++  const browser = await chromium.launch({ headless: !HEADED });
++  const ctx = await browser.newContext({ viewport: { width: 420, height: 900 }, deviceScaleFactor: 2 });
++  const page = await ctx.newPage();
++  const errors = [];
++  page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
++  page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push("console: " + m.text()); });   // 막아 둔 외부 폰트·CDN 은 제외
++  page.on("dialog", (d) => d.accept());
++  await mockSupabase(page);
++  await page.route(/https:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com)\//, (r) => r.abort());
++  fs.mkdirSync(SHOTS, { recursive: true });
++  const shot = async (name) => { try { await page.screenshot({ path: path.join(SHOTS, name + ".png"), fullPage: true }); } catch { /* */ } };
++  const text = async () => (await page.locator("body").innerText()).replace(/\s+/g, " ");
++
++  try {
++    // A. 목록 — 가벼운 열만, 건수는 HEAD 로 따로
++    await page.goto(base + "#/admin/items");
++    await page.locator(".irv-item").first().waitFor({ timeout: 20000 });
++    await page.waitForFunction(() => /\d+건 · draft \d+/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
++    let t = await text();
++    ok(/2305건 · draft 2300 \/ live 5/.test(t), "A1 머리말 건수 — 전체 2305 · draft 2300 · live 5");
++    ok(!/불러오기 실패/.test(t), "A2 실패 문구 없음");
++    const listReq = log.find((l) => l.m === "GET" && /select=/.test(l.q) && /offset=/.test(l.q));
++    ok(listReq && !/solution|figure/.test(decodeURIComponent(listReq.q)) && /limit=50/.test(listReq.q), "A3 목록 조회는 해설·그림 열 없이 50건씩");
++    ok(log.filter((l) => l.m === "HEAD").length >= 2, "A4 건수는 HEAD 요청으로");
++    ok((await page.locator(".irv-item").count()) === 50, "A5 한 쪽 50건");
++    ok(/이차방정식 문제/.test(t) && !/\[\[/.test(await page.locator(".irv-q").first().innerText()), "A6 목록 제목에 마커 기호 없음");
++
++    // B. 펼치기 — 해설·그림을 그때 받고, 학생과 같은 표시(괄호 규칙 · 분수)
++    const before = log.length;
++    await page.locator(".irv-row").first().click();
++    await page.locator(".irv-detail .isol .lv").first().waitFor({ timeout: 15000 });
++    const solReq = log.slice(before).find((l) => l.m === "GET" && /select=solution/.test(l.q));
++    ok(!!solReq && /id=eq\./.test(solReq.q), "B1 펼치면 그 문항의 solution·figure 만 받는다");
++    const det = page.locator(".irv-detail");
++    const dt = (await det.innerText()).replace(/\s+/g, " ");
++    ok(/\{x − \(-3\)\}\{x − \(-1\)\} = 0/.test(dt), "B2 해설의 겹괄호가 { } 로 (괄호 규칙)");
++    ok((await det.locator(".mf").count()) >= 1, "B3 [[frac]] 마커는 상하 분수로");
++    ok(/채점기준 · 7점/.test(dt) && /인수 만들기/.test(dt), "B4 채점기준표 표시");
++    ok((await det.locator(".iq").count()) === 1 && /두 근이 -3, -1인/.test(dt), "B5 문항 본문은 ItemQuestion 으로");
++    ok(/정답: 4/.test(dt), "B6 정답 표시");
++    await shot("admin-items-open");
++
++    // C. 일괄 전환 — 1,000건씩 세 번, 완료 문구
++    const before2 = log.length;
++    await page.locator("button.irv-btn.go", { hasText: "필터 전체 draft → live" }).click();
++    await page.waitForFunction(() => /→ live 완료/.test(document.querySelector(".irv-msg")?.textContent || ""), null, { timeout: 30000 });
++    const patches = log.slice(before2).filter((l) => l.m === "PATCH");
++    ok(patches.length === 3, `C1 PATCH 세 번(1,000·1,000·300) — ${patches.length}번`);
++    ok(patches.every((l) => /id=in\./.test(l.q)), "C2 전환은 id 목록으로");
++    ok(ITEMS.filter((it) => it.status === "live").length === 2305, "C3 모의 DB 에서 2300건이 live 로");
++    t = await text();
++    ok(/2300건 → live 완료/.test(t), "C4 완료 문구");
++    await page.waitForFunction(() => /draft 0 \/ live 2305/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
++    ok(/2305건 · draft 0 \/ live 2305/.test(await text()), "C5 머리말 건수 갱신");
++
++    ok(errors.length === 0, "Z 콘솔·페이지 오류 없음" + (errors.length ? ` — ${errors.slice(0, 3).join(" | ")}` : ""));
++  } catch (e) {
++    fail++; console.log("FAIL - 예외:", e.message);
++    await shot("admin-items-error");
++  } finally {
++    await browser.close(); srv.close();
++  }
++  console.log(`\n${pass}/${pass + fail} 통과`);
++  process.exit(fail ? 1 : 0);
++})();
+-- 
+2.43.0
+
