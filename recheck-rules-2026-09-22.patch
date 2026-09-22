@@ -1,0 +1,284 @@
+From 59174872c57f563742f96670238c416924f1436a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 22 Sep 2026 04:43:20 +0000
+Subject: [PATCH] =?UTF-8?q?=EB=8F=85=EB=A6=BD=20=EA=B2=80=EC=82=B0:=20?=
+ =?UTF-8?q?=EA=B7=9C=EC=B9=99=20=EC=97=86=EB=8D=98=20=ED=8B=80=2011?=
+ =?UTF-8?q?=EA=B0=9C=20=EC=B1=84=EC=9A=B0=EA=B8=B0=20=E2=80=94=20=EC=A0=84?=
+ =?UTF-8?q?=EC=B2=B4=20137,631=EB=AC=B8=ED=95=AD=EC=9D=B4=20=EB=91=90=20?=
+ =?UTF-8?q?=EA=B2=BD=EB=A1=9C=EB=A1=9C=20=EC=9E=AC=ED=98=84=EB=90=9C?=
+ =?UTF-8?q?=EB=8B=A4?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+지금까지 "독립 검산 규칙 없는 문항"이 1,166건(틀 11개) 남아 있어 그 틀은 사람이 답을 눈으로 봐야 했다.
+자료가 그림·목록에 있어 발문 텍스트만으로는 못 세던 것들인데, **그림 인자(figure)를 다시 읽어** 검산하도록 했다.
+
+tools/recheck.py
+  · 도우미 `_numlist`(발문의 수 목록 — [[frac]] 마커 포함) · `_figargs`(figure 에서 fn 의 인자)
+  · m1-1-sign-number-t3 · int-rational-t1 — 목록을 다시 읽어 양수/음수/자연수/정수/음의 정수/정수가 아닌 유리수를 센다
+  · m1-1-graph-t2 — coordplane 의 꺾은선에서 y 가 같은 두 점 사이 = 멈춘 시간
+  · m1-2-stemleaf-t1·t2·t3 — 줄기·잎에서 자료값을 복원해 (이상인 개수 / k번째 큰 값 / 줄기별 개수)
+  · m1-2-histogram-t1·t2 — 계급·도수에서 (최대 도수 계급의 계급값 / 이상인 도수의 합)
+  · m1-2-congruent-t4·t5 — t1 만 보던 규칙을 세 틀 모두로(계산은 같다: 180° − 두 각)
+  · m1-1-order-t1 — 문자열 답(부등호)은 `check_m1str` 로: 주어진 두 수 그대로·문제가 정한 부등호·대소가 맞는가
+  · 보고에 규칙 없는 틀 목록을 찍는다(앞으로 빈 곳이 생기면 바로 보인다)
+  · 음성 대조: 11개 틀의 답을 하나씩 일부러 틀리게 바꿔 11건 모두 R1 로 잡히는 것을 확인
+
+tools/mkseed_m1_gaps2.py · seeds/m3-1-quad-build.json
+  · t1·t4 전개 줄의 `x² − (합)x + (곱)` 이 합·곱 ±1 일 때 '1x' 가 되던 것 → 합·곱은 말로 쓰고 식은 정리된 꼴로
+  · t1·t4 확인 줄의 대입 계산이 근 ±1 일 때 '× 1' 이 되던 것 → 인수가 0 이 되는 것으로 확인 (해설 규격 §2 항등 표기 금지)
+  · 문항 수·답은 그대로(840건) — 해설 문면만 바뀌므로 반영은 replace_templates 로
+
+전체 재생성 137,631문항: recheck **규칙 없음 0 · 불일치 0 · 경고 0**, audit 중복 0 · D3 경고만. 틀별 통계는 이전과 동일.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01H3ULNhSa28Vfc3rcfmFQqV
+---
+ itemfactory/seeds/m3-1-quad-build.json |   8 +-
+ itemfactory/tools/mkseed_m1_gaps2.py   |   9 +-
+ itemfactory/tools/recheck.py           | 109 +++++++++++++++++++++++--
+ 3 files changed, 110 insertions(+), 16 deletions(-)
+
+diff --git a/itemfactory/seeds/m3-1-quad-build.json b/itemfactory/seeds/m3-1-quad-build.json
+index bccf0d0..7df32f0 100644
+--- a/itemfactory/seeds/m3-1-quad-build.json
++++ b/itemfactory/seeds/m3-1-quad-build.json
+@@ -135,7 +135,7 @@
+       "sol1": "두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − {pn(p)}) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
+       "sol2": [
+         "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0",
+-        "전개하면 x² − {pn(s)}x + {pn(m)} = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
++        "두 근의 합은 {s}, 두 근의 곱은 {m}이므로 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
+         "따라서 b = {b}, c = {c}이고 {QT} = {ans}"
+       ],
+       "sol2_fig": [
+@@ -195,7 +195,7 @@
+           }
+         ]
+       ],
+-      "sol3": "x = {p}{eul(p)} 대입하면 {pn(p)}² {sgn(b)} × {pn(p)} {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",
++      "sol3": "x = {p}{eul(p)} 대입하면 인수 (x − {pn(p)})가 0이 되어 좌변 전체가 0이고, x = {q}{eul(q)} 대입해도 마찬가지다. 답은 {ans}이다.",
+       "sol3_fig": [
+         {
+           "fn": "steps",
+@@ -381,7 +381,7 @@
+       "sol1": "두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − {pn(p)}) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
+       "sol2": [
+         "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0",
+-        "전개하면 {co(a)}(x² − {pn(s)}x + {pn(m)}) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
++        "두 근의 합은 {s}, 두 근의 곱은 {m}이므로 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
+         "따라서 b = {b}, c = {c}이고 {QT} = {ans}"
+       ],
+       "sol2_fig": [
+@@ -441,7 +441,7 @@
+           }
+         ]
+       ],
+-      "sol3": "x = {p}{eul(p)} 대입하면 {a} × {pn(p)}² {sgn(b)} × {pn(p)} {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",
++      "sol3": "x = {p}{eul(p)} 대입하면 인수 (x − {pn(p)})가 0이 되어 좌변 전체가 0이고, x = {q}{eul(q)} 대입해도 마찬가지다. 답은 {ans}이다.",
+       "sol3_fig": [
+         {
+           "fn": "steps",
+diff --git a/itemfactory/tools/mkseed_m1_gaps2.py b/itemfactory/tools/mkseed_m1_gaps2.py
+index 87cc701..78d67af 100644
+--- a/itemfactory/tools/mkseed_m1_gaps2.py
++++ b/itemfactory/tools/mkseed_m1_gaps2.py
+@@ -598,12 +598,13 @@ def qb_t1():
+         question="두 근이 {p}, {q}이고 x²의 계수가 {a}인 이차방정식을 {a}x² + bx + c = 0 꼴로 나타낼 때, {QT}의 값을 구하시오." if False else None,   # a=1 일 때 "1x²" 을 피하려 qb_t1_fix
+         answer="{ans}", answer_alt=[],
+         sol1="두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − {pn(p)}) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
+-        sol2=["{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0", "전개하면 {co(a)}(x² − {pn(s)}x + {pn(m)}) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
++        # 전개 줄에 x² − (합)x + (곱) 을 그대로 쓰면 합·곱이 ±1 일 때 '1x'·'× 1' 이 나온다 → 합·곱은 말로, 식은 정리된 꼴로
++        sol2=["{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0", "두 근의 합은 {s}, 두 근의 곱은 {m}이므로 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
+         sol2_fig=steps([{"text": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0", "hint": "근 p → 인수 (x − p)", "marks": [{"on": "{pn(p)}", "note": "음수 근이면 부호가 바뀐다"}]},
+                         {"text": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0", "hint": "a 를 모든 항에 곱한다"},
+                         {"text": "b = {b}, c = {c} → {QT} = {ans}"}]),
+         sol2_anim=[[reveal(0), hl("hint:0", "mark:0-0")], [reveal(1), hl("hint:1")], [reveal(2)]],
+-        sol3="x = {p}{eul(p)} 대입하면 {pn(p)}² {sgn(b)} × {pn(p)} {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",   # a≥2 는 qb_t1_split 에서 'a ×' 를 붙인다
++        sol3="x = {p}{eul(p)} 대입하면 인수 (x − {pn(p)})가 0이 되어 좌변 전체가 0이고, x = {q}{eul(q)} 대입해도 마찬가지다. 답은 {ans}이다.",
+         sol3_fig=steps(["x = {p} 대입 → 0  ✓", "x = {q} 대입 → 0  ✓"]),
+         sol3_anim=[[reveal(0)], [reveal(1)]],
+         model_answer="두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})(x − {pn(q)}) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
+@@ -626,10 +627,6 @@ def qb_t1_split(t):
+         u["params"] = [p for p in t["params"] if p["name"] != "a"] + [{"name": "a", "values": {"in": avals}}]
+         u["question"] = q
+         u["title"] = t["title"] + (" (x² 의 계수 1)" if no == 1 else " (x² 의 계수 2·3)")
+-        if no == 4:   # 대입 검산: 2 × (-4)² … (양수 근이면 2 × 4² — 괄호 없이)
+-            u["sol3"] = t["sol3"].replace("대입하면 {pn(p)}²", "대입하면 {a} × {pn(p)}²")
+-        else:         # 계수 1 이면 전개식에 괄호가 필요 없다: (x² − 3x + 2) = 0 → x² − 3x + 2 = 0
+-            u["sol2"] = [x.replace("{co(a)}(x² − {pn(s)}x + {pn(m)}) = 0", "x² − {pn(s)}x + {pn(m)} = 0") for x in t["sol2"]]
+         out.append(u)
+     return out
+ 
+diff --git a/itemfactory/tools/recheck.py b/itemfactory/tools/recheck.py
+index faf3679..b985648 100644
+--- a/itemfactory/tools/recheck.py
++++ b/itemfactory/tools/recheck.py
+@@ -22,6 +22,7 @@ from genkit.expr import _has_jong   # noqa: E402
+ OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "out/gen")
+ prob = Counter()
+ ex = defaultdict(list)
++skip_tpl = Counter()          # 독립 검산 규칙이 없는 틀 — 사람이 답을 눈으로 봐야 하는 것들
+ 
+ 
+ def bad(code, it, msg=""):
+@@ -52,6 +53,29 @@ def ans_val(it):
+         return None, "?"
+ 
+ 
++def _numlist(q):
++    """'다음 수 -0.9,  8,  [[-frac(28,7)]],  0 중에서 …' 의 수 목록 → Fraction 리스트 (마커 분수 포함)."""
++    m = re.search(r"다음 수 (.+?) 중에서", q)
++    if not m:
++        return None
++    vals = []
++    for t in re.finditer(r"\[\[(-?)frac\((\d+),\s*(\d+)\)\]\]|(-?\d+(?:\.\d+)?)", m.group(1)):
++        if t.group(4) is not None:
++            vals.append(Fraction(t.group(4)))
++        else:
++            v = Fraction(int(t.group(2)), int(t.group(3)))
++            vals.append(-v if t.group(1) else v)
++    return vals
++
++
++def _figargs(it, fn):
++    """자료가 그림에 있는 틀(줄기와 잎·히스토그램·그래프)의 독립 검산용 — figure 에서 fn 의 인자를 꺼낸다."""
++    for g in it.get("figure") or []:
++        if g.get("fn") == fn:
++            return g.get("args") or {}
++    return None
++
++
+ # ── ① 독립 검산 — 발문에서 수를 읽어 다시 푼다 ─────────────────────────────
+ SUPD = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789")             # 위첨자 지수 → 숫자
+ 
+@@ -127,10 +151,26 @@ def recompute(it):
+             if m:
+                 vals.append(Fraction(m.group(1)))
+         return max(vals) - min(vals) if len(vals) == 5 else None
+-    if tid.startswith("m1-1-graph-t2") or tid.startswith("m1-1-order-t1") or tid.startswith("m1-1-sign-number-t3") or tid.startswith("m1-1-int-rational-t1"):
+-        return "skip"                                             # 답이 그림·목록·부등식인 유형 — 문면만으로 수치 재계산 불가
++    if tid.startswith("m1-1-sign-number-t3") or tid.startswith("m1-1-int-rational-t1"):
++        vals = _numlist(q)                                        # 목록을 다시 읽어 조건에 맞는 것을 센다
++        if vals is None:
++            return None
++        if "양수는" in q: return Fraction(sum(1 for v in vals if v > 0))
++        if "음수는" in q: return Fraction(sum(1 for v in vals if v < 0))
++        if "자연수는" in q: return Fraction(sum(1 for v in vals if v > 0 and v.denominator == 1))
++        if "음의 정수는" in q: return Fraction(sum(1 for v in vals if v < 0 and v.denominator == 1))
++        if "정수가 아닌 유리수는" in q: return Fraction(sum(1 for v in vals if v.denominator != 1))
++        if "정수는" in q: return Fraction(sum(1 for v in vals if v.denominator == 1))
++        return None
++    if tid.startswith("m1-1-graph-t2"):
++        a = _figargs(it, "coordplane") or {}                      # 거리–시간 그래프에서 y 가 같은 두 점 사이가 멈춘 시간
++        pts = ((a.get("lines") or [{}])[0] or {}).get("points") or []
++        flat = [pts[i + 1][0] - pts[i][0] for i in range(len(pts) - 1) if pts[i + 1][1] == pts[i][1]]
++        return Fraction(flat[0]) if len(flat) == 1 else None
++    if tid.startswith("m1-1-order-t1"):
++        return "done"                                             # 문자열 답 — check_m1str
+     # ── 09-21 중1-2·중3-1 빈 개념 (mkseed_m1_gaps2.py)
+-    if tid.startswith("m1-2-congruent-t1"):
++    if tid.startswith(("m1-2-congruent-t1", "m1-2-congruent-t4", "m1-2-congruent-t5")):
+         m = re.search(r"∠[A-F] = \[\[deg\((\d+)\)\]\], ∠[A-F] = \[\[deg\((\d+)\)\]\]", q); return Fraction(180 - int(m.group(1)) - int(m.group(2)))
+     if tid.startswith("m1-2-congruent-t2"):
+         m = re.search(r"= (\d+) cm, [A-F]{2} = (\d+) cm, [A-F]{2} = (\d+) cm", q); return Fraction(sum(int(x) for x in m.groups()))
+@@ -156,8 +196,44 @@ def recompute(it):
+         c, b = p1 * q1, -(p2 + q2)
+         roots = [x for x in range(-30, 31) if x * x + b * x + c == 0]
+         return Fraction(max(roots)) if len(roots) == 2 else None
+-    if tid.startswith("m1-2-stemleaf-") or tid.startswith("m1-2-histogram-t1") or tid.startswith("m1-2-histogram-t2"):
+-        return "skip"                                             # 자료가 그림에 있다
++    if tid.startswith("m1-2-stemleaf-"):
++        a = _figargs(it, "stemleaf") or {}                        # 줄기·잎을 다시 읽어 자료값을 복원해 센다
++        stems, leaves = a.get("stems") or [], a.get("leaves") or []
++        vals = [10 * st + lf for st, ls in zip(stems, leaves) for lf in ls]
++        if not vals:
++            return None
++        if tid.startswith("m1-2-stemleaf-t1"):
++            m = re.search(r"(\d+)\s*(?:회|분|점|kg|cm)\s*이상인", q)
++            return Fraction(sum(1 for v in vals if v >= int(m.group(1)))) if m else None
++        if tid.startswith("m1-2-stemleaf-t2"):
++            m = re.search(r"(\d+)번째로 높은", q)
++            if not m:
++                return None
++            k, ds = int(m.group(1)), sorted(vals, reverse=True)
++            return Fraction(ds[k - 1]) if 1 <= k <= len(ds) else None
++        if tid.startswith("m1-2-stemleaf-t3"):
++            m = re.search(r"줄기는 (\d+)이다", q)
++            if not m or int(m.group(1)) not in stems:
++                return None
++            return Fraction(len(leaves[stems.index(int(m.group(1)))]))
++        return None
++    if tid.startswith("m1-2-histogram-t1") or tid.startswith("m1-2-histogram-t2"):
++        a = _figargs(it, "hist") or {}                            # 계급·도수를 다시 읽는다
++        bins, counts = a.get("bins") or [], a.get("counts") or []
++        rng = [[Fraction(x) for x in str(b).split("~")] for b in bins]
++        if not counts or len(rng) != len(counts) or any(len(r) != 2 for r in rng):
++            return None
++        if tid.startswith("m1-2-histogram-t1"):
++            top = max(counts)
++            if counts.count(top) > 1:
++                return None                                       # 최대 도수가 둘이면 계급값이 정해지지 않는다
++            lo, hi = rng[counts.index(top)]
++            return (lo + hi) / 2
++        m = re.search(r"(\d+)\s*(?:kg|cm|초|점|분)\s*이상인", q)
++        if not m:
++            return None
++        x = Fraction(m.group(1))
++        return Fraction(sum(c for (lo, _hi), c in zip(rng, counts) if lo >= x))
+     if tid.startswith("m1-1-numline-mid-t1") or tid.startswith("m1-1-numline-mid-t3"):
+         a, b = n[0], n[1]; return (a + b) / 2
+     if tid.startswith("m1-1-numline-mid-t2"):
+@@ -3102,6 +3178,22 @@ def _hx(tid, q):
+     return None
+ 
+ 
++def check_m1str(it):
++    """중1 문자열 답 틀 — 부등호로 나타내기(m1-1-order-t1). True/False, 해당 없으면 None."""
++    tid, q, a = it["template_id"], it["question"], it["answer"]
++    if not tid.startswith("m1-1-order-t1"):
++        return None
++    m = re.match(r"두 수 (-?\d+(?:\.\d+)?), (-?\d+(?:\.\d+)?)의 대소 관계를 부등호 (<|>)[를을]", q)
++    ma = re.fullmatch(r"(-?\d+(?:\.\d+)?) (<|>) (-?\d+(?:\.\d+)?)", a.strip())
++    if not m or not ma:
++        return False
++    x, y, sign = Fraction(m.group(1)), Fraction(m.group(2)), m.group(3)
++    lo, s2, hi = Fraction(ma.group(1)), ma.group(2), Fraction(ma.group(3))
++    if s2 != sign or {lo, hi} != {x, y}:                          # 주어진 두 수 그대로, 문제가 정한 부등호로
++        return False
++    return lo < hi if s2 == "<" else lo > hi
++
++
+ def check_hs(it):
+     """고등부 문자열 답(범위) 틀. True/False, 해당 없으면 None."""
+     tid, q, a = it["template_id"], it["question"], it["answer"]
+@@ -3532,6 +3624,8 @@ for f in sorted(OUT.glob("*_pool.json")):
+             pos = check_hs(it)
+         if pos is None:
+             pos = check_letters(it)
++        if pos is None:
++            pos = check_m1str(it)
+         if pos is not None:
+             if not pos:
+                 bad("R1-독립 검산 불일치", it, f"문자열 답 재계산 ≠ 답 {it['answer']}")
+@@ -3543,6 +3637,7 @@ for f in sorted(OUT.glob("*_pool.json")):
+             pass
+         elif got == "skip":
+             prob["(검산 규칙 없음)"] += 1
++            skip_tpl[it["template_id"]] += 1
+         elif got is None or av is None:
+             bad("R0-검산 불가", it, f"answer={it['answer']}")
+         elif Fraction(got) != av:
+@@ -3578,5 +3673,7 @@ for code, c in sorted(prob.items(), key=lambda kv: -kv[1]):
+     for e in ex[code][1:3]:
+         print(f"  {'':<28}        {e}")
+ hard = [k for k in prob if k[0] in "RF" and not k.startswith("(")]
+-print(f"\n  독립 검산 규칙 없는 문항 {prob['(검산 규칙 없음)']}건")
++print(f"\n  독립 검산 규칙 없는 문항 {prob['(검산 규칙 없음)']}건" + (f" · 틀 {len(skip_tpl)}개" if skip_tpl else ""))
++for t, c in skip_tpl.most_common():
++    print(f"      {t:<30} {c:>4}건")
+ sys.exit(1 if hard else 0)
+-- 
+2.43.0
+
