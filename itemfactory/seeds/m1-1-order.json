@@ -2216,7 +2216,7 @@
       "sol2": [
         "|{na}| = {a}, |{nb}| = {b}이고 {a} < {b}",
         "절댓값이 큰 {nb}{ika(nb)} 더 작다 → {nb} < {na}",
-        "큰 수 − 작은 수 = {na} − ({nb}) = {ans}"
+        "큰 수 − 작은 수 = {na} − {pn(nb)} = {ans}"
       ],
       "sol2_fig": [
         {
@@ -2255,14 +2255,14 @@
         ],
         []
       ],
-      "sol3": "수직선에서 {nb}{eun(nb)} {na}보다 왼쪽에 있으므로 {nb} < {na}{ika(na)} 맞고, 두 점 사이의 거리가 {h}이므로 {na} − ({nb}) = {ans}이다.",
+      "sol3": "수직선에서 {nb}{eun(nb)} {na}보다 왼쪽에 있으므로 {nb} < {na}{ika(na)} 맞고, 두 점 사이의 거리가 {h}이므로 {na} − {pn(nb)} = {ans}이다.",
       "sol3_fig": [
         {
           "fn": "steps",
           "args": {
             "lines": [
               "{nb} < {na}",
-              "{na} − ({nb}) = {ans}"
+              "{na} − {pn(nb)} = {ans}"
             ]
           }
         }
@@ -2281,7 +2281,7 @@
           }
         ]
       ],
-      "model_answer": "|{na}| = {a} < {b} = |{nb}|이므로 절댓값이 큰 {nb}{ika(nb)} 더 작다. 즉 {nb} < {na}이고, 큰 수에서 작은 수를 빼면 {na} − ({nb}) = {ans}이다.",
+      "model_answer": "|{na}| = {a} < {b} = |{nb}|이므로 절댓값이 큰 {nb}{ika(nb)} 더 작다. 즉 {nb} < {na}이고, 큰 수에서 작은 수를 빼면 {na} − {pn(nb)} = {ans}이다.",
       "rubric": [
         {
           "element": "절댓값 비교",
@@ -2298,7 +2298,7 @@
         {
           "element": "답 구하기",
           "points": 2,
-          "criterion": "{na} − ({nb}) = {ans}{eul(ans)} 구했다.",
+          "criterion": "{na} − {pn(nb)} = {ans}{eul(ans)} 구했다.",
           "partial": "차의 부호가 틀렸으면 1점."
         }
       ],

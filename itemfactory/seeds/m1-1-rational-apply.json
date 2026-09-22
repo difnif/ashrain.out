@@ -370,7 +370,7 @@
       "sol1": "수직선에서 두 점 사이의 거리는 오른쪽 수(큰 수)에서 왼쪽 수(작은 수)를 뺀 값이다. 음수를 뺄 때는 부호에 주의한다.",
       "sol2": [
         "두 수 중 큰 수는 {big}, 작은 수는 {small}",
-        "거리 = (큰 수) − (작은 수) = {big} − ({small}) = {ans}"
+        "거리 = (큰 수) − (작은 수) = {big} − {pn(small)} = {ans}"
       ],
       "sol2_fig": [
         {
@@ -382,10 +382,10 @@
                 "hint": "수직선에서 오른쪽이 큰 수"
               },
               {
-                "text": "{big} − ({small}) = {ans}",
+                "text": "{big} − {pn(small)} = {ans}",
                 "marks": [
                   {
-                    "on": "({small})",
+                    "on": "{pn(small)}",
                     "note": "음수를 빼면 더하는 것"
                   }
                 ]
@@ -450,7 +450,7 @@
           }
         ]
       ],
-      "model_answer": "두 수 중 큰 수는 {big}, 작은 수는 {small}이므로 두 점 사이의 거리는 {big} − ({small}) = {ans}이다.",
+      "model_answer": "두 수 중 큰 수는 {big}, 작은 수는 {small}이므로 두 점 사이의 거리는 {big} − {pn(small)} = {ans}이다.",
       "rubric": [
         {
           "element": "큰 수·작은 수 정하기",
@@ -461,7 +461,7 @@
         {
           "element": "거리 구하기",
           "points": 3,
-          "criterion": "{big} − ({small}) = {ans}{ro(ans)} 계산했다.",
+          "criterion": "{big} − {pn(small)} = {ans}{ro(ans)} 계산했다.",
           "partial": "음수를 빼는 부호 처리를 틀렸으면 1점."
         }
       ],
@@ -581,7 +581,7 @@
       "sol2": [
         "틀린 문제 수: {n} − {w} = {l} (문제)",
         "얻은 점수: (+{p}) × {w} = {gain}, 잃은 점수: (−{q}) × {l} = {loss}",
-        "최종 점수: {gain} + ({loss}) = {ans} (점)"
+        "최종 점수: {gain} + {pn(loss)} = {ans} (점)"
       ],
       "sol2_fig": [
         {
@@ -597,7 +597,7 @@
                 "hint": "잃은 점수는 음수"
               },
               {
-                "text": "{gain} + ({loss}) = {ans}",
+                "text": "{gain} + {pn(loss)} = {ans}",
                 "marks": [
                   {
                     "on": "{ans}",
@@ -660,7 +660,7 @@
           }
         ]
       ],
-      "model_answer": "틀린 문제는 {n} − {w} = {l}문제이다. 얻은 점수는 (+{p}) × {w} = {gain}(점), 잃은 점수는 (−{q}) × {l} = {loss}(점)이므로 최종 점수는 {gain} + ({loss}) = {ans}(점)이다.",
+      "model_answer": "틀린 문제는 {n} − {w} = {l}문제이다. 얻은 점수는 (+{p}) × {w} = {gain}(점), 잃은 점수는 (−{q}) × {l} = {loss}(점)이므로 최종 점수는 {gain} + {pn(loss)} = {ans}(점)이다.",
       "rubric": [
         {
           "element": "식 세우기",
@@ -671,7 +671,7 @@
         {
           "element": "해 구하기",
           "points": 3,
-          "criterion": "{gain} + ({loss}) = {ans}{eul(ans)} 계산했다.",
+          "criterion": "{gain} + {pn(loss)} = {ans}{eul(ans)} 계산했다.",
           "partial": "부호 실수면 1점."
         },
         {
