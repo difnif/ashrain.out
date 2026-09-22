@@ -22,6 +22,7 @@ from genkit.expr import _has_jong   # noqa: E402
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "out/gen")
 prob = Counter()
 ex = defaultdict(list)
+skip_tpl = Counter()          # 독립 검산 규칙이 없는 틀 — 사람이 답을 눈으로 봐야 하는 것들
 
 
 def bad(code, it, msg=""):
@@ -50,6 +51,29 @@ def ans_val(it):
         return Fraction(a), "num"
     except ValueError:
         return None, "?"
+
+
+def _numlist(q):
+    """'다음 수 -0.9,  8,  [[-frac(28,7)]],  0 중에서 …' 의 수 목록 → Fraction 리스트 (마커 분수 포함)."""
+    m = re.search(r"다음 수 (.+?) 중에서", q)
+    if not m:
+        return None
+    vals = []
+    for t in re.finditer(r"\[\[(-?)frac\((\d+),\s*(\d+)\)\]\]|(-?\d+(?:\.\d+)?)", m.group(1)):
+        if t.group(4) is not None:
+            vals.append(Fraction(t.group(4)))
+        else:
+            v = Fraction(int(t.group(2)), int(t.group(3)))
+            vals.append(-v if t.group(1) else v)
+    return vals
+
+
+def _figargs(it, fn):
+    """자료가 그림에 있는 틀(줄기와 잎·히스토그램·그래프)의 독립 검산용 — figure 에서 fn 의 인자를 꺼낸다."""
+    for g in it.get("figure") or []:
+        if g.get("fn") == fn:
+            return g.get("args") or {}
+    return None
 
 
 # ── ① 독립 검산 — 발문에서 수를 읽어 다시 푼다 ─────────────────────────────
@@ -127,10 +151,26 @@ def recompute(it):
             if m:
                 vals.append(Fraction(m.group(1)))
         return max(vals) - min(vals) if len(vals) == 5 else None
-    if tid.startswith("m1-1-graph-t2") or tid.startswith("m1-1-order-t1") or tid.startswith("m1-1-sign-number-t3") or tid.startswith("m1-1-int-rational-t1"):
-        return "skip"                                             # 답이 그림·목록·부등식인 유형 — 문면만으로 수치 재계산 불가
+    if tid.startswith("m1-1-sign-number-t3") or tid.startswith("m1-1-int-rational-t1"):
+        vals = _numlist(q)                                        # 목록을 다시 읽어 조건에 맞는 것을 센다
+        if vals is None:
+            return None
+        if "양수는" in q: return Fraction(sum(1 for v in vals if v > 0))
+        if "음수는" in q: return Fraction(sum(1 for v in vals if v < 0))
+        if "자연수는" in q: return Fraction(sum(1 for v in vals if v > 0 and v.denominator == 1))
+        if "음의 정수는" in q: return Fraction(sum(1 for v in vals if v < 0 and v.denominator == 1))
+        if "정수가 아닌 유리수는" in q: return Fraction(sum(1 for v in vals if v.denominator != 1))
+        if "정수는" in q: return Fraction(sum(1 for v in vals if v.denominator == 1))
+        return None
+    if tid.startswith("m1-1-graph-t2"):
+        a = _figargs(it, "coordplane") or {}                      # 거리–시간 그래프에서 y 가 같은 두 점 사이가 멈춘 시간
+        pts = ((a.get("lines") or [{}])[0] or {}).get("points") or []
+        flat = [pts[i + 1][0] - pts[i][0] for i in range(len(pts) - 1) if pts[i + 1][1] == pts[i][1]]
+        return Fraction(flat[0]) if len(flat) == 1 else None
+    if tid.startswith("m1-1-order-t1"):
+        return "done"                                             # 문자열 답 — check_m1str
     # ── 09-21 중1-2·중3-1 빈 개념 (mkseed_m1_gaps2.py)
-    if tid.startswith("m1-2-congruent-t1"):
+    if tid.startswith(("m1-2-congruent-t1", "m1-2-congruent-t4", "m1-2-congruent-t5")):
         m = re.search(r"∠[A-F] = \[\[deg\((\d+)\)\]\], ∠[A-F] = \[\[deg\((\d+)\)\]\]", q); return Fraction(180 - int(m.group(1)) - int(m.group(2)))
     if tid.startswith("m1-2-congruent-t2"):
         m = re.search(r"= (\d+) cm, [A-F]{2} = (\d+) cm, [A-F]{2} = (\d+) cm", q); return Fraction(sum(int(x) for x in m.groups()))
@@ -156,8 +196,44 @@ def recompute(it):
         c, b = p1 * q1, -(p2 + q2)
         roots = [x for x in range(-30, 31) if x * x + b * x + c == 0]
         return Fraction(max(roots)) if len(roots) == 2 else None
-    if tid.startswith("m1-2-stemleaf-") or tid.startswith("m1-2-histogram-t1") or tid.startswith("m1-2-histogram-t2"):
-        return "skip"                                             # 자료가 그림에 있다
+    if tid.startswith("m1-2-stemleaf-"):
+        a = _figargs(it, "stemleaf") or {}                        # 줄기·잎을 다시 읽어 자료값을 복원해 센다
+        stems, leaves = a.get("stems") or [], a.get("leaves") or []
+        vals = [10 * st + lf for st, ls in zip(stems, leaves) for lf in ls]
+        if not vals:
+            return None
+        if tid.startswith("m1-2-stemleaf-t1"):
+            m = re.search(r"(\d+)\s*(?:회|분|점|kg|cm)\s*이상인", q)
+            return Fraction(sum(1 for v in vals if v >= int(m.group(1)))) if m else None
+        if tid.startswith("m1-2-stemleaf-t2"):
+            m = re.search(r"(\d+)번째로 높은", q)
+            if not m:
+                return None
+            k, ds = int(m.group(1)), sorted(vals, reverse=True)
+            return Fraction(ds[k - 1]) if 1 <= k <= len(ds) else None
+        if tid.startswith("m1-2-stemleaf-t3"):
+            m = re.search(r"줄기는 (\d+)이다", q)
+            if not m or int(m.group(1)) not in stems:
+                return None
+            return Fraction(len(leaves[stems.index(int(m.group(1)))]))
+        return None
+    if tid.startswith("m1-2-histogram-t1") or tid.startswith("m1-2-histogram-t2"):
+        a = _figargs(it, "hist") or {}                            # 계급·도수를 다시 읽는다
+        bins, counts = a.get("bins") or [], a.get("counts") or []
+        rng = [[Fraction(x) for x in str(b).split("~")] for b in bins]
+        if not counts or len(rng) != len(counts) or any(len(r) != 2 for r in rng):
+            return None
+        if tid.startswith("m1-2-histogram-t1"):
+            top = max(counts)
+            if counts.count(top) > 1:
+                return None                                       # 최대 도수가 둘이면 계급값이 정해지지 않는다
+            lo, hi = rng[counts.index(top)]
+            return (lo + hi) / 2
+        m = re.search(r"(\d+)\s*(?:kg|cm|초|점|분)\s*이상인", q)
+        if not m:
+            return None
+        x = Fraction(m.group(1))
+        return Fraction(sum(c for (lo, _hi), c in zip(rng, counts) if lo >= x))
     if tid.startswith("m1-1-numline-mid-t1") or tid.startswith("m1-1-numline-mid-t3"):
         a, b = n[0], n[1]; return (a + b) / 2
     if tid.startswith("m1-1-numline-mid-t2"):
@@ -3102,6 +3178,22 @@ def _hx(tid, q):
     return None
 
 
+def check_m1str(it):
+    """중1 문자열 답 틀 — 부등호로 나타내기(m1-1-order-t1). True/False, 해당 없으면 None."""
+    tid, q, a = it["template_id"], it["question"], it["answer"]
+    if not tid.startswith("m1-1-order-t1"):
+        return None
+    m = re.match(r"두 수 (-?\d+(?:\.\d+)?), (-?\d+(?:\.\d+)?)의 대소 관계를 부등호 (<|>)[를을]", q)
+    ma = re.fullmatch(r"(-?\d+(?:\.\d+)?) (<|>) (-?\d+(?:\.\d+)?)", a.strip())
+    if not m or not ma:
+        return False
+    x, y, sign = Fraction(m.group(1)), Fraction(m.group(2)), m.group(3)
+    lo, s2, hi = Fraction(ma.group(1)), ma.group(2), Fraction(ma.group(3))
+    if s2 != sign or {lo, hi} != {x, y}:                          # 주어진 두 수 그대로, 문제가 정한 부등호로
+        return False
+    return lo < hi if s2 == "<" else lo > hi
+
+
 def check_hs(it):
     """고등부 문자열 답(범위) 틀. True/False, 해당 없으면 None."""
     tid, q, a = it["template_id"], it["question"], it["answer"]
@@ -3532,6 +3624,8 @@ for f in sorted(OUT.glob("*_pool.json")):
             pos = check_hs(it)
         if pos is None:
             pos = check_letters(it)
+        if pos is None:
+            pos = check_m1str(it)
         if pos is not None:
             if not pos:
                 bad("R1-독립 검산 불일치", it, f"문자열 답 재계산 ≠ 답 {it['answer']}")
@@ -3543,6 +3637,7 @@ for f in sorted(OUT.glob("*_pool.json")):
             pass
         elif got == "skip":
             prob["(검산 규칙 없음)"] += 1
+            skip_tpl[it["template_id"]] += 1
         elif got is None or av is None:
             bad("R0-검산 불가", it, f"answer={it['answer']}")
         elif Fraction(got) != av:
@@ -3578,5 +3673,7 @@ for code, c in sorted(prob.items(), key=lambda kv: -kv[1]):
     for e in ex[code][1:3]:
         print(f"  {'':<28}        {e}")
 hard = [k for k in prob if k[0] in "RF" and not k.startswith("(")]
-print(f"\n  독립 검산 규칙 없는 문항 {prob['(검산 규칙 없음)']}건")
+print(f"\n  독립 검산 규칙 없는 문항 {prob['(검산 규칙 없음)']}건" + (f" · 틀 {len(skip_tpl)}개" if skip_tpl else ""))
+for t, c in skip_tpl.most_common():
+    print(f"      {t:<30} {c:>4}건")
 sys.exit(1 if hard else 0)
