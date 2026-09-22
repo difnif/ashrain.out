@@ -598,12 +598,13 @@ def qb_t1():
         question="두 근이 {p}, {q}이고 x²의 계수가 {a}인 이차방정식을 {a}x² + bx + c = 0 꼴로 나타낼 때, {QT}의 값을 구하시오." if False else None,   # a=1 일 때 "1x²" 을 피하려 qb_t1_fix
         answer="{ans}", answer_alt=[],
         sol1="두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − {pn(p)}) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
-        sol2=["{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0", "전개하면 {co(a)}(x² − {pn(s)}x + {pn(m)}) = 0, 즉 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
+        # 전개 줄에 x² − (합)x + (곱) 을 그대로 쓰면 합·곱이 ±1 일 때 '1x'·'× 1' 이 나온다 → 합·곱은 말로, 식은 정리된 꼴로
+        sol2=["{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0", "두 근의 합은 {s}, 두 근의 곱은 {m}이므로 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0", "따라서 b = {b}, c = {c}이고 {QT} = {ans}"],
         sol2_fig=steps([{"text": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0", "hint": "근 p → 인수 (x − p)", "marks": [{"on": "{pn(p)}", "note": "음수 근이면 부호가 바뀐다"}]},
                         {"text": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0", "hint": "a 를 모든 항에 곱한다"},
                         {"text": "b = {b}, c = {c} → {QT} = {ans}"}]),
         sol2_anim=[[reveal(0), hl("hint:0", "mark:0-0")], [reveal(1), hl("hint:1")], [reveal(2)]],
-        sol3="x = {p}{eul(p)} 대입하면 {pn(p)}² {sgn(b)} × {pn(p)} {sgn(c)} = 0이 성립하므로 방정식이 맞다. 답은 {ans}이다.",   # a≥2 는 qb_t1_split 에서 'a ×' 를 붙인다
+        sol3="x = {p}{eul(p)} 대입하면 인수 (x − {pn(p)})가 0이 되어 좌변 전체가 0이고, x = {q}{eul(q)} 대입해도 마찬가지다. 답은 {ans}이다.",
         sol3_fig=steps(["x = {p} 대입 → 0  ✓", "x = {q} 대입 → 0  ✓"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
         model_answer="두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})(x − {pn(q)}) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
@@ -626,10 +627,6 @@ def qb_t1_split(t):
         u["params"] = [p for p in t["params"] if p["name"] != "a"] + [{"name": "a", "values": {"in": avals}}]
         u["question"] = q
         u["title"] = t["title"] + (" (x² 의 계수 1)" if no == 1 else " (x² 의 계수 2·3)")
-        if no == 4:   # 대입 검산: 2 × (-4)² … (양수 근이면 2 × 4² — 괄호 없이)
-            u["sol3"] = t["sol3"].replace("대입하면 {pn(p)}²", "대입하면 {a} × {pn(p)}²")
-        else:         # 계수 1 이면 전개식에 괄호가 필요 없다: (x² − 3x + 2) = 0 → x² − 3x + 2 = 0
-            u["sol2"] = [x.replace("{co(a)}(x² − {pn(s)}x + {pn(m)}) = 0", "x² − {pn(s)}x + {pn(m)} = 0") for x in t["sol2"]]
         out.append(u)
     return out
 
