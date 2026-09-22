@@ -4,6 +4,9 @@
 // v1.1 (09-21): ① 목록은 가벼운 열만 받고(해설·그림은 펼칠 때) 건수는 따로 센다 — 예전엔 select * + 정확한 건수 + 정렬을
 //   한 문장으로 해서 138k 행에서 DB 의 8초 제한에 걸렸다("canceling statement due to statement timeout").
 //   ② 문항·보기·정답·해설·그림을 학생이 보는 그대로(MathText·도형·괄호 규칙) 보여 준다. ③ 일괄 전환은 1,000건씩 나눠 한다.
+// v1.2 (09-22): 「틀별 보기」 — 검토는 틀 단위로 한다(같은 틀은 숫자만 다르다). 틀마다 개념·draft/live 수·표본 발문·이 틀이 재는 것을
+//   한 줄로 보여 주고 [문항 보기]·[draft → live]·[live → draft] 를 바로 누른다. 집계는 supabase/2026-09_template_stats.sql 의
+//   admin_template_stats() (없으면 안내만). 틀 필터도 이 목록에서 채운다(item_templates 표에는 시드 틀이 없다).
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
@@ -14,6 +17,9 @@ import { solutionLevels } from "../lib/items";
 import { bustStudyCache } from "../lib/studyCache";
 
 const PAGE = 50;
+const UNIT_ORDER = ["m1-1", "m1-2", "m2-1", "m2-2", "m3-1", "m3-2", "h1-1", "h1-2", "h2-1", "h2-2", "h3-1", "h3-2", "h3-3"];
+const unitRank = (u) => { const i = UNIT_ORDER.indexOf(u); return i < 0 ? 99 : i; };
+const tplNo = (id) => { const m = /-t(\d+)$/.exec(id || ""); return m ? Number(m[1]) : 0; };
 // 목록에 필요한 열만 — solution·figure(jsonb, 행당 수 KB)는 펼칠 때 따로 받는다
 const LIST_COLS = "id,test_type,unit_id,concept_ids,qtype,difficulty,question,choices,answer,answer_alt,tags,source,status,gen_meta,created_at,template_id,param_index,content_key,struct_key";
 const BULK = 1000;
@@ -75,6 +81,14 @@ export default function AdminItemReview() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
+  // 틀별 보기
+  const [view, setView] = useState("items");      // "items" | "tpls"
+  const [stats, setStats] = useState(null);       // admin_template_stats() 결과 (null = 아직)
+  const [statsErr, setStatsErr] = useState("");
+  const [tUnit, setTUnit] = useState("all");
+  const [tOnlyDraft, setTOnlyDraft] = useState(true);
+  const [tSearch, setTSearch] = useState("");
+
   useEffect(() => { (async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setMe("no"); return; }
@@ -85,17 +99,74 @@ export default function AdminItemReview() {
     setConcepts(cs || []);
   })(); }, []);
 
+  // 개념을 고르면 그 개념의 틀 목록(틀별 집계에서) — 집계가 없으면 item_templates 표(옛 틀)에서
   useEffect(() => { (async () => {
-    if (cid === "all") { setTpls([]); setTpl("all"); return; }
+    if (cid === "all") { setTpls([]); return; }
+    if (stats) { setTpls(stats.filter((r) => r.concept_id === cid).map((r) => ({ template_id: r.template_id, title: r.discriminates || "" }))); return; }
     const { data } = await supabase.from("item_templates")
       .select("template_id,title").eq("concept_id", cid).order("template_id");
-    setTpls(data || []); setTpl("all");
-  })(); }, [cid]);
+    setTpls(data || []);
+  })(); }, [cid, stats]);
+  useEffect(() => { if (tpl !== "all" && !tpls.some((t) => t.template_id === tpl) && cid !== "all" && stats) setTpl("all"); },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tpls]);
 
   const units = useMemo(
     () => [...new Set(concepts.map((c) => c.unit_id))], [concepts]);
   const conceptOpts = useMemo(
     () => concepts.filter((c) => unit === "all" || c.unit_id === unit), [concepts, unit]);
+  const conceptTitle = useMemo(() => Object.fromEntries(concepts.map((c) => [c.id, c.title])), [concepts]);
+  const conceptOrder = useMemo(() => Object.fromEntries(concepts.map((c) => [c.id, c.sort_order])), [concepts]);
+
+  async function loadStats() {
+    setStatsErr("");
+    const { data, error } = await supabase.rpc("admin_template_stats");
+    if (error) { setStatsErr(/PGRST202|does not exist|not find/i.test(error.message) ? "집계 함수가 아직 없습니다 — supabase/2026-09_template_stats.sql 을 적용하면 보입니다." : "집계 실패: " + error.message); setStats([]); return; }
+    const rows = (data || []).map((r) => ({ ...r, n_draft: Number(r.n_draft), n_live: Number(r.n_live) }));
+    rows.sort((a, b) => unitRank(a.unit_id) - unitRank(b.unit_id) || (conceptOrder[a.concept_id] ?? 999) - (conceptOrder[b.concept_id] ?? 999)
+      || String(a.concept_id).localeCompare(String(b.concept_id)) || tplNo(a.template_id) - tplNo(b.template_id) || a.template_id.localeCompare(b.template_id));
+    setStats(rows);
+  }
+  useEffect(() => { if (me === "admin" && view === "tpls" && stats === null) loadStats(); },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [me, view]);
+
+  const tplRows = useMemo(() => {
+    if (!stats) return [];
+    const q = tSearch.trim().toLowerCase();
+    return stats.filter((r) => (tUnit === "all" || r.unit_id === tUnit) && (!tOnlyDraft || r.n_draft > 0)
+      && (!q || [r.template_id, r.discriminates, r.sample_q, conceptTitle[r.concept_id]].some((x) => String(x || "").toLowerCase().includes(q))));
+  }, [stats, tUnit, tOnlyDraft, tSearch, conceptTitle]);
+
+  // 틀별 보기 → 그 틀의 문항 목록으로
+  function showTemplate(r) {
+    setUnit(r.unit_id); setCid(r.concept_id); setTpl(r.template_id); setStatus("all"); setNeedsFix(false); setSearch(""); setSearchQ("");
+    setView("items");
+  }
+
+  // 틀 하나의 draft ↔ live — 1,000건씩
+  async function flipTemplate(r, from, to) {
+    const n = from === "draft" ? r.n_draft : r.n_live;
+    if (!n) return;
+    if (!window.confirm(`${r.template_id} 의 ${from} ${n}건을 ${to}로 전환할까요?`)) return;
+    setBusy(true);
+    let done = 0, lastFirst = null;
+    while (done < n) {
+      const { data, error } = await supabase.from("test_items").select("id").eq("template_id", r.template_id).eq("status", from).order("id").limit(BULK);
+      if (error) { setMsg(`전환 실패(${done}건까지 됨): ` + error.message); break; }
+      if (!data?.length) break;
+      if (data[0].id === lastFirst) { setMsg(`전환이 진행되지 않습니다(${done}건까지 됨) — 권한을 확인하세요`); break; }
+      lastFirst = data[0].id;
+      const { error: e2 } = await supabase.from("test_items").update({ status: to }).in("id", data.map((x) => x.id));
+      if (e2) { setMsg(`전환 실패(${done}건까지 됨): ` + e2.message); break; }
+      done += data.length;
+    }
+    setBusy(false);
+    if (done >= n) setMsg(`${r.template_id}: ${done}건 → ${to}`);
+    setStats((st) => (st || []).map((x) => (x.template_id !== r.template_id ? x
+      : { ...x, n_draft: x.n_draft + (to === "draft" ? done : -done), n_live: x.n_live + (to === "live" ? done : -done) })));
+    bustStudyCache();
+  }
 
   function applyFilters(q) {
     if (ttype !== "all") q = q.eq("test_type", ttype);
@@ -104,7 +175,7 @@ export default function AdminItemReview() {
     if (qtype !== "all") q = q.eq("qtype", qtype);
     if (cid !== "all") q = q.contains("concept_ids", [cid]);
     else if (unit !== "all") q = q.eq("unit_id", unit);
-    if (tpl !== "all") q = q.eq("gen_meta->>tpl", tpl);
+    if (tpl !== "all") q = q.eq("template_id", tpl);
     if (needsFix) q = q.contains("tags", ["needs_fix"]);
     if (searchQ) q = q.ilike("question", "%" + searchQ + "%");
     return q;
@@ -188,6 +259,7 @@ export default function AdminItemReview() {
     setBusy(false);
     if (done >= count) setMsg(`${done}건 → ${to} 완료`);
     bustStudyCache();
+    setStats(null);
     load(page, true);
   }
 
@@ -196,23 +268,91 @@ export default function AdminItemReview() {
 
   const pages = Math.max(1, Math.ceil(total / PAGE));
 
+  const tSum = tplRows.reduce((a, r) => ({ d: a.d + r.n_draft, l: a.l + r.n_live }), { d: 0, l: 0 });
+  const tUnits = stats ? [...new Set(stats.map((r) => r.unit_id))].sort((a, b) => unitRank(a) - unitRank(b)) : [];
+
+  if (view === "tpls") {
+    let lastCid = null;
+    return (
+      <div className="irv-wrap">
+        <style>{CSS}</style>
+        <div className="irv-head">
+          <h2>문항 검토 <span className="irv-sub">틀 {tplRows.length}개 · draft {tSum.d} / live {tSum.l}</span></h2>
+          <div className="irv-bulk">
+            <button className="irv-chip" onClick={() => setView("items")}>문항</button>
+            <button className="irv-chip on">틀별</button>
+          </div>
+        </div>
+        <div className="irv-filters">
+          <select value={tUnit} onChange={(e) => setTUnit(e.target.value)}>
+            <option value="all">학기 전체</option>
+            {tUnits.map((u) => <option key={u} value={u}>{unitLabel(u)}</option>)}
+          </select>
+          <button className={"irv-chip" + (tOnlyDraft ? " on" : "")} onClick={() => setTOnlyDraft(!tOnlyDraft)}>draft 있는 틀만</button>
+          <input className="irv-search" value={tSearch} placeholder="틀 · 개념 · 발문 검색" onChange={(e) => setTSearch(e.target.value)} />
+          <button className="irv-btn" disabled={busy} onClick={() => { setStats(null); loadStats(); }}>다시 세기</button>
+          {msg && <span className="irv-msg">{msg}</span>}
+        </div>
+        {stats === null && !statsErr && <p className="irv-empty">틀별로 세는 중…</p>}
+        {statsErr && <p className="irv-msg">{statsErr}</p>}
+        <div className="irv-tpls">
+          {tplRows.map((r) => {
+            const head = r.concept_id !== lastCid; lastCid = r.concept_id;
+            const cRows = head ? tplRows.filter((x) => x.concept_id === r.concept_id) : null;
+            return (
+              <div key={r.template_id}>
+                {head && (
+                  <div className="irv-cgroup">
+                    <span className="irv-cg-id">{unitLabel(r.unit_id)} · {String(r.concept_id).split("-").pop()}</span>
+                    <span className="irv-cg-title">{conceptTitle[r.concept_id] || r.concept_id}</span>
+                    <span className="irv-cg-n">틀 {cRows.length} · draft {cRows.reduce((a, x) => a + x.n_draft, 0)} / live {cRows.reduce((a, x) => a + x.n_live, 0)}</span>
+                  </div>
+                )}
+                <div className={"irv-tpl" + (r.n_draft ? " has-draft" : "")}>
+                  <div className="irv-tpl-row">
+                    <span className="irv-tag tpl">{r.template_id.replace(r.concept_id + "-", "").replace(/^(.+)-t(\d+)$/, "$1 · t$2")}</span>
+                    <span className="irv-d" style={{ background: D_COLOR[r.difficulty] || "#64748b" }}>{r.difficulty}</span>
+                    <span className="irv-tag">{r.qtype}</span>
+                    {r.geometry && <span className="irv-tag">기하</span>}
+                    {r.has_figure && <span className="irv-tag">그림</span>}
+                    <span className="irv-tpl-n"><b className={r.n_draft ? "st-draft" : ""}>draft {r.n_draft}</b> · live {r.n_live}</span>
+                  </div>
+                  <div className="irv-tpl-q"><MathText text={String(r.sample_q || "").replace(/\n/g, " ")} pre={false} /></div>
+                  {r.discriminates && <div className="irv-tpl-dis">재는 것: {r.discriminates}</div>}
+                  <div className="irv-tpl-act">
+                    <button className="irv-btn" onClick={() => showTemplate(r)}>문항 보기</button>
+                    {r.n_draft > 0 && <button className="irv-btn go" disabled={busy} onClick={() => flipTemplate(r, "draft", "live")}>draft → live ({r.n_draft})</button>}
+                    {r.n_live > 0 && <button className="irv-btn" disabled={busy} onClick={() => flipTemplate(r, "live", "draft")}>live → draft</button>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {stats && !tplRows.length && <p className="irv-empty">조건에 맞는 틀이 없습니다.</p>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="irv-wrap">
       <style>{CSS}</style>
       <div className="irv-head">
         <h2>문항 검토 <span className="irv-sub">{total}건 · draft {nDraft} / live {total - nDraft}</span></h2>
         <div className="irv-bulk">
+          <button className="irv-chip on">문항</button>
+          <button className="irv-chip" onClick={() => setView("tpls")}>틀별</button>
           <button className="irv-btn go" disabled={busy} onClick={() => bulkStatus("draft", "live")}>필터 전체 draft → live</button>
           <button className="irv-btn" disabled={busy} onClick={() => bulkStatus("live", "draft")}>live → draft</button>
         </div>
       </div>
 
       <div className="irv-filters">
-        <select value={unit} onChange={(e) => { setUnit(e.target.value); setCid("all"); }}>
+        <select value={unit} onChange={(e) => { setUnit(e.target.value); setCid("all"); setTpl("all"); }}>
           <option value="all">단원 전체</option>
           {units.map((u) => <option key={u} value={u}>{unitLabel(u)}</option>)}
         </select>
-        <select value={cid} onChange={(e) => setCid(e.target.value)}>
+        <select value={cid} onChange={(e) => { setCid(e.target.value); setTpl("all"); }}>
           <option value="all">개념 전체</option>
           {conceptOpts.map((c) => <option key={c.id} value={c.id}>{c.id.split("-").pop()} {c.title}</option>)}
         </select>
@@ -220,12 +360,14 @@ export default function AdminItemReview() {
           {["concept_set", "unit", "calc", "rain", "mock", "out", "all"].map((t) =>
             <option key={t} value={t}>{t === "all" ? "종류 전체" : t}</option>)}
         </select>
-        {tpls.length > 0 && (
+        {(tpls.length > 0 || tpl !== "all") && (
           <select value={tpl} onChange={(e) => setTpl(e.target.value)}>
             <option value="all">틀 전체</option>
-            {tpls.map((t) => <option key={t.template_id} value={t.template_id}>{t.template_id} {t.title}</option>)}
+            {tpls.map((t) => <option key={t.template_id} value={t.template_id}>{t.template_id}{t.title ? " — " + String(t.title).slice(0, 40) : ""}</option>)}
+            {tpl !== "all" && !tpls.some((t) => t.template_id === tpl) && <option value={tpl}>{tpl}</option>}
           </select>
         )}
+        {tpl !== "all" && <button className="irv-chip on" onClick={() => setTpl("all")}>틀 {tpl} ×</button>}
       </div>
 
       <div className="irv-filters">
@@ -319,6 +461,19 @@ const CSS = `
 .irv-rubric .irv-partial{display:block;color:#64748b;font-size:11.5px;margin-top:2px}
 .irv-pits{margin:6px 0 0 18px;padding:0;font-size:12.5px;color:#475569}
 .irv-pits .irv-eff{color:#b45309}
+.irv-tpls{margin-top:8px}
+.irv-cgroup{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:16px 0 6px;padding-bottom:4px;border-bottom:2px solid #0f172a}
+.irv-cg-id{font-size:12px;color:#64748b;font-variant-numeric:tabular-nums}
+.irv-cg-title{font-weight:800;font-size:15px}
+.irv-cg-n{font-size:12px;color:#64748b;margin-left:auto}
+.irv-tpl{border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;margin:6px 0;background:#fff}
+.irv-tpl.has-draft{border-color:#fbbf24;background:#fffdf5}
+.irv-tpl-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.irv-tpl-n{margin-left:auto;font-size:12.5px;color:#475569}
+.irv-tpl-n .st-draft{color:#b45309}
+.irv-tpl-q{font-size:13.5px;line-height:1.5;margin:6px 0 2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.irv-tpl-dis{font-size:12px;color:#64748b;line-height:1.45;margin:2px 0 4px}
+.irv-tpl-act{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .irv-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
 .irv-head h2{margin:6px 0;font-size:20px}
 .irv-sub{font-size:13px;color:#64748b;font-weight:400;margin-left:8px}

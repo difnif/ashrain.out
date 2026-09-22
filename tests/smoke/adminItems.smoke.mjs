@@ -32,7 +32,22 @@ for (let i = 0; i < 2305; i++) ITEMS.push({
   template_id: "m3-1-quad-build-t1", param_index: i, content_key: `ck${i}`, struct_key: "sk", solution: SOL,
   figure: i === 0 ? [{ fn: "steps", args: { lines: [{ text: "(x − (-3))(x − (-1)) = 0" }] } }] : null,
 });
-const CONCEPTS = [{ id: "m3-1-20", unit_id: "m3-1", title: "이차방정식 구하기", sort_order: 20 }];
+for (let i = 0; i < 7; i++) ITEMS.push({                            // 다른 개념·틀: live 만 7건
+  id: `00000000-0000-4000-8000-1${String(i).padStart(11, "0")}`, test_type: "concept_set", unit_id: "m1-1", concept_ids: ["m1-1-02"], qtype: "short", difficulty: 2,
+  question: `거듭제곱 문제 ${i}: 2³의 값은?`, choices: null, answer: "8", answer_alt: [], tags: [], source: "seed", status: "live",
+  gen_meta: { tpl: "m1-1-power-t1", idx: i }, created_at: "2026-09-21T14:00:00Z", template_id: "m1-1-power-t1", param_index: i, content_key: `pk${i}`, struct_key: "sk2",
+  solution: SOL, figure: null, labels: { L43_discriminates: "거듭제곱을 곱셈으로 풀어 계산하는가", geometry: false },
+});
+ITEMS.forEach((it) => { if (!it.labels) it.labels = { L43_discriminates: "근이 p 이면 인수가 (x − p) 임을 아는가", geometry: false }; });
+const CONCEPTS = [{ id: "m3-1-20", unit_id: "m3-1", title: "이차방정식 구하기", sort_order: 20 }, { id: "m1-1-02", unit_id: "m1-1", title: "거듭제곱", sort_order: 2 }];
+function templateStats() {                                            // admin_template_stats() 모의
+  const by = new Map();
+  for (const it of ITEMS) {
+    if (!by.has(it.template_id)) by.set(it.template_id, { template_id: it.template_id, seed: it.template_id.replace(/-t\d+$/, ""), n_draft: 0, n_live: 0, sample_id: it.id, unit_id: it.unit_id, concept_id: it.concept_ids[0], qtype: it.qtype, difficulty: it.difficulty, made_at: it.created_at, sample_q: it.question, discriminates: it.labels.L43_discriminates, geometry: false, has_figure: !!it.figure });
+    const r = by.get(it.template_id); if (it.status === "draft") r.n_draft++; else r.n_live++;
+  }
+  return [...by.values()];
+}
 const log = [];                                                       // 요청 기록
 
 function applyFilters(u) {
@@ -89,6 +104,7 @@ async function mockSupabase(page) {
     if (u.pathname.startsWith("/rest/v1/")) {
       const table = u.pathname.replace("/rest/v1/", "").split("/")[0];
       const wantObj = accept.includes("pgrst.object");
+      if (u.pathname === "/rest/v1/rpc/admin_template_stats") { log.push({ m: "RPC", q: "admin_template_stats" }); return json(templateStats()); }
       if (table === "test_items") {
         log.push({ m: req.method(), q: u.search });
         const list = applyFilters(u);
@@ -144,7 +160,7 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
     await page.locator(".irv-item").first().waitFor({ timeout: 20000 });
     await page.waitForFunction(() => /\d+건 · draft \d+/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
     let t = await text();
-    ok(/2305건 · draft 2300 \/ live 5/.test(t), "A1 머리말 건수 — 전체 2305 · draft 2300 · live 5");
+    ok(/2312건 · draft 2300 \/ live 12/.test(t), "A1 머리말 건수 — 전체 2312 · draft 2300 · live 12");
     ok(!/불러오기 실패/.test(t), "A2 실패 문구 없음");
     const listReq = log.find((l) => l.m === "GET" && /select=/.test(l.q) && /offset=/.test(l.q));
     ok(listReq && !/solution|figure/.test(decodeURIComponent(listReq.q)) && /limit=50/.test(listReq.q), "A3 목록 조회는 해설·그림 열 없이 50건씩");
@@ -167,18 +183,54 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
     ok(/정답: 4/.test(dt), "B6 정답 표시");
     await shot("admin-items-open");
 
-    // C. 일괄 전환 — 1,000건씩 세 번, 완료 문구
+    // D. 틀별 보기 — 집계 함수로 틀 목록, draft 있는 틀만, 문항 보기 → 틀 필터, 틀 하나 전환
+    await page.locator("button.irv-chip", { hasText: "틀별" }).click();
+    await page.locator(".irv-tpl").first().waitFor({ timeout: 15000 });
+    ok(log.some((l) => l.m === "RPC"), "D1 틀별 집계는 admin_template_stats RPC 로");
+    let tt = await text();
+    ok(/틀 1개 · draft 2300 \/ live 5/.test(tt), "D2 머리말 — draft 있는 틀 1개 (live 만 있는 틀은 숨김)");
+    ok(/이차방정식 구하기/.test(tt) && /재는 것: 근이 p 이면/.test(tt) && /draft 2300 · live 5/.test(tt), "D3 개념 제목 · 재는 것 · 건수");
+    await page.locator("button.irv-chip", { hasText: "draft 있는 틀만" }).click();
+    ok((await page.locator(".irv-tpl").count()) === 2 && /거듭제곱/.test(await text()), "D4 토글을 끄면 live 만 있는 틀도 보인다");
+    await page.locator("button.irv-chip", { hasText: "draft 있는 틀만" }).click();
+    const before3 = log.length;
+    await page.locator(".irv-tpl button.irv-btn", { hasText: "문항 보기" }).first().click();
+    await page.locator(".irv-item").first().waitFor({ timeout: 15000 });
+    await page.waitForFunction(() => /\d+건 · draft/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
+    const filt = log.slice(before3).find((l) => l.m === "GET" && /offset=/.test(l.q));
+    ok(filt && /template_id=eq\.m3-1-quad-build-t1/.test(filt.q) && /concept_ids=cs\./.test(filt.q), "D5 문항 보기 → 개념·틀 필터로 목록 조회");
+    ok(/틀 m3-1-quad-build-t1 ×/.test(await text()), "D6 틀 필터 칩 표시");
+    await page.locator("button.irv-chip", { hasText: "틀별" }).click();
+    await page.locator(".irv-tpl").first().waitFor({ timeout: 15000 });
+    ok(!log.slice(before3).some((l) => l.m === "RPC"), "D7 다시 열어도 집계는 다시 세지 않는다(캐시)");
+    // 틀 하나 전환은 소량으로 시험: live 7건짜리 틀을 draft 로
+    await page.locator("button.irv-chip", { hasText: "draft 있는 틀만" }).click();
+    const before4 = log.length;
+    await page.locator(".irv-tpl", { hasText: "거듭제곱" }).locator("button.irv-btn", { hasText: "live → draft" }).click();
+    await page.waitForFunction(() => /m1-1-power-t1: 7건 → draft/.test(document.querySelector(".irv-msg")?.textContent || ""), null, { timeout: 15000 });
+    const tp = log.slice(before4).filter((l) => l.m === "PATCH");
+    ok(tp.length === 1 && /id=in\./.test(tp[0].q) && ITEMS.filter((it) => it.template_id === "m1-1-power-t1" && it.status === "draft").length === 7, "D8 틀 하나 전환 — id 목록 PATCH 한 번, 7건 draft");
+    ok(/draft 7 · live 0/.test(await text()), "D9 틀 카드 건수 즉시 갱신");
+    await shot("admin-items-tpls");
+    await page.locator("button.irv-chip", { hasText: "문항" }).first().click();
+    await page.locator(".irv-item").first().waitFor({ timeout: 15000 });
+    await page.locator("button.irv-chip.on", { hasText: "틀 m3-1-quad-build-t1 ×" }).click();
+    await page.locator("select").nth(1).selectOption("all");
+    await page.locator("select").nth(0).selectOption("all");
+    await page.waitForFunction(() => /2312건 · draft 2307/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
+
+    // C. 일괄 전환 — 1,000건씩 세 번, 완료 문구 (draft 2307 = 2300 + 7)
     const before2 = log.length;
     await page.locator("button.irv-btn.go", { hasText: "필터 전체 draft → live" }).click();
     await page.waitForFunction(() => /→ live 완료/.test(document.querySelector(".irv-msg")?.textContent || ""), null, { timeout: 30000 });
     const patches = log.slice(before2).filter((l) => l.m === "PATCH");
-    ok(patches.length === 3, `C1 PATCH 세 번(1,000·1,000·300) — ${patches.length}번`);
+    ok(patches.length === 3, `C1 PATCH 세 번(1,000·1,000·307) — ${patches.length}번`);
     ok(patches.every((l) => /id=in\./.test(l.q)), "C2 전환은 id 목록으로");
-    ok(ITEMS.filter((it) => it.status === "live").length === 2305, "C3 모의 DB 에서 2300건이 live 로");
+    ok(ITEMS.filter((it) => it.status === "live").length === 2312, "C3 모의 DB 에서 2307건이 live 로");
     t = await text();
-    ok(/2300건 → live 완료/.test(t), "C4 완료 문구");
-    await page.waitForFunction(() => /draft 0 \/ live 2305/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
-    ok(/2305건 · draft 0 \/ live 2305/.test(await text()), "C5 머리말 건수 갱신");
+    ok(/2307건 → live 완료/.test(t), "C4 완료 문구");
+    await page.waitForFunction(() => /draft 0 \/ live 2312/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
+    ok(/2312건 · draft 0 \/ live 2312/.test(await text()), "C5 머리말 건수 갱신");
 
     ok(errors.length === 0, "Z 콘솔·페이지 오류 없음" + (errors.length ? ` — ${errors.slice(0, 3).join(" | ")}` : ""));
   } catch (e) {
