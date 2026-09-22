@@ -1,0 +1,282 @@
+From d4d5bbe8ae8ce1666857a0be22e0664352e58c51 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 22 Sep 2026 23:31:02 +0000
+Subject: [PATCH] =?UTF-8?q?=EB=AC=B8=ED=95=AD=20=EA=B2=80=ED=86=A0:=20?=
+ =?UTF-8?q?=EB=84=93=EC=9D=80=20=ED=95=84=ED=84=B0=20=EC=8B=9C=EA=B0=84=20?=
+ =?UTF-8?q?=EC=B4=88=EA=B3=BC=20=ED=95=B4=EA=B2=B0=20+=20=E3=80=8C?=
+ =?UTF-8?q?=ED=8B=80=EB=B3=84=E3=80=8D=2050=EA=B0=9C=EC=94=A9=20=EC=AA=BD?=
+ =?UTF-8?q?=20=EB=82=98=EB=88=84=EA=B8=B0=20(AdminItemReview=20v1.3)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+「틀별」 탭은 잘 떴지만 머리말에 "canceling statement due to statement timeout" 이 남아 있었다.
+그 문구는 틀 목록이 아니라 **문항 탭이 화면에 뜰 때 도는 기본 질의**가 실패한 것이고, 원인은 행 수가 아니라 RLS 였다.
+
+원인 (EXPLAIN 으로 확인)
+  · test_items 의 관리자 정책이 `is_admin() OR status = 'live'` 라, 훑는 행마다 함수를 부르고 색인을 못 쓴다.
+    `count(*) where test_type='concept_set'` 이 138k 행 전체 훑기 → **6.2초**. 목록·전체 건수·draft 건수 셋이 동시에 돌아 8초 제한을 넘겼다.
+  · 정렬도 created_at 역순이라 색인이 없어 전체 정렬이 필요했다.
+
+고친 것
+  · 목록 정렬 created_at 역순 → **template_id · param_index** — ti_template 색인 + 증분 정렬로 **116 ms**(같은 조건 EXPLAIN).
+    검토는 틀 단위로 하므로 보기에도 이쪽이 맞다.
+  · 총 건수 질의를 없앴다 — PAGE+1 행을 받아 다음 쪽이 있는지로 쪽을 넘긴다.
+  · 머리말 건수: 좁은 필터(개념·틀·검색)면 예전처럼 정확히 세고(색인이 걸려 빠르다),
+    넓은 필터면 틀별 집계(admin_template_stats, 캐시됨)에서 가져온다 — 학기 필터 반영, 정확하다.
+  · 「틀별」 50개씩 쪽 나누기 (Park, 09-22) — 190개를 한 번에 그리지 않는다. 필터가 바뀌면 첫 쪽으로.
+  · wideCount 계산은 조기 반환 뒤에 두면 Hook 규칙 위반이라 위로 올렸다(빈 화면 원인).
+
+tests/smoke/adminItems.smoke.mjs 29건 (A4a 틀 순서 정렬 · A4b 넓은 필터에서 건수 질의 없음 · D6a 좁은 필터는 정확히 셈 추가).
+DB 변경 없음 — 새 색인도 마이그레이션도 필요 없다.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01H3ULNhSa28Vfc3rcfmFQqV
+---
+ src/components/AdminItemReview.jsx | 80 ++++++++++++++++++++++--------
+ tests/smoke/adminItems.smoke.mjs   | 20 ++++----
+ 2 files changed, 70 insertions(+), 30 deletions(-)
+
+diff --git a/src/components/AdminItemReview.jsx b/src/components/AdminItemReview.jsx
+index b94290a..e11e69e 100644
+--- a/src/components/AdminItemReview.jsx
++++ b/src/components/AdminItemReview.jsx
+@@ -7,6 +7,12 @@
+ // v1.2 (09-22): 「틀별 보기」 — 검토는 틀 단위로 한다(같은 틀은 숫자만 다르다). 틀마다 개념·draft/live 수·표본 발문·이 틀이 재는 것을
+ //   한 줄로 보여 주고 [문항 보기]·[draft → live]·[live → draft] 를 바로 누른다. 집계는 supabase/2026-09_template_stats.sql 의
+ //   admin_template_stats() (없으면 안내만). 틀 필터도 이 목록에서 채운다(item_templates 표에는 시드 틀이 없다).
++// v1.3 (09-22): 넓은 필터에서 또 시간 초과가 나던 것 — 원인은 행 수가 아니라 **RLS**. 관리자 정책이 (is_admin() OR status='live') 라
++//   훑는 행마다 함수를 부르며 전체 훑기가 되어, 138k 행 세기가 6초+ 였다(EXPLAIN 확인). 그래서
++//   ① 목록 정렬을 created_at 역순 → template_id·param_index 로 (ti_template 색인 + 증분 정렬 → 116 ms, 검토 순서로도 이쪽이 낫다)
++//   ② 넓은 필터에서는 건수를 세지 않고 틀별 집계(admin_template_stats)에서 가져온다 — 정확하고 캐시된다
++//   ③ 쪽 나누기는 총 건수 대신 PAGE+1 행을 받아 다음 쪽 유무로 (총 건수 질의 자체를 없앴다)
++//   ④ 「틀별」도 50개씩 쪽 나누기 (Park, 09-22)
+ 
+ import { useEffect, useMemo, useState } from "react";
+ import { supabase } from "../supabaseClient";
+@@ -74,8 +80,9 @@ export default function AdminItemReview() {
+ 
+   // 목록
+   const [rows, setRows] = useState([]);
+-  const [total, setTotal] = useState(0);
+-  const [nDraft, setNDraft] = useState(0);
++  const [total, setTotal] = useState(null);      // 좁은 필터에서만 정확히 센다 (null = 세지 않음)
++  const [nDraft, setNDraft] = useState(null);
++  const [hasMore, setHasMore] = useState(false);
+   const [page, setPage] = useState(0);
+   const [open, setOpen] = useState(null);
+   const [busy, setBusy] = useState(false);
+@@ -88,6 +95,7 @@ export default function AdminItemReview() {
+   const [tUnit, setTUnit] = useState("all");
+   const [tOnlyDraft, setTOnlyDraft] = useState(true);
+   const [tSearch, setTSearch] = useState("");
++  const [tPage, setTPage] = useState(0);
+ 
+   useEffect(() => { (async () => {
+     const { data: { user } } = await supabase.auth.getUser();
+@@ -127,9 +135,19 @@ export default function AdminItemReview() {
+       || String(a.concept_id).localeCompare(String(b.concept_id)) || tplNo(a.template_id) - tplNo(b.template_id) || a.template_id.localeCompare(b.template_id));
+     setStats(rows);
+   }
+-  useEffect(() => { if (me === "admin" && view === "tpls" && stats === null) loadStats(); },
++  useEffect(() => { if (me === "admin" && stats === null) loadStats(); },   // 머리말 건수·틀 필터에도 쓰인다
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+-    [me, view]);
++    [me, view, stats]);
++
++  useEffect(() => { setTPage(0); }, [tUnit, tOnlyDraft, tSearch, stats]);
++
++  // 넓은 필터의 머리말 건수 — 틀별 집계에서 (학기 필터만 반영; 정확하고 캐시된다)
++  const wideCount = useMemo(() => {
++    if (!stats) return null;
++    const m = stats.filter((r) => (unit === "all" || r.unit_id === unit));
++    return { tpl: m.length, draft: m.reduce((a, r) => a + r.n_draft, 0), live: m.reduce((a, r) => a + r.n_live, 0) };
++  }, [stats, unit]);
++
+ 
+   const tplRows = useMemo(() => {
+     if (!stats) return [];
+@@ -181,18 +199,29 @@ export default function AdminItemReview() {
+     return q;
+   }
+ 
++  // 좁은 필터(개념·틀·검색)에서만 건수를 센다 — 넓은 필터의 count 는 RLS 때문에 전체 훑기가 되어 8초 제한에 걸린다
++  const narrow = cid !== "all" || tpl !== "all" || !!searchQ;
++
+   async function load(p = page, keepMsg = false) {
+     setBusy(true); if (!keepMsg) setMsg("");
+-    const [list, tot, dr] = await Promise.all([
++    const jobs = [
+       applyFilters(supabase.from("test_items").select(LIST_COLS))
+-        .order("created_at", { ascending: false }).order("id").range(p * PAGE, p * PAGE + PAGE - 1),
+-      applyFilters(supabase.from("test_items").select("id", { count: "exact", head: true })),
+-      applyFilters(supabase.from("test_items").select("id", { count: "exact", head: true })).eq("status", "draft"),
+-    ]);
++        .order("template_id").order("param_index").range(p * PAGE, p * PAGE + PAGE),   // PAGE+1 행 — 다음 쪽 유무
++    ];
++    if (narrow) {
++      jobs.push(applyFilters(supabase.from("test_items").select("id", { count: "exact", head: true })));
++      jobs.push(applyFilters(supabase.from("test_items").select("id", { count: "exact", head: true })).eq("status", "draft"));
++    }
++    const [list, tot, dr] = await Promise.all(jobs);
+     setBusy(false);
+-    const error = list.error || tot.error || dr.error;
++    const error = list.error || tot?.error || dr?.error;
+     if (error) { setMsg("불러오기 실패: " + error.message); return; }
+-    setRows(list.data || []); setTotal(tot.count || 0); setNDraft(dr.count || 0); setOpen(null);
++    const got = list.data || [];
++    setHasMore(got.length > PAGE);
++    setRows(got.slice(0, PAGE));
++    setTotal(narrow ? (tot?.count ?? 0) : null);
++    setNDraft(narrow ? (dr?.count ?? 0) : null);
++    setOpen(null);
+   }
+ 
+   // 펼칠 때 해설·그림을 받아 행에 붙인다 (한 번만)
+@@ -235,7 +264,7 @@ export default function AdminItemReview() {
+     });
+     const { error } = await supabase.from("test_items").delete().eq("id", it.id);
+     if (error) { setMsg("삭제 실패: " + error.message); return; }
+-    setRows((r) => r.filter((x) => x.id !== it.id)); setTotal((t) => t - 1);
++    setRows((r) => r.filter((x) => x.id !== it.id)); setTotal((t) => (t == null ? t : t - 1));
+   }
+ 
+   async function bulkStatus(from, to) {
+@@ -266,9 +295,9 @@ export default function AdminItemReview() {
+   if (me === null) return <div className="irv-wrap">확인 중…</div>;
+   if (me === "no") return <div className="irv-wrap">관리자 전용 페이지입니다.</div>;
+ 
+-  const pages = Math.max(1, Math.ceil(total / PAGE));
+-
+   const tSum = tplRows.reduce((a, r) => ({ d: a.d + r.n_draft, l: a.l + r.n_live }), { d: 0, l: 0 });
++  const tPages = Math.max(1, Math.ceil(tplRows.length / PAGE));
++  const tShown = tplRows.slice(tPage * PAGE, tPage * PAGE + PAGE);   // 한 쪽에 50틀 — 190개를 한 번에 그리면 무겁다
+   const tUnits = stats ? [...new Set(stats.map((r) => r.unit_id))].sort((a, b) => unitRank(a) - unitRank(b)) : [];
+ 
+   if (view === "tpls") {
+@@ -277,7 +306,7 @@ export default function AdminItemReview() {
+       <div className="irv-wrap">
+         <style>{CSS}</style>
+         <div className="irv-head">
+-          <h2>문항 검토 <span className="irv-sub">틀 {tplRows.length}개 · draft {tSum.d} / live {tSum.l}</span></h2>
++          <h2>문항 검토 <span className="irv-sub">틀 {tplRows.length}개 · draft {tSum.d} / live {tSum.l}{tPages > 1 ? ` · ${tPage + 1}/${tPages} 쪽` : ""}</span></h2>
+           <div className="irv-bulk">
+             <button className="irv-chip" onClick={() => setView("items")}>문항</button>
+             <button className="irv-chip on">틀별</button>
+@@ -296,9 +325,9 @@ export default function AdminItemReview() {
+         {stats === null && !statsErr && <p className="irv-empty">틀별로 세는 중…</p>}
+         {statsErr && <p className="irv-msg">{statsErr}</p>}
+         <div className="irv-tpls">
+-          {tplRows.map((r) => {
++          {tShown.map((r) => {
+             const head = r.concept_id !== lastCid; lastCid = r.concept_id;
+-            const cRows = head ? tplRows.filter((x) => x.concept_id === r.concept_id) : null;
++            const cRows = head ? tShown.filter((x) => x.concept_id === r.concept_id) : null;
+             return (
+               <div key={r.template_id}>
+                 {head && (
+@@ -330,6 +359,13 @@ export default function AdminItemReview() {
+           })}
+           {stats && !tplRows.length && <p className="irv-empty">조건에 맞는 틀이 없습니다.</p>}
+         </div>
++        {tPages > 1 && (
++          <div className="irv-pager">
++            <button className="irv-btn" disabled={tPage === 0} onClick={() => { setTPage(tPage - 1); window.scrollTo(0, 0); }}>‹</button>
++            <span>{tPage + 1} / {tPages} 쪽</span>
++            <button className="irv-btn" disabled={tPage + 1 >= tPages} onClick={() => { setTPage(tPage + 1); window.scrollTo(0, 0); }}>›</button>
++          </div>
++        )}
+       </div>
+     );
+   }
+@@ -338,7 +374,9 @@ export default function AdminItemReview() {
+     <div className="irv-wrap">
+       <style>{CSS}</style>
+       <div className="irv-head">
+-        <h2>문항 검토 <span className="irv-sub">{total}건 · draft {nDraft} / live {total - nDraft}</span></h2>
++        <h2>문항 검토 <span className="irv-sub">{narrow
++          ? `${total ?? "…"}건 · draft ${nDraft ?? "…"} / live ${total == null || nDraft == null ? "…" : total - nDraft}`
++          : wideCount ? `${unit === "all" ? "전체" : unitLabel(unit)} 틀 ${wideCount.tpl}개 · draft ${wideCount.draft} / live ${wideCount.live}` : "세는 중…"}</span></h2>
+         <div className="irv-bulk">
+           <button className="irv-chip on">문항</button>
+           <button className="irv-chip" onClick={() => setView("tpls")}>틀별</button>
+@@ -442,9 +480,9 @@ export default function AdminItemReview() {
+       </div>
+ 
+       <div className="irv-pager">
+-        <button className="irv-btn" disabled={page === 0} onClick={() => { setPage(page - 1); load(page - 1); }}>‹</button>
+-        <span>{page + 1} / {pages}</span>
+-        <button className="irv-btn" disabled={page + 1 >= pages} onClick={() => { setPage(page + 1); load(page + 1); }}>›</button>
++        <button className="irv-btn" disabled={page === 0 || busy} onClick={() => { setPage(page - 1); load(page - 1); }}>‹</button>
++        <span>{page + 1}{narrow && total != null ? ` / ${Math.max(1, Math.ceil(total / PAGE))}` : ""} 쪽</span>
++        <button className="irv-btn" disabled={!hasMore || busy} onClick={() => { setPage(page + 1); load(page + 1); }}>›</button>
+       </div>
+     </div>
+   );
+diff --git a/tests/smoke/adminItems.smoke.mjs b/tests/smoke/adminItems.smoke.mjs
+index 106249c..1f67bba 100644
+--- a/tests/smoke/adminItems.smoke.mjs
++++ b/tests/smoke/adminItems.smoke.mjs
+@@ -155,16 +155,17 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
+   const text = async () => (await page.locator("body").innerText()).replace(/\s+/g, " ");
+ 
+   try {
+-    // A. 목록 — 가벼운 열만, 건수는 HEAD 로 따로
++    // A. 목록 — 가벼운 열만 · 틀 순서 · 넓은 필터에서는 건수를 세지 않는다(RLS 시간 초과 회피)
+     await page.goto(base + "#/admin/items");
+     await page.locator(".irv-item").first().waitFor({ timeout: 20000 });
+-    await page.waitForFunction(() => /\d+건 · draft \d+/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
++    await page.waitForFunction(() => /틀 \d+개 · draft \d+/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
+     let t = await text();
+-    ok(/2312건 · draft 2300 \/ live 12/.test(t), "A1 머리말 건수 — 전체 2312 · draft 2300 · live 12");
++    ok(/전체 틀 2개 · draft 2300 \/ live 12/.test(t), "A1 머리말은 틀별 집계에서 — 전체 틀 2개 · draft 2300 / live 12");
+     ok(!/불러오기 실패/.test(t), "A2 실패 문구 없음");
+     const listReq = log.find((l) => l.m === "GET" && /select=/.test(l.q) && /offset=/.test(l.q));
+-    ok(listReq && !/solution|figure/.test(decodeURIComponent(listReq.q)) && /limit=50/.test(listReq.q), "A3 목록 조회는 해설·그림 열 없이 50건씩");
+-    ok(log.filter((l) => l.m === "HEAD").length >= 2, "A4 건수는 HEAD 요청으로");
++    ok(listReq && !/solution|figure/.test(decodeURIComponent(listReq.q)) && /limit=51/.test(listReq.q), "A3 목록 조회는 해설·그림 열 없이 51건(다음 쪽 유무 확인용)");
++    ok(listReq && /order=template_id[.,]/.test(decodeURIComponent(listReq.q)), "A4a 정렬은 틀 순서(template_id, param_index)");
++    ok(log.filter((l) => l.m === "HEAD").length === 0, "A4b 넓은 필터에서는 건수 질의를 하지 않는다");
+     ok((await page.locator(".irv-item").count()) === 50, "A5 한 쪽 50건");
+     ok(/이차방정식 문제/.test(t) && !/\[\[/.test(await page.locator(".irv-q").first().innerText()), "A6 목록 제목에 마커 기호 없음");
+ 
+@@ -179,8 +180,8 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
+     ok(/\{x − \(-3\)\}\{x − \(-1\)\} = 0/.test(dt), "B2 해설의 겹괄호가 { } 로 (괄호 규칙)");
+     ok((await det.locator(".mf").count()) >= 1, "B3 [[frac]] 마커는 상하 분수로");
+     ok(/채점기준 · 7점/.test(dt) && /인수 만들기/.test(dt), "B4 채점기준표 표시");
+-    ok((await det.locator(".iq").count()) === 1 && /두 근이 -3, -1인/.test(dt), "B5 문항 본문은 ItemQuestion 으로");
+-    ok(/정답: 4/.test(dt), "B6 정답 표시");
++    ok((await det.locator(".iq").count()) === 1 && /거듭제곱 문제 0/.test(dt), "B5 문항 본문은 ItemQuestion 으로 (틀 순서상 첫 줄은 m1-1-power-t1)");
++    ok(/정답: 8/.test(dt), "B6 정답 표시");
+     await shot("admin-items-open");
+ 
+     // D. 틀별 보기 — 집계 함수로 틀 목록, draft 있는 틀만, 문항 보기 → 틀 필터, 틀 하나 전환
+@@ -200,6 +201,7 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
+     const filt = log.slice(before3).find((l) => l.m === "GET" && /offset=/.test(l.q));
+     ok(filt && /template_id=eq\.m3-1-quad-build-t1/.test(filt.q) && /concept_ids=cs\./.test(filt.q), "D5 문항 보기 → 개념·틀 필터로 목록 조회");
+     ok(/틀 m3-1-quad-build-t1 ×/.test(await text()), "D6 틀 필터 칩 표시");
++    ok(log.slice(before3).some((l) => l.m === "HEAD"), "D6a 좁은 필터(틀 지정)에서는 정확한 건수를 센다");
+     await page.locator("button.irv-chip", { hasText: "틀별" }).click();
+     await page.locator(".irv-tpl").first().waitFor({ timeout: 15000 });
+     ok(!log.slice(before3).some((l) => l.m === "RPC"), "D7 다시 열어도 집계는 다시 세지 않는다(캐시)");
+@@ -217,7 +219,7 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
+     await page.locator("button.irv-chip.on", { hasText: "틀 m3-1-quad-build-t1 ×" }).click();
+     await page.locator("select").nth(1).selectOption("all");
+     await page.locator("select").nth(0).selectOption("all");
+-    await page.waitForFunction(() => /2312건 · draft 2307/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
++    await page.waitForFunction(() => /전체 틀 2개 · draft 2307/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
+ 
+     // C. 일괄 전환 — 1,000건씩 세 번, 완료 문구 (draft 2307 = 2300 + 7)
+     const before2 = log.length;
+@@ -230,7 +232,7 @@ const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else {
+     t = await text();
+     ok(/2307건 → live 완료/.test(t), "C4 완료 문구");
+     await page.waitForFunction(() => /draft 0 \/ live 2312/.test(document.querySelector(".irv-sub")?.textContent || ""), null, { timeout: 15000 });
+-    ok(/2312건 · draft 0 \/ live 2312/.test(await text()), "C5 머리말 건수 갱신");
++    ok(/전체 틀 2개 · draft 0 \/ live 2312/.test(await text()), "C5 머리말 건수 갱신(집계 다시 셈)");
+ 
+     ok(errors.length === 0, "Z 콘솔·페이지 오류 없음" + (errors.length ? ` — ${errors.slice(0, 3).join(" | ")}` : ""));
+   } catch (e) {
+-- 
+2.43.0
+
