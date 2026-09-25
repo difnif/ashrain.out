@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import random
+import re
 import sys
 from fractions import Fraction
 
@@ -339,7 +340,56 @@ def _sl_rows():
     return rows
 
 
-SL_ROWS = _sl_rows()
+# 단위 표기(09-25 3차): 단위 기호 cm·kg 는 수와 띄어 쓴다(UU). 단위 뒤 조사는 읽는 소리(UR) 기준 — 'cm'는 센티미터, 'kg'는 킬로그램.
+UNIT_UU = {"cm": " cm", "kg": " kg"}
+UNIT_UR = {"점": "점", "회": "회", "분": "분", "초": "초", "cm": "센티미터", "kg": "킬로그램"}
+
+
+def _sl_weight_rows(rows):
+    """t1·t3 용 — 몸무게 행을 중학생 범위(35~74 kg)의 자료로 같은 자리(행 키)에 다시 넣는다 (09-25 3차: 줄기 1~3 = 10~39 kg 학생이 있었다).
+    X(기준값)·CNTX·BIGS 도 새 자료로 다시 구하고, t1·t3 가 모두 성립하도록(잎이 가장 많은 줄기가 하나, 기준 이상이 1명 이상·전원 아님) 고른다.
+    K 는 그대로 둔다(t2 는 _sl2_rows 에서 따로 몸무게를 뽑는다)."""
+    rnd = random.Random(1821)
+    out = {}
+    seen1, seen3 = set(), set()                  # 발문이 겹치면 DUP 로 떨어진다 — t1 발문(N, X)·t3 발문(N, BIGS)이 몸무게 행끼리 겹치지 않게
+    for key, r in rows.items():
+        if r["CTX"] != "몸무게":
+            out[key] = r
+            continue
+        for _ in range(100000):
+            nst = rnd.choice([3, 4])
+            s0 = rnd.choice([3, 4]) if nst == 4 else rnd.choice([3, 4, 5])
+            stems = list(range(s0, s0 + nst))
+            heavy = rnd.choice(stems + [st for st in stems if st in (4, 5)])     # 잎이 가장 많은 줄기 — 40·50 kg대가 더 자주
+            leaves = []
+            for st in stems:
+                pool = range(5, 10) if st == 3 else (range(0, 5) if st == 7 else range(0, 10))
+                k = rnd.choice([4, 5]) if st == heavy else rnd.choice([1, 2, 2, 3])
+                leaves.append(sorted(rnd.sample(list(pool), min(k, len(pool)))))
+            vals = sorted(10 * st + lf for st, ls in zip(stems, leaves) for lf in ls)
+            counts = [len(ls) for ls in leaves]
+            mx = max(counts)
+            X = 10 * rnd.choice(stems[1:]) + rnd.choice([3, 5, 7])
+            cntX = sum(1 for v in vals if v >= X)
+            if len(vals) < 8 or counts.count(mx) != 1 or not (1 <= cntX < len(vals)) or cntX == X or mx == stems[counts.index(mx)]:
+                continue
+            if (len(vals), X) in seen1 or (len(vals), stems[counts.index(mx)]) in seen3:
+                continue
+            seen1.add((len(vals), X)); seen3.add((len(vals), stems[counts.index(mx)]))
+            break
+        else:
+            raise SystemExit(f"_sl_weight_rows: {key} 몸무게 자료를 만들지 못함")
+        note = f"{stems[0]}|{leaves[0][0]}{'은' if str(leaves[0][0])[-1] in '013678' else '는'} {vals[0]}{r['U']}"
+        out[key] = dict(r, N=len(vals), STEMS=stems, LEAVES=leaves, NOTE=note, X=X, CNTX=cntX, KTH=vals[-r["K"]],
+                        BIGS=stems[counts.index(mx)], BIGN=mx, MAXV=vals[-1], MINV=vals[0], RNG=vals[-1] - vals[0],
+                        LTOP=", ".join(str(v) for v in vals[-4:][::-1]))
+    for r in out.values():                       # 표기 칸 — 그림 메모도 '39 kg'
+        r["NOTE"] = re.sub(r"(\d)(cm|kg)$", r"\1 \2", r["NOTE"])
+        r["UU"], r["UR"] = UNIT_UU.get(r["U"], r["U"]), UNIT_UR[r["U"]]
+    return out
+
+
+SL_ROWS = _sl_weight_rows(_sl_rows())
 SL_FIG = [{"fn": "stemleaf", "args": {"stems": "{STEMS}", "leaves": "{LEAVES}", "note": "{NOTE}"}}]
 
 
@@ -385,8 +435,7 @@ def _sl2_rows():
             r = _sl2_weight_row(rnd, r)
         vals = _sl_vals(r)
         row = {f: r[f] for f in ("CTX", "U", "N", "STEMS", "LEAVES", "NOTE", "K", "KTH", "MAXV", "MINV", "LTOP")}
-        if r["U"] == "kg":                                # 단위 기호(kg)는 수와 띄어 쓴다 — '58 kg' (점·회·분은 붙여 씀)
-            row["NOTE"] = row["NOTE"].replace("kg", " kg")
+        row["NOTE"] = re.sub(r"(\d)kg$", r"\1 kg", row["NOTE"])   # 단위 기호(kg)는 수와 띄어 쓴다 — '58 kg' (점·회·분은 붙여 씀)
         row["UU"] = " kg" if r["U"] == "kg" else r["U"]   # t2 가 쓰는 칸만 (몸무게 행의 X·BIGS 등 옛 값이 남지 않게)
         out[k] = dict(row, GT=", ".join(str(v) for v in vals[-1:-r["K"]:-1]))
     return out
@@ -410,19 +459,19 @@ def sl_t1():
         cost_values=["N", "X", "CNTX"],
         answer_var="ansv",
         verify=["ans == CNTX", "ans <= N", "MAXV >= X"],
-        question="다음은 학생 {N}명의 {CTX}{eul(CTX)} 조사하여 나타낸 줄기와 잎 그림이다. {CTX}{ika(CTX)} {X}{U} 이상인 학생은 모두 몇 명인지 구하시오.",
+        question="다음은 학생 {N}명의 {CTX}{eul(CTX)} 조사하여 나타낸 줄기와 잎 그림이다. {CTX}{ika(CTX)} {X}{UU} 이상인 학생은 모두 몇 명인지 구하시오.",
         figure=SL_FIG,
         answer="{ansv}", answer_alt=["{ansv}명"],
-        sol1="줄기와 잎 그림에서 한 자료의 값은 (줄기)(잎)으로 읽는다 — {NOTE}. 기준 {X}{U} 이상인 것을 셀 때는 줄기가 더 큰 줄의 잎은 모두 세고, 기준과 줄기가 같은 줄에서는 잎을 하나씩 비교한다.",
-        sol2=["줄기가 {X}{U}의 십의 자리보다 큰 줄의 잎은 모두 {X}{U} 이상이다", "줄기가 같은 줄에서는 일의 자리(잎)가 기준 이상인 것만 센다", "세어 보면 {X}{U} 이상인 학생은 {CNTX}명"],
+        sol1="줄기와 잎 그림에서 한 자료의 값은 (줄기)(잎)으로 읽는다 — {NOTE}. 기준 {X}{UU} 이상인 것을 셀 때는 줄기가 더 큰 줄의 잎은 모두 세고, 기준과 줄기가 같은 줄에서는 잎을 하나씩 비교한다.",
+        sol2=["줄기가 {X}{UU}의 십의 자리보다 큰 줄의 잎은 모두 {X}{UU} 이상이다", "줄기가 같은 줄에서는 일의 자리(잎)가 기준 이상인 것만 센다", "세어 보면 {X}{UU} 이상인 학생은 {CNTX}명"],
         sol2_fig=steps([{"text": "큰 줄기의 잎: 모두 포함", "hint": "줄기 = 십의 자리"}, {"text": "같은 줄기: 잎 ≥ 기준의 일의 자리", "marks": [{"on": "잎", "note": "'이상'은 같은 값 포함"}]}, {"text": "합: {CNTX}명"}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")], [reveal(2)]],
-        sol3="그림의 위 줄부터 왼쪽에서 오른쪽으로(작은 값부터) {X}{U} 이상인 자료를 모두 적으면 {GEX}의 {CNTX}개다. 따라서 전체 {N}명 중 {CNTX}명이 조건에 맞다.",
-        sol3_fig=steps(["{X}{U} 이상: {GEX}", "전체 {N}명 중 {CNTX}명"]),
+        sol3="그림의 위 줄부터 왼쪽에서 오른쪽으로(작은 값부터) {X}{UU} 이상인 자료를 모두 적으면 {GEX}의 {CNTX}개다. 따라서 전체 {N}명 중 {CNTX}명이 조건에 맞다.",
+        sol3_fig=steps(["{X}{UU} 이상: {GEX}", "전체 {N}명 중 {CNTX}명"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="줄기와 잎 그림에서 {X}{U} 이상인 값을 세면 {CNTX}개이다. 따라서 {CNTX}명이다.",
+        model_answer="줄기와 잎 그림에서 {X}{UU} 이상인 값을 세면 {CNTX}개이다. 따라서 {CNTX}명이다.",
         rubric=[
-            {"element": "자료 값 읽기", "points": 3, "criterion": "줄기와 잎을 합쳐 값을 읽고 {X}{U} 이상인 것을 골랐다.", "partial": "같은 줄기의 잎 비교를 빠뜨렸으면 1점."},
+            {"element": "자료 값 읽기", "points": 3, "criterion": "줄기와 잎을 합쳐 값을 읽고 {X}{UU} 이상인 것을 골랐다.", "partial": "같은 줄기의 잎 비교를 빠뜨렸으면 1점."},
             {"element": "답 구하기", "points": 2, "criterion": "{CNTX}명을 답했다.", "partial": "하나 차이면 1점."},
         ],
         rubric_total=5,
@@ -476,19 +525,19 @@ def sl_t3():
         cost_values=["N", "BIGN"],
         answer_var="ansv",
         verify=["ans == BIGN", "ans <= N"],
-        question="다음은 학생 {N}명의 {CTX}{eul(CTX)} 조사하여 나타낸 줄기와 잎 그림이다. 잎이 가장 많은 줄기는 {BIGS}이다. 이 줄기에 속하는 학생, 즉 {CTX}{ika(CTX)} {lo}{U} 이상 {hi}{U} 이하인 학생은 몇 명인지 구하시오.",
+        question="다음은 학생 {N}명의 {CTX}{eul(CTX)} 조사하여 나타낸 줄기와 잎 그림이다. 잎이 가장 많은 줄기는 {BIGS}이다. 이 줄기에 속하는 학생, 즉 {CTX}{ika(CTX)} {lo}{UU} 이상 {hi}{UU} 이하인 학생은 몇 명인지 구하시오.",
         figure=SL_FIG,
         answer="{ansv}", answer_alt=["{ansv}명"],
-        sol1="줄기와 잎 그림에서 한 줄기의 잎 하나가 자료 하나다. 그러므로 줄기 {BIGS}에 적힌 잎의 개수가 곧 {lo}{U} 이상 {hi}{U} 이하인 학생 수다.",
+        sol1="줄기와 잎 그림에서 한 줄기의 잎 하나가 자료 하나다. 그러므로 줄기 {BIGS}에 적힌 잎의 개수가 곧 {lo}{UU} 이상 {hi}{UU} 이하인 학생 수다.",
         sol2=["줄기 {BIGS}의 잎을 센다", "잎이 {BIGN}개이므로 학생은 {BIGN}명"],
         sol2_fig=steps([{"text": "줄기 {BIGS} → 값 {lo}~{hi}", "hint": "줄기 = 십의 자리"}, {"text": "잎의 개수 = {BIGN}", "marks": [{"on": "{BIGN}", "note": "잎 하나 = 학생 한 명"}]}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")]],
         sol3="다른 줄기의 잎은 모두 {BIGN}개보다 적으므로 줄기 {BIGS}{ika(BIGS)} 잎이 가장 많은 줄기가 맞고, 그 학생 수는 {BIGN}명이다.",
         sol3_fig=steps(["줄기 {BIGS}: {BIGN}명 (가장 많음)"]),
         sol3_anim=[[reveal(0)]],
-        model_answer="줄기 {BIGS}의 잎은 {BIGN}개이므로 {lo}{U} 이상 {hi}{U} 이하인 학생은 {BIGN}명이다.",
+        model_answer="줄기 {BIGS}의 잎은 {BIGN}개이므로 {lo}{UU} 이상 {hi}{UU} 이하인 학생은 {BIGN}명이다.",
         rubric=[
-            {"element": "줄기의 뜻", "points": 2, "criterion": "줄기 {BIGS}{ika(BIGS)} {lo}~{hi}{U}를 뜻함을 밝혔다.", "partial": "범위를 잘못 썼으면 인정하지 않는다."},
+            {"element": "줄기의 뜻", "points": 2, "criterion": "줄기 {BIGS}{ika(BIGS)} {lo}~{hi}{UU}{eul(UR)} 뜻함을 밝혔다.", "partial": "범위를 잘못 썼으면 인정하지 않는다."},
             {"element": "잎 세기", "points": 3, "criterion": "잎의 개수 {BIGN}개를 세어 {BIGN}명으로 답했다.", "partial": "하나 차이면 1점."},
         ],
         rubric_total=5,
@@ -527,6 +576,8 @@ def _hg_rows():
 
 
 HG_ROWS = _hg_rows()
+for _r in HG_ROWS.values():                   # 표기 칸(09-25 3차) — UU: cm·kg 는 띄어 씀, UR: 단위 뒤 조사용 읽는 소리, SC: 점수(100점 상한) 표시
+    _r["UU"], _r["UR"], _r["SC"] = UNIT_UU.get(_r["U"], _r["U"]), UNIT_UR[_r["U"]], int(_r["CTX"] == "수학 점수")
 HG_FIG = [{"fn": "hist", "args": {"bins": "{BINS}", "counts": "{F}", "labels": "도수(명)"}}]
 
 
@@ -551,8 +602,8 @@ def _hg2_rows():
                 hump[pos] = c
             f = hump
         bins = [f"{s0 + cw*i}~{s0 + cw*(i+1)}" for i in range(5)]
-        lab = [f"{b}{r['U']} {c}명" for b, c in zip(bins, f)]
-        out[k] = {"CTX": r["CTX"], "U": r["U"], "S0": s0, "CW": cw, "N": sum(f), "BINS": bins, "F": f,
+        lab = [f"{b}{r['UU']} {c}명" for b, c in zip(bins, f)]
+        out[k] = {"CTX": r["CTX"], "U": r["U"], "UU": r["UU"], "UR": r["UR"], "S0": s0, "CW": cw, "N": sum(f), "BINS": bins, "F": f,
                   "F1": f[0], "F2": f[1], "F3": f[2], "F4": f[3], "F5": f[4], "X": s0 + cw * jx, "CNTX": sum(f[jx:]),
                   "GEB": ", ".join(lab[jx:]), "GESUM": " + ".join(str(c) for c in f[jx:]),
                   "LTB": ", ".join(lab[:jx]), "LTSUM": " + ".join(str(c) for c in f[:jx])}
@@ -572,7 +623,7 @@ def hg_t1():
         params=[{"name": "k", "values": {"in": list(HG_ROWS)}}],
         table={"key": "k", "rows": HG_ROWS},
         derive={"ansv": "MIDn/MIDd"},
-        constraints=["FMAX >= 1"],
+        constraints=["FMAX >= 1", "SC == 0 or S0 + 5*CW <= 100"],   # 수학 점수 계급이 100점을 넘는 행은 뺀다 (09-25 3차)
         cost_values=["N", "CW", "ansv"],
         answer_var="ansv",
         verify=["2*ans == LOMAX + HIMAX", "LOMAX < ans", "ans < HIMAX"],
@@ -580,15 +631,15 @@ def hg_t1():
         figure=HG_FIG,
         answer="{dec(ansv)}", answer_alt=["{dec(ansv)}{U}", "{dec(ansv)} {U}"],
         sol1="히스토그램에서 직사각형의 높이가 도수이므로 가장 높은 직사각형이 도수가 가장 큰 계급이다. 계급값은 그 계급의 양 끝 값을 더해 2로 나눈 한가운데 값이다.",
-        sol2=["가장 높은 직사각형의 계급: {LOMAX}{U} 이상 {HIMAX}{U} 미만 (도수 {FMAX}명)", "계급값 = ({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)} ({U})"],
+        sol2=["가장 높은 직사각형의 계급: {LOMAX}{UU} 이상 {HIMAX}{UU} 미만 (도수 {FMAX}명)", "계급값 = ({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)} ({U})"],
         sol2_fig=steps([{"text": "도수 최대: {LOMAX} ~ {HIMAX} ({FMAX}명)", "hint": "가장 높은 직사각형"}, {"text": "({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)}", "marks": [{"on": "{dec(ansv)}", "note": "도수 {FMAX}{eul(FMAX)} 답하지 말 것"}]}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")]],
-        sol3="계급값 {dec(ansv)}{U}{eun(U)} {LOMAX}{U}와 {HIMAX}{U}의 한가운데이므로 계급 안에 있다. 답은 {dec(ansv)}{U}{ida(U)}.",
+        sol3="계급값 {dec(ansv)}{UU}{eun(UR)} {LOMAX}{UU}{wa(UR)} {HIMAX}{UU}의 한가운데이므로 계급 안에 있다. 답은 {dec(ansv)}{UU}{ida(UR)}.",
         sol3_fig=steps(["{LOMAX} < {dec(ansv)} < {HIMAX}"]),
         sol3_anim=[[reveal(0)]],
-        model_answer="도수가 가장 큰 계급은 {LOMAX}{U} 이상 {HIMAX}{U} 미만이므로 계급값은 ({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)} ({U})이다.",
+        model_answer="도수가 가장 큰 계급은 {LOMAX}{UU} 이상 {HIMAX}{UU} 미만이므로 계급값은 ({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)} ({U})이다.",
         rubric=[
-            {"element": "계급 찾기", "points": 2, "criterion": "가장 높은 직사각형의 계급 {LOMAX}~{HIMAX}{U}를 골랐다.", "partial": "다른 계급을 골랐으면 인정하지 않는다."},
+            {"element": "계급 찾기", "points": 2, "criterion": "가장 높은 직사각형의 계급 {LOMAX}~{HIMAX}{UU}{eul(UR)} 골랐다.", "partial": "다른 계급을 골랐으면 인정하지 않는다."},
             {"element": "계급값 구하기", "points": 3, "criterion": "({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)}{eul(ansv)} 구했다.", "partial": "계급의 크기나 도수를 답했으면 인정하지 않는다."},
         ],
         rubric_total=5,
@@ -609,19 +660,19 @@ def hg_t2():
         cost_values=["N", "X", "CNTX"],
         answer_var="ansv",
         verify=["ans == CNTX", "ans < N", "F1 + F2 + F3 + F4 + F5 == N"],
-        question="다음은 학생 {N}명의 {CTX}{eul(CTX)} 조사하여 나타낸 히스토그램이다. {CTX}{ika(CTX)} {X}{U} 이상인 학생은 모두 몇 명인지 구하시오.",
+        question="다음은 학생 {N}명의 {CTX}{eul(CTX)} 조사하여 나타낸 히스토그램이다. {CTX}{ika(CTX)} {X}{UU} 이상인 학생은 모두 몇 명인지 구하시오.",
         figure=HG_FIG,
         answer="{ansv}", answer_alt=["{ansv}명"],
-        sol1="히스토그램의 각 직사각형의 높이가 그 계급의 도수(학생 수)다. {X}{U} 이상인 학생은 {X}{U}에서 시작하는 계급부터 오른쪽 계급들의 도수를 모두 더하면 된다.",
-        sol2=["{X}{U} 이상인 계급과 그 도수(직사각형의 높이)를 읽으면 {GEB}", "이 도수를 모두 더하면 {GESUM} = {CNTX} (명)"],
-        sol2_fig=steps([{"text": "{GEB}", "hint": "{X}{U}에서 시작하는 계급부터 (경계값은 그 계급에 포함)"}, {"text": "{GESUM} = {CNTX}", "marks": [{"on": "{CNTX}", "note": "전체 {N}명 중"}]}]),
+        sol1="히스토그램의 각 직사각형의 높이가 그 계급의 도수(학생 수)다. {X}{UU} 이상인 학생은 {X}{UU}에서 시작하는 계급부터 오른쪽 계급들의 도수를 모두 더하면 된다.",
+        sol2=["{X}{UU} 이상인 계급과 그 도수(직사각형의 높이)를 읽으면 {GEB}", "이 도수를 모두 더하면 {GESUM} = {CNTX} (명)"],
+        sol2_fig=steps([{"text": "{GEB}", "hint": "{X}{UU}에서 시작하는 계급부터 (경계값은 그 계급에 포함)"}, {"text": "{GESUM} = {CNTX}", "marks": [{"on": "{CNTX}", "note": "전체 {N}명 중"}]}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")]],
-        sol3="나머지 {X}{U} 미만인 계급은 {LTB}이므로 {LTSUM} = {N - CNTX} (명)이다. {CNTX} + {N - CNTX} = {N}{ro(N)} 전체 학생 수와 맞다. 답은 {CNTX}명이다.",
-        sol3_fig=steps(["{X}{U} 미만: {LTSUM} = {N - CNTX}", "{CNTX} + {N - CNTX} = {N}"]),
+        sol3="나머지 {X}{UU} 미만인 계급은 {LTB}이므로 {LTSUM} = {N - CNTX} (명)이다. {CNTX} + {N - CNTX} = {N}{ro(N)} 전체 학생 수와 맞다. 답은 {CNTX}명이다.",
+        sol3_fig=steps(["{X}{UU} 미만: {LTSUM} = {N - CNTX}", "{CNTX} + {N - CNTX} = {N}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="{X}{U} 이상인 계급의 도수는 {GEB}이므로 모두 더하면 {GESUM} = {CNTX} (명)이다.",
+        model_answer="{X}{UU} 이상인 계급의 도수는 {GEB}이므로 모두 더하면 {GESUM} = {CNTX} (명)이다.",
         rubric=[
-            {"element": "계급 고르기", "points": 2, "criterion": "{X}{U} 이상인 계급들을 빠짐없이 골랐다.", "partial": "경계 계급을 빠뜨렸으면 1점."},
+            {"element": "계급 고르기", "points": 2, "criterion": "{X}{UU} 이상인 계급들을 빠짐없이 골랐다.", "partial": "경계 계급을 빠뜨렸으면 1점."},
             {"element": "도수 더하기", "points": 3, "criterion": "도수의 합 {CNTX}명을 구했다.", "partial": "덧셈 실수면 1점."},
         ],
         rubric_total=5,
@@ -638,11 +689,11 @@ def hg_t3():
         params=[{"name": "q", "values": {"in": ["hist", "poly"]}}, {"name": "k", "values": {"in": list(HG_ROWS)}}],
         table=[{"key": "q", "rows": {"hist": {"QW": "히스토그램의 각 직사각형의 넓이의 합"}, "poly": {"QW": "이 히스토그램에서 만든 도수분포다각형과 가로축으로 둘러싸인 부분의 넓이"}}}, {"key": "k", "rows": HG_ROWS}],
         derive={"ansv": "AREA"},
-        constraints=["AREA != N", "AREA != CW"],
+        constraints=["AREA != N", "AREA != CW", "SC == 0 or S0 + 5*CW <= 100"],   # 수학 점수 계급이 100점을 넘는 행은 뺀다 (09-25 3차, t1 과 같은 기준)
         cost_values=["N", "CW", "AREA"],
         answer_var="ansv",
         verify=["ans == CW*N", "F1 + F2 + F3 + F4 + F5 == N"],
-        question="다음은 학생 {N}명의 {CTX}{eul(CTX)} 조사하여 나타낸 히스토그램이다. 계급의 크기가 {CW}{U}일 때, {QW}{eul(QW)} 구하시오.",
+        question="다음은 학생 {N}명의 {CTX}{eul(CTX)} 조사하여 나타낸 히스토그램이다. 계급의 크기가 {CW}{UU}일 때, {QW}{eul(QW)} 구하시오.",
         figure=HG_FIG,
         answer="{ansv}", answer_alt=[],
         sol1="히스토그램의 직사각형은 가로가 계급의 크기, 세로가 도수이므로 넓이는 (계급의 크기) × (도수)다. 모든 직사각형의 넓이를 더하면 (계급의 크기) × (도수의 총합)이 되고, 도수분포다각형과 가로축으로 둘러싸인 넓이도 이와 같다.",

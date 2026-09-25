@@ -3569,7 +3569,11 @@ def check_fig(it):
 # ── ③ 한국어·표기 ───────────────────────────────────────────────────────────
 JOSA = {"은": True, "는": False, "이": True, "가": False, "을": True, "를": False,
         "과": True, "와": False, "으로": True, "로": False}
-_JOSA_RE = re.compile(r"(-?\d+(?:\.\d+)?|π)\s*(은\(는\)|이\(가\)|을\(를\)|\(으\)로|으로|은|는|이|가|을|를|과|와|로)(?=[\s,.…)]|$)")
+_JOSA_RE = re.compile(r"(?<![/\d.])(-?\d+(?:\.\d+)?|π)\s*(은\(는\)|이\(가\)|을\(를\)|\(으\)로|으로|은|는|이|가|을|를|과|와|로)(?=[\s,.…)]|$)")
+# 분수·근호 마커 뒤 조사 — 'b분의 a'(분자)·'루트 n' 의 읽는 소리 기준 (09-25). 기대값은 엔진 조사 함수 그대로.
+from genkit.expr import eul as _eul, eun as _eun, ika as _ika, wa as _wa, ro as _ro   # noqa: E402
+_MARK_JOSA_RE = re.compile(r"(\[\[-?(?:frac|sqrt)\([^\[\]]*\)\]\]|(?<![\w.])-?\d+/\d+)(으로|은|는|이|가|을|를|과|와|로)(?=[\s,.…)]|$)")
+_JOSA_FN_OF = {"은": _eun, "는": _eun, "이": _ika, "가": _ika, "을": _eul, "를": _eul, "과": _wa, "와": _wa, "으로": _ro, "로": _ro}
 
 
 _PH_RE = re.compile(r"\{[A-Za-z_][A-Za-z_0-9*/+\- ().,]*\}")
@@ -3603,6 +3607,11 @@ def check_text(it, field, text):
             bad("T6-조사 불일치", it, f"{field}: {num}{j} → {num}로"); continue
         if j in ("은", "는", "이", "가", "을", "를", "과", "와") and JOSA[j] != want:
             bad("T6-조사 불일치", it, f"{field}: {num}{j}")
+    for m in _MARK_JOSA_RE.finditer(text):
+        mk, j = m.group(1), m.group(2)
+        exp = _JOSA_FN_OF[j](mk)
+        if exp != j:
+            bad("T8-분수·근호 뒤 조사", it, f"{field}: {mk}{j} → {mk}{exp}")
 
 
 n = 0

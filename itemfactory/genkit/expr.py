@@ -123,9 +123,27 @@ def fill(text, env: dict):
     if not isinstance(text, str):
         return text
     if "{" not in text:
-        return text
+        return fix_mark_josa(text)
     out = _SUB_RE.sub(lambda m: show(evaluate(m.group(1), env)), text.replace("{{", "\x00").replace("}}", "\x01"))
-    return out.replace("\x00", "{").replace("\x01", "}")
+    return fix_mark_josa(out.replace("\x00", "{").replace("\x01", "}"))
+
+
+# 채운 뒤 마지막 손질 (09-25) — ① 계수 0 인 항 지우기 ② 분수·근호 뒤 조사 자동 보정.
+# 분수·근호 뒤 조사 자동 보정 — 시드 문자열에 '[[frac(1,5)]]를'·'3/2로' 처럼 조사가 박혀 있어도
+# 읽는 소리('오분의 일' → 을, '이분의 삼' → 으로)대로 고쳐 쓴다. 조사 바로 뒤가 띄어쓰기·문장부호·끝일 때만(이다·이고 등은 건드리지 않음).
+_MARK_JOSA_RE = re.compile(r"(\[\[-?(?:frac|sqrt)\([^\[\]]*\)\]\]|(?<![\w.])-?\d+/\d+)(으로|은|는|이|가|을|를|과|와|로)(?=[\s,.…)]|$)")
+
+
+_ZERO_TERM = re.compile(r"\s[+\u2212-]\s0([a-z])(?![\w(²³⁴])")      # 'x² + 0x − 9' → 'x² − 9' (계수 0 인 항)
+
+
+def fix_mark_josa(text: str) -> str:
+    if " 0" in text:
+        text = _ZERO_TERM.sub("", text)
+    if "/" not in text and "[[" not in text:
+        return text
+    fn = {"은": eun, "는": eun, "이": ika, "가": ika, "을": eul, "를": eul, "과": wa, "와": wa, "으로": ro, "로": ro}
+    return _MARK_JOSA_RE.sub(lambda m: m.group(1) + fn[m.group(2)](m.group(1)), text)
 
 
 def fill_num(text, env: dict):
@@ -153,10 +171,24 @@ def fill_num(text, env: dict):
 _JONG = {"0", "1", "3", "6", "7", "8"}      # 숫자 읽기 끝소리에 받침이 있는 것
 
 
+_FRAC_TAIL = re.compile(r"\[\[\s*-?\s*frac\(\s*(.+?)\s*,[^\]]*\)\s*\]\]\s*$")    # [[frac(a,b)]] — 'b분의 a'
+_SQRT_TAIL = re.compile(r"\[\[\s*-?\s*sqrt\(\s*(.+?)\s*\)\s*\]\]\s*$")          # [[sqrt(n)]] — '루트 n'
+
+
+def _tail(v) -> str:
+    """조사를 고를 때 **마지막으로 읽히는** 부분. 분수는 'b분의 a' 라 분자, 근호는 '루트 n' 이라 n (09-25)."""
+    t = str(v).strip()
+    m = _FRAC_TAIL.search(t) or _SQRT_TAIL.search(t)
+    if m:
+        t = m.group(1)
+    m = re.search(r"(\S+)/[^\s/]+\)*$", t)    # 끝이 분수(11/2 · (x + 1)/2)면 '이분의 십일' — 분자로 읽는다.
+    if m:                                    # 괄호 속 설명('(1/x 항은 … 적분)')처럼 분수가 끝이 아니면 건드리지 않는다
+        t = m.group(1)
+    return t.rstrip(")")
+
+
 def _has_jong(v) -> bool:
-    t = str(v).strip().rstrip(")")
-    if "/" in t:                             # 분수(11/2)는 '이분의 십일' — 분자로 읽는다
-        t = t.split("/")[0].strip()
+    t = _tail(v)
     m = re.search(r"(\d)\s*$", t)
     if m:
         return m.group(1) in _JONG
@@ -173,7 +205,7 @@ _LATIN_JONG = set("LMNR")        # 엘·엠·엔·알 → 받침 있음. 그 외
 def eul(v):  return "\uc744" if _has_jong(v) else "\ub97c"      # 을/를
 def eun(v):  return "\uc740" if _has_jong(v) else "\ub294"      # 은/는
 def ika(v):  return "\uc774" if _has_jong(v) else "\uac00"      # 이/가
-def ro(v):   return "\uc73c\ub85c" if (_has_jong(v) and not str(v).strip().rstrip(")").upper().endswith(("1", "7", "8", "L", "R"))) else "\ub85c"   # 로/으로 (ㄹ 받침은 '로')
+def ro(v):   return "\uc73c\ub85c" if (_has_jong(v) and not _tail(v).rstrip(")").upper().endswith(("1", "7", "8", "L", "R"))) else "\ub85c"   # 로/으로 (ㄹ 받침은 '로')
 def wa(v):   return "\uacfc" if _has_jong(v) else "\uc640"      # 과/와
 def ida(v):  return "\uc774\ub2e4" if _has_jong(v) else "\ub2e4"  # 이다/다
 
