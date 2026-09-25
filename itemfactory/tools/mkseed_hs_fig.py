@@ -19,7 +19,7 @@ from fractions import Fraction
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from hsseed import HS, SEED, T, run  # noqa: E402
-from genkit.expr import eul as _eul, ika as _ika, ro as _ro, wa as _wa  # noqa: E402
+from genkit.expr import eul as _eul, ika as _ika, pn as _pn, ro as _ro, wa as _wa  # noqa: E402
 
 rng = random.Random(20260924)
 
@@ -512,6 +512,13 @@ def _rangeof(vs):
     return {"XLO": min(xs) - 1, "XHI": max(xs) + 1, "YLO": min(ys) - 1, "YHI": max(ys) + 1}
 
 
+def _vmul(x, y, after_plus=False):
+    """성분 곱 x × y — 한쪽이 ±1 이면 '1 × ', '× 1' 없이 곱한 값만. after_plus: 덧셈 뒤 자리(음수 괄호)."""
+    if abs(x) == 1 or abs(y) == 1:
+        return _pn(x * y) if after_plus else str(x * y)
+    return f"{_pn(x) if after_plus else x} × {_pn(y)}"
+
+
 def _vf1_rows():
     out = {}
     for _ in range(900):
@@ -523,17 +530,32 @@ def _vf1_rows():
         arr = [{"from": [0, 0], "to": list(a), "label": "a"}, {"from": [0, 0], "to": list(b), "label": "b"}, {"from": [0, 0], "to": list(s), "label": "a + b"}]
         lines = [{"points": [list(a), list(s)], "style": "dashed"}, {"points": [list(b), list(s)], "style": "dashed"}]
         fig = {**_rangeof([a, b, s]), "PTS": pts, "ARR": arr, "LINES": lines}
-        base = f"그림과 같이 두 벡터 [[vec(a)]] = [[vcomp({a[0]}, {a[1]})]], [[vec(b)]] = [[vcomp({b[0]}, {b[1]})]]와 그 합 [[vec(a) + vec(b)]]을 좌표평면에 나타내었다."
+        base = f"그림과 같이 두 벡터 [[vec(a)]] = [[vcomp({a[0]}, {a[1]})]], [[vec(b)]] = [[vcomp({b[0]}, {b[1]})]]{_wa(b[1])} 그 합 [[vec(a) + vec(b)]]를 좌표평면에 나타내었다."
         na2 = s[0] ** 2 + s[1] ** 2; nd2 = dd[0] ** 2 + dd[1] ** 2
-        asks = [("sum", Fraction(s[0] + s[1]), "[[vec(a) + vec(b)]]의 모든 성분의 합", f"[[vec(a) + vec(b)]] = ({a[0]} + ({b[0]}), {a[1]} + ({b[1]})) = ({s[0]}, {s[1]})"),
-                ("dot", Fraction(a[0] * b[0] + a[1] * b[1]), "[[dot(vec(a), vec(b))]]의 값", f"[[dot(vec(a), vec(b))]] = {a[0]} × ({b[0]}) + ({a[1]}) × ({b[1]})"),
-                ("n2", Fraction(na2), "[[pow(abs(vec(a) + vec(b)), 2)]]의 값", f"[[vec(a) + vec(b)]] = ({s[0]}, {s[1]})이므로 |a + b|² = {s[0]}² + ({s[1]})²"),
-                ("pm", Fraction(a[0] ** 2 + a[1] ** 2 - b[0] ** 2 - b[1] ** 2), "[[dot((vec(a) + vec(b)), (vec(a) − vec(b)))]]의 값", f"(a + b)·(a − b) = |a|² − |b|² = ({a[0] ** 2 + a[1] ** 2}) − ({b[0] ** 2 + b[1] ** 2})")]
+        asks = [("sum", Fraction(s[0] + s[1]), "[[vec(a) + vec(b)]]의 모든 성분의 합", f"[[vec(a) + vec(b)]] = ({a[0]} + {_pn(b[0])}, {a[1]} + {_pn(b[1])}) = ({s[0]}, {s[1]})"),
+                ("dot", Fraction(a[0] * b[0] + a[1] * b[1]), "[[dot(vec(a), vec(b))]]의 값", f"[[dot(vec(a), vec(b))]] = {_vmul(a[0], b[0])} + {_vmul(a[1], b[1], True)} = {a[0] * b[0] + a[1] * b[1]}"),
+                ("n2", Fraction(na2), "[[pow(abs(vec(a) + vec(b)), 2)]]의 값", f"[[vec(a) + vec(b)]] = ({s[0]}, {s[1]})에서 [[pow(abs(vec(a) + vec(b)), 2)]] = {_pn(s[0])}² + {_pn(s[1])}² = {na2}"),
+                ("pm", Fraction(a[0] ** 2 + a[1] ** 2 - b[0] ** 2 - b[1] ** 2), "[[dot((vec(a) + vec(b)), (vec(a) − vec(b)))]]의 값", f"[[dot((vec(a) + vec(b)), (vec(a) − vec(b)))]] = [[pow(abs(vec(a)), 2)]] − [[pow(abs(vec(b)), 2)]] = {a[0] ** 2 + a[1] ** 2} − {b[0] ** 2 + b[1] ** 2} = {a[0] ** 2 + a[1] ** 2 - b[0] ** 2 - b[1] ** 2}")]
         na = _isq(na2)
-        if na: asks.append(("n", na, "[[abs(vec(a) + vec(b))]]의 값", f"[[vec(a) + vec(b)]] = ({s[0]}, {s[1]})이므로 |a + b| = [[sqrt({na2})]]"))
+        if na: asks.append(("n", na, "[[abs(vec(a) + vec(b))]]의 값", f"[[vec(a) + vec(b)]] = ({s[0]}, {s[1]})에서 [[abs(vec(a) + vec(b))]] = [[sqrt({na2})]]"))
+        neg_ab = any(x < 0 for x in a + b)
+        neg_s = any(x < 0 for x in s)
+        pit = {   # 실수거리(등록부 {PITA}·{PITB}·{PITC}) — 묻는 것마다, 셋째는 음수 성분이 있을 때만 부호 실수
+            "sum": ("합 벡터를 두 벡터의 크기의 합으로 봄", "성분의 합 대신 합 벡터의 성분을 그대로 답함",
+                    "음수 성분을 더할 때 부호 실수" if neg_ab else "성분끼리 더하는 계산 실수"),
+            "dot": ("x성분과 y성분을 엇갈려 곱함", "내적을 성분끼리 곱한 벡터로 답함",
+                    "음수 성분을 곱할 때 부호 실수" if neg_ab else "성분끼리 곱하는 계산 실수"),
+            "n2": ("합 벡터의 크기의 제곱 대신 두 벡터의 크기의 제곱의 합을 구함", "제곱하지 않고 합 벡터의 크기를 답함",
+                   "음수 성분을 제곱할 때 부호 실수" if neg_s else "성분을 더하거나 제곱하는 계산 실수"),
+            "pm": ("두 벡터의 내적을 두 벡터의 크기의 곱으로 계산함", "전개할 때 서로 지워지는 두 벡터의 내적 항을 남겨 둠",
+                   "음수 성분을 제곱할 때 부호 실수" if neg_ab else "성분을 제곱하는 계산 실수"),
+            "n": ("합 벡터의 크기 대신 두 벡터의 크기의 합을 구함", "제곱근을 씌우지 않고 크기의 제곱을 답함",
+                  "음수 성분을 제곱할 때 부호 실수" if neg_s else "성분을 더하거나 제곱하는 계산 실수"),
+        }
         for kk, v, ask, step in asks:
             q = f"벡터그림 {a} {b} {kk}"
-            r = _row(q, v, Q=f"{base} {ask}을 구하시오.", STEP=step, ASK=ask.replace("의 값", "").replace("의 모든 성분의 합", "의 성분의 합"), **fig)
+            pa, pb, pc = pit[kk]
+            r = _row(q, v, Q=f"{base} {ask}을 구하시오.", STEP=step, ASK=ask.replace("의 값", "").replace("의 모든 성분의 합", "의 성분의 합"), PITA=pa, PITB=pb, PITC=pc, **fig)
             if r: out[f"{a}_{b}_{kk}"] = r
     return _pick(out, 330)
 

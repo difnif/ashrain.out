@@ -496,6 +496,11 @@ def pr_t4():
         pitfalls=[("독립을 배반(P(A ∩ B) = 0)으로 착각", "독립의 성질", "불인정"), ("적어도 한 번을 n × p로 계산", "독립의 성질", "불인정"), ("여사건 1 − p 계산 실수", "계산", "부분")])
 
 
+def _pw1(b, e):
+    """확률의 거듭제곱 표기 — 지수 1이면 밑만"""
+    return _fm(b) if e == 1 else f"[[pow({_fi(b)}, {e})]]"
+
+
 def _pr5_rows():
     out = {}
     for n in (3, 4, 5):
@@ -506,12 +511,30 @@ def _pr5_rows():
                 facs = [str(math.comb(n, k))] if math.comb(n, k) != 1 else []
                 facs += [_fm(p ** k)] if k else []
                 facs += [_fm((1 - p) ** (n - k))] if n - k else []
-                r = _row(q, v, Q=f"한 번의 시행에서 사건 A가 일어날 확률이 {_fm(p)}이다. 이 시행을 {n}번 독립적으로 반복할 때, 사건 A가 정확히 {k}번 일어날 확률을 구하시오.", LAW=f"독립시행의 확률: [[comb({n}, {k})]] pᵏ(1 − p)ⁿ⁻ᵏ", STEP=f"[[comb({n}, {k})]] × [[pow({_fi(p)}, {k})]] × [[pow({_fi(1 - p)}, {n - k})]] = " + " × ".join(facs), KIND="정확히 k번")
+                cb = math.comb(n, k)
+                ask = "한 번도 일어나지 않을" if k == 0 else f"정확히 {k}번 일어날"
+                if cb == 1:        # C(n, 0) = C(n, n) = 1 — 조합을 빠뜨려도 답이 같으므로 지수 0 실수를 본다
+                    z = _fi(p) if k == 0 else _fi(1 - p)
+                    pit1, rp1 = f"[[pow({z}, 0)]] = 1을 0으로 둠", f"[[pow({z}, 0)]] = 1을 0으로 두었으면 1점."
+                else:
+                    pit1, rp1 = f"조합의 수 [[comb({n}, {k})]] = {cb}{_eul(cb)} 곱하지 않음", f"조합의 수 [[comb({n}, {k})]] = {cb}{_eul(cb)} 곱하지 않았으면 1점."
+                pit2 = f"{_fm(1 - p)}의 지수를 {n - k} 대신 {k if k != n - k else n}{_ro(k if k != n - k else n)} 둠"
+                if p == Fraction(1, 2):   # p = 1 − p 이면 어느 [[frac(1,2)]]의 지수인지 가릴 수 없다
+                    pit2 = f"[[frac(1,2)]]을 모두 {n}번이 아니라 {2 * n}번 곱함(지수의 합이 {n}{_ika(n)} 아님)"
+                pit3 = ("한 번도 일어나지 않을 확률 대신 적어도 한 번 일어날 확률을 구함" if k == 0 else
+                        f"{n}번 모두 일어날 확률을 {_fm(p)} × {n}{_ro(n)} 계산함" if k == n else f"정확히 {k}번 대신 {k}번 이상일 확률을 구함")
+                r = _row(q, v, Q=f"한 번의 시행에서 사건 A가 일어날 확률이 {_fm(p)}이다. 이 시행을 {n}번 독립적으로 반복할 때, 사건 A가 {ask} 확률을 구하시오.", LAW=f"독립시행의 확률 [[comb(n, k)]] pᵏ(1 − p)ⁿ⁻ᵏ에서 n = {n}, k = {k}, p = {_fm(p)}", STEP=f"[[comb({n}, {k})]] × {_pw1(p, k)} × {_pw1(1 - p, n - k)}" + (" = " + " × ".join(facs) if len(facs) > 1 else ""), KIND="정확히 k번",
+                         PLAN=f"이 문제는 n = {n}, k = {k}, p = {_fm(p)}인 경우이다.", PIT1=pit1, PIT2=pit2, PIT3=pit3, RP1=rp1, ANSM=_fm(v),
+                         CHK=f"k = {', '.join(str(j) for j in range(n + 1))}일 때의 확률 " + ", ".join(_fm(math.comb(n, j) * p ** j * (1 - p) ** (n - j)) for j in range(n + 1)) + f"{_eul(p ** n)} 모두 더하면 1이 되는지 확인한다.")
                 if r: out[f"e{n}_{p}_{k}"] = r
             for k in (n - 1,):
                 v = sum(math.comb(n, j) * p ** j * (1 - p) ** (n - j) for j in range(k, n + 1))
                 q = f"독립시행 {n}회 p = {_fm(p)} {k}번 이상"
-                r = _row(q, v, Q=f"한 번의 시행에서 사건 A가 일어날 확률이 {_fm(p)}이다. 이 시행을 {n}번 독립적으로 반복할 때, 사건 A가 {k}번 이상 일어날 확률을 구하시오.", LAW=f"{k}번과 {n}번 일어날 확률의 합", STEP=f"[[comb({n}, {k})]] × [[pow({_fi(p)}, {k})]] × {_fm(1 - p)} + [[pow({_fi(p)}, {n})]] = {_fm(math.comb(n, k) * p ** k * (1 - p))} + {_fm(p ** n)}", KIND="k번 이상")
+                w = sum(math.comb(n, j) * p ** j * (1 - p) ** (n - j) for j in range(0, k))
+                r = _row(q, v, Q=f"한 번의 시행에서 사건 A가 일어날 확률이 {_fm(p)}이다. 이 시행을 {n}번 독립적으로 반복할 때, 사건 A가 {k}번 이상 일어날 확률을 구하시오.", LAW=f"{k}번과 {n}번 일어날 확률의 합", STEP=f"[[comb({n}, {k})]] × [[pow({_fi(p)}, {k})]] × {_fm(1 - p)} + [[comb({n}, {n})]] × [[pow({_fi(p)}, {n})]] = {_fm(math.comb(n, k) * p ** k * (1 - p))} + {_fm(p ** n)}", KIND="k번 이상",
+                         PLAN=f"'{k}번 이상'은 {k}번 또는 {n}번 일어나는 경우이므로 두 확률을 더한다.", PIT3=f"{k}번 이상 대신 정확히 {k}번일 확률만 구함", ANSM=_fm(v),
+                         PIT1=f"조합의 수 [[comb({n}, {k})]] = {n}{_eul(n)} 곱하지 않음", RP1=f"조합의 수 [[comb({n}, {k})]] = {n}{_eul(n)} 곱하지 않았으면 1점.", PIT2=(f"{_fm(1 - p)}의 지수를 1 대신 {k}{_ro(k)} 둠" if p != Fraction(1, 2) else f"[[frac(1,2)]]을 {n}번이 아니라 {2 * n}번 곱함(지수의 합이 {n}{_ika(n)} 아님)"),
+                         CHK=f"여사건 '{k - 1}번 이하'일 확률을 따로 구하면 {_fm(w)}이고, {_fm(v)} + {_fm(w)} = 1이 되는지 확인한다.")
                 if r: out[f"g{n}_{p}_{k}"] = r
     return _pick(out, 300)
 
@@ -525,12 +548,12 @@ def pr_t5():
         params=[{"name": "f", "values": {"in": list(PR5_ROWS)}}], table={"key": "f", "rows": PR5_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
-        sol1="독립시행에서 사건이 k번 일어날 확률은 어느 k번인지 고르는 경우의 수 [[comb(n, k)]]에 pᵏ(1 − p)ⁿ⁻ᵏ를 곱한 것이다({LAW}). 이 문제는 {KIND} 유형이다.",
-        sol2=[("{LAW}", "공식"), ("{STEP}", "대입"), ("= {ans}", None, ("{ans}", "확률"))],
-        sol3=["k = 0부터 n까지의 확률을 모두 더하면 1이 됨을 이용해 검산할 수 있다. 따라서 답은 {ans}이다.", "{STEP}", "답 {ans}"],
+        sol1="독립시행에서 사건이 k번 일어날 확률은 어느 k번인지 고르는 경우의 수 [[comb(n, k)]]에 pᵏ(1 − p)ⁿ⁻ᵏ를 곱한 것이다. {PLAN}",
+        sol2=[("{LAW}", "공식"), ("{STEP}", "대입"), ("= {ans}", None, ("{ANSM}", "확률"))],
+        sol3=["{CHK} 따라서 답은 {ans}이다.", "{STEP}", "답 {ans}"],
         model="{LAW}이므로 {STEP} = {ans}이다.",
-        rubric=[("공식", 3, "{STEP} 꼴로 세웠다.", "C(n, k)를 빠뜨렸으면 1점."), ("계산", 2, "{ans}{eul(ans)} 구했다.", "거듭제곱·분수 계산 실수면 1점.")],
-        pitfalls=[("C(n, k)를 곱하지 않음", "공식", "부분"), ("(1 − p)의 지수를 k로 둠", "공식", "불인정"), ("'이상'을 '정확히'로 계산", "공식", "불인정")])
+        rubric=[("공식", 3, "{STEP} 꼴로 세웠다.", "{RP1}"), ("계산", 2, "{ans}{eul(ans)} 구했다.", "거듭제곱·분수 계산 실수면 1점.")],
+        pitfalls=[("{PIT1}", "공식", "부분"), ("{PIT2}", "공식", "불인정"), ("{PIT3}", "공식", "불인정")])
 
 
 PR_SEED = SEED(PR, category="확률", title="확률 — 수학적 확률·덧셈정리와 여사건·조건부확률·독립사건·독립시행", unit_id="h3-2", concept_ids=["h3-2-04", "h3-2-05", "h3-2-06", "h3-2-07"],
@@ -541,6 +564,18 @@ PR_SEED = SEED(PR, category="확률", title="확률 — 수학적 확률·덧셈
 # ═══════════════════════════════════════════════════════════════════ 3. 통계
 ST = "h3-2-stat"
 ST_B = {**HS, "prereq": ["확률", "평균과 분산"], "ops": ["통계"], "traps": ["V(aX + b) = a²V(X)", "표준화 Z = (X − m)/σ"], "tags": ["확률분포", "이항분포", "정규분포", "추정"]}
+
+
+_S1K = {   # 묻는 값별 [확인]·채점 부분점수·실수거리
+    "E": dict(PLAN="확률분포표에서 평균은 E(X) = Σ x·P(X = x)이다. X의 각 값과 그 확률을 곱해 모두 더한다.", CHK="확률의 합이 1인지, 평균이 X가 가질 수 있는 가장 작은 값과 가장 큰 값 사이에 있는지 확인한다.", RP1="x와 확률을 곱하지 않고 X의 값만 평균 냈으면 인정하지 않는다.",
+              PIT1="E(X)를 X의 값들의 단순 평균으로 구함", PIT2="x × P(X = x)의 곱 중 한 항을 빠뜨림"),
+    "EL": dict(PLAN="일차변환의 평균은 E(aX + b) = aE(X) + b이므로 먼저 E(X) = Σ x·P(X = x)를 구한다.", CHK="확률의 합이 1인지, E(X)가 X의 가장 작은 값과 가장 큰 값 사이에 있는지 확인한다.", RP1="E(aX + b)를 aE(X) + b가 아닌 식으로 두었으면 인정하지 않는다.",
+               PIT1="E(aX + b)를 E(X) 또는 aE(X)로 둠", PIT2="E(aX + b)에서 b를 a배 함"),
+    "V": dict(PLAN="분산은 V(X) = E(X²) − (E(X))²이므로 E(X) = Σ x·P(X = x)와 E(X²) = Σ x²·P(X = x)를 구한다.", CHK="확률의 합이 1인지, 분산이 0 이상인지 확인한다.", RP1="분산에서 (E(X))²을 빼지 않았으면 인정하지 않는다.",
+              PIT1="V(X) = E(X²)으로 둠((E(X))²을 빼지 않음)", PIT2="E(X²)을 구할 때 x² 대신 x를 곱함"),
+    "VL": dict(PLAN="일차변환의 분산은 V(aX + b) = a²V(X)이고 b와는 상관없으므로 먼저 V(X) = E(X²) − (E(X))²을 구한다.", CHK="확률의 합이 1인지, 분산이 0 이상인지 확인한다.", RP1="V(aX + b)를 aV(X)로 두었으면 인정하지 않는다.",
+               PIT1="V(aX + b)를 aV(X)로 둠", PIT2="V(aX + b)에 b를 더하거나 b²을 곱함"),
+}
 
 
 def _st1_rows():
@@ -561,14 +596,32 @@ def _st1_rows():
         V = E2 - E * E
         tbl = "[[mat(2, " + str(k + 1) + ", X, " + ", ".join(str(x) for x in xs) + ", P(X = x), " + ", ".join(_fi(p_) for p_ in probs) + ")]]"
         a, b = rng.choice((2, 3, -2, 4)), rng.choice((1, -1, 3, -3, 5))
-        for kk, ask, v, step in (("E", "[[ev(X)]]", E, "E(X) = Σ x·P(X = x) = " + " + ".join(f"{x} × {_fm(p_)}" for x, p_ in zip(xs, probs))),
-                                 ("V", "[[var(X)]]", V, f"V(X) = E(X²) − (E(X))² = {_fm(E2)} − ({_fm(E)})²"),
-                                 ("EL", f"[[ev({a}X {'+' if b > 0 else '−'} {abs(b)})]]", a * E + b, f"E(aX + b) = aE(X) + b = {a} × {_fm(E)} {'+' if b > 0 else '−'} {abs(b)}"),
-                                 ("VL", f"[[var({a}X {'+' if b > 0 else '−'} {abs(b)})]]", a * a * V, f"V(aX + b) = a²V(X) = {a * a} × {_fm(V)}")):
+        esum = " + ".join(_fm(p_) if x == 1 else f"{x} × {_fm(p_)}" for x, p_ in zip(xs, probs))       # 1 × p 는 p 로
+        e2sum = " + ".join(_fm(p_) if x == 1 else f"{x * x} × {_fm(p_)}" for x, p_ in zip(xs, probs))
+        esq = f"({_fm(E)})²" if E.denominator > 1 else f"{E}²"
+        sg = '+' if b > 0 else '−'
+        lin = f"{a}X {sg} {abs(b)}"
+        concrete = {   # 일차변환 문항은 a, b 대신 실제 수로
+            "EL": dict(PLAN=f"E({lin}) = {a}E(X) {sg} {abs(b)}이므로 먼저 E(X) = Σ x·P(X = x)를 구한다.",
+                       PIT1=f"E({lin}){_eul(abs(b))} " + (f"{a}E(X)로 둠" if a * E + b == E else f"E(X) 또는 {a}E(X)로 둠"), PIT2=f"상수 {abs(b)}에도 {a}{_eul(a)} 곱함",
+                       RP1=(f"E({lin}){_eul(abs(b))} " + (f"{a}E(X)로" if a * E + b == E else f"E(X) 또는 {a}E(X)로") + f" 두었으면 인정하지 않고, 상수 {abs(b)}에도 {a}{_eul(a)} 곱했으면 1점.")),
+            "VL": dict(PLAN=f"V({lin}) = {a * a}V(X)이고 상수 {abs(b)}{_wa(abs(b))}는 상관없으므로 먼저 V(X) = E(X²) − (E(X))²을 구한다.",
+                       PIT1=f"V({lin}){_eul(abs(b))} {a}V(X)로 둠", PIT2=f"V({lin})에 상수 {abs(b)}{_eul(abs(b))} 더함",
+                       RP1=f"V({lin}){_eul(abs(b))} {a}V(X)로 두었으면 인정하지 않는다.")}
+        if Fraction(sum(xs), len(xs)) == E:      # 단순 평균이 E(X)와 같은 분포 — 그 실수는 답을 바꾸지 않는다
+            concrete["E"] = dict(PIT1="x × P(X = x) 대신 X의 값만 더함", RP1="X의 값에 확률을 곱하지 않았으면 인정하지 않는다.")
+        base = {"E": "확률의 합 " + " + ".join(_fm(p_) for p_ in probs) + " = 1",
+                "V": f"E(X) = {esum} = {_fm(E)}, E(X²) = {e2sum} = {_fm(E2)}",
+                "EL": f"E(X) = {esum} = {_fm(E)}",
+                "VL": f"E(X) = {_fm(E)}, E(X²) = {_fm(E2)}, V(X) = E(X²) − (E(X))² = {_fm(E2)} − {esq} = {_fm(V)}"}
+        for kk, ask, v, step in (("E", "[[ev(X)]]", E, "E(X) = Σ x·P(X = x) = " + esum),
+                                 ("V", "[[var(X)]]", V, f"V(X) = E(X²) − (E(X))² = {_fm(E2)} − {esq}"),
+                                 ("EL", f"[[ev({lin})]]", a * E + b, f"E({lin}) = {a}E(X) {sg} {abs(b)} = {a}{'' if E == 1 else ' × ' + _fm(E)} {sg} {abs(b)}"),
+                                 ("VL", f"[[var({lin})]]", a * a * V, f"V({lin}) = {a * a}V(X) = {a * a} × {_fm(V)}")):
             if v == 0:
                 continue
             q = f"{tbl} {ask}"
-            r = _row(q, v, Q=f"확률변수 X의 확률분포가 다음 표와 같을 때, {ask}의 값을 구하시오. {tbl}", TBL=tbl, STEP=step, EV=_fm(E), VV=_fm(V), E2=_fm(E2), ASK=ask)
+            r = _row(q, v, Q=f"확률변수 X의 확률분포가 다음 표와 같을 때, {ask}의 값을 구하시오. {tbl}", TBL=tbl, STEP=step, BASE=base[kk], ASK=ask, ANSM=_fm(v), **{**_S1K[kk], **concrete.get(kk, {})})
             if r: out[f"{len(out)}_{kk}"] = r
     return out
 
@@ -582,12 +635,12 @@ def st_t1():
         params=[{"name": "f", "values": {"in": list(ST1_ROWS)}}], table={"key": "f", "rows": ST1_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
-        sol1="확률분포표에서 평균 E(X) = Σ x·P(X = x), 분산 V(X) = E(X²) − (E(X))²이다. 일차변환 Y = aX + b에서는 E(Y) = aE(X) + b, V(Y) = a²V(X)이다. 여기서 E(X) = {EV}, E(X²) = {E2}, V(X) = {VV}.",
-        sol2=[("E(X) = {EV}, E(X²) = {E2}, V(X) = {VV}", "기본값"), ("{STEP}", "공식"), ("{ASK} = {ans}", None, ("{ans}", "{ASK}"))],
-        sol3=["확률의 합이 1인지, 분산이 0 이상인지 확인한다. 따라서 {ASK} = {ans}이다.", "{STEP}", "답 {ans}"],
-        model="E(X) = {EV}, E(X²) = {E2}, V(X) = {VV}이고 {STEP}이므로 {ASK} = {ans}이다.",
-        rubric=[("공식", 3, "{STEP} 꼴로 세웠다.", "분산에서 (E(X))²을 빼지 않았으면 인정하지 않는다."), ("계산", 2, "{ans}{eul(ans)} 구했다.", "분수 계산 실수면 1점.")],
-        pitfalls=[("V(aX + b)를 aV(X)로 둠", "공식", "불인정"), ("V(X) = E(X²)으로 둠", "공식", "불인정"), ("E(aX + b)에서 b를 a배 함", "공식", "부분")])
+        sol1="{PLAN}",
+        sol2=[("{BASE}", "기본값"), ("{STEP}", "공식"), ("{ASK} = {ans}", None, ("{ANSM}", "{ASK}"))],
+        sol3=["{CHK} 따라서 {ASK} = {ans}이다.", "{STEP}", "답 {ans}"],
+        model="{BASE}이고 {STEP}이므로 {ASK} = {ans}이다.",
+        rubric=[("공식", 3, "{STEP} 꼴로 세웠다.", "{RP1}"), ("계산", 2, "{ans}{eul(ans)} 구했다.", "분수 계산 실수면 1점.")],
+        pitfalls=[("{PIT1}", "공식", "불인정"), ("{PIT2}", "공식", "부분")])
 
 
 def _st2_rows():

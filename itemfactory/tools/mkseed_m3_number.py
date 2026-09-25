@@ -699,7 +699,7 @@ def mf_t3():
         verify=["ans == A*B", "A - B == 2*p"],
         question="곱셈 공식을 이용하여 {A} × {B}{eul(B)} 계산하시오.",
         answer="{ans}", answer_alt=[],
-        sol1="{A}{wa(A)} {B}{eun(B)} {N}{eul(N)}가운데 두고 {p}만큼 크고 작은 수이므로 ({N} + {p})({N} − {p})로 쓸 수 있다. 합차 공식 (a + b)(a − b) = a² − b²을 쓰면 가운데 항 없이 {N}² − {p}²으로 바로 계산된다.",
+        sol1="{A}{wa(A)} {B}{eun(B)} {N}{eul(N)} 가운데 두고 {p}만큼 크고 작은 수이므로 ({N} + {p})({N} − {p}){ro(p)} 쓸 수 있다. 합차 공식 (a + b)(a − b) = a² − b²을 쓰면 가운데 항 없이 {N}² − {p}²으로 바로 계산된다.",
         sol2=[
             "{A} × {B} = ({N} + {p})({N} − {p})",
             "= {N}² − {p}² = {N2} − {p2}",
@@ -707,7 +707,7 @@ def mf_t3():
         ],
         sol2_fig=steps([
             {"text": "({N} + {p})({N} − {p})", "hint": "기준수 {N}, 차 {p}"},
-            {"text": "{N2} − {p2}", "hint": "(a + b)(a − b) = a² − b²", "marks": [{"on": "− {p2}", "note": "p² 을 뺀다"}]},
+            {"text": "{N2} − {p2}", "hint": "(a + b)(a − b) = a² − b²", "marks": [{"on": "− {p2}", "note": "{p}² = {p2}{eul(p2)} 뺀다"}]},
             {"text": "= {ans}"},
         ]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2)]],
@@ -716,7 +716,7 @@ def mf_t3():
         sol3_anim=[[reveal(0)], [reveal(1)]],
         model_answer="{A} × {B} = ({N} + {p})({N} − {p}) = {N}² − {p}² = {N2} − {p2} = {ans}이다.",
         rubric=[
-            {"element": "공식 적용", "points": 3, "criterion": "({N} + {p})({N} − {p}) = {N2} − {p2}{ro(p2)} 썼다.", "partial": "가운데 항을 넣어 (N + p)² 꼴로 계산했으면 인정하지 않는다."},
+            {"element": "공식 적용", "points": 3, "criterion": "({N} + {p})({N} − {p}) = {N2} − {p2}{ro(p2)} 썼다.", "partial": "가운데 항을 넣어 ({N} + {p})² 꼴로 계산했으면 인정하지 않는다."},
             {"element": "계산", "points": 2, "criterion": "{ans}{eul(ans)} 구했다.", "partial": "계산 실수면 1점."},
         ],
         rubric_total=5,
@@ -990,10 +990,10 @@ def mf_t8():
 
 # t9 — x² ± sx ± 1 = 0 → x ± 1/x → x² + 1/x²
 XE_ROWS = {
-    "mp": {"SG1": "−", "C": "+ 1", "GT": "x + [[frac(1, x)]]", "gs": 1, "k": -2, "KT": "− 2", "FORM": "x² + [[frac(1, pow(x,2))]] = [[pow(x + frac(1, x), 2)]] − 2"},
-    "pp": {"SG1": "+", "C": "+ 1", "GT": "x + [[frac(1, x)]]", "gs": -1, "k": -2, "KT": "− 2", "FORM": "x² + [[frac(1, pow(x,2))]] = [[pow(x + frac(1, x), 2)]] − 2"},
-    "mm": {"SG1": "−", "C": "− 1", "GT": "x − [[frac(1, x)]]", "gs": 1, "k": 2, "KT": "+ 2", "FORM": "x² + [[frac(1, pow(x,2))]] = [[pow(x − frac(1, x), 2)]] + 2"},
-    "pm": {"SG1": "+", "C": "− 1", "GT": "x − [[frac(1, x)]]", "gs": -1, "k": 2, "KT": "+ 2", "FORM": "x² + [[frac(1, pow(x,2))]] = [[pow(x − frac(1, x), 2)]] + 2"},
+    "mp": {"SG1": "−", "C": "+ 1", "CV": "1", "CF": "+ [[frac(1, x)]]", "GT": "x + [[frac(1, x)]]", "PITF": "1/x 앞의 부호 +를 −로 바꿔 x − 1/x로 잘못 만듦", "gs": 1, "k": -2, "KT": "− 2", "FORM": "x² + [[frac(1, pow(x,2))]] = [[pow(x + frac(1, x), 2)]] − 2"},
+    "pp": {"SG1": "+", "C": "+ 1", "CV": "1", "CF": "+ [[frac(1, x)]]", "GT": "x + [[frac(1, x)]]", "PITF": "1/x 앞의 부호 +를 −로 바꿔 x − 1/x로 잘못 만듦", "gs": -1, "k": -2, "KT": "− 2", "FORM": "x² + [[frac(1, pow(x,2))]] = [[pow(x + frac(1, x), 2)]] − 2"},
+    "mm": {"SG1": "−", "C": "− 1", "CV": "−1", "CF": "− [[frac(1, x)]]", "GT": "x − [[frac(1, x)]]", "PITF": "1/x 앞의 부호 −를 +로 바꿔 x + 1/x로 잘못 만듦", "gs": 1, "k": 2, "KT": "+ 2", "FORM": "x² + [[frac(1, pow(x,2))]] = [[pow(x − frac(1, x), 2)]] + 2"},
+    "pm": {"SG1": "+", "C": "− 1", "CV": "−1", "CF": "− [[frac(1, x)]]", "GT": "x − [[frac(1, x)]]", "PITF": "1/x 앞의 부호 −를 +로 바꿔 x + 1/x로 잘못 만듦", "gs": -1, "k": 2, "KT": "+ 2", "FORM": "x² + [[frac(1, pow(x,2))]] = [[pow(x − frac(1, x), 2)]] + 2"},
 }
 
 
@@ -1013,9 +1013,9 @@ def mf_t9():
         verify=["ans == s2 + k", "GV*GV == s2"],
         question="x² {SG1} {s}x {C} = 0일 때, x² + [[frac(1, pow(x,2))]]의 값을 구하시오. (단, x ≠ 0)",
         answer="{ans}", answer_alt=[],
-        sol1="x ≠ 0이므로 양변을 x로 나눌 수 있다: x {SG1} {s} {C}[[frac(1, x)]] = 0 꼴이 되어 {GT} = {GV}{eul(GV)} 얻는다. 이제 {FORM}에 대입하면 된다 — 상수항이 {C}일 때 x × 1/x = 1이므로 변형 공식의 상수는 {KT}이다.",
+        sol1="x ≠ 0이므로 양변을 x로 나누면 x {SG1} {s} {CF} = 0이 되어 {GT} = {GV}{eul(GV)} 얻는다. 이제 {FORM}에 대입하면 된다 — 상수항이 {CV}일 때 x × 1/x = 1이므로 변형 공식의 상수는 {KT}이다.",
         sol2=[
-            "양변을 x로 나누면 x {SG1} {s} {C} × [[frac(1, x)]] = 0, 즉 {GT} = {GV}",
+            "양변을 x로 나누면 x {SG1} {s} {CF} = 0, 즉 {GT} = {GV}",
             "{FORM}",
             "x² + [[frac(1, pow(x,2))]] = {pn(GV)}² {KT} = {s2} {KT} = {ans}",
         ],
@@ -1030,7 +1030,7 @@ def mf_t9():
         sol3_anim=[[reveal(0)], [reveal(1)]],
         model_answer="x ≠ 0이므로 양변을 x로 나누면 {GT} = {GV}이다. {FORM}이므로 x² + [[frac(1, pow(x,2))]] = {pn(GV)}² {KT} = {ans}이다.",
         rubric=[
-            {"element": "x로 나누기", "points": 3, "criterion": "양변을 x로 나누어 {GT} = {GV}{eul(GV)} 얻었다.", "partial": "부호가 틀렸어도 제곱하므로 이후가 맞으면 2점."},
+            {"element": "x로 나누기", "points": 3, "criterion": "양변을 x로 나누어 {GT} = {GV}{eul(GV)} 얻었다.", "partial": "{GT}의 값의 부호만 틀렸으면(제곱하면 같으므로) 이후가 맞을 때 2점."},
             {"element": "변형 공식", "points": 2, "criterion": "{FORM}에 대입해 {ans}{eul(ans)} 구했다.", "partial": "상수 {KT}의 부호가 틀렸으면 인정하지 않는다."},
         ],
         rubric_total=5,

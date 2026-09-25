@@ -1276,7 +1276,7 @@
         "주어진 변": "두 변은 △ABC, 한 변은 △DEF",
         "대응": "DF↔AC / EF↔BC / DE↔AB"
       },
-      "discriminates": "꼭짓점 순서로 대응변을 찾아(DF는 AC와 같다) 둘레에 넣는가",
+      "discriminates": "꼭짓점 순서로 대응변을 찾아(DF↔AC, EF↔BC, DE↔AB) 둘레에 넣는가",
       "difficulty": 2,
       "params": [
         {
@@ -1444,7 +1444,7 @@
       "id": "m1-2-congruent-t2",
       "pitfalls": [
         {
-          "text": "DF 를 AB 나 BC 와 대응시킴",
+          "text": "{S3}{eul(S3)} {S3C}{ika(S3C)} 아니라 {S1} 또는 {S2}{wa(S2)} 대응시킴",
           "on": "대응변",
           "effect": "불인정"
         },
@@ -1515,7 +1515,9 @@
         }
       ],
       "derive": {
-        "P": "a + b + c"
+        "P": "a + b + c",
+        "L": "max(a, b, c)",
+        "R": "a + b + c - max(a, b, c)"
       },
       "constraints": [
         "a + b > c",
@@ -1537,7 +1539,11 @@
       "verify": [
         "a + b + ans == P",
         "ans > 0",
-        "a + b > ans"
+        "a + b > ans",
+        "b + ans > a",
+        "ans + a > b",
+        "L < R",
+        "2*L < P"
       ],
       "question": "△ABC ≡ △DEF이고 △DEF의 둘레의 길이가 {P} cm이다. AB = {a} cm, BC = {b} cm일 때, AC의 길이를 구하시오.",
       "answer": "{c}",
@@ -1594,7 +1600,7 @@
           }
         ]
       ],
-      "sol_check": "{a} + {b} + {c} = {P}{ro(P)} 둘레와 맞고, 가장 긴 변이 나머지 두 변의 합보다 짧아 삼각형이 된다. 답은 {c} cm다.",
+      "sol_check": "{a} + {b} + {c} = {P}{ro(P)} 둘레와 맞고, 가장 긴 변 {L} cm가 나머지 두 변의 합 {R} cm보다 짧아 세 변 {a} cm, {b} cm, {c} cm로 삼각형이 만들어진다. 답은 {c} cm다.",
       "model_answer": "합동인 두 삼각형은 둘레가 같으므로 △ABC의 둘레는 {P} cm이다. 따라서 AC = {P} − {a} − {b} = {c} (cm)이다.",
       "rubric": [
         {

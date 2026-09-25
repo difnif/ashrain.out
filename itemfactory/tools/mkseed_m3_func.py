@@ -333,6 +333,10 @@ QF_SEED = {
 QM = "m3-1-quad-func-apply"
 QM_BASE = {**BASE, "prereq": ["이차함수의 꼭짓점", "완전제곱식"], "ops": ["이차함수"], "traps": ["최대/최소 구분", "꼭짓점 y좌표"], "tags": ["이차함수의 최댓값과 최솟값"]}
 MM_ROWS = {"max": {"MM": "최댓값", "sg": -1, "DIR": "위로 볼록"}, "min": {"MM": "최솟값", "sg": 1, "DIR": "아래로 볼록"}}
+# t1 [확인] 전용 — a 의 부호와 꼭짓점 밖에서의 대소(MM_ROWS 는 t2 도 쓰므로 따로 둔다)
+MM1_ROWS = {"max": {**MM_ROWS["max"], "SGNW": "음수", "CMPW": "작다"}, "min": {**MM_ROWS["min"], "SGNW": "양수", "CMPW": "크다"}}
+# t1 [방침] — |a| = 1 이면 '1로 묶고'가 무의미하므로 |a| 별로 문구를 나눈다
+GRP1_ROWS = {"1": {"GRP": "이차항·일차항을 괄호로 묶고"}, "2": {"GRP": "이차항·일차항을 x²의 계수 a로 묶고"}, "3": {"GRP": "이차항·일차항을 x²의 계수 a로 묶고"}}
 
 
 # t1 — y = ax² + bx + c 의 최댓값/최솟값
@@ -344,7 +348,7 @@ def qm_t1():
         difficulty=3,
         discriminates="a < 0이면 최댓값, a > 0이면 최솟값이며 그 값은 꼭짓점의 y좌표임을 아는가",
         params=[{"name": "aa", "values": {"int": [1, 3]}}, {"name": "p", "values": {"in": NZ(-4, 4)}}, {"name": "q", "values": {"in": NZ(-9, 9)}}, {"name": "v", "values": {"in": ["max", "min"]}}],
-        table={"key": "v", "rows": MM_ROWS},
+        table=[{"key": "v", "rows": MM1_ROWS}, {"key": "aa", "rows": GRP1_ROWS}],
         derive={"a": "sg*aa", "b": "-2*sg*aa*p", "c": "sg*aa*p*p + q", "np": "-p", "p2": "p*p", "boa": "-2*p", "ap2": "sg*aa*p*p", "ans": "q"},
         constraints=["c != 0", "ans not in (b, c)", "ans != 0"],
         cost_values=["a", "p", "q", "b", "c", "ans"],
@@ -352,7 +356,7 @@ def qm_t1():
         verify=["b == -2*a*p", "c == ap2 + q", "ans == q"],
         question="이차함수 y = {co(a)}x² {sgt(b)}x {sgn(c)}의 {MM}을 구하시오.",
         answer="{ans}", answer_alt=[],
-        sol1="y = a(x − p)² + q 꼴로 고치면 그래프의 꼭짓점이 (p, q)이고, a = {a}{eun(a)} {DIR}이므로 꼭짓점에서 {MM} q를 갖는다. 이차항·일차항을 {a}{ro(a)} 묶고 (x의 계수의 반)² = {p2}{eul(p2)} 더하고 빼어 완전제곱식을 만든다.",
+        sol1="y = a(x − p)² + q 꼴로 고치면 그래프의 꼭짓점이 (p, q)이고, a = {a}{eun(a)} {DIR}이므로 꼭짓점에서 {MM} q를 갖는다. {GRP} (괄호 안 x의 계수의 반)² = {p2}{eul(p2)} 더하고 빼어 완전제곱식을 만든다.",
         sol2=[
             "y = {co(a)}(x² {sgt(boa)}x) {sgn(c)} = {co(a)}(x² {sgt(boa)}x + {p2} − {p2}) {sgn(c)}",
             "= {co(a)}(x {sgn(np)})² {sgn(-ap2)} {sgn(c)} = {co(a)}(x {sgn(np)})² {sgn(q)}",
@@ -364,7 +368,7 @@ def qm_t1():
             {"text": "a = {a} → {DIR} → {MM} {ans}"},
         ]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2)]],
-        sol3="{co(a)}(x {sgn(np)})²{eun(p)} x = {p}일 때 0이고 그 밖에서는 {DIR}의 방향으로 커지거나 작아지므로 y는 x = {p}에서 {MM} {q}{eul(q)} 갖는다. 따라서 {MM}은 {ans}이다.",
+        sol3="(x {sgn(np)})²의 값은 x = {p}일 때 0이고 그 밖에서는 항상 양수이다. a = {a}{ika(a)} {SGNW}이므로 y = {co(a)}(x {sgn(np)})² {sgn(q)}의 값은 x = {p}일 때 {q}{ika(q)} 되고 그 밖에서는 {q}보다 {CMPW}. 따라서 {MM}은 {ans}이다.",
         sol3_fig=steps(["(x {sgn(np)})² ≥ 0, a = {a}", "{MM} = {ans}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
         model_answer="y = {co(a)}x² {sgt(b)}x {sgn(c)} = {co(a)}(x {sgn(np)})² {sgn(q)}이고 a = {a}{eun(a)} {DIR}이므로 x = {p}일 때 {MM} {ans}{eul(ans)} 갖는다.",
@@ -422,11 +426,11 @@ def qm_t3():
     return tpl(QM, 3, {**QM_BASE, **COMMON_APPLY, "context": "기하맥락", "ops": ["이차함수"], "points": 4, "pool_target": 300},
         title="둘레의 길이가 일정한 직사각형의 넓이의 최댓값",
         skill="가로를 x로 놓아 넓이를 x의 이차함수로 나타내고 완전제곱식으로 최댓값 구하기",
-        variant_axis={"둘레": "12~160 (4의 배수)", "문장": "둘레가 주어진 직사각형 / 철사로 만든 직사각형 / 직사각형 모양의 액자"},
+        variant_axis={"둘레": "12~160 (4의 배수)", "문장": "둘레가 주어진 직사각형 / 철사로 만든 직사각형 / 직사각형 모양의 액자(바깥 테두리 기준)"},
         difficulty=3,
         discriminates="세로를 (둘레/2 − x)로 나타내 넓이 식을 세우고, 정사각형일 때 최대임을 확인하는가",
         params=[{"name": "k", "values": {"int": [3, 40]}}, {"name": "c", "values": {"in": ["rect", "wire", "frame"]}}],
-        table={"key": "c", "rows": {"rect": {"PRE": "둘레의 길이가 ", "POST": " cm인 직사각형의 넓이의 최댓값"}, "wire": {"PRE": "길이가 ", "POST": " cm인 철사를 남김없이 모두 사용하여 직사각형을 만들 때, 이 직사각형의 넓이의 최댓값"}, "frame": {"PRE": "둘레의 길이가 ", "POST": " cm인 직사각형 모양의 액자를 만들 때, 액자 안쪽 직사각형의 넓이의 최댓값"}}},
+        table={"key": "c", "rows": {"rect": {"PRE": "둘레의 길이가 ", "POST": " cm인 직사각형의 넓이의 최댓값"}, "wire": {"PRE": "길이가 ", "POST": " cm인 철사를 남김없이 모두 사용하여 직사각형을 만들 때, 이 직사각형의 넓이의 최댓값"}, "frame": {"PRE": "바깥 테두리의 둘레의 길이가 ", "POST": " cm인 직사각형 모양의 액자를 만들 때, 바깥 테두리로 둘러싸인 직사각형의 넓이의 최댓값"}}},
         derive={"L": "4*k", "H": "2*k", "ans": "k*k"},
         constraints=["ans != L"],
         cost_values=["k", "L", "H", "ans"],
@@ -434,7 +438,7 @@ def qm_t3():
         verify=["L == 4*k", "H == 2*k", "ans == k*k"],
         question="{PRE}{L}{POST}을 구하시오.",
         answer="{ans}", answer_alt=["{ans} cm²"],
-        sol1="가로를 x cm라 하면 가로 + 세로 = {L} ÷ 2 = {H}이므로 세로는 ({H} − x) cm이다. 넓이 S = x({H} − x) = −x² + {H}x는 x의 이차함수이고 x²의 계수가 음수이므로 최댓값을 갖는다. 완전제곱식으로 고쳐 꼭짓점의 y좌표를 읽는다.",
+        sol1="가로를 x cm라 하면 가로 + 세로 = {L} ÷ 2 = {H}이므로 세로는 ({H} − x) cm이다. 넓이 S = x({H} − x) = −x² + {H}x는 x의 이차함수이고 x²의 계수가 음수이므로 최댓값을 갖는다. 완전제곱식으로 고쳐 꼭짓점에서의 S의 값을 읽는다.",
         sol2=[
             "가로 x, 세로 {H} − x: S = x({H} − x) = −x² + {H}x",
             "S = −(x² − {H}x + {k*k} − {k*k}) = −(x − {k})² + {ans}",
@@ -451,7 +455,7 @@ def qm_t3():
         sol3_anim=[[reveal(0)], [reveal(1)]],
         model_answer="가로를 x cm라 하면 세로는 ({H} − x) cm이므로 넓이 S = x({H} − x) = −(x − {k})² + {ans}이다. 따라서 x = {k}일 때 넓이의 최댓값은 {ans} cm²이다.",
         rubric=[
-            {"element": "넓이 식", "points": 2, "criterion": "S = x({H} − x){eul(H)} 세웠다.", "partial": "세로를 {L} − x로 놓았으면 인정하지 않는다."},
+            {"element": "넓이 식", "points": 2, "criterion": "S = x({H} − x)를 세웠다.", "partial": "세로를 {L} − x로 놓았으면 인정하지 않는다."},
             {"element": "최댓값", "points": 3, "criterion": "완전제곱식으로 고쳐 최댓값 {ans}{eul(ans)} 구했다.", "partial": "정사각형일 때 최대라는 사실만 써서 답했으면 2점."},
         ],
         rubric_total=5,
@@ -459,31 +463,47 @@ def qm_t3():
 
 
 # t4 — 던져 올린 물체의 최고 높이·시각
-HT_ROWS = {"h": {"ASK": "최고 높이", "UNIT": " m", "w": 1, "w3": 0}, "t": {"ASK": "최고 높이에 도달하는 시각", "UNIT": "초", "w": 0, "w3": 0}, "back": {"ASK": "다시 지면에 떨어지는 시각", "UNIT": "초", "w": 0, "w3": 1}}
-H0_ROWS = {"0": {"PLACE": "지면", "TAIL": "", "h0": 0}, "10": {"PLACE": "높이 10 m인 곳", "TAIL": " + 10", "h0": 10}, "20": {"PLACE": "높이 20 m인 곳", "TAIL": " + 20", "h0": 20}, "30": {"PLACE": "높이 30 m인 곳", "TAIL": " + 30", "h0": 30}}
+# 묻는 것 × 출발 높이를 한 행으로 굽는다(출발 높이가 있으면 '지면'이 아니라 '처음 던진 높이'로 되돌아오는 시각을 묻는다).
+#   초속은 10~50 m(k = 1~5)로 현실적인 범위, 출발 높이 0~60 m(5 m 간격)로 문항 수를 보충.
+def _ht_rows():
+    out = {}
+    for h0 in range(0, 61, 5):
+        place = {"PLACE": "지면" if h0 == 0 else f"높이 {h0} m인 곳", "TAIL": "" if h0 == 0 else f" + {h0}", "h0": h0}
+        back = "다시 지면에 떨어지는 시각" if h0 == 0 else "처음 던진 높이로 다시 내려오는 시각"
+        out[f"h|{h0}"] = {**place, "ASK": "최고 높이", "QASK": "의 최고 높이", "UNIT": " m", "w": 1, "w3": 0,
+                          "S1END": "최고 높이는 꼭짓점의 h좌표이다.", "PITB": "최고 높이 대신 처음 던진 높이나 초속을 답함"}
+        out[f"t|{h0}"] = {**place, "ASK": "최고 높이에 도달하는 시각", "QASK": "가 최고 높이에 도달하는 시각", "UNIT": "초", "w": 0, "w3": 0,
+                          "S1END": "최고 높이에 도달하는 시각은 꼭짓점의 t좌표이다.", "PITB": "처음 높이로 되돌아오는 시각(꼭짓점의 t좌표의 2배)을 답함"}
+        out[f"back|{h0}"] = {**place, "ASK": back, "QASK": "가 " + back, "UNIT": "초", "w": 0, "w3": 1,
+                             "S1END": "그래프는 꼭짓점을 지나고 t축에 수직인 직선에 대하여 대칭이므로, 던진 순간(t = 0)과 대칭인 시각에 " + ("다시 지면(h = 0)에 떨어진다." if h0 == 0 else "처음 던진 높이로 다시 내려온다."),
+                             "PITB": "최고 높이에 도달하는 시각(꼭짓점의 t좌표)을 그대로 답함"}
+    return out
+
+
+HT_ROWS = _ht_rows()
 
 
 def qm_t4():
     return tpl(QM, 4, {**QM_BASE, **COMMON_APPLY, "ops": ["이차함수"], "points": 4, "pool_target": 300},
         title="던져 올린 물체의 최고 높이와 그때의 시각",
         skill="h = −5t² + vt를 완전제곱식으로 고쳐 꼭짓점 (t, h)를 읽기",
-        variant_axis={"초속": "20~300 (10의 배수)", "출발 높이": "0·10·20·30 m", "구하는 것": "최고 높이 / 시각 / 지면에 떨어지는 시각"},
+        variant_axis={"초속": "10~50 (10의 배수)", "출발 높이": "0~60 m (5 m 간격)", "구하는 것": "최고 높이 / 시각 / 지면(처음 높이)으로 되돌아오는 시각"},
         difficulty=3,
         discriminates="꼭짓점의 t좌표가 시각, h좌표가 최고 높이임을 구별해 답하는가",
-        params=[{"name": "k", "values": {"int": [2, 30]}}, {"name": "ask", "values": {"in": ["h", "t", "back"]}}, {"name": "s0", "values": {"in": ["0", "10", "20", "30"]}}],
-        table=[{"key": "ask", "rows": HT_ROWS}, {"key": "s0", "rows": H0_ROWS}],
+        params=[{"name": "k", "values": {"int": [1, 5]}}, {"name": "c", "values": {"in": list(HT_ROWS)}}],
+        table={"key": "c", "rows": HT_ROWS},
         derive={"v": "10*k", "hmax": "5*k*k + h0", "k2": "k*k", "ans": "w*(5*k*k + h0) + w3*2*k + (1 - w - w3)*k"},
-        constraints=["ans != v", "w3 == 0 or h0 == 0", "ans != h0"],
+        constraints=["ans != v", "ans != h0"],
         cost_values=["k", "v", "hmax", "ans"],
         answer_var="ans",
         verify=["v == 10*k", "hmax == 5*k2 + h0", "ans == w*hmax + w3*2*k + (1 - w - w3)*k"],
-        question="{PLACE}에서 초속 {v} m로 똑바로 위로 던져 올린 물체의 t초 후의 높이를 h m라 하면 h = {v}t − 5t²{TAIL}인 관계가 성립한다. 이 물체의 {ASK}를 구하시오.",
+        question="{PLACE}에서 초속 {v} m로 똑바로 위로 던져 올린 물체의 t초 후의 높이를 h m라 하면 h = {v}t − 5t²{TAIL}인 관계가 성립한다. 이 물체{QASK}을 구하시오.",
         answer="{ans}", answer_alt=["{ans}{UNIT}"],
-        sol1="h = −5t² + {v}t{TAIL}는 t의 이차함수이고 t²의 계수가 음수이므로 꼭짓점에서 최댓값(최고 높이)을 갖는다. −5로 묶어 h = −5(t² − {2*k}t){TAIL} = −5(t − {k})² + {hmax}{ro(hmax)} 고치면 꼭짓점은 ({k}, {hmax}): t = {k}초일 때 최고 높이 {hmax} m이다. 지면(h = 0)에 떨어지는 시각은 h = 0을 풀어 구한다.",
+        sol1="h = −5t² + {v}t{TAIL}에서 h는 t의 이차함수이고 t²의 계수가 음수이므로 꼭짓점에서 최댓값(최고 높이)을 갖는다. −5로 묶어 h = −5(t² − {2*k}t){TAIL} = −5(t − {k})² + {hmax}{ro(hmax)} 고치면 꼭짓점은 ({k}, {hmax})이다. {S1END}",
         sol2=[
             "h = −5(t² − {2*k}t){TAIL} = −5(t² − {2*k}t + {k2} − {k2}){TAIL}",
             "= −5(t − {k})² + {hmax}",
-            "t = {k}초일 때 최고 높이 {hmax} m, 지면에 떨어질 때(h = 0) t = {2*k} → {ASK}는 {ans}{UNIT}",
+            "t = {k}초일 때 최고 높이 {hmax} m, 대칭성에서 t = 0과 t = {2*k}일 때 h = {h0} → {ASK}는 {ans}{UNIT}",
         ],
         sol2_fig=steps([
             {"text": "h = −5(t² − {2*k}t)", "hint": "−5로 묶기"},
@@ -491,13 +511,13 @@ def qm_t4():
             {"text": "{ASK} = {ans}{UNIT}"},
         ]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0", "mark:1-1")], [reveal(2)]],
-        sol3="t = {k}{eul(k)} 대입하면 h = {v} × {k} − 5 × {k2}{TAIL} = {hmax}{ro(hmax)} 맞고, 대칭성으로 t = 0과 t = {2*k}(높이가 처음과 같아지는 시각)의 한가운데 t = {k}에서 최고이다. 따라서 {ASK}는 {ans}{UNIT}이다.",
+        sol3="t = {k}{eul(k)} 대입하면 h = {v*k} − {5*k2}{TAIL} = {hmax}{ro(hmax)} 맞고, t = {2*k}{eul(2*k)} 대입하면 h = {2*v*k} − {20*k2}{TAIL} = {h0}{ro(h0)} 처음 높이와 같다. 즉 t = 0과 t = {2*k}의 한가운데인 t = {k}에서 최고 높이에 이른다. 따라서 {ASK}는 {ans}{UNIT}이다.",
         sol3_fig=steps(["t = {k}: h = {hmax} (t = 0, {2*k}의 중점)", "{ASK} = {ans}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
         model_answer="h = −5t² + {v}t{TAIL} = −5(t − {k})² + {hmax}이므로 t = {k}초일 때 최고 높이 {hmax} m에 도달하고, 출발 높이로 되돌아오는 시각은 t = {2*k}이다. 따라서 {ASK}는 {ans}{UNIT}이다.",
         rubric=[
             {"element": "완전제곱식 변형", "points": 3, "criterion": "h = −5(t − {k})² + {hmax}{ro(hmax)} 고쳤다.", "partial": "−5로 묶지 않아 계수가 틀렸으면 1점."},
-            {"element": "시각·높이 읽기", "points": 2, "criterion": "{ASK} {ans}{UNIT}{eul(UNIT)} 답했다.", "partial": "시각과 높이를 바꿔 답했으면 인정하지 않는다."},
+            {"element": "시각·높이 읽기", "points": 2, "criterion": "{ASK}가 {ans}{UNIT}임을 구했다.", "partial": "시각과 높이를 바꿔 답했으면 인정하지 않는다."},
         ],
         rubric_total=5,
     )

@@ -12,7 +12,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from genkit.expr import eul as _eul  # noqa: E402
+from genkit.expr import eul as _eul, eun as _eun, pn as _pn, ro as _ro  # noqa: E402
 from hsseed import HS, NZ, SEED, T, run  # noqa: E402
 
 # ═══════════════════════════════════════════════════════════════════ 1. 다항식
@@ -184,53 +184,153 @@ def cx_t2():
         pitfalls=[("분모에만 켤레를 곱함", "켤레 곱하기", "불인정"), ("켤레의 부호를 바꾸지 않음", "켤레 곱하기", "불인정"), ("i² = −1 처리 실수", "p, q 읽기", "부분")])
 
 
+def _P(b, e):
+    """거듭제곱 마커 — 발문·해설에서 '^' 를 날것으로 쓰지 않는다. 밑이 식이면 b 를 괄호째 넘긴다."""
+    return f"[[pow({b}, {e})]]"
+
+
+_I2 = "(pow(1 + i, 2))"          # ((1 + i)²) — 괄호째 밑
+_M2 = "(pow(1 − i, 2))"
+_Q = "(frac(1 + i, 1 − i))"
+_PIT_I = "i의 지수를 4로 나눈 나머지에 맞지 않는 값을 씀(i³ = i 등)"
+
+
+def _times_sign(coef, sign):
+    """coef × (±1) 의 값 — '× 1'·'× (-1)' 을 쓰지 않고 부호만 붙인다."""
+    return f"{coef}" if sign == 1 else f"{-coef}"
+
+
 CX3_ROWS = {}
 for _k in range(1, 8):
     _n = 4 * _k
-    CX3_ROWS[f"pw{_n}"] = {"EXPR": f"(1 + i)^{_n}", "n": _n, "ans": (-4) ** _k, "KEY": "(1 + i)² = 2i", "STEP1": f"(1 + i)^{_n} = ((1 + i)²)^{2 * _k} = (2i)^{2 * _k}", "STEP2": f"(2i)^{2 * _k} = 2^{2 * _k} × i^{2 * _k} = {4 ** _k} × {(-1) ** _k} = {(-4) ** _k}"}
-    CX3_ROWS[f"pm{_n}"] = {"EXPR": f"(1 − i)^{_n}", "n": _n, "ans": (-4) ** _k, "KEY": "(1 − i)² = −2i", "STEP1": f"(1 − i)^{_n} = ((1 − i)²)^{2 * _k} = (−2i)^{2 * _k}", "STEP2": f"(−2i)^{2 * _k} = 2^{2 * _k} × i^{2 * _k} = {4 ** _k} × {(-1) ** _k} = {(-4) ** _k}"}
+    CX3_ROWS[f"pw{_n}"] = {"EXPR": _P("1 + i", _n), "n": _n, "ans": (-4) ** _k, "KEY": "(1 + i)² = 2i", "STEP1": f"{_P('1 + i', _n)} = {_P(_I2, 2 * _k)} = {_P('2i', 2 * _k)}",
+                           "STEP2": f"{_P('2i', 2 * _k)} = {_P(2, 2 * _k)} × {_P('i', 2 * _k)} = {_times_sign(4 ** _k, (-1) ** _k)}",
+                           "PITA": "(1 + i)²에서 i² = 1로 두어 2 + 2i로 계산"}
+    CX3_ROWS[f"pm{_n}"] = {"EXPR": _P("1 − i", _n), "n": _n, "ans": (-4) ** _k, "KEY": "(1 − i)² = −2i", "STEP1": f"{_P('1 − i', _n)} = {_P(_M2, 2 * _k)} = {_P('−2i', 2 * _k)}",
+                           "STEP2": f"{_P('−2i', 2 * _k)} = {_P(2, 2 * _k)} × {_P('i', 2 * _k)} = {_times_sign(4 ** _k, (-1) ** _k)}",
+                           "PITA": "(1 − i)²에서 i² = 1로 두어 2 − 2i로 계산"}
 for _n in range(6, 61, 2):
     _v = 2 if _n % 4 == 0 else -2
-    _one = 1 if _n % 4 == 0 else -1
     CX3_ROWS[f"rt{_n}"] = {"EXPR": f"[[pow(frac(1 + i, 1 − i), {_n})]] + [[pow(frac(1 − i, 1 + i), {_n})]]", "n": _n, "ans": _v, "KEY": "(1 + i)/(1 − i) = i, (1 − i)/(1 + i) = −i",
-                           "STEP1": f"i^{_n} + (−i)^{_n} = 2 × i^{_n}", "STEP2": f"{_n} = 4 × {_n // 4} + {_n % 4}이므로 i^{_n} = i^{_n % 4} = {'1' if _n % 4 == 0 else '-1'}, 값은 {_v}"}
+                           "STEP1": f"{_P('i', _n)} + {_P('-i', _n)} = 2 × {_P('i', _n)}",
+                           "STEP2": f"{_n}{_eul(_n)} 4로 나눈 나머지가 {_n % 4}이므로 {_P('i', _n)} = {'1' if _n % 4 == 0 else 'i² = -1'}, 값은 {_v}",
+                           "PITA": "(1 + i)/(1 − i)를 계산할 때 분모의 켤레복소수를 분자에 곱하지 않음"}
 for _n in range(5, 40, 2):
     # (1 + i)^n / (1 − i)^(n−2) = i^(n−2) (1 + i)² = 2 i^(n−1) → n 홀수면 ±2
     _v = 2 if (_n - 1) % 4 == 0 else -2
     CX3_ROWS[f"q3{_n}"] = {"EXPR": f"[[frac(pow(1 + i, {_n}), pow(1 − i, {_n - 2}))]]", "n": _n, "ans": _v, "KEY": "(1 + i)/(1 − i) = i, (1 + i)² = 2i",
-                           "STEP1": f"(1 + i)^{_n}/(1 − i)^{_n - 2} = ((1 + i)/(1 − i))^{_n - 2} × (1 + i)² = i^{_n - 2} × 2i = 2i^{_n - 1}", "STEP2": f"{_n - 1} = 4 × {(_n - 1) // 4} + {(_n - 1) % 4}이므로 i^{_n - 1} = {'1' if (_n - 1) % 4 == 0 else '-1'}, 값은 {_v}"}
+                           "STEP1": f"[[frac(pow(1 + i, {_n}), pow(1 − i, {_n - 2}))]] = {_P(_Q, _n - 2)} × (1 + i)² = {_P('i', _n - 2)} × 2i = 2{_P('i', _n - 1)}",
+                           "STEP2": f"{_n - 1}{_eul(_n - 1)} 4로 나눈 나머지가 {(_n - 1) % 4}이므로 {_P('i', _n - 1)} = {'1' if (_n - 1) % 4 == 0 else '-1'}, 값은 {_v}",
+                           "PITA": "(1 + i)/(1 − i)를 계산할 때 분모의 켤레복소수를 분자에 곱하지 않음"}
 for _k in range(1, 8):
     _n = 4 * _k
-    CX3_ROWS[f"ss{_n}"] = {"EXPR": f"(1 + i)^{_n} + (1 − i)^{_n}", "n": _n, "ans": 2 * (-4) ** _k, "KEY": "(1 + i)² = 2i, (1 − i)² = −2i",
-                           "STEP1": f"(1 + i)^{_n} + (1 − i)^{_n} = (2i)^{2 * _k} + (−2i)^{2 * _k} = 2 × (2i)^{2 * _k}", "STEP2": f"(2i)^{2 * _k} = {4 ** _k} × {(-1) ** _k} = {(-4) ** _k}이므로 값은 {2 * (-4) ** _k}"}
+    CX3_ROWS[f"ss{_n}"] = {"EXPR": f"{_P('1 + i', _n)} + {_P('1 − i', _n)}", "n": _n, "ans": 2 * (-4) ** _k, "KEY": "(1 + i)² = 2i, (1 − i)² = −2i",
+                           "STEP1": f"{_P('1 + i', _n)} + {_P('1 − i', _n)} = {_P('2i', 2 * _k)} + {_P('−2i', 2 * _k)} = 2 × {_P('2i', 2 * _k)}",
+                           "STEP2": f"{_P('2i', 2 * _k)} = {_times_sign(4 ** _k, (-1) ** _k)}이므로 값은 {2 * (-4) ** _k}",
+                           "PITA": "(1 + i)², (1 − i)²에서 i² = 1로 두어 계산"}
 for _n in range(2, 13, 2):
     # (1 + i)^(2n) + (1 − i)^(2n) = (2i)^n + (−2i)^n = 2 × 2^n × i^n (n 짝수)
     _v = 2 * 2 ** _n * (1 if _n % 4 == 0 else -1)
-    CX3_ROWS[f"se{_n}"] = {"EXPR": f"(1 + i)^{2 * _n} + (1 − i)^{2 * _n}", "n": 2 * _n, "ans": _v, "KEY": "(1 + i)² = 2i, (1 − i)² = −2i",
-                           "STEP1": f"(1 + i)^{2 * _n} + (1 − i)^{2 * _n} = (2i)^{_n} + (−2i)^{_n} = 2 × 2^{_n} × i^{_n} ({_n}은 짝수)", "STEP2": f"i^{_n} = {'1' if _n % 4 == 0 else '-1'}이므로 값은 2 × {2 ** _n} × {'1' if _n % 4 == 0 else '(-1)'} = {_v}"}
+    CX3_ROWS[f"se{_n}"] = {"EXPR": f"{_P('1 + i', 2 * _n)} + {_P('1 − i', 2 * _n)}", "n": 2 * _n, "ans": _v, "KEY": "(1 + i)² = 2i, (1 − i)² = −2i",
+                           "STEP1": f"{_P('1 + i', 2 * _n)} + {_P('1 − i', 2 * _n)} = {_P('2i', _n)} + {_P('−2i', _n)} = 2 × {_P(2, _n)} × {_P('i', _n)} ({_n}{_eun(_n)} 짝수)",
+                           "STEP2": f"{_P('i', _n)} = {'1' if _n % 4 == 0 else '-1'}이므로 값은 {'' if _n % 4 else '2 × '}{2 ** _n if _n % 4 == 0 else f'−(2 × {2 ** _n})'} = {_v}",
+                           "PITA": "(1 + i)², (1 − i)²에서 i² = 1로 두어 계산"}
 for _n in range(2, 11):
-    CX3_ROWS[f"ab{_n}"] = {"EXPR": f"복소수 (1 + i)^{_n}{_eul(_n)} a + bi (a, b는 실수) 꼴로 나타낼 때, a² + b²", "n": _n, "ans": 2 ** _n, "KEY": "|(1 + i)^n|² = (|1 + i|²)^n = 2^n, 즉 a² + b² = 2^n",
-                           "STEP1": f"(1 + i)^{_n}의 켤레복소수는 (1 − i)^{_n}이므로 a² + b² = (1 + i)^{_n}(1 − i)^{_n} = ((1 + i)(1 − i))^{_n} = 2^{_n}", "STEP2": f"2^{_n} = {2 ** _n}"}
+    CX3_ROWS[f"ab{_n}"] = {"EXPR": f"복소수 {_P('1 + i', _n)}을 a + bi (a, b는 실수) 꼴로 나타낼 때, a² + b²", "n": _n, "ans": 2 ** _n, "KEY": "(a + bi)(a − bi) = a² + b²",
+                           "STEP1": f"a² + b² = {_P('1 + i', _n)}{_P('1 − i', _n)} = {_P('(1 + i)(1 − i)', _n)} = {_P(2, _n)}", "STEP2": f"{_P(2, _n)} = {2 ** _n}",
+                           "PITA": "켤레복소수의 곱 (a + bi)(a − bi)를 a² − b²으로 둠"}
 for _n in (7, 23, 27, 43, 47):
-    CX3_ROWS[f"sm{_n}"] = {"EXPR": f"i + i² + i³ + ⋯ + [[pow(i, {_n})]]", "n": _n, "ans": -1, "KEY": "i + i² + i³ + i⁴ = i − 1 − i + 1 = 0",
-                           "STEP1": f"네 항씩 묶으면 0이므로 {_n} = 4 × {_n // 4} + 3에서 남는 세 항 i^{_n - 2} + i^{_n - 1} + i^{_n}만 남는다", "STEP2": f"i^{_n - 2} + i^{_n - 1} + i^{_n} = i + i² + i³ = i − 1 − i = −1"}
+    CX3_ROWS[f"sm{_n}"] = {"EXPR": f"i + i² + i³ + ⋯ + {_P('i', _n)}", "n": _n, "ans": -1, "KEY": "i + i² + i³ + i⁴ = i − 1 − i + 1 = 0",
+                           "STEP1": f"i + i² + ⋯ + {_P('i', _n)} = {_P('i', _n - 2)} + {_P('i', _n - 1)} + {_P('i', _n)} (앞의 {_n - 3}개 항은 네 개씩 묶여 0)",
+                           "STEP2": f"{_P('i', _n - 2)} + {_P('i', _n - 1)} + {_P('i', _n)} = i + i² + i³ = i − 1 − i = −1",
+                           "PITA": "네 항의 합 i + i² + i³ + i⁴를 0이 아닌 값으로 계산"}
 for _n in range(2, 11):
-    CX3_ROWS[f"pr{_n}"] = {"EXPR": f"[[pow((1 + i)(1 − i), {_n})]]", "n": _n, "ans": 2 ** _n, "KEY": "(1 + i)(1 − i) = 1 − i² = 2",
-                           "STEP1": f"((1 + i)(1 − i))^{_n} = 2^{_n}", "STEP2": f"2^{_n} = {2 ** _n}"}
+    CX3_ROWS[f"pr{_n}"] = {"EXPR": _P("(1 + i)(1 − i)", _n), "n": _n, "ans": 2 ** _n, "KEY": "(1 + i)(1 − i) = 1 − i² = 2",
+                           "STEP1": f"{_P('(1 + i)(1 − i)', _n)} = {_P(2, _n)}", "STEP2": f"{_P(2, _n)} = {2 ** _n}",
+                           "PITA": "(1 + i)(1 − i) = 1 − i²에서 i² = 1로 두어 0으로 계산"}
+
+
+def _iv(e):
+    """i^e 의 값(문자열) — e 는 정수"""
+    return ("1", "i", "-1", "-i")[e % 4]
+
+
+def _cx3_extra(key, r):
+    """행마다 방침 둘째 문장(PLAN)·[확인](CHK, CHK1, CHK2)·채점기준(EL2, RUB1, RUB2, PART2)·실수거리(PITA~C) — 실제로 계산한 지수로 쓴다."""
+    kind, n, ans = key[:2], r["n"], r["ans"]
+    per = "i, i², i³, i⁴ = i, −1, −i, 1이 차례로 반복되므로"
+    if kind in ("pw", "pm", "ss", "se", "rt", "q3"):
+        e = {"pw": n // 2, "pm": n // 2, "ss": n // 2, "se": n // 2, "rt": n, "q3": n - 1}[kind]
+        base = {"pw": "(2i)", "pm": "(−2i)", "ss": "(2i)", "se": "(2i)", "rt": "i", "q3": "i"}[kind]
+        coef = {"pw": 2 ** e, "pm": 2 ** e, "ss": 2 * 2 ** e, "se": 2 * 2 ** e, "rt": 2, "q3": 2}[kind]
+        iv, ie = _iv(e), _P("i", e)
+        val = f"{coef}" if iv == "1" else f"{coef}의 부호를 바꾼 {-coef}"
+        r["PLAN"] = f"그러면 식은 {base}의 거듭제곱이 되고, i⁴ = 1이므로 i의 지수를 4로 나눈 나머지로 값이 정해진다."
+        r["CHK"] = (f"{per} {ie}의 값은 지수 {e}{_eul(e)} 4로 나눈 나머지 {e % 4}에 따라 정해진다"
+                    f"{'(나머지가 0이면 i⁴ = 1과 같다)' if e % 4 == 0 else ''}. {ie} = {iv}이므로 값은 {val}이다.")
+        r["CHK1"] = f"주기 4: {e} ÷ 4의 나머지 {e % 4} → {ie} = {iv}"
+        r["CHK2"] = f"{ie} = {iv} → 값 = {ans}"
+        r["RUB1"] = f"{r['KEY']}를 써서 {base}의 거듭제곱으로 바꿨다."          # KEY 는 모두 'i' 로 끝난다
+        r["RUB2"] = f"i⁴ = 1의 주기로 {ie} = {iv}{_eul(iv)} 정해 {ans}{_eul(ans)} 구했다."
+        r["PART2"] = "i의 거듭제곱 값은 맞게 정했으나 마지막 곱셈에서 계산 실수가 있으면 1점."
+        r["EL2"] = "주기성·값"
+        r["PITB"] = _PIT_I
+        r["PITC"] = "2의 거듭제곱 계산 실수" if kind in ("pw", "pm", "ss", "se") else "마지막에 곱하는 2를 빠뜨림"
+    elif kind == "sm":
+        r["PLAN"] = "그러면 앞에서부터 네 항씩 묶은 합은 모두 0이 되므로, 항의 개수를 4로 나눈 나머지만큼의 마지막 항들만 남는다."
+        r["CHK"] = (f"항은 i부터 {_P('i', n)}까지 {n}개이고 {n}{_eul(n)} 4로 나눈 나머지는 3이다. 남는 세 항 {_P('i', n - 2)}, {_P('i', n - 1)}, {_P('i', n)}의 지수를 4로 나눈 나머지는 1, 2, 3이므로 "
+                    f"차례로 i, −1, −i이다. 따라서 합은 i − 1 − i = −1이다.")
+        r["CHK1"] = f"{n} ÷ 4의 나머지 3 → 남는 항 {_P('i', n - 2)} + {_P('i', n - 1)} + {_P('i', n)}"
+        r["CHK2"] = "i + (−1) + (−i) = −1"
+        r["RUB1"] = "네 항씩 묶은 합 i + i² + i³ + i⁴ = 0을 썼다."
+        r["RUB2"] = f"남는 세 항의 합으로 {ans}{_eul(ans)} 구했다."
+        r["PART2"] = "남는 항의 개수를 틀렸으면 1점."
+        r["EL2"] = "남는 항·값"
+        r["PITB"] = "i² = −1, i³ = −i 등 i의 거듭제곱 값을 틀림"
+        r["PITC"] = "남는 항의 개수를 틀림"          # PART2 와 같은 판정(부분)
+    elif kind == "ab":
+        z = (1 + 1j) ** n
+        A, B = int(round(z.real)), int(round(z.imag))
+        zs = f"{A}" if B == 0 else (f"{B}i" if A == 0 else f"{A} {'+' if B > 0 else '−'} {abs(B)}i")
+        r["PLAN"] = f"{_P('1 + i', n)} = a + bi이면 그 켤레복소수는 {_P('1 − i', n)} = a − bi이므로 a² + b² = (a + bi)(a − bi) = {_P('1 + i', n)}{_P('1 − i', n)}이다."
+        r["CHK"] = f"(1 + i)² = 2i를 써서 직접 계산하면 {_P('1 + i', n)} = {zs}이므로 a = {A}, b = {B}이다. 이때 a² + b² = {_pn(A)}² + {_pn(B)}² = {ans}{_ro(ans)} 같다. 따라서 값은 {ans}이다."
+        r["CHK1"] = f"{_P('1 + i', n)} = {zs} → a = {A}, b = {B}"
+        r["CHK2"] = f"a² + b² = {_pn(A)}² + {_pn(B)}² = {ans}"
+        r["RUB1"] = f"켤레복소수의 곱을 써서 a² + b² = {_P('1 + i', n)}{_P('1 − i', n)}임을 밝혔다."
+        r["RUB2"] = f"{_P('(1 + i)(1 − i)', n)} = {_P(2, n)} = {ans}{_eul(ans)} 구했다."
+        r["PART2"] = "2의 거듭제곱 계산 실수면 1점."
+        r["EL2"] = "거듭제곱의 값"
+        r["PITB"] = "(1 + i)(1 − i)에서 i² = 1로 두어 0으로 계산"
+        r["PITC"] = "2의 거듭제곱 계산 실수"
+    elif kind == "pr":
+        r["PLAN"] = "그러면 식은 2의 거듭제곱이 되어 i가 남지 않는다."
+        r["CHK"] = f"켤레복소수끼리의 곱은 (실수부)² + (허수부)²이므로 (1 + i)(1 − i) = 1² + 1² = 2로 다시 확인된다. 따라서 값은 {_P(2, n)} = {ans}이다."
+        r["CHK1"] = "(1 + i)(1 − i) = 1² + 1² = 2"
+        r["CHK2"] = f"{_P(2, n)} = {ans}"
+        r["RUB1"] = "(1 + i)(1 − i) = 2를 써서 2의 거듭제곱으로 바꿨다."
+        r["RUB2"] = f"{_P(2, n)} = {ans}{_eul(ans)} 구했다."
+        r["PART2"] = "2의 거듭제곱 계산 실수면 1점."
+        r["EL2"] = "거듭제곱의 값"
+        r["PITB"] = "거듭제곱을 빠뜨리고 (1 + i)(1 − i)의 값 2를 답함"
+        r["PITC"] = "2의 거듭제곱 계산 실수"
+    return r
+
+
+CX3_ROWS = {_k: _cx3_extra(_k, _r) for _k, _r in CX3_ROWS.items()}
 
 
 def cx_t3():
-    return T(CX, 3, CX_B, title="i의 거듭제곱 — (1 + i)^n, ((1 + i)/(1 − i))^n의 값",
-        skill="(1 + i)² = 2i, (1 + i)/(1 − i) = i로 바꾼 뒤 i⁴ = 1의 주기성으로 값 구하기", axis={"형태": "(1 ± i)^{4k} / 몫의 거듭제곱(합·단독·분수꼴) / i의 거듭제곱의 합 / ((1 + i)(1 − i))ⁿ", "n": "4~60"}, disc="먼저 간단한 꼴(2i, i)로 바꾸고 지수를 4로 나눈 나머지로 i^n을 정하는가", diff=3,
+    return T(CX, 3, CX_B, title="i의 거듭제곱 — (1 + i)ⁿ, ((1 + i)/(1 − i))ⁿ의 값",
+        skill="(1 + i)² = 2i, (1 + i)/(1 − i) = i로 바꾼 뒤 i⁴ = 1의 주기성으로 값 구하기", axis={"형태": "(1 ± i)⁴ᵏ / 몫의 거듭제곱(합·단독·분수꼴) / i의 거듭제곱의 합 / ((1 + i)(1 − i))ⁿ", "n": "4~60"}, disc="먼저 간단한 꼴(2i, i)로 바꾸고 지수를 4로 나눈 나머지로 iⁿ을 정하는가", diff=3,
         params=[{"name": "f", "values": {"in": list(CX3_ROWS)}}], table={"key": "f", "rows": CX3_ROWS},
         derive={"v": "ans"}, constraints=["ans != n"], cost=["n", "ans"], verify=["v == ans"],
         q="{EXPR}의 값을 구하시오. (단, i = [[sqrt(-1)]])", answer="{ans}",
-        sol1="{KEY}임을 먼저 쓴다. 그러면 식은 i의 거듭제곱(또는 (2i)의 거듭제곱)이 되고, i⁴ = 1이므로 지수를 4로 나눈 나머지로 값이 정해진다.",
+        sol1="{KEY}임을 먼저 쓴다. {PLAN}",
         sol2=[("{KEY}", "간단한 꼴로"), ("{STEP1}", "거듭제곱으로 정리"), ("{STEP2}", None, ("{ans}", "값"))],
-        sol3=["i, i², i³, i⁴ = i, −1, −i, 1이 반복되므로 지수 {n}을 4로 나눈 나머지 {n % 4}(0이면 4)에 해당하는 값을 쓴다. 따라서 값은 {ans}이다.", "주기 4: {n} = 4 × {floor(n/4)} + {n % 4}", "값 = {ans}"],
+        sol3=["{CHK}", "{CHK1}", "{CHK2}"],
         model="{KEY}이므로 {STEP1}이다. {STEP2}이다.",
-        rubric=[("간단한 꼴", 2, "{KEY}{eul(KEY)} 써서 i의 거듭제곱으로 바꿨다.", "직접 전개하다 멈췄으면 1점."), ("주기성·값", 3, "i⁴ = 1의 주기로 {ans}{eul(ans)} 구했다.", "나머지 계산 실수면 1점.")],
-        pitfalls=[("(1 + i)² = 2로 계산", "간단한 꼴", "불인정"), ("i³ = i로 착각", "주기성·값", "불인정"), ("2의 거듭제곱 계산 실수", "주기성·값", "부분")])
+        rubric=[("식 변형", 2, "{RUB1}", "직접 전개하다 멈췄으면 1점."), ("{EL2}", 3, "{RUB2}", "{PART2}")],
+        pitfalls=[("{PITA}", "식 변형", "불인정"), ("{PITB}", "값", "불인정"), ("{PITC}", "값", "부분")])          # 등록부(pitfalls.py)와 같게 — 행마다 채움
 
 
 def cx_t4():
@@ -249,20 +349,61 @@ def cx_t4():
         pitfalls=[("실수 조건을 실수부 = 0으로 둠", "전개·조건", "불인정"), ("i² 처리 실수", "전개·조건", "부분"), ("이항 부호 실수", "x 구하기", "부분")])
 
 
+def _cx5_rows():
+    """(a, b, 묻는 것) 행 — 순서는 예전 파라미터 a × b × k 의 혼합 진법 순서 그대로(같은 색인 = 같은 문항).
+    [확인]·채점기준·실수거리를 묻는 것(합/곱/합+곱)에 맞춰 행마다 쓴다."""
+    from genkit.expr import co as _co, sgt as _sgt
+    ask = {"sum": ("z + [[conj(z)]]", 1, 0), "prod": ("z[[conj(z)]]", 0, 1), "both": ("z + [[conj(z)]] + z[[conj(z)]]", 1, 1)}
+    out = {}
+    for a in NZ(-6, 6):
+        for b in NZ(-6, 6):
+            for k, (ASK, w1, w2) in ask.items():
+                z, zc = f"{a} {_sgt(b)}i", f"{a} {_sgt(-b)}i"
+                sm, pp = 2 * a, a * a + b * b
+                ans = w1 * sm + w2 * pp
+                c_sum = f"({z}) + ({zc}) = {a} + {_pn(a)} = {sm}{_ro(sm)} 허수부가 지워진다"
+                c_prod = f"({z})({zc}) = {a * a} − {_co(b * b)}i² = {a * a} + {b * b} = {pp}{_ro(pp)} 실수가 된다"
+                row = {"a": a, "b": b, "ASK": ASK, "w1": w1, "w2": w2}
+                if k == "sum":
+                    row.update(CHK=f"직접 더해 보면 {c_sum}. 따라서 {ASK} = {ans}이다.", CHK1=f"z + z̄ = {sm} ✓",
+                               RC1=f"[[conj(z)]] = {zc}로 놓고 z + [[conj(z)]]를 계산해 허수부가 지워짐을 보였다.",
+                               PART1="켤레는 바르게 놓았으나 덧셈에서 단순 계산 실수가 있으면 1점.",
+                               MODEL=f"[[conj(z)]] = {zc}이므로 z + [[conj(z)]] = 2 × (실수부) = 2 × {_pn(a)} = {sm}이다.",
+                               PITA="켤레복소수의 실수부 부호까지 바꿈", PITB="허수부가 지워지는 것을 놓쳐 z + [[conj(z)]]에 i를 남김", PITC="z[[conj(z)]]의 값을 답함")
+                elif k == "prod":
+                    row.update(CHK=f"직접 곱해 보면 {c_prod}. 따라서 {ASK} = {ans}이다.", CHK1=f"z z̄ = {a * a} + {b * b} = {pp} ✓",
+                               RC1=f"[[conj(z)]] = {zc}로 놓고 i² = −1을 써서 z[[conj(z)]]를 계산했다.",
+                               PART1="켤레와 i² = −1은 바르게 썼으나 전개에서 단순 계산 실수가 있으면 1점. (i² = −1을 놓친 경우는 인정하지 않는다.)",
+                               MODEL=f"[[conj(z)]] = {zc}이므로 z[[conj(z)]] = (실수부)² + (허수부)² = {_pn(a)}² + {_pn(b)}² = {pp}이다.",
+                               PITA="z[[conj(z)]]를 (실수부)² − (허수부)²으로 계산(i² = −1을 놓침)", PITB="(허수부)²을 계산할 때 부호 실수", PITC="z + [[conj(z)]]의 값을 답함")
+                else:
+                    row.update(CHK=f"직접 계산해 보면 합은 {c_sum}. 곱은 {c_prod}. 따라서 {ASK} = {sm} + {pp} = {ans}이다.", CHK1=f"z + z̄ = {sm}, z z̄ = {pp} ✓",
+                               RC1=f"[[conj(z)]] = {zc}로 놓고 합은 2 × (실수부) = {sm}, 곱은 (실수부)² + (허수부)² = {pp}{_ro(pp)} 계산했다.",
+                               PART1="켤레와 i² = −1은 바르게 썼으나 합이나 곱에서 단순 계산 실수가 있으면 1점. (i² = −1을 놓친 경우는 인정하지 않는다.)",
+                               MODEL=f"[[conj(z)]] = {zc}이므로 z + [[conj(z)]] = {sm}, z[[conj(z)]] = {_pn(a)}² + {_pn(b)}² = {pp}이다. 따라서 {ASK} = {sm} + {pp} = {ans}이다.",
+                               PITA="z[[conj(z)]]를 (실수부)² − (허수부)²으로 계산(i² = −1을 놓침)", PITB="합과 곱 중 하나의 계산 실수", PITC="합과 곱 중 하나를 빠뜨리고 답함")
+                if a == 1 and abs(b) == 1 and k in ("sum", "prod"):          # z = 1 ± i 이면 합과 곱이 모두 2 — 'PITC(다른 값을 답함)' 이 정답을 가리킨다
+                    row["PITC"] = "켤레를 쓰지 않고 z + z = 2z로 계산" if k == "sum" else "z[[conj(z)]] 대신 z²을 계산"
+                out[f"{a}_{b}_{k}"] = row
+    return out
+
+
+CX5_ROWS = _cx5_rows()
+
+
 def cx_t5():
     return T(CX, 5, CX_B, title="켤레복소수 — z + z̄, z z̄, z² 의 값",
         skill="z = a + bi의 켤레 z̄ = a − bi를 써서 합·곱을 계산하기", axis={"a, b": "±1~±6", "구하는 것": "z + z̄ / z z̄ / (z + z̄)(z z̄)"}, disc="z + z̄ = 2a, z z̄ = a² + b²(실수)임을 아는가", diff=2,
-        params=[{"name": "a", "values": {"in": NZ(-6, 6)}}, {"name": "b", "values": {"in": NZ(-6, 6)}}, {"name": "k", "values": {"in": ["sum", "prod", "both"]}}],
-        table={"key": "k", "rows": {"sum": {"ASK": "z + [[conj(z)]]", "w1": 1, "w2": 0}, "prod": {"ASK": "z[[conj(z)]]", "w1": 0, "w2": 1}, "both": {"ASK": "z + [[conj(z)]] + z[[conj(z)]]", "w1": 1, "w2": 1}}},
+        params=[{"name": "f", "values": {"in": list(CX5_ROWS)}}], table={"key": "f", "rows": CX5_ROWS},
         derive={"s": "2*a", "pp": "a*a + b*b", "nb": "-b", "ans": "w1*2*a + w2*(a*a + b*b)"},
         constraints=["ans != 0", "ans not in (a, b)"], cost=["a", "b", "s", "pp", "ans"], verify=["s == 2*a", "pp == a*a + b*b"],
         q="복소수 z = {a} {sgt(b)}i에 대하여 {ASK}의 값을 구하시오. (단, [[conj(z)]]는 z의 켤레복소수)", answer="{ans}",
-        sol1="z = {a} {sgt(b)}i의 켤레복소수는 허수부의 부호만 바꾼 [[conj(z)]] = {a} {sgt(nb)}i이다. z + [[conj(z)]] = 2 × (실수부) = {s}, z[[conj(z)]] = (실수부)² + (허수부)² = {a}² + {pn(b)}² = {pp}{ro(pp)} 항상 실수가 된다.",
-        sol2=[("[[conj(z)]] = {a} {sgt(nb)}i", "허수부의 부호만 반대"), ("z + [[conj(z)]] = {s}, z[[conj(z)]] = {a}² + {pn(b)}² = {pp}", "합은 2a, 곱은 a² + b²"), ("{ASK} = {ans}", None, ("{ans}", "답"))],
-        sol3=["직접 곱해 보면 ({a} {sgt(b)}i)({a} {sgt(nb)}i) = {a*a} − {pn(b*b)}i² = {a*a} + {b*b} = {pp}{ro(pp)} 실수이다. 따라서 {ASK} = {ans}이다.", "z z̄ = {a*a} + {b*b} = {pp} ✓", "{ASK} = {ans}"],
-        model="[[conj(z)]] = {a} {sgt(nb)}i이므로 z + [[conj(z)]] = {s}, z[[conj(z)]] = {a}² + {pn(b)}² = {pp}이다. 따라서 {ASK} = {ans}이다.",
-        rubric=[("켤레·계산", 3, "[[conj(z)]] = {a} {sgt(nb)}i로 놓고 합 {s}, 곱 {pp}{eul(pp)} 구했다.", "곱에서 i² = −1을 놓쳐 a² − b²으로 했으면 1점."), ("답", 2, "{ASK} = {ans}{eul(ans)} 구했다.", "계산 실수면 1점.")],
-        pitfalls=[("z z̄ = a² − b²으로 계산", "켤레·계산", "불인정"), ("켤레의 실수부 부호도 바꿈", "켤레·계산", "불인정"), ("합·곱을 바꿔 답함", "답", "부분")])
+        sol1="z = {a} {sgt(b)}i의 켤레복소수는 허수부의 부호만 바꾼 [[conj(z)]] = {a} {sgt(nb)}i이다. z + [[conj(z)]] = 2 × (실수부) = {s}, z[[conj(z)]] = (실수부)² + (허수부)² = {pn(a)}² + {pn(b)}² = {pp}{ro(pp)} 항상 실수가 된다.",
+        sol2=[("[[conj(z)]] = {a} {sgt(nb)}i", "허수부의 부호만 반대"), ("z + [[conj(z)]] = {s}, z[[conj(z)]] = {pn(a)}² + {pn(b)}² = {pp}", "합은 2 × (실수부), 곱은 (실수부)² + (허수부)²"), ("{ASK} = {ans}", None, ("{ans}", "답"))],
+        sol3=["{CHK}", "{CHK1}", "{ASK} = {ans}"],
+        model="{MODEL}",
+        rubric=[("켤레·계산", 3, "{RC1}", "{PART1}"), ("값 구하기", 2, "{ASK} = {ans}{eul(ans)} 구했다.", "계산 실수면 1점.")],
+        pitfalls=[("{PITA}", "켤레·계산", "불인정"), ("{PITB}", "켤레·계산", "부분"), ("{PITC}", "값 구하기", "부분")])          # 등록부(pitfalls.py)와 같게 — 행마다 채움
 
 
 CX_SEED = SEED(CX, category="연산", title="복소수 — 곱셈·나눗셈·i의 거듭제곱·실수 조건·켤레복소수", unit_id="h1-1", concept_ids=["h1-1-04"],
@@ -324,7 +465,8 @@ def qd_t3():
         pitfalls=[("x² + (합)x + (곱)으로 부호를 틀림", "방정식·답", "불인정"), ("곱의 전개에서 (α + β) 항 누락", "새 근의 합·곱", "부분"), ("원래 합의 부호 실수", "새 근의 합·곱", "불인정")])
 
 
-def _qd_conj(no, title, kind, root_q, root_sol, prod_f, prod_expr, qvals, extra_constraints):
+def _qd_conj(no, title, kind, root_q, root_sol, prod_f, prod_expr, qvals, extra_constraints, root_josa="{eul(qv)}", prod_sol=None):
+    prod_sol = prod_sol or prod_f
     return T(QD, no, QD_B, title=title,
         skill="켤레근도 근임을 써서 합·곱으로 a, b 구하기", axis={"p": "±1~±6", "q": qvals, "묻는 것": "a + b / ab / a − b"}, disc=f"계수가 {kind}이면 켤레근도 근임을 알고 합 2p, 곱 {prod_f}로 계수를 정하는가", diff=3,
         params=[{"name": "p", "values": {"in": NZ(-6, 6)}}, {"name": "qv", "values": {"in": [2, 3, 5, 6, 7, 10, 11, 13] if kind == "유리수" else [1, 2, 3, 4, 5, 6, 7]}}, {"name": "k", "values": {"in": ["sum", "prod", "diff"]}}],
@@ -332,9 +474,9 @@ def _qd_conj(no, title, kind, root_q, root_sol, prod_f, prod_expr, qvals, extra_
         derive={"s": "2*p", "prod": prod_expr, "a": "-2*p", "b": prod_expr, "ans": f"w1*(-2*p + {prod_expr}) + w2*(-2*p)*({prod_expr}) + (1 - w1 - w2)*(-2*p - ({prod_expr}))"},
         constraints=["b != 0", "ans != 0", "ans not in (p, qv)"] + extra_constraints, cost=["p", "qv", "s", "prod", "ans"], verify=["a == -s", "b == prod"],
         q=f"x에 대한 이차방정식 x² + ax + b = 0의 한 근이 {{p}} + {root_q}일 때, {kind} a, b에 대하여 {{ASK}}의 값을 구하시오.", answer="{ans}",
-        sol1=f"계수가 {kind}인 이차방정식의 한 근이 {{p}} + {root_q}이면 다른 한 근은 켤레인 {{p}} − {root_q}이다. 두 근의 합은 {{s}}, 곱은 {prod_f} = {{prod}}이므로 근과 계수의 관계에서 a = −(합) = {{a}}, b = (곱) = {{b}}이다.",
+        sol1=f"계수가 {kind}인 이차방정식의 한 근이 {{p}} + {root_q}이면 다른 한 근은 켤레인 {{p}} − {root_q}이다. 두 근의 합은 {{s}}, 곱은 {prod_sol} = {{prod}}이므로 근과 계수의 관계에서 a = −(합) = {{a}}, b = (곱) = {{b}}이다.",
         sol2=[(f"다른 한 근: {{p}} − {root_q} (켤레근)", f"계수가 {kind}"), (f"합 = {{s}}, 곱 = ({{p}} + {root_q})({{p}} − {root_q}) = {{prod}}", "합차 공식"), ("a = −({s}) = {a}, b = {prod} → {ASK} = {ans}", None, ("{ans}", "{ASK}"))],
-        sol3=[f"x = {{p}} + {root_sol}{{eul(qv)}} x² {{sgt(a)}}x {{sgn(b)}}에 넣으면 0이 된다(직접 전개해 확인). 따라서 {{ASK}} = {{ans}}이다.", "x² {sgt(a)}x {sgn(b)} = 0에 근 대입 → 0 ✓", "{ASK} = {ans}"],
+        sol3=[f"x = {{p}} + {root_sol}{root_josa} x² {{sgt(a)}}x {{sgn(b)}}에 넣으면 0이 된다(직접 전개해 확인). 따라서 {{ASK}} = {{ans}}이다.", "x² {sgt(a)}x {sgn(b)} = 0에 근 대입 → 0 ✓", "{ASK} = {ans}"],
         model=f"켤레근 {{p}} − {root_q}도 근이므로 두 근의 합은 {{s}}, 곱은 {{prod}}이다. 따라서 a = {{a}}, b = {{b}}이고 {{ASK}} = {{ans}}이다.",
         rubric=[("켤레근", 2, f"다른 한 근이 {{p}} − {root_q}임을 밝혔다.", "근거 없이 썼으면 1점."), ("계수 구하기", 3, "합 {s}, 곱 {prod}에서 a = {a}, b = {b}{ro(b)} 구해 {ASK} = {ans}{eul(ans)} 답했다.", "a의 부호가 틀렸으면 1점.")],
         pitfalls=[("켤레근을 쓰지 않고 한 근만 대입해 못 풂", "켤레근", "불인정"), ("a = 합(부호 반대)으로 둠", "계수 구하기", "부분"), ("곱의 계산에서 (√q)² 또는 i² 실수", "계수 구하기", "부분")])
@@ -345,7 +487,8 @@ def qd_t4():
 
 
 def qd_t6():
-    return _qd_conj(6, "한 근이 p + qi인 실계수 이차방정식의 계수", "실수", "{qv}i", "{qv}i", "p² + q²", "p*p + qv*qv", "1~7", [])
+    return _qd_conj(6, "한 근이 p + qi인 실계수 이차방정식의 계수", "실수", "{co(qv)}i", "{co(qv)}i", "p² + q²", "p*p + qv*qv", "1~7", [],
+                    root_josa="를", prod_sol="{pn(p)}² + {qv}²")          # 허수 단위 i 로 끝나므로 조사는 늘 '를' · q = 1 이면 '1i' 대신 'i'
 
 
 def qd_t5():

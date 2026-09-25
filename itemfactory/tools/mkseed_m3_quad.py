@@ -16,7 +16,7 @@ from math import gcd, isqrt
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from seedlib import COMMON_APPLY, dump, hl, reveal, steps, with_pitfalls  # noqa: E402
-from genkit.expr import eul as _eul, ika as _ika  # noqa: E402
+from genkit.expr import eul as _eul, ika as _ika, ro as _ro  # noqa: E402
 
 
 def tpl(seed_id, no, base, **kw):
@@ -219,6 +219,12 @@ def fa_t3():
     )
 
 
+def _pitb(nb: int) -> str:
+    """t4 실수거리: b의 부호를 바꿔 쓴 값 — 'b의 부호를 바꿔 b = −6으로 씀'"""
+    t = ("−" if nb < 0 else "") + str(abs(nb))
+    return f"b의 부호를 바꿔 b = {t}{_ro(abs(nb))} 씀"
+
+
 # t4 — 공통인수를 먼저 묶는 인수분해: k(x ± m)², k(x + m)(x − m)
 def _cf_rows():
     out = {}
@@ -230,10 +236,15 @@ def _cf_rows():
                 inner = _quad(1, 2 * b, m * m)
                 fac = f"{k}(x {_st(b)})²"
                 out[f"s{k}-{m}-{sg}"] = {"EXPR": expr, "J": _eul(k * m * m), "FORMQ": "a(x + b)²", "FAC": fac, "INNER": inner, "k": k, "m": m, "bb": b, "ans": k + b,
-                                         "STEP": f"x² {_st(2 * b, 'x')} + {m * m} = (x {_st(b)})²", "NAME": "완전제곱식", "BT": str(b)}
+                                         "STEP": f"x² {_st(2 * b, 'x')} + {m * m} = (x {_st(b)})²", "NAME": "완전제곱식", "BT": str(b),
+                                         "PRE": "정수 a, b (a는 양수)에 대하여 ", "POST": "", "BWHY": "a는 공통인수, b는 괄호 안의 수이다.",
+                                         "NOFAC": f"({k}x {_st(k * b)})(x {_st(b)})", "PITB": _pitb(-b)}
             expr = f"{k}x² − {k * m * m}"
             out[f"d{k}-{m}"] = {"EXPR": expr, "J": _eul(k * m * m), "FORMQ": "a(x + b)(x − b)", "FAC": f"{k}(x + {m})(x − {m})", "INNER": f"x² − {m * m}", "k": k, "m": m, "bb": m, "ans": k + m,
-                                "STEP": f"x² − {m * m} = x² − {m}² = (x + {m})(x − {m})", "NAME": "합차 공식", "BT": str(m)}
+                                "STEP": f"x² − {m * m} = x² − {m}² = (x + {m})(x − {m})", "NAME": "합차 공식", "BT": str(m),
+                                "PRE": "", "POST": " (단, a, b는 양수)",
+                                "NOFAC": f"({k}x + {k * m})(x − {m})", "PITB": _pitb(-m),
+                                "BWHY": f"a는 공통인수이다. (x + {m})(x − {m}) = (x − {m})(x + {m})이므로 b는 {m}도 −{m}도 될 수 있지만, b는 양수이므로 b = {m}이다."}
     return out
 
 
@@ -252,9 +263,9 @@ def fa_t4():
         cost_values=["k", "m", "ans"],
         answer_var="ans",
         verify=["ans == k + bb"],
-        question="{EXPR}{J} 인수분해하면 {FORMQ}일 때, 정수 a, b (a는 양수)에 대하여 a + b의 값을 구하시오.",
+        question="{EXPR}{J} 인수분해하면 {FORMQ}일 때, {PRE}a + b의 값을 구하시오.{POST}",
         answer="{ans}", answer_alt=[],
-        sol1="각 항에 공통으로 들어 있는 인수 {k}{eul(k)} 먼저 묶어 내면 {k}({INNER})이 된다. 괄호 안 {INNER}{eun(INNER)} {NAME}으로 인수분해되므로 {FAC}{ika(FAC)} 된다. a는 공통인수, b는 괄호 안의 수이다.",
+        sol1="각 항에 공통으로 들어 있는 인수 {k}{eul(k)} 먼저 묶어 내면 {k}({INNER}){ika(INNER)} 된다. 괄호 안 {INNER}{eun(INNER)} {NAME}으로 인수분해되므로 {FAC}{ika(FAC)} 된다. {BWHY}",
         sol2=[
             "공통인수 {k}{eul(k)} 묶으면 {k}({INNER})",
             "{STEP}",
@@ -272,7 +283,7 @@ def fa_t4():
         model_answer="{EXPR} = {k}({INNER}) = {FAC}이므로 a = {k}, b = {BT}이고 a + b = {ans}이다.",
         rubric=[
             {"element": "공통인수", "points": 2, "criterion": "공통인수 {k}{eul(k)} 묶어 {k}({INNER}){eul(INNER)} 얻었다.", "partial": "공통인수를 일부만 묶었으면 1점."},
-            {"element": "공식 인수분해", "points": 3, "criterion": "{FAC}{ro(FAC)} 인수분해해 a + b = {ans}{eul(ans)} 구했다.", "partial": "공통인수를 묶지 않고 (kx + …)(…) 꼴로 썼어도 a, b를 바르게 읽었으면 2점."},
+            {"element": "공식 인수분해", "points": 3, "criterion": "{FAC}{ro(FAC)} 인수분해해 a + b = {ans}{eul(ans)} 구했다.", "partial": "공통인수를 묶지 않고 {NOFAC} 꼴로 썼어도 a, b를 바르게 읽었으면 2점."},
         ],
         rubric_total=5,
     )
@@ -328,9 +339,22 @@ def _fv_rows():
                 continue
             xpy, xmyk = 2 * c, 2                                   # x + y = 2c, x − y = 2√a
             base = {"c": c, "a": a, "XPY": xpy, "XY": xy}
-            out[f"s{c}-{a}"] = {**base, "ASKQ": "x² + 2xy + y²의 값", "FAC": "(x + y)²", "FACV": f"(x + y)² = {xpy}² = {xpy * xpy}", "ans": xpy * xpy, "KIND": "완전제곱식", "USE": "x + y"}
-            out[f"d{c}-{a}"] = {**base, "ASKQ": f"x² − y² = k[[sqrt({a})]]일 때, 상수 k의 값", "FAC": "(x + y)(x − y)", "FACV": f"(x + y)(x − y) = {xpy} × 2[[sqrt({a})]] = {2 * xpy}[[sqrt({a})]]", "ans": 2 * xpy, "KIND": "합차 공식", "USE": "x + y, x − y"}
-            out[f"m{c}-{a}"] = {**base, "ASKQ": f"x²y − xy² = k[[sqrt({a})]]일 때, 상수 k의 값", "FAC": "xy(x − y)", "FACV": f"xy(x − y) = {_pn(xy)} × 2[[sqrt({a})]] = {2 * xy}[[sqrt({a})]]", "ans": 2 * xy, "KIND": "공통인수 xy", "USE": "xy, x − y"}
+            r2 = f"2[[sqrt({a})]]"
+            s_xpy = f"x + y = ({c} + [[sqrt({a})]]) + ({c} − [[sqrt({a})]]) = {xpy}"
+            s_xmy = f"x − y = ({c} + [[sqrt({a})]]) − ({c} − [[sqrt({a})]]) = {r2}"
+            s_xy = f"xy = ({c} + [[sqrt({a})]])({c} − [[sqrt({a})]]) = {c}² − ([[sqrt({a})]])² = {xy}"
+            out[f"s{c}-{a}"] = {**base, "ASKQ": "x² + 2xy + y²의 값", "FAC": "(x + y)²", "FACV": f"(x + y)² = {xpy}² = {xpy * xpy}", "ans": xpy * xpy, "KIND": "완전제곱식", "USE": "x + y",
+                                "PREP": f"x + y = {xpy}", "CHK": s_xpy, "CHKF": f"x + y = {c} + {c} = {xpy}",
+                                "PIT2": f"x + y = {xpy}{_eul(xpy)} 제곱하지 않고 그대로 답함", "PIT3": "(x + y)² 대신 x² + y²만 계산함(2xy 누락)",
+                                "PART2": "x + y의 값을 제곱하지 않았으면 인정하지 않는다."}
+            out[f"d{c}-{a}"] = {**base, "ASKQ": f"x² − y² = k[[sqrt({a})]]{_eul(a)} 만족시키는 상수 k의 값", "FAC": "(x + y)(x − y)", "FACV": f"(x + y)(x − y) = {xpy} × {r2} = {2 * xpy}[[sqrt({a})]]", "ans": 2 * xpy, "KIND": "합차 공식", "USE": "x + y, x − y",
+                                "PREP": f"x + y = {xpy}, x − y = {r2}", "CHK": f"{s_xpy}, {s_xmy}", "CHKF": f"x + y = {xpy},  x − y = {r2}",
+                                "PIT2": f"x − y = 2√{a}{_eul(a)} 2로 씀", "PIT3": "x² − y²을 (x − y)²으로 인수분해함",
+                                "PART2": f"√{a}의 계수와 유리수 부분을 혼동했으면 인정하지 않는다."}
+            out[f"m{c}-{a}"] = {**base, "ASKQ": f"x²y − xy² = k[[sqrt({a})]]{_eul(a)} 만족시키는 상수 k의 값", "FAC": "xy(x − y)", "FACV": f"xy(x − y) = {_pn(xy)} × {r2} = {2 * xy}[[sqrt({a})]]", "ans": 2 * xy, "KIND": "공통인수 xy", "USE": "xy, x − y",
+                                "PREP": f"xy = {xy}, x − y = {r2}", "CHK": f"{s_xy}, {s_xmy}", "CHKF": f"xy = {c}² − {a} = {xy}",
+                                "PIT2": f"x − y = 2√{a}{_eul(a)} 2로 씀", "PIT3": f"xy = {c}² − {a}의 부호 실수",
+                                "PART2": f"√{a}의 계수와 유리수 부분을 혼동했으면 인정하지 않는다."}
     return out
 
 
@@ -352,25 +376,25 @@ def fa_t6():
         verify=["XPY == 2*c", "XY == c*c - a"],
         question="x = {c} + [[sqrt({a})]], y = {c} − [[sqrt({a})]]일 때, {ASKQ}을 구하시오.",
         answer="{ans}", answer_alt=[],
-        sol1="x, y를 그대로 대입하면 계산이 번거롭다. 먼저 식을 {KIND}로 인수분해하면 {FAC}{ika(FAC)} 되고, x + y = {XPY}, x − y = 2[[sqrt({a})]], xy = {XY}처럼 간단한 값만 필요하다.",
+        sol1="x, y를 그대로 대입하면 계산이 번거롭다. 먼저 식을 {KIND}로 인수분해하면 {FAC}{ika(FAC)} 되므로 {USE}의 값만 있으면 된다: {PREP}.",
         sol2=[
-            "x + y = {XPY}, x − y = 2[[sqrt({a})]], xy = {XY}",
+            "{PREP}",
             "인수분해: {FAC}",
             "{FACV}이므로 답은 {ans}",
         ],
         sol2_fig=steps([
-            {"text": "x + y = {XPY},  x − y = 2[[sqrt({a})]],  xy = {XY}", "hint": "먼저 준비"},
+            {"text": "{PREP}", "hint": "먼저 준비"},
             {"text": "{FAC}", "hint": "{KIND}", "marks": [{"on": "{FAC}", "note": "{USE} 사용"}]},
             {"text": "{FACV}"},
         ]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2)]],
-        sol3="x + y = ({c} + [[sqrt({a})]]) + ({c} − [[sqrt({a})]]) = {XPY}, x − y = 2[[sqrt({a})]], xy = {c}² − ([[sqrt({a})]])² = {XY}{ika(XY)} 맞는지 확인하면 {FACV}이다. 따라서 답은 {ans}이다.",
-        sol3_fig=steps(["xy = {c}² − {a} = {XY}", "{FACV}"]),
+        sol3="x, y의 값에서 다시 계산하면 {CHK}이므로 {FACV}이다. 따라서 답은 {ans}이다.",
+        sol3_fig=steps(["{CHKF}", "{FACV}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="x + y = {XPY}, x − y = 2[[sqrt({a})]], xy = {XY}이고 식을 인수분해하면 {FAC}이므로 {FACV}이다. 따라서 답은 {ans}이다.",
+        model_answer="식을 인수분해하면 {FAC}이고 {PREP}이므로 {FACV}이다. 따라서 답은 {ans}이다.",
         rubric=[
             {"element": "인수분해·값 준비", "points": 3, "criterion": "{FAC}{ro(FAC)} 인수분해하고 {USE}의 값을 구했다.", "partial": "직접 대입해 바르게 계산했어도 인정한다."},
-            {"element": "계산", "points": 2, "criterion": "{ans}{eul(ans)} 구했다.", "partial": "√{a}의 계수와 유리수 부분을 혼동했으면 인정하지 않는다."},
+            {"element": "계산", "points": 2, "criterion": "{ans}{eul(ans)} 구했다.", "partial": "{PART2}"},
         ],
         rubric_total=5,
     )
@@ -565,7 +589,7 @@ def qs_t4():
         cost_values=["m", "D", "b", "c", "m2", "ans"],
         answer_var="ans",
         verify=["ans == nm + D", "m2 - c == D", "b == 2*m"],
-        question="이차방정식 x² {sgt(b)}x {sgn(c)} = 0을 완전제곱식을 이용하여 풀면 x = p ± [[sqrt(q)]]일 때, 유리수 p와 가장 작은 자연수 q에 대하여 p + q의 값을 구하시오.",
+        question="이차방정식 x² {sgt(b)}x {sgn(c)} = 0을 완전제곱식을 이용하여 풀어 해를 x = p ± [[sqrt(q)]] 꼴로 나타낼 때, 유리수 p와 가장 작은 자연수 q에 대하여 p + q의 값을 구하시오.",
         answer="{ans}", answer_alt=[],
         sol1="좌변을 인수분해할 수 없으면 완전제곱식으로 만든다. 상수항 {c}{eul(c)} 우변으로 넘기고, x의 계수 {b}의 반 {m}{eul(m)} 제곱한 {m2}{eul(m2)} 양변에 더하면 좌변이 (x {sgn(m)})²이 된다. 그다음 제곱근을 취해 x = {nm} ± [[sqrt({D})]]{eul(D)} 얻는다.",
         sol2=[
@@ -736,17 +760,18 @@ def qs_t7():
         sol2=[
             "b² − 4ac = {b2} − {foura}k",
             "{NAME}: {b2} − {foura}k {DC}",
-            "{foura}k{ro(foura)} 정리하면 k {OP} {T}",
+            "{foura}k를 이항하면 {foura}k {OP} {b2}, 양변을 {foura}로 나누면 k {OP} {T}",
         ],
         sol2_fig=steps([
             {"text": "{b2} − {foura}k {DC}", "hint": "{NAME}"},
-            {"text": "k {OP} {T}", "hint": "{foura}로 나눔 — 부등호 방향", "marks": [{"on": "{OP}", "note": "음수로 나누면 방향 반대"}]},
+            {"text": "{foura}k {OP} {b2}", "hint": "{foura}k를 이항"},
+            {"text": "k {OP} {T}", "hint": "양변을 {foura}로 나눔", "marks": [{"on": "{OP}", "note": "양수로 나누므로 부등호 방향 그대로"}]},
         ]),
-        sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")]],
+        sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")], [reveal(2), hl("hint:2", "mark:2-0")]],
         sol3="k = {T}이면 b² − 4ac = 0이 되어 중근을 갖는 경계이다. 그보다 k가 작으면 b² − 4ac > 0(두 근), 크면 < 0(근 없음)이므로 조건에 맞는 범위는 k {OP} {T}이다.",
         sol3_fig=steps(["경계 k = {T} (중근)", "k {OP} {T}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="b² − 4ac = {b2} − {foura}k이고 {NAME}이려면 {b2} − {foura}k {DC}이어야 하므로 k {OP} {T}이다.",
+        model_answer="b² − 4ac = {b2} − {foura}k이고 조건 '{NAME}'에 맞으려면 {b2} − {foura}k {DC}이어야 하므로 {foura}k {OP} {b2}, 즉 k {OP} {T}이다.",
         rubric=[
             {"element": "판별식 조건", "points": 3, "criterion": "{b2} − {foura}k {DC}{eul(DC)} 세웠다.", "partial": "부등호(등호 포함 여부)가 틀렸으면 1점."},
             {"element": "범위", "points": 2, "criterion": "k {OP} {T}{eul(T)} 구했다.", "partial": "부등호 방향이 반대면 인정하지 않는다."},
@@ -1128,6 +1153,22 @@ def qa_t7():
 
 
 # t8 — 대각선의 개수 n(n − 3)/2 = D
+def _qd_rows():
+    """(n, 묻는 것) 행 — 순서는 예전 params [n, k] 혼합 진법과 같다(n 바깥, k 안쪽). 확인 문장은 묻는 것 하나만 계산한다."""
+    out = {}
+    for n in range(5, 41):
+        out[f"edge-{n}"] = {"n": n, "ASK": "변의 개수", "ASK2": "변의 개수", "UNIT": "", "w1": 1, "w2": 0,
+                            "CHK": f"{n}각형은 변이 {n}개이다"}
+        out[f"vert-{n}"] = {"n": n, "ASK": "한 꼭짓점에서 그을 수 있는 대각선의 개수", "ASK2": "한 꼭짓점에서 그을 수 있는 대각선의 개수", "UNIT": "", "w1": 0, "w2": 1,
+                            "CHK": f"{n}각형의 한 꼭짓점에서는 자기 자신과 이웃한 두 꼭짓점을 뺀 나머지 꼭짓점으로 대각선을 그을 수 있으므로 {n} − 3 = {n - 3}(개)이다"}
+        out[f"angle-{n}"] = {"n": n, "ASK": "내각의 크기의 합(단위: °)", "ASK2": "내각의 크기의 합", "UNIT": "°", "w1": 0, "w2": 0,
+                             "CHK": f"{n}각형의 내각의 크기의 합은 180° × ({n} − 2) = {180 * (n - 2)}°이다"}
+    return out
+
+
+QD_ROWS = _qd_rows()
+
+
 def qa_t8():
     return tpl(QA, 8, {**QA_BASE, "context": "기하맥락"},
         title="대각선의 개수가 주어진 다각형 — 변의 개수",
@@ -1135,8 +1176,8 @@ def qa_t8():
         variant_axis={"n": "5~40", "묻는 것": "변의 개수 / 한 꼭짓점에서 그을 수 있는 대각선의 개수 / 내각의 크기의 합"},
         difficulty=2,
         discriminates="대각선 공식을 세우고 2를 곱해 정리한 뒤 n ≥ 3인 근을 고르는가",
-        params=[{"name": "n", "values": {"int": [5, 40]}}, {"name": "k", "values": {"in": ["edge", "vert", "angle"]}}],
-        table={"key": "k", "rows": {"edge": {"ASK": "변의 개수", "w1": 1, "w2": 0}, "vert": {"ASK": "한 꼭짓점에서 그을 수 있는 대각선의 개수", "w1": 0, "w2": 1}, "angle": {"ASK": "내각의 크기의 합(단위: °)", "w1": 0, "w2": 0}}},
+        params=[{"name": "f", "values": {"in": list(QD_ROWS)}}],
+        table={"key": "f", "rows": QD_ROWS},
         derive={"D": "n*(n - 3)/2", "D2": "n*(n - 3)", "nn": "-(n - 3)", "n3": "n - 3", "ans": "w1*n + w2*(n - 3) + (1 - w1 - w2)*180*(n - 2)"},
         constraints=["ans != D", "ans != n3 or w2 == 1"],
         cost_values=["n", "D", "D2", "ans"],
@@ -1148,18 +1189,18 @@ def qa_t8():
         sol2=[
             "[[frac(n(n − 3), 2)]] = {D} → n(n − 3) = {D2} → n² − 3n − {D2} = 0",
             "(n − {n})(n + {n3}) = 0 → n = {n} 또는 n = {nn}",
-            "n은 3 이상의 자연수이므로 n = {n}: {n}각형이고, {ASK}는 {ans}",
+            "n은 3 이상의 자연수이므로 n = {n}: {n}각형이고, {ASK2}{eun(ASK2)} {ans}{UNIT}",
         ],
         sol2_fig=steps([
             {"text": "n(n − 3) = {D2}", "hint": "대각선 공식 × 2"},
             {"text": "(n − {n})(n + {n3}) = 0", "hint": "n² − 3n − {D2} = 0", "marks": [{"on": "(n − {n})", "note": "n = {n}"}]},
-            {"text": "{n}각형 → {ASK} {ans}"},
+            {"text": "{n}각형 → {ASK2} {ans}{UNIT}"},
         ]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2)]],
-        sol3="{n}각형의 대각선의 개수는 {n} × {n3} ÷ 2 = {D}{ro(D)} 조건과 맞는다. n = {nn}{eun(nn)} 다각형이 될 수 없다. {n}각형에서 한 꼭짓점에서 그을 수 있는 대각선은 {n3}개, 내각의 크기의 합은 180° × ({n} − 2)이다. 따라서 {ASK}는 {ans}이다.",
-        sol3_fig=steps(["{n} × {n3} ÷ 2 = {D} ✓", "{ASK} {ans}"]),
+        sol3="{n}각형의 대각선의 개수는 {n} × {n3} ÷ 2 = {D}{ro(D)} 조건과 맞는다. n = {nn}{eun(nn)} 다각형이 될 수 없다. {CHK}. 따라서 {ASK2}{eun(ASK2)} {ans}{UNIT}이다.",
+        sol3_fig=steps(["{n} × {n3} ÷ 2 = {D} ✓", "{ASK2} {ans}{UNIT}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="n각형의 대각선의 개수는 [[frac(n(n − 3), 2)]]이므로 n(n − 3) = {D2}, 즉 n² − 3n − {D2} = 0에서 (n − {n})(n + {n3}) = 0이므로 n = {n} (n ≥ 3). 따라서 {n}각형이고 {ASK}는 {ans}이다.",
+        model_answer="n각형의 대각선의 개수는 [[frac(n(n − 3), 2)]]이므로 n(n − 3) = {D2}, 즉 n² − 3n − {D2} = 0에서 (n − {n})(n + {n3}) = 0이므로 n = {n} (n ≥ 3). 따라서 {n}각형이고 {ASK2}{eun(ASK2)} {ans}{UNIT}이다.",
         rubric=[
             {"element": "식 세우기", "points": 2, "criterion": "[[frac(n(n − 3), 2)]] = {D}{eul(D)} 세웠다.", "partial": "2로 나누는 것을 빠뜨렸으면 인정하지 않는다."},
             {"element": "풀이·답", "points": 3, "criterion": "n = {n}{eul(n)} 구해 {ASK} {ans}{eul(ans)} 답했다.", "partial": "음수 근을 버리지 않았으면 2점."},

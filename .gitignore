@@ -19,6 +19,10 @@ itemfactory/out/gen/review*.html
 itemfactory/out/legible*.json
 itemfactory/out/s[0-9]*/
 itemfactory/out/gen_prev/
+# 로컬 검증용 전체·부분 빌드 (전체 재빌드 1 GB 넘음) — 09-25
+itemfactory/out/all/
+itemfactory/out/final/
+itemfactory/out/fix*/
 itemfactory/legacy/
 
 # 참고 코퍼스(출판사 교사자료·교육청 채점표·동아 서술형 문항) — 저작물이라 공개 저장소에 올리지 않는다.

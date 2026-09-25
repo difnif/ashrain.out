@@ -352,7 +352,8 @@
         "c": "a*p*q",
         "ans": "w1*(-a*(p + q)) + w2*(a*p*q)",
         "s": "p + q",
-        "m": "p*q"
+        "m": "p*q",
+        "nb": "-(p + q)"
       },
       "constraints": [
         "p < q",
@@ -361,7 +362,8 @@
         "ans != p",
         "ans != q",
         "ans != a",
-        "ans != 0"
+        "ans != 0",
+        "p + q != 0"
       ],
       "cost_values": [
         "a",
@@ -373,16 +375,19 @@
       "verify": [
         "a*p*p + b*p + c == 0",
         "a*q*q + b*q + c == 0",
-        "ans == w1*b + w2*c"
+        "ans == w1*b + w2*c",
+        "a*nb == b",
+        "a*m == c"
       ],
       "question": "두 근이 {p}, {q}이고 x²의 계수가 {a}인 이차방정식을 {a}x² + bx + c = 0 꼴로 나타낼 때, {QT}의 값을 구하시오.",
       "answer": "{ans}",
       "answer_alt": [],
-      "sol1": "두 근이 p, q 이고 x²의 계수가 a 인 이차방정식은 a(x − p)(x − q) = 0 이다. 근이 {p}이면 인수는 (x − {pn(p)}) 이므로 부호에 주의해 인수를 만든 뒤 전개하여 계수를 읽는다.",
+      "sol1": "두 근이 p, q이고 x²의 계수가 a인 이차방정식은 a(x − p)(x − q) = 0이다. 근이 {p}이면 인수는 (x − {pn(p)})이므로 부호에 주의해 인수를 만든다. 전개할 때는 괄호 두 개를 먼저 곱해 정리한 뒤, 앞의 {a}{eul(a)} x² 항만이 아니라 x 항과 상수항에도 모두 곱해야 한다.",
       "sol2": [
-        "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0",
-        "두 근의 합은 {s}, 두 근의 곱은 {m}이므로 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0",
-        "따라서 b = {b}, c = {c}이고 {QT} = {ans}"
+        "{a}(x − {pn(p)})(x − {pn(q)}) = 0",
+        "괄호 두 개를 먼저 곱하면 (x − {pn(p)})(x − {pn(q)}) = x² {sgt(nb)}x {sgn(m)} (두 근의 합 {s}, 곱 {m})",
+        "{a}{eul(a)} 세 항에 모두 곱하면 {a}(x² {sgt(nb)}x {sgn(m)}) = {a}x² {sgt(b)}x {sgn(c)} = 0",
+        "{a}x² + bx + c = 0과 비교하면 b = {b}, c = {c}이므로 구하는 {QT}의 값은 {ans}"
       ],
       "sol2_fig": [
         {
@@ -390,21 +395,31 @@
           "args": {
             "lines": [
               {
-                "text": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0",
+                "text": "{a}(x − {pn(p)})(x − {pn(q)}) = 0",
                 "hint": "근 p → 인수 (x − p)",
                 "marks": [
                   {
-                    "on": "{pn(p)}",
-                    "note": "음수 근이면 부호가 바뀐다"
+                    "on": "(x − {pn(p)})",
+                    "note": "x에서 근 {p}{eul(p)} 뺀다"
                   }
                 ]
               },
               {
-                "text": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0",
-                "hint": "a 를 모든 항에 곱한다"
+                "text": "(x − {pn(p)})(x − {pn(q)}) = x² {sgt(nb)}x {sgn(m)}",
+                "hint": "합 {s}, 곱 {m}"
               },
               {
-                "text": "b = {b}, c = {c} → {QT} = {ans}"
+                "text": "{a}(x² {sgt(nb)}x {sgn(m)}) = {a}x² {sgt(b)}x {sgn(c)}",
+                "hint": "{a}{eul(a)} 모든 항에 곱한다",
+                "marks": [
+                  {
+                    "on": "{a}x²",
+                    "note": "x 항·상수항에도 {a}배"
+                  }
+                ]
+              },
+              {
+                "text": "b = {b}, c = {c} → {QT}의 값 {ans}"
               }
             ]
           }
@@ -438,10 +453,23 @@
           {
             "act": "reveal",
             "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": [
+              "hint:2",
+              "mark:2-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:3"
           }
         ]
       ],
-      "sol3": "x = {p}{eul(p)} 대입하면 인수 (x − {pn(p)})가 0이 되어 좌변 전체가 0이고, x = {q}{eul(q)} 대입해도 마찬가지다. 답은 {ans}이다.",
+      "sol3": "x = {p}{eul(p)} 대입하면 인수 (x − {pn(p)}){ika(p)} 0이 되어 좌변 전체가 0이고, x = {q}{eul(q)} 대입해도 마찬가지다. 답은 {ans}이다.",
       "sol3_fig": [
         {
           "fn": "steps",
@@ -467,24 +495,24 @@
           }
         ]
       ],
-      "model_answer": "두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {co(a)}(x − {pn(p)})(x − {pn(q)}) = 0, 전개하면 {co(a)}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이고 {QT} = {ans}이다.",
+      "model_answer": "두 근이 {p}, {q}이고 x²의 계수가 {a}이므로 {a}(x − {pn(p)})(x − {pn(q)}) = 0이다. (x − {pn(p)})(x − {pn(q)}) = x² {sgt(nb)}x {sgn(m)}이고, {a}{eul(a)} 모든 항에 곱하면 {a}x² {sgt(b)}x {sgn(c)} = 0이다. 따라서 b = {b}, c = {c}이므로 구하는 {QT}의 값은 {ans}이다.",
       "rubric": [
         {
           "element": "인수 만들기",
           "points": 3,
-          "criterion": "{co(a)}(x − {pn(p)})(x − {pn(q)}) = 0 꼴로 세웠다.",
-          "partial": "근의 부호를 바꿔 인수를 만들었으면 인정하지 않는다."
+          "criterion": "{a}(x − {pn(p)})(x − {pn(q)}) = 0 꼴로 세웠다.",
+          "partial": "근 p의 인수를 (x + p)로 썼으면 인정하지 않는다."
         },
         {
           "element": "전개",
           "points": 2,
-          "criterion": "{co(a)}x² {sgt(b)}x {sgn(c)} = 0으로 전개했다.",
-          "partial": "a 를 한 항에만 곱했으면 1점."
+          "criterion": "{a}(x² {sgt(nb)}x {sgn(m)}) = {a}x² {sgt(b)}x {sgn(c)} = 0으로 {a}{eul(a)} 모든 항에 곱해 전개했다.",
+          "partial": "a를 한 항에만 곱했으면 1점."
         },
         {
           "element": "답 구하기",
           "points": 2,
-          "criterion": "{QT} = {ans}{eul(ans)} 구했다.",
+          "criterion": "{QT}의 값 {ans}{eul(ans)} 구했다.",
           "partial": "다른 계수를 답했으면 인정하지 않는다."
         }
       ],
@@ -492,12 +520,12 @@
       "id": "m3-1-quad-build-t4",
       "pitfalls": [
         {
-          "text": "근 p 의 인수를 (x + p) 로 씀",
+          "text": "근 p의 인수를 (x + p)로 씀",
           "on": "인수 만들기",
           "effect": "불인정"
         },
         {
-          "text": "x² 의 계수 a 를 x 항이나 상수항에 곱하지 않음",
+          "text": "x²의 계수 a를 x 항이나 상수항에 곱하지 않음",
           "on": "전개",
           "effect": "부분"
         }

@@ -3607,8 +3607,8 @@
       ],
       "sol1": "우극한 x → {p}+는 x ≥ {p}인 쪽의 식 x² {sgn(a)}에, 좌극한 x → {p}−는 x < {p}인 쪽의 식 {co(b)}x {sgn(c)}에 x = {p}{eul(p)} 대입해 구한다(다항식은 연속이므로 대입으로 극한을 얻는다).",
       "sol2": [
-        "우극한: [[lim(x, {p}, pow(x,2) {sgn(a)}, +)]] = {p}² {sgn(a)} = {R}",
-        "좌극한: [[lim(x, {p}, {co(b)}x {sgn(c)}, -)]] = {b} × {pn(p)} {sgn(c)} = {Lf}",
+        "우극한: [[lim(x, {p}, pow(x,2) {sgn(a)}, +)]] = {pn(p)}² {sgn(a)} = {R}",
+        "좌극한: [[lim(x, {p}, {co(b)}x {sgn(c)}, -)]] = {b*p} {sgn(c)} = {Lf}",
         "합: {R} + {pn(Lf)} = {ans}"
       ],
       "sol2_fig": [
@@ -3617,11 +3617,11 @@
           "args": {
             "lines": [
               {
-                "text": "우극한: [[lim(x, {p}, pow(x,2) {sgn(a)}, +)]] = {p}² {sgn(a)} = {R}",
+                "text": "우극한: [[lim(x, {p}, pow(x,2) {sgn(a)}, +)]] = {pn(p)}² {sgn(a)} = {R}",
                 "hint": "x ≥ {p} 쪽"
               },
               {
-                "text": "좌극한: [[lim(x, {p}, {co(b)}x {sgn(c)}, -)]] = {b} × {pn(p)} {sgn(c)} = {Lf}",
+                "text": "좌극한: [[lim(x, {p}, {co(b)}x {sgn(c)}, -)]] = {b*p} {sgn(c)} = {Lf}",
                 "hint": "x < {p} 쪽"
               },
               {
@@ -3714,7 +3714,7 @@
       "rubric_total": 5,
       "pitfalls": [
         {
-          "text": "x ≥ p 쪽 식으로 좌극한을 구함",
+          "text": "x ≥ {p} 쪽 식으로 좌극한을 구함",
           "on": "좌·우극한",
           "effect": "불인정"
         },
@@ -3831,8 +3831,8 @@
       ],
       "sol1": "두 조각 모두 다항식이므로 x = {p}{ika(p)} 아닌 곳에서는 연속이다. x = {p}에서 연속이려면 좌극한(x < {p} 쪽 {co(b)}x {sgn(c)})과 우극한·함숫값(x ≥ {p} 쪽 x² + a)이 같아야 한다.",
       "sol2": [
-        "좌극한: {b} × {pn(p)} {sgn(c)} = {Lf}",
-        "우극한 = 함숫값: {p}² + a = {p2} + a",
+        "좌극한: {co(b)}x {sgn(c)}에 x = {p}{eul(p)} 대입하면 {b*p} {sgn(c)} = {Lf}",
+        "우극한 = 함숫값: {pn(p)}² + a = {p2} + a",
         "{p2} + a = {Lf} → a = {ans}"
       ],
       "sol2_fig": [
@@ -3841,11 +3841,11 @@
           "args": {
             "lines": [
               {
-                "text": "좌극한: {b} × {pn(p)} {sgn(c)} = {Lf}",
+                "text": "좌극한: {co(b)}x {sgn(c)}에 x = {p}{eul(p)} 대입하면 {b*p} {sgn(c)} = {Lf}",
                 "hint": "x < {p} 쪽"
               },
               {
-                "text": "우극한 = 함숫값: {p}² + a = {p2} + a",
+                "text": "우극한 = 함숫값: {pn(p)}² + a = {p2} + a",
                 "hint": "x ≥ {p} 쪽"
               },
               {

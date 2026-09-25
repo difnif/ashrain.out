@@ -221,19 +221,25 @@ TR = "h1-2-transform"
 TR_B = {**HS, "prereq": ["원의 방정식", "직선의 방정식"], "ops": ["도형의 이동"], "traps": ["이동 방향 부호", "대칭의 종류"], "tags": ["평행이동", "대칭이동"]}
 
 
+def _sq(v, c):
+    """원의 방정식 문면 — 중심 좌표 c 에 대한 (v − c)², c = 0 이면 v² ('(x + 0)²' 을 쓰지 않는다)."""
+    return f"{v}²" if c == 0 else f"({v} {'−' if c > 0 else '+'} {abs(c)})²"
+
+
 def tr_t1():
     return T(TR, 1, TR_B, title="원의 평행이동 — 옮긴 원의 방정식의 상수항",
         skill="x 대신 x − m, y 대신 y − n을 넣어 옮긴 도형의 식을 만들고 전개하기", axis={"중심": "−4~4", "이동": "±1~±5"}, disc="x축 방향 m만큼의 이동이 x → x − m임을 알고 중심이 (p + m, q + n)이 됨을 쓰는가", diff=2,
+        table=[{"key": "p", "rows": {str(v): {"XL": _sq("x", v)} for v in range(-4, 5)}}, {"key": "qv", "rows": {str(v): {"YL": _sq("y", v)} for v in range(-4, 5)}}],
         params=[{"name": "p", "values": {"int": [-4, 4]}}, {"name": "qv", "values": {"int": [-4, 4]}}, {"name": "r", "values": {"int": [1, 5]}}, {"name": "m", "values": {"in": NZ(-5, 5)}}, {"name": "n", "values": {"in": NZ(-5, 5)}}],
         derive={"np": "-p", "nq": "-qv", "r2": "r*r", "p2": "p + m", "q2": "qv + n", "np2": "-(p + m)", "nq2": "-(qv + n)", "A": "-2*(p + m)", "B": "-2*(qv + n)", "ans": "(p + m)**2 + (qv + n)**2 - r*r"},
         constraints=["ans != 0", "ans not in (p, qv, r2, m, n)", "p2 != 0", "q2 != 0"], cost=["p", "qv", "r", "m", "n", "p2", "q2", "ans"], verify=["ans == p2*p2 + q2*q2 - r2"],
-        q="원 (x {sgn(np)})² + (y {sgn(nq)})² = {r2}{eul(r2)} x축의 방향으로 {m}만큼, y축의 방향으로 {n}만큼 평행이동한 원의 방정식이 x² + y² + ax + by + c = 0일 때, 상수 c의 값을 구하시오.", answer="{ans}",
-        sol1="도형을 x축 방향으로 m, y축 방향으로 n만큼 평행이동하면 식의 x 대신 x − m, y 대신 y − n을 넣는다. 원의 중심 ({p}, {qv})는 ({p2}, {q2})로 옮겨지고 반지름은 그대로 {r}이다. (x {sgn(np2)})² + (y {sgn(nq2)})² = {r2}{eul(r2)} 전개해 상수항을 읽는다.",
+        q="원 {XL} + {YL} = {r2}{eul(r2)} x축의 방향으로 {m}만큼, y축의 방향으로 {n}만큼 평행이동한 원의 방정식이 x² + y² + ax + by + c = 0일 때, 상수 c의 값을 구하시오.", answer="{ans}",
+        sol1="도형을 x축의 방향으로 {m}만큼, y축의 방향으로 {n}만큼 평행이동하면 식의 x 대신 x {sgn(-m)}, y 대신 y {sgn(-n)}{eul(n)} 넣는다. 원의 중심 ({p}, {qv}){eun(qv)} ({p2}, {q2}){ro(q2)} 옮겨지고 반지름은 그대로 {r}이다. (x {sgn(np2)})² + (y {sgn(nq2)})² = {r2}{eul(r2)} 전개해 상수항을 읽는다.",
         sol2=[("중심 ({p}, {qv}) → ({p2}, {q2}), 반지름 {r} 그대로", "평행이동"), ("(x {sgn(np2)})² + (y {sgn(nq2)})² = {r2}", "옮긴 원"), ("전개: x² + y² {sgt(A)}x {sgt(B)}y {sgn(ans)} = 0 → c = {ans}", None, ("{ans}", "c"))],
-        sol3=["상수항 c = (중심의 x좌표)² + (중심의 y좌표)² − r² = {p2}² + {pn(q2)}² − {r2} = {ans}이다. 따라서 c = {ans}이다.", "c = {p2}² + {pn(q2)}² − {r2}", "c = {ans}"],
+        sol3=["상수항 c = (중심의 x좌표)² + (중심의 y좌표)² − (반지름)² = {pn(p2)}² + {pn(q2)}² − {r2} = {ans}이다. 따라서 c = {ans}이다.", "c = {pn(p2)}² + {pn(q2)}² − {r2}", "c = {ans}"],
         model="평행이동한 원은 (x {sgn(np2)})² + (y {sgn(nq2)})² = {r2}이고 전개하면 x² + y² {sgt(A)}x {sgt(B)}y {sgn(ans)} = 0이므로 c = {ans}이다.",
         rubric=[("평행이동", 3, "옮긴 원 (x {sgn(np2)})² + (y {sgn(nq2)})² = {r2}{eul(r2)} 세웠다.", "이동 방향 부호가 반대면 인정하지 않는다."), ("전개·c", 2, "c = {ans}{eul(ans)} 구했다.", "전개 실수면 1점.")],
-        pitfalls=[("x 대신 x + m을 넣음(방향 반대)", "평행이동", "불인정"), ("반지름도 바뀐다고 생각함", "평행이동", "부분"), ("전개 실수", "전개·c", "부분")])
+        pitfalls=[("x 대신 x {sgn(m)}, y 대신 y {sgn(n)}{eul(n)} 넣음(방향 반대)", "평행이동", "불인정"), ("반지름도 바뀐다고 생각함", "평행이동", "부분"), ("전개 실수", "전개·c", "부분")])
 
 
 SYM_ROWS = {

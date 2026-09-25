@@ -67,7 +67,9 @@ def ap_t1():
         pitfalls=[("끝점 값을 비교하지 않고 극값을 최대·최소로 답함", "후보 비교", "불인정"), ("구간 밖의 극점을 후보에 넣음", "후보 비교", "부분"), ("함숫값 계산 실수", "답", "부분")])
 
 
-def _ap2_rows():
+def _ap2_rows_legacy():
+    """v1 행 집합(정수 k 최솟값 갈래 포함). 이제 쓰지 않지만 _pick 이 모듈 rng 를 행 수만큼 소비하므로,
+    뒤에 오는 틀(_ap5·_in3 …)의 뽑기가 바뀌지 않도록 같은 수의 키로 한 번 섞어 준다."""
     out = {}
     for r1, r2, p, q in CUBICS:
         for c in (-4, -1, 0, 2, 5):
@@ -77,14 +79,69 @@ def _ap2_rows():
             v = int(M - mn - 1)
             qtext = f"방정식 {desc} = k가 서로 다른 세 실근을 갖도록 하는 정수 k의 개수를 구하시오."
             if v >= 1 and Fraction(v) not in _nums(qtext):
-                out[f"{r1}_{r2}_{c}_3"] = {"FX": desc, "ASK": "서로 다른 세 실근을 갖도록 하는 정수 k의 개수", "V": v, "M": int(M), "MN": int(mn), "R1": r1, "R2": r2, "COND": f"{int(mn)} < k < {int(M)}", "WHY": "y = k가 극댓값과 극솟값 사이를 지나야 세 점에서 만난다", "DF": f"f'(x) = 3(x {'−' if r1 > 0 else '+'} {abs(r1)})(x {'−' if r2 > 0 else '+'} {abs(r2)})".replace("(x − 0)", "x").replace("(x + 0)", "x")}
-            for kk, ask, v2, cond, why in (("one_min", "오직 하나의 실근을 갖도록 하는 정수 k의 최솟값", int(M) + 1, f"k > {int(M)} 또는 k < {int(mn)}", "y = k가 극댓값보다 위이거나 극솟값보다 아래이면 한 점에서만 만난다"),
-                                           ("two", "서로 다른 두 실근을 갖는 모든 k의 값의 합", int(M + mn), f"k = {int(M)} 또는 k = {int(mn)}", "y = k가 극댓값 또는 극솟값과 같으면 접해서 두 실근(중근 포함)")):
+                out[f"{r1}_{r2}_{c}_3"] = 1
+            for kk, ask, v2 in (("one_min", "오직 하나의 실근을 갖도록 하는 정수 k의 최솟값", int(M) + 1), ("two", "서로 다른 두 실근을 갖는 모든 k의 값의 합", int(M + mn))):
                 qtext = f"방정식 {desc} = k가 {ask}를 구하시오."
                 if v2 == 0 or Fraction(v2) in _nums(qtext):
                     continue
-                out[f"{r1}_{r2}_{c}_{kk}"] = {"FX": desc, "ASK": ask, "V": v2, "M": int(M), "MN": int(mn), "R1": r1, "R2": r2, "COND": cond, "WHY": why, "DF": f"f'(x) = 3(x {'−' if r1 > 0 else '+'} {abs(r1)})(x {'−' if r2 > 0 else '+'} {abs(r2)})".replace("(x − 0)", "x").replace("(x + 0)", "x")}
+                out[f"{r1}_{r2}_{c}_{kk}"] = 1
     return _pick(out, 330)
+
+
+def _pnv(v):
+    return f"({v})" if v < 0 else str(v)
+
+
+def _ap2_rows():
+    """t2 행. 한 실근 갈래는 k > 극댓값 · k < 극솟값 두 범위가 모두 답이 되므로 k 를 자연수(최솟값)·음의 정수(최댓값)로 묶고,
+    극솟값 < 0 < 극댓값 인 f 만 쓴다 → 자연수 k 는 아래 범위에, 음의 정수 k 는 위 범위에 들 수 없어 답이 하나로 정해진다."""
+    _ap2_rows_legacy()                      # rng 소비만 (위 docstring)
+    out = {}
+    WHY1 = "y = k가 극댓값보다 위에 있거나 극솟값보다 아래에 있으면 곡선과 한 점에서만 만난다"
+    CHK1 = "k가 극값과 같으면 곡선에 접해 실근이 2개(그중 하나는 중근)가 되므로 경계는 제외한다"
+    for r1, r2, p, q in CUBICS:
+        DF = f"f'(x) = 3(x {'−' if r1 > 0 else '+'} {abs(r1)})(x {'−' if r2 > 0 else '+'} {abs(r2)})".replace("(x − 0)", "x").replace("(x + 0)", "x")
+        for c in range(-4, 6):
+            f = [1, p, q, c]
+            M, mn = int(_ev(f, r1)), int(_ev(f, r2))
+            desc = _pt(f)
+            base = {"FX": desc, "M": M, "MN": mn, "R1": r1, "R2": r2, "DF": DF}
+            if c in (-4, -1, 0, 2, 5):
+                v = M - mn - 1
+                qtext = f"방정식 {desc} = k가 서로 다른 세 실근을 갖도록 하는 정수 k의 개수를 구하시오."
+                if v >= 1 and Fraction(v) not in _nums(qtext):
+                    out[f"{r1}_{r2}_{c}_3"] = {**base, "ASK": "서로 다른 세 실근을 갖도록 하는 정수 k의 개수", "V": v, "COND": f"{mn} < k < {M}",
+                                               "WHY": "y = k가 극솟값과 극댓값 사이에 있어야 곡선과 세 점에서 만난다",
+                                               "PICK": f"{mn} < k < {M}인 정수 k는 {mn + 1}부터 {M - 1}까지이므로 개수는 {v}" if v > 1 else f"{mn} < k < {M}인 정수 k는 {mn + 1} 하나뿐이므로 개수는 1",
+                                               "CHK": CHK1, "PART": "정수 개수 세기 실수면 1점.",
+                                               "PITB": "경계 k = 극값을 세 실근에 포함", "PITC": "양 끝을 뺀 정수 개수 세기 실수"}
+                v = M + mn
+                qtext = f"방정식 {desc} = k가 서로 다른 두 실근을 갖는 모든 k의 값의 합을 구하시오."
+                if v != 0 and Fraction(v) not in _nums(qtext):
+                    out[f"{r1}_{r2}_{c}_two"] = {**base, "ASK": "서로 다른 두 실근을 갖는 모든 k의 값의 합", "V": v, "COND": f"k = {M} 또는 k = {mn}",
+                                                 "WHY": "y = k가 극댓값 또는 극솟값과 같으면 곡선에 접해 서로 다른 실근이 2개(그중 하나는 중근)가 된다",
+                                                 "PICK": f"k의 값의 합은 {M} + {_pnv(mn)} = {v}",
+                                                 "CHK": "k가 두 극값 사이이면 실근이 3개, 바깥이면 1개이므로 서로 다른 두 실근은 k가 극값과 같을 때뿐이다", "PART": "한 값만 구했으면 1점.",
+                                                 "PITB": "k가 두 극값 사이일 때도 서로 다른 두 실근이라고 봄", "PITC": "두 k의 값 중 하나만 합에 넣음"}
+            if not (mn < 0 < M):
+                continue
+            for kk, ask, v, pick, chk, pitb, pitc in (
+                    ("one_nat", "오직 하나의 실근을 갖도록 하는 자연수 k의 최솟값", M + 1,
+                     f"극솟값 {mn}{_ika(mn)} 음수이므로 k < {mn}인 k는 자연수가 아니다. 따라서 자연수 k는 k > {M}일 때만 조건을 만족하고, 그 최솟값은 {M + 1}",
+                     f"{CHK1}. 또 k < {mn} 쪽에는 자연수가 없어 답이 k > {M} 쪽에서만 나온다",
+                     "경계 k = 극댓값을 한 실근에 포함해 극댓값을 답함", "k < 극솟값 쪽에 자연수가 없음을 밝히지 않고 k > 극댓값 쪽만 봄"),
+                    ("one_neg", "오직 하나의 실근을 갖도록 하는 음의 정수 k의 최댓값", mn - 1,
+                     f"극댓값 {M}{_ika(M)} 양수이므로 k > {M}인 k는 음수가 아니다. 따라서 음의 정수 k는 k < {mn}일 때만 조건을 만족하고, 그 최댓값은 {mn - 1}",
+                     f"{CHK1}. 또 k > {M} 쪽에는 음의 정수가 없어 답이 k < {mn} 쪽에서만 나온다",
+                     "경계 k = 극솟값을 한 실근에 포함해 극솟값을 답함", "k > 극댓값 쪽에 음의 정수가 없음을 밝히지 않고 k < 극솟값 쪽만 봄")):
+                qtext = f"방정식 {desc} = k가 {ask}을 구하시오."
+                if v == 0 or Fraction(v) in _nums(qtext):
+                    continue
+                out[f"{r1}_{r2}_{c}_{kk}"] = {**base, "ASK": ask, "V": v, "COND": f"k > {M} 또는 k < {mn}", "WHY": WHY1, "PICK": pick, "CHK": chk,
+                                              "PART": "두 범위 중 한쪽만 보고 답했으면 1점.", "PITB": pitb, "PITC": pitc}
+    keys = sorted(out)
+    random.Random(20260925).shuffle(keys)
+    return {k: out[k] for k in keys}
 
 
 AP2_ROWS = _ap2_rows()
@@ -92,31 +149,31 @@ AP2_ROWS = _ap2_rows()
 
 def ap_t2():
     return T(AP, 2, AP_B, title="방정식의 실근의 개수 — y = f(x)와 y = k의 교점",
-        skill="삼차함수의 극댓값·극솟값과 직선 y = k의 위치 관계로 실근의 개수를 판단하기", axis={"f": "x³ + px² + qx + c (정수 극점)", "묻는 것": "세 실근 k의 개수 / 한 실근 k의 최솟값 / 두 실근 k의 합"}, disc="실근의 개수를 그래프의 교점 개수로 바꾸고 극값을 경계로 쓰는가", diff=3,
+        skill="삼차함수의 극댓값·극솟값과 직선 y = k의 위치 관계로 실근의 개수를 판단하기", axis={"f": "x³ + px² + qx + c (정수 극점)", "묻는 것": "세 실근 k의 개수 / 한 실근 자연수 k의 최솟값·음의 정수 k의 최댓값 / 두 실근 k의 합"}, disc="실근의 개수를 그래프의 교점 개수로 바꾸고 극값을 경계로 쓰는가", diff=3,
         params=[{"name": "f", "values": {"in": list(AP2_ROWS)}}], table={"key": "f", "rows": AP2_ROWS},
         derive={"ans": "V"}, cost=["M", "MN", "ans"], verify=["ans == V"],
         q="방정식 {FX} = k가 {ASK}{eul(ASK)} 구하시오.", answer="{ans}",
         sol1="방정식 f(x) = k의 실근은 곡선 y = f(x)와 직선 y = k의 교점의 x좌표이다. {DF}이므로 극댓값 f({R1}) = {M}, 극솟값 f({R2}) = {MN}이다. {WHY}.",
-        sol2=[("극댓값 {M}, 극솟값 {MN}", "극값"), ("{WHY}: {COND}", "직선 y = k의 위치"), ("답: {ans}", None, ("{ans}", "답"))],
-        sol3=["k가 극값과 같을 때는 접하므로 실근이 2개(중근 포함)임을 경계에서 확인한다. 따라서 답은 {ans}이다.", "{COND}", "답 {ans}"],
-        model="극댓값 {M}, 극솟값 {MN}이고 {WHY}이므로 {COND}. 따라서 답은 {ans}이다.",
-        rubric=[("극값·위치 관계", 3, "극댓값 {M}, 극솟값 {MN}{eul(MN)} 구해 {COND}{eul(COND)} 세웠다.", "경계(등호) 처리를 틀리면 1점."), ("답", 2, "{ans}{eul(ans)} 구했다.", "정수 세기 실수면 1점.")],
-        pitfalls=[("극값을 실근의 개수로 착각", "극값·위치 관계", "불인정"), ("경계 k = 극값을 세 실근에 포함", "극값·위치 관계", "부분"), ("정수 개수 세기 실수", "답", "부분")])
+        sol2=[("극댓값 {M}, 극솟값 {MN}", "극값"), ("{WHY}: {COND}", "직선 y = k의 위치"), ("{PICK}", None, ("{ans}", "답"))],
+        sol3=["{CHK}. 따라서 답은 {ans}이다.", "{COND}", "답 {ans}"],
+        model="극댓값 {M}, 극솟값 {MN}이다. {WHY}. 조건은 {COND}이고, {PICK}이다.",
+        rubric=[("극값·위치 관계", 3, "극댓값 {M}, 극솟값 {MN}{eul(MN)} 구해 {COND}{eul(COND)} 세웠다.", "경계(등호) 처리를 틀리면 1점."), ("답", 2, "{ans}{eul(ans)} 구했다.", "{PART}")],
+        pitfalls=[("극값을 실근의 개수로 착각", "극값·위치 관계", "불인정"), ("경계 k = 극값을 세 실근에 포함", "극값·위치 관계", "부분"), ("한 실근 조건에서 k > 극댓값·k < 극솟값 중 한쪽만 봄", "답", "부분"), ("정수 개수 세기 실수", "답", "부분")])
 
 
 def ap_t3():
     return T(AP, 3, AP_B, title="극값을 가질 조건 — f'(x) = 0의 판별식",
         skill="삼차함수가 극값을 가지려면 f'(x) = 0이 서로 다른 두 실근을 가져야 함(D > 0)을 쓰기", axis={"f": "x³ + ax² + bx (b: 1~60)", "묻는 것": "극값을 갖지 않는 정수 a의 개수 / 극값을 갖는 자연수 a의 최솟값 / 극값을 갖지 않는 자연수 a의 최댓값"}, disc="극값의 존재를 도함수의 판별식 부호로 옮기는가", diff=3,
         params=[{"name": "b", "values": {"int": [1, 60]}}, {"name": "k", "values": {"in": ["none", "min", "nmax"]}}],
-        table={"key": "k", "rows": {"none": {"ASK": "극값을 갖지 않도록 하는 정수 a의 개수", "COND": "D/4 = a² − 3b ≤ 0", "w": 1, "w2": 0}, "min": {"ASK": "극값을 갖도록 하는 자연수 a의 최솟값", "COND": "D/4 = a² − 3b > 0", "w": 0, "w2": 0}, "nmax": {"ASK": "극값을 갖지 않도록 하는 자연수 a의 최댓값", "COND": "D/4 = a² − 3b ≤ 0", "w": 0, "w2": 1}}},
+        table={"key": "k", "rows": {"none": {"ASK": "극값을 갖지 않도록 하는 정수 a의 개수", "WHEN": "극값을 갖지 않으려면 D/4 ≤ 0", "w": 1, "w2": 0}, "min": {"ASK": "극값을 갖도록 하는 자연수 a의 최솟값", "WHEN": "극값을 가지려면 D/4 > 0", "w": 0, "w2": 0}, "nmax": {"ASK": "극값을 갖지 않도록 하는 자연수 a의 최댓값", "WHEN": "극값을 갖지 않으려면 D/4 ≤ 0", "w": 0, "w2": 1}}},
         derive={"b3": "3*b", "r": "floor(sqrt(3*b))", "ans": "w*(2*floor(sqrt(3*b)) + 1) + w2*floor(sqrt(3*b)) + (1 - w - w2)*(floor(sqrt(3*b)) + 1)", "exact": "floor(sqrt(3*b))*floor(sqrt(3*b)) == 3*b"},
         constraints=["ans not in (b, b3)", "not exact"], cost=["b", "b3", "r", "ans"], verify=["r*r < b3", "(r + 1)*(r + 1) > b3"],
-        q="함수 f(x) = x³ + ax² + {b}x가 {ASK}{eul(ASK)} 구하시오.", answer="{ans}",
-        sol1="f'(x) = 3x² + 2ax + {b}이고, 삼차함수가 극값을 가지려면 f'(x) = 0이 서로 다른 두 실근을 가져야 한다(판별식 D > 0). 극값을 갖지 않으려면 D ≤ 0이다. D/4 = a² − 3 × {b} = a² − {b3}.",
-        sol2=[("f'(x) = 3x² + 2ax + {b}, D/4 = a² − {b3}", "도함수의 판별식"), ("{COND} → a² {OPS} {b3}", "조건"), ("답: {ans}", None, ("{ans}", "답"))],
+        q="함수 f(x) = x³ + ax² + {co(b)}x가 {ASK}{eul(ASK)} 구하시오.", answer="{ans}",
+        sol1="f'(x) = 3x² + 2ax + {b}이고, 삼차함수가 극값을 가지려면 f'(x) = 0이 서로 다른 두 실근을 가져야 한다(판별식 D > 0). 극값을 갖지 않으려면 D ≤ 0이다. D/4 = {D4}.",
+        sol2=[("f'(x) = 3x² + 2ax + {b}, D/4 = a² − {b3}", "도함수의 판별식"), ("{WHEN}: a² − {b3} {OPS} 0 → a² {OPS} {b3}", "조건"), ("{RN_none if w == 1 else (RN_nmax if w2 == 1 else RN_min)}", None, ("{ans}", "답"))],
         sol3=["a² = {b3}이 되는 정수 a는 없으므로({r}² = {r*r} < {b3} < {(r + 1)*(r + 1)} = {r + 1}²) 경계에서 세는 실수가 없는지 확인한다. 따라서 답은 {ans}이다.", "{r}² < {b3} < {r + 1}²", "답 {ans}"],
-        model="D/4 = a² − {b3}에서 {COND}이므로 a² {OPS} {b3}이고, {r}² < {b3} < {r + 1}²이므로 답은 {ans}이다.",
-        rubric=[("판별식 조건", 3, "판별식 조건 {COND} 꼴의 부등식을 세웠다.", "부등호 방향이 반대면 인정하지 않는다."), ("정수 세기", 2, "{ans}{eul(ans)} 구했다.", "경계 처리 실수면 1점.")],
+        model="D/4 = a² − {b3}이고 {WHEN}이어야 하므로 a² − {b3} {OPS} 0, 즉 a² {OPS} {b3}이다. {r}² < {b3} < {r + 1}²에 주의하면 {RN_none if w == 1 else (RN_nmax if w2 == 1 else RN_min)}이다.",
+        rubric=[("판별식 조건", 3, "판별식 조건 a² − {b3} {OPS} 0을 세웠다.", "부등호 방향이 반대면 인정하지 않는다."), ("정수 세기", 2, "{ans}{eul(ans)} 구했다.", "경계 처리 실수면 1점.")],
         pitfalls=[("극값 조건을 D ≥ 0으로 둠(중근 포함)", "판별식 조건", "부분"), ("D 대신 D/4 계산에서 2a를 a로 둠", "판별식 조건", "불인정"), ("정수 개수 세기 실수", "정수 세기", "부분")])
 
 
@@ -124,6 +181,19 @@ def _ap3_fix(t):
     t["table"]["rows"]["none"]["OPS"] = "≤"
     t["table"]["rows"]["min"]["OPS"] = ">"
     t["table"]["rows"]["nmax"]["OPS"] = "≤"
+    # 실수거리 셋째(등록부 {PIT3}) — 묻는 것마다
+    t["table"]["rows"]["none"]["PIT3"] = "a²의 부등식을 풀면서 양의 정수 a만 세고 0과 음의 정수 a를 뺌"
+    t["table"]["rows"]["min"]["PIT3"] = "a²과 비교할 제곱수를 잘못 골라 최솟값을 하나 작게 답함(경계의 a는 극값을 갖지 않음)"
+    t["table"]["rows"]["nmax"]["PIT3"] = "a²과 비교할 제곱수를 잘못 골라 최댓값을 하나 크게 답함(그 a에서는 극값을 가짐)"
+    # b 별 문장 — D/4 전개(b = 1 이면 '3 × 1' 없이)와 a² 부등식 → a 의 범위 단계
+    rows = {}
+    for b in range(1, 61):
+        b3, r = 3 * b, math.isqrt(3 * b)
+        rows[str(b)] = {"D4": f"a² − 3 × {b} = a² − {b3}" if b != 1 else "a² − 3",
+                        "RN_none": f"a² ≤ {b3}에서 -{r} ≤ a ≤ {r}이므로 정수 a는 -{r}부터 {r}까지 {2 * r + 1}개",
+                        "RN_min": f"a² > {b3}인 자연수 a는 a ≥ {r + 1}이므로 최솟값은 {r + 1}",
+                        "RN_nmax": f"a² ≤ {b3}인 자연수 a는 a ≤ {r}이므로 최댓값은 {r}"}
+    t["table"] = [t["table"], {"key": "b", "rows": rows}]
     return t
 
 
@@ -157,6 +227,14 @@ def ap_t4():
         pitfalls=[("f'(x) = (x − r₁)(x − r₂)로 두고 3을 빠뜨림", "계수 비교", "불인정"), ("2a와 a를 혼동", "계수 비교", "부분"), ("극대·극소의 순서를 바꿔 근을 배치", "계수 비교", "부분")])
 
 
+PIT5 = {   # 실수거리(등록부 {PIT1}·{PIT2}) — 묻는 것마다: (미분 요소 불인정, 값 요소 부분)
+    "v": ("속도를 구하면서 x(t)를 미분하지 않고 그대로 대입함", "v(t) 대신 두 번 미분한 a(t)에 대입해 가속도를 답함"),
+    "a": ("가속도를 x(t)를 한 번만 미분한 것(속도)으로 둠", "a(t) 대신 v(t)에 대입해 속도를 답함"),
+    "turn": ("위치 x(t)의 부호가 바뀌는 시각을 운동 방향이 바뀌는 시각으로 봄", "v(t)의 부호 변화를 확인하지 않고 v = 0인 다른 시각을 답함"),
+    "stop": ("속도 대신 위치 x(t) = 0인 시각을 구함", "v(t) = 0의 두 근 중 하나만 합에 넣음"),
+}
+
+
 def _ap5_rows():
     out = {}
     for r1 in range(0, 5):
@@ -170,19 +248,30 @@ def _ap5_rows():
                 vf = _der(xf)
                 af = _der(vf)
                 desc = _pt(xf, "t")
+                VT, AT = _pt(vf, "t"), _pt(af, "t")
+                FAC = f"3(t − {r1})(t − {r2})".replace("(t − 0)", "t")
+                PLAN_V = f"위치 x(t)를 t로 미분한 것이 속도이므로 v(t) = {VT}이고, 구하는 속도는 v(t)에 그 시각을 대입한 값이다"
+                PLAN_A = f"위치 x(t)를 t로 미분하면 속도 v(t) = {VT}, 속도를 다시 t로 미분하면 가속도 a(t) = {AT}이다. 구하는 가속도는 a(t)에 그 시각을 대입한 값이다"
+                PLAN_T = f"위치 x(t)를 t로 미분하면 속도 v(t) = {VT}이다. 운동 방향이 바뀌는 순간은 속도의 부호가 바뀌는 순간(v = 0을 지나며 부호가 바뀜)이다"
+                PLAN_S = f"위치 x(t)를 t로 미분하면 속도 v(t) = {VT}이다. 속도가 0이 되는 시각은 v(t) = 0의 근이다"
                 asks = []
                 for t0 in range(0, 6):
                     v0, a0 = _ev(vf, t0), _ev(af, t0)
-                    asks.append((f"v{t0}", f"t = {t0}에서의 속도", int(v0), f"v(t) = {_pt(vf, 't')}에 t = {t0} 대입"))
-                    asks.append((f"a{t0}", f"t = {t0}에서의 가속도", int(a0), f"a(t) = {_pt(af, 't')}에 t = {t0} 대입"))
+                    asks.append((f"v{t0}", f"t = {t0}에서의 속도", int(v0), f"v({t0}) = {int(v0)}", PLAN_V, f"v(t) = {VT}",
+                                 "속도는 위치를 한 번 미분한 것이므로 x(t)에 대입하거나 두 번 미분하지 않았는지 확인한다", "위치 x(t)에 대입했으면 인정하지 않는다."))
+                    asks.append((f"a{t0}", f"t = {t0}에서의 가속도", int(a0), f"a({t0}) = {int(a0)}", PLAN_A, f"v(t) = {VT}, a(t) = {AT}",
+                                 "가속도는 위치를 두 번 미분한 것이므로 v(t)에 대입한 값(속도)과 헷갈리지 않았는지 확인한다", "v(t)는 맞게 구했으나 a(t)를 구하는 미분 계산이 틀렸으면 1점."))
                 if r1 > 0:
-                    asks.append(("turn", "처음으로 운동 방향을 바꾸는 시각", r1, f"v(t) = {_pt(vf, 't')} = 3(t − {r1})(t − {r2})의 부호가 처음 바뀌는 t = {r1}"))
-                asks.append(("stop", "속도가 0이 되는 모든 시각의 합", r1 + r2, f"v(t) = 3(t − {r1})(t − {r2}) = 0에서 t = {r1}, {r2}"))
-                for kk, ask, v, expl in asks:
+                    asks.append(("turn", "처음으로 운동 방향을 바꾸는 시각", r1, f"v(t) = {FAC}의 부호가 t = {r1}의 앞뒤에서 +에서 −로 처음 바뀌므로 t = {r1}", PLAN_T, f"v(t) = {VT} = {FAC}",
+                                 f"속도가 0이라고 반드시 방향이 바뀌는 것은 아니므로 t = {r1}의 앞뒤에서 v(t)의 부호가 실제로 바뀌는지 인수분해 꼴에서 확인한다", "v(t)는 맞게 구했으나 인수분해가 틀렸으면 1점."))
+                asks.append(("stop", "속도가 0이 되는 모든 시각의 합", r1 + r2, f"v(t) = {FAC} = 0에서 t = {r1}, {r2}이므로 합은 {r1 + r2}", PLAN_S, f"v(t) = {VT} = {FAC}",
+                             "v(t) = 0의 두 근을 모두 더했는지, 근과 계수의 관계로 본 두 근의 합과 같은지 확인한다", "v(t)는 맞게 구했으나 인수분해가 틀렸으면 1점."))
+                for kk, ask, v, expl, plan, der, chk, part in asks:
                     qtext = f"수직선 위를 움직이는 점 P의 시각 t에서의 위치 x가 x = {desc}일 때, {ask}를 구하시오."
                     if v == 0 or Fraction(v) in _nums(qtext):
                         continue
-                    out[f"{r1}_{r2}_{c}_{kk}"] = {"XT": desc, "ASK": ask, "V": v, "VT": _pt(vf, "t"), "AT": _pt(af, "t"), "EXPL": expl}
+                    pit1, pit2 = PIT5[kk[0] if kk[0] in "va" else kk]
+                    out[f"{r1}_{r2}_{c}_{kk}"] = {"XT": desc, "ASK": ask, "V": v, "VT": VT, "AT": AT, "EXPL": expl, "PLAN": plan, "DER": der, "CHK": chk, "PART": part, "PIT1": pit1, "PIT2": pit2}
     return _pick(out, 330)
 
 
@@ -195,11 +284,11 @@ def ap_t5():
         params=[{"name": "f", "values": {"in": list(AP5_ROWS)}}], table={"key": "f", "rows": AP5_ROWS},
         derive={"ans": "V"}, cost=["ans"], verify=["ans == V"],
         q="수직선 위를 움직이는 점 P의 시각 t에서의 위치 x가 x = {XT}일 때, {ASK}{eul(ASK)} 구하시오.", answer="{ans}",
-        sol1="위치 x(t)를 t로 미분하면 속도 v(t) = {VT}, 다시 미분하면 가속도 a(t) = {AT}이다. 운동 방향이 바뀌는 순간은 속도의 부호가 바뀌는 순간(v = 0을 지나며 부호 변화)이다.",
-        sol2=[("v(t) = {VT}, a(t) = {AT}", "미분"), ("{EXPL}", "{ASK}"), ("답: {ans}", None, ("{ans}", "답"))],
-        sol3=["속도가 0이라고 반드시 방향이 바뀌는 것은 아니므로(부호 변화 확인) 인수분해 꼴에서 부호를 살핀다. 따라서 답은 {ans}이다.", "{EXPL}", "답 {ans}"],
-        model="v(t) = {VT}, a(t) = {AT}이고 {EXPL}이므로 답은 {ans}이다.",
-        rubric=[("미분", 3, "v(t) = {VT}, a(t) = {AT}{eul(AT)} 구했다.", "가속도를 위치의 미분으로 두었으면 1점."), ("답", 2, "{ans}{eul(ans)} 구했다.", "대입·부호 실수면 1점.")],
+        sol1="{PLAN}.",
+        sol2=[("{DER}", "미분"), ("{EXPL}", "{ASK}"), ("답: {ans}", None, ("{ans}", "답"))],
+        sol3=["{CHK}. 따라서 답은 {ans}이다.", "{EXPL}", "답 {ans}"],
+        model="{DER}이고 {EXPL}이다. 따라서 답은 {ans}이다.",
+        rubric=[("미분", 3, "{DER}{eul(DER)} 구했다.", "{PART}"), ("답", 2, "{ans}{eul(ans)} 구했다.", "대입·부호 실수면 1점.")],
         pitfalls=[("가속도를 x(t)를 한 번만 미분한 것으로 둠", "미분", "불인정"), ("속도 0인 시각을 모두 방향 전환 시각으로 봄", "답", "부분"), ("대입 계산 실수", "답", "부분")])
 
 
@@ -310,6 +399,20 @@ def in_t2():
         pitfalls=[("F(아래끝) − F(위끝)으로 뺌", "계산", "불인정"), ("적분에서 지수만 올리고 나누지 않음", "부정적분", "불인정"), ("음수 대입 부호 실수", "계산", "부분")])
 
 
+def _mulx(c, v, paren=False):
+    """곱 c × v 표기 — 한쪽이 ±1 이면 '1 × ', '× 1' 을 쓰지 않고 곱한 값만 쓴다. paren: 덧셈 뒤 자리(음수는 괄호)."""
+    if abs(c) == 1 or abs(v) == 1:
+        return _fmp(c * v) if paren else _fm(c * v)
+    return f"{_fmp(c) if paren else c} × {_fmp(v)}"
+
+
+def _cterm(c, X, first=False):
+    """계수가 붙은 항 — 계수 ±1 은 숨긴다. first 면 맨 앞 항('2X', '-X'), 아니면 '+ 2X'·'− X'."""
+    if first:
+        return f"{'' if c == 1 else ('-' if c == -1 else c)}{X}"
+    return f"{'+' if c > 0 else '−'} {'' if abs(c) == 1 else abs(c)}{X}"
+
+
 def _in3_rows():
     out = {}
     for a in range(1, 5):
@@ -323,7 +426,7 @@ def _in3_rows():
                         q = f"[[dinteg(-{a}, {a}, {f}, x)]]"
                         if v == 0 or Fraction(v) in _nums(q):
                             continue
-                        out[f"o{a}_{p}_{s}_{r}_{od}"] = {"EXPR": q, "V": v, "LAW": "기함수(홀수 차수)의 대칭구간 적분은 0, 우함수(짝수 차수)는 [0, a]의 2배", "STEP": f"= 2[[dinteg(0, {a}, {abs(3 * p)}pow(x,2) {'+' if r > 0 else '−'} {abs(r)}, x)]]" if p > 0 else f"= 2[[dinteg(0, {a}, -{abs(3 * p)}pow(x,2) {'+' if r > 0 else '−'} {abs(r)}, x)]]", "RES": f"= 2({p} × {a ** 3} {'+' if r > 0 else '−'} {abs(r)} × {a}) = {v}", "KIND": "대칭구간"}
+                        out[f"o{a}_{p}_{s}_{r}_{od}"] = {"EXPR": q, "V": v, "LAW": "기함수(홀수 차수)의 대칭구간 적분은 0, 우함수(짝수 차수)는 0부터 위끝까지 적분한 값의 2배", "STEP": f"= 2[[dinteg(0, {a}, {abs(3 * p)}pow(x,2) {'+' if r > 0 else '−'} {abs(r)}, x)]]" if p > 0 else f"= 2[[dinteg(0, {a}, -{abs(3 * p)}pow(x,2) {'+' if r > 0 else '−'} {abs(r)}, x)]]", "RES": f"= 2({_mulx(p, a ** 3)} {'+' if r > 0 else '−'} {_mulx(abs(r), a)}) = {v}", "KIND": "대칭구간", "PIT1": "짝수 차수 항을 0부터 위끝까지 적분한 값을 2배 하지 않음", "PIT2": "홀수 차수 항도 2배 해서 남김", "PIT3": "부정적분에 대입할 때 계산·부호 실수", "LHS": q, "CHK": f"성질을 쓰지 않고 그대로 적분해도, 홀수 차수 항의 부정적분은 짝수 차수 식이라 x = {a}{_wa(a)} x = -{a}에서의 값이 같아 빼면 0이 되므로 같은 값이 나오는지 확인한다", "PART": "짝수 차수 항만 남겨 2배 하는 식은 맞게 세웠으나 식을 옮겨 적는 실수가 있으면 1점."}
     for fa in range(-6, 8):
         for ga in range(-5, 7):
             for c1 in (1, 2, 3, -1):
@@ -333,7 +436,7 @@ def _in3_rows():
                     q = f"[[dinteg(1, 3, f(x), x)]] = {fa}, [[dinteg(1, 3, g(x), x)]] = {ga}일 때, [[dinteg(1, 3, {lin}, x)]]"
                     if v == 0 or Fraction(v) in _nums(q) or fa == 0 or ga == 0:
                         continue
-                    out[f"l{fa}_{ga}_{c1}_{c2}"] = {"EXPR": q, "V": v, "LAW": "정적분의 선형성: ∫(kf + lg) = k∫f + l∫g", "STEP": f"= {c1} × [[dinteg(1, 3, f(x), x)]] + ({c2}) × [[dinteg(1, 3, g(x), x)]]", "RES": f"= {c1} × {_fmp(fa)} + ({c2}) × {_fmp(ga)} = {v}", "KIND": "선형성"}
+                    out[f"l{fa}_{ga}_{c1}_{c2}"] = {"EXPR": q, "V": v, "LAW": "정적분의 선형성: ∫(kf + lg) = k∫f + l∫g", "STEP": f"= {_cterm(c1, '[[dinteg(1, 3, f(x), x)]]', True)} {_cterm(c2, '[[dinteg(1, 3, g(x), x)]]')}", "RES": f"= {_mulx(c1, fa)} + {_mulx(c2, ga, paren=True)} = {v}", "KIND": "선형성", "PIT1": "계수를 빼고 두 정적분 값을 그대로 더함", "PIT2": "∫(kf + lg)를 두 정적분의 곱으로 계산함", "PIT3": "음수 계수·음수 적분값을 곱할 때 부호 실수", "LHS": f"[[dinteg(1, 3, {lin}, x)]]", "CHK": f"f(x), g(x)의 식은 몰라도 선형성만으로 값이 정해진다. 각 정적분 값에 곱한 계수 {c1}, {c2}{_ika(c2)} 식의 f(x), g(x) 앞 계수(부호 포함)와 같은지 확인한다", "PART": "계수를 곱하는 식은 맞게 세웠으나 한 항의 계수를 옮겨 적는 실수가 있으면 1점."}
     for a in range(-3, 3):
         for b in range(a + 1, 5):
             for c in range(b + 1, 7):
@@ -343,7 +446,7 @@ def _in3_rows():
                         q = f"[[dinteg({a}, {b}, f(x), x)]] = {v1}, [[dinteg({b}, {c}, f(x), x)]] = {v2}일 때, [[dinteg({a}, {c}, f(x), x)]]"
                         if v == 0 or Fraction(v) in _nums(q):
                             continue
-                        out[f"c{a}_{b}_{c}_{v1}_{v2}"] = {"EXPR": q, "V": v, "LAW": "구간 나누기: ∫ₐᶜ = ∫ₐᵇ + ∫ᵇᶜ", "STEP": f"= [[dinteg({a}, {b}, f(x), x)]] + [[dinteg({b}, {c}, f(x), x)]]", "RES": f"= {v1} + {_fmp(v2)} = {v}", "KIND": "구간 나누기"}
+                        out[f"c{a}_{b}_{c}_{v1}_{v2}"] = {"EXPR": q, "V": v, "LAW": "구간 나누기: ∫ₐᶜ = ∫ₐᵇ + ∫ᵇᶜ", "STEP": f"= [[dinteg({a}, {b}, f(x), x)]] + [[dinteg({b}, {c}, f(x), x)]]", "RES": f"= {v1} + {_fmp(v2)} = {v}", "KIND": "구간 나누기", "PIT1": "두 구간의 적분값을 더하지 않고 뺌", "PIT2": "이어지지 않는 구간끼리 붙임(끝점을 잘못 맞춤)", "PIT3": "음수 적분값을 더할 때 부호 실수", "LHS": f"[[dinteg({a}, {c}, f(x), x)]]", "CHK": f"f(x)의 식은 몰라도 구간을 이어 붙이면 값이 정해진다. 두 구간 [{a}, {b}], [{b}, {c}]가 겹치지도 비지도 않게 이어져 [{a}, {c}]가 되는지 확인한다", "PART": "구간은 맞게 나누었으나 위끝·아래끝을 옮겨 적는 실수가 있으면 1점."}
     return _pick(out, 330)
 
 
@@ -358,9 +461,9 @@ def in_t3():
         q="{EXPR}의 값을 구하시오.", answer="{ans}",
         sol1="정적분의 성질을 쓴다: {LAW}. 이 문제는 {KIND} 유형이다.",
         sol2=[("{LAW}", "성질"), ("{STEP}", "적용"), ("{RES}", None, ("{ans}", "값"))],
-        sol3=["성질을 쓰지 않고 직접 계산해도 같은 값이 나오는지(대칭구간이면 홀수 항이 0인지) 확인한다. 따라서 값은 {ans}이다.", "{STEP}", "답 {ans}"],
-        model="{LAW}이므로 {STEP} {RES}. 따라서 값은 {ans}이다.",
-        rubric=[("성질 적용", 3, "{STEP} 꼴로 바꿨다.", "홀수 차수 항을 남겼거나 계수를 안으로 넣지 않았으면 1점."), ("계산", 2, "{ans}{eul(ans)} 구했다.", "부호 실수면 1점.")],
+        sol3=["{CHK}. 따라서 값은 {ans}이다.", "{STEP}", "답 {ans}"],
+        model="{LAW}이므로 {LHS} {STEP} {RES}. 따라서 값은 {ans}이다.",
+        rubric=[("성질 적용", 3, "{LHS} {STEP} 꼴로 바꿨다.", "{PART}"), ("계산", 2, "{ans}{eul(ans)} 구했다.", "부호 실수면 1점.")],
         pitfalls=[("우함수 부분을 2배 하지 않음", "성질 적용", "불인정"), ("∫(f + g)를 ∫f × ∫g로 계산", "성질 적용", "불인정"), ("구간을 이어 붙일 때 부호 실수", "계산", "부분")])
 
 

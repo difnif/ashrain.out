@@ -593,13 +593,21 @@ def _ta2_rows():
                                  "Q": f"지면 위의 한 지점 P에서 건물의 밑 B까지의 거리가 {d} m이고, P에서 건물의 꼭대기 A를 올려다본 각의 크기가 {th}°일 때, 건물의 높이 [[seg(AB)]]를 구하시오.",
                                  "REL": f"tan {th}° = [[frac(seg(AB), seg(PB))]]", "CALC": f"AB = PB × tan {th}° = {d} × {mk(*tv)} = {h}", "SET": "직각삼각형 PBA에서 ∠P = {}°, 이웃변 PB = {} m".format(th, d),
                                  "px": -d, "ay": round(val(tv[0] * d, tv[1]), 4), "N1": "P", "N2": "B", "N3": "A", "LAB": f"{d} m"}
-            L = 2 * k if th != 45 else k
+            L = k                                                # 사다리 길이 3~12 m (현실적인 범위)
             hs = mk(sv[0] * L, sv[1])
-            if not exposed(hs, str(L), str(th)):
+            if L >= 3 and not exposed(hs, str(L), str(th)):
               out[f"l{th}-{k}"] = {"KIND": "사다리", "th": th, "d": L, "ANS_T": hs, "F": "sin", "FV": mk(*sv), "ansv": round(val(sv[0] * L, sv[1]), 6),
-                                 "Q": f"길이가 {L} m인 사다리 PA를 벽에 기대어 놓았더니 사다리가 지면과 이루는 각의 크기가 {th}°이었다. 사다리가 벽에 닿은 점 A의 지면으로부터의 높이 [[seg(AB)]]를 구하시오.",
+                                 "Q": f"길이가 {L} m인 사다리 PA를 벽에 기대어 놓았더니 사다리가 지면과 이루는 각의 크기가 {th}°였다. 사다리가 벽에 닿은 점 A의 지면으로부터의 높이 [[seg(AB)]]를 구하시오.",
                                  "REL": f"sin {th}° = [[frac(seg(AB), seg(PA))]]", "CALC": f"AB = PA × sin {th}° = {L} × {mk(*sv)} = {hs}", "SET": "직각삼각형 PBA에서 ∠P = {}°, 빗변 PA = {} m".format(th, L),
                                  "px": -round(val(SPECIAL[('cos', th)][0] * L, SPECIAL[('cos', th)][1]), 4), "ay": round(val(sv[0] * L, sv[1]), 4), "N1": "P", "N2": "B", "N3": "A", "LAB": f"{L} m"}
+    # 갈래별 계산 부분점수·실수거리 — 유리화가 생기는 것은 tan 30°(1/√3)·sin 45°(1/√2)를 쓸 때뿐
+    for r in out.values():
+        if (r["KIND"], r["th"]) in (("건물", 30), ("사다리", 45)):
+            r["PART"] = "분모의 근호를 유리화하지 않았으면 1점."
+            r["PITC"] = "분모의 근호를 유리화하지 않음"
+        else:
+            r["PART"] = "곱셈 계산 실수면 1점."
+            r["PITC"] = "sin 30°와 sin 60°의 값을 바꿔 씀" if r["F"] == "sin" else "tan 30°와 tan 60°의 값을 바꿔 씀"
     return out
 
 
@@ -611,7 +619,7 @@ def ta_t2():
     return tpl(TA, 2, TA_BASE,
         title="삼각비를 이용한 높이 측정 — 건물의 높이·사다리의 높이",
         skill="상황을 직각삼각형으로 옮겨 아는 변과 구하는 변을 잇는 삼각비로 높이 구하기",
-        variant_axis={"상황": "건물(tan) / 사다리(sin)", "각": "30°·45°·60°", "길이": "2~12 배"},
+        variant_axis={"상황": "건물(tan) / 사다리(sin)", "각": "30°·45°·60°", "길이": "건물 거리 2~12 배 / 사다리 3~12 m"},
         difficulty=3,
         discriminates="올려다본 각·지면과 이루는 각이 어느 꼭짓점의 각인지 읽고, 거리(이웃변)인지 사다리 길이(빗변)인지 구별하는가",
         params=[{"name": "f", "values": {"in": list(TA2_ROWS)}}],
@@ -641,7 +649,7 @@ def ta_t2():
         model_answer="{SET}이므로 {REL}이고, {CALC}이다. 따라서 높이는 {ANS_T} m이다.",
         rubric=[
             {"element": "직각삼각형·삼각비", "points": 3, "criterion": "{REL}의 관계를 세웠다.", "partial": "sin과 tan을 바꿔 썼으면 인정하지 않는다."},
-            {"element": "계산", "points": 2, "criterion": "AB = {ANS_T} m를 구했다.", "partial": "유리화하지 않았으면 1점."},
+            {"element": "계산", "points": 2, "criterion": "AB = {ANS_T} m를 구했다.", "partial": "{PART}"},
         ],
         rubric_total=5,
     )
