@@ -105,7 +105,7 @@ def recompute(it):
     if tid.startswith("m1-1-int-rational-t3"):
         m = re.match(r"(-?\d+) 이상 (-?\d+) 이하인 정수", q); return Fraction(int(m.group(2)) - int(m.group(1)) + 1)
     if tid.startswith("m1-1-ineq-sign-t"):
-        m = re.match(r"x는 (-?\d+) (이상|초과|보다 크고|보다 작지 않고) (-?\d+) (이하인|미만인|보다 크지 않은|보다 작은) 수", q)
+        m = re.match(r"x는 (-?\d+) ?(이상|초과|보다 크고|보다 작지 않고) (-?\d+) ?(이하인|미만인|보다 크지 않은|보다 작은) 수", q)
         a, b = int(m.group(1)), int(m.group(3)); lo = a if m.group(2) in ("이상", "보다 작지 않고") else a + 1; hi = b if m.group(4) in ("이하인", "보다 크지 않은") else b - 1
         return Fraction(hi - lo + 1) if "몇 개" in q else Fraction(sum(range(lo, hi + 1)))
     if tid.startswith("m1-1-rational-apply-t1"):
@@ -1300,10 +1300,10 @@ def recompute(it):
             if (a < 0) != (m.group(4) == "최댓값"): return None
             return M + b * b / (4 * a)
         if tid == "m3-1-quad-func-apply-t3":
-            L = Fraction(re.match(r"(?:둘레의 길이가|길이가) (\d+) cm인", q).group(1)); return (L / 4) ** 2
-        m = re.match(r"(?:지면|높이 (\d+) m인 곳)에서 초속 (\d+) m로 .+?h = (\d+)t − 5t²(?: \+ (\d+))?인.+?이 물체의 (최고 높이|최고 높이에 도달하는 시각|다시 지면에 떨어지는 시각)[을를]", q); v = Fraction(m.group(2)); h0 = Fraction(m.group(1) or 0)
+            L = Fraction(re.match(r"(?:바깥 테두리의 )?(?:둘레의 길이가|길이가) (\d+) cm인", q).group(1)); return (L / 4) ** 2
+        m = re.match(r"(?:지면|높이 (\d+) m인 곳)에서 초속 (\d+) m로 .+?h = (\d+)t − 5t²(?: \+ (\d+))?인.+?이 물체(?:의|가) (최고 높이|최고 높이에 도달하는 시각|다시 지면에 떨어지는 시각|처음 던진 높이로 다시 내려오는 시각)[을를]", q); v = Fraction(m.group(2)); h0 = Fraction(m.group(1) or 0)
         if m.group(3) != m.group(2) or Fraction(m.group(4) or 0) != h0: return None
-        return v * v / 20 + h0 if m.group(5) == "최고 높이" else v / 10 if m.group(5).startswith("최고") else (v / 5 if h0 == 0 else None)
+        return v * v / 20 + h0 if m.group(5) == "최고 높이" else v / 10 if m.group(5).startswith("최고") else (v / 5 if (h0 == 0) == m.group(5).startswith("다시 지면") else None)
     if tid.startswith("m3-1-quad-func"):
         if tid == "m3-1-quad-func-t1":
             m = re.match(r"이차함수 y = ax²의 그래프가 점 \((-?\d+), (-?\d+)\)를 지날 때, 상수 a", q); pp, qq = Fraction(m.group(1)), Fraction(m.group(2)); return qq / (pp * pp)
@@ -1449,13 +1449,13 @@ def recompute(it):
             m = re.match(r"\[\[frac\((-?\d+) ([+−]) (\d*)i, (-?\d+) ([+−]) (\d*)i\)\]\] = p \+ qi일 때, 실수 p, q에 대하여 (p \+ q|p|q)의 값", q); a, b, c, d = Fraction(m.group(1)), _sv(m.group(2), m.group(3) or "1"), Fraction(m.group(4)), _sv(m.group(5), m.group(6) or "1")
             n = c * c + d * d; pv, qv = (a * c + b * d) / n, (b * c - a * d) / n; return {"p": pv, "q": qv, "p + q": pv + qv}[m.group(7)]
         if tid == "h1-1-complex-t3":
-            m = re.match(r"\(1 [+−] i\)\^(\d+)의 값", q)
+            m = re.match(r"(?:\(1 [+−] i\)\^|\[\[pow\(1 [+−] i, )(\d+)\)?(?:\]\])?의 값", q)      # 09-25: 발문을 [[pow(…)]] 로 통일
             if m: n = int(m.group(1)); return Fraction((-4) ** (n // 4)) if n % 4 == 0 else None
-            m = re.match(r"\(1 \+ i\)\^(\d+) \+ \(1 − i\)\^(\d+)의 값", q)
+            m = re.match(r"(?:\(1 \+ i\)\^(\d+) \+ \(1 − i\)\^(\d+)|\[\[pow\(1 \+ i, (\d+)\)\]\] \+ \[\[pow\(1 − i, (\d+)\)\]\])의 값", q)
             if m:
-                n = int(m.group(1)); z = complex(1, 1) ** n + complex(1, -1) ** n
+                n = int(m.group(1) or m.group(3)); z = complex(1, 1) ** n + complex(1, -1) ** n
                 return Fraction(round(z.real)) if abs(z.imag) < 1e-6 and abs(z.real - round(z.real)) < 1e-6 else None
-            m = re.match(r"복소수 \(1 \+ i\)\^(\d+)[을를] a \+ bi \(a, b는 실수\) 꼴로 나타낼 때, a² \+ b²의 값", q)
+            m = re.match(r"복소수 (?:\(1 \+ i\)\^|\[\[pow\(1 \+ i, )(\d+)\)?(?:\]\])?[을를] a \+ bi \(a, b는 실수\) 꼴로 나타낼 때, a² \+ b²의 값", q)
             if m: return Fraction(2 ** int(m.group(1)))
             m = re.match(r"\[\[frac\(pow\(1 \+ i, (\d+)\), pow\(1 − i, (\d+)\)\)\]\]의 값", q)
             if m:
@@ -1489,8 +1489,8 @@ def recompute(it):
             else: ns, npd = 2 * s_, 4 * pv
             return -ns + npd
         if tid in ("h1-1-quad-t4", "h1-1-quad-t6"):
-            m = re.search(r"한 근이 (-?\d+) \+ (\[\[sqrt\((\d+)\)\]\]|(\d+)i)일 때, (?:유리수|실수) a, b에 대하여 (a \+ b|ab|a − b)의 값", q); pp = Fraction(m.group(1))
-            a = -2 * pp; b = pp * pp - Fraction(m.group(3)) if m.group(3) else pp * pp + Fraction(m.group(4)) ** 2
+            m = re.search(r"한 근이 (-?\d+) \+ (\[\[sqrt\((\d+)\)\]\]|(\d*)i)일 때, (?:유리수|실수) a, b에 대하여 (a \+ b|ab|a − b)의 값", q); pp = Fraction(m.group(1))
+            a = -2 * pp; b = pp * pp - Fraction(m.group(3)) if m.group(3) else pp * pp + Fraction(m.group(4) or 1) ** 2
             return {"a + b": a + b, "ab": a * b, "a − b": a - b}[m.group(5)]
         if tid == "h1-1-quad-t5":
             m = re.match(r"이차방정식 x² ([+−]) (\d*)x \+ k = 0의 두 근의 차가 (\d+)일 때", q); b = _sv(m.group(1), m.group(2) or "1"); d = Fraction(m.group(3)); s_ = -b; return (s_ * s_ - d * d) / 4
@@ -1543,9 +1543,9 @@ def recompute(it):
             if not m: return None
             n, r_ = int(m.group(1)), int(m.group(2)); return Fraction(math.perm(n, r_))
         if tid == "h1-1-count-t3":
-            m = re.match(r"(\d+)명의 학생을 일렬로 세울 때, (특정 2명이 서로 이웃하도록|특정 2명이 양 끝에 서도록|특정 2명이 양 끝에 서지 않도록|특정 2명이 서로 이웃하지 않도록|특정 1명이 맨 앞에 서도록|특정 1명이 맨 뒤에 서도록|특정 1명이 맨 앞에 서지 않도록|특정 3명이 모두 서로 이웃하도록|특정 2명 사이에 정확히 1명이 서도록)", q); n = int(m.group(1)); k = m.group(2)
+            m = re.match(r"(\d+)명의 학생을 일렬로 세울 때, (특정 2명이 서로 이웃하도록|특정 2명이 양 끝에 서도록|특정 2명이 양 끝에 서지 않도록|특정 2명이 맨 앞과 맨 뒤를 둘 다 차지하는 일이 없도록|특정 2명이 서로 이웃하지 않도록|특정 1명이 맨 앞에 서도록|특정 1명이 맨 뒤에 서도록|특정 1명이 맨 앞에 서지 않도록|특정 3명이 모두 서로 이웃하도록|특정 2명 사이에 정확히 1명이 서도록)", q); n = int(m.group(1)); k = m.group(2)
             if k == "특정 1명이 맨 앞에 서지 않도록": return Fraction(math.factorial(n) - math.factorial(n - 1))
-            if k == "특정 2명이 양 끝에 서지 않도록": return Fraction(math.factorial(n) - 2 * math.factorial(n - 2))
+            if k in ("특정 2명이 양 끝에 서지 않도록", "특정 2명이 맨 앞과 맨 뒤를 둘 다 차지하는 일이 없도록"): return Fraction(math.factorial(n) - 2 * math.factorial(n - 2))
             if "맨 앞" in k or "맨 뒤" in k: return Fraction(math.factorial(n - 1))
             if "3명" in k: return Fraction(6 * math.factorial(n - 2))
             if "사이에" in k: return Fraction(2 * (n - 2) * math.factorial(n - 2))
@@ -1622,7 +1622,8 @@ def recompute(it):
             if x1 * x1 + y1 * y1 != r2: return None
             return r2 / x1 if m.group(4) == "x절편" else r2 / y1
         if tid == "h1-2-transform-t1":
-            p, qq, r2 = std(q); m = re.search(r"x축의 방향으로 (-?\d+)만큼, y축의 방향으로 (-?\d+)만큼", q); mm, nn = Fraction(m.group(1)), Fraction(m.group(2)); return (p + mm) ** 2 + (qq + nn) ** 2 - r2
+            m = re.search(r"원 (x²|\(x ([+−]) (\d+)\)²) \+ (y²|\(y ([+−]) (\d+)\)²) = (\d+)", q)   # 중심 좌표 0 이면 x²·y²
+            p = -_sv(m.group(2), m.group(3)) if m.group(2) else Fraction(0); qq = -_sv(m.group(5), m.group(6)) if m.group(5) else Fraction(0); r2 = Fraction(m.group(7)); m = re.search(r"x축의 방향으로 (-?\d+)만큼, y축의 방향으로 (-?\d+)만큼", q); mm, nn = Fraction(m.group(1)), Fraction(m.group(2)); return (p + mm) ** 2 + (qq + nn) ** 2 - r2
         if tid == "h1-2-transform-t2":
             m = re.match(r"점 \((-?\d+), (-?\d+)\)[을를] (x축|y축|원점|직선 y = x)에 대하여 대칭이동", q); x2, y2 = sym[m.group(3)](Fraction(m.group(1)), Fraction(m.group(2))); return x2 - y2
         if tid == "h1-2-transform-t3":
@@ -2341,12 +2342,15 @@ def _h22b(tid, q):
         pts = [lo, hi] + [r for r in sp.solve(sp.diff(f, x), x) if r.is_real and lo < r < hi]; vals = [f.subs(x, p) for p in pts]; M, mn = _spv(max(vals)), _spv(min(vals))
         return {"최댓값": M, "최솟값": mn, "최댓값과 최솟값의 합": M + mn}[m.group(4)]
     if tid == "h2-2-diffapp-t2":
-        m = re.match(r"방정식 (.+?) = k가 (서로 다른 세 실근을 갖도록 하는 정수 k의 개수|오직 하나의 실근을 갖도록 하는 정수 k의 최솟값|서로 다른 두 실근을 갖는 모든 k의 값의 합)[을를] 구하시오", q); f = _polyq(m.group(1)); rs = sorted(sp.solve(sp.diff(f, x), x))
+        m = re.match(r"방정식 (.+?) = k가 (서로 다른 세 실근을 갖도록 하는 정수 k의 개수|오직 하나의 실근을 갖도록 하는 자연수 k의 최솟값|오직 하나의 실근을 갖도록 하는 음의 정수 k의 최댓값|서로 다른 두 실근을 갖는 모든 k의 값의 합)[을를] 구하시오", q); f = _polyq(m.group(1)); rs = sorted(sp.solve(sp.diff(f, x), x))
         if len(rs) != 2: return None
         M, mn = _spv(f.subs(x, rs[0])), _spv(f.subs(x, rs[1]))
-        return {"서로 다른 세 실근을 갖도록 하는 정수 k의 개수": M - mn - 1, "오직 하나의 실근을 갖도록 하는 정수 k의 최솟값": M + 1, "서로 다른 두 실근을 갖는 모든 k의 값의 합": M + mn}[m.group(2)]
+        one = lambda k: k > M or k < mn  # noqa: E731  — 실근 하나 ⇔ 극댓값보다 위 또는 극솟값보다 아래 (두 갈래 모두 봄)
+        if m.group(2).endswith("자연수 k의 최솟값"): return Fraction(min(k for k in range(1, max(int(M), 0) + 3) if one(k)))
+        if m.group(2).endswith("음의 정수 k의 최댓값"): return Fraction(max(k for k in range(min(int(mn), 0) - 2, 0) if one(k)))
+        return {"서로 다른 세 실근을 갖도록 하는 정수 k의 개수": M - mn - 1, "서로 다른 두 실근을 갖는 모든 k의 값의 합": M + mn}[m.group(2)]
     if tid == "h2-2-diffapp-t3":
-        m = re.match(r"함수 f\(x\) = x³ \+ ax² \+ (\d+)x가 (극값을 갖지 않도록 하는 정수 a의 개수|극값을 갖도록 하는 자연수 a의 최솟값|극값을 갖지 않도록 하는 자연수 a의 최댓값)", q); b = int(m.group(1))
+        m = re.match(r"함수 f\(x\) = x³ \+ ax² \+ (\d*)x가 (극값을 갖지 않도록 하는 정수 a의 개수|극값을 갖도록 하는 자연수 a의 최솟값|극값을 갖지 않도록 하는 자연수 a의 최댓값)", q); b = int(m.group(1) or 1)
         if m.group(2).endswith("정수 a의 개수"): return Fraction(sum(1 for a in range(-200, 201) if a * a - 3 * b <= 0))
         if m.group(2).endswith("자연수 a의 최댓값"): return Fraction(max(a for a in range(1, 400) if a * a - 3 * b <= 0))
         return Fraction(next(a for a in range(1, 400) if a * a - 3 * b > 0))
@@ -2459,7 +2463,7 @@ def _h31(tid, q):
         m = re.match(r"순환소수 0\.(\d\d)", q); f = Fraction(int(m.group(1)), 99); return Fraction(f.numerator + f.denominator)
     if tid == "h3-1-seqlim-t5":
         m = re.match(r"넓이가 (\d+)인 도형 S₁에서 시작하여 (.+?)을 차례로", q); S1 = int(m.group(1)); d = m.group(2)
-        mm = re.search(r"넓이가 (\d+)/(\d+)", d); r = Fraction(int(mm.group(1)), int(mm.group(2))) if mm else Fraction(1, 2) if "절반" in d else None
+        mm = re.search(r"넓이[가는] 바로 앞 도형의 (\d+)/(\d+)배", d); r = Fraction(int(mm.group(1)), int(mm.group(2))) if mm else Fraction(1, 2) if "절반" in d else None
         return S1 / (1 - r) if r is not None else None
     if tid in ("h3-1-diff2-t1", "h3-1-diff2-t2"):
         m = re.match(r"\[\[lim\(x, 0, (.+)\)\]\]의 값", q); return _spv(sp.limit(_sym2(m.group(1)), x, 0))
@@ -2640,8 +2644,9 @@ def _h32(tid, q):
         na = sum(v for (g, e), v in cnt.items() if fa(g, e)); nab = sum(v for (g, e), v in cnt.items() if fa(g, e) and fb(g, e))
         return Fraction(nab, na)
     if tid == "h3-2-prob-t5":
-        m = re.match(r"한 번의 시행에서 사건 A가 일어날 확률이 (\[\[.+?\]\])이다\. 이 시행을 (\d+)번 독립적으로 반복할 때, 사건 A가 (정확히 (\d+)번|(\d+)번 이상) 일어날 확률", q)
+        m = re.match(r"한 번의 시행에서 사건 A가 일어날 확률이 (\[\[.+?\]\])이다\. 이 시행을 (\d+)번 독립적으로 반복할 때, 사건 A가 (정확히 (\d+)번 일어날|(\d+)번 이상 일어날|한 번도 일어나지 않을) 확률", q)
         p = _pv(m.group(1)); n_ = int(m.group(2))
+        if m.group(3).startswith("한 번도"): return (1 - p) ** n_
         if m.group(4): k = int(m.group(4)); return C(n_, k) * p ** k * (1 - p) ** (n_ - k)
         k = int(m.group(5)); return sum(C(n_, j) * p ** j * (1 - p) ** (n_ - j) for j in range(k, n_ + 1))
     if tid == "h3-2-stat-t1":

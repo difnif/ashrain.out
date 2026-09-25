@@ -418,7 +418,8 @@ def _sc1_rows():
         WORD = opts[correct]
         out[f"c{i}"] = {"Q": f"다음은 학생 {n}명의 {cx} 점수 x와 {cy} 점수 y를 순서쌍 (x, y)로 나타낸 것이고, 그 산점도는 그림과 같다. {_ptlist(pts)}. 두 변량 x, y 사이의 상관관계로 옳은 것을 다음 A~C 중에서 고르시오. {optstr}",
                         "L": L, "K": ord(L) - 64, "WORD": WORD, "PTS": [{"x": x, "y": y} for x, y in pts], "XL": cx, "YL": cy, "N": n,
-                        "TREND": {"pos": "x가 커질수록 y도 대체로 커진다", "neg": "x가 커질수록 y는 대체로 작아진다", "none": "x가 커져도 y가 커지거나 작아지는 경향이 없다"}[kind]}
+                        "TREND": {"pos": "x가 커질수록 y도 대체로 커진다", "neg": "x가 커질수록 y는 대체로 작아진다", "none": "x가 커져도 y가 커지거나 작아지는 경향이 없다"}[kind],
+                        "CHK": {"pos": "점들이 오른쪽 위로 향하는 한 직선 주위에 모여 있다", "neg": "점들이 오른쪽 아래로 향하는 한 직선 주위에 모여 있다", "none": "점들이 어느 한 직선 주위에 모여 있지 않고 고르게 흩어져 있다"}[kind]}
     return _pick(out, 330)
 
 
@@ -434,8 +435,8 @@ def sc_t1():
         figure=[{"fn": "scatter", "args": {"points": "{PTS}", "x_label": "{XL}", "y_label": "{YL}", "x_range": [45, 105], "y_range": [45, 105]}}],
         sol1="산점도에서 x가 커질수록 y도 커지는 경향이면 양의 상관관계, y가 작아지는 경향이면 음의 상관관계, 뚜렷한 경향이 없으면 상관관계가 없다고 한다.",
         sol2=[("점의 분포: {TREND}", "경향 읽기"), ("따라서 {WORD}", "판정"), ("답: {L}", None, ("{L}", "판정"))],
-        sol3=["점들이 오른쪽 위(또는 아래)로 향하는 한 직선 주위에 모이는지 확인한다. 따라서 답은 {L}이다.", "{WORD}", "답 {L}"],
-        model="산점도에서 {TREND}. 따라서 {WORD}고, 답은 {L}이다.",
+        sol3=["점들이 오른쪽 위(또는 아래)로 향하는 한 직선 주위에 모이는지 확인하면, {CHK}. 따라서 답은 {L}이다.", "{WORD}", "답 {L}"],
+        model="산점도에서 {TREND}. 따라서 {WORD}고 판단할 수 있으므로 답은 {L}이다.",
         rubric=[("경향 읽기", 3, "{TREND}는 것을 읽었다.", "몇 점만 보고 판정했으면 1점."), ("판정", 2, "{WORD}고 답했다.", "양·음을 바꿨으면 인정하지 않는다.")],
         pitfalls=[("점 몇 개만 보고 판정", "경향 읽기", "부분"), ("양과 음을 반대로 봄", "판정", "불인정"), ("점이 많이 흩어져 있어도 상관관계가 있다고 봄", "판정", "불인정")])
 
@@ -481,6 +482,11 @@ def sc_t2():
         pitfalls=[("이상과 초과를 혼동(경계 점 포함 여부)", "세기", "부분"), ("y > x의 방향을 반대로 봄", "영역 읽기", "불인정"), ("점을 빠뜨리거나 두 번 셈", "세기", "부분")])
 
 
+def _dc(f):
+    """t3 확인·모범답안 문장용 소수 표기(정수면 정수, 아니면 소수 한 자리까지)."""
+    return str(f.numerator) if f.denominator == 1 else f"{float(f):g}"
+
+
 def _sc3_rows():
     out = {}
     for i in range(160):
@@ -493,13 +499,29 @@ def _sc3_rows():
         base = f"다음은 학생 {n}명의 {cx} 점수 x와 {cy} 점수 y를 순서쌍 (x, y)로 나타낸 것이고, 그 산점도는 그림과 같다. {_ptlist(pts)}."
         up = sum(1 for x, y in pts if y > x); dn = sum(1 for x, y in pts if y < x)
         sx = sum(x for x, y in pts); sy = sum(y for x, y in pts)
+        eq = n - up - dn; hi = sum(1 for x, y in pts if x + y >= 150)
+        chk = {"diff": f"p + q = {up + dn}" + (f"에 두 점수가 같은 학생(직선 y = x 위의 점) {eq}명을 더하면 전체 인원 {n}명과 같다" if eq else f"{_ro(up + dn)} 전체 인원 {n}명과 같다(두 점수가 같은 학생은 없다)"),
+               "pct": f"합이 150점 이상인 학생 {hi}명과 150점 미만인 학생 {n - hi}명을 더하면 전체 인원 {n}명과 같고, {hi} ÷ {n} × 100 = {_dc(Fraction(hi * 100, n))}이다",
+               "meanx": f"평균 {_dc(Fraction(sx, n))}에 인원 {n}{_eul(n)} 곱하면 {cx} 점수의 합 {sx}{_wa(sx)} 같다"}
+        conc = {"diff": f"p − q = {up} − {dn} = {up - dn}이다", "pct": f"{cx} 점수와 {cy} 점수의 합이 150점 이상인 학생은 전체의 {_dc(Fraction(hi * 100, n))} %이다",
+                "meanx": f"{cx} 점수의 평균은 {_dc(Fraction(sx, n))}점이다"}
+        # 묻는 것별 [방침]·부분점수·실수거리(pitfalls.py 의 {PIT1}~{PIT3} 자리표시자로 들어간다)
+        per = {"diff": {"S1": "산점도의 각 점은 한 학생의 두 점수이다. 직선 y = x 위쪽의 점은 y가 더 큰 학생, 아래쪽의 점은 x가 더 큰 학생이고, 직선 y = x 위의 점은 두 점수가 같은 학생이므로 p와 q 어느 쪽에도 세지 않는다.",
+                        "PA1": "직선 y = x의 위·아래를 바꿨으면 인정하지 않는다. 두 점수가 같은 학생을 p나 q에 넣어 셌으면 1점.", "PA2": "q − p로 계산했으면 인정하지 않는다. 뺄셈 값 계산 실수면 1점.",
+                        "PIT1": "직선 y = x 위의 점(두 점수가 같은 학생)을 p나 q에 넣어 셈", "PIT2": "p − q 대신 q − p를 계산함", "PIT3": "뺄셈 값 계산 실수"},
+               "pct": {"S1": "산점도의 각 점은 한 학생의 두 점수이다. 두 점수의 합이 150점 이상인 점(합이 정확히 150점인 점 포함)을 세고, 비율은 (조건을 만족하는 학생 수) ÷ (전체 학생 수) × 100이다.",
+                       "PA1": "두 점수의 합이 정확히 150인 학생을 빠뜨렸으면 1점.", "PA2": "100을 곱하지 않았으면 인정하지 않는다. 나눗셈 계산 실수면 1점.",
+                       "PIT1": "합이 정확히 150점인 점을 빼고 셈", "PIT2": "백분율에서 100을 곱하지 않음", "PIT3": "나눗셈 계산 실수"},
+               "meanx": {"S1": f"산점도의 각 점은 한 학생의 두 점수이고, {cx} 점수는 각 점의 x좌표이다. x좌표를 모두 더한 합을 전체 학생 수로 나누면 {cx} 점수의 평균이다.",
+                         "PA1": f"{cy} 점수(y좌표)를 더했으면 인정하지 않는다. x좌표를 빠뜨리거나 두 번 더했으면 1점.", "PA2": "합을 인원으로 나누지 않았으면 인정하지 않는다. 인원 수를 잘못 세었거나 나눗셈 실수면 1점.",
+                         "PIT1": "x좌표 하나를 빠뜨리거나 두 번 더함", "PIT2": "합을 인원으로 나누지 않고 합을 답함", "PIT3": "인원 수를 잘못 세어 나누거나 나눗셈 실수"}}
         asks = (("diff", f"{cy} 점수가 {cx} 점수보다 높은 학생 수를 p, 낮은 학생 수를 q라 할 때 p − q의 값", Fraction(up - dn), f"p = {up}, q = {dn}"),
                 ("pct", f"{cx} 점수와 {cy} 점수의 합이 150점 이상인 학생은 전체의 몇 %인지", Fraction(sum(1 for x, y in pts if x + y >= 150) * 100, n), f"합이 150 이상인 점 {sum(1 for x, y in pts if x + y >= 150)}개 ÷ {n}명 × 100"),
                 ("meanx", f"{cx} 점수의 평균", Fraction(sx, n), f"{cx} 점수의 합 {sx} ÷ {n}"))
         for kk, ask, v, desc in asks:
             if v == 0 or (kk == "pct" and (v * 100).denominator != 1) or (kk == "meanx" and (v * 10).denominator != 1):
                 continue
-            r = _row(f"산점도3 {i} {kk}", v, Q=f"{base} {ask}{_eul(ask)} 구하시오.", PTS=[{"x": x, "y": y} for x, y in pts], XL=cx, YL=cy, N=n, ASK=ask, DESC=desc, KIND=kk)
+            r = _row(f"산점도3 {i} {kk}", v, Q=f"{base} {ask}{_eul(ask)} 구하시오.", PTS=[{"x": x, "y": y} for x, y in pts], XL=cx, YL=cy, N=n, ASK=ask, DESC=desc, KIND=kk, CHK=chk[kk], CONC=conc[kk], **per[kk])
             if r: out[f"{i}_{kk}"] = r
     return _pick(out, 330)
 
@@ -514,12 +536,12 @@ def sc_t3():
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{dec(ans)}",
         figure=[{"fn": "scatter", "args": {"points": "{PTS}", "x_label": "{XL}", "y_label": "{YL}", "x_range": [45, 105], "y_range": [45, 105]}}],
-        sol1="산점도의 각 점은 한 학생의 두 점수이다. 직선 y = x 위쪽의 점은 y가 더 큰 학생, 아래쪽은 x가 더 큰 학생이고, 비율은 (조건을 만족하는 학생 수) ÷ (전체) × 100, 평균은 합 ÷ 인원이다.",
+        sol1="{S1}",
         sol2=[("{DESC}", "자료 읽기"), ("계산하면 {dec(ans)}", "계산"), ("답: {dec(ans)}", None, ("{dec(ans)}", "값"))],
-        sol3=["전체 인원 {N}명과 센 점의 개수의 합이 맞는지 확인한다. 따라서 답은 {dec(ans)}이다.", "{DESC}", "답 {dec(ans)}"],
-        model="{DESC}이므로 {ASK}는 {dec(ans)}이다.",
-        rubric=[("자료 읽기", 2, "{DESC}으로 읽었다.", "직선 y = x의 위·아래를 바꿨으면 인정하지 않는다."), ("계산", 3, "{dec(ans)}{eul(dec(ans))} 구했다.", "나눗셈·백분율 실수면 1점.")],
-        pitfalls=[("y = x 위의 점(같은 점수)을 위나 아래로 셈", "자료 읽기", "부분"), ("백분율에서 100을 곱하지 않음", "계산", "불인정"), ("평균의 분모를 잘못 셈", "계산", "부분")])
+        sol3=["{CHK}. 따라서 답은 {dec(ans)}이다.", "{DESC}", "답 {dec(ans)}"],
+        model="{DESC}이므로 {CONC}. 따라서 답은 {dec(ans)}이다.",
+        rubric=[("자료 읽기", 2, "{DESC}으로 읽었다.", "{PA1}"), ("계산", 3, "{dec(ans)}{eul(dec(ans))} 구했다.", "{PA2}")],
+        pitfalls=[("{PIT1}", "자료 읽기", "부분"), ("{PIT2}", "계산", "불인정"), ("{PIT3}", "계산", "부분")])
 
 
 SC_SEED = SEED(SC, category="확률통계", title="산점도와 상관관계 — 판정·개수·계산", unit_id="m3-2", concept_ids=["m3-2-14"],

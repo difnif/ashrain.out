@@ -22,6 +22,9 @@ from fractions import Fraction
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from seedlib import dump, hl, numline, reveal, steps, with_pitfalls  # noqa: E402
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from genkit.expr import eul, ika, pn, ro, wa  # noqa: E402  — 표에 굽는 문장의 조사 (엔진과 같은 규칙)
+
 SUP = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
 
 
@@ -191,6 +194,8 @@ def _pw3_rows():
                 continue
             if a in (4, 9) or (a == 8) or (a == 6 and n > 4):
                 continue
+            if a == n:                                          # 2² = 4, 3³ = 27 — 밑과 지수가 같으면 '밑·지수를 바꿔 답함' 실수거리가 정답을 가리킨다
+                continue
             rows[f"{a}|{n}|e"] = {"a": a, "n": n, "N": N, "mode": 0, "AV": n, "SN": sup(n), "MUL": " × ".join([str(a)] * n)}
             rows[f"{a}|{n}|b"] = {"a": a, "n": n, "N": N, "mode": 1, "AV": a, "SN": sup(n), "MUL": " × ".join([str(a)] * n)}
     return rows
@@ -234,12 +239,56 @@ def pw_t3():
     )
 
 
+def _pw3_texts(r):
+    """t3 해설 — 지수를 구할 때(밑을 안다)는 N 을 밑으로 1이 될 때까지 나누고,
+    밑을 구할 때(밑을 모른다)는 N 을 소인수분해해 똑같은 묶음 n개로 나눈다 (답인 밑을 미리 쓰지 않는다)."""
+    a, n, N, SN, MUL = r["a"], r["n"], r["N"], r["SN"], r["MUL"]
+    if r["mode"] == 0:
+        chain = " → ".join(str(a ** k) for k in range(n, -1, -1))
+        return {
+            "SOL1": f"{a}ⁿ은 {a}{eul(a)} n번 곱한 수이다. {N}{eul(N)} {a}{ro(a)} 1이 될 때까지 나누어 몇 번 나누어지는지 세면, "
+                    f"{N}{ika(N)} {a}{eul(a)} 몇 번 곱한 수인지, 즉 지수 n을 알 수 있다.",
+            "S1": f"{N}{eul(N)} {a}{ro(a)} 1이 될 때까지 나누면 {chain}, 모두 {n}번 나누어진다",
+            "S2": f"즉 {a}{ika(a)} {n}번 곱해진 수이므로 {N} = {MUL} = {a}{SN}",
+            "S3": f"따라서 n = {n}",
+            "F1": chain, "FH": f"{a}{ro(a)} {n}번 나누어진다", "F2": f"{N} = {a}{SN}", "FN": "나눈 횟수 = 지수", "F3": f"n = {n}",
+            "MA": f"{N}{eul(N)} {a}{ro(a)} 1이 될 때까지 나누면 {n}번 나누어지므로 {N} = {MUL} = {a}{SN}이다. 따라서 n = {n}이다.",
+            "PITA": f"{N}{eul(N)} {a}{ro(a)} 1이 될 때까지 나눈 횟수를 하나 적게 세어 지수를 1 작게 씀",
+            "PITB": f"지수 n 대신 밑 {a}{eul(a)} 답으로 씀",
+        }
+    sol1 = (f"x{SN}은 같은 수 x를 {n}번 곱한 수이다. x를 모르므로 먼저 {N}{eul(N)} 소인수분해하고, "
+            f"곱해진 수들을 똑같은 묶음 {n}개로 나누면 한 묶음의 값이 x이다.")
+    if a in (6, 10):                                  # 합성수 밑 — 두 소인수를 하나씩 묶는다
+        p, q = (2, 3) if a == 6 else (2, 5)
+        pf = " × ".join([str(p)] * n + [str(q)] * n)
+        gr = " × ".join([f"({p} × {q})"] * n)
+        s2 = f"{p}{wa(p)} {q}{eul(q)} 하나씩 묶으면 {N} = {gr} = {MUL} = {a}{SN}"
+        f2 = f"= {gr} = {a}{SN}"
+        ma = f"{N}{eul(N)} 소인수분해하면 {N} = {pf} = {gr} = {a}{SN}이므로 x = {a}이다."
+    else:                                             # 소수 밑 — 소인수분해가 곧 같은 수의 곱
+        pf = MUL
+        s2 = f"{a}{ika(a)} {n}번 곱해졌으므로 {N} = {a}{SN}"
+        f2 = f"= {a}{SN}"
+        ma = f"{N}{eul(N)} 소인수분해하면 {N} = {MUL} = {a}{SN}이므로 x = {a}이다."
+    return {"SOL1": sol1, "S1": f"{N}{eul(N)} 소인수분해하면 {N} = {pf}", "S2": s2, "S3": f"따라서 x = {a}",
+            "F1": f"{N} = {pf}", "FH": "소인수분해", "F2": f2, "FN": f"같은 수를 {n}번 곱함", "F3": f"x = {a}", "MA": ma,
+            "PITA": f"x{SN}을 x × {n}{ro(n)} 착각해 {N}{eul(N)} {n}{ro(n)} 나눔",
+            "PITB": f"밑 x 대신 지수 {n}{eul(n)} 답으로 씀"}
+
+
 def pw_t3_fix(t):
-    """question 은 mode 별로 다르다 — 표에 QTEXT 를 두고 문면은 {QTEXT} 하나로."""
+    """question 은 mode 별로 다르다 — 표에 QTEXT 를 두고 문면은 {QTEXT} 하나로. 해설도 mode 별로 표에 굽는다."""
     for r in PW3_ROWS.values():
         r["QTEXT"] = (f"{r['a']}ⁿ = {r['N']}일 때, 자연수 n의 값을 구하시오." if r["mode"] == 0
                       else f"x{r['SN']} = {r['N']}일 때, 자연수 x의 값을 구하시오.")
+        r.update(_pw3_texts(r))
     t["question"] = "{QTEXT}"
+    t["sol1"] = "{SOL1}"
+    t["sol2"] = ["{S1}", "{S2}", "{S3}"]
+    t["sol2_fig"] = steps([{"text": "{F1}", "hint": "{FH}"},
+                           {"text": "{F2}", "marks": [{"on": "{SN}", "note": "{FN}"}]},
+                           {"text": "{F3}"}])
+    t["model_answer"] = "{MA}"
     return t
 
 
@@ -247,28 +296,42 @@ def pw_t3_fix(t):
 SG = "m1-1-sign-number"
 SG_BASE = {**BASE, "process": "표현", "context": "생활맥락", "ops": ["사칙"], "traps": ["부호"], "prereq": ["자연수와 0"], "tags": ["양수", "음수", "부호"], "difficulty": 1}
 
-CTX_ROWS = {
-    "temp": {"POS": "영상", "NEG": "영하", "U": "℃", "EX": 5, "JO": "를", "PEX": "영상 5 ℃를 +5 ℃로"},
-    "sea": {"POS": "해발", "NEG": "해저", "U": "m", "EX": 100, "JO": "를", "PEX": "해발 100 m를 +100 m로"},
-    "money": {"POS": "수입", "NEG": "지출", "U": "원", "EX": 1000, "JO": "을", "PEX": "수입 1000원을 +1000원으로"},
-    "profit": {"POS": "이익", "NEG": "손해", "U": "원", "EX": 500, "JO": "을", "PEX": "이익 500원을 +500원으로"},
-    "east": {"POS": "동쪽으로", "NEG": "서쪽으로", "U": "km", "EX": 3, "JO": "를", "PEX": "동쪽으로 3 km를 +3 km로"},
-    "gain": {"POS": "증가", "NEG": "감소", "U": "명", "EX": 10, "JO": "을", "PEX": "10명 증가를 +10명으로"},
+CTX_ROWS = {                                            # 조사는 단위를 읽는 소리로 굳혀 둔다 (℃ 도·m 미터·km 킬로미터 → 는/로, 원·명 → 은/으로)
+    #  UQ: 수 뒤에 붙는 단위(기호 단위는 띄어 씀) · AQ2: 묻는 양의 꼬리 · AE: 그 뒤 은/는 · AJ: 을/를 · UR: 답 뒤 (으)로
+    "temp": {"POS": "영상", "NEG": "영하", "U": "℃", "UQ": " ℃", "EX": 5, "PEX": "영상 5 ℃를 +5 ℃로",
+             "ASK1": "영하 ", "AQ2": " ℃", "AE": "는", "AJ": "를", "UR": "로"},
+    "sea": {"POS": "해발", "NEG": "해저", "U": "m", "UQ": " m", "EX": 100, "PEX": "해발 100 m를 +100 m로",
+            "ASK1": "해저 ", "AQ2": " m", "AE": "는", "AJ": "를", "UR": "로"},
+    "money": {"POS": "수입", "NEG": "지출", "U": "원", "UQ": "원", "EX": 1000, "PEX": "수입 1000원을 +1000원으로",
+              "ASK1": "지출 ", "AQ2": "원", "AE": "은", "AJ": "을", "UR": "으로"},
+    "profit": {"POS": "이익", "NEG": "손해", "U": "원", "UQ": "원", "EX": 500, "PEX": "이익 500원을 +500원으로",
+               "ASK1": "손해 ", "AQ2": "원", "AE": "은", "AJ": "을", "UR": "으로"},
+    "east": {"POS": "동쪽", "NEG": "서쪽", "U": "km", "UQ": " km", "EX": 3, "PEX": "동쪽으로 3 km 이동한 것을 +3 km로",
+             "ASK1": "서쪽으로 ", "AQ2": " km 이동한 것", "AE": "은", "AJ": "을", "UR": "로"},
+    "gain": {"POS": "증가", "NEG": "감소", "U": "명", "UQ": "명", "EX": 10, "PEX": "10명 증가를 +10명으로",
+             "ASK1": "", "AQ2": "명 감소", "AE": "는", "AJ": "를", "UR": "으로"},
 }
 SIDE_ROWS = {"neg": {"s": -1, "SIDE": "NEG"}}          # 양수 쪽을 묻는 변주는 답의 수가 문면에 그대로 있어 뺐다 (R-05)
 
 
+SG1_VALS = {                                            # 맥락마다 현실적인 크기 (영하 3000 ℃·서쪽 3000 km·지출 1원 같은 수치를 막는다)
+    "temp": [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 25, 30],
+    "sea": [1, 2, 3, 4, 6, 7, 8, 9, 12, 15, 20, 25, 30, 40, 50, 200, 300, 2000, 3000],
+    "money": [10, 20, 30, 40, 50, 200, 300, 400, 600, 700, 800, 2000, 3000, 5000],
+    "profit": [10, 20, 30, 40, 50, 100, 200, 300, 400, 600, 700, 800, 2000, 3000],
+    "east": [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 20, 25, 30, 40, 50],
+    "gain": [1, 2, 3, 4, 6, 7, 8, 9, 12, 15, 20, 25, 30, 40, 50, 200, 300, 2000, 3000],
+}
+
+
 def _sg1_rows():
-    """맥락 × 묻는 쪽 — 묻는 문구(ASK)를 미리 굽는다 ('영하 {v} ℃' 는 값이 들어가므로 접두만)."""
+    """맥락 × 묻는 쪽 × 크기 — 묻는 양은 '{ASK1}{v}{AQ2}' 로 쓰고 뒤 조사(AE·AJ·UR)는 표에서 받는다 (단위 기호는 조사 함수가 못 읽는다)."""
     rows = {}
     for ck, c in CTX_ROWS.items():
         for sk, sd in SIDE_ROWS.items():
-            word = c["NEG"] if sd["s"] < 0 else c["POS"]
             sw = "−" if sd["s"] < 0 else "+"
-            if ck == "gain":
-                rows[f"{ck}|{sk}"] = {**c, "s": sd["s"], "SW": sw, "NUL": "", "ASK1": "", "ASK2": f"{c['U']} {word}{c['JO']}"}
-            else:
-                rows[f"{ck}|{sk}"] = {**c, "s": sd["s"], "SW": sw, "NUL": "", "ASK1": f"{word} ", "ASK2": f"{c['U']}{c['JO']}"}
+            for v in SG1_VALS[ck]:
+                rows[f"{ck}|{sk}|{v}"] = {**c, "s": sd["s"], "SW": sw, "NUL": "", "v": v}
     return rows
 
 
@@ -281,27 +344,27 @@ def sg_t1():
         skill="영상/영하, 수입/지출처럼 반대되는 두 양을 기준(0)에 대해 양의 부호와 음의 부호로 나타내기",
         variant_axis={"맥락": "온도·해발·수입/지출·이익/손해·동/서·증가/감소", "묻는 쪽": "음수"},
         discriminates="반대되는 양은 반대 부호로 나타냄을 알고, 값의 크기는 그대로 두는가",
-        params=[{"name": "c", "values": {"in": list(SG1_ROWS)}}, {"name": "v", "values": {"in": [1, 2, 3, 4, 6, 7, 8, 9, 12, 15, 20, 25, 30, 40, 50, 200, 300, 2000, 3000]}}],
+        params=[{"name": "c", "values": {"in": list(SG1_ROWS)}}],
         table={"key": "c", "rows": SG1_ROWS},
         derive={"ansv": "s*v"},
         constraints=["v != EX"],
         cost_values=["v"],
         answer_var="ansv",
         verify=["ansv == s*v", "abs(ansv) == v", "s == -1"],
-        question="{PEX} 나타낼 때, {ASK1}{v}{ASK2} 부호를 사용하여 나타내시오.",
+        question="{PEX} 나타낼 때, {ASK1}{v}{AQ2}{AJ} 부호를 사용하여 나타내시오.",
         answer="{ansv}", answer_alt=["{ansv}{U}", "{ansv} {U}"],
         sol1="서로 반대되는 성질의 두 양은 한쪽을 양의 부호 +로 나타내면 다른 쪽은 음의 부호 −로 나타낸다. 부호만 정하면 되고 크기(수)는 그대로 쓴다.",
-        sol2=["{PEX} 나타냈으므로 {POS}{eun(POS)} +, {NEG}{eun(NEG)} −", "따라서 구하는 양은 {ansv}{U}"],
+        sol2=["{PEX} 나타냈으므로 {POS}{eun(POS)} +, {NEG}{eun(NEG)} −", "따라서 {ASK1}{v}{AQ2}{AE} {ansv}{UQ}"],
         sol2_fig=steps([{"text": "{POS} → +,  {NEG} → −", "hint": "반대되는 양은 반대 부호"},
-                        {"text": "{ASK1}{v}{U} → {ansv}{U}", "marks": [{"on": "{ansv}", "note": "크기 {v}{eun(v)} 그대로"}]}]),
+                        {"text": "{ASK1}{v}{AQ2} → {ansv}{UQ}", "marks": [{"on": "{ansv}", "note": "크기 {v}{eun(v)} 그대로"}]}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")]],
-        sol3="기준 0에서 {POS} 쪽이 +, {NEG} 쪽이 −이므로 부호가 맞고, 크기 {v}{eun(v)} 그대로이다. 답은 {ansv}{U}이다.",
-        sol3_fig=steps(["0을 기준으로 {POS}: +  /  {NEG}: −", "답: {ansv}{U}"]),
+        sol3="0을 기준으로 {POS}{eul(POS)} +로 나타냈으니 반대인 {NEG}{eun(NEG)} −이고, 크기 {v}{eun(v)} 그대로이다. 답은 {ansv}{UQ}이다.",
+        sol3_fig=steps(["0을 기준으로 {POS}: +  /  {NEG}: −", "답: {ansv}{UQ}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="{POS}{eul(POS)} + 로 나타내므로 반대인 {NEG}{eun(NEG)} − 로 나타낸다. 따라서 {ASK1}{v}{U}{eun(U)} {ansv}{U}이다.",
+        model_answer="{POS}{eul(POS)} +로 나타내므로 반대인 {NEG}{eun(NEG)} −로 나타낸다. 따라서 {ASK1}{v}{AQ2}{AE} {ansv}{UQ}이다.",
         rubric=[
-            {"element": "부호 정하기", "points": 3, "criterion": "반대되는 양이므로 부호를 {SW}로 정했다.", "partial": "부호가 반대면 인정하지 않는다."},
-            {"element": "답 쓰기", "points": 2, "criterion": "{ansv}{U}{ro(U)} 크기와 부호를 함께 썼다.", "partial": "부호 없이 {v}만 썼으면 1점."},
+            {"element": "부호 정하기", "points": 3, "criterion": "반대되는 양이므로 음의 부호 −를 붙였다.", "partial": "부호가 반대면 인정하지 않는다."},
+            {"element": "답 쓰기", "points": 2, "criterion": "{ansv}{UQ}{UR} 크기와 부호를 함께 썼다.", "partial": "부호 없이 {v}만 썼으면 1점."},
         ],
         rubric_total=5,
     )
@@ -515,6 +578,17 @@ def ir_t2_split(t):
         u["params"] = [p for p in t["params"] if p["name"] != "q1"] + [{"name": "q1", "values": {"in": [key]}}]
         u["question"] = qtext
         u["title"] = t["title"] + (" (사이)" if key == "open" else " (이상·이하)")
+        if key == "ge":                                   # '이상·이하' 는 양 끝을 포함한다 — '사이' 로 풀지 않는다
+            u["sol1"] = ("'{a} 이상'은 {a}도 포함하고 '{b} 이하'는 {b}도 포함한다. 수직선에서 {a}부터 {b}까지 음의 정수, 0, 양의 정수가 "
+                         "차례로 놓이므로, 0을 빠뜨리지 않도록 음수 쪽, 0, 양수 쪽으로 나누어 센다.")
+            u["sol2"] = ["음의 정수: {NNEG}개 ({a}도 포함)", "0: 1개", "양의 정수: {NPOS}개 ({b}도 포함) → 모두 {ans}개"]
+            u["sol2_fig"] = steps([{"text": "음의 정수 {NNEG}개", "hint": "{a}도 포함"}, {"text": "0 (1개)", "marks": [{"on": "0", "note": "0을 잊지 말 것"}]},
+                                   {"text": "양의 정수 {NPOS}개 → {NNEG} + 1 + {NPOS} = {ans}", "hint": "{b}도 포함"}])
+            u["sol2_anim"] = [[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")], [reveal(2), hl("hint:2")]]
+            u["sol3"] = "수직선에 양 끝 {a}, {b}까지 포함하여 {a}부터 {b}까지의 정수를 찍어 세어 보면 조건에 맞는 정수는 {ans}개다."
+            u["sol3_fig"] = numline("{a-1}", "{b+1}", [{"x": "{a}", "label": "{dec(a)}"}, {"x": 0, "label": "0"}, {"x": "{b}", "label": "{dec(b)}"}])
+            u["model_answer"] = ("{a} 이상 {b} 이하인 정수는 양 끝 {a}{wa(a)} {b}{eul(b)} 포함한다. 이 정수들을 음의 정수 {NNEG}개, 0 한 개, "
+                                 "양의 정수 {NPOS}개로 나누어 세면 모두 {ans}개이다.")
         out.append(u)
     return out
 
@@ -525,7 +599,8 @@ OD_BASE = {**BASE, "process": "개념이해", "ops": ["사칙"], "traps": ["부�
 
 
 def _od1_rows():
-    """두 수의 대소 — 정수·소수만(분수 마커는 답으로 칠 수 없다). 절반은 둘 다 음수."""
+    """두 수의 대소 — 정수·소수만(분수 마커는 답으로 칠 수 없다). 절반은 둘 다 음수, 나머지 절반은 음수 하나와 0 또는 양수 하나
+    (둘 다 0 이상인 쌍은 '음수의 대소'를 재지 못하므로 뺀다)."""
     rnd = random.Random(1313)
     vals = [-7, -3, -1, 0, 1, 3, 7, 12, -2.5, -0.4, 0.75, 3.5, -4, -9, 2, -5.5, 6, -12]
     rows = {}
@@ -536,6 +611,8 @@ def _od1_rows():
         if (x, y) in pairs:
             continue
         if len(rows) < 30 and not (x < 0 and y < 0):
+            continue
+        if len(rows) >= 30 and not (min(x, y) < 0 <= max(x, y)):
             continue
         pairs.add((x, y))
         i += 1
@@ -681,14 +758,61 @@ def od_t3():
 # ═══════════════════════════════════════════════════════════════════ 5. 부등호의 사용 (m1-1-14)
 IS = "m1-1-ineq-sign"
 IS_BASE = {**BASE, "process": "표현", "ops": ["부등식"], "traps": ["조건누락"], "prereq": ["수의 대소 관계", "정수"], "tags": ["부등호", "이상", "이하", "초과", "미만"]}
-PH_ROWS = {
-    "ge_le": {"PH": "이상", "PH2": "이하인", "iA": 1, "iB": 1, "SA": "≤", "SB": "≤"},
-    "ge_lt": {"PH": "이상", "PH2": "미만인", "iA": 1, "iB": 0, "SA": "≤", "SB": "<"},
-    "gt_le": {"PH": "초과", "PH2": "이하인", "iA": 0, "iB": 1, "SA": "<", "SB": "≤"},
-    "gt_lt": {"PH": "초과", "PH2": "미만인", "iA": 0, "iB": 0, "SA": "<", "SB": "<"},
-    "big_le": {"PH": "보다 크고", "PH2": "보다 크지 않은", "iA": 0, "iB": 1, "SA": "<", "SB": "≤"},
-    "ge_lt2": {"PH": "보다 작지 않고", "PH2": "보다 작은", "iA": 1, "iB": 0, "SA": "≤", "SB": "<"},
+PH_ROWS = {                                             # QA·QB: 문면용 — '이상·초과' 는 수와 띄우고 조사 '보다' 는 붙인다
+    "ge_le": {"PH": "이상", "PH2": "이하인", "QA": " 이상", "QB": " 이하인", "iA": 1, "iB": 1, "SA": "≤", "SB": "≤"},
+    "ge_lt": {"PH": "이상", "PH2": "미만인", "QA": " 이상", "QB": " 미만인", "iA": 1, "iB": 0, "SA": "≤", "SB": "<"},
+    "gt_le": {"PH": "초과", "PH2": "이하인", "QA": " 초과", "QB": " 이하인", "iA": 0, "iB": 1, "SA": "<", "SB": "≤"},
+    "gt_lt": {"PH": "초과", "PH2": "미만인", "QA": " 초과", "QB": " 미만인", "iA": 0, "iB": 0, "SA": "<", "SB": "<"},
+    "big_le": {"PH": "보다 크고", "PH2": "보다 크지 않은", "QA": "보다 크고", "QB": "보다 크지 않은", "iA": 0, "iB": 1, "SA": "<", "SB": "≤"},
+    "ge_lt2": {"PH": "보다 작지 않고", "PH2": "보다 작은", "QA": "보다 작지 않고", "QB": "보다 작은", "iA": 1, "iB": 0, "SA": "≤", "SB": "<"},
 }
+
+
+def _is2_rows():
+    """t2 — (표현, m, b) 조합마다 범위의 부호 구성에 맞춘 방침·합 계산 문장을 굽는다.
+    음수·양수가 함께 있으면 절댓값이 같은 수끼리 짝지어 0, 한쪽 부호뿐이면(0부터 / 0까지) 짝짓기 없이 그대로 더한다."""
+    rows = {}
+    for pk, p in PH_ROWS.items():
+        for m in range(1, 7):
+            for b in range(1, 10):
+                a = -m
+                lo, hi = a + 1 - p["iA"], b - 1 + p["iB"]
+                n = hi - lo + 1
+                ans = sum(range(lo, hi + 1))
+                if n < 3 or ans == 0 or abs(ans) > 45:
+                    continue
+                if lo < 0 < hi:
+                    c = min(-lo, hi)
+                    pairs = "-1과 1" if c == 1 else ("-2와 2, -1과 1" if c == 2 else f"{-c}{wa(-c)} {c}, …, -1과 1")
+                    rest = list(range(c + 1, hi + 1)) if hi > -lo else list(range(lo, -c))
+                    zero = f"{pairs}은 {'각각 ' if c > 1 else ''}더하면 0이 되고 0은 더해도 합이 변하지 않으니"
+                    if len(rest) == 1:
+                        s3 = f"{zero}, 남는 수는 {rest[0]}뿐이므로 합은 {ans}"
+                    else:
+                        s3 = f"{zero}, 남는 수만 더하면 " \
+                             + " + ".join([str(rest[0])] + [pn(r) for r in rest[1:]]) + f" = {ans}"
+                    s1b = "범위에 음수와 양수가 함께 있으므로, 절댓값이 같은 음수와 양수를 짝지어 더하면 0이 되는 것을 이용하면 계산이 빠르다."
+                    mk = "(−k) + k = 0 이용"
+                    pit3 = "음수와 양수를 더하면서 부호를 잃음"
+                    pp3 = "부호 처리 실수면 1점."
+                elif lo == 0:
+                    s3 = "0은 더해도 합이 그대로이므로 " + " + ".join(str(r) for r in range(1, hi + 1)) + f" = {ans}"
+                    s1b = "이 범위에는 음수가 없어 짝지어 0을 만들 수 없다. 0은 더해도 합이 그대로이므로 양수만 차례로 더한다."
+                    mk = "음수가 없으니 그대로 더한다"
+                    pit3 = f"1부터 {hi}까지 더하다가 수를 빠뜨리거나 두 번 더함"
+                    pp3 = "더하다가 수를 빠뜨리거나 두 번 더했으면 1점."
+                else:                                   # hi == 0 — 음수와 0뿐
+                    s3 = "0은 더해도 합이 그대로이므로 " + " + ".join([str(lo)] + [pn(r) for r in range(lo + 1, 0)]) + f" = {ans}"
+                    s1b = "이 범위에는 양수가 없어 짝지어 0을 만들 수 없다. 0은 더해도 합이 그대로이므로 음수만 차례로 더한다."
+                    mk = "양수가 없으니 그대로 더한다"
+                    pit3 = "음수끼리 더한 합을 양수로 씀"
+                    pp3 = "합의 부호를 +로 썼으면 1점."
+                xl = ", ".join(str(v) for v in range(lo, hi + 1)) if n <= 6 else f"{lo}, {lo + 1}, …, {hi}"
+                rows[f"{pk}|{m}|{b}"] = {**p, "m": m, "b": b, "S1B": s1b, "S3": s3, "MK": mk, "XL": xl, "PIT3": pit3, "PP3": pp3}
+    return rows
+
+
+IS2_ROWS = _is2_rows()
 
 
 def is_t1():
@@ -705,21 +829,25 @@ def is_t1():
         cost_values=["m", "b", "ans"],
         answer_var="ans",
         verify=["ans == hi - lo + 1", "lo >= a", "hi <= b"],
-        question="x는 {a} {PH} {b} {PH2} 수이다. 이 조건을 만족하는 정수 x는 모두 몇 개인지 구하시오.",
+        question="x는 {a}{QA} {b}{QB} 수이다. 이 조건을 만족하는 정수 x는 모두 몇 개인지 구하시오.",
         answer="{ans}", answer_alt=["{ans}개"],
         sol1="'이상·이하·크지 않다·작지 않다'는 그 수를 포함하므로 ≤, ≥를 쓰고, '초과·미만·크다·작다'는 포함하지 않으므로 <, >를 쓴다. 조건을 부등호로 옮긴 뒤 그 범위의 정수를 센다.",
         sol2=["조건을 부등호로 나타내면 {a} {SA} x {SB} {b}", "이 범위의 정수는 {lo}부터 {hi}까지", "따라서 정수 x는 {hi} − {pn(lo)} + 1 = {ans}개"],
-        sol2_fig=steps([{"text": "{a} {SA} x {SB} {b}", "hint": "포함하면 ≤, 포함하지 않으면 <", "marks": [{"on": "{SA}", "note": "'{PH}'"}, {"on": "{SB}", "note": "'{PH2}'"}]},
-                        {"text": "정수 x: {lo}, …, {hi}"},
+        sol2_fig=steps([{"text": "{a} {SA} x {SB} {b}", "hint": "포함하면 ≤, 포함하지 않으면 <", "marks": [{"on": "{a} {SA}", "note": "'{PH}'"}, {"on": "{SB} {b}", "note": "'{PH2}'"}]},   # 옆 수까지 — 렌더러는 첫 일치만 바꾸므로 ≤ ≤ 가 겹치지 않게
+                        {"text": "정수 x: {lo}부터 {hi}까지"},
                         {"text": "개수: {hi} − {pn(lo)} + 1 = {ans}"}]),
         sol2_anim=[[reveal(0), hl("hint:0", "mark:0-0", "mark:0-1")], [reveal(1)], [reveal(2)]],
-        sol3="수직선에 {a}부터 {b}까지 그리고 양 끝을 포함하는지(●) 않는지(○) 표시해 세어 보면 {lo}부터 {hi}까지 {ans}개다.",
-        sol3_fig=numline("{a-1}", "{b+1}", [{"x": "{a}", "label": "a"}, {"x": "{b}", "label": "b"}], [{"from": "{lo}", "to": "{hi}"}]),
+        sol3="수직선에 {a}부터 {b}까지 구간을 그리고 양 끝을 포함하면 ●, 포함하지 않으면 ○로 표시한 뒤 그 안의 정수를 세어 보면 {lo}부터 {hi}까지 {ans}개다.",
+        # 렌더러(numline)는 점을 늘 ●로 그리고 구간 끝만 ●/○(inclusive)를 가른다 — 끝점은 점으로 찍지 않고 구간 [a, b] 를 ○로 그린 뒤,
+        # 포함하는 끝에만 길이 0 구간을 ●로 덧그린다 (seg:0 이 본 구간).
+        sol3_fig=numline("{a-1}", "{b+1}", [], [{"from": "{a}", "to": "{b}", "inclusive": False},
+                                                 {"from": "{a}", "to": "{a}", "inclusive": "{iA == 1}"},
+                                                 {"from": "{b}", "to": "{b}", "inclusive": "{iB == 1}"}]),
         sol3_anim=[[hl("seg:0")]],
         model_answer="조건을 부등호로 나타내면 {a} {SA} x {SB} {b}이다. 이를 만족하는 정수는 {lo}부터 {hi}까지이므로 모두 {ans}개이다.",
         rubric=[
             {"element": "부등호로 나타내기", "points": 3, "criterion": "조건을 {a} {SA} x {SB} {b}{ro(b)} 옮겼다.", "partial": "한쪽 부등호의 종류만 틀렸으면 1점."},
-            {"element": "정수 세기", "points": 2, "criterion": "범위의 정수 {lo}~{hi}{eul(hi)} 빠짐없이 셌다.", "partial": "양 끝 처리를 틀렸으면 1점."},
+            {"element": "정수 세기", "points": 2, "criterion": "범위의 정수 {lo}~{hi}{eul(hi)} 빠짐없이 셌다.", "partial": "양 끝 처리를 틀렸거나 0을 빠뜨렸으면 1점."},
             {"element": "답 구하기", "points": 2, "criterion": "{ans}개를 답했다.", "partial": "계산 실수면 1점."},
         ],
         rubric_total=7,
@@ -730,23 +858,23 @@ def is_t2():
     return tpl(IS, 2, IS_BASE,
         title="조건을 만족하는 정수의 합 — 부등호로 옮긴 뒤 모두 더하기",
         skill="말로 주어진 범위를 부등호로 옮기고 그 범위의 정수를 모두 더하기",
-        variant_axis={"표현": "이상/이하 · 초과/미만 · 크고/크지 않은 · 작지 않고/작은", "구간": "음수~양수 (합이 0이 아닌 것)"},
-        discriminates="양 끝의 포함 여부를 정확히 옮기고, 음수와 양수가 상쇄됨을 이용해 합을 구하는가",
+        variant_axis={"표현": "이상/이하 · 초과/미만 · 크고/크지 않은 · 작지 않고/작은", "구간": "음수~양수 · 0~양수 · 음수~0 (합이 0이 아닌 것)"},
+        discriminates="양 끝의 포함 여부를 정확히 옮기고, 음수와 양수가 함께 있으면 절댓값이 같은 수끼리 상쇄됨을 이용해 합을 구하는가",
         process="절차수행", difficulty=3, time_limit=90, points=5,
-        params=[{"name": "ph", "values": {"in": list(PH_ROWS)}}, {"name": "m", "values": {"int": [1, 6]}}, {"name": "b", "values": {"int": [1, 9]}}],
-        table={"key": "ph", "rows": PH_ROWS},
+        params=[{"name": "k", "values": {"in": list(IS2_ROWS)}}],
+        table={"key": "k", "rows": IS2_ROWS},
         derive={"a": "-m", "lo": "a + 1 - iA", "hi": "b - 1 + iB", "n": "hi - lo + 1", "ans": "(lo + hi)*(hi - lo + 1)/2"},
         constraints=["n >= 3", "ans != 0", "abs(ans) <= 45"],
         cost_values=["m", "b", "n", "ans"],
         answer_var="ans",
         verify=["2*ans == (lo + hi)*n", "n == hi - lo + 1"],
-        question="x는 {a} {PH} {b} {PH2} 수이다. 이 조건을 만족하는 정수 x의 값을 모두 더한 것을 구하시오.",
+        question="x는 {a}{QA} {b}{QB} 수이다. 이 조건을 만족하는 정수 x의 값을 모두 더한 것을 구하시오.",
         answer="{ans}", answer_alt=[],
-        sol1="먼저 조건을 부등호로 옮겨 정수의 범위를 정한다. 음수와 양수가 함께 있으면 절댓값이 같은 수끼리 더해 0이 되는 것을 이용하면 계산이 빠르다.",
-        sol2=["조건을 부등호로 나타내면 {a} {SA} x {SB} {b}", "정수 x는 {lo}부터 {hi}까지 {n}개", "절댓값이 같은 음수·양수는 더해서 0이므로 남는 수들의 합은 {ans}"],
+        sol1="먼저 조건을 부등호로 옮겨 정수의 범위를 정한다. {S1B}",
+        sol2=["조건을 부등호로 나타내면 {a} {SA} x {SB} {b}", "정수 x는 {lo}부터 {hi}까지 {n}개", "{S3}"],
         sol2_fig=steps([{"text": "{a} {SA} x {SB} {b}", "hint": "'{PH}' → {SA}, '{PH2}' → {SB}"},
-                        {"text": "x = {lo}, …, {hi}  ({n}개)"},
-                        {"text": "합 = {ans}", "marks": [{"on": "{ans}", "note": "(−k) + k = 0 이용"}]}]),
+                        {"text": "x = {XL}  ({n}개)"},
+                        {"text": "합 = {ans}", "marks": [{"on": "{ans}", "note": "{MK}"}]}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1)], [reveal(2), hl("mark:2-0")]],
         sol3="{lo}부터 {hi}까지 {n}개의 정수를 순서대로 더하면 (처음 수 + 마지막 수) × 개수 ÷ 2 = ({lo} + {hi}) × {n} ÷ 2 = {ans}{ro(ans)} 같다. 답은 {ans}이다.",
         sol3_fig=steps(["({lo} + {hi}) × {n} ÷ 2 = {ans}"]),
@@ -755,7 +883,7 @@ def is_t2():
         rubric=[
             {"element": "부등호로 나타내기", "points": 3, "criterion": "조건을 {a} {SA} x {SB} {b}{ro(b)} 옮겼다.", "partial": "한쪽 부등호의 종류만 틀렸으면 1점."},
             {"element": "정수 나열", "points": 2, "criterion": "{lo}부터 {hi}까지 {n}개를 빠짐없이 나열했다.", "partial": "양 끝 처리를 틀렸으면 1점."},
-            {"element": "합 구하기", "points": 3, "criterion": "합 {ans}{eul(ans)} 구했다.", "partial": "부호 처리 실수면 1점."},
+            {"element": "합 구하기", "points": 3, "criterion": "합 {ans}{eul(ans)} 구했다.", "partial": "{PP3}"},      # 갈래별 — pitfalls {PIT3} 와 같은 실수
         ],
         rubric_total=8,
     )
@@ -1163,7 +1291,7 @@ def gr_t2():
         sol2=["그래프가 수평인 구간은 x = {t1}부터 x = {t2}까지 (거리 {d1} m 그대로)", "멈춰 있던 시간: {t2} − {t1} = {ans} (분)"],
         sol2_fig=steps([{"text": "수평 구간: {t1}분 ~ {t2}분", "hint": "거리가 {d1} m로 변하지 않음"}, {"text": "{t2} − {t1} = {ans}", "marks": [{"on": "{ans}", "note": "y의 차가 아니라 x의 차"}]}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")]],
-        sol3="걸은 시간 {t1}분과 {rest}분에 멈춘 {ans}분을 더하면 {T}분으로 전체 시간과 같다. 답은 {ans}분이다.",
+        sol3="멈추기 전에 걸은 {t1}분, 멈춰 있던 {ans}분, 다시 걸은 {rest}분을 모두 더하면 {t1} + {ans} + {rest} = {T}(분)으로 전체 걸린 시간과 같다. 답은 {ans}분이다.",
         sol3_fig=steps(["{t1} + {ans} + {rest} = {T}"]),
         sol3_anim=[[reveal(0)]],
         model_answer="그래프가 수평인 x = {t1}부터 x = {t2}까지는 거리가 {d1} m로 변하지 않으므로 멈춰 있던 것이다. 따라서 멈춰 있던 시간은 {t2} − {t1} = {ans}(분)이다.",

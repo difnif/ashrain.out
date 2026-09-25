@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from hsseed import HS, NZ, SEED, T, run  # noqa: E402
-from genkit.expr import eul as _eul, eun as _eun, wa as _wa  # noqa: E402
+from genkit.expr import eul as _eul, eun as _eun, ro as _ro, wa as _wa  # noqa: E402
 
 rng = random.Random(20260914)
 
@@ -525,57 +525,112 @@ def fn_t4():
     return T(FN, 4, FN_B, title="합성함수의 역함수의 값 — (f∘g)⁻¹(k)",
         skill="(f∘g)⁻¹(k) = m ⇔ (f∘g)(m) = k이므로 합성함수의 식을 만들어 방정식 풀기", axis={"f": "ax + b", "g": "x + c", "합성": "f∘g / g∘f"}, disc="합성의 역함수 값을 '합성 = k'의 방정식으로 바꾸고, 합성 순서를 지키는가", diff=3,
         params=[{"name": "a", "values": {"in": NZ(-3, 3)}}, {"name": "b", "values": {"in": NZ(-5, 5)}}, {"name": "c", "values": {"in": NZ(-5, 5)}}, {"name": "x0", "values": {"in": NZ(-5, 5)}}, {"name": "m", "values": {"in": ["fg", "gf"]}}],
-        table={"key": "m", "rows": {"fg": {"ASK": "(f∘g)⁻¹", "COMP": "(f∘g)(x) = f(g(x)) = f(x + c)", "w": 1}, "gf": {"ASK": "(g∘f)⁻¹", "COMP": "(g∘f)(x) = g(f(x)) = f(x) + c", "w": 0}}},
-        derive={"k": "w*(a*(x0 + c) + b) + (1 - w)*(a*x0 + b + c)", "ans": "x0", "cc": "w*(a*c + b) + (1 - w)*(b + c)"},
+        # 합성 과정 'f(x + c)'·'f(x) + c' 는 실제 수로 쓴다: fg → f(x {sgn(c)}) = {co(a)}(x {sgn(c)}) {sgn(b)} / gf → f(x) {sgn(c)} = ({co(a)}x {sgn(b)}) {sgn(c)}
+        table={"key": "m", "rows": {"fg": {"ASK": "(f∘g)⁻¹", "FN": "(f∘g)", "COMP": "(f∘g)(x) = f(g(x))", "A1": "f(x ", "A2": ") = ", "A3": "(x ", "w": 1, "PITA": "(f∘g)⁻¹을 f⁻¹∘g⁻¹로 계산", "XX": " × ", "NG": "-", "BL": ""},
+                                    "gf": {"ASK": "(g∘f)⁻¹", "FN": "(g∘f)", "COMP": "(g∘f)(x) = g(f(x))", "A1": "f(x) ", "A2": " = (", "A3": "x ", "w": 0, "PITA": "(g∘f)⁻¹을 g⁻¹∘f⁻¹로 계산", "XX": " × ", "NG": "-", "BL": ""}}},
+        derive={"k": "w*(a*(x0 + c) + b) + (1 - w)*(a*x0 + b + c)", "ans": "x0", "cc": "w*(a*c + b) + (1 - w)*(b + c)", "s2": "w*c + (1 - w)*b", "s3": "w*b + (1 - w)*c"},
         constraints=["k != 0", "ans not in (a, b, c, k)", "a != 1", "cc != 0"], cost=["a", "b", "c", "k", "ans"], verify=["w == 0 or a*(ans + c) + b == k", "w == 1 or a*ans + b + c == k"],
         q="두 함수 f(x) = {co(a)}x {sgn(b)}, g(x) = x {sgn(c)}에 대하여 {ASK}({k})의 값을 구하시오.", answer="{ans}",
-        sol1="{ASK}({k}) = m이라 하면 역함수의 뜻에서 합성함수의 값이 {k}인 m을 찾으면 된다. 합성함수의 식은 {COMP} = {co(a)}x {sgn(cc)}이다.",
-        sol2=[("{ASK}({k}) = m ⇔ (합성함수)(m) = {k}", "역함수의 뜻"), ("합성: {COMP} = {co(a)}x {sgn(cc)}", "합성함수의 식"), ("{co(a)}m {sgn(cc)} = {k} → m = {ans}", None, ("{ans}", "m"))],
-        sol3=["m = {ans}{eul(ans)} 합성함수에 넣으면 {a} × {pn(ans)} {sgn(cc)} = {k}{ika(k)} 되어 맞다. 따라서 {ASK}({k}) = {ans}이다.", "합성함수({ans}) = {k} ✓", "{ASK}({k}) = {ans}"],
-        model="{COMP} = {co(a)}x {sgn(cc)}이므로 {ASK}({k}) = m은 {co(a)}m {sgn(cc)} = {k}의 해 m = {ans}이다.",
-        rubric=[("합성함수의 식", 3, "{COMP} = {co(a)}x {sgn(cc)}{eul(cc)} 구했다.", "합성 순서를 바꿨으면 인정하지 않는다."), ("역함수 값", 2, "m = {ans}{eul(ans)} 구했다.", "방정식 풀이 실수면 1점.")],
-        pitfalls=[("합성 순서를 바꿈", "합성함수의 식", "불인정"), ("(f∘g)⁻¹을 f⁻¹∘g⁻¹로 계산", "합성함수의 식", "불인정"), ("방정식 풀이 실수", "역함수 값", "부분")])
+        sol1="{ASK}({k}) = m이라 하면 역함수의 뜻에서 합성함수의 값이 {k}인 m을 찾으면 된다. 합성함수의 식은 {COMP} = {A1}{sgn(c)}{A2}{co(a)}{A3}{sgn(s2)}) {sgn(s3)} = {co(a)}x {sgn(cc)}이다.",
+        sol2=[("{ASK}({k}) = m ⇔ {FN}(m) = {k}", "역함수의 뜻"), ("합성: {COMP} = {A1}{sgn(c)}{A2}{co(a)}{A3}{sgn(s2)}) {sgn(s3)} = {co(a)}x {sgn(cc)}", "합성함수의 식"), ("{co(a)}m {sgn(cc)} = {k} → m = {ans}", None, ("{ans}", "m"))],
+        sol3=["m = {ans}{eul(ans)} 합성함수 {FN}(x) = {co(a)}x {sgn(cc)}에 넣으면 {a if (ans == 1 or a != -1) else BL}{BL if ans == 1 else (XX if a != -1 else NG)}{BL if ans == 1 else pn(ans)} {sgn(cc)} = {k}{ika(k)} 되어 맞다. 따라서 {ASK}({k}) = {ans}이다.", "{FN}({ans}) = {k} ✓", "{ASK}({k}) = {ans}"],
+        model="{COMP} = {A1}{sgn(c)}{A2}{co(a)}{A3}{sgn(s2)}) {sgn(s3)} = {co(a)}x {sgn(cc)}이므로 {ASK}({k}) = m은 {co(a)}m {sgn(cc)} = {k}의 해 m = {ans}이다.",
+        rubric=[("합성함수의 식", 3, "{COMP} = {A1}{sgn(c)}{A2}{co(a)}{A3}{sgn(s2)}) {sgn(s3)} = {co(a)}x {sgn(cc)}{eul(cc)} 구했다.", "합성 순서를 바꿨으면 인정하지 않는다."), ("역함수 값", 2, "m = {ans}{eul(ans)} 구했다.", "방정식 풀이 실수면 1점.")],
+        pitfalls=[("합성 순서를 바꿈", "합성함수의 식", "불인정"), ("{PITA}", "합성함수의 식", "불인정"), ("방정식 풀이 실수", "역함수 값", "부분")])          # 등록부(pitfalls.py)와 같게
 
 
 def _fn5_rows():
     out = {}
     letters = "abcdefgh"
+    pw = lambda b, e: f"{b}" if e == 1 else f"[[pow({b},{e})]]"          # noqa: E731 — 지수 1 은 쓰지 않는다
     for m in range(2, 7):
         X = list(range(1, m + 1))
         for n in range(2, 9):
             Y = list(letters[:n])
-            kinds = [("all", f"X에서 Y로의 함수의 개수", n ** m, f"X의 원소 {m}개가 각각 Y의 원소 {n}개 중 하나를 택하므로 [[pow({n},{m})]]", f"[[pow({n},{m})]]"),
-                     ("const", f"X에서 Y로의 상수함수의 개수", n, f"함숫값 하나를 Y의 원소 {n}개 중에서 고르므로 {n}", f"{n}"),
-                     ("fix", f"X에서 Y로의 함수 f 중 f(1) = a인 함수의 개수", n ** (m - 1), f"f(1) = a로 정해졌고 나머지 원소 {m - 1}개가 각각 Y의 원소 {n}개 중 하나를 택하므로 [[pow({n},{m - 1})]]", f"[[pow({n},{m - 1})]]"),
-                     ("nfix", f"X에서 Y로의 함수 f 중 f(1) ≠ a인 함수의 개수", (n - 1) * n ** (m - 1), f"f(1)은 a를 뺀 {n - 1}가지, 나머지 원소 {m - 1}개는 각각 {n}가지이므로 {n - 1} × [[pow({n},{m - 1})]]", f"{n - 1} × [[pow({n},{m - 1})]]")]
+            # (종류, 묻는 것, 값, 근거(…므로), 식 머리, 식 전개)
+            kinds = [("all", "X에서 Y로의 함수의 개수", n ** m, f"X의 원소 {m}개가 각각 Y의 원소 {n}개 중 하나를 택하므로", pw(n, m), pw(n, m)),
+                     ("const", "X에서 Y로의 상수함수의 개수", n, f"상수함수는 X의 모든 원소가 같은 함숫값을 가지므로 그 값 하나를 Y의 원소 {n}개 중에서 고르면 되고,", f"{n}가지", None),
+                     ("fix", "X에서 Y로의 함수 f 중 f(1) = a인 함수의 개수", n ** (m - 1), f"f(1) = a로 정해졌고 나머지 원소 {m - 1}개가 각각 Y의 원소 {n}개 중 하나를 택하므로", pw(n, m - 1), pw(n, m - 1)),
+                     ("nfix", "X에서 Y로의 함수 f 중 f(1) ≠ a인 함수의 개수", (n - 1) * n ** (m - 1), f"f(1)은 a를 뺀 {n - 1}가지, 나머지 원소 {m - 1}개는 각각 {n}가지이므로", *([pw(n, m - 1)] * 2 if n == 2 else [f"{n - 1} × {pw(n, m - 1)}"] * 2))]          # n − 1 = 1 이면 '1 ×' 를 쓰지 않는다
             if n >= m:
-                kinds.append(("inj", f"X에서 Y로의 일대일함수의 개수", math.perm(n, m), f"X의 원소 {m}개가 서로 다른 함숫값을 가지므로 [[perm({n},{m})]]", f"[[perm({n},{m})]] = {' × '.join(str(n - i) for i in range(m))}" if n > m else f"[[perm({n},{m})]] = {n}!"))
-            for kk, desc, v, expl, form in kinds:
+                kinds.append(("inj", "X에서 Y로의 일대일함수의 개수", math.perm(n, m), f"X의 원소 {m}개가 서로 다른 함숫값을 가지므로", f"[[perm({n},{m})]]",
+                              f"[[perm({n},{m})]] = {' × '.join(str(n - i) for i in range(m))}" if n > m else f"[[perm({n},{m})]] = {n}!"))
+            for kk, desc, v, why, head, form in kinds:
                 q = f"두 집합 X = {_setm(X)}, Y = {_setm(Y)}에 대하여 {desc}를 구하시오."
                 if v in _nums(q) or v < 2:
                     continue
-                out[f"{m}_{n}_{kk}"] = {"SETX": ", ".join(map(str, X)), "SETY": ", ".join(Y), "DESC": desc, "V": v, "EXPL": expl, "FORM": form, "NX": m, "NY": n}
+                if kk == "const":
+                    row = {"EXPL": f"{why} 그 방법은 {n}가지이다", "FORM": head, "FORMEQ": f"상수함수의 개수 = {n}",
+                           "MODEL": f"{why} 그 방법은 {n}가지이다. 따라서 상수함수의 개수는 {n}이다."}
+                elif form == str(v):                   # 지수 1 — 'n = n' 으로 쓰지 않는다
+                    row = {"EXPL": f"{why} {v}가지이다", "FORM": f"{v}가지", "FORMEQ": f"함수의 개수 = {v}", "MODEL": f"{why} 구하는 함수의 개수는 {v}이다."}
+                else:
+                    row = {"EXPL": f"{why} {form}", "FORM": form, "FORMEQ": f"{form} = {v}", "MODEL": f"{why} {form} = {v}이다."}
+                # 'f(1) = a' 를 묻는 행은 공역에 문자 f 가 있으면(원소 6개 이상) 함수 이름과 겹치므로 쓰지 않는다 — 행은 남기고 OK = 0 으로 걸러 색인을 지킨다
+                ok = 0 if (kk in ("fix", "nfix") and "f" in Y) else 1
+                out[f"{m}_{n}_{kk}"] = {"SETX": ", ".join(map(str, X)), "SETY": ", ".join(Y), "DESC": desc, "V": v, "NX": m, "NY": n, "OK": ok, **row}
         if m >= 3:
+            # 일대일대응 — 공역 Y 를 X 와 원소 수가 같은 문자 집합으로 둔다(정의한 Y 를 실제로 쓴다)
             v = math.factorial(m)
-            out[f"{m}_bij"] = {"SETX": ", ".join(map(str, X)), "SETY": ", ".join(map(str, X)), "DESC": "X에서 X로의 일대일대응의 개수", "V": v, "EXPL": f"X의 원소 {m}개를 자기 자신의 원소에 빠짐없이 하나씩 짝지으므로 {m}! = {' × '.join(str(m - i) for i in range(m))} = {v}", "FORM": f"{m}!", "NX": m, "NY": m}
+            prod = " × ".join(str(m - i) for i in range(m - 1))        # 4! = 4 × 3 × 2 (끝의 × 1 은 쓰지 않는다)
+            why = f"X의 원소 {m}개를 Y의 원소 {m}개에 빠짐없이 하나씩 짝지으므로"
+            out[f"{m}_bij"] = {"SETX": ", ".join(map(str, X)), "SETY": ", ".join(letters[:m]), "DESC": "X에서 Y로의 일대일대응의 개수", "V": v, "NX": m, "NY": m, "OK": 1,
+                               "EXPL": f"{why} {m}! = {prod}", "FORM": f"{m}!", "FORMEQ": f"{m}! = {prod} = {v}", "MODEL": f"{why} {m}! = {prod} = {v}이다."}
     return out
 
 
 FN5_ROWS = _fn5_rows()
 
 
+def _fn5_extra(key, r):
+    """[방침] 둘째 문장(PLAN)·부분점수(PART1)·실수거리({PITA} 불인정, {PITB} 부분) — 묻는 종류에 맞는 것만."""
+    m, n = r["NX"], r["NY"]
+    kind = key.split("_")[-1]
+    pw = lambda b, e: f"{b}" if e == 1 else f"[[pow({b},{e})]]"          # noqa: E731
+    same = "함숫값이 서로 달라야 함을 쓰지 않고 셌으면 인정하지 않는다."
+    r["PLAN"], r["PART1"], r["PITA"], r["PITB"] = {
+        "all": (f"정의역 X의 원소 {m}개마다 Y의 원소 {n}개 중 하나를 함숫값으로 고르므로, 원소마다의 가짓수를 곱하면 함수의 개수가 된다.",
+                "밑과 지수를 바꿔 셌으면 인정하지 않는다." if m ** n != n ** m else ("함숫값이 서로 달라야 한다고 보고 셌으면 인정하지 않는다." if n >= m else "가짓수를 곱하지 않고 더했으면 인정하지 않는다."),
+                f"밑과 지수를 바꿔 {pw(m, n)}으로 셈" if m ** n != n ** m else (f"함숫값이 서로 달라야 한다고 보고 [[perm({n},{m})]]{_ro(m)} 셈" if n >= m else f"원소마다의 가짓수를 곱하지 않고 더해 {n * m}{_ro(n * m)} 셈"),          # mⁿ = nᵐ(같은 수이거나 2⁴ = 4²)이면 바꾼 식이 정답과 같다
+                "원소 하나의 가짓수를 빠뜨려 곱하는 수가 하나 적음"),
+        "const": ("상수함수는 X의 모든 원소가 같은 하나의 함숫값을 가지므로, 그 공통의 함숫값을 Y에서 하나 고르는 방법의 수만 세면 된다.",
+                  "상수함수가 아닌 함수까지 모두 셌으면 인정하지 않는다.", f"상수함수가 아닌 함수까지 모두 세어 {pw(n, m)}으로 셈", f"X의 원소의 개수 {m}{_eul(m)} 답함"),
+        "fix": ("f(1)의 값은 a 하나로 정해져 있으므로, 나머지 원소들의 함숫값만 골라 가짓수를 곱한다.",
+                "f(1)의 값까지 여러 가지로 셌으면 인정하지 않는다.", f"f(1)의 값까지 {n}가지로 세어 {pw(n, m)}으로 셈", "f(1)을 뺀 나머지 원소의 개수를 하나 더 많게 셈"),
+        "nfix": ("f(1)은 a를 뺀 나머지 값 중에서, 다른 원소들은 Y 전체에서 함숫값을 고르므로 두 가짓수를 곱한다.",
+                 "f(1)의 값에서 a를 빼지 않았으면 인정하지 않는다.", "f(1)의 값에서 a를 빼지 않고 셈",
+                 "f(1) = a인 함수의 개수를 답함" if n > 2 else "f(1)을 뺀 나머지 원소의 개수를 하나 더 많게 셈"),          # n(Y) = 2 이면 두 개수가 같다
+        "inj": ("일대일함수는 서로 다른 원소의 함숫값이 달라야 하므로, 원소의 함숫값을 하나씩 정할 때마다 고를 수 있는 값이 하나씩 줄어든다.",
+                same, f"함숫값이 서로 달라야 함을 놓쳐 {pw(n, m)}으로 셈", "곱하는 수를 하나씩 줄이다 개수를 틀림"),
+        "bij": ("일대일대응은 일대일함수이면서 Y의 모든 원소가 함숫값으로 쓰여야 하므로, 원소의 개수가 같은 X와 Y의 원소를 빠짐없이 하나씩 짝짓는 방법의 수를 센다.",
+                same, f"함숫값이 서로 달라야 함을 놓쳐 {pw(m, m)}으로 셈", "곱하는 수를 하나씩 줄이다 개수를 틀림"),
+    }[kind]
+    if kind == "const":          # 상수함수 — 함숫값 하나만 고른다 (원소마다 고르는 일반 함수의 검산과 다르다)
+        yl = r["SETY"].split(", ")
+        r["CHK"] = f"상수함수는 X의 모든 원소를 Y의 한 원소로 보내는 함수이므로, 모든 함숫값이 {yl[0]}인 함수, 모두 {yl[1]}인 함수, …처럼 Y의 원소 하나마다 꼭 하나씩 있다."
+        r["HINT2"] = "공통의 함숫값 하나 고르기"
+    else:
+        r["CHK"] = "함수 하나를 실제로 적어 보면 정의역의 원소마다 함숫값을 하나씩 고르는 과정과 같음을 알 수 있다."
+        r["HINT2"] = "가짓수 곱하기"
+    r["FJ"] = "로" if r["FORM"].endswith("!") else _ro(r["FORM"])          # 'n!' 은 '팩토리얼'로 읽는다 → '로'
+    return r
+
+
+FN5_ROWS = {_k: _fn5_extra(_k, _r) for _k, _r in FN5_ROWS.items()}
+
+
 def fn_t5():
     return T(FN, 5, FN_B, title="함수의 개수 — 함수·상수함수·일대일함수·일대일대응",
         skill="정의역의 각 원소가 택할 수 있는 함숫값의 가짓수를 곱해 함수의 개수 세기", axis={"X": "원소 2~6개", "Y": "원소 2~8개", "종류": "함수 / 상수함수 / f(1) = a 고정·제외 / 일대일함수 / 일대일대응"}, disc="함수는 nᵐ, 일대일함수는 nPm, 일대일대응은 m!임을 정의에서 이끌어내는가", diff=2,
         params=[{"name": "f", "values": {"in": list(FN5_ROWS)}}], table={"key": "f", "rows": FN5_ROWS},
-        derive={"ans": "V"}, cost=["NX", "NY", "ans"], verify=["ans == V"],
+        derive={"ans": "V"}, constraints=["OK == 1"], cost=["NX", "NY", "ans"], verify=["ans == V"],
         q="두 집합 X = [[set({SETX})]], Y = [[set({SETY})]]에 대하여 {DESC}를 구하시오.", answer="{ans}",
-        sol1="함수는 정의역의 각 원소에 공역의 원소를 하나씩 대응시키는 것이다. 정의역 X의 원소 {NX}개마다 택할 수 있는 함숫값의 가짓수를 곱하면 함수의 개수가 된다. 일대일함수는 함숫값이 서로 달라야 하므로 가짓수가 하나씩 줄고, 일대일대응은 공역 전체를 빠짐없이 쓴다.",
-        sol2=[("n(X) = {NX}, n(Y) = {NY}", "원소의 개수"), ("{EXPL}", "가짓수 곱하기"), ("{FORM} = {ans}", None, ("{ans}", "개수"))],
-        sol3=["함수 하나를 실제로 적어 보면 정의역의 원소마다 함숫값을 하나씩 고르는 과정과 같음을 알 수 있다. 따라서 {DESC}는 {ans}이다.", "{FORM}", "답 {ans}"],
-        model="{EXPL}이므로 {FORM} = {ans}이다.",
-        rubric=[("가짓수 세기", 3, "{FORM}{ro(FORM)} 세웠다.", "함수와 일대일함수를 혼동했으면 인정하지 않는다."), ("계산", 2, "{ans}{eul(ans)} 구했다.", "곱셈 실수면 1점.")],
-        pitfalls=[("함수의 개수를 mⁿ으로 셈(지수·밑 바꿈)", "가짓수 세기", "불인정"), ("일대일함수를 nᵐ으로 셈", "가짓수 세기", "불인정"), ("곱셈 실수", "계산", "부분")])
+        sol1="함수는 정의역의 각 원소에 공역의 원소를 하나씩 대응시키는 것이다. {PLAN}",
+        sol2=[("n(X) = {NX}, n(Y) = {NY}", "원소의 개수"), ("{EXPL}", "{HINT2}"), ("{FORMEQ}", None, ("{ans}", "개수"))],
+        sol3=["{CHK} 따라서 {DESC}는 {ans}이다.", "{FORM}", "답 {ans}"],
+        model="{MODEL}",
+        rubric=[("가짓수 세기", 3, "{FORM}{FJ} 세웠다.", "{PART1}"), ("계산", 2, "{ans}{eul(ans)} 구했다.", "계산 실수면 1점.")],
+        pitfalls=[("{PITA}", "가짓수 세기", "불인정"), ("{PITB}", "가짓수 세기", "부분"), ("개수 계산 실수", "계산", "부분")])          # 등록부(pitfalls.py)와 같게
 
 
 FN_SEED = SEED(FN, category="함수", title="함수 — 일차함수 값·합성함수 값·역함수 값·합성의 역함수·함수의 개수", unit_id="h1-2", concept_ids=["h1-2-16", "h1-2-17", "h1-2-18"],

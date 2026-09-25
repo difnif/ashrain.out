@@ -19,7 +19,7 @@ import sympy as sp
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from hsseed import HS, NZ, SEED, T, run  # noqa: E402
-from genkit.expr import eul as _eul, ro as _ro, wa as _wa  # noqa: E402
+from genkit.expr import eul as _eul, ika as _ika, ro as _ro, wa as _wa  # noqa: E402
 
 rng = random.Random(20260920)
 X, N, K, TT = sp.symbols("x n k t")
@@ -70,6 +70,9 @@ def _sc(c):
 
 def _sg(c):
     return f"{'+' if c > 0 else '−'} {abs(c)}"
+
+
+_SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 
 
 def _sgc(c):
@@ -239,11 +242,22 @@ def _sl4_fix(t):
 def _sl5_rows():
     out = {}
     for S1 in (2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 25, 27, 30, 32, 36, 40, 45, 48, 50, 54, 60, 64, 72, 80, 81, 90, 96, 100):
-        for rn, rd, desc in ((1, 2, "각 변의 중점을 이어 만든 정사각형(넓이가 절반)"), (1, 4, "각 변의 길이를 절반으로 줄인 닮은 도형(넓이가 1/4)"), (4, 9, "각 변의 길이를 2/3배로 줄인 닮은 도형(넓이가 4/9)"), (1, 3, "넓이가 1/3씩 줄어드는 도형"), (1, 9, "각 변의 길이를 1/3배로 줄인 닮은 도형(넓이가 1/9)"), (9, 16, "각 변의 길이를 3/4배로 줄인 닮은 도형(넓이가 9/16)"), (2, 5, "넓이가 2/5씩 줄어드는 도형")):
+        for rn, rd, desc in ((1, 2, "각 변의 중점을 이어 만든 정사각형(넓이는 바로 앞 도형의 절반)"), (1, 4, "각 변의 길이를 절반으로 줄인 닮은 도형(넓이는 바로 앞 도형의 1/4배)"), (4, 9, "각 변의 길이를 2/3배로 줄인 닮은 도형(넓이는 바로 앞 도형의 4/9배)"), (1, 3, "넓이가 바로 앞 도형의 1/3배로 줄어드는 도형"), (1, 9, "각 변의 길이를 1/3배로 줄인 닮은 도형(넓이는 바로 앞 도형의 1/9배)"), (9, 16, "각 변의 길이를 3/4배로 줄인 닮은 도형(넓이는 바로 앞 도형의 9/16배)"), (2, 5, "넓이가 바로 앞 도형의 2/5배로 줄어드는 도형")):
             r = Fraction(rn, rd)
             v = S1 / (1 - r)
             q = f"넓이가 {S1}인 도형 S₁에서 시작하여 {desc}을 차례로 만들어 S₂, S₃, ⋯을 얻는다. 모든 도형의 넓이의 합 S₁ + S₂ + S₃ + ⋯을 구하시오."
-            row = _row(q, v, Q=q, S1=S1, RS=f"[[frac({rn},{rd})]]", RES=f"[[frac({S1}, 1 − frac({rn},{rd}))]] = {_fm(v)}", S2=_fm(S1 * r))
+            rf = f"[[frac({rn},{rd})]]"
+            if rd == 2:            # 중점을 이은 정사각형 — 넓이 비를 발문이 준다
+                plan = f"각 변의 중점을 이어 만든 정사각형의 넓이는 바로 앞 정사각형의 절반이므로 넓이는 공비 {rf}인 등비수열을 이룬다."
+                pit, rp = "중점을 이은 정사각형의 넓이의 비를 1/4로 봄(한 변의 길이의 비를 1/2로 착각)", "넓이의 비를 1/4로 두었으면 인정하지 않는다."
+            elif "길이" in desc:   # 닮은 도형 — 길이의 비 k, 넓이의 비 k²
+                k = Fraction(math.isqrt(rn), math.isqrt(rd))
+                plan = f"닮은 도형에서 길이의 비가 k이면 넓이의 비는 k²이다. 각 변의 길이가 {_fm(k)}배이므로 넓이는 {rf}배가 되어, 넓이는 공비 {rf}인 등비수열을 이룬다."
+                pit, rp = f"길이의 비 {k}{_eul(k)} 넓이의 공비로 씀", "길이의 비를 공비로 썼으면 인정하지 않는다."
+            else:                  # 넓이의 배율을 바로 준 도형
+                plan = f"넓이가 바로 앞 도형의 {rf}배이므로 넓이는 공비 {rf}인 등비수열을 이룬다."
+                pit, rp = f"줄어드는 비율 {r} 대신 1 − {r} = {1 - r}{_eul(1 - r)} 공비로 씀", "공비를 1 − r로 썼으면 인정하지 않는다."
+            row = _row(q, v, Q=q, S1=S1, RS=rf, RSWA=_wa(r), RSEUL=_eul(r), RSRO=_ro(r.numerator), RES=f"[[frac({S1}, 1 − frac({rn},{rd}))]] = {_fm(v)}", S2=_fm(S1 * r), PLAN=plan, PIT1=pit, RP1=rp, ANSM=_fm(v))
             if row: out[f"{S1}_{rn}_{rd}"] = row
     return out
 
@@ -253,16 +267,16 @@ SL5_ROWS = _sl5_rows()
 
 def sl_t5():
     return T(SL, 5, SL_B, title="등비급수의 활용 — 닮은 도형의 넓이의 합",
-        skill="넓이가 일정한 비로 줄어드는 도형의 넓이의 합을 등비급수 S₁/(1 − r)로 구하기", axis={"S₁": "4~64", "비": "1/2, 1/4, 4/9, 1/3"}, disc="넓이의 비(길이비의 제곱)를 공비로 잡는가", diff=3,
+        skill="넓이가 일정한 비로 줄어드는 도형의 넓이의 합을 등비급수 S₁/(1 − r)로 구하기", axis={"S₁": "2~100", "넓이의 배율": "1/2, 1/4, 4/9, 1/3, 1/9, 9/16, 2/5"}, disc="넓이의 비(길이비의 제곱)를 공비로 잡는가", diff=3,
         params=[{"name": "f", "values": {"in": list(SL5_ROWS)}}], table={"key": "f", "rows": SL5_ROWS},
         derive={"ans": "VN/VD"}, cost=["S1", "ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
-        sol1="닮은 도형이 반복되면 넓이는 등비수열을 이룬다. 길이의 비가 k이면 넓이의 비는 k²이다. 첫째항 S₁ = {S1}, 공비 {RS}이므로 등비급수의 합 S₁/(1 − r)를 쓴다.",
-        sol2=[("S₁ = {S1}, S₂ = {S2}, 공비 r = {RS}", "넓이의 비"), ("|r| < 1이므로 수렴, 합 = [[frac(S1, 1 − r)]]", "등비급수"), ("{RES}", None, ("{ans}", "합"))],
-        sol3=["S₂/S₁ = {S2}/{S1}이 공비 {RS}와 같은지 확인한다. 따라서 합은 {ans}이다.", "{RES}", "합 {ans}"],
+        sol1="{PLAN} 첫째항 S₁ = {S1}, 공비 {RS}이므로 등비급수의 합 S₁/(1 − r)을 쓴다.",
+        sol2=[("S₁ = {S1}, S₂ = {S2}, 공비 r = {RS}", "넓이의 비"), ("|r| < 1이므로 수렴, 합 = [[frac(S1, 1 − r)]]", "등비급수"), ("{RES}", None, ("{ANSM}", "합"))],
+        sol3=["S₂ ÷ S₁ = {S2} ÷ {S1} = {RS}{RSRO} 공비와 같은지 확인한다. 따라서 합은 {ans}이다.", "{RES}", "합 {ans}"],
         model="넓이는 첫째항 {S1}, 공비 {RS}인 등비수열이므로 합은 {RES}이다. 따라서 답은 {ans}이다.",
-        rubric=[("공비", 3, "넓이의 공비 {RS}{eul(S1)} 잡았다.", "길이의 비를 공비로 썼으면 인정하지 않는다."), ("합", 2, "{ans}{eul(ans)} 구했다.", "공식 실수면 1점.")],
-        pitfalls=[("길이의 비를 넓이의 공비로 씀", "공비", "불인정"), ("첫째항을 S₂로 둠", "합", "부분"), ("1 − r 계산 실수", "합", "부분")])
+        rubric=[("공비", 3, "넓이의 공비 {RS}{RSEUL} 잡았다.", "{RP1}"), ("합", 2, "{ans}{eul(ans)} 구했다.", "공식 실수면 1점.")],
+        pitfalls=[("{PIT1}", "공비", "불인정"), ("첫째항을 S₂로 둠", "합", "부분"), ("1 − r 계산 실수", "합", "부분")])
 
 
 SL_SEED = SEED(SL, category="해석", title="수열의 극한과 급수 — 극한값·등비수열 수렴 조건·부분분수 급수·등비급수(순환소수)·닮은 도형의 넓이 합", unit_id="h3-1", concept_ids=["h3-1-01", "h3-1-02", "h3-1-03", "h3-1-04"],
@@ -346,48 +360,153 @@ def dc_t2():
         pitfalls=[("sin(ax)/x → 1로 둠", "꼴 맞추기", "불인정"), ("(1 − cos x)/x² → 0으로 봄", "꼴 맞추기", "불인정"), ("a/b를 뒤집음", "극한값", "불인정")])
 
 
+_D3K = {   # 규칙별 [확인]·채점 부분점수·실수거리 (틀 문자열은 자리표시자만)
+    "pe": dict(CHK="곱의 미분법 u'v + uv'의 두 항을 모두 썼는지, e⁰ = 1을 바르게 넣었는지 확인한다.", RP1="u'v + uv'에서 한 항을 빠뜨렸으면 1점.",
+               PIT1="곱의 미분을 (uv)' = u'v'으로 계산함", PIT2="u'v + uv'에서 한 항을 빠뜨림", PIT3="e⁰을 0으로 두고 대입함"),
+    "es": dict(CHK="곱의 미분법의 두 항을 모두 썼는지, 지수함수·삼각함수의 안쪽 계수를 곱했는지 확인한다.", RP1="안쪽 계수를 빠뜨렸거나 한 항을 빠뜨렸으면 1점.",
+               PIT1="곱의 미분을 (uv)' = u'v'으로 계산함", PIT2="eᵃˣ 또는 sin(bx)의 미분에서 안쪽 계수를 빠뜨림", PIT3="sin 0 = 0, cos 0 = 1을 바꿔 넣음"),
+    "sc": dict(CHK="곱의 미분법의 두 항을 모두 썼는지, (cos x)' = −sin x의 부호를 지켰는지 확인한다.", RP1="부호나 안쪽 계수를 빠뜨렸으면 1점.",
+               PIT1="곱의 미분을 (uv)' = u'v'으로 계산함", PIT2="cos(bx)의 미분에서 부호(−)나 계수 b를 빠뜨림", PIT3="sin 0 = 0, cos 0 = 1을 바꿔 넣음"),
+    "q": dict(CHK="분자의 순서(u'v − uv')와 분모의 제곱 (x² + 1)²을 확인한다.", RP1="분모의 제곱을 빠뜨렸으면 1점.",
+              PIT1="분자의 순서를 바꿔 uv' − u'v로 계산함", PIT2="분모를 제곱하지 않고 x² + 1로 둠", PIT3="x = 1을 대입할 때 (x² + 1)² = 4를 2로 계산함"),
+    "ln": dict(CHK="(ln u)' = u'/u에서 분자 u'을 빠뜨리지 않았는지 확인한다.", RP1="u'의 계수를 틀렸으면 1점.",
+               PIT1="(ln u)'을 1/u로 두어 안쪽 미분 u'을 빠뜨림", PIT2="u'을 구할 때 이차항의 미분 계수를 틀림", PIT3="x = 0을 대입할 때 분모의 값 1을 잘못 계산함"),
+    "pow": dict(CHK="안쪽 함수의 미분(x의 계수)을 곱했는지, 지수를 하나 낮췄는지 확인한다.", RP1="지수를 하나 낮추지 않았으면 1점.",
+                PIT1="합성함수에서 안쪽 미분(x의 계수)을 빠뜨림", PIT2="지수를 n − 1로 낮추지 않음", PIT3="x = 0을 대입한 뒤 거듭제곱의 부호나 값을 틀림"),
+    "te": dict(CHK="(tan x)' = sec²x, (eᵏˣ)' = keᵏˣ에서 안쪽 계수를 곱했는지 확인한다.", RP1="안쪽 계수를 빠뜨렸으면 1점.",
+               PIT1="(tan x)'의 부호를 틀려 −sec²x로 둠", PIT2="tan(ax) 또는 eᵇˣ의 미분에서 안쪽 계수를 빠뜨림", PIT3="sec²0 = 1, e⁰ = 1을 잘못 넣음"),
+    "par": dict(CHK="dy/dx = (dy/dt)/(dx/dt)의 순서와, x가 아닌 t의 값을 넣었는지 확인한다.", RP1="dy/dt와 dx/dt 중 하나를 잘못 구했으면 1점.",
+                PIT1="dy/dx를 (dx/dt)/(dy/dt)로 뒤집음", PIT2="dy/dt 또는 dx/dt의 계산 실수", PIT3="t의 값 대신 x의 값을 대입함"),
+    "imp": dict(CHK="y의 식을 x로 미분할 때 dy/dx를 곱했는지, 점의 x좌표와 y좌표를 바르게 넣었는지 확인한다.", RP1="dy/dx로 정리할 때 부호를 빠뜨렸으면 1점.",
+                PIT1="y를 상수로 보고 y의 식을 미분할 때 dy/dx를 곱하지 않음", PIT2="dy/dx로 정리할 때 부호(−)를 빠뜨림", PIT3="점의 x좌표와 y좌표를 바꿔 대입함"),
+    "inv": dict(CHK="g'(y₀)는 f'(x₀)의 역수이고, x₀는 f(x₀) = y₀를 만족하는 값임을 확인한다.", RP1="f'(x₀) 대신 f'(y₀)를 계산했으면 1점.",
+                PIT1="역함수의 미분계수를 역수가 아닌 f'(x₀)로 둠", PIT2="f'(x₀) 대신 f'(y₀)를 계산함", PIT3="f(x₀) = y₀를 만족하는 x₀를 잘못 찾음"),
+}
+
+
+def _coef_miss(items):
+    """[(식, 계수)] 중 계수가 1이 아닌 것만 — '…의 미분에서 계수 a를 곱하지 않음' 문구 (없으면 None)"""
+    parts = [f"{e}의 미분에서 계수 {c}" for e, c in items if c != 1]
+    if not parts:
+        return None
+    last = [c for e, c in items if c != 1][-1]
+    return " 또는 ".join(parts) + f"{_eul(last)} 곱하지 않음"
+
+
+def _d3x_pe(a, b):
+    u = f"({_sc(a)}x {_sg(b)})eˣ"
+    return dict(CHK=f"두 항 {_sc(a)}eˣ와 ({_sc(a)}x {_sg(b)})eˣ를 모두 썼는지, e⁰ = 1을 바르게 넣었는지 확인한다.", RP1="두 항 중 하나를 빠뜨렸으면 1점.",
+                PIT1=f"곱의 미분법의 두 항을 더하지 않고 빼서 {_sc(a)}eˣ − ({_sc(a)}x {_sg(b)})eˣ로 둠", PIT2="곱의 미분법의 두 항 중 하나를 빠뜨림")
+
+
+def _d3x_es(a, b):
+    miss = _coef_miss([(f"[[pow(e, {_sc(a)}x)]]", a), (f"sin({_sc(b)}x)", b)])
+    return dict(CHK=f"두 항을 모두 썼는지, [[pow(e, {_sc(a)}x)]]와 sin({_sc(b)}x)의 도함수에 안쪽 계수를 곱했는지 확인한다." if miss else "두 항을 모두 썼는지, e⁰ = 1, sin 0 = 0, cos 0 = 1을 바르게 넣었는지 확인한다.",
+                RP1=(miss[:-1] + "았으면 1점.") if miss else "두 항 중 하나를 빠뜨렸으면 1점.",
+                PIT1="곱의 미분법의 두 항을 더하지 않고 빼서 씀", PIT2=miss or "곱의 미분법의 두 항 중 하나를 빠뜨림",
+                **({"PIT3": "e⁰을 0으로 두고 대입함"} if a == b else {}))        # a = b 면 sin 0·cos 0 을 바꿔도 답이 같다
+
+
+def _d3x_sc(a, b):
+    miss = _coef_miss([(f"sin({_sc(a)}x)", a)])
+    return dict(CHK=f"두 항을 모두 썼는지, sin({_sc(a)}x)의 도함수가 {_sc(a)}cos({_sc(a)}x)인지 확인한다.",
+                RP1=(miss[:-1] + "았으면 1점.") if miss else f"cos({_sc(b)}x)의 미분에서 부호(−)를 빠뜨렸으면 1점.",
+                PIT1=f"sin({_sc(a)}x)cos({_sc(b)}x)의 도함수를 두 인수의 도함수의 곱으로 둠", PIT2=miss or f"cos({_sc(b)}x)의 미분에서 부호(−)를 빠뜨림",
+                **({"PIT3": "cos 0 = 1을 0으로 두고 대입함"} if a == -b else {}))        # a = −b 면 sin 0·cos 0 을 바꿔도 답이 같다
+
+
+def _d3x_te(a, b):
+    miss = _coef_miss([(f"tan({_sc(a)}x)", a), (f"[[pow(e, {_sc(b)}x)]]", b)])
+    return dict(CHK=f"(tan x)' = sec²x와 [[pow(e, {_sc(b)}x)]]의 도함수에서 안쪽 계수를 곱했는지 확인한다." if miss else "(tan x)' = sec²x, (eˣ)' = eˣ를 바르게 썼는지 확인한다.",
+                RP1=(miss[:-1] + "았으면 1점.") if miss else "(eˣ)'을 eˣ가 아닌 식으로 두었으면 1점.",
+                PIT2=miss or "(eˣ)'을 eˣ가 아닌 xeˣ⁻¹로 둠")
+
+
+def _d3x_ln(a, b):
+    inner, dinner = f"{_sc(a)}x² {_sg(b)}x + 1", f"{2 * a}x {_sg(b)}"
+    return dict(CHK=f"(ln u)' = u'/u에서 분자에 ({inner})' = {dinner}{_eul(abs(b))} 썼는지 확인한다.", RP1="안쪽 함수의 도함수를 틀렸으면 1점.",
+                PIT1=f"(ln({inner}))'을 1/({inner})로 두어 안쪽 함수의 미분을 곱하지 않음", PIT2=f"안쪽 함수 {inner}의 도함수를 {dinner}{_ika(abs(b))} 아닌 식으로 구함")
+
+
+def _d3x_q(a, b):
+    num = f"{_sc(a)}x {_sg(b)}"
+    tail = f"− {_sc(a)}(x² + 1)" if a > 0 else f"+ {_sc(-a)}(x² + 1)"
+    return dict(PIT1=f"분자의 두 항 순서를 바꿔 ({num}) × 2x {tail}로 계산함")
+
+
+def _d3x_pow(a, b, n):
+    inner = f"{_sc(a)}x {_sg(b)}"
+    if a == 1:
+        pit1, chk = f"지수 {n}{_eul(n)} 앞으로 내려 곱하지 않음", f"지수 {n}{_eul(n)} 앞으로 내려 곱하고 지수를 {n - 1}{_ro(n - 1)} 낮췄는지 확인한다."
+    else:
+        pit1 = f"안쪽 함수 {inner}의 도함수 {a}{_eul(a)} 곱하지 않음" + (" (부호를 틀림)" if a == -1 else "")
+        chk = f"안쪽 함수 {inner}의 도함수 {a}{_eul(a)} 곱했는지, 지수를 {n - 1}{_ro(n - 1)} 낮췄는지 확인한다."
+    return dict(CHK=chk, RP1=f"지수를 {n - 1}{_ro(n - 1)} 낮추지 않았으면 1점.", PIT1=pit1, PIT2=f"지수를 {n - 1}{_ro(n - 1)} 낮추지 않음")
+
+
+def _d3x_inv(x0, y0, fp):
+    same = abs(x0) == abs(y0)       # y₀ = ±x₀ 이면 f'(y₀) = f'(x₀) — 그 실수는 답을 바꾸지 않는다
+    return dict(CHK=f"f'({x0}) = {fp}의 역수가 g'({y0})이고, x = {x0}{_ika(x0)} f(x) = {y0}의 해임을 확인한다.",
+                RP1=("f'(x) 계산을 틀렸으면 1점." if same else f"f'({x0}) 대신 f'({y0}){_eul(y0)} 계산했으면 1점."),
+                PIT1=f"g'({y0}){_eul(y0)} 역수가 아닌 f'({x0}) = {fp}{_ro(fp)} 둠", PIT2=("f'(x)의 계산 실수" if same else f"f'({x0}) 대신 f'({y0}){_eul(y0)} 계산함"),
+                PIT3=f"f(x) = {y0}를 만족하는 x를 잘못 찾음".replace(f"{y0}를", f"{y0}{_eul(y0)}"))
+
+
+def _dc3_kind(fx, law):
+    if law.startswith("몫"):
+        return "q"
+    if "ln u" in law:
+        return "ln"
+    if "uⁿ" in law:
+        return "pow"
+    if "tan" in law:
+        return "te"
+    return "pe" if fx.startswith("(") else ("es" if "pow(e" in fx else "sc")
+
+
 def _dc3_rows():
     out = {}
     fams = []      # (문면 f(x) 표기(마커 포함), sympy 식, x0, 규칙, 도함수 표기)
     for a in NZ(-3, 3):
         for b in NZ(-3, 3):
-            fams.append((f"({_sc(a)}x {_sg(b)})[[pow(e, x)]]", (a * X + b) * sp.exp(X), 0, "곱의 미분법 (uv)' = u'v + uv'", f"f'(x) = {_sc(a)}eˣ + ({_sc(a)}x {_sg(b)})eˣ"))
-            fams.append((f"[[pow(e, {_sc(a)}x) sin({_sc(b)}x)]]", sp.exp(a * X) * sp.sin(b * X), 0, "곱의 미분법 (uv)' = u'v + uv'", f"f'(x) = {_sc(a)}e^({_sc(a)}x) sin({_sc(b)}x) {_sgc(b)}e^({_sc(a)}x) cos({_sc(b)}x)"))
-            fams.append((f"[[frac({_sc(a)}x {_sg(b)}, pow(x,2) + 1)]]", (a * X + b) / (X ** 2 + 1), 1, "몫의 미분법 (u/v)' = (u'v − uv')/v²", f"f'(x) = [[frac({_sc(a)}(pow(x,2) + 1) − ({_sc(a)}x {_sg(b)}) × 2x, pow(pow(x,2) + 1, 2))]]"))
-            fams.append((f"[[ln({_sc(a)}pow(x,2) {_sg(b)}x + 1)]]", sp.log(a * X ** 2 + b * X + 1), 0, "합성함수의 미분법 (ln u)' = u'/u", f"f'(x) = [[frac({2 * a}x {_sg(b)}, {_sc(a)}pow(x,2) {_sg(b)}x + 1)]]"))
+            fams.append((f"({_sc(a)}x {_sg(b)})[[pow(e, x)]]", (a * X + b) * sp.exp(X), 0, "곱의 미분법 (uv)' = u'v + uv'", f"f'(x) = {_sc(a)}eˣ + ({_sc(a)}x {_sg(b)})eˣ", f"e⁰ = 1이고 x = 0일 때 {_sc(a)}x {_sg(b)} = {b}이므로 f'(0) = {a} + {_fmp(b)}", _d3x_pe(a, b)))
+            fams.append((f"[[pow(e, {_sc(a)}x) sin({_sc(b)}x)]]", sp.exp(a * X) * sp.sin(b * X), 0, "곱의 미분법 (uv)' = u'v + uv'", f"f'(x) = {_sc(a)}[[pow(e, {_sc(a)}x)]] sin({_sc(b)}x) {_sgc(b)}[[pow(e, {_sc(a)}x)]] cos({_sc(b)}x)", f"e⁰ = 1, sin 0 = 0, cos 0 = 1이므로 앞의 항은 0, 뒤의 항은 {b}{_ika(b)} 되어 f'(0)", _d3x_es(a, b)))
+            fams.append((f"[[frac({_sc(a)}x {_sg(b)}, pow(x,2) + 1)]]", (a * X + b) / (X ** 2 + 1), 1, "몫의 미분법 (u/v)' = (u'v − uv')/v²", f"f'(x) = [[frac({_sc(a)}(pow(x,2) + 1) − ({_sc(a)}x {_sg(b)}) × 2x, pow(pow(x,2) + 1, 2))]]", f"x = 1을 대입하면 u'v = {2 * a}, uv' = {2 * (a + b)}, v² = 4이므로 f'(1) = [[frac({2 * a} − {_fmp(2 * (a + b))}, 4)]]", _d3x_q(a, b)))
+            fams.append((f"[[ln({_sc(a)}pow(x,2) {_sg(b)}x + 1)]]", sp.log(a * X ** 2 + b * X + 1), 0, "합성함수의 미분법 (ln u)' = u'/u", f"f'(x) = [[frac({2 * a}x {_sg(b)}, {_sc(a)}pow(x,2) {_sg(b)}x + 1)]]", f"x = 0을 대입하면 분자는 {b}, 분모는 1이므로 f'(0)", _d3x_ln(a, b)))
     for a in NZ(-3, 3):
         for b in NZ(-4, 4):
             for n in (3, 4, 5):
-                fams.append((f"[[pow({_sc(a)}x {_sg(b)}, {n})]]", (a * X + b) ** n, 0, "합성함수의 미분법 (uⁿ)' = nuⁿ⁻¹u'", f"f'(x) = {n}({_sc(a)}x {_sg(b)})^{n - 1} × ({a}) = {n * a}({_sc(a)}x {_sg(b)})^{n - 1}"))
+                fams.append((f"[[pow({_sc(a)}x {_sg(b)}, {n})]]", (a * X + b) ** n, 0, "합성함수의 미분법 (uⁿ)' = nuⁿ⁻¹u'", f"f'(x) = {n}({_sc(a)}x {_sg(b)}){_SUP[n - 1]} × ({_sc(a)}x {_sg(b)})' = {n * a}({_sc(a)}x {_sg(b)}){_SUP[n - 1]}", (f"x = 0을 대입하면 f'(0) = {n * a} × {_fmp(b)}{_SUP[n - 1]}" if abs(b) != 1 else f"x = 0일 때 {_sc(a)}x {_sg(b)} = {b}이고 {_fmp(b)}{_SUP[n - 1]} = {b ** (n - 1)}이므로 f'(0)"), _d3x_pow(a, b, n)))
     for a in NZ(-3, 3):
         for b in NZ(-3, 3):
-            fams.append((f"[[sin({_sc(a)}x) cos({_sc(b)}x)]]", sp.sin(a * X) * sp.cos(b * X), 0, "곱의 미분법", f"f'(x) = {_sc(a)}cos({_sc(a)}x)cos({_sc(b)}x) {_sgc(-b)}sin({_sc(a)}x)sin({_sc(b)}x)"))
-            fams.append((f"[[tan({_sc(a)}x) + pow(e, {_sc(b)}x)]]", sp.tan(a * X) + sp.exp(b * X), 0, "(tan x)' = sec²x, (eᵏˣ)' = keᵏˣ", f"f'(x) = {_sc(a)}sec²({_sc(a)}x) {_sgc(b)}e^({_sc(b)}x)"))
-    for fx, fexpr, x0, law, dfs in fams:
+            fams.append((f"[[sin({_sc(a)}x) cos({_sc(b)}x)]]", sp.sin(a * X) * sp.cos(b * X), 0, "곱의 미분법", f"f'(x) = {_sc(a)}cos({_sc(a)}x)cos({_sc(b)}x) {_sgc(-b)}sin({_sc(a)}x)sin({_sc(b)}x)", f"sin 0 = 0, cos 0 = 1이므로 앞의 항은 {a}, 뒤의 항은 0이 되어 f'(0)", _d3x_sc(a, b)))
+            fams.append((f"[[tan({_sc(a)}x) + pow(e, {_sc(b)}x)]]", sp.tan(a * X) + sp.exp(b * X), 0, "(tan x)' = sec²x, (eᵏˣ)' = keᵏˣ", f"f'(x) = {_sc(a)}sec²({_sc(a)}x) {_sgc(b)}[[pow(e, {_sc(b)}x)]]", f"sec²0 = 1, e⁰ = 1이므로 f'(0) = {a} {_sg(b)}", _d3x_te(a, b)))
+    for fx, fexpr, x0, law, dfs, sub, ext in fams:
         d = sp.diff(fexpr, X).subs(X, x0)
         v = _rat(d)
         if v is None or v == 0:
             continue
         q = f"함수 f(x) = {fx}에 대하여 f'({x0})의 값을 구하시오."
-        r = _row(q, v, Q=q, LAW=law, DFS=dfs, KIND="미분법")
+        r = _row(q, v, Q=q, LAW=law, DFS=dfs, SUB=sub, KIND="미분법", ANSM=_fm(v), **{**_D3K[_dc3_kind(fx, law)], **ext})
         if r: out[f"f{len(out)}"] = r
     for a in NZ(-3, 3):
         for b in NZ(-4, 4):
             for t0 in (1, 2, -1, -2):
                 v = Fraction(3 * t0 ** 2 + b, 2 * t0)
                 q = f"매개변수 t로 나타낸 곡선 x = [[pow(t,2) {_sg(a)}]], y = [[pow(t,3) {_sg(b)}t]]에 대하여 t = {t0}일 때 [[dydx(y, x)]]의 값을 구하시오."
-                r = _row(q, v, Q=q, LAW="매개변수 미분법 dy/dx = (dy/dt)/(dx/dt)", DFS=f"dx/dt = 2t, dy/dt = 3t² {_sg(b)} → [[dydx(y, x)]] = [[frac(3pow(t,2) {_sg(b)}, 2t)]]", KIND="매개변수")
+                # 노출 검사(_row)는 예전 문면 q 로 — 행 수가 바뀌면 공용 rng 소비가 달라져 다른 틀까지 흔들린다. 문면은 ±1t → ±t
+                r = _row(q, v, Q=q.replace(f"{_sg(b)}t]]", f"{_sgc(b)}t]]"), LAW="매개변수 미분법 dy/dx = (dy/dt)/(dx/dt)", DFS=f"dx/dt = 2t, dy/dt = 3t² {_sg(b)} → [[dydx(y, x)]] = [[frac(3pow(t,2) {_sg(b)}, 2t)]]", SUB=f"t = {t0}{_eul(t0)} 대입하면 dy/dt = {3 * t0 * t0 + b}, dx/dt = {2 * t0}이므로 [[dydx(y, x)]]", KIND="매개변수", ANSM=_fm(v), **{**_D3K["par"], **({"PIT3": f"t = {t0}{_eul(t0)} 대입한 뒤 dy/dt 또는 dx/dt의 값을 잘못 계산함"} if t0 * t0 + a == t0 else {})})
                 if r: out[f"p{a}_{b}_{t0}"] = r
     for (p, qv, rr) in ((3, 4, 5), (4, 3, 5), (-3, 4, 5), (3, -4, 5), (5, 12, 13), (12, 5, 13), (-5, 12, 13), (6, 8, 10), (8, -6, 10), (8, 15, 17), (15, 8, 17), (-8, 15, 17)):
         v = Fraction(-p, qv)
         q = f"곡선 [[pow(x,2) + pow(y,2) = {rr * rr}]] 위의 점 ({p}, {qv})에서의 [[dydx(y, x)]]의 값을 구하시오."
-        r = _row(q, v, Q=q, LAW="음함수의 미분법 — 양변을 x로 미분: 2x + 2y·y' = 0", DFS=f"[[dydx(y, x)]] = [[-frac(x, y)]], 점 ({p}, {qv}) 대입", KIND="음함수")
+        r = _row(q, v, Q=q, LAW="음함수의 미분법 — 양변을 x로 미분: 2x + 2y·y' = 0", DFS=f"[[dydx(y, x)]] = [[-frac(x, y)]]", SUB=f"점 ({p}, {qv})에서 x = {p}, y = {qv}{_eul(qv)} 대입하면 [[dydx(y, x)]] = −[[frac({_fmp(p)}, {_fmp(qv)})]]", KIND="음함수", ANSM=_fm(v), **_D3K["imp"])
         if r: out[f"i{p}_{qv}"] = r
     for (p, qv) in ((1, 2), (2, 1), (1, -1), (-1, 2), (2, -3), (1, 3), (3, 1), (-2, 1), (2, 3), (3, -2)):
         c = p ** 3 + qv ** 3
         v = Fraction(-p * p, qv * qv)
         q = f"곡선 [[pow(x,3) + pow(y,3) = {c}]] 위의 점 ({p}, {qv})에서의 [[dydx(y, x)]]의 값을 구하시오."
-        r = _row(q, v, Q=q, LAW="음함수의 미분법 — 양변을 x로 미분: 3x² + 3y²·y' = 0", DFS=f"[[dydx(y, x)]] = [[-frac(pow(x,2), pow(y,2))]], 점 ({p}, {qv}) 대입", KIND="음함수")
+        r = _row(q, v, Q=q, LAW="음함수의 미분법 — 양변을 x로 미분: 3x² + 3y²·y' = 0", DFS=f"[[dydx(y, x)]] = [[-frac(pow(x,2), pow(y,2))]]", SUB=f"점 ({p}, {qv})에서 x² = {p * p}, y² = {qv * qv}이므로 [[dydx(y, x)]]" + (f" = −[[frac({p * p}, {qv * qv})]]" if qv * qv != 1 else ""), KIND="음함수", ANSM=_fm(v), **_D3K["imp"])
         if r: out[f"j{p}_{qv}"] = r
     for a in range(0, 7):          # f'(x) = 3x² + a ≥ 0 → 단조, 역함수 존재
         for b in NZ(-5, 5):
@@ -399,7 +518,7 @@ def _dc3_rows():
                 v = Fraction(1, fp)
                 fx = f"[[pow(x,3) {(_sgc(a) + 'x ') if a else ''}{_sg(b)}]]"
                 q = f"함수 f(x) = {fx}의 역함수를 g(x)라 할 때, g'({y0})의 값을 구하시오."
-                r = _row(q, v, Q=q, LAW="역함수의 미분법 g'(y₀) = 1/f'(x₀) (f(x₀) = y₀)", DFS=f"f({x0}) = {y0}이므로 x₀ = {x0}, f'(x) = 3x² {_sg(a) if a else ''}, f'({x0}) = {fp}".replace("3x² ,", "3x²,"), KIND="역함수")
+                r = _row(q, v, Q=q, LAW="역함수의 미분법 g'(y₀) = 1/f'(x₀) (f(x₀) = y₀)", DFS=f"f({x0}) = {y0}이므로 x₀ = {x0}, f'(x) = 3x² {_sg(a) if a else ''}, f'({x0}) = {fp}".replace("3x² ,", "3x²,"), SUB=f"g'({y0}) = [[frac(1, f'({x0}))]]", KIND="역함수", ANSM=_fm(v), **{**_D3K["inv"], **_d3x_inv(x0, y0, fp)})
                 if r: out[f"v{a}_{b}_{x0}"] = r
     return _pick(out, 330)
 
@@ -414,11 +533,27 @@ def dc_t3():
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
         sol1="{LAW}. 함수의 구조(곱·몫·합성·매개변수·음함수·역함수)에 맞는 규칙을 고른 뒤 주어진 점을 대입한다.",
-        sol2=[("{LAW}", "미분법 고르기"), ("{DFS}", "도함수"), ("대입: {ans}", None, ("{ans}", "값"))],
-        sol3=["안쪽 함수의 미분(합성), u'v + uv'의 두 항(곱), 분모의 제곱(몫), 역수 관계(역함수)를 빠뜨리지 않았는지 확인한다. 따라서 값은 {ans}이다.", "{DFS}", "답 {ans}"],
-        model="{LAW}에 따라 {DFS}이고, 주어진 점을 대입하면 {ans}이다.",
-        rubric=[("미분법", 3, "{DFS} 꼴로 도함수를 구했다.", "한 항을 빠뜨렸으면 1점."), ("대입", 2, "{ans}{eul(ans)} 구했다.", "대입 계산 실수면 1점.")],
-        pitfalls=[("합성함수에서 안쪽 미분을 빠뜨림", "미분법", "불인정"), ("몫의 미분에서 분자의 순서를 바꿈", "미분법", "불인정"), ("역함수의 미분계수를 f'(x₀)로 답함(역수 아님)", "대입", "불인정")])
+        sol2=[("{LAW}", "미분법 고르기"), ("{DFS}", "도함수"), ("{SUB} = {ans}", None, ("{ANSM}", "값"))],
+        sol3=["{CHK} 따라서 값은 {ans}이다.", "{DFS}", "답 {ans}"],
+        model="{LAW}에 따라 {DFS}이고, {SUB} = {ans}이다.",
+        rubric=[("미분법", 3, "{DFS} 꼴로 도함수를 구했다.", "{RP1}"), ("대입", 2, "{ans}{eul(ans)} 구했다.", "대입 계산 실수면 1점.")],
+        pitfalls=[("{PIT1}", "미분법", "불인정"), ("{PIT2}", "미분법", "부분"), ("{PIT3}", "대입", "부분")])
+
+
+_D4P = {}   # 곡선별 도함수 실수거리
+for _cs in ("x pow(e, x)", "pow(e, x)(x + 1)", "x ln(x)", "pow(e, x) sin(x)", "pow(e, x) cos(x)"):
+    _D4P[_cs] = "곱의 미분법에서 두 항 중 하나를 빠뜨림"
+for _cs in ("frac(x, x + 1)", "frac(2x, pow(x,2) + 1)", "frac(pow(x,2), x + 1)", "frac(x + 1, x − 1)", "frac(ln(x), x)", "frac(x, x + 2)"):
+    _D4P[_cs] = "몫의 미분법에서 분자의 순서를 바꾸거나 분모의 제곱을 빠뜨림"
+for _cs in ("pow(e, 2x)", "ln(2x + 1)", "ln(pow(x,2) + 1)", "sqrt(2x + 1)", "pow(e, 3x)", "ln(3x + 1)", "sin(2x) + 1", "frac(1, x + 1)"):
+    _D4P[_cs] = "합성함수의 미분에서 안쪽 함수의 미분을 곱하지 않음"
+for _cs in ("ln(x)", "ln(x) + x", "ln(x) − 1", "ln(x) + pow(x,2)"):
+    _D4P[_cs] = "(ln x)'을 1/x이 아닌 식으로 둠"
+for _cs in ("pow(e, x)", "pow(e, x) − x", "pow(e, x) + x", "pow(e, x) − 2x"):
+    _D4P[_cs] = "(eˣ)'을 eˣ가 아닌 xeˣ⁻¹로 둠"
+_D4P.update({"sin(x) + cos(x)": "(cos x)' = −sin x의 부호를 빠뜨림", "cos(x) + x": "(cos x)' = −sin x의 부호를 빠뜨림", "tan(x) + 1": "(tan x)'을 sec²x가 아닌 식으로 둠",
+             "frac(1, x)": "(1/x)' = −1/x²의 부호를 빠뜨림", "frac(1, pow(x,2))": "(1/x²)' = −2/x³의 부호나 계수를 틀림", "sqrt(x)": "(√x)' = 1/(2√x)에서 2를 빠뜨림"})
+_D4K = {"sum": "m + n 대신 기울기 m 또는 y절편 n만 답함", "y": "y절편 대신 x절편을 구함", "x": "x절편 대신 y절편을 구함"}
 
 
 def _dc4_rows():
@@ -440,7 +575,15 @@ def _dc4_rows():
                 if v == 0:
                     continue
                 q = f"곡선 y = [[{disp}]] 위의 점 ({x0}, {_fm(y0)})에서의 접선 {ask}"
-                r = _row(q, v, CURVE=disp, X0=x0, Y0=_fm(y0), M=_fm(m), MC=("" if m == 1 else ("-" if m == -1 else _fm(m))), NN=_fm(n), NS=(f"+ {_fm(n)}" if n > 0 else f"− {_fm(-n)}"), ASK=ask, KIND=kk)
+                mc = "" if m == 1 else ("-" if m == -1 else _fm(m))
+                line = f"y = {mc}x" + ("" if n == 0 else (f" + {_fm(n)}" if n > 0 else f" − {_fm(-n)}"))
+                tail, fin = {"sum": (f" (m = {_fm(m)}, n = {_fm(n)})", f"m = {_fm(m)}, n = {_fm(n)}이므로 "), "y": ("", "따라서 "), "x": (" → y = 0일 때의 x의 값이 x절편", "y = 0을 대입해 x의 값을 구하면 ")}[kk]
+                pit3 = _D4K[kk]
+                if kk == "sum" and n == 0:        # n = 0 이면 'm만 답함' 이 정답과 같다
+                    pit3 = f"m을 f'({x0})의 값이 아닌 f'(x)의 식으로 남겨 둠"
+                elif kk in ("x", "y") and m == -1:  # 기울기 −1 이면 x절편 = y절편
+                    pit3 = "절편을 구할 때 부호를 틀림"
+                r = _row(q, v, PIT1=("접점의 y좌표를 0으로 둠" if y0 else f"기울기로 f'({x0}) 대신 f({x0}) = 0을 씀"), PIT2=_D4P[cs], PIT3=pit3, ANSM=_fm(v), CURVE=disp, X0=x0, Y0=_fm(y0), Y0P=_fmp(y0), Y0IKA=_ika(y0), PTEUL=_eul(y0), M=_fm(m), MC=mc, NN=_fm(n), LINE=line, LEUL=(_eul(abs(n)) if n else "를"), TAIL=tail, FIN=fin, ASK=ask, KIND=kk)
                 if r: out[f"{k}_{cs}_{kk}"] = r
     return _pick(out, 300)
 
@@ -454,12 +597,12 @@ def dc_t4():
         params=[{"name": "f", "values": {"in": list(DC4_ROWS)}}], table={"key": "f", "rows": DC4_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
-        sol1="접선의 기울기는 접점에서의 미분계수 f'({X0}) = {M}이고, 접선은 접점 ({X0}, {Y0})를 지나므로 y − {pn(Y0)} = {M}(x − {pn(X0)}), 즉 y = {MC}x {NS}이다.",
-        sol2=[("f'({X0}) = {M}", "기울기"), ("y = {MC}x {NS} (y절편 {NN}, x절편 = −n/m)", "접선"), ("{ASK} = {ans}", None, ("{ans}", "{ASK}"))],
-        sol3=["접선에 x = {X0}를 넣으면 {Y0}{ika(Y0)} 나와 접점을 지난다. 따라서 {ASK} = {ans}이다.", "y = {MC}x {NS}", "{ASK} = {ans}"],
-        model="기울기 f'({X0}) = {M}, 접점 ({X0}, {Y0})이므로 접선은 y = {MC}x {NS}이다. 따라서 {ASK} = {ans}이다.",
-        rubric=[("기울기·접선", 3, "m = {M}, 접선 y = {MC}x {NS}{eul(NN)} 세웠다.", "미분 실수면 1점."), ("답", 2, "{ASK} = {ans}{eul(ans)} 구했다.", "절편 계산 실수면 1점.")],
-        pitfalls=[("접점의 y좌표를 0으로 둠", "기울기·접선", "불인정"), ("(xeˣ)'을 eˣ로 둠(곱의 미분 누락)", "기울기·접선", "불인정"), ("x절편·y절편 혼동", "답", "부분")])
+        sol1="접선의 기울기는 접점에서의 미분계수 f'({X0}) = {M}이고, 접선은 접점 ({X0}, {Y0}){PTEUL} 지나므로 y − {Y0P} = {MC}(x − {pn(X0)}), 즉 {LINE}이다.",
+        sol2=[("f'({X0}) = {M}", "기울기"), ("{LINE}{TAIL}", "접선"), ("{ASK} = {ans}", None, ("{ANSM}", "{ASK}"))],
+        sol3=["접선에 x = {X0}를 넣으면 {Y0}{Y0IKA} 나와 접점을 지난다. 따라서 {ASK} = {ans}이다.", "{LINE}", "{ASK} = {ans}"],
+        model="기울기 f'({X0}) = {M}, 접점 ({X0}, {Y0})이므로 접선은 {LINE}이다. {FIN}{ASK} = {ans}이다.",
+        rubric=[("기울기·접선", 3, "m = {M}, 접선 {LINE}{LEUL} 세웠다.", "미분 실수면 1점."), ("답", 2, "{ASK} = {ans}{eul(ans)} 구했다.", "절편 계산 실수면 1점.")],
+        pitfalls=[("{PIT1}", "기울기·접선", "불인정"), ("{PIT2}", "기울기·접선", "부분"), ("{PIT3}", "답", "부분")])
 
 
 def _dc4_fix(t):
@@ -748,6 +891,23 @@ def ic_t4():
         pitfalls=[("구간을 항상 [0, 1]로 둠", "정적분으로 옮기기", "불인정"), ("Δx = 2/n을 1/n으로 봄", "정적분으로 옮기기", "부분"), ("적분 계산 실수", "계산", "부분")])
 
 
+def _ic5_step(step, v, c):
+    """'= 식 = 값 (주석)' — 끝값이 없으면 붙이고, 상수배 c는 '= c × (식) = c × 값 = c·값' 으로 등호를 잇는다."""
+    body, note = (step[2:].split(" (", 1) + [""])[:2]
+    note = f" ({note}" if note else ""
+    segs = body.split(" = ")
+    if c == 1:
+        return "= " + body + ("" if segs[-1] == _fm(v) else f" = {_fm(v)}") + note
+    return f"= {c} × ({segs[0]}) = {c} × {_fm(v)} = {_fm(c * v)}" + note
+
+
+_I5P = {"[[pow(e, x)]]": "[[pow(e, ln(a))]]을 a로 바꾸지 않고 그대로 둠", "[[frac(1, x)]]": "1/x의 원시함수를 ln x가 아닌 −1/x²로 둠", "[[frac(2, x)]]": "2/x의 원시함수를 2 ln x가 아닌 −2/x²로 둠",
+        "[[sin(x)]]": "sin x의 원시함수를 −cos x가 아닌 cos x로 둠", "[[cos(x)]]": "cos x의 원시함수를 sin x가 아닌 −sin x로 둠", "[[sqrt(x)]]": "√x의 원시함수의 계수 2/3를 틀림",
+        "[[frac(1, pow(x,2))]]": "1/x²의 원시함수를 −1/x이 아닌 1/x로 두어 부호를 틀림", "[[ln(x)]]": "ln x의 원시함수를 x ln x − x가 아닌 1/x로 둠", "[[pow(e, 2x)]]": "e²ˣ의 원시함수에서 ½을 빠뜨림",
+        "[[pow(e, -x)]]": "e⁻ˣ의 원시함수를 −e⁻ˣ가 아닌 e⁻ˣ로 두어 부호를 틀림", "[[sin(2x)]]": "sin 2x의 원시함수에서 ½을 빠뜨림", "[[cos(2x)]]": "cos 2x의 원시함수에서 ½을 빠뜨림",
+        "[[pow(sec(x), 2)]]": "sec²x의 원시함수를 tan x가 아닌 식으로 둠", "[[frac(1, sqrt(x))]]": "1/√x의 원시함수를 2√x가 아닌 √x로 둠(계수 2 누락)"}
+
+
 def _ic5_rows():
     out = {}
     items = [("[[pow(e, x)]]", "x = 0, x = ln 3", Fraction(2), "dinteg(0, ln(3), pow(e, x), x)", "= [[pow(e, ln(3))]] − 1 = 3 − 1"), ("[[pow(e, x)]]", "x = 0, x = ln 5", Fraction(4), "dinteg(0, ln(5), pow(e, x), x)", "= 5 − 1"),
@@ -758,15 +918,31 @@ def _ic5_rows():
              ("[[ln(x)]]", "x = 1, x = e", Fraction(1), "dinteg(1, e, ln(x), x)", "= [x ln x − x]₁ᵉ = (e − e) − (0 − 1) = 1"), ("[[pow(e, 2x)]]", "x = 0, x = ln 2", Fraction(3, 2), "dinteg(0, ln(2), pow(e, 2x), x)", "= [[frac(1,2)]](4 − 1) = [[frac(3,2)]]"), ("[[pow(e, -x)]]", "x = 0, x = ln 2", Fraction(1, 2), "dinteg(0, ln(2), pow(e, -x), x)", "= −[[frac(1,2)]] + 1 = [[frac(1,2)]]"),
              ("[[sin(2x)]]", "x = 0, x = [[frac(pi, 2)]]", Fraction(1), "dinteg(0, frac(pi, 2), sin(2x), x)", "= [[frac(1,2)]](−cos π + 1) = 1"), ("[[pow(sec(x), 2)]]", "x = 0, x = [[frac(pi, 4)]]", Fraction(1), "dinteg(0, frac(pi, 4), pow(sec(x), 2), x)", "= tan [[frac(pi, 4)]] − 0 = 1"), ("[[frac(2, x)]]", "x = 1, x = e", Fraction(2), "dinteg(1, e, frac(2, x), x)", "= 2 ln e = 2"),
              ("[[pow(e, x)]]", "x = 0, x = ln 2", Fraction(1), "dinteg(0, ln(2), pow(e, x), x)", "= 2 − 1 = 1"), ("[[pow(e, x)]]", "x = ln 2, x = ln 6", Fraction(4), "dinteg(ln(2), ln(6), pow(e, x), x)", "= 6 − 2 = 4"), ("[[pow(e, x)]]", "x = 0, x = ln 4", Fraction(3), "dinteg(0, ln(4), pow(e, x), x)", "= 4 − 1 = 3"), ("[[pow(e, x)]]", "x = ln 2, x = ln 5", Fraction(3), "dinteg(ln(2), ln(5), pow(e, x), x)", "= 5 − 2 = 3"),
-             ("[[frac(1, x)]]", "x = e, x = e²", Fraction(1), "dinteg(e, pow(e, 2), frac(1, x), x)", "= 2 − 1 = 1"), ("[[cos(x)]]", "x = 0, x = π", Fraction(2), "dinteg(0, frac(pi, 2), cos(x), x) − dinteg(frac(pi, 2), pi, cos(x), x)", "= 1 + 1 = 2 (x > π/2에서 cos x < 0이므로 부호를 바꿔 더함)"), ("[[cos(x)]]", "x = 0, x = 2π", Fraction(4), "4 dinteg(0, frac(pi, 2), cos(x), x)", "= 4 × 1 = 4 (부호가 바뀌는 구간마다 절댓값)"), ("[[sin(x)]]", "x = 0, x = [[frac(pi, 2)]]", Fraction(1), "dinteg(0, frac(pi, 2), sin(x), x)", "= −cos [[frac(pi, 2)]] + cos 0 = 1"),
-             ("[[sqrt(x)]]", "x = 0, x = 1", Fraction(2, 3), "dinteg(0, 1, sqrt(x), x)", "= [[frac(2,3)]] × 1 = [[frac(2,3)]]"), ("[[sqrt(x)]]", "x = 4, x = 9", Fraction(38, 3), "dinteg(4, 9, sqrt(x), x)", "= [[frac(2,3)]](27 − 8) = [[frac(38,3)]]"), ("[[frac(1, pow(x,2))]]", "x = 1, x = 3", Fraction(2, 3), "dinteg(1, 3, frac(1, pow(x,2)), x)", "= −[[frac(1,3)]] + 1 = [[frac(2,3)]]"), ("[[pow(e, 2x)]]", "x = 0, x = ln 3", Fraction(4), "dinteg(0, ln(3), pow(e, 2x), x)", "= [[frac(1,2)]](9 − 1) = 4"),
+             ("[[frac(1, x)]]", "x = e, x = e²", Fraction(1), "dinteg(e, pow(e, 2), frac(1, x), x)", "= 2 − 1 = 1"), ("[[cos(x)]]", "x = 0, x = π", Fraction(2), "dinteg(0, frac(pi, 2), cos(x), x) − dinteg(frac(pi, 2), pi, cos(x), x)", "= 1 + 1 = 2 (x > π/2에서 cos x < 0이므로 부호를 바꿔 더함)"), ("[[cos(x)]]", "x = 0, x = 2π", Fraction(4), "4 dinteg(0, frac(pi, 2), cos(x), x)", "= 4(sin [[frac(pi, 2)]] − sin 0) = 4 (부호가 바뀌는 구간마다 절댓값)"), ("[[sin(x)]]", "x = 0, x = [[frac(pi, 2)]]", Fraction(1), "dinteg(0, frac(pi, 2), sin(x), x)", "= −cos [[frac(pi, 2)]] + cos 0 = 1"),
+             ("[[sqrt(x)]]", "x = 0, x = 1", Fraction(2, 3), "dinteg(0, 1, sqrt(x), x)", "= [[frac(2,3)]](1 − 0) = [[frac(2,3)]]"), ("[[sqrt(x)]]", "x = 4, x = 9", Fraction(38, 3), "dinteg(4, 9, sqrt(x), x)", "= [[frac(2,3)]](27 − 8) = [[frac(38,3)]]"), ("[[frac(1, pow(x,2))]]", "x = 1, x = 3", Fraction(2, 3), "dinteg(1, 3, frac(1, pow(x,2)), x)", "= −[[frac(1,3)]] + 1 = [[frac(2,3)]]"), ("[[pow(e, 2x)]]", "x = 0, x = ln 3", Fraction(4), "dinteg(0, ln(3), pow(e, 2x), x)", "= [[frac(1,2)]](9 − 1) = 4"),
              ("[[pow(e, -x)]]", "x = 0, x = ln 4", Fraction(3, 4), "dinteg(0, ln(4), pow(e, -x), x)", "= −[[frac(1,4)]] + 1 = [[frac(3,4)]]"), ("[[cos(2x)]]", "x = 0, x = [[frac(pi, 4)]]", Fraction(1, 2), "dinteg(0, frac(pi, 4), cos(2x), x)", "= [[frac(1,2)]] sin [[frac(pi, 2)]] = [[frac(1,2)]]"), ("[[frac(1, sqrt(x))]]", "x = 1, x = 4", Fraction(2), "dinteg(1, 4, frac(1, sqrt(x)), x)", "= 2([[sqrt(4)]] − 1) = 2"), ("[[frac(1, sqrt(x))]]", "x = 1, x = 9", Fraction(4), "dinteg(1, 9, frac(1, sqrt(x)), x)", "= 2(3 − 1) = 4")]
+    seen = set()
     for c in (1, 2, 3, 4, 5):
         for curve, lines, v, integ, step in items:
             vc = c * v
-            cs = curve if c == 1 else f"{c}{curve}" if not curve.startswith("[[frac") else f"{c}{curve}"
-            q = f"곡선 y = {cs}, x축 및 두 직선 {lines}로 둘러싸인 부분의 넓이"
-            r = _row(q, vc, Q=f"곡선 y = {cs}, x축 및 두 직선 {lines}{'로' if lines.endswith(']]') else _ro(lines)} 둘러싸인 부분의 넓이를 구하시오.", INT=(f"[[{integ}]]" if c == 1 else f"{c}[[{integ}]]"), STEP=(step if c == 1 else f"{c} × ({step[2:]})"), CURVE=cs)
+            mf = re.fullmatch(r"\[\[frac\((\d+), (.+)\)\]\]", curve)
+            # 분수 곡선은 계수를 분자에 — '2[[frac(2, x)]]' 는 대분수(2와 x분의 2)처럼 읽힌다
+            cs = curve if c == 1 else (f"[[frac({c * int(mf.group(1))}, {mf.group(2)})]]" if mf else f"{c}{curve}")
+            # 행 선별(_row 노출 검사)은 예전 문면으로 — 행 순서(param_index)를 그대로 두고, 새 문면에서 답이 드러나거나
+            # 같은 곡선·구간이 겹치는 행은 SKIP=1 로 표시해 constraints 에서 거른다
+            q = f"곡선 y = {curve if c == 1 else f'{c}{curve}'}, x축 및 두 직선 {lines}로 둘러싸인 부분의 넓이"
+            skip = int(Fraction(vc) in _nums(cs) or (cs, lines) in seen)
+            seen.add((cs, lines))
+            lnk = re.findall(r"ln (\d+)", lines)[::-1]
+            pit2 = (", ".join(f"[[pow(e, ln({k}))]]" for k in lnk) + f"을 {'각각 ' if len(lnk) > 1 else ''}{', '.join(lnk)}{_ro(lnk[-1])} 바꾸지 않고 그대로 둠") if curve == "[[pow(e, x)]]" else _I5P[curve]
+            why = {"4": "|cos x|의 그래프는 네 구간 [0, π/2], [π/2, π], [π, 3π/2], [3π/2, 2π]에서 모양이 같으므로 넓이는 [0, π/2]에서의 넓이의 4배이다.",
+                   "2": "sin x는 [π, 2π]에서 x축 아래에 있고 그 부분은 [0, π] 부분과 x축에 대해 대칭이므로 넓이는 [0, π]에서의 넓이의 2배이다."}.get(integ[0], "cos x는 [π/2, π]에서 음수이므로 그 구간의 정적분에는 −를 붙인다." if " − " in integ else "")
+            wrap = integ[0].isdigit() or " − " in integ          # 상수배가 식 전체에 걸리도록 괄호
+            flip = "부호" in step or "절댓값" in step            # x축 아래 부분이 있는 구간
+            r = _row(q, vc, Q=f"곡선 y = {cs}, x축 및 두 직선 {lines}{'로' if lines.endswith((']]', 'π')) else _ro(lines)} 둘러싸인 부분의 넓이를 구하시오.", INT=(f"[[{integ}]]" if c == 1 else (f"{c}([[{integ}]])" if wrap else f"{c}[[{integ}]]")), STEP=_ic5_step(step, v, c), CURVE=cs,
+                     PIT1=("x축 아래 부분도 부호를 바꾸지 않고 그대로 적분함" if flip else "위끝과 아래끝을 바꿔 넣어 음수를 넓이로 답함"), PIT2=pit2, WHY=(why + " " if why else ""), STEP1=(why + " → 넓이 = " if why else "구간에서의 부호 확인 → 넓이 = "),
+                     RP1=("x축 아래 부분의 부호를 바꾸지 않았으면 1점." if flip else "위끝과 아래끝을 바꿔 넣었으면 1점."), ANSM=_fm(vc), SKIP=skip,
+                     SGN=("구간 안에 f(x) < 0인 부분이 있으므로 그 부분은 부호를 바꿔 더한다." + (" " + why if why else "") if flip else "이 구간에서는 f(x) ≥ 0이므로 절댓값 없이 그대로 적분한다."))
             if r: out[f"{c}_{len(out)}"] = r
     return out
 
@@ -778,14 +954,22 @@ def ic_t5():
     return T(IC, 5, IC_B, title="넓이 — 지수·로그·삼각·무리함수와 x축 사이",
         skill="구간에서 함수의 부호를 확인하고 ∫|f(x)|dx로 넓이 구하기", axis={"곡선": "eˣ, 1/x, sin x, cos x, √x, 1/√x, 1/x², ln x, e²ˣ, e⁻ˣ, sec²x × 상수배(1~5)", "구간": "ln a, eᵏ, π 등"}, disc="x축 아래 부분의 부호를 처리하고 지수·로그의 특수값을 정확히 계산하는가", diff=3,
         params=[{"name": "f", "values": {"in": list(IC5_ROWS)}}], table={"key": "f", "rows": IC5_ROWS},
-        derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
+        derive={"ans": "VN/VD"}, constraints=["SKIP == 0"], cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
-        sol1="곡선과 x축 사이의 넓이는 구간에서 |f(x)|를 적분한 것이다. 구간에서 f(x) ≥ 0이면 그대로, 음수인 부분이 있으면 부호를 바꿔 더한다. 넓이 = {INT}.",
-        sol2=[("구간에서의 부호 확인 → 넓이 = {INT}", "적분 세우기"), ("{STEP}", "계산"), ("넓이 = {ans}", None, ("{ans}", "넓이"))],
+        sol1="곡선과 x축 사이의 넓이는 구간에서 |f(x)|를 적분한 것이다. {SGN} 넓이 = {INT}.",
+        sol2=[("{STEP1}{INT}", "적분 세우기"), ("{STEP}", "계산"), ("넓이 = {ans}", None, ("{ANSM}", "넓이"))],
         sol3=["계산 결과가 양수인지, 원시함수를 미분하면 피적분함수가 되는지 확인한다. 따라서 넓이는 {ans}이다.", "{INT}", "넓이 {ans}"],
-        model="넓이 = {INT} {STEP}. 따라서 넓이는 {ans}이다.",
-        rubric=[("적분 세우기", 3, "{INT} 꼴로 세웠다.", "x축 아래 부분의 부호를 바꾸지 않았으면 1점."), ("계산", 2, "{ans}{eul(ans)} 구했다.", "특수값 계산 실수면 1점.")],
-        pitfalls=[("sin x를 0에서 2π까지 그대로 적분해 0으로 답함", "적분 세우기", "불인정"), ("e^(ln a)를 그대로 둠", "계산", "부분"), ("√x의 원시함수 계수 2/3 실수", "계산", "부분")])
+        model="{WHY}넓이 = {INT} {STEP}. 따라서 넓이는 {ans}이다.",
+        rubric=[("적분 세우기", 3, "{INT} 꼴로 세웠다.", "{RP1}"), ("계산", 2, "{ans}{eul(ans)} 구했다.", "원시함수나 특수값 계산 실수면 1점.")],
+        pitfalls=[("{PIT1}", "적분 세우기", "부분"), ("{PIT2}", "계산", "부분")])
+
+
+_I6K = {"disp": dict(PIT1="위치의 변화량을 움직인 거리처럼 ∫|v(t)|dt로 계산함", PIT2="적분 구간의 끝 시각을 잘못 잡음", RP1="적분 구간을 잘못 잡았으면 1점.", RP2="원시함수나 대입 계산 실수면 1점.",
+                     CHK="원시함수를 미분하면 v(t)가 되는지, 위끝과 아래끝을 바르게 넣었는지 확인한다.",
+                     PLAN="이 문제는 위치의 변화량을 물으므로 v(t)의 부호와 상관없이 v(t)를 그대로 적분한다."),
+        "dist": dict(PIT1="움직인 거리를 ∫v(t)dt로 계산함", PIT2="v(t)의 부호가 바뀌는 시각을 찾지 않음", RP1="부호가 바뀌는 시각에서 구간을 나누지 않았으면 1점.", RP2="구간별 적분값 계산 실수면 1점.",
+                     CHK="움직인 거리는 위치의 변화량의 절댓값보다 작을 수 없음을 확인한다.",
+                     PLAN="이 문제는 움직인 거리를 물으므로 v(t)의 부호가 바뀌는 시각에서 구간을 나눠 |v(t)|를 적분한다.")}
 
 
 def _ic6_rows():
@@ -798,9 +982,10 @@ def _ic6_rows():
             pos = lambda T_: Fraction(T_) ** 3 + Fraction(p, 2) * T_ ** 2 + qv * T_  # noqa: E731
             disp = pos(b) - pos(0)
             dist = abs(pos(a) - pos(0)) + abs(pos(b) - pos(a))
-            for kk, ask, v, expl in (("disp", f"t = 0에서 t = {b}까지 점 P의 위치의 변화량", disp, f"위치의 변화량 = [[dinteg(0, {b}, v(t), t)]]"), ("dist", f"t = 0에서 t = {b}까지 점 P가 움직인 거리", dist, f"움직인 거리 = [[dinteg(0, {b}, abs(v(t)), t)]], v(t) = 3(t − {a})(t − {b})의 부호가 t = {a}에서 바뀌므로 [0, {a}]와 [{a}, {b}]로 나눠 절댓값을 취한다")):
+            d1, d2 = pos(a) - pos(0), pos(b) - pos(a)
+            for kk, ask, v, expl in (("disp", f"t = 0에서 t = {b}까지 점 P의 위치의 변화량", disp, f"위치의 변화량 = [[dinteg(0, {b}, v(t), t)]]"), ("dist", f"t = 0에서 t = {b}까지 점 P가 움직인 거리", dist, f"움직인 거리 = [[dinteg(0, {b}, abs(v(t)), t)]], v(t) = 3(t − {a})(t − {b})의 부호가 t = {a}에서 바뀌므로 [0, {a}]{_wa(a)} [{a}, {b}]{_ro(b)} 나눠 절댓값을 취한다: [[dinteg(0, {a}, v(t), t)]] − [[dinteg({a}, {b}, v(t), t)]] = {_fm(d1)} + {_fm(-d2)}")):
                 q = f"수직선 위를 움직이는 점 P의 시각 t에서의 속도가 v(t) = {vt}일 때, {ask}"
-                r = _row(q, v, Q=f"수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = {vt}일 때, {ask}를 구하시오.", VT=vt, EXPL=expl, ASK=ask, VAL=f"{_fm(v)}")
+                r = _row(q, v, Q=f"수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = {vt}일 때, {ask}{_eul(ask)} 구하시오.", VT=vt, EXPL=expl, ASK=ask, VAL=f"{_fm(v)}", ANSM=_fm(v), **_I6K["disp" if kk in ("disp", "s1") else "dist"])
                 if r: out[f"p{a}_{b}_{kk}"] = r
     for a in range(1, 7):
         for b in range(a + 1, 9):
@@ -808,14 +993,15 @@ def _ic6_rows():
             vt = f"2t − {2 * a}"
             disp = b * b - 2 * a * b
             dist = a * a + (b - a) ** 2
-            for kk, ask, v, expl in (("disp", f"t = 0에서 t = {b}까지 점 P의 위치의 변화량", disp, f"위치의 변화량 = [[dinteg(0, {b}, v(t), t)]] = [t² − {2 * a}t]₀^{b}"), ("dist", f"t = 0에서 t = {b}까지 점 P가 움직인 거리", dist, f"움직인 거리 = [[dinteg(0, {b}, abs(v(t)), t)]], v(t) = 2(t − {a})의 부호가 t = {a}에서 바뀌므로 [0, {a}]와 [{a}, {b}]로 나눠 절댓값을 취한다: {a}² + ({b} − {a})²")):
+            for kk, ask, v, expl in (("disp", f"t = 0에서 t = {b}까지 점 P의 위치의 변화량", disp, f"위치의 변화량 = [[dinteg(0, {b}, v(t), t)]] = [t² − {2 * a}t]₀{_SUP[b]}"), ("dist", f"t = 0에서 t = {b}까지 점 P가 움직인 거리", dist, f"움직인 거리 = [[dinteg(0, {b}, abs(v(t)), t)]], v(t) = 2(t − {a})의 부호가 t = {a}에서 바뀌므로 [0, {a}]{_wa(a)} [{a}, {b}]{_ro(b)} 나눠 절댓값을 취한다: −[[dinteg(0, {a}, v(t), t)]] + [[dinteg({a}, {b}, v(t), t)]] = {a}² + ({b} − {a})²")):
                 q = f"수직선 위를 움직이는 점 P의 시각 t에서의 속도가 v(t) = {vt}일 때, {ask}"
-                r = _row(q, v, Q=f"수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = {vt}일 때, {ask}를 구하시오.", VT=vt, EXPL=expl, ASK=ask, VAL=f"{_fm(v)}")
+                r = _row(q, v, Q=f"수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = {vt}일 때, {ask}{_eul(ask)} 구하시오.", VT=vt, EXPL=expl, ASK=ask, VAL=f"{_fm(v)}", ANSM=_fm(v), **_I6K["disp" if kk in ("disp", "s1") else "dist"])
                 if r: out[f"q{a}_{b}_{kk}"] = r
     for c in (1, 2, 3, 4, 5, 6):
-        for kk, ask, v, expl, vt in (("s2", "t = 0에서 t = 2π까지 점 P가 움직인 거리", 4 * c, f"[[dinteg(0, 2pi, abs({_sc(c)}sin(t)), t)]] = 2[[dinteg(0, pi, {_sc(c)}sin(t), t)]] = 2 × {2 * c}", f"{_sc(c)}sin t"), ("s1", "t = 0에서 t = π까지 점 P의 위치의 변화량", 2 * c, f"[[dinteg(0, pi, {_sc(c)}sin(t), t)]] = {c}(−cos π + cos 0)", f"{_sc(c)}sin t"), ("c1", "t = 0에서 t = π까지 점 P가 움직인 거리", 2 * c, f"[[dinteg(0, pi, abs({_sc(c)}cos(t)), t)]] = 2[[dinteg(0, frac(pi, 2), {_sc(c)}cos(t), t)]] = 2 × {c} = {2 * c}", f"{_sc(c)}cos t")):
+        for kk, ask, v, expl, vt in (("s2", "t = 0에서 t = 2π까지 점 P가 움직인 거리", 4 * c, f"sin t는 t = π에서 부호가 바뀌고 [π, 2π]에서의 |v(t)|의 그래프는 [0, π]에서의 그래프와 모양이 같으므로 [[dinteg(0, 2pi, abs({_sc(c)}sin(t)), t)]] = 2[[dinteg(0, pi, {_sc(c)}sin(t), t)]] = 2 × {2 * c}", f"{_sc(c)}sin t"), ("s1", "t = 0에서 t = π까지 점 P의 위치의 변화량", 2 * c, f"[[dinteg(0, pi, {_sc(c)}sin(t), t)]] = {c}(−cos π + cos 0)", f"{_sc(c)}sin t"), ("c1", "t = 0에서 t = π까지 점 P가 움직인 거리", 2 * c, f"cos t는 t = π/2에서 부호가 바뀌고 [π/2, π]에서의 |v(t)|의 그래프는 [0, π/2]에서의 그래프와 대칭이므로 [[dinteg(0, pi, abs({_sc(c)}cos(t)), t)]] = 2[[dinteg(0, frac(pi, 2), {_sc(c)}cos(t), t)]]" + (f" = 2 × {c}" if c > 1 else ""), f"{_sc(c)}cos t")):
             q = f"속도가 v(t) = {vt}일 때, {ask}"
-            r = _row(q, v, Q=f"수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = {vt}일 때, {ask}를 구하시오.", VT=vt, EXPL=expl, ASK=ask, VAL=f"{v}")
+            r = _row(q, v, Q=f"수직선 위를 움직이는 점 P의 시각 t(t ≥ 0)에서의 속도가 v(t) = {vt}일 때, {ask}{_eul(ask)} 구하시오.", VT=vt, EXPL=expl, ASK=ask, VAL=f"{v}", ANSM=_fm(v),
+                     **{**_I6K["disp" if kk in ("disp", "s1") else "dist"], **({"PIT1": "속도 v(t)를 위치로 보고 v(π) − v(0)을 답함"} if kk == "s1" else {})})      # [0, π]에서 sin t ≥ 0 — |v| 적분도 같은 값
             if r: out[f"t{c}_{kk}"] = r
     return out
 
@@ -829,12 +1015,12 @@ def ic_t6():
         params=[{"name": "f", "values": {"in": list(IC6_ROWS)}}], table={"key": "f", "rows": IC6_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}",
-        sol1="시각 a에서 b까지 위치의 변화량은 [[dinteg(a, b, v(t), t)]], 움직인 거리는 [[dinteg(a, b, abs(v(t)), t)]]이다. 거리를 구할 때는 v(t)의 부호가 바뀌는 시각에서 구간을 나눈다.",
-        sol2=[("v(t) = {VT}", "속도"), ("{EXPL}", "적분 세우기"), ("= {VAL}", None, ("{ans}", "{ASK}"))],
-        sol3=["움직인 거리는 위치의 변화량의 절댓값보다 작을 수 없음을 확인한다. 따라서 {ASK}는 {ans}이다.", "{EXPL}", "답 {ans}"],
+        sol1="시각 a에서 b까지 위치의 변화량은 [[dinteg(a, b, v(t), t)]], 움직인 거리는 [[dinteg(a, b, abs(v(t)), t)]]이다. {PLAN}",
+        sol2=[("v(t) = {VT}", "속도"), ("{EXPL}", "적분 세우기"), ("= {VAL}", None, ("{ANSM}", "{ASK}"))],
+        sol3=["{CHK} 따라서 {ASK}는 {ans}이다.", "{EXPL}", "답 {ans}"],
         model="{EXPL} = {VAL}. 따라서 {ASK}는 {ans}이다.",
-        rubric=[("적분 세우기", 3, "{EXPL} 꼴로 세웠다.", "거리에서 절댓값을 빠뜨렸으면 1점."), ("계산", 2, "{ans}{eul(ans)} 구했다.", "구간 나누기 실수면 1점.")],
-        pitfalls=[("움직인 거리를 ∫v dt로 계산", "적분 세우기", "불인정"), ("부호가 바뀌는 시각을 찾지 않음", "적분 세우기", "부분"), ("적분 계산 실수", "계산", "부분")])
+        rubric=[("적분 세우기", 3, "{EXPL} 꼴로 세웠다.", "{RP1}"), ("계산", 2, "{ans}{eul(ans)} 구했다.", "{RP2}")],
+        pitfalls=[("{PIT1}", "적분 세우기", "불인정"), ("{PIT2}", "적분 세우기", "부분"), ("적분 계산 실수", "계산", "부분")])
 
 
 IC_SEED = SEED(IC, category="해석", title="여러 가지 적분법 — 기본 정적분·치환적분·부분적분·정적분과 급수·넓이·속도와 거리", unit_id="h3-1", concept_ids=["h3-1-13", "h3-1-14", "h3-1-15", "h3-1-16", "h3-1-17", "h3-1-18"],
