@@ -25,25 +25,33 @@ export function sunPos(date = new Date(), lat = 37.66, lon = 126.83) {
 }
 
 /**
- * 그림자 렌더 값 — 해 반대 방향으로, 해가 낮을수록 길고 흐리고 옅게.
+ * 그림자 렌더 값 — 해시계처럼: 해 반대 방향으로, 해가 낮을수록 길게. 그림자는 늘 짙다(사용자 확정 2026-09-26).
+ * 우물을 "지름 unit, 높이 unit×WELL_H 인 원통"으로 보고, 땅에 떨어지는 그림자(원을 그림자 방향으로 끌어 늘인 캡슐)의
+ * 늘어난 길이 len = 높이 / tan(고도). 날짜(계절)와 시각이 모두 고도에 들어가므로 여름 한낮은 짧고 겨울·아침저녁은 길다.
  * heading: 화면 위쪽이 향한 방위(나침반, 도). 기본 0 = "화면 위 = 북쪽" 고정.
- * unit: 우물 지름(px) — 길이를 이에 비례시킨다.
- * 반환: null(해가 진 뒤) 또는 { dx, dy, blur, alpha }
+ * unit: 그림자를 드리우는 우물(돌 테두리)의 화면 지름(px).
+ * 반환: null(해가 진 뒤) 또는 { dir, len, dx, dy, blur, alpha }
+ *   dir 화면 기준 그림자 방향(도, 위=0 시계방향) · len 늘어난 길이(px) · dx/dy 그림자 끝 쪽 벡터(px)
+ *   blur 가장자리 반그림자(px, 길수록 조금 더 부드럽게) · alpha 짙기(0.62, 해가 지평선에 붙을 때만 살짝 옅게)
  */
+export const WELL_H = 0.55;       // 우물 돌담 높이 / 지름 — 실제 우물(지름 1.2m·높이 0.65m 안팎) 비율
+export const SHADOW_MAX = 2.4;    // 그림자 최대 길이 = 지름 × 이 값 (해 뜰 녘·질 녘에 화면을 뒤덮지 않게)
+
 export function shadowOf(sun, heading = 0, unit = 46) {
   if (!sun || sun.el <= 0.5) return null;             // 지평선 아래·직전 — 해 그림자 없음
   const rad = Math.PI / 180;
-  const el = Math.min(sun.el, 88);
-  // 그림자 방위 = 해 방위 + 180, 화면 기준으로 heading 만큼 되돌린다
-  const dir = (sun.az + 180 - heading) * rad;         // 북=0 시계방향
-  const len = Math.min(unit * 1.15, (unit * 0.34) / Math.tan(Math.max(el, 8) * rad));
-  const dx = Math.sin(dir) * len;
-  const dy = -Math.cos(dir) * len;                    // 화면 y 는 아래로 +
-  const soft = 1 - Math.min(el / 60, 1);              // 낮은 해일수록 부드럽게
+  const el = Math.min(sun.el, 89);
+  const dirDeg = (((sun.az + 180 - heading) % 360) + 360) % 360;   // 그림자 방위(화면 기준, 위=0 시계방향)
+  const len = Math.min(unit * SHADOW_MAX, (unit * WELL_H) / Math.tan(Math.max(el, 2) * rad));
+  const dir = dirDeg * rad;
+  const r1 = (v) => Math.round(v * 10) / 10;
+  const low = Math.max(0, (12 - el) / 11);            // 0(고도 12° 이상) ~ 1(지평선)
   return {
-    dx: Math.round(dx * 10) / 10,
-    dy: Math.round(dy * 10) / 10,
-    blur: Math.round((3 + soft * 9) * 10) / 10,
-    alpha: Math.round((0.38 - soft * 0.16) * 100) / 100,
+    dir: r1(dirDeg),
+    len: r1(len),
+    dx: r1(Math.sin(dir) * len),
+    dy: r1(-Math.cos(dir) * len),                      // 화면 y 는 아래로 +
+    blur: r1(0.6 + Math.min(len / unit, SHADOW_MAX) * 0.6),
+    alpha: Math.round((0.62 - 0.2 * low) * 100) / 100,
   };
 }

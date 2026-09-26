@@ -6,6 +6,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { getWx } from "../lib/wx";
 import { sunPos, shadowOf } from "../lib/sun";
+
+// 번들 우물 그림(메달 컷)에서 돌 테두리 원의 지름 비율 — 원 반지름 486 / 캔버스 1024 × 2
+const WELL_DISC = 0.95;
 import { WELL_FEATURES, WELL_DEFAULT, clampWellCfg, wellMode } from "../lib/well";
 
 /** 번들 기본 이미지 — 템페라 화풍 돌우물 (배경 오려낸 원형 메달) */
@@ -152,11 +155,12 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
   const mode = modeOverride || wellMode(wx, hour);
   const sun = useMemo(() => sunPos(date), [date]);
   const hd = headingOverride ?? (hdLive ? heading : 0);
-  const sh = mode === "sun" && cfg.fx.shadow ? shadowOf(sun, hd, cfg.btn.d) : null;
-
   const showImg = cfg.img.on || reveal;
   const d = cfg.btn.d;
   const imgD = Math.round(d * cfg.img.scale / 100);
+  // 그림자를 드리우는 건 돌 테두리 원(메달 컷 지름 ≈ 이미지의 95%) — 이미지가 없으면 자리 원
+  const castD = showImg ? Math.round(imgD * WELL_DISC) : d;
+  const sh = mode === "sun" && cfg.fx.shadow ? shadowOf(sun, hd, castD) : null;
   const btnBottom = `calc(var(--wt-h, 52px) - ${d - cfg.btn.dy}px)`;
   const sunDir = sh ? (((sun.az - hd) % 360) + 360) % 360 : null;
 
@@ -164,7 +168,8 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
   const filters = [];
   if (mode === "dim") filters.push("brightness(.74) saturate(.85)");
   if (mode === "night") filters.push("brightness(.8) saturate(.9)");
-  if (sh) filters.push(`drop-shadow(${sh.dx}px ${sh.dy}px ${sh.blur}px rgba(15,20,30,${sh.alpha}))`);
+  // 맑음: 땅에 떨어지는 긴 그림자는 아래 .wl-cast 가 따로 그린다 — 여기엔 바닥에 붙은 접지 그림자만
+  if (sh) filters.push("drop-shadow(0 1px 1.5px rgba(10,12,18,.4))");
   else if (mode === "night") filters.push("drop-shadow(0 3px 9px rgba(130,160,255,.25))");
   else filters.push("drop-shadow(0 2px 5px rgba(15,20,30,.28))");
 
@@ -179,6 +184,25 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
 
   return (
     <div className="wl-slot" style={{ "--wl-d": d + "px" }}>
+      {sh && (
+        // 해시계 그림자 — 원통 우물이 땅에 드리우는 캡슐 모양. 탭 글자 아래·탭바 배경 위(z -1)에 깔린다.
+        <div className="wl-castbox" aria-hidden="true"
+          style={{ width: showImg ? imgD : d, height: showImg ? imgD : d, bottom: btnBottom,
+            transform: showImg ? `translateX(-50%) translateY(${(imgD - d) / 2 - cfg.img.dy}px)` : "translateX(-50%)" }}>
+          {theme === "dark" && (
+            // 다크: 어두운 바탕엔 어두운 그림자가 안 보인다 → 우물 둘레에 햇빛 든 땅을 은은히 깔고, 그림자가 그 빛을 끊는다
+            <div className="wl-sunlit" style={{ width: castD * 2.8, height: castD * 2.8,
+              left: `calc(50% - ${castD * 1.4}px)`, top: `calc(50% - ${castD * 1.4}px)` }} />
+          )}
+          <div className="wl-cast" style={{
+            width: castD, height: castD + sh.len, borderRadius: castD / 2,
+            left: `calc(50% - ${castD / 2}px)`, top: `calc(50% - ${castD / 2}px)`,
+            transformOrigin: `${castD / 2}px ${castD / 2}px`, transform: `rotate(${sh.dir - 180}deg)`,
+            background: theme === "dark" ? `rgba(0,0,0,${Math.min(0.95, sh.alpha + 0.3).toFixed(2)})` : `rgba(10,12,18,${sh.alpha})`,
+            filter: `blur(${sh.blur}px)`,
+          }} />
+        </div>
+      )}
       {showImg && (
         <div className="wl-img" aria-hidden="true"
           style={{ width: imgD, height: imgD, bottom: btnBottom,
@@ -189,7 +213,7 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
                   onError={() => setBroken(true)} />}
             {sunDir != null && (
               <div className="wl-shade" style={{
-                background: `linear-gradient(${Math.round((sunDir + 180) % 360)}deg, rgba(6,10,18,${(0.14 + 0.18 * (1 - Math.min(sun.el, 75) / 75)).toFixed(2)}) 0%, rgba(6,10,18,0) 58%)`,
+                background: `linear-gradient(${Math.round((sunDir + 180) % 360)}deg, rgba(6,10,18,${(0.3 + 0.25 * (1 - Math.min(sun.el, 75) / 75)).toFixed(2)}) 0%, rgba(6,10,18,0) 58%)`,
               }} />
             )}
             {mode === "night" && <div className="wl-lamp" />}
@@ -251,6 +275,11 @@ export const WELL_CSS = `
 .wl-btn.ghost { background: none; border-color: transparent; color: transparent; }
 .wl-btn:active { transform: translateX(-50%) scale(.96); }
 .wl-img { position: absolute; left: 50%; z-index: 2; pointer-events: none; }
+.wl-castbox { position: absolute; left: 50%; z-index: -1; pointer-events: none; }
+.wl-cast { position: absolute; will-change: transform; transition: transform .6s ease, height .6s ease; }
+.wl-sunlit { position: absolute; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255,226,170,.2) 0%, rgba(255,226,170,.1) 40%, rgba(255,226,170,0) 70%); }
+@media (prefers-reduced-motion: reduce) { .wl-cast { transition: none; } }
 .wl-core { position: relative; width: 100%; height: 100%; animation: wl-breathe 7s ease-in-out infinite; }
 .wl-core img, .wl-core svg { width: 100%; height: 100%; display: block; user-select: none; }
 .wl-core img { object-fit: contain; }

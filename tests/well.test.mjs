@@ -30,6 +30,18 @@ t("해가 낮을수록 그림자가 길고 흐리다", Math.hypot(shE.dx, shE.dy
 const shH = shadowOf(noon, noon.az, 46);
 t("나침반 보정 — 화면이 해를 향하면 그림자는 화면 아래로", shH.dy > 0 && Math.abs(shH.dx) < Math.abs(shH.dy));
 
+// ── 해시계 그림자 (2026-09-26 사용자 확정: 확실히 그림자로 보이게 매우 짙게, 길이 변화 반영) ──
+t("낮 그림자는 짙다(α ≥ 0.6)", shN.alpha >= 0.6 && shM.alpha >= 0.6);
+t("해가 지평선에 붙어도 그림자는 여전히 보인다(α ≥ 0.4)", shadowOf({ az: 270, el: 1 }, 0, 88).alpha >= 0.4);
+t("가장자리는 살짝만 부드럽게(blur ≤ 2.2px)", [shN, shM, shE].every((x) => x.blur > 0 && x.blur <= 2.2));
+t("길이 = 높이/tan(고도) — 고도 45°면 지름×0.55", Math.abs(shadowOf({ az: 180, el: 45 }, 0, 100).len - 55) < 0.2);
+t("길이 상한 — 지름×2.4", shadowOf({ az: 90, el: 1 }, 0, 100).len === 240);
+const lenAt = (m, d, h, mi) => shadowOf(sunPos(kst(m, d, h, mi)), 0, 100).len;
+t("계절 반영 — 겨울 한낮 그림자가 여름 한낮보다 훨씬 길다", lenAt(12, 21, 12, 30) > lenAt(6, 21, 12, 30) * 4);
+t("시각 반영 — 아침 8시가 한낮보다 길다", lenAt(9, 20, 8, 0) > lenAt(9, 20, 12, 40) * 2);
+t("한낮 그림자는 화면 위(북)로 — dir ≈ 0", (() => { const x = shadowOf(noon, 0, 100).dir; return x < 20 || x > 340; })());
+t("dir·len 과 dx·dy 가 서로 맞는다", Math.abs(Math.hypot(shM.dx, shM.dy) - shM.len) < 0.3);
+
 // ── 연출 상태 3가지 (사용자 확정: 맑음 그림자 / 흐림·비 감광 / 밤 조명) ──
 const W = (c) => pickWeather(c);
 const CLEAR = W({ temperature_2m: 21, precipitation: 0, weather_code: 1, cloud_cover: 20, wind_speed_10m: 2 });

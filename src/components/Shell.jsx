@@ -239,12 +239,13 @@ const SH_CSS = `
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;
   padding-bottom: env(safe-area-inset-bottom, 0px); }
 .sh-row { font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
-.sh-tabs-in { max-width: 520px; margin: 0 auto; display: flex; align-items: stretch;
+.sh-tabs-in { isolation: isolate; max-width: 520px; margin: 0 auto; display: flex; align-items: stretch;
   height: var(--wt-h, 52px); padding: 0 10px; }
 .sh-tab { -webkit-tap-highlight-color: transparent; flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 1px; color: var(--mut); cursor: pointer; padding: 3px 0 4px; font-family: inherit; }
 .sh-tab .ic { font-size: calc(17px * var(--wt-s, 1)); line-height: 1; position: relative; }
-.sh-tab .lb { font-size: calc(9.5px * var(--wt-s, 1)); font-weight: 800; }
+.sh-tab .lb { font-size: calc(9.5px * var(--wt-s, 1)); font-weight: 800;
+  text-shadow: 0 0 2px var(--card), 0 0 4px var(--card); } /* 우물 해 그림자가 탭 밑으로 지나가도 글자가 읽히게 */
 .sh-tab.on { color: var(--ac); }
 .sh-dot { position: absolute; top: -2px; right: -7px; width: 8px; height: 8px; border-radius: 999px; }
 .sh-dot.new { background: #EF4444; }
