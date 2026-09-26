@@ -1,0 +1,258 @@
+From f88666b02ff730abf2718fc748bd950d6edf6959 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 26 Sep 2026 11:45:14 +0000
+Subject: [PATCH] =?UTF-8?q?=EC=9A=B0=EB=AC=BC=20=ED=95=B4=EC=8B=9C?=
+ =?UTF-8?q?=EA=B3=84=20=EA=B7=B8=EB=A6=BC=EC=9E=90=20=E2=80=94=20=EC=A7=99?=
+ =?UTF-8?q?=EC=9D=80=20=EC=BA=A1=EC=8A=90=20=EA=B7=B8=EB=A6=BC=EC=9E=90,?=
+ =?UTF-8?q?=20=EC=8B=9C=EA=B0=81=C2=B7=EA=B3=84=EC=A0=88=20=EB=94=B0?=
+ =?UTF-8?q?=EB=9D=BC=20=EA=B8=B8=EC=9D=B4=20=EB=B3=80=ED=99=94?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+사용자 요청(2026-09-26): 그림자가 확실히 그림자로 보이게 매우 짙게, 해시계 원리가 느껴지게.
+
+이전: 우물 그림 전체를 drop-shadow 로 옮겨 찍은 옅고 흐린 복사본(α .22~.38, blur 3~12px,
+길이 상한 지름×1.15) — 길어지면 우물에서 떨어져 나가고, 해가 낮을수록 더 옅어져 변화가 안 보였다.
+
+지금(src/lib/sun.js shadowOf):
+- 우물을 원통(지름 D, 높이 D×0.55)으로 보고, 땅에 떨어지는 그림자 = 원을 그림자 방향으로
+  끌어 늘인 캡슐. 늘어난 길이 = 높이 / tan(태양 고도), 상한 D×2.4.
+  고도에 날짜·시각이 모두 들어가므로 계절(겨울 한낮 > 여름 한낮 ×4 이상)과
+  시각(아침·저녁 길고 한낮 짧음) 모두 반영.
+- 짙기 α .62 고정(해가 지평선에 붙을 때만 .42까지), 가장자리 blur 0.6~2px(길수록 조금 부드럽게).
+- 반환에 dir·len 추가(dx·dy·blur·alpha 유지 — 기존 테스트 호환).
+
+렌더(src/components/Well.jsx):
+- .wl-castbox/.wl-cast — 우물 중심에 한쪽 끝을 둔 캡슐을 방향대로 회전. z -1 이라
+  탭바 배경 위·탭 글자 아래에 깔린다(.sh-tabs-in isolation: isolate 로 관리자 미리보기도 동일).
+- 긴 drop-shadow 는 접지 그림자(1px)로 교체, 우물 안쪽 음영도 조금 짙게.
+- 다크 테마: 어두운 바탕엔 그림자가 안 보이므로 우물 둘레에 햇빛 든 땅(은은한 난색 원광)을 깔고
+  검은 그림자가 그 빛을 끊게 한다.
+- 탭 글자에 카드색 후광 — 그림자가 탭 밑을 지나도 글자가 읽힌다.
+
+검증: well.test 32/32(해시계 검사 9개 추가) · 전 단위 16종 통과 · run3 ERRORS 0 ·
+관리자 미리보기 7·9·12·15·17시 라이트/다크 캡처 확인 · vite build OK
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01TVPgJtxkFqu2NnXMGRKJqJ
+---
+ README.md                |  2 +-
+ src/components/Shell.jsx |  5 +++--
+ src/components/Well.jsx  | 37 +++++++++++++++++++++++++++++++++----
+ src/lib/sun.js           | 36 ++++++++++++++++++++++--------------
+ src/pages/AdminWell.jsx  |  3 ++-
+ tests/well.test.mjs      | 12 ++++++++++++
+ 6 files changed, 73 insertions(+), 22 deletions(-)
+
+diff --git a/README.md b/README.md
+index 2da87a5..a55db84 100644
+--- a/README.md
++++ b/README.md
+@@ -76,7 +76,7 @@ cp -r node_modules/@mediapipe/tasks-vision/wasm public/models/wasm
+ 하단 탭바 중앙의 원형 「우물」. 탭 4개는 납작하게 좌우 2+2로 벌리고 가운데에 우물이 탭바보다 크게 얹힌다.
+ 그림은 **기본 1장** — 번들 `public/brand/well/base.webp`(템페라 화풍 돌우물, 원형 메달 컷)이 기본이고,
+ 관리자가 스토리지 `figures/well/base.*` 업로드로 교체할 수 있다(지우면 번들로 복귀).
+-연출은 **3가지**(확정): 맑은 낮 = 태양 각도(`src/lib/sun.js`) 그림자가 실시간으로 돈다(방향 센서 기기는 나침반 연동 —
++연출은 **3가지**(확정): 맑은 낮 = 태양 각도(`src/lib/sun.js`) **해시계 그림자**가 실시간으로 돈다 — 우물을 원통(높이=지름×0.55)으로 보고 땅에 떨어지는 캡슐 모양을 짙게(α .62) 그리며, 길이 = 높이/tan(고도)라 시각·계절 따라 늘고 준다(최대 지름×2.4). 탭 글자 아래·탭바 배경 위에 깔리고, 다크 테마에선 우물 둘레 햇빛 든 땅을 그림자가 끊는 방식(방향 센서 기기는 나침반 연동 —
+ iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정) · 흐리거나 비·눈 = 그림자 없이 감광 · 밤(20~6시) = 중앙 조명 연출.
+ 실황은 대시보드 히어로와 같은 신호(`src/lib/wx.js`), 상태 결정은 `src/lib/well.js`(wellMode).
+ 우물을 탭하면 사진 도구 런처(학습 도구와 동일 5종: 서술형 채점·첨삭/사진 힌트/문장 해설/표시 연습/풀이과정 검사).
+diff --git a/src/components/Shell.jsx b/src/components/Shell.jsx
+index 6b2b563..46e79ea 100644
+--- a/src/components/Shell.jsx
++++ b/src/components/Shell.jsx
+@@ -239,12 +239,13 @@ const SH_CSS = `
+   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;
+   padding-bottom: env(safe-area-inset-bottom, 0px); }
+ .sh-row { font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
+-.sh-tabs-in { max-width: 520px; margin: 0 auto; display: flex; align-items: stretch;
++.sh-tabs-in { isolation: isolate; max-width: 520px; margin: 0 auto; display: flex; align-items: stretch;
+   height: var(--wt-h, 52px); padding: 0 10px; }
+ .sh-tab { -webkit-tap-highlight-color: transparent; flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center;
+   justify-content: center; gap: 1px; color: var(--mut); cursor: pointer; padding: 3px 0 4px; font-family: inherit; }
+ .sh-tab .ic { font-size: calc(17px * var(--wt-s, 1)); line-height: 1; position: relative; }
+-.sh-tab .lb { font-size: calc(9.5px * var(--wt-s, 1)); font-weight: 800; }
++.sh-tab .lb { font-size: calc(9.5px * var(--wt-s, 1)); font-weight: 800;
++  text-shadow: 0 0 2px var(--card), 0 0 4px var(--card); } /* 우물 해 그림자가 탭 밑으로 지나가도 글자가 읽히게 */
+ .sh-tab.on { color: var(--ac); }
+ .sh-dot { position: absolute; top: -2px; right: -7px; width: 8px; height: 8px; border-radius: 999px; }
+ .sh-dot.new { background: #EF4444; }
+diff --git a/src/components/Well.jsx b/src/components/Well.jsx
+index 8910e3d..55c006c 100644
+--- a/src/components/Well.jsx
++++ b/src/components/Well.jsx
+@@ -6,6 +6,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
+ import { supabase } from "../supabaseClient";
+ import { getWx } from "../lib/wx";
+ import { sunPos, shadowOf } from "../lib/sun";
++
++// 번들 우물 그림(메달 컷)에서 돌 테두리 원의 지름 비율 — 원 반지름 486 / 캔버스 1024 × 2
++const WELL_DISC = 0.95;
+ import { WELL_FEATURES, WELL_DEFAULT, clampWellCfg, wellMode } from "../lib/well";
+ 
+ /** 번들 기본 이미지 — 템페라 화풍 돌우물 (배경 오려낸 원형 메달) */
+@@ -152,11 +155,12 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
+   const mode = modeOverride || wellMode(wx, hour);
+   const sun = useMemo(() => sunPos(date), [date]);
+   const hd = headingOverride ?? (hdLive ? heading : 0);
+-  const sh = mode === "sun" && cfg.fx.shadow ? shadowOf(sun, hd, cfg.btn.d) : null;
+-
+   const showImg = cfg.img.on || reveal;
+   const d = cfg.btn.d;
+   const imgD = Math.round(d * cfg.img.scale / 100);
++  // 그림자를 드리우는 건 돌 테두리 원(메달 컷 지름 ≈ 이미지의 95%) — 이미지가 없으면 자리 원
++  const castD = showImg ? Math.round(imgD * WELL_DISC) : d;
++  const sh = mode === "sun" && cfg.fx.shadow ? shadowOf(sun, hd, castD) : null;
+   const btnBottom = `calc(var(--wt-h, 52px) - ${d - cfg.btn.dy}px)`;
+   const sunDir = sh ? (((sun.az - hd) % 360) + 360) % 360 : null;
+ 
+@@ -164,7 +168,8 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
+   const filters = [];
+   if (mode === "dim") filters.push("brightness(.74) saturate(.85)");
+   if (mode === "night") filters.push("brightness(.8) saturate(.9)");
+-  if (sh) filters.push(`drop-shadow(${sh.dx}px ${sh.dy}px ${sh.blur}px rgba(15,20,30,${sh.alpha}))`);
++  // 맑음: 땅에 떨어지는 긴 그림자는 아래 .wl-cast 가 따로 그린다 — 여기엔 바닥에 붙은 접지 그림자만
++  if (sh) filters.push("drop-shadow(0 1px 1.5px rgba(10,12,18,.4))");
+   else if (mode === "night") filters.push("drop-shadow(0 3px 9px rgba(130,160,255,.25))");
+   else filters.push("drop-shadow(0 2px 5px rgba(15,20,30,.28))");
+ 
+@@ -179,6 +184,25 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
+ 
+   return (
+     <div className="wl-slot" style={{ "--wl-d": d + "px" }}>
++      {sh && (
++        // 해시계 그림자 — 원통 우물이 땅에 드리우는 캡슐 모양. 탭 글자 아래·탭바 배경 위(z -1)에 깔린다.
++        <div className="wl-castbox" aria-hidden="true"
++          style={{ width: showImg ? imgD : d, height: showImg ? imgD : d, bottom: btnBottom,
++            transform: showImg ? `translateX(-50%) translateY(${(imgD - d) / 2 - cfg.img.dy}px)` : "translateX(-50%)" }}>
++          {theme === "dark" && (
++            // 다크: 어두운 바탕엔 어두운 그림자가 안 보인다 → 우물 둘레에 햇빛 든 땅을 은은히 깔고, 그림자가 그 빛을 끊는다
++            <div className="wl-sunlit" style={{ width: castD * 2.8, height: castD * 2.8,
++              left: `calc(50% - ${castD * 1.4}px)`, top: `calc(50% - ${castD * 1.4}px)` }} />
++          )}
++          <div className="wl-cast" style={{
++            width: castD, height: castD + sh.len, borderRadius: castD / 2,
++            left: `calc(50% - ${castD / 2}px)`, top: `calc(50% - ${castD / 2}px)`,
++            transformOrigin: `${castD / 2}px ${castD / 2}px`, transform: `rotate(${sh.dir - 180}deg)`,
++            background: theme === "dark" ? `rgba(0,0,0,${Math.min(0.95, sh.alpha + 0.3).toFixed(2)})` : `rgba(10,12,18,${sh.alpha})`,
++            filter: `blur(${sh.blur}px)`,
++          }} />
++        </div>
++      )}
+       {showImg && (
+         <div className="wl-img" aria-hidden="true"
+           style={{ width: imgD, height: imgD, bottom: btnBottom,
+@@ -189,7 +213,7 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
+                   onError={() => setBroken(true)} />}
+             {sunDir != null && (
+               <div className="wl-shade" style={{
+-                background: `linear-gradient(${Math.round((sunDir + 180) % 360)}deg, rgba(6,10,18,${(0.14 + 0.18 * (1 - Math.min(sun.el, 75) / 75)).toFixed(2)}) 0%, rgba(6,10,18,0) 58%)`,
++                background: `linear-gradient(${Math.round((sunDir + 180) % 360)}deg, rgba(6,10,18,${(0.3 + 0.25 * (1 - Math.min(sun.el, 75) / 75)).toFixed(2)}) 0%, rgba(6,10,18,0) 58%)`,
+               }} />
+             )}
+             {mode === "night" && <div className="wl-lamp" />}
+@@ -251,6 +275,11 @@ export const WELL_CSS = `
+ .wl-btn.ghost { background: none; border-color: transparent; color: transparent; }
+ .wl-btn:active { transform: translateX(-50%) scale(.96); }
+ .wl-img { position: absolute; left: 50%; z-index: 2; pointer-events: none; }
++.wl-castbox { position: absolute; left: 50%; z-index: -1; pointer-events: none; }
++.wl-cast { position: absolute; will-change: transform; transition: transform .6s ease, height .6s ease; }
++.wl-sunlit { position: absolute; border-radius: 50%; pointer-events: none;
++  background: radial-gradient(circle, rgba(255,226,170,.2) 0%, rgba(255,226,170,.1) 40%, rgba(255,226,170,0) 70%); }
++@media (prefers-reduced-motion: reduce) { .wl-cast { transition: none; } }
+ .wl-core { position: relative; width: 100%; height: 100%; animation: wl-breathe 7s ease-in-out infinite; }
+ .wl-core img, .wl-core svg { width: 100%; height: 100%; display: block; user-select: none; }
+ .wl-core img { object-fit: contain; }
+diff --git a/src/lib/sun.js b/src/lib/sun.js
+index 6cd784d..bc3dd7e 100644
+--- a/src/lib/sun.js
++++ b/src/lib/sun.js
+@@ -25,25 +25,33 @@ export function sunPos(date = new Date(), lat = 37.66, lon = 126.83) {
+ }
+ 
+ /**
+- * 그림자 렌더 값 — 해 반대 방향으로, 해가 낮을수록 길고 흐리고 옅게.
++ * 그림자 렌더 값 — 해시계처럼: 해 반대 방향으로, 해가 낮을수록 길게. 그림자는 늘 짙다(사용자 확정 2026-09-26).
++ * 우물을 "지름 unit, 높이 unit×WELL_H 인 원통"으로 보고, 땅에 떨어지는 그림자(원을 그림자 방향으로 끌어 늘인 캡슐)의
++ * 늘어난 길이 len = 높이 / tan(고도). 날짜(계절)와 시각이 모두 고도에 들어가므로 여름 한낮은 짧고 겨울·아침저녁은 길다.
+  * heading: 화면 위쪽이 향한 방위(나침반, 도). 기본 0 = "화면 위 = 북쪽" 고정.
+- * unit: 우물 지름(px) — 길이를 이에 비례시킨다.
+- * 반환: null(해가 진 뒤) 또는 { dx, dy, blur, alpha }
++ * unit: 그림자를 드리우는 우물(돌 테두리)의 화면 지름(px).
++ * 반환: null(해가 진 뒤) 또는 { dir, len, dx, dy, blur, alpha }
++ *   dir 화면 기준 그림자 방향(도, 위=0 시계방향) · len 늘어난 길이(px) · dx/dy 그림자 끝 쪽 벡터(px)
++ *   blur 가장자리 반그림자(px, 길수록 조금 더 부드럽게) · alpha 짙기(0.62, 해가 지평선에 붙을 때만 살짝 옅게)
+  */
++export const WELL_H = 0.55;       // 우물 돌담 높이 / 지름 — 실제 우물(지름 1.2m·높이 0.65m 안팎) 비율
++export const SHADOW_MAX = 2.4;    // 그림자 최대 길이 = 지름 × 이 값 (해 뜰 녘·질 녘에 화면을 뒤덮지 않게)
++
+ export function shadowOf(sun, heading = 0, unit = 46) {
+   if (!sun || sun.el <= 0.5) return null;             // 지평선 아래·직전 — 해 그림자 없음
+   const rad = Math.PI / 180;
+-  const el = Math.min(sun.el, 88);
+-  // 그림자 방위 = 해 방위 + 180, 화면 기준으로 heading 만큼 되돌린다
+-  const dir = (sun.az + 180 - heading) * rad;         // 북=0 시계방향
+-  const len = Math.min(unit * 1.15, (unit * 0.34) / Math.tan(Math.max(el, 8) * rad));
+-  const dx = Math.sin(dir) * len;
+-  const dy = -Math.cos(dir) * len;                    // 화면 y 는 아래로 +
+-  const soft = 1 - Math.min(el / 60, 1);              // 낮은 해일수록 부드럽게
++  const el = Math.min(sun.el, 89);
++  const dirDeg = (((sun.az + 180 - heading) % 360) + 360) % 360;   // 그림자 방위(화면 기준, 위=0 시계방향)
++  const len = Math.min(unit * SHADOW_MAX, (unit * WELL_H) / Math.tan(Math.max(el, 2) * rad));
++  const dir = dirDeg * rad;
++  const r1 = (v) => Math.round(v * 10) / 10;
++  const low = Math.max(0, (12 - el) / 11);            // 0(고도 12° 이상) ~ 1(지평선)
+   return {
+-    dx: Math.round(dx * 10) / 10,
+-    dy: Math.round(dy * 10) / 10,
+-    blur: Math.round((3 + soft * 9) * 10) / 10,
+-    alpha: Math.round((0.38 - soft * 0.16) * 100) / 100,
++    dir: r1(dirDeg),
++    len: r1(len),
++    dx: r1(Math.sin(dir) * len),
++    dy: r1(-Math.cos(dir) * len),                      // 화면 y 는 아래로 +
++    blur: r1(0.6 + Math.min(len / unit, SHADOW_MAX) * 0.6),
++    alpha: Math.round((0.62 - 0.2 * low) * 100) / 100,
+   };
+ }
+diff --git a/src/pages/AdminWell.jsx b/src/pages/AdminWell.jsx
+index 4a6fb9d..0fbe701 100644
+--- a/src/pages/AdminWell.jsx
++++ b/src/pages/AdminWell.jsx
+@@ -193,7 +193,8 @@ export default function AdminWell({ theme = "light" }) {
+           <p className="aw-t">동작 방식 — 연출 3가지</p>
+           <p className="aw-d">
+             우물은 대시보드 히어로와 같은 실황(강수·구름)과 시각만 봐요. <b>맑은 낮</b>엔 태양 각도를 계산해
+-            그림자가 실시간으로 돌고(나침반 되는 기기는 폰 방향까지 반영), <b>흐리거나 비·눈</b>이면 그림자 없이
++            해시계처럼 짙은 그림자가 실시간으로 돌고 길이도 변해요 — 해가 낮을수록(아침·저녁, 겨울) 길고 한여름 한낮엔 짧아요
++            (나침반 되는 기기는 폰 방향까지 반영). <b>흐리거나 비·눈</b>이면 그림자 없이
+             명도만 낮아지고, <b>밤(20시~6시)</b>엔 우물 중앙에 조명이 비치는 연출이 들어가요.
+           </p>
+         </div>
+diff --git a/tests/well.test.mjs b/tests/well.test.mjs
+index 5726211..06362d5 100644
+--- a/tests/well.test.mjs
++++ b/tests/well.test.mjs
+@@ -30,6 +30,18 @@ t("해가 낮을수록 그림자가 길고 흐리다", Math.hypot(shE.dx, shE.dy
+ const shH = shadowOf(noon, noon.az, 46);
+ t("나침반 보정 — 화면이 해를 향하면 그림자는 화면 아래로", shH.dy > 0 && Math.abs(shH.dx) < Math.abs(shH.dy));
+ 
++// ── 해시계 그림자 (2026-09-26 사용자 확정: 확실히 그림자로 보이게 매우 짙게, 길이 변화 반영) ──
++t("낮 그림자는 짙다(α ≥ 0.6)", shN.alpha >= 0.6 && shM.alpha >= 0.6);
++t("해가 지평선에 붙어도 그림자는 여전히 보인다(α ≥ 0.4)", shadowOf({ az: 270, el: 1 }, 0, 88).alpha >= 0.4);
++t("가장자리는 살짝만 부드럽게(blur ≤ 2.2px)", [shN, shM, shE].every((x) => x.blur > 0 && x.blur <= 2.2));
++t("길이 = 높이/tan(고도) — 고도 45°면 지름×0.55", Math.abs(shadowOf({ az: 180, el: 45 }, 0, 100).len - 55) < 0.2);
++t("길이 상한 — 지름×2.4", shadowOf({ az: 90, el: 1 }, 0, 100).len === 240);
++const lenAt = (m, d, h, mi) => shadowOf(sunPos(kst(m, d, h, mi)), 0, 100).len;
++t("계절 반영 — 겨울 한낮 그림자가 여름 한낮보다 훨씬 길다", lenAt(12, 21, 12, 30) > lenAt(6, 21, 12, 30) * 4);
++t("시각 반영 — 아침 8시가 한낮보다 길다", lenAt(9, 20, 8, 0) > lenAt(9, 20, 12, 40) * 2);
++t("한낮 그림자는 화면 위(북)로 — dir ≈ 0", (() => { const x = shadowOf(noon, 0, 100).dir; return x < 20 || x > 340; })());
++t("dir·len 과 dx·dy 가 서로 맞는다", Math.abs(Math.hypot(shM.dx, shM.dy) - shM.len) < 0.3);
++
+ // ── 연출 상태 3가지 (사용자 확정: 맑음 그림자 / 흐림·비 감광 / 밤 조명) ──
+ const W = (c) => pickWeather(c);
+ const CLEAR = W({ temperature_2m: 21, precipitation: 0, weather_code: 1, cloud_cover: 20, wind_speed_10m: 2 });
+-- 
+2.43.0
+
