@@ -1,0 +1,318 @@
+From 9b8ea4181b4df4ef0fa76d84f0e9427e197166fc Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 28 Sep 2026 00:47:18 +0900
+Subject: [PATCH] =?UTF-8?q?dbpush:=20statement=20timeout(57014)=20?=
+ =?UTF-8?q?=EB=8C=80=EB=B9=84=20=E2=80=94=20=EC=9E=88=EB=8A=94=20=ED=82=A4?=
+ =?UTF-8?q?=EB=8A=94=20=ED=8B=80=20=ED=95=98=EB=82=98=EC=94=A9=20=EC=9D=BD?=
+ =?UTF-8?q?=EA=B3=A0,=20=EC=93=B0=EA=B8=B0=EB=8A=94=20=EB=B0=98=EC=9C=BC?=
+ =?UTF-8?q?=EB=A1=9C=20=EB=82=98=EB=88=A0=20=EC=9E=AC=EC=8B=9C=EB=8F=84?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Run #15·#17 이 PostgREST 의 statement_timeout 8 초(service 키여도 authenticator 역할 값)에 걸려 57014 로 끊긴 것의 후속.
+워크플로 파일은 건드리지 않는다 — dbpush.py 만.
+
+1) 있는 키 읽기(existing_keys): 틀 40 개를 IN 으로 묶고 item_key 로 정렬하던 것을 틀 하나씩 · param_index 정렬로.
+   EXPLAIN ANALYZE(09-28): 묶음 질의는 플래너가 item_key 유니크 인덱스를 처음부터 훑는 계획을 골라 121,256 행을 걸러
+   내며 14 초(버퍼 128k)가 걸렸다 — 이것이 Run #17 의 57014. 틀 하나 질의는 ti_template 인덱스로 34 ms.
+2) 제자리 갱신 묶음 200 → 50 (UPDATE_BATCH). 추가는 200 그대로(Run #16 성공), 키 묶음 100 그대로.
+3) 모든 쓰기(추가·갱신·retired·옛 draft 삭제)와 읽기에 재시도: 57014·502·503·504·전송 오류(httpx)면 묶음을 반으로
+   나눠 다시(1 행까지; 그랬으면 다음 묶음부터 크기도 반으로), 1 행짜리도 안 되면 3 초·10 초 쉬고 두 번 더, 그래도 안 되면
+   그 오류로 끝낸다. 조건 삭제(교체)는 나눌 수 없어 쉬고 다시만. 23505(유니크 위반) 처리는 그대로(한 행씩 → 건너뜀).
+   요약(STEP_SUMMARY)에 「시간 초과 재시도 n회 (…)」를 남긴다.
+
+가짜 클라이언트 시나리오 90 검사 통과: 정상 갱신(id·status·created_at 유지, 옛 live retired, 옛 draft 삭제, 새 행 추가,
+다른 틀 무변경) · 50 시간 초과 → 25·25 (다음 묶음부터 25) · 1 행까지 내려가 쉬고 성공 · 1 행 3 회 실패 → 57014 로 종료
+(앞 반쪽은 반영, 뒤는 미반영) · 23505 + 시간 초과 혼합(중복 행만 건너뜀, rc 1) · ReadTimeout·ConnectError·503 반분 ·
+PAGE 쪽 나누기 · dry-run 무변경 · 이상한 패턴 사전 거부 · @ 없는 교체.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018JLsd3vGmury1h1hVpEaRi
+---
+ itemfactory/tools/dbpush.py | 184 ++++++++++++++++++++++++------------
+ 1 file changed, 125 insertions(+), 59 deletions(-)
+
+diff --git a/itemfactory/tools/dbpush.py b/itemfactory/tools/dbpush.py
+index a402aff..86761b0 100644
+--- a/itemfactory/tools/dbpush.py
++++ b/itemfactory/tools/dbpush.py
+@@ -24,6 +24,14 @@
+ #      새 빌드에 없는 옛 행(파라미터 조합을 뺀 경우)은 draft 면 지우고, live 면 status='retired' 로 내린다
+ #      (지우지 않으므로 푼 기록은 남고, 학생 화면·「틀별」 집계에서는 빠진다. 되살리려면 status 를 live 로).
+ #      새 빌드에만 있는 행은 --status 로 추가(②와 같음). 문면이 다른 행과 같아져 23505 가 나면 그 행만 건너뛰고 알린다.
++#   ⑤ 시간 초과 대비 (09-28) — PostgREST 를 거치면 statement_timeout 이 8 초라(service 키여도 authenticator 역할의 값)
++#      한 문장이 8 초를 넘기면 57014 로 끊긴다(Run #15·#17). 그래서
++#      · 있는 키 읽기는 틀 **하나씩** 읽는다. 여러 틀을 IN 으로 묶고 item_key 로 정렬하면 플래너가 item_key 인덱스를
++#        처음부터 훑는 계획을 골라(12 만 행을 걸러 내며 14 초 → 57014) 시간을 넘겼다. 틀 하나 · param_index 정렬이면 34 ms.
++#      · 갱신 묶음은 50 행. 어떤 쓰기든 57014(또는 502·503·504 · 전송 오류)가 나면 묶음을 반으로 나눠 다시 보내고
++#        (1 행까지), 그랬으면 다음 묶음부터 크기도 반으로 줄인다. 1 행짜리도 안 되면 3 초 · 10 초 쉬고 두 번 더,
++#        그래도 안 되면 그 오류로 끝낸다. 실패한 문장은 통째로 되돌려지고 업서트·상태 변경·삭제 모두 다시 보내도
++#        같은 결과라(멱등) 다시 보내는 게 안전하다. 요약에 「시간 초과 재시도 n회」로 남긴다.
+ #
+ #   비밀: SUPABASE_URL · SUPABASE_SERVICE_KEY (GitHub secrets; 로컬은 itemfactory/.env 도 읽는다 — 클라이언트 코드 금지).
+ #   요약은 $GITHUB_STEP_SUMMARY(있으면)에 표로 남긴다.
+@@ -40,8 +48,12 @@ from collections import Counter
+ from pathlib import Path
+ 
+ HERE = Path(__file__).resolve().parent.parent          # itemfactory/
+-BATCH = 200
++BATCH = 200                                             # 추가(INSERT) 묶음
++UPDATE_BATCH = 50                                       # 제자리 갱신 묶음 (09-28: 200 → 50 — 큰 jsonb 행의 UPDATE 는 8 초를 넘겼다)
++KEY_BATCH = 100                                         # item_key 로 지우거나 status 를 바꾸는 묶음
+ PAGE = 1000                                             # PostgREST max-rows 기본값
++TRANSIENT = ("57014", "502", "503", "504")              # 다시 보내도 되는 오류: statement timeout · 게이트웨이(PostgREST 재시작 등)
++WAITS = (3, 10)                                         # 1 행(1 개)짜리도 시간 초과면 이만큼 쉬고 다시 (초)
+ DROP_COLS = ("surface_key", "category")                 # test_items 에 없는 열 (build.py push 와 동일)
+ # 제자리 갱신이 덮어쓰는 열 — 식별·상태·출처·생성 시각(id, item_key, template_id, param_index, test_type, status, source,
+ # created_at)은 바꾸지 않는다. content_key 는 DB 생성 열이라 question·choices·figure 를 따라 저절로 바뀐다.
+@@ -79,6 +91,51 @@ def _api_error():
+     return APIError
+ 
+ 
++def _transport_error():
++    import httpx                                         # supabase 가 쓰는 HTTP 클라이언트 — 연결 끊김·응답 없음 등
++    return httpx.TransportError
++
++
++# ---------------------------------------------------------------- ⑤ 시간 초과 재시도
++_retries: list[str] = []                                 # 재시도한 묶음 기록(요약용) — "업서트 200→100" 처럼
++
++
++def _try(fn):
++    """fn() 을 한 번 실행한다. 성공 → (True, 결과). 다시 해 볼 만한 오류(TRANSIENT · 전송 오류) → (False, 예외).
++    그 밖의 오류(23505 유니크 위반 등)는 그대로 올린다."""
++    try:
++        return True, fn()
++    except _api_error() as ex:
++        if str(ex.code) not in TRANSIENT:                # JSON 이 아닌 5xx 응답이면 code 가 HTTP 상태(int)로 온다
++            raise
++        return False, ex
++    except _transport_error() as ex:
++        return False, ex
++
++
++def _split(fn, items: list, what: str):
++    """fn(items) 를 실행하고 결과를 돌려준다. 시간 초과·전송 오류면 items 를 반으로 나눠 다시(1 개까지 — 이때는 None 을 돌려준다).
++    1 개짜리도 안 되면 WAITS 만큼 쉬고 두 번 더 해 보고, 그래도 안 되면 그 예외를 올린다."""
++    ok, res = _try(lambda: fn(items))
++    if ok:
++        return res
++    if len(items) > 1:
++        mid = len(items) // 2
++        _retries.append(f"{what} {len(items)}→{mid}")
++        print(f"    ⏱ {what}: {len(items)}개 묶음이 시간 초과({getattr(res, 'code', None) or type(res).__name__}) → {mid}·{len(items) - mid}개로 나눠 다시")
++        _split(fn, items[:mid], what)
++        _split(fn, items[mid:], what)
++        return None
++    for w in WAITS:
++        _retries.append(f"{what} 1개 {w}s 대기")
++        print(f"    ⏱ {what}: 1개짜리도 시간 초과 → {w}초 쉬고 다시")
++        time.sleep(w)
++        ok, res = _try(lambda: fn(items))
++        if ok:
++            return res
++    raise res
++
++
+ # ---------------------------------------------------------------- ① 교체(draft 삭제)
+ PATTERN = re.compile(r"^[mh][1-3]-[1-3]-[a-z0-9]+(?:-[a-z0-9]+)*-(?:t\d+|\*)$")   # m1-2-mean-t2 · m2-2-centroid-* · h3-1-seqlim-* (09-15: 고등부 h 접두 허용) · h3-3-vecfig-t1 (09-26: 단원 번호 3 허용)
+ 
+@@ -97,24 +154,31 @@ def _tpl_filter(q, pat: str):
+ 
+ def delete_drafts(sb, pat: str, dry: bool) -> int:
+     """pat 에 맞는 틀의 draft·seed 행을 지운다. live 는 건드리지 않는다. 지운(지울) 행 수를 돌려준다."""
+-    q = sb.table("test_items").select("id", count="exact", head=True).eq("status", "draft").eq("source", "seed")
+-    n = _tpl_filter(q, pat).execute().count or 0
+-    if n and not dry:
++    def count(_):
++        q = sb.table("test_items").select("id", count="exact", head=True).eq("status", "draft").eq("source", "seed")
++        return _tpl_filter(q, pat).execute().count or 0
++
++    def delete(_):
+         d = sb.table("test_items").delete(returning="minimal").eq("status", "draft").eq("source", "seed")
+         _tpl_filter(d, pat).execute()
++
++    n = _split(count, [pat], f"교체 {pat} 세기")           # 조건 삭제라 나눌 수 없다 — 시간 초과면 쉬고 다시만
++    if n and not dry:
++        _split(delete, [pat], f"교체 {pat} 삭제")
+     return n
+ 
+ 
+ # ---------------------------------------------------------------- ② 있는 키 읽기
+ def existing_keys(sb, template_ids: list[str]) -> dict[str, str]:
+-    """틀들의 DB 행 item_key → status."""
++    """틀들의 DB 행 item_key → status. 틀 하나씩 읽는다(⑤ — IN 으로 묶으면 플래너가 item_key 인덱스를 훑어 시간을 넘긴다)."""
+     have: dict[str, str] = {}
+-    ids = sorted(set(template_ids))
+-    for i in range(0, len(ids), 40):
+-        chunk, off = ids[i:i + 40], 0
++    for tid in sorted(set(template_ids)):
++        off = 0
+         while True:
+-            rows = (sb.table("test_items").select("item_key,status").in_("template_id", chunk)
+-                    .order("item_key").range(off, off + PAGE - 1).execute().data) or []
++            def page(_):
++                return (sb.table("test_items").select("item_key,status").eq("template_id", tid)
++                        .order("param_index").range(off, off + PAGE - 1).execute().data) or []
++            rows = _split(page, [tid], f"있는 키 {tid}")
+             have.update({r["item_key"]: r.get("status") for r in rows if r.get("item_key")})
+             if len(rows) < PAGE:
+                 break
+@@ -132,36 +196,46 @@ def _upsert(sb, rows):
+                                          returning="minimal").execute()
+ 
+ 
++def _upsert_rows(sb, rows: list[dict], op, batch_size: int, what: str, dup_why):
++    """rows 를 batch_size 묶음으로 op(sb, 묶음) 한다 → (올린 수, 건너뛴 [(item_key, 사유)]).
++    시간 초과는 _split 이 반으로 나눠 다시 보내고(그랬으면 다음 묶음부터 크기를 반으로 줄인다 — 8 초짜리 실패를 되풀이하지 않게),
++    묶음이 23505(유니크 위반)면 한 행씩 보내 문제 행만 건너뛴다."""
++    APIError = _api_error()
++    done, skipped, size, i = 0, [], batch_size, 0
++    while i < len(rows):
++        batch, n_retry = rows[i:i + size], len(_retries)
++        i += len(batch)
++        try:
++            _split(lambda b: op(sb, b), batch, what)
++            done += len(batch)
++        except APIError as ex:
++            if ex.code != "23505":
++                raise
++            for r in batch:                              # 묶음이 유니크 위반 → 한 행씩 (이미 들어간 행은 다시 보내도 같다)
++                try:
++                    _split(lambda b: op(sb, b), [r], what)
++                    done += 1
++                except APIError as ex1:
++                    if ex1.code != "23505":
++                        raise
++                    skipped.append((r["item_key"], dup_why(ex1)))
++        if len(_retries) > n_retry and size > 1:
++            size //= 2
++            print(f"    ↓ {what}: 다음 묶음부터 {size}행씩")
++    return done, skipped
++
++
+ def push_rows(sb, rows: list[dict], status: str, dry: bool):
+     """새 행만 올린다. 돌려주는 값: (올린 수, 건너뛴 [(item_key, 사유)])."""
+-    APIError = _api_error()
+     for r in rows:
+         for c in DROP_COLS:
+             r.pop(c, None)
+         r["status"] = status
+-    added, skipped = 0, []
+     if dry:
+-        return len(rows), skipped
+-    for i in range(0, len(rows), BATCH):
+-        batch = rows[i:i + BATCH]
+-        try:
+-            _upsert(sb, batch)
+-            added += len(batch)
+-            continue
+-        except APIError as ex:
+-            if ex.code != "23505":
+-                raise
+-        for r in batch:                                  # 묶음이 유니크 위반 → 한 행씩
+-            try:
+-                _upsert(sb, [r])
+-                added += 1
+-            except APIError as ex:
+-                if ex.code != "23505":
+-                    raise
+-                why = "content 중복(같은 문면이 다른 item_key 로 있음)" if "content" in (ex.message or "") \
+-                    else (ex.message or "unique violation")[:120]
+-                skipped.append((r["item_key"], why))
+-    return added, skipped
++        return len(rows), []
++    return _upsert_rows(sb, rows, _upsert, BATCH, "추가",
++                        lambda ex: "content 중복(같은 문면이 다른 item_key 로 있음)" if "content" in (ex.message or "")
++                        else (ex.message or "unique violation")[:120])
+ 
+ 
+ # ---------------------------------------------------------------- ④ 제자리 갱신
+@@ -172,31 +246,13 @@ def _merge(sb, rows):
+ 
+ def update_rows(sb, rows: list[dict], dry: bool):
+     """DB 에 이미 있는 행을 제자리에서 덮어쓴다. 돌려주는 값: (갱신 수, 건너뛴 [(item_key, 사유)])."""
+-    APIError = _api_error()
+     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+     payload = [{**{c: r.get(c) for c in KEY_COLS}, **{c: r.get(c) for c in UPDATE_COLS if c in r}, "updated_at": now}
+                for r in rows]
+-    done, skipped = 0, []
+     if dry:
+-        return len(payload), skipped
+-    for i in range(0, len(payload), BATCH):
+-        batch = payload[i:i + BATCH]
+-        try:
+-            _merge(sb, batch)
+-            done += len(batch)
+-            continue
+-        except APIError as ex:
+-            if ex.code != "23505":
+-                raise
+-        for r in batch:
+-            try:
+-                _merge(sb, [r])
+-                done += 1
+-            except APIError as ex:
+-                if ex.code != "23505":
+-                    raise
+-                skipped.append((r["item_key"], "갱신하면 문면이 다른 행과 같아짐(content 중복)"))
+-    return done, skipped
++        return len(payload), []
++    return _upsert_rows(sb, payload, _merge, UPDATE_BATCH, "제자리 갱신",
++                        lambda ex: "갱신하면 문면이 다른 행과 같아짐(content 중복)")
+ 
+ 
+ def retire_keys(sb, keys: list[str], dry: bool) -> int:
+@@ -204,9 +260,13 @@ def retire_keys(sb, keys: list[str], dry: bool) -> int:
+     if dry or not keys:
+         return len(keys)
+     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+-    for i in range(0, len(keys), 100):
++
++    def retire(ks):
+         (sb.table("test_items").update({"status": "retired", "updated_at": now}, returning="minimal")
+-         .eq("status", "live").in_("item_key", keys[i:i + 100]).execute())
++         .eq("status", "live").in_("item_key", ks).execute())
++
++    for i in range(0, len(keys), KEY_BATCH):
++        _split(retire, keys[i:i + KEY_BATCH], "retired 내리기")
+     return len(keys)
+ 
+ 
+@@ -214,8 +274,12 @@ def delete_keys(sb, keys: list[str], dry: bool) -> int:
+     """draft 인 옛 행만 item_key 로 지운다."""
+     if dry or not keys:
+         return len(keys)
+-    for i in range(0, len(keys), 100):
+-        sb.table("test_items").delete(returning="minimal").eq("status", "draft").in_("item_key", keys[i:i + 100]).execute()
++
++    def delete(ks):
++        sb.table("test_items").delete(returning="minimal").eq("status", "draft").in_("item_key", ks).execute()
++
++    for i in range(0, len(keys), KEY_BATCH):
++        _split(delete, keys[i:i + KEY_BATCH], "옛 draft 삭제")
+     return len(keys)
+ 
+ 
+@@ -279,7 +343,8 @@ def main() -> None:
+     added, skipped = push_rows(sb, new_rows, a.status, a.dry_run)
+     new_by_tpl = Counter(r["template_id"] for r in new_rows)
+     skip_by_tpl = Counter(k.rsplit(":", 1)[0] for k, _ in skipped)
+-    print(f"  {'올릴' if a.dry_run else '올림'} {added}행 · 건너뜀 {len(skipped)}행 · {time.time() - t0:.0f}s")
++    print(f"  {'올릴' if a.dry_run else '올림'} {added}행 · 건너뜀 {len(skipped)}행 · {time.time() - t0:.0f}s"
++          + (f" · 시간 초과 재시도 {len(_retries)}회" if _retries else ""))
+ 
+     # 요약
+     lines = ["| 틀 | 풀 | 이미 있음 | 추가 | 건너뜀 |", "|---|---:|---:|---:|---:|"]
+@@ -290,6 +355,7 @@ def main() -> None:
+             f"풀 {len(rows)}행 / 이미 있음 {len(rows) - len(new_rows)} / 추가 {added} / 건너뜀 {len(skipped)}"
+             + (f" / draft 삭제 {sum(deleted.values())}" if deleted else "")
+             + (f" / 제자리 갱신 {updated} (건너뜀 {len(u_skipped)}, 빌드에 없는 옛 행 draft {len(stale_draft)} 삭제 · live {len(stale_live)} retired)" if upats else "")
++            + (f" / 시간 초과 재시도 {len(_retries)}회 ({', '.join(_retries[:6])}{', …' if len(_retries) > 6 else ''})" if _retries else "")
+             + "\n"
+             + ("".join(f"\n- 교체 `{p}` → draft {n}행 {'삭제 예정' if a.dry_run else '삭제'}" for p, n in deleted.items()) + "\n" if deleted else ""))
+     tail = ""
+-- 
+2.43.0
+
