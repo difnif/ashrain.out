@@ -1151,7 +1151,7 @@
           }
         ]
       ],
-      "model_answer": "x = {x0}, y = {y0}{eul(y0)} 대입하면 {co(x0)}a {Y0B} = {c1}, {co(x0)}b {Y0A} = {c2}이다. 두 식을 연립하여 풀면 a = {a}, b = {b}이므로 {ASK} = {ans}이다.",
+      "model_answer": "x = {x0}, y = {y0}{eul(y0)} 대입하면 {co(x0)}a {Y0B} = {c1} … ①, {co(x0)}b {Y0A} = {c2} … ②이다. b를 없애기 위해 ① × {pn(x0)} − ② × {pn(y0)}{eul(y0)} 하면 {ss}a = {ra}이므로 a = {a}이다. a = {a}{eul(a)} ①에 대입하면 {x0a} {Y0B} = {c1}, {co(y0)}b = {rb}이므로 b = {b}이다. 따라서 {ASK} = {ans}이다.",
       "rubric": [
         {
           "element": "대입해 식 세우기",

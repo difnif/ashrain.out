@@ -503,8 +503,23 @@ def _sc3_rows():
         chk = {"diff": f"p + q = {up + dn}" + (f"에 두 점수가 같은 학생(직선 y = x 위의 점) {eq}명을 더하면 전체 인원 {n}명과 같다" if eq else f"{_ro(up + dn)} 전체 인원 {n}명과 같다(두 점수가 같은 학생은 없다)"),
                "pct": f"합이 150점 이상인 학생 {hi}명과 150점 미만인 학생 {n - hi}명을 더하면 전체 인원 {n}명과 같고, {hi} ÷ {n} × 100 = {_dc(Fraction(hi * 100, n))}이다",
                "meanx": f"평균 {_dc(Fraction(sx, n))}에 인원 {n}{_eul(n)} 곱하면 {cx} 점수의 합 {sx}{_wa(sx)} 같다"}
-        conc = {"diff": f"p − q = {up} − {dn} = {up - dn}이다", "pct": f"{cx} 점수와 {cy} 점수의 합이 150점 이상인 학생은 전체의 {_dc(Fraction(hi * 100, n))} %이다",
-                "meanx": f"{cx} 점수의 평균은 {_dc(Fraction(sx, n))}점이다"}
+        # [전개]·[모범답안]에 센 점(순서쌍)·더한 x좌표를 나열한다 — 결과(p = 4, 합 930)만 적지 않게 (10-01, 1차 검토 B)
+        ups = [(x, y) for x, y in pts if y > x]; dns = [(x, y) for x, y in pts if y < x]; eqs = [(x, y) for x, y in pts if y == x]
+        his = [(x, y) for x, y in pts if x + y >= 150]; los = [(x, y) for x, y in pts if x + y < 150]
+        pct = _dc(Fraction(hi * 100, n)); mean = _dc(Fraction(sx, n)); xsum = " + ".join(str(x) for x, y in pts)
+        lst = lambda ps: _ptlist(ps) if ps else "없음"      # noqa: E731
+        lines = {"diff": (f"직선 y = x 위쪽(y > x)의 점: {lst(ups)} → p = {up}", f"직선 y = x 아래쪽(y < x)의 점: {lst(dns)} → q = {dn}", f"p − q = {up} − {dn} = {up - dn}"),
+                 "pct": (f"x + y ≥ 150인 점: {lst(his)} → {hi}명", f"x + y < 150인 점: {lst(los)} → {n - hi}명", f"{hi} ÷ {n} × 100 = {pct}"),
+                 "meanx": (f"x좌표({cx} 점수)의 합: {xsum} = {sx}", f"학생 수(점의 개수): {n}명", f"평균: {sx} ÷ {n} = {mean}")}
+        up_s = f"직선 y = x 위쪽(y > x)의 점은 {_ptlist(ups)}의 {up}개," if ups else "직선 y = x 위쪽(y > x)의 점은 없고,"
+        dn_s = f"아래쪽(y < x)의 점은 {_ptlist(dns)}의 {dn}개이다." if dns else "아래쪽(y < x)의 점은 없다."
+        eq_s = f" 직선 y = x 위의 점 {_ptlist(eqs)}의 {eq}개는 두 점수가 같으므로 어느 쪽에도 세지 않는다." if eqs else ""
+        model = {"diff": f"{up_s} {dn_s}{eq_s} {cy} 점수가 {cx} 점수보다 높은 학생은 위쪽의 점, 낮은 학생은 아래쪽의 점이므로 p = {up}, q = {dn}이고, p − q = {up} − {dn} = {up - dn}이다.",
+                 "pct": f"x + y ≥ 150인 점은 {_ptlist(his)}의 {hi}개이므로 {cx} 점수와 {cy} 점수의 합이 150점 이상인 학생은 {hi}명이다. 전체 {n}명 중 {hi}명이므로 그 비율은 {hi} ÷ {n} × 100 = {pct}(%)이다.",
+                 "meanx": f"{cx} 점수는 각 점의 x좌표이므로 그 합은 {xsum} = {sx}이고, 학생은 {n}명이므로 {cx} 점수의 평균은 {sx} ÷ {n} = {mean}(점)이다."}
+        # [확인] 판서 첫 줄은 검산 식으로 (전개 줄 되풀이 대신)
+        chkf = {"diff": f"p + q + (동점) = {up} + {dn} + {eq} = {n} ✓" if eq else f"p + q = {up} + {dn} = {n} ✓",
+                "pct": f"{hi} + {n - hi} = {n} ✓", "meanx": f"{mean} × {n} = {sx} ✓"}
         # 묻는 것별 [방침]·부분점수·실수거리(pitfalls.py 의 {PIT1}~{PIT3} 자리표시자로 들어간다)
         per = {"diff": {"S1": "산점도의 각 점은 한 학생의 두 점수이다. 직선 y = x 위쪽의 점은 y가 더 큰 학생, 아래쪽의 점은 x가 더 큰 학생이고, 직선 y = x 위의 점은 두 점수가 같은 학생이므로 p와 q 어느 쪽에도 세지 않는다.",
                         "PA1": "직선 y = x의 위·아래를 바꿨으면 인정하지 않는다. 두 점수가 같은 학생을 p나 q에 넣어 셌으면 1점.", "PA2": "q − p로 계산했으면 인정하지 않는다. 뺄셈 값 계산 실수면 1점.",
@@ -515,13 +530,16 @@ def _sc3_rows():
                "meanx": {"S1": f"산점도의 각 점은 한 학생의 두 점수이고, {cx} 점수는 각 점의 x좌표이다. x좌표를 모두 더한 합을 전체 학생 수로 나누면 {cx} 점수의 평균이다.",
                          "PA1": f"{cy} 점수(y좌표)를 더했으면 인정하지 않는다. x좌표를 빠뜨리거나 두 번 더했으면 1점.", "PA2": "합을 인원으로 나누지 않았으면 인정하지 않는다. 인원 수를 잘못 세었거나 나눗셈 실수면 1점.",
                          "PIT1": "x좌표 하나를 빠뜨리거나 두 번 더함", "PIT2": "합을 인원으로 나누지 않고 합을 답함", "PIT3": "인원 수를 잘못 세어 나누거나 나눗셈 실수"}}
+        # DESC 는 채점 요소 1(자료 읽기)의 기준 문장에 들어간다 — 읽은 값만(식·단위 섞지 않게)
         asks = (("diff", f"{cy} 점수가 {cx} 점수보다 높은 학생 수를 p, 낮은 학생 수를 q라 할 때 p − q의 값", Fraction(up - dn), f"p = {up}, q = {dn}"),
-                ("pct", f"{cx} 점수와 {cy} 점수의 합이 150점 이상인 학생은 전체의 몇 %인지", Fraction(sum(1 for x, y in pts if x + y >= 150) * 100, n), f"합이 150 이상인 점 {sum(1 for x, y in pts if x + y >= 150)}개 ÷ {n}명 × 100"),
-                ("meanx", f"{cx} 점수의 평균", Fraction(sx, n), f"{cx} 점수의 합 {sx} ÷ {n}"))
+                ("pct", f"{cx} 점수와 {cy} 점수의 합이 150점 이상인 학생은 전체의 몇 %인지", Fraction(sum(1 for x, y in pts if x + y >= 150) * 100, n), f"합이 150점 이상인 학생을 {hi}명"),
+                ("meanx", f"{cx} 점수의 평균", Fraction(sx, n), f"{cx} 점수의 합을 {sx}"))
         for kk, ask, v, desc in asks:
             if v == 0 or (kk == "pct" and (v * 100).denominator != 1) or (kk == "meanx" and (v * 10).denominator != 1):
                 continue
-            r = _row(f"산점도3 {i} {kk}", v, Q=f"{base} {ask}{_eul(ask)} 구하시오.", PTS=[{"x": x, "y": y} for x, y in pts], XL=cx, YL=cy, N=n, ASK=ask, DESC=desc, KIND=kk, CHK=chk[kk], CONC=conc[kk], **per[kk])
+            l1, l2, l3 = lines[kk]
+            r = _row(f"산점도3 {i} {kk}", v, Q=f"{base} {ask}{_eul(ask)} 구하시오.", PTS=[{"x": x, "y": y} for x, y in pts], XL=cx, YL=cy, N=n, ASK=ask, DESC=desc, KIND=kk, CHK=chk[kk],
+                     L1=l1, L2=l2, L3=l3, MODEL=model[kk], CHKF=chkf[kk], **per[kk])
             if r: out[f"{i}_{kk}"] = r
     return _pick(out, 330)
 
@@ -537,9 +555,9 @@ def sc_t3():
         q="{Q}", answer="{dec(ans)}",
         figure=[{"fn": "scatter", "args": {"points": "{PTS}", "x_label": "{XL}", "y_label": "{YL}", "x_range": [45, 105], "y_range": [45, 105]}}],
         sol1="{S1}",
-        sol2=[("{DESC}", "자료 읽기"), ("계산하면 {dec(ans)}", "계산"), ("답: {dec(ans)}", None, ("{dec(ans)}", "값"))],
-        sol3=["{CHK}. 따라서 답은 {dec(ans)}이다.", "{DESC}", "답 {dec(ans)}"],
-        model="{DESC}이므로 {CONC}. 따라서 답은 {dec(ans)}이다.",
+        sol2=[("{L1}", "자료 읽기"), ("{L2}", "자료 읽기"), ("{L3}", "계산"), ("답: {dec(ans)}", None, ("{dec(ans)}", "값"))],
+        sol3=["{CHK}. 따라서 답은 {dec(ans)}이다.", "{CHKF}", "답 {dec(ans)}"],
+        model="{MODEL} 따라서 답은 {dec(ans)}이다.",
         rubric=[("자료 읽기", 2, "{DESC}으로 읽었다.", "{PA1}"), ("계산", 3, "{dec(ans)}{eul(dec(ans))} 구했다.", "{PA2}")],
         pitfalls=[("{PIT1}", "자료 읽기", "부분"), ("{PIT2}", "계산", "불인정"), ("{PIT3}", "계산", "부분")])
 

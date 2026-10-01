@@ -5,6 +5,8 @@
 //       → v1.5(cases·app·iter·xbar·hat·box·cdots·sigma·라벨 첨자/프라임·point3 렉서 수정·image/scene 도형)
 //       → v1.5 r2(op·nota·idx·tr·dig·문자 recdec·3인자 recdec·변수 프라임 a'·원문자 답·양의 부호 답·표시 수정 3건)
 //   v1.4 이하 문법은 전부 그대로 통과하며 IR(toIR)은 바뀌지 않는다. 표시(disp)만 recdec 소수점·곱 병치·op 괄호가 고쳐졌다.
+//       → 09-30 r4(문자 하나+숫자 = 아래첨자 변수 x1 → x₁, 종전 x × 1 · 거듭제곱 밑 괄호 (2/3)⁴·(√2)³·(ln x)⁶, 삼각 sin²x ·
+//                 조합·순열 문자 첨자 ₙCᵣ). mathir.py 도 같이 고침.
 
 // ---------------------------------------------------------------- 함수표 (단일 원천)
 export const FUNCS = {
@@ -44,6 +46,8 @@ export const FUNCS = {
 const CONSTS = { pi: Math.PI, e: Math.E, inf: Infinity, empty: null, i: null, cdots: null };
 const GREEK = new Set(["alpha","beta","gamma","delta","theta","lam","mu","omega","phi","sigma"]);
 export const GREEK_DISP = { alpha:"α", beta:"β", gamma:"γ", delta:"δ", theta:"θ", lam:"λ", mu:"μ", omega:"ω", phi:"φ", sigma:"σ" };
+const SUBVAR = /^([A-Za-z])(\d+)$/;                         // 09-30 아래첨자 변수 x1·S1·a10 (문자 하나 + 숫자, 붙여 씀)
+const isVarName = (v) => v.length === 1 || GREEK.has(v) || SUBVAR.test(v);
 const BOX = "가나다라마바사아자차카타파하";
 export const GRADE_ORD = { m1:1, m2:2, m3:3, h1:4, h2:5, h3:6 };
 const LABEL_FNS = new Set(["seg","line","ray","arc","angle","tri","quad","vec"]);
@@ -130,6 +134,10 @@ function lex(src) {
     else if (m[2]) {
       let v = m[2];
       if (i < s.length && /\d/.test(s[i]) && (v + s[i]) in FUNCS) { v += s[i]; i += 1; }   // v1.5⑦ point3
+      else if (v.length === 1 && i < s.length && /\d/.test(s[i])) {                        // 09-30 아래첨자 변수 x1 → x₁ (종전 x × 1)
+        const d = /^\d+/.exec(s.slice(i))[0];
+        if (!/^\.\d/.test(s.slice(i + d.length))) { v += d; i += d.length; }
+      }
       out.push(["id", v, m.index]);
     }
     else out.push(["op", OPMAP[m[3]] || m[3], m.index]);
@@ -181,7 +189,7 @@ class P {
     if (v === "(") { const inner = this.rel(); this.expect(")"); return { t: "paren", a: inner }; }
     if (k === "num") return { t: "num", v };
     if (k === "id") {
-      if (this.peek()[1] === "'" && !(v in CONSTS) && (v.length === 1 || GREEK.has(v))) {   // v1.5r2⑮ 변수 프라임 a', f'(x)
+      if (this.peek()[1] === "'" && !(v in CONSTS) && isVarName(v)) {   // v1.5r2⑮ 변수 프라임 a', f'(x)
         let np = 0;
         while (this.peek()[1] === "'") { this.take(); np++; }
         if (this.peek()[1] === "(") {                                   // f'(x) → app(prime(f[, n]), x)
@@ -194,7 +202,7 @@ class P {
       }
       if (this.peek()[1] === "(") return this.call(v, p);
       if (v in CONSTS) return { t: "const", v };
-      if (v.length === 1 || GREEK.has(v)) return { t: "var", v };
+      if (isVarName(v)) return { t: "var", v };
       throw new MathIRError("V-01", `미지의 식별자 '${v}'`, p);
     }
     throw new MathIRError("V-01", `예상치 못한 토큰 '${v}'`, p);
@@ -246,7 +254,7 @@ class P {
       this.maxGrade = Math.max(this.maxGrade, GRADE_ORD[grade]);
       return { t: "fn", f: name, args };
     }
-    if (name.length === 1 || GREEK.has(name)) { this.maxGrade = Math.max(this.maxGrade, GRADE_ORD.h1); return { t: "apply", f: name, args }; }   // v1.5④ alpha(t)
+    if (isVarName(name)) { this.maxGrade = Math.max(this.maxGrade, GRADE_ORD.h1); return { t: "apply", f: name, args }; }   // v1.5④ alpha(t) · 09-30 f1(x)
     throw new MathIRError("V-01", `미지의 함수 '${name}'`, pos);
   }
 }
@@ -270,6 +278,17 @@ const SUB = { "0":"₀","1":"₁","2":"₂","3":"₃","4":"₄","5":"₅","6":"�
 const sup = (s) => [...s].map((c) => SUP[c] || c).join("");
 const subs = (s) => [...s].map((c) => SUB[c] || c).join("");
 const over = (s, mk) => [...s].map((c) => c + mk).join("");
+const nameDisp = (v) => { const m = SUBVAR.exec(v); return m ? m[1] + subs(m[2]) : (GREEK_DISP[v] || v); };
+// 09-30 문자 아래첨자 — ₙCᵣ 처럼 조합·순열의 문자 인자. 유니코드에 없는 글자(b·c·d·f·g·q·w·y·z)가 끼면 null
+const SUBL = { a:"ₐ", e:"ₑ", h:"ₕ", i:"ᵢ", j:"ⱼ", k:"ₖ", l:"ₗ", m:"ₘ", n:"ₙ", o:"ₒ", p:"ₚ", r:"ᵣ", s:"ₛ", t:"ₜ", u:"ᵤ", v:"ᵥ", x:"ₓ",
+  "+":"₊", "−":"₋", "-":"₋", "=":"₌", "(":"₍", ")":"₎" };
+const subAll = (s) => { let o = ""; for (const c of s) { const u = SUB[c] || SUBL[c]; if (!u) return null; o += u; } return o; };
+// HTML 모드의 아래첨자 자리표(\u0018 … \u0019) → <sub class="msb">
+const SB = (s) => "\u0018" + s + "\u0019";
+// 거듭제곱의 밑: 닫힌 모양(|a|, a₁, f(x), P(A), {…} …)만 괄호 없이. 분수·근호·로그·곱셈꼴 함수 등은 (…)ⁿ — 09-30 (2/3)⁴, (√2)³, (log₂ x)²
+const POW_BARE = new Set(["abs","sub","set","setb","point","point3","vcomp","card","prob","cprob","ev","var","sd","binomd","normald",
+  "app","idx","max","min","floor","nota","box","vec","seg","line","ray","arc","conj","xbar","hat","prime","itv","mat"]);
+const TRIG = new Set(["sin","cos","tan","csc","sec","cot"]);
 const ATOM = new Set(["num","var","const","label","fn","apply","paren"]);
 const atom = (n) => !(n.t === "fn" && n.f === "op") && ATOM.has(n.t);      // v1.5r2: a ◎ b 는 원자가 아님
 const wrap = (n) => atom(n) ? disp(n) : "(" + disp(n) + ")";
@@ -304,9 +323,9 @@ export function disp(n) {
   const t = n.t;
   if (t === "num") return n.v;
   if (t === "const") return { pi:"π", e:"e", inf:"∞", i:"i", empty:"∅", cdots:"⋯" }[n.v];
-  if (t === "var") {                                                             // v1.5r2 a′ · 그리스 문자
+  if (t === "var") {                                                             // v1.5r2 a′ · 그리스 문자 · 09-30 x₁
     const base = n.v.replace(/'+$/, ""), k = n.v.length - base.length;
-    return (GREEK_DISP[base] || base) + (PRIMES[k] ?? "′".repeat(k));
+    return nameDisp(base) + (PRIMES[k] ?? "′".repeat(k));
   }
   if (t === "label") return n.v.replace(/\d+/g, (m) => subs(m)).replace(/'/g, "′");   // 라벨 숫자→아래첨자, '→′
   if (t === "neg") return "−" + wrap(n.a);
@@ -318,13 +337,18 @@ export function disp(n) {
     return disp(n.a) + ` ${op} ` + (n.b.t === "neg" ? wrap(n.b) : disp(n.b));
   }
   if (t === "rel") { let s = disp(n.args[0]); n.ops.forEach((op, k) => { s += ` ${op} ` + disp(n.args[k + 1]); }); return s; }
-  if (t === "apply") return (GREEK_DISP[n.f] || n.f) + "(" + n.args.map(disp).join(", ") + ")";
+  if (t === "apply") return nameDisp(n.f) + "(" + n.args.map(disp).join(", ") + ")";
   const f = n.f, a = n.args, D = disp;
   const lab = () => a.map(D).join("");
   switch (f) {
     case "frac": return _H ? FR(D(a[0]), D(a[1])) : wrap(a[0]) + "/" + wrap(a[1]);
     case "mixed": return _H ? D(a[0]) + FR(D(a[1]), D(a[2])) : D(a[0]) + " " + D(a[1]) + "/" + D(a[2]);
-    case "pow": { const ex = toIR(a[1]).replace(/ /g, ""); return wrap(a[0]) + (/^-?\d+$/.test(ex) ? sup(ex) : "^(" + D(a[1]) + ")"); }
+    case "pow": {
+      const ex = toIR(a[1]).replace(/ /g, ""), B = a[0];
+      if (B.t === "fn" && TRIG.has(B.f) && /^\d+$/.test(ex)) return B.f + sup(ex) + " " + wrap(B.args[0]);   // 09-30 sin²x (종전 sin x² — sin(x²) 로 읽힘)
+      const base = B.t === "fn" && !POW_BARE.has(B.f) ? "(" + D(B) + ")" : wrap(B);                     // 09-30 (2/3)⁴ · (√2)³ (종전 2/3⁴ · √2³)
+      return base + (/^-?\d+$/.test(ex) ? sup(ex) : "^(" + D(a[1]) + ")");
+    }
     case "sqrt": return "√" + wrap(a[0]);
     case "root": return sup(toIR(a[0])) + "√" + wrap(a[1]);
     case "abs": return "|" + D(a[0]) + "|";
@@ -399,7 +423,11 @@ export function disp(n) {
     case "perm": case "comb": case "pperm": case "hcomb": {
       const L = { perm:"P", comb:"C", pperm:"Π", hcomb:"H" }[f];
       const x = toIR(a[0]), y = toIR(a[1]);
-      return /^\d+$/.test(x) && /^\d+$/.test(y) ? subs(x) + L + subs(y) : x + L + y;
+      if (/^\d+$/.test(x) && /^\d+$/.test(y)) return subs(x) + L + subs(y);
+      const dx = D(a[0]).replace(/ /g, ""), dy = D(a[1]).replace(/ /g, "");   // 09-30 ₙCᵣ · ₙ₊ᵣ₋₁Cᵣ (종전 nCr 평문)
+      if (_H) return SB(dx) + L + SB(dy);
+      const ux = subAll(dx), uy = subAll(dy);
+      return ux != null && uy != null ? ux + L + uy : x + L + y;
     }
     case "prob": return "P(" + D(a[0]) + ")";
     case "cprob": return "P(" + D(a[0]) + " | " + D(a[1]) + ")";
@@ -590,6 +618,7 @@ export const MATH_CSS = `
 .mcr>.mcc{font-size:.92em}
 .mm{display:inline-grid;vertical-align:middle;border-left:1.5px solid currentColor;border-right:1.5px solid currentColor;border-radius:.6em;padding:.12em .4em;column-gap:.75em;row-gap:.12em;margin:0 .12em}
 .mm>span{text-align:center;white-space:nowrap}
+.msb{font-size:.68em;line-height:0;vertical-align:-.3em;letter-spacing:.01em}
 `;
 const _escH = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const FRAC_HTML = (nu, de) => `<span class="mf"><span class="mn">${nu}</span><span class="md">${de}</span></span>`;
@@ -612,6 +641,7 @@ function _blockPlaceholders(s) {
     const [r, c, cells] = body.split("\u0015"); const cs = (cells ?? "").split("\u0016");
     return `<span class="mm" style="grid-template-columns:repeat(${Number(c) || 1},auto)">${cs.map((x) => `<span>${x}</span>`).join("")}</span>`;
   });
+  s = s.replace(/\u0018([^\u0018\u0019]*)\u0019/g, (_, x) => `<sub class="msb">${x}</sub>`);   // 09-30 ₙCᵣ 문자 아래첨자
   return s;
 }
 // 평문 분수: 분자·분모 = (괄호묶음) | 숫자[소수][변수|π] | 변수 1글자 | [숫자]π

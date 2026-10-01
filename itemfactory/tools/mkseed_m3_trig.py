@@ -164,7 +164,7 @@ def tb_t1():
         ],
         sol2_fig=steps([
             {"text": "{MISS}", "hint": "피타고라스 정리"},
-            {"text": "{F} = [[frac({NS}, {DS})]]", "hint": "{EXPL}", "marks": [{"on": "[[frac({NS}, {DS})]]", "note": "기준각 확인"}]},
+            {"text": "{F} = [[frac(seg({NS}), seg({DS}))]]", "hint": "{EXPL}", "marks": [{"on": "[[frac(seg({NS}), seg({DS}))]]", "note": "기준각 확인"}]},
             {"text": "= [[{RAW}]] = {ans}"},
         ]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2)]],

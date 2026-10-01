@@ -7332,11 +7332,11 @@
                 "hint": "피타고라스 정리"
               },
               {
-                "text": "{F} = [[frac({NS}, {DS})]]",
+                "text": "{F} = [[frac(seg({NS}), seg({DS}))]]",
                 "hint": "{EXPL}",
                 "marks": [
                   {
-                    "on": "[[frac({NS}, {DS})]]",
+                    "on": "[[frac(seg({NS}), seg({DS}))]]",
                     "note": "기준각 확인"
                   }
                 ]

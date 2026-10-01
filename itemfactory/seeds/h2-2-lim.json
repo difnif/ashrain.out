@@ -3510,14 +3510,24 @@
       ],
       "id": "h2-2-lim-t6",
       "title": "좌극한과 우극한 — 조각 정의 함수",
-      "skill": "x = p의 양쪽에서 각각 해당 조각의 식으로 극한을 구해 더하기",
+      "skill": "x = p의 양쪽에서 각각 해당 조각의 식으로 극한을 구해 우극한에서 좌극한 빼기",
       "variant_axis": {
         "p": "−3~4",
-        "조각": "x² + a / bx + c"
+        "조각": "x² + a / bx + c",
+        "이차식 조각의 자리": "x ≥ p / x < p"
       },
       "discriminates": "x → p+와 x → p−에서 어느 식을 써야 하는지 구별하는가",
       "difficulty": 2,
       "params": [
+        {
+          "name": "side",
+          "values": {
+            "in": [
+              "ge",
+              "lt"
+            ]
+          }
+        },
         {
           "name": "p",
           "values": {
@@ -3579,18 +3589,60 @@
           }
         }
       ],
-      "question": "함수 f(x) = [[cases(pow(x,2) {sgn(a)}, x ≥ {p}, {co(b)}x {sgn(c)}, x < {p})]]에 대하여 [[lim(x, {p}, f(x), +)]] + [[lim(x, {p}, f(x), -)]]의 값을 구하시오.",
+      "question": "함수 f(x) = [[cases(pow(x,2) {sgn(a)}, x {C1} {p}, {co(b)}x {sgn(c)}, x {C2} {p})]]에 대하여 [[lim(x, {p}, f(x), +)]] − [[lim(x, {p}, f(x), -)]]의 값을 구하시오.",
       "answer": "{ans}",
       "answer_alt": [],
+      "table": {
+        "key": "side",
+        "rows": {
+          "ge": {
+            "C1": "≥",
+            "C2": "<",
+            "w": 1,
+            "X2": "x² ",
+            "M2": "pow(x,2) ",
+            "XX": "x ",
+            "SQ": "² ",
+            "SP": " "
+          },
+          "lt": {
+            "C1": "<",
+            "C2": "≥",
+            "w": 0,
+            "X2": "x² ",
+            "M2": "pow(x,2) ",
+            "XX": "x ",
+            "SQ": "² ",
+            "SP": " "
+          }
+        }
+      },
       "derive": {
-        "R": "p*p + a",
+        "Q": "p*p + a",
         "Lf": "b*p + c",
-        "ans": "p*p + a + b*p + c"
+        "R": "w*(p*p + a) + (1 - w)*(b*p + c)",
+        "L": "w*(b*p + c) + (1 - w)*(p*p + a)",
+        "ans": "(2*w - 1)*(p*p + a - b*p - c)",
+        "QT": "X2 + sgn(a)",
+        "QM": "M2 + sgn(a)",
+        "LN": "co(b) + XX + sgn(c)",
+        "QC": "pn(p) + SQ + sgn(a)",
+        "LNC": "dec(b*p) + SP + sgn(c)",
+        "RTX": "QT if w == 1 else LN",
+        "LTX": "LN if w == 1 else QT",
+        "RMK": "QM if w == 1 else LN",
+        "LMK": "LN if w == 1 else QM",
+        "RCL": "QC if w == 1 else LNC",
+        "LCL": "LNC if w == 1 else QC",
+        "PR": "dec((100*p + 1)/100)",
+        "PL": "dec((100*p - 1)/100)",
+        "RV": "dec(w*(((100*p + 1)/100)**2 + a) + (1 - w)*(b*(100*p + 1)/100 + c))",
+        "LV": "dec(w*(b*(100*p - 1)/100 + c) + (1 - w)*(((100*p - 1)/100)**2 + a))"
       },
       "constraints": [
-        "R != Lf",
+        "Q != Lf",
         "ans != 0",
-        "ans not in (p, a, b, c, R, Lf)"
+        "ans not in (p, a, b, c, R, L)"
       ],
       "cost_values": [
         "p",
@@ -3598,18 +3650,19 @@
         "b",
         "c",
         "R",
-        "Lf",
+        "L",
         "ans"
       ],
       "answer_var": "ans",
       "verify": [
-        "ans == R + Lf"
+        "ans == R - L",
+        "R - L != L - R"
       ],
-      "sol1": "우극한 x → {p}+는 x ≥ {p}인 쪽의 식 x² {sgn(a)}에, 좌극한 x → {p}−는 x < {p}인 쪽의 식 {co(b)}x {sgn(c)}에 x = {p}{eul(p)} 대입해 구한다(다항식은 연속이므로 대입으로 극한을 얻는다).",
+      "sol1": "우극한 x → {p}+는 x ≥ {p}인 쪽의 식 {RTX}에, 좌극한 x → {p}−는 x < {p}인 쪽의 식 {LTX}에 x = {p}{eul(p)} 대입해 구한다(다항식은 연속이므로 대입으로 극한을 얻는다). x = {p}에서의 극한값이 존재하지 않더라도 좌극한과 우극한은 각각 구할 수 있으므로, 두 값을 구해 우극한에서 좌극한을 뺀다.",
       "sol2": [
-        "우극한: [[lim(x, {p}, pow(x,2) {sgn(a)}, +)]] = {pn(p)}² {sgn(a)} = {R}",
-        "좌극한: [[lim(x, {p}, {co(b)}x {sgn(c)}, -)]] = {b*p} {sgn(c)} = {Lf}",
-        "합: {R} + {pn(Lf)} = {ans}"
+        "우극한: [[lim(x, {p}, {RMK}, +)]] = {RCL} = {R}",
+        "좌극한: [[lim(x, {p}, {LMK}, -)]] = {LCL} = {L}",
+        "우극한 − 좌극한: {R} − {pn(L)} = {ans}"
       ],
       "sol2_fig": [
         {
@@ -3617,19 +3670,19 @@
           "args": {
             "lines": [
               {
-                "text": "우극한: [[lim(x, {p}, pow(x,2) {sgn(a)}, +)]] = {pn(p)}² {sgn(a)} = {R}",
+                "text": "우극한: [[lim(x, {p}, {RMK}, +)]] = {RCL} = {R}",
                 "hint": "x ≥ {p} 쪽"
               },
               {
-                "text": "좌극한: [[lim(x, {p}, {co(b)}x {sgn(c)}, -)]] = {b*p} {sgn(c)} = {Lf}",
+                "text": "좌극한: [[lim(x, {p}, {LMK}, -)]] = {LCL} = {L}",
                 "hint": "x < {p} 쪽"
               },
               {
-                "text": "합: {R} + {pn(Lf)} = {ans}",
+                "text": "우극한 − 좌극한: {R} − {pn(L)} = {ans}",
                 "marks": [
                   {
                     "on": "{ans}",
-                    "note": "합"
+                    "note": "우극한 − 좌극한"
                   }
                 ]
               }
@@ -3669,14 +3722,14 @@
           }
         ]
       ],
-      "sol3": "좌극한과 우극한이 다르므로({R} ≠ {Lf}) x = {p}에서 극한값은 존재하지 않지만, 각각의 값은 정해진다. 따라서 합은 {ans}이다.",
+      "sol3": "{p}보다 조금 큰 x = {PR}에서 f({PR}) = {RV}, 조금 작은 x = {PL}에서 f({PL}) = {LV}{ro(LV)}, x가 오른쪽에서 {p}에 다가가면 f(x)는 {R}에, 왼쪽에서 다가가면 {L}에 가까워진다. 따라서 우극한 − 좌극한 = {R} − {pn(L)} = {ans}이다.",
       "sol3_fig": [
         {
           "fn": "steps",
           "args": {
             "lines": [
-              "우극한 {R}, 좌극한 {Lf}",
-              "합 {ans}"
+              "f({PR}) = {RV}, f({PL}) = {LV}",
+              "{R} − {pn(L)} = {ans}"
             ]
           }
         }
@@ -3696,37 +3749,42 @@
         ]
       ],
       "geometry": false,
-      "model_answer": "우극한은 x² {sgn(a)}에 대입한 {R}, 좌극한은 {co(b)}x {sgn(c)}에 대입한 {Lf}이므로 합은 {ans}이다.",
+      "model_answer": "x ≥ {p}에서 f(x) = {RTX}, x < {p}에서 f(x) = {LTX}이므로 [[lim(x, {p}, f(x), +)]] = {RCL} = {R}, [[lim(x, {p}, f(x), -)]] = {LCL} = {L}이다. 따라서 [[lim(x, {p}, f(x), +)]] − [[lim(x, {p}, f(x), -)]] = {R} − {pn(L)} = {ans}이다.",
       "rubric": [
         {
           "element": "좌·우극한",
           "points": 3,
-          "criterion": "우극한 {R}, 좌극한 {Lf}{eul(Lf)} 구했다.",
-          "partial": "식을 바꿔 대입했으면 인정하지 않는다."
+          "criterion": "우극한 {R}, 좌극한 {L}{eul(L)} 구했다.",
+          "partial": "대입 계산 실수면 1점. (좌·우의 식을 바꿔 대입했으면 인정하지 않는다.)"
         },
         {
-          "element": "합",
+          "element": "우극한 − 좌극한",
           "points": 2,
-          "criterion": "{ans}{eul(ans)} 구했다.",
-          "partial": "계산 실수면 1점."
+          "criterion": "{R} − {pn(L)} = {ans}{eul(ans)} 구했다.",
+          "partial": "빼는 순서를 바꿨거나 계산 실수가 있으면 1점."
         }
       ],
       "rubric_total": 5,
       "pitfalls": [
         {
-          "text": "x ≥ {p} 쪽 식으로 좌극한을 구함",
+          "text": "x ≥ {p} 쪽 식과 x < {p} 쪽 식을 바꿔 좌·우극한을 구함",
           "on": "좌·우극한",
           "effect": "불인정"
         },
         {
-          "text": "극한값이 없다고 답함",
-          "on": "합",
-          "effect": "불인정"
+          "text": "대입 계산 실수",
+          "on": "좌·우극한",
+          "effect": "부분"
         },
         {
-          "text": "대입 계산 실수",
-          "on": "합",
+          "text": "좌극한에서 우극한을 빼 부호가 반대인 값을 답함",
+          "on": "우극한 − 좌극한",
           "effect": "부분"
+        },
+        {
+          "text": "x = {p}에서 극한값이 존재하지 않으므로 값을 구할 수 없다고 답함",
+          "on": "우극한 − 좌극한",
+          "effect": "불인정"
         }
       ]
     },

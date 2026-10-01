@@ -1,5 +1,7 @@
 // ashrain.out — 문항 도형 렌더러 (figsvg.js, v1.0 / SPEC-도형렌더러 §2 구현)
 // 위치: src/lib/figsvg.js
+// 09-30: 히스토그램을 계급 경계 눈금·빈틈없는 직사각형·정수 세로 눈금으로(R1) · 축의 'O'·'y' 위치, 원점 생략 표시, 세 자리 이상
+//        세로 눈금값 잘림 방지(R2) · 원기둥·원뿔을 반지름:높이 비율로, 반구 반지름 선 위치(R3)
 //
 // 원칙
 //   · 순수 함수 — React·DOM 의존 없음. Node에서 그대로 시험 가능(tools/figcheck.mjs).
@@ -56,6 +58,14 @@ export function num(v, env = {}) {
     const x = (r && typeof r.toNumber === "function") ? r.toNumber() : r;
     return (typeof x === "number" && Number.isFinite(x)) ? x : null;
   } catch { return null; }
+}
+
+/** 치수 수: num 이 안 되면 'r = 3'·'2r = 6 cm' 처럼 '= 수' 로 끝나는 라벨의 그 수 (09-30, 입체 비율용) */
+function dimNum(v) {
+  const n = num(v, {});
+  if (n != null) return n;
+  const m = /=\s*(-?\d+(?:\.\d+)?)\s*(?:cm|mm|m)?\s*$/.exec(String(v ?? ""));
+  return m ? Number(m[1]) : null;
 }
 
 /** 범위: "[-3, 3]" | [-3,3] | "0, 35" | {min,max} | "-3~3" → [lo, hi] */
@@ -179,6 +189,10 @@ function frame(xr, yr, o, opts = {}) {
   return { W, H, X, Y, xlo, xhi, ylo, yhi, pad };
 }
 
+// 09-30 축 표시 수정(R2): 'O' 는 원점이 그림 안에 있을 때만(종전: 축이 0에서 시작하지 않아도 모서리에 'O'),
+//   축이 0에서 시작하지 않으면 그 끝에 생략 표시(//), 'y' 는 축 위 끝 위로(종전: 맨 위 눈금값과 겹침),
+//   세로 눈금값이 왼쪽 여백보다 길면(세 자리 이상) 그만큼 그림을 왼쪽으로 넓힌다. 아래 끝 가로 눈금값·위 끝 'y' 도 그림 안으로
+//   (<!--fig-pad:왼,위,아래--> → figureToHtml1 의 widenPad 가 viewBox 를 넓힌다).
 function axes(f, o, { grid = true, ticks = true } = {}) {
   let s = "";
   const step = (lo, hi) => {
@@ -194,24 +208,56 @@ function axes(f, o, { grid = true, ticks = true } = {}) {
       s += L(f.X(f.xlo), f.Y(y), f.X(f.xhi), f.Y(y), { w: 0.6, op: o.grid });
   }
   const y0 = Math.min(Math.max(0, f.ylo), f.yhi), x0 = Math.min(Math.max(0, f.xlo), f.xhi);
+  const xCut = f.xlo > 1e-9, yCut = f.ylo > 1e-9;                 // 축이 0에서 시작하지 않음(원점 생략)
   s += L(f.X(f.xlo), f.Y(y0), f.X(f.xhi), f.Y(y0), { w: 1.1 });
   s += L(f.X(x0), f.Y(f.ylo), f.X(x0), f.Y(f.yhi), { w: 1.1 });
+  const brk = (px, py, vertical) => {                                  // 생략 표시 — 축을 가로지르는 짧은 빗금 둘
+    let b = "";
+    for (const d of [-2.5, 2.5]) {
+      b += vertical ? L(px - 4, py + d + 2, px + 4, py + d - 2, { w: 1, k: "axis-break" })
+                    : L(px + d - 2, py + 4, px + d + 2, py - 4, { w: 1, k: "axis-break" });
+    }
+    return b;
+  };
+  if (xCut) s += brk(f.X(f.xlo) + 9, f.Y(y0), false);
+  if (yCut) s += brk(f.X(x0), f.Y(f.ylo) - 9, true);
   s += T(f.X(f.xhi) + 6, f.Y(y0) + 4, "x", { anchor: "start", op: 0.7 });
-  s += T(f.X(x0) - 4, f.Y(f.yhi) - 4, "y", { anchor: "end", op: 0.7 });
+  s += T(f.X(x0), f.Y(f.yhi) - 6, "y", { anchor: "middle", op: 0.7 });
+  let wL = 0;
   if (ticks) {
+    const showO = !xCut && !yCut;
+    // 'O' 글자 상자 — 원점 바로 옆 음수 눈금값(-1 등)이 여기에 닿으면 그 눈금값만 뺀다(종전: 'O' 와 겹쳐 그림)
+    const oB = { x0: f.X(x0) - 6 - 7, x1: f.X(x0) - 6 + 1, y0: f.Y(y0) + 14 - 9, y1: f.Y(y0) + 14 + 2 };
+    const hitO = (x0_, x1_, y0_, y1_) => showO && x0_ < oB.x1 && x1_ > oB.x0 && y0_ < oB.y1 && y1_ > oB.y0;
     for (let x = Math.ceil(f.xlo / sx) * sx; x <= f.xhi + 1e-9; x += sx) {
       if (Math.abs(x) < 1e-9) continue;
       s += L(f.X(x), f.Y(y0) - 3, f.X(x), f.Y(y0) + 3, { w: 1 });
-      s += T(f.X(x), f.Y(y0) + 14, R2(x), { op: 0.65, size: 10 });
+      const w = textW(String(R2(x)), 10);
+      if (!hitO(f.X(x) - w / 2, f.X(x) + w / 2, f.Y(y0) + 5, f.Y(y0) + 14)) s += T(f.X(x), f.Y(y0) + 14, R2(x), { op: 0.65, size: 10 });
     }
     for (let y = Math.ceil(f.ylo / sy) * sy; y <= f.yhi + 1e-9; y += sy) {
       if (Math.abs(y) < 1e-9) continue;
       s += L(f.X(x0) - 3, f.Y(y), f.X(x0) + 3, f.Y(y), { w: 1 });
-      s += T(f.X(x0) - 6, f.Y(y) + 3.5, R2(y), { anchor: "end", op: 0.65, size: 10 });
+      const w = textW(String(R2(y)), 10);
+      if (!hitO(f.X(x0) - 6 - w, f.X(x0) - 6, f.Y(y) - 5, f.Y(y) + 3.5)) s += T(f.X(x0) - 6, f.Y(y) + 3.5, R2(y), { anchor: "end", op: 0.65, size: 10 });
+      wL = Math.max(wL, w);
     }
-    s += T(f.X(x0) - 6, f.Y(y0) + 14, "O", { anchor: "end", op: 0.65, size: 10 });
+    if (showO) s += T(f.X(x0) - 6, f.Y(y0) + 14, "O", { anchor: "end", op: 0.65, size: 10 });
   }
+  const eL = Math.max(0, Math.ceil(wL + 6 + 2 - f.X(x0)));             // 세로 눈금값 왼쪽 끝이 0 밖으로 나가는 만큼
+  const eT = Math.max(0, Math.ceil(12 - (f.Y(f.yhi) - 6)));             // 'y' 글자 윗부분
+  const eB = ticks ? Math.max(0, Math.ceil(f.Y(y0) + 14 + 4 - f.H)) : 0;  // 아래 끝 가로 눈금값
+  if (eL || eT || eB) s += `<!--fig-pad:${eL},${eT},${eB}-->`;
   return s;
+}
+
+/** 09-30: 눈금값·축 글자가 잘리지 않게 그림을 넓힌다 — axes 가 남긴 <!--fig-pad:왼,위,아래--> 를 보고 첫 <svg> 의 viewBox·크기를 고친다 */
+function widenPad(html) {
+  const m = /<!--fig-pad:(\d+),(\d+),(\d+)-->/.exec(html || "");
+  if (!m) return html;
+  const [l, t, b] = m.slice(1).map(Number);
+  return html.replace(/<!--fig-pad:\d+,\d+,\d+-->/g, "").replace(/<svg ([^>]*?)viewBox="0 0 ([\d.]+) ([\d.]+)" width="([\d.]+)" height="([\d.]+)"/,
+    (_, pre, w, h) => `<svg ${pre}viewBox="${R2(-l)} ${R2(-t)} ${R2(Number(w) + l)} ${R2(Number(h) + t + b)}" width="${R2(Number(w) + l)}" height="${R2(Number(h) + t + b)}"`);
 }
 
 /** 관계식/함수식을 표본 평가해 폴리라인으로 — y=f(x), f(x), 음함수 x는 격자 스캔 */
@@ -788,14 +834,26 @@ function fnTable(a) {
   return h.replace(/background:currentColor;color:transparent"><span style="color:initial;mix-blend-mode:difference">/g, 'font-weight:600">');
 }
 
+/** 세로축 눈금 — 0 부터 1·2·5·10… 간격, 맨 위 막대 위에 값 글자가 들어갈 여유를 둔다. 정수 자료면 눈금도 정수 */
+function niceTicks(mx) {
+  const top = Math.max(mx, 1e-9);
+  const p = Math.pow(10, Math.floor(Math.log10(top / 5)));
+  const st = [1, 2, 2.5, 5, 10].map((k) => k * p).find((k) => top / k <= 6) || p * 10;
+  const stp = Number.isInteger(mx) && st < 1 ? 1 : (Number.isInteger(mx) && !Number.isInteger(st) ? Math.ceil(st) : st);
+  const ymax = Math.ceil((top + stp * 0.3) / stp) * stp;
+  return { stp, ymax };
+}
+
 function barChart(labels, values, o, { ylab } = {}) {
   const vs = values.map((v) => num(v, {}));
   if (!vs.some(isNum)) return null;
-  const mx = Math.max(...vs.filter(isNum), 0) * 1.15 || 1;
-  const W = o.width, H = 175, padL = 34, padB = 34, padT = 12, padR = 10;
+  const { stp, ymax: mx } = niceTicks(Math.max(...vs.filter(isNum), 0));   // 09-30: 정수 눈금(종전 최댓값×1.15÷4 — 소수 눈금)
+  const yl = ylab ? lab(ylab) : "";
+  const W = o.width, H = 180, padL = 34, padB = 34, padT = yl ? 24 : 12, padR = 10;
   const n = labels.length || vs.length;
   const bw = (W - padL - padR) / Math.max(1, n);
   let s = svgOpen(W, H, o);
+  for (let y = stp; y <= mx + 1e-9; y += stp) s += L(padL, H - padB - (H - padB - padT) * y / mx, W - padR, H - padB - (H - padB - padT) * y / mx, { w: 0.6, op: o.grid });
   s += L(padL, H - padB, W - padR, H - padB, { w: 1.1 }) + L(padL, padT, padL, H - padB, { w: 1.1 });
   vs.forEach((v, i) => {
     if (!isNum(v)) return;
@@ -805,18 +863,64 @@ function barChart(labels, values, o, { ylab } = {}) {
     s += T(padL + i * bw + bw / 2, H - padB - hgt - 4, R2(v), { size: 9.5, op: .8 });
   });
   labels.forEach((t, i) => { s += T(padL + i * bw + bw / 2, H - padB + 13, lab(t), { size: 9, op: .75 }); });
-  const step = mx / 4;
-  for (let k = 0; k <= 4; k++) {
-    const y = H - padB - (H - padB - padT) * k / 4;
-    s += L(padL - 3, y, padL, y, { w: 1, op: .7 });
-    s += T(padL - 6, y + 3.5, R2(step * k), { anchor: "end", size: 9, op: .65 });
+  for (let y = 0; y <= mx + 1e-9; y += stp) {
+    const py = H - padB - (H - padB - padT) * y / mx;
+    s += L(padL - 3, py, padL, py, { w: 1, op: .7 });
+    s += T(padL - 6, py + 3.5, R2(y), { anchor: "end", size: 9, op: .65 });
   }
-  if (ylab) s += T(padL - 4, padT - 2, lab(ylab), { anchor: "end", size: 9.5, op: .7 });
+  if (yl) s += T(Math.max(4, padL - textW(yl, 9.5) / 2), padT - 10, yl, { anchor: "start", size: 9.5, op: .7, k: "ylab" });
   return s + "</svg>";
 }
 
+// 09-30 히스토그램(R1) — 계급 경계를 가로축 눈금으로, 직사각형을 빈틈없이 붙여 그린다(종전 막대그래프: 간격 72 %·경계 눈금 없음).
+//   계급 "a~b" 가 이어지지 않거나 읽을 수 없으면 막대그래프로 떨어진다.
 function fnHist(a, o) {
-  return barChart(arr(a.bins).map(lab), arr(a.counts), o, { ylab: a.labels ?? a.y_label ?? a.y_axis });
+  const labels = arr(a.bins).map(lab), counts = arr(a.counts).map((v) => num(v, {}));
+  const ylab = a.labels ?? a.y_label ?? a.y_axis;
+  const edges = [];
+  let ok = labels.length >= 2 && labels.length === counts.length && counts.every(isNum);
+  if (ok) {
+    labels.forEach((t, i) => {
+      const m = /^\s*(-?\d+(?:\.\d+)?)\s*(?:~|∼|-|–|이상)\s*(-?\d+(?:\.\d+)?)\s*(?:미만)?\s*$/.exec(String(t));
+      if (!m) { ok = false; return; }
+      const lo = Number(m[1]), hi = Number(m[2]);
+      if (!(hi > lo)) ok = false;
+      if (i === 0) edges.push(lo);
+      else if (Math.abs(edges[edges.length - 1] - lo) > 1e-9) ok = false;
+      edges.push(hi);
+    });
+  }
+  if (!ok) return barChart(labels, arr(a.counts), o, { ylab });
+  const { stp, ymax } = niceTicks(Math.max(...counts, 0));
+  const yl = ylab ? lab(ylab) : "", xl = lab(a.x_label ?? a.xlab ?? "");
+  const W = o.width, H = 196, padL = 30, padR = xl ? 12 + textW(xl, 9.5) : 14, padT = 26, padB = 30;
+  const n = counts.length, gap = 0.5;                                   // 원점과 첫 계급 사이는 반 계급 너비 (생략 표시)
+  const bw = (W - padL - padR) / (n + gap);
+  const X = (k) => padL + (gap + k) * bw;                               // k = 경계 번호 0..n
+  const Y = (v) => H - padB - (H - padB - padT) * v / ymax;
+  let s = svgOpen(W, H, o);
+  for (let v = stp; v <= ymax + 1e-9; v += stp) s += L(padL, Y(v), W - padR, Y(v), { w: 0.6, op: o.grid, k: `grid:${v}` });
+  counts.forEach((v, i) => {
+    s += `<rect data-k="bin:${i}" x="${R2(X(i))}" y="${R2(Y(v))}" width="${R2(bw)}" height="${R2(Y(0) - Y(v))}" `
+       + `fill="${o.accent}" fill-opacity="0.42" stroke="${o.accent}" stroke-width="1.1"/>`;
+    s += T(X(i) + bw / 2, Y(v) - 4, R2(v), { size: 9.5, op: .8, k: `val:${i}` });
+  });
+  s += L(padL, Y(0), W - padR + 4, Y(0), { w: 1.1 }) + L(padL, padT - 4, padL, Y(0), { w: 1.1 });
+  if (edges[0] !== 0) {                                                // 가로축 0~첫 경계 생략 표시
+    const bx = padL + gap * bw / 2;
+    for (const d of [-2.5, 2.5]) s += L(bx + d - 2, Y(0) + 4, bx + d + 2, Y(0) - 4, { w: 1, k: "axis-break" });
+  }
+  edges.forEach((e, k) => {
+    s += L(X(k), Y(0), X(k), Y(0) + 3, { w: 1, op: .8 });
+    s += T(X(k), Y(0) + 14, R2(e), { size: 9.5, op: .75, k: `edge:${k}` });
+  });
+  for (let v = 0; v <= ymax + 1e-9; v += stp) {
+    s += L(padL - 3, Y(v), padL, Y(v), { w: 1, op: .7 });
+    s += T(padL - 6, Y(v) + 3.5, R2(v), { anchor: "end", size: 9.5, op: .65 });
+  }
+  if (yl) s += T(Math.max(2, padL - 10), padT - 12, yl, { anchor: "start", size: 9.5, op: .75, k: "ylab" });
+  if (xl) s += T(W - padR + 8, Y(0) + 14, xl, { anchor: "start", size: 9.5, op: .75, k: "xlab" });
+  return s + "</svg>";
 }
 
 function fnScatter(a, o) {
@@ -950,6 +1054,17 @@ function solidKind(k) {
   const s = String(k || "").trim().toLowerCase().replace(/\s+/g, "_");
   return SOLID_ALIAS[s] || SOLID_ALIAS[String(k || "").trim()] || null;
 }
+/** 09-30: 밑면(타원) 반지름 글자 자리 — 반지름 선 바로 위, 타원 뒤쪽 호에 닿지 않게 가운데 쪽으로 당기고, 안 되면 타원 아래 */
+function radiusLabelAt(cx, by, rx, ry, txt) {
+  const w = textW(txt, 11), cap = 8.5;
+  for (let c = cx + rx / 2; c >= cx + w / 2 + 4; c -= 1.5) {
+    const x2 = c + w / 2 - cx;
+    const yb = by - ry * Math.sqrt(Math.max(0, 1 - (x2 / rx) ** 2));   // 글자 오른쪽 끝에서 뒤쪽 호의 높이
+    if (by - 3 - cap >= yb + 2.5) return [c, by - 3];
+  }
+  return [cx + rx / 2, by + ry + 12];
+}
+
 function fnSolid(a, o) {
   const kind = solidKind(a.kind);
   if (!kind) return null;
@@ -971,7 +1086,15 @@ function fnSolid(a, o) {
     s += L(...off(Dd), ...off(A), { w: 1, dash: "3 3", op: .6 });
     s += L(...off(Dd), ...off(Cc), { w: 1, dash: "3 3", op: .6 });
   } else if (kind === "cylinder" || kind === "cone" || kind === "hemisphere") {
-    const rx = 46, ry = 15, h = 86;
+    // 09-30(R3): 반지름·높이가 둘 다 수이면 그 비율대로(종전 늘 rx 46 · 높이 86 고정 — 높이 17 인 원기둥과 3 인 원기둥이 같은 모양)
+    let rx = 46, ry = kind === "hemisphere" ? 17 : 15, h = 86;
+    if (kind !== "hemisphere") {
+      const rv = dimNum(a.radius ?? a.r), hv = dimNum(a.height ?? a.h);
+      if (isNum(rv) && isNum(hv) && rv > 0 && hv > 0) {
+        const sc = Math.min(72 / rv, 112 / hv);
+        rx = Math.max(16, rv * sc); h = Math.max(28, hv * sc); ry = Math.max(6, Math.min(20, rx * 0.3));
+      }
+    }
     const top = cy - h / 2, bot = cy + h / 2;
     if (kind === "cylinder") {
       s += `<ellipse data-k="top" cx="${cx}" cy="${top}" rx="${rx}" ry="${ry}" fill="none" stroke="currentColor" stroke-width="1.4"/>`;
@@ -987,16 +1110,28 @@ function fnSolid(a, o) {
       s += PATH(`M${cx - rx} ${cy} A${rx} ${rx} 0 0 1 ${cx + rx} ${cy}`, { w: 1.4 });
       s += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="currentColor" stroke-width="1.4"/>`;
     }
+    // 높이 글자: 안쪽에 들어가면 가운데 점선 옆, 아니면 옆면 바깥(원뿔은 폭이 넓은 아래쪽 62 % 높이에서 잰다)
     const ht = lab(a.height ?? a.h);
-    if (ht && kind !== "hemisphere") { s += L(cx, top, cx, bot, { w: 1, dash: "3 3", op: .6, k: "height" }); s += T(cx + 8, cy, ht, { anchor: "start", size: 11, k: "h-lbl" }); }
+    if (ht && kind !== "hemisphere") {
+      s += L(cx, top, cx, bot, { w: 1, dash: "3 3", op: .6, k: "height" });
+      const fy = kind === "cone" ? 0.62 : 0.5, yH = top + h * fy, room = kind === "cone" ? rx * fy : rx;
+      const inside = textW(ht, 11) + 5 + 4 <= room;
+      s += T(inside ? cx + 5 : cx + room + 6, yH + 4, ht, { anchor: "start", size: 11, k: "h-lbl" });
+    }
+    // 반지름 글자: 밑면 타원 뒤쪽 반에 들어가면 반지름 선 바로 위, 아니면 밑면 타원 아래 (종전 bot+14 — 앞쪽 호와 겹침)
     const rt = lab(a.radius ?? a.r);
-    if (rt) { s += L(cx, bot, cx + rx, bot, { w: 1, dash: "3 3", op: .6, k: "radius" }); s += T(cx + rx / 2, bot + 14, rt, { size: 11, k: "r-lbl" }); }
+    if (rt) {
+      const by = kind === "hemisphere" ? cy : bot;                     // 반구는 밑면(가운데 타원)이 cy (종전 bot — 그림 아래에 떠 있던 반지름 선)
+      s += L(cx, by, cx + rx, by, { w: 1, dash: "3 3", op: .6, k: "radius" });
+      const [lx, ly] = radiusLabelAt(cx, by, rx, ry, rt);
+      s += T(lx, ly, rt, { size: 11, k: "r-lbl" });
+    }
   } else if (kind === "sphere") {
     const r = 52;
     s += C(cx, cy, r, { w: 1.4 });
     s += `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="16" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>`;
     const rt = lab(a.radius ?? a.r);
-    if (rt) { s += L(cx, cy, cx + r, cy, { w: 1, dash: "3 3", op: .7 }); s += T(cx + r / 2, cy - 6, rt, { size: 11 }); }
+    if (rt) { s += L(cx, cy, cx + r, cy, { w: 1, dash: "3 3", op: .7 }); const [lx, ly] = radiusLabelAt(cx, cy, r, 16, rt); s += T(lx, ly, rt, { size: 11 }); }
   } else if (kind === "triprism" || kind === "pyramid") {
     const w = 88, h = 66;
     const b = [[cx - w / 2, cy + h / 2], [cx + w / 2, cy + h / 2]];
@@ -1489,7 +1624,7 @@ export function figureToHtml1(fig, opts = {}) {
     return { kind: "note", html: note(a.raw ?? a.description ?? "", `미지원 도형 ${fn}`), warnings };
   }
   let out = null;
-  try { out = r(a, o); }
+  try { out = widenPad(r(a, o)); }
   catch (e) { warnings.push(`${fn} 렌더 예외: ${e && e.message}`); out = null; }
   if (!out) {
     warnings.push(`${fn} 인자로는 그릴 수 없음`);

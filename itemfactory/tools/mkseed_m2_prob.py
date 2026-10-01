@@ -395,14 +395,14 @@ def prb_t1():
         question="1부터 {N}까지의 자연수가 각각 하나씩 적힌 {N}{OBJ} {ONE}{eul(ONE)} 임의로 {V} 때, {k}의 배수가 적힌 것이 나올 확률을 구하시오.",
         answer="{ans}", answer_alt=[],
         sol1="확률은 (사건의 경우의 수) ÷ (전체 경우의 수)이다. 전체는 {N}가지이고, {k}의 배수는 {k}, {2*k}, …, {k*m}의 {m}개이므로 {m}/{N}을 약분한다. {N}을 {k}로 나눈 몫이 그대로 배수의 개수임을 이용하면 빠르다.",
-        sol1_fig=steps(["전체 경우의 수: {N}", "{k}의 배수: {k}, {2*k}, …, {k*m} → {m}개", "확률 = [[frac({m}, {N})]] = [[{ans}]]"]),
+        sol1_fig=steps(["전체 경우의 수: {N}", "{k}의 배수: {k}, {2*k}, …, {k*m} → {m}개", "확률 = [[frac({m}, {N})]] = {ans}"]),
         sol1_anim=[[reveal(0)], [reveal(1)], [reveal(2)]],
         sol2=[
             "모든 경우의 수는 {N}이다.",
             "{N} 이하의 {k}의 배수는 {k}, {2*k}, …, {k*m}의 {m}개이다.",
             "따라서 확률은 [[frac({m}, {N})]] = {ans}이다.",
         ],
-        sol2_fig=steps([{"text": "{N} ÷ {k} = {m} …", "hint": "몫이 배수의 개수"}, {"text": "[[frac({m}, {N})]] = [[{ans}]]", "hint": "약분"}]),
+        sol2_fig=steps([{"text": "{N} ÷ {k} = {m} …", "hint": "몫이 배수의 개수"}, {"text": "[[frac({m}, {N})]] = {ans}", "hint": "약분"}]),
         sol2_anim=[[], [reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")]],
         sol3="{k} × {m} = {k*m} ≤ {N}이고 {k} × {m + 1} = {k*(m + 1)} > {N}이므로 배수는 {m}개가 맞다. 확률 {ans}{eun(ans)} 0과 1 사이의 값이다. 답은 {ans}이다.",
         model_answer="모든 경우의 수는 {N}이고, {N} 이하의 {k}의 배수는 {m}개이다. 따라서 확률은 [[frac({m}, {N})]] = {ans}이다.",
@@ -468,14 +468,14 @@ def prb_t2():
         question="서로 다른 두 개의 주사위를 동시에 던질 때, 나오는 두 눈의 수의 합이 {k}일 확률을 구하시오.",
         answer="{ans}", answer_alt=[],
         sol1="두 주사위를 구별하면 모든 경우의 수는 6 × 6 = 36이다. 합이 {k}인 순서쌍 (a, b)는 a = 1, 2, …를 넣어 b = {k} − a가 1 이상 6 이하인 것을 세면 {c}개다. 확률은 {c}/36을 약분한 값이다.",
-        sol1_fig=steps(["전체: 6 × 6 = 36", "합이 {k}: (a, {k} − a) 꼴 → {c}개", "확률 = [[frac({c}, 36)]] = [[{ans}]]"]),
+        sol1_fig=steps(["전체: 6 × 6 = 36", "합이 {k}: (a, {k} − a) 꼴 → {c}개", "확률 = [[frac({c}, 36)]] = {ans}"]),
         sol1_anim=[[reveal(0)], [reveal(1)], [reveal(2)]],
         sol2=[
             "모든 경우의 수는 6 × 6 = 36이다.",
             "합이 {k}인 순서쌍은 (a, {k} − a)에서 a와 {k} − a가 모두 1 이상 6 이하인 것이므로 {c}개이다.",
             "따라서 확률은 [[frac({c}, 36)]] = {ans}이다.",
         ],
-        sol2_fig=steps([{"text": "36", "hint": "전체"}, {"text": "합 {k}: {c}가지", "hint": "순서쌍"}, {"text": "[[frac({c}, 36)]] = [[{ans}]]"}]),
+        sol2_fig=steps([{"text": "36", "hint": "전체"}, {"text": "합 {k}: {c}가지", "hint": "순서쌍"}, {"text": "[[frac({c}, 36)]] = {ans}"}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")], [reveal(2)]],
         sol3="합이 2부터 12까지인 경우의 수는 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1로 모두 더하면 36이 되고, 합 {k}에 해당하는 값은 {c}이다. 답은 {ans}이다.",
         model_answer="모든 경우의 수는 36이고, 합이 {k}인 경우는 {c}가지이다. 따라서 확률은 [[frac({c}, 36)]] = {ans}이다.",
@@ -492,12 +492,29 @@ Q3 = {"least": {"Q": "적어도 한 개는 앞면이 나올", "isL": 1, "EXPL": 
 
 
 def coin_rows():
+    # 10-01 재검토: '모두 앞면' 갈래의 [방침]·[확인]·채점 요소 2·실수거리가 '적어도' 갈래 얘기였다 → 갈래별 문장을 행에 미리 채워 둔다
     rows = {}
     for q, qr in Q3.items():
         for n in (2, 3, 4):
             T = 2 ** n
+            if q == "least":
+                ex1 = (f"모두 뒷면인 경우는 1가지뿐이므로 그 확률은 [[frac(1, {T})]]이다. '적어도 한 개는 앞면'의 반대(여사건)는 '모두 뒷면'이므로 "
+                       f"여사건의 확률을 1에서 뺀다.")
+                chk = (f"'적어도 한 개는 앞면'과 '모두 뒷면'은 서로 여사건이므로 두 확률을 더하면 1이 되어야 한다: "
+                       f"[[frac({T - 1}, {T})]] + [[frac(1, {T})]] = 1. 묻는 것에 맞는 값은 [[frac({T - 1}, {T})]]이다.")
+                e2, p2 = "여사건·확률", "모두 뒷면일 확률까지만 구했으면 1점."
+                pf2 = "'적어도 한 개는 앞면'을 '앞면이 정확히 한 개'로 읽음"
+                pf3 = f"여사건(모두 뒷면)의 확률 [[frac(1, {T})]]까지 구하고 1에서 빼지 않음"
+            else:
+                ex1 = f"모두 앞면인 경우는 1가지뿐이므로 그 확률은 1을 모든 경우의 수 {T}{'으로' if str(T)[-1] in '036' else '로'} 나눈 값이다."
+                chk = (f"동전 하나가 앞면일 확률은 [[frac(1, 2)]]이고 {n}개의 결과는 서로 영향을 끼치지 않으므로, "
+                       f"[[frac(1, 2)]]을 {n}번 곱해도 [[frac(1, {T})]]로 같다. 답은 [[frac(1, {T})]]이다.")
+                e2, p2 = "경우 세기·확률", "모두 앞면인 경우를 1가지가 아닌 수로 세었으면 1점."
+                pf2 = f"'모두 앞면'을 '적어도 한 개는 앞면'으로 읽고 1 − [[frac(1, {T})]]을 구함"
+                pf3 = f"'모두 앞면'과 '모두 뒷면'을 함께 세어 확률을 [[frac(2, {T})]]로 둠"
             rows[f"{q}-{n}"] = {**qr, "n": n, "T": T, "PROD": " × ".join(["2"] * n),
-                                "FORMN": (f"1 − [[frac(1, {T})]]" if q == "least" else f"1 ÷ {T}")}
+                                "FORMN": (f"1 − [[frac(1, {T})]]" if q == "least" else f"1 ÷ {T}"),
+                                "EX1": ex1, "CHK": chk, "E2": e2, "P2": p2, "PF2": pf2, "PF3": pf3}
     return rows
 
 
@@ -520,21 +537,21 @@ def prb_t3():
         verify=["isL == 0 or ans == 1 - 1/2**n", "isL == 1 or ans == 1/2**n"],
         question="서로 다른 {n}개의 동전을 동시에 던질 때, {Q} 확률을 구하시오.",
         answer="{ans}", answer_alt=[],
-        sol1="동전 하나마다 앞·뒤 2가지이므로 모든 경우의 수는 {PROD} = {T}이다. 모두 앞면(또는 모두 뒷면)인 경우는 1가지뿐이므로 그 확률은 1/{T}이다. {EXPL}",
-        sol1_fig=steps(["전체: {PROD} = {T}", "모두 뒷면(또는 모두 앞면): 1가지 → [[frac(1, {T})]]", "{FORMN} = [[{ans}]]"]),
+        sol1="동전 하나마다 앞·뒤 2가지이므로 모든 경우의 수는 {PROD} = {T}이다. {EX1}",
+        sol1_fig=steps(["전체: {PROD} = {T}", "모두 뒷면(또는 모두 앞면): 1가지 → [[frac(1, {T})]]", "{FORMN} = {ans}"]),
         sol1_anim=[[reveal(0)], [reveal(1)], [reveal(2)]],
         sol2=[
             "모든 경우의 수는 {PROD} = {T}이다.",
             "{EXPL}",
             "따라서 확률은 {FORMN} = {ans}이다.",
         ],
-        sol2_fig=steps([{"text": "전체 {PROD} = {T}", "hint": "동전마다 2가지"}, {"text": "{FORM}", "hint": "{Q} 확률"}, {"text": "{FORMN} = [[{ans}]]"}]),
+        sol2_fig=steps([{"text": "전체 {PROD} = {T}", "hint": "동전마다 2가지"}, {"text": "{FORM}", "hint": "{Q} 확률"}, {"text": "{FORMN} = {ans}"}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")], [reveal(2)]],
-        sol3="'적어도 한 개는 앞면'과 '모두 뒷면'은 서로 여사건이므로 두 확률을 더하면 1이 되어야 한다: {1 - p1} + {p1} = 1. 묻는 것에 맞는 값은 {ans}이다.",
+        sol3="{CHK}",
         model_answer="모든 경우의 수는 {PROD} = {T}이다. {EXPL} 따라서 확률은 {FORMN} = {ans}이다.",
         rubric=[
-            {"element": "전체 경우의 수", "points": 3, "criterion": "모든 경우의 수 {T}{eul(T)} 밝혔다.", "partial": "2 × {n}으로 잘못 세었으면 인정하지 않는다."},
-            {"element": "여사건·확률", "points": 3, "criterion": "{FORM}으로 확률을 세웠다.", "partial": "모두 뒷면일 확률까지만 구했으면 1점."},
+            {"element": "전체 경우의 수", "points": 3, "criterion": "모든 경우의 수 {T}{eul(T)} 밝혔다.", "partial": "동전을 구별하지 않고 앞면의 개수로만 세어 {n + 1}가지로 두었으면 인정하지 않는다."},
+            {"element": "{E2}", "points": 3, "criterion": "{FORM}으로 확률을 세웠다.", "partial": "{P2}"},
             {"element": "답 구하기", "points": 2, "criterion": "{ans}{eul(ans)} 답했다.", "partial": ""},
         ],
     )
@@ -556,16 +573,16 @@ def prb_t4():
         question="서로 다른 두 개의 주사위를 동시에 던질 때, 적어도 하나는 {k} 이상의 눈이 나올 확률을 구하시오.",
         answer="{ans}", answer_alt=[],
         sol1="'적어도 하나는 {k} 이상'의 반대(여사건)는 '두 눈이 모두 {j} 이하'이다. 두 눈이 모두 {j} 이하인 경우는 {j} × {j} = {cc}가지이므로 그 확률을 1에서 뺀다. 직접 세면 경우가 많아 여사건이 훨씬 빠르다.",
-        sol1_fig=steps(["전체: 36", "여사건 — 둘 다 {j} 이하: {j} × {j} = {cc}가지 → [[frac({cc}, 36)]]", "1 − [[frac({cc}, 36)]] = [[{ans}]]"]),
+        sol1_fig=steps(["전체: 36", "여사건 — 둘 다 {j} 이하: {j} × {j} = {cc}가지 → [[frac({cc}, 36)]]", "1 − [[frac({cc}, 36)]] = {ans}"]),
         sol1_anim=[[reveal(0)], [reveal(1)], [reveal(2)]],
         sol2=[
             "모든 경우의 수는 6 × 6 = 36이다.",
             "여사건 '두 눈이 모두 {j} 이하'인 경우의 수는 {j} × {j} = {cc}이므로 그 확률은 36가지 중 {cc}가지, 곧 {pc}이다.",
             "따라서 구하는 확률은 1 − {pc} = {ans}이다.",
         ],
-        sol2_fig=steps([{"text": "36", "hint": "전체"}, {"text": "{j} × {j} = {cc}", "hint": "여사건: 둘 다 {j} 이하"}, {"text": "1 − [[frac({cc}, 36)]] = [[{ans}]]"}]),
+        sol2_fig=steps([{"text": "36", "hint": "전체"}, {"text": "{j} × {j} = {cc}", "hint": "여사건: 둘 다 {j} 이하"}, {"text": "1 − [[frac({cc}, 36)]] = {ans}"}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")], [reveal(2)]],
-        sol3="직접 세면 적어도 하나가 {k} 이상인 경우의 수는 36 − {cc} = {36 - cc}가지이고, 이를 36으로 나눈 값은 {ans}{wa(ans)} 같다. 답은 {ans}이다.",
+        sol3="직접 세면 첫째 눈이 {k} 이상인 경우가 {7 - k} × 6 = {6*(7 - k)}가지, 첫째 눈은 {j} 이하이고 둘째 눈이 {k} 이상인 경우가 {j} × {7 - k} = {j*(7 - k)}가지로 모두 {36 - cc}가지이다. 이를 36으로 나눈 값은 {ans}{wa(ans)} 같다. 답은 {ans}이다.",
         model_answer="모든 경우의 수는 36이고, 여사건인 두 눈이 모두 {j} 이하인 경우의 수는 {j} × {j} = {cc}이다. 따라서 확률은 1 − [[frac({cc}, 36)]] = {ans}이다.",
         rubric=[
             {"element": "여사건 세우기", "points": 3, "criterion": "'적어도 하나는 {k} 이상'의 여사건이 '둘 다 {j} 이하'임을 밝혔다.", "partial": "여사건을 '둘 다 {k} 이상'으로 잘못 잡았으면 인정하지 않는다."},
@@ -579,33 +596,33 @@ def prb_t5():
     return tpl("m2-2-probability", 5, PRB,
         title="a의 배수 또는 b의 배수일 확률 (서로 배반)",
         skill="두 사건이 동시에 일어나지 않으면 확률을 더하기",
-        variant_axis={"N": "20~50", "a, b": "서로 겹치지 않는 배수(ab > N)"},
+        variant_axis={"N": "20~50", "a, b": "서로 겹치지 않는 배수(최소공배수 > N)"},
         discriminates="두 사건이 겹치지 않음을 확인하고 확률을 더하는가",
         qtype="short", difficulty=2, pool_target=300, time_limit=90,
         params=[{"name": "N", "values": {"int": [20, 50]}}, {"name": "a", "values": {"in": [3, 4, 5, 6, 7]}}, {"name": "b", "values": {"in": [7, 9, 11, 13, 17]}}],
-        derive={"ma": "floor(N/a)", "mb": "floor(N/b)", "ans": "(floor(N/a) + floor(N/b))/N"},
-        constraints=["a*b > N", "a < b", "mb >= 1"],
+        derive={"ma": "floor(N/a)", "mb": "floor(N/b)", "ans": "(floor(N/a) + floor(N/b))/N", "L": "lcm(a, b)"},
+        constraints=["lcm(a, b) > N", "a < b", "mb >= 1"],     # 10-01: 종전 a*b > N — 3·9, 6·9 는 9·18 이 겹쳐 답이 틀렸다(21/300행)
         cost_values=["N", "a", "b", "ma", "mb", "ans"],
         answer_var="ans",
-        verify=["ans*N == ma + mb", "a*b > N"],
+        verify=["ans*N == ma + mb", "lcm(a, b) > N"],
         question="1부터 {N}까지의 자연수가 각각 하나씩 적힌 {N}장의 카드 중에서 한 장을 임의로 뽑을 때, {a}의 배수 또는 {b}의 배수가 적힌 카드가 나올 확률을 구하시오.",
         answer="{ans}", answer_alt=[],
-        sol1="{a}의 배수이면서 {b}의 배수인 수는 {a} × {b} = {a*b}의 배수인데 {a*b} > {N}이므로 {N} 이하에는 없다. 두 사건이 동시에 일어나지 않으므로(서로 배반) '또는'의 확률은 각각의 확률을 더한 것이다.",
-        sol1_fig=steps(["{a}의 배수: {ma}개, {b}의 배수: {mb}개", "겹치는 수(공배수 {a*b}의 배수): 없음", "[[frac({ma}, {N})]] + [[frac({mb}, {N})]] = [[{ans}]]"]),
+        sol1="{a}의 배수이면서 {b}의 배수인 수는 {a}와 {b}의 최소공배수 {L}의 배수인데 {L} > {N}이므로 {N} 이하에는 없다. 두 사건이 동시에 일어나지 않으므로(서로 배반) '또는'의 확률은 각각의 확률을 더한 것이다.",
+        sol1_fig=steps(["{a}의 배수: {ma}개, {b}의 배수: {mb}개", "겹치는 수(최소공배수 {L}의 배수): 없음", "[[frac({ma}, {N})]] + [[frac({mb}, {N})]] = {ans}"]),
         sol1_anim=[[reveal(0)], [reveal(1)], [reveal(2)]],
         sol2=[
             "모든 경우의 수는 {N}이다. {a}의 배수는 {ma}개, {b}의 배수는 {mb}개이다.",
-            "{a}와 {b}의 공배수 {a*b}{eun(a*b)} {N}보다 크므로 두 사건은 동시에 일어나지 않는다.",
+            "{a}와 {b}의 최소공배수 {L}{eun(L)} {N}보다 크므로 두 사건은 동시에 일어나지 않는다.",
             "따라서 확률은 [[frac({ma}, {N})]] + [[frac({mb}, {N})]] = {ans}이다.",
         ],
-        sol2_fig=steps([{"text": "{ma}개, {mb}개", "hint": "각 배수의 개수"}, {"text": "공배수 없음 ({a*b} > {N})", "hint": "서로 배반"}, {"text": "[[frac({ma}, {N})]] + [[frac({mb}, {N})]] = [[{ans}]]"}]),
+        sol2_fig=steps([{"text": "{ma}개, {mb}개", "hint": "각 배수의 개수"}, {"text": "겹치는 수 없음 (최소공배수 {L} > {N})", "hint": "서로 배반"}, {"text": "[[frac({ma}, {N})]] + [[frac({mb}, {N})]] = {ans}"}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")], [reveal(2)]],
         sol3="{a}의 배수 {ma}개와 {b}의 배수 {mb}개를 나열하면 같은 수가 없으므로 사건의 경우의 수는 {ma + mb}이고, 확률 {ans}{eun(ans)} 1을 넘지 않는다. 답은 {ans}이다.",
         model_answer="모든 경우의 수는 {N}이고, {a}의 배수는 {ma}개, {b}의 배수는 {mb}개이며 두 사건은 동시에 일어나지 않는다. 따라서 확률은 [[frac({ma}, {N})]] + [[frac({mb}, {N})]] = {ans}이다.",
         rubric=[
-            {"element": "배반 판단", "points": 3, "criterion": "두 사건이 동시에 일어나지 않음(공배수가 {N} 이하에 없음)을 밝혔다.", "partial": "확인 없이 더하기만 했으면 1점."},
+            {"element": "배반 판단", "points": 3, "criterion": "두 사건이 동시에 일어나지 않음(최소공배수 {L}의 배수가 {N} 이하에 없음)을 밝혔다.", "partial": "확인 없이 더하기만 했으면 1점."},
             {"element": "확률 더하기", "points": 3, "criterion": "각 배수의 개수 {ma}, {mb}{eul(mb)} 세어 확률을 더했다.", "partial": "한쪽 개수만 옳으면 1점."},
-            {"element": "답 구하기", "points": 2, "criterion": "약분한 {ans}{eul(ans)} 답했다.", "partial": "약분하지 않았으면 1점."},
+            {"element": "답 구하기", "points": 2, "criterion": "{ans}{eul(ans)} 답했다(기약분수로).", "partial": "약분할 수 있는데 하지 않았으면 1점."},
         ],
     )
 
@@ -670,7 +687,7 @@ def prb_t6():
             "{EXPL}",
             "따라서 확률은 {PRE}{x1} × {x2} = {ans}이다.",
         ],
-        sol2_fig=steps([{"text": "[[{x1}]], [[{x2}]]", "hint": "{HINT1}"}, {"text": "{FORM}", "hint": "{Q} 확률"}, {"text": "{PRE}[[{x1}]] × [[{x2}]] = [[{ans}]]"}]),
+        sol2_fig=steps([{"text": "{x1}, {x2}", "hint": "{HINT1}"}, {"text": "{FORM}", "hint": "{Q} 확률"}, {"text": "{PRE}{x1} × {x2} = {ans}"}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")], [reveal(2)]],
         sol3="네 경우(둘 다 성공 {p*qq}, {A}만 {p*fq}, {B}만 {fp*qq}, 둘 다 실패 {fp*fq})의 확률을 모두 더하면 1이 된다. 묻는 것에 맞는 값은 {ans}이다.",
         model_answer="{STEP1} 확률은 {x1}, {x2}이다. {EXPL} 따라서 확률은 {PRE}{x1} × {x2} = {ans}이다.",
@@ -700,7 +717,7 @@ def prb_t7():
         cost_values=["a", "b", "T", "p1", "p2", "ans"],
         answer_var="ans",
         verify=["ans == p1*p2", "isR == 1 or ans == a*(a - 1)/((a + b)*(a + b - 1))"],
-        question="주머니에 흰 공 {a}개, 검은 공 {b}개가 들어 있다. 이 주머니에서 공 한 개를 임의로 꺼내 색을 {Q} 다시 한 개를 임의로 꺼낼 때, 두 번 모두 흰 공이 나올 확률을 구하시오.",
+        question="주머니에 흰 공 {a}개, 검은 공 {b}개가 들어 있다. 이 주머니에서 공 한 개를 임의로 꺼내 색을 {Q} 한 개를 더 임의로 꺼낼 때, 두 번 모두 흰 공이 나올 확률을 구하시오.",
         answer="{ans}", answer_alt=[],
         sol1="첫 번째에는 전체 {T}개 중 흰 공이 {a}개이므로 흰 공이 나올 확률은 {p1}이다. {EXPL} 두 번째 확률은 {p2}이고, 두 번 모두 일어나야 하므로 두 확률을 곱한다.",
         sol1_fig=table(["", "흰 공", "전체", "확률"], [["첫 번째", "{a}", "{T}", "{a}/{T}"], ["두 번째", "{a - 1 + isR}", "{T - 1 + isR}", "{a - 1 + isR}/{T - 1 + isR}"]]),
@@ -709,7 +726,7 @@ def prb_t7():
             "{EXPL} 두 번째에는 전체 {T - 1 + isR}개 중 흰 공이 {a - 1 + isR}개이므로 확률은 {p2}이다.",
             "따라서 확률은 {p1} × {p2} = {ans}이다.",
         ],
-        sol2_fig=steps([{"text": "첫 번째 [[{p1}]]", "hint": "흰 {a} / 전체 {T}"}, {"text": "두 번째 [[{p2}]]", "hint": "{SECOND}"}, {"text": "[[{p1}]] × [[{p2}]] = [[{ans}]]"}]),
+        sol2_fig=steps([{"text": "첫 번째 {p1}", "hint": "흰 {a} / 전체 {T}"}, {"text": "두 번째 {p2}", "hint": "{SECOND}"}, {"text": "{p1} × {p2} = {ans}"}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")], [reveal(2)]],
         sol3="다시 넣으면 [[frac({a}, {T})]] × [[frac({a}, {T})]] = {a*a/(T*T)}, 넣지 않으면 [[frac({a}, {T})]] × [[frac({a - 1}, {T - 1})]] = {a*(a - 1)/(T*(T - 1))}로 서로 다르며, 넣지 않을 때가 더 작다(흰 공이 하나 줄었으므로). 문제의 조건에 맞는 값은 {ans}이다.",
         model_answer="첫 번째에 흰 공이 나올 확률은 {p1}이고, {EXPL} 두 번째 확률은 {p2}이다. 따라서 두 번 모두 흰 공이 나올 확률은 {p1} × {p2} = {ans}이다.",

@@ -1145,13 +1145,19 @@
               "ASKA": "AOC",
               "wA": 1,
               "LA": "x",
-              "LB": " "
+              "LB": " ",
+              "XL": "x",
+              "DA": "",
+              "DB": "°"
             },
             "2": {
               "ASKA": "COB",
               "wA": 0,
               "LA": " ",
-              "LB": "x"
+              "LB": "x",
+              "XL": "x",
+              "DA": "°",
+              "DB": ""
             }
           }
         }
@@ -1163,7 +1169,8 @@
         "cy": "4*sin(pi*x/180)",
         "ans": "wA*180*ra/(ra + rb) + (1 - wA)*180*rb/(ra + rb)",
         "oth": "180 - ans",
-        "pw": "wA*ra + (1 - wA)*rb"
+        "pw": "wA*ra + (1 - wA)*rb",
+        "an": "wA*180*ra/(ra + rb) + (1 - wA)*180*rb/(ra + rb)"
       },
       "constraints": [
         "x != ra",
@@ -1283,13 +1290,13 @@
                   "at": "O",
                   "from": "A",
                   "to": "C",
-                  "label": "x"
+                  "label": "{XL if wA == 1 else x}{DA}"
                 },
                 {
                   "at": "O",
                   "from": "C",
                   "to": "B",
-                  "label": "{y}°"
+                  "label": "{XL if wA == 0 else y}{DB}"
                 }
               ]
             },
@@ -1380,7 +1387,7 @@
           }
         ]
       ],
-      "sol_check": "다른 한 각은 180° − {ans}° = {oth}°이고 {x} : {y} = {ra} : {rb}{ro(rb)} 호의 비와 같다. 답: [[deg({ans})]]",
+      "sol_check": "다른 한 각은 180° − {an}° = {oth}°이고 {x} : {y} = {ra} : {rb}{ro(rb)} 호의 비와 같다. 답: {ans}",
       "model_answer": "AB가 원 O의 지름이므로 ∠AOC + ∠COB = 180°이다. 한 원에서 호의 길이는 중심각의 크기에 정비례하므로 ∠AOC : ∠COB = {ra} : {rb}이고, 따라서 ∠{ASKA} = 180° ÷ ({ra} + {rb}) × {pw} = {ans}°이다.",
       "rubric": [
         {
@@ -1410,12 +1417,12 @@
           "effect": "불인정"
         },
         {
-          "text": "180°를 {ra} : {rb}로 배분할 때 다른 한 각의 몫 {oth}°를 ∠{ASKA}로 씀",
+          "text": "180°를 {ra} : {rb}{ro(rb)} 배분할 때 다른 한 각의 몫 {oth}°를 ∠{ASKA}로 씀",
           "on": "비례배분",
           "effect": "불인정"
         },
         {
-          "text": "180 × {ra} ÷ {ra + rb}의 계산이 어긋남",
+          "text": "180 × {pw} ÷ {ra + rb}의 계산이 어긋남",
           "on": "비례배분",
           "effect": "부분"
         }

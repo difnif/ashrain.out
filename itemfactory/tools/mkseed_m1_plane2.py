@@ -430,7 +430,8 @@ def _diam_rows():
 
 
 DIAM_ROWS = _diam_rows()
-ASK_DIAM = {"1": {"ASKA": "AOC", "wA": 1, "LA": "x", "LB": " "}, "2": {"ASKA": "COB", "wA": 0, "LA": " ", "LB": "x"}}
+ASK_DIAM = {"1": {"ASKA": "AOC", "wA": 1, "LA": "x", "LB": " ", "XL": "x", "DA": "", "DB": "°"},
+            "2": {"ASKA": "COB", "wA": 0, "LA": " ", "LB": "x", "XL": "x", "DA": "°", "DB": ""}}   # 10-01: 해설 그림도 구하는 각에 x
 
 
 def ar_t3():
@@ -442,7 +443,8 @@ def ar_t3():
         qtype="short", difficulty=2, pool_target=300,
         params=[{"name": "rt", "values": {"in": list(DIAM_ROWS)}}, {"name": "ask", "values": {"in": [1, 2]}}],
         table=[{"key": "rt", "rows": DIAM_ROWS}, {"key": "ask", "rows": ASK_DIAM}],
-        derive={"x": "180*ra/(ra + rb)", "y": "180*rb/(ra + rb)", "cx": "-4*cos(pi*x/180)", "cy": "4*sin(pi*x/180)", "ans": "wA*180*ra/(ra + rb) + (1 - wA)*180*rb/(ra + rb)", "oth": "180 - ans", "pw": "wA*ra + (1 - wA)*rb"},
+        derive={"x": "180*ra/(ra + rb)", "y": "180*rb/(ra + rb)", "cx": "-4*cos(pi*x/180)", "cy": "4*sin(pi*x/180)", "ans": "wA*180*ra/(ra + rb) + (1 - wA)*180*rb/(ra + rb)", "oth": "180 - ans", "pw": "wA*ra + (1 - wA)*rb",
+                "an": "wA*180*ra/(ra + rb) + (1 - wA)*180*rb/(ra + rb)"},   # 10-01: sol_check 에서는 {ans} 가 답 글자 [[deg(75)]] 로 바뀌므로 수는 {an}
         constraints=["x != ra", "x != rb", "x != y"],
         cost_values=["ra", "rb", "ans"],
         relation="X*(ra + rb) - 180*pw", unknown="X", answer_var="ans",
@@ -453,7 +455,7 @@ def ar_t3():
         answer="[[deg({ans})]]", answer_alt=["{ans}"],
         sol1="AB가 지름이므로 호 AC와 호 CB를 합치면 반원이고, 두 호의 중심각을 더하면 ∠AOB = 180°다. 호의 길이는 중심각에 정비례하므로 ∠AOC : ∠COB = {ra} : {rb}이고, 180°를 {ra} : {rb}로 비례배분하면 두 각이 모두 나온다. 360°가 아니라 180°를 나눈다.",
         sol1_fig=scene({"O": [0, 0], "A": [-4, 0], "B": [4, 0], "C": ["{cx}", "{cy}"]}, [["A", "B"], ["O", "C"]], circles=TWO_CIRC,
-                       marks={"arc": [arc("O", "A", "C", "x"), arc("O", "C", "B", "{y}°")]}),
+                       marks={"arc": [arc("O", "A", "C", "{XL if wA == 1 else x}{DA}"), arc("O", "C", "B", "{XL if wA == 0 else y}{DB}")]}),
         sol1_anim=[[hl("seg:A-B")], [hl("arc:O", keep=True)]],
         sol2=[
             "AB가 지름이므로 ∠AOC + ∠COB = 180°",
@@ -466,7 +468,7 @@ def ar_t3():
             {"text": "∠{ASKA} = 180° ÷ {ra + rb} × {pw} = {ans}°", "marks": [{"on": "{ans}°", "note": "비례배분"}]},
         ]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1")], [reveal(2), hl("mark:2-0")]],
-        sol_check="다른 한 각은 180° − {ans}° = {oth}°이고 {x} : {y} = {ra} : {rb}로 호의 비와 같다. 답: [[deg({ans})]]",
+        sol_check="다른 한 각은 180° − {an}° = {oth}°이고 {x} : {y} = {ra} : {rb}로 호의 비와 같다. 답: {ans}",
         model_answer="AB가 원 O의 지름이므로 ∠AOC + ∠COB = 180°이다. 한 원에서 호의 길이는 중심각의 크기에 정비례하므로 ∠AOC : ∠COB = {ra} : {rb}이고, 따라서 ∠{ASKA} = 180° ÷ ({ra} + {rb}) × {pw} = {ans}°이다.",
         rubric=[
             {"element": "반원 읽기", "points": 2, "criterion": "AB가 지름이므로 ∠AOC + ∠COB = 180°임을 밝혔다.", "partial": "360°로 두었으면 인정하지 않는다."},

@@ -172,8 +172,14 @@ def recompute(it):
     # ── 09-21 중1-2·중3-1 빈 개념 (mkseed_m1_gaps2.py)
     if tid.startswith(("m1-2-congruent-t1", "m1-2-congruent-t4", "m1-2-congruent-t5")):
         m = re.search(r"∠[A-F] = \[\[deg\((\d+)\)\]\], ∠[A-F] = \[\[deg\((\d+)\)\]\]", q); return Fraction(180 - int(m.group(1)) - int(m.group(2)))
-    if tid.startswith("m1-2-congruent-t2"):
-        m = re.search(r"= (\d+) cm, [A-F]{2} = (\d+) cm, [A-F]{2} = (\d+) cm", q); return Fraction(sum(int(x) for x in m.groups()))
+    if tid.startswith("m1-2-congruent-t2"):                        # 10-01: △DEF 의 변을 대응(D→A, E→B, F→C)으로 옮겨 △ABC 세 변을 채운다 — 겹치는 변은 길이가 같아야
+        side = {}
+        for nm, v in re.findall(r"([A-F]{2}) = (\d+) cm", q):
+            key = "".join(sorted(nm.translate(str.maketrans("DEF", "ABC"))))
+            if key in side and side[key] != int(v):
+                return None
+            side[key] = int(v)
+        return Fraction(sum(side.values())) if sorted(side) == ["AB", "AC", "BC"] else None
     if tid.startswith("m1-2-congruent-t3"):
         m = re.search(r"둘레의 길이가 (\d+) cm이다. AB = (\d+) cm, BC = (\d+) cm", q); P, a, b = (int(x) for x in m.groups()); return Fraction(P - a - b)
     if tid.startswith("m1-2-revolution-t1"):
@@ -206,7 +212,7 @@ def recompute(it):
             m = re.search(r"(\d+)\s*(?:회|분|점|kg|cm)\s*이상인", q)
             return Fraction(sum(1 for v in vals if v >= int(m.group(1)))) if m else None
         if tid.startswith("m1-2-stemleaf-t2"):
-            m = re.search(r"(\d+)번째로 높은", q)
+            m = re.search(r"(\d+)번째로 (?:높은|무거운|긴)", q)       # 09-30 맥락별 낱말(몸무게·시간)
             if not m:
                 return None
             k, ds = int(m.group(1)), sorted(vals, reverse=True)
@@ -480,8 +486,8 @@ def recompute(it):
         nn = int(n[0]); return 1 - Fraction(1, 2 ** nn) if "적어도" in q else Fraction(1, 2 ** nn)
     if tid.startswith("m2-2-probability-t4"):
         k = int(n[0]); return 1 - Fraction((k - 1) ** 2, 36)
-    if tid.startswith("m2-2-probability-t5"):
-        N, a, b = int(n[1]), int(n[3]), int(n[4]); return Fraction(N // a + N // b, N)
+    if tid.startswith("m2-2-probability-t5"):                     # 10-01: 겹치는 배수까지 직접 세어 검산(종전 N//a + N//b — 같은 실수를 되풀이)
+        N, a, b = int(n[1]), int(n[3]), int(n[4]); return Fraction(sum(1 for x in range(1, N + 1) if x % a == 0 or x % b == 0), N)
     if tid.startswith("m2-2-probability-t6"):
         fr = re.findall(r"frac\((\d+),\s*(\d+)\)", q); p = Fraction(int(fr[0][0]), int(fr[0][1])); r = Fraction(int(fr[1][0]), int(fr[1][1]))
         if "둘 다" in q and ("못할" in q or "실패할" in q or "않을" in q): return (1 - p) * (1 - r)
@@ -2297,9 +2303,12 @@ def _h22a(tid, q):
         m = re.match(r"함수 f\(x\) = x³ ([+−]) (\d*)x ([+−]) (\d+) − k에 대하여 방정식 f\(x\) = 0이 열린구간 \((-?\d+), (-?\d+)\)에서", q); c = _sv(m.group(1), m.group(2) or "1"); d = _sv(m.group(3), m.group(4)); p, p1 = int(m.group(5)), int(m.group(6))
         f = lambda t: t ** 3 + c * t + d  # noqa: E731
         return Fraction(f(p1) - f(p) - 1)
-    if tid == "h2-2-lim-t6":
-        m = re.match(r"함수 f\(x\) = \[\[cases\(pow\(x,2\) ([+−]) (\d+), x ≥ (-?\d+), (.+?), x < -?\d+\)\]\]에 대하여", q); a = _sv(m.group(1), m.group(2)); p = int(m.group(3)); g = _sym(m.group(4))
-        return Fraction(p * p) + a + _spv(g.subs(x, p))
+    if tid == "h2-2-lim-t6":        # 10-01: 우극한 − 좌극한(예전 발문은 +) · 이차식 조각이 x ≥ p 쪽일 수도 x < p 쪽일 수도 있다 — 조건 부호를 읽어 어느 쪽 식인지 정한다
+        m = re.match(r"함수 f\(x\) = \[\[cases\(pow\(x,2\) ([+−]) (\d+), x (≥|<) (-?\d+), (.+?), x (≥|<) (-?\d+)\)\]\]에 대하여 \[\[lim\(x, (-?\d+), f\(x\), \+\)\]\] ([+−]) \[\[lim\(x, (-?\d+), f\(x\), -\)\]\]의 값", q)
+        if not m or m.group(3) == m.group(6) or not (m.group(4) == m.group(7) == m.group(8) == m.group(10)): return None
+        a = _sv(m.group(1), m.group(2)); p = int(m.group(4)); quad = Fraction(p * p) + a; lin = _spv(_sym(m.group(5)).subs(x, p))
+        right, left = (quad, lin) if m.group(3) == "≥" else (lin, quad)
+        return right - left if m.group(9) == "−" else right + left
     if tid == "h2-2-lim-t7":
         m = re.match(r"함수 f\(x\) = \[\[cases\(pow\(x,2\) \+ a, x ≥ (-?\d+), (.+?), x < -?\d+\)\]\]가", q); p = int(m.group(1)); g = _sym(m.group(2)); return _spv(g.subs(x, p)) - p * p
     if tid == "h2-2-diff-t1":
@@ -2388,9 +2397,9 @@ def _h22b(tid, q):
     if tid == "h2-2-integ-t3":
         mo = re.fullmatch(r"\[\[dinteg\((-?\d+), (-?\d+), ([^\[\]]+), x\)\]\]의 값을 구하시오\.", q)
         if mo: return _spv(sp.integrate(_sym(mo.group(3)), (x, int(mo.group(1)), int(mo.group(2)))))
-        ml = re.match(r"\[\[dinteg\(1, 3, f\(x\), x\)\]\] = (-?\d+), \[\[dinteg\(1, 3, g\(x\), x\)\]\] = (-?\d+)일 때, \[\[dinteg\(1, 3, (-?\d*)f\(x\) ([+−]) (\d*)g\(x\), x\)\]\]", q)
+        ml = re.match(r"(?:두 연속함수 f\(x\), g\(x\)에 대하여 )?\[\[dinteg\(1, 3, f\(x\), x\)\]\] = (-?\d+), \[\[dinteg\(1, 3, g\(x\), x\)\]\] = (-?\d+)일 때, \[\[dinteg\(1, 3, (-?\d*)f\(x\) ([+−]) (\d*)g\(x\), x\)\]\]", q)   # 10-01: '(두) 연속함수 … 에 대하여' 머리 허용
         if ml: fa, ga = int(ml.group(1)), int(ml.group(2)); c1 = _coef(ml.group(3)); c2 = _sv(ml.group(4), ml.group(5) or "1"); return c1 * fa + c2 * ga
-        mc = re.match(r"\[\[dinteg\((-?\d+), (-?\d+), f\(x\), x\)\]\] = (-?\d+), \[\[dinteg\((-?\d+), (-?\d+), f\(x\), x\)\]\] = (-?\d+)일 때, \[\[dinteg\((-?\d+), (-?\d+), f\(x\), x\)\]\]", q)
+        mc = re.match(r"(?:연속함수 f\(x\)에 대하여 )?\[\[dinteg\((-?\d+), (-?\d+), f\(x\), x\)\]\] = (-?\d+), \[\[dinteg\((-?\d+), (-?\d+), f\(x\), x\)\]\] = (-?\d+)일 때, \[\[dinteg\((-?\d+), (-?\d+), f\(x\), x\)\]\]", q)
         if mc and mc.group(2) == mc.group(4) and mc.group(1) == mc.group(7) and mc.group(5) == mc.group(8): return Fraction(int(mc.group(3)) + int(mc.group(6)))
         return None
     if tid == "h2-2-integ-t4":
@@ -2462,8 +2471,11 @@ def _h31(tid, q):
         if m: return _spv(sp.summation(_sym2(m.group(1)), (n, 1, sp.oo)))
         m = re.match(r"순환소수 0\.(\d\d)", q); f = Fraction(int(m.group(1)), 99); return Fraction(f.numerator + f.denominator)
     if tid == "h3-1-seqlim-t5":
-        m = re.match(r"넓이가 (\d+)인 도형 S₁에서 시작하여 (.+?)을 차례로", q); S1 = int(m.group(1)); d = m.group(2)
-        mm = re.search(r"넓이[가는] 바로 앞 도형의 (\d+)/(\d+)배", d); r = Fraction(int(mm.group(1)), int(mm.group(2))) if mm else Fraction(1, 2) if "절반" in d else None
+        m = re.match(r"넓이가 (\d+)인 (?:도형|정사각형) S₁에서 시작하여 (.+?)을 차례로", q); S1 = int(m.group(1)); d = m.group(2)
+        mm = re.search(r"넓이[가는] 바로 앞 도형의 (\d+)/(\d+)배", d); ml = re.search(r"각 변의 길이를 (\d+)/(\d+)배로", d)
+        # 10-01 발문에서 넓이 비 괄호를 뺐다 — 길이의 비를 읽어 제곱하고(닮음), 중점을 이은 정사각형은 (√2/2)² = 1/2
+        r = (Fraction(int(mm.group(1)), int(mm.group(2))) if mm else Fraction(int(ml.group(1)), int(ml.group(2))) ** 2 if ml
+             else Fraction(1, 4) if "길이를 절반으로" in d else Fraction(1, 2) if "중점을 이어" in d else None)
         return S1 / (1 - r) if r is not None else None
     if tid in ("h3-1-diff2-t1", "h3-1-diff2-t2"):
         m = re.match(r"\[\[lim\(x, 0, (.+)\)\]\]의 값", q); return _spv(sp.limit(_sym2(m.group(1)), x, 0))

@@ -467,16 +467,20 @@ def qm_t3():
 #   초속은 10~50 m(k = 1~5)로 현실적인 범위, 출발 높이 0~60 m(5 m 간격)로 문항 수를 보충.
 def _ht_rows():
     out = {}
+    # 되돌아오는 시각(t = 2k) 절은 그걸 묻는 back 갈래의 [전개]·[모범답안]에만 — 최고 높이·그 시각 갈래에 넣으면 실수거리가
+    # 오답으로 꼽는 값이 답 옆에 적힌다 (10-01, 1차 검토 B). 절의 앞뒤 조각은 행에, t = 2k 는 틀에서 {2*k if w3 else BL} 로 채운다.
+    no_back = {"SYMA": "", "SYMB": "", "MBK1": "한다", "MBK2": "", "BL": ""}
     for h0 in range(0, 61, 5):
         place = {"PLACE": "지면" if h0 == 0 else f"높이 {h0} m인 곳", "TAIL": "" if h0 == 0 else f" + {h0}", "h0": h0}
         back = "다시 지면에 떨어지는 시각" if h0 == 0 else "처음 던진 높이로 다시 내려오는 시각"
         out[f"h|{h0}"] = {**place, "ASK": "최고 높이", "QASK": "의 최고 높이", "UNIT": " m", "w": 1, "w3": 0,
-                          "S1END": "최고 높이는 꼭짓점의 h좌표이다.", "PITB": "최고 높이 대신 처음 던진 높이나 초속을 답함"}
+                          "S1END": "최고 높이는 꼭짓점의 h좌표이다.", "PITB": "최고 높이 대신 처음 던진 높이나 초속을 답함", **no_back}
         out[f"t|{h0}"] = {**place, "ASK": "최고 높이에 도달하는 시각", "QASK": "가 최고 높이에 도달하는 시각", "UNIT": "초", "w": 0, "w3": 0,
-                          "S1END": "최고 높이에 도달하는 시각은 꼭짓점의 t좌표이다.", "PITB": "처음 높이로 되돌아오는 시각(꼭짓점의 t좌표의 2배)을 답함"}
+                          "S1END": "최고 높이에 도달하는 시각은 꼭짓점의 t좌표이다.", "PITB": "처음 높이로 되돌아오는 시각(꼭짓점의 t좌표의 2배)을 답함", **no_back}
         out[f"back|{h0}"] = {**place, "ASK": back, "QASK": "가 " + back, "UNIT": "초", "w": 0, "w3": 1,
                              "S1END": "그래프는 꼭짓점을 지나고 t축에 수직인 직선에 대하여 대칭이므로, 던진 순간(t = 0)과 대칭인 시각에 " + ("다시 지면(h = 0)에 떨어진다." if h0 == 0 else "처음 던진 높이로 다시 내려온다."),
-                             "PITB": "최고 높이에 도달하는 시각(꼭짓점의 t좌표)을 그대로 답함"}
+                             "PITB": "최고 높이에 도달하는 시각(꼭짓점의 t좌표)을 그대로 답함",
+                             "SYMA": ", 대칭성에서 t = 0과 t = ", "SYMB": f"일 때 h = {h0}", "MBK1": "하고, 출발 높이로 되돌아오는 시각은 t = ", "MBK2": "이다", "BL": ""}
     return out
 
 
@@ -503,10 +507,10 @@ def qm_t4():
         sol2=[
             "h = −5(t² − {2*k}t){TAIL} = −5(t² − {2*k}t + {k2} − {k2}){TAIL}",
             "= −5(t − {k})² + {hmax}",
-            "t = {k}초일 때 최고 높이 {hmax} m, 대칭성에서 t = 0과 t = {2*k}일 때 h = {h0} → {ASK}는 {ans}{UNIT}",
+            "t = {k}초일 때 최고 높이 {hmax} m{SYMA}{2*k if w3 else BL}{SYMB} → {ASK}는 {ans}{UNIT}",
         ],
         sol2_fig=steps([
-            {"text": "h = −5(t² − {2*k}t)", "hint": "−5로 묶기"},
+            {"text": "h = −5(t² − {2*k}t){TAIL}", "hint": "−5로 묶기"},
             {"text": "h = −5(t − {k})² + {hmax}", "hint": "꼭짓점 ({k}, {hmax})", "marks": [{"on": "(t − {k})²", "note": "시각 {k}초"}, {"on": "+ {hmax}", "note": "최고 높이"}]},
             {"text": "{ASK} = {ans}{UNIT}"},
         ]),
@@ -514,7 +518,7 @@ def qm_t4():
         sol3="t = {k}{eul(k)} 대입하면 h = {v*k} − {5*k2}{TAIL} = {hmax}{ro(hmax)} 맞고, t = {2*k}{eul(2*k)} 대입하면 h = {2*v*k} − {20*k2}{TAIL} = {h0}{ro(h0)} 처음 높이와 같다. 즉 t = 0과 t = {2*k}의 한가운데인 t = {k}에서 최고 높이에 이른다. 따라서 {ASK}는 {ans}{UNIT}이다.",
         sol3_fig=steps(["t = {k}: h = {hmax} (t = 0, {2*k}의 중점)", "{ASK} = {ans}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="h = −5t² + {v}t{TAIL} = −5(t − {k})² + {hmax}이므로 t = {k}초일 때 최고 높이 {hmax} m에 도달하고, 출발 높이로 되돌아오는 시각은 t = {2*k}이다. 따라서 {ASK}는 {ans}{UNIT}이다.",
+        model_answer="h = −5t² + {v}t{TAIL} = −5(t − {k})² + {hmax}이므로 t = {k}초일 때 최고 높이 {hmax} m에 도달{MBK1}{2*k if w3 else BL}{MBK2}. 따라서 {ASK}는 {ans}{UNIT}이다.",
         rubric=[
             {"element": "완전제곱식 변형", "points": 3, "criterion": "h = −5(t − {k})² + {hmax}{ro(hmax)} 고쳤다.", "partial": "−5로 묶지 않아 계수가 틀렸으면 1점."},
             {"element": "시각·높이 읽기", "points": 2, "criterion": "{ASK}가 {ans}{UNIT}임을 구했다.", "partial": "시각과 높이를 바꿔 답했으면 인정하지 않는다."},

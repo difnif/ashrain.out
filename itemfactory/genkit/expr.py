@@ -205,7 +205,13 @@ _LATIN_JONG = set("LMNR")        # 엘·엠·엔·알 → 받침 있음. 그 외
 def eul(v):  return "\uc744" if _has_jong(v) else "\ub97c"      # 을/를
 def eun(v):  return "\uc740" if _has_jong(v) else "\ub294"      # 은/는
 def ika(v):  return "\uc774" if _has_jong(v) else "\uac00"      # 이/가
-def ro(v):   return "\uc73c\ub85c" if (_has_jong(v) and not _tail(v).rstrip(")").upper().endswith(("1", "7", "8", "L", "R"))) else "\ub85c"   # 로/으로 (ㄹ 받침은 '로')
+def ro(v):   return "\uc73c\ub85c" if (_has_jong(v) and not _tail(v).rstrip(")").upper().endswith(("1", "7", "8", "L", "R")) and not _rieul(v)) else "\ub85c"   # 로/으로 (ㄹ 받침은 '로')
+
+
+def _rieul(v) -> bool:
+    """끝 글자가 ㄹ 받침 한글인가(확률·서울 → '로') — 10-01: 종전엔 숫자·영문자만 보아 '확률으로'가 나왔다"""
+    t = _tail(v).rstrip(")")
+    return bool(t) and "\uac00" <= t[-1] <= "\ud7a3" and (ord(t[-1]) - 0xAC00) % 28 == 8
 def wa(v):   return "\uacfc" if _has_jong(v) else "\uc640"      # 과/와
 def ida(v):  return "\uc774\ub2e4" if _has_jong(v) else "\ub2e4"  # 이다/다
 
