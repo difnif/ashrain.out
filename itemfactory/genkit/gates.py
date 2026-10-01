@@ -6,6 +6,7 @@
 #   G2 독립 재풀이 정답을 만든 식이 아닌 다른 경로로 정답이 재현되는가 (sympy)
 #   G3 오답지 충돌 보기끼리 겹치지 않고, 오답이 우연히 정답이 아닌가
 #   G4 mathir 왕복 문면·보기·정답·도형이 v1.5 문법으로 무오류인가 (+ 도형 정규 스키마 v1.6)
+#               09-30: 해설 판서 줄·기하 [확인]·채점기준·실수거리 문장까지
 #   G5 형식·난이도 해설 단수(기하 2단/그 외 3단)·길이·라벨 규격
 
 from __future__ import annotations
@@ -180,10 +181,37 @@ def g4_mathir(item: dict):
                 fn = f.get("fn")
                 if fn not in FIGS_V16:
                     raise Reject("G4", f"해설 도식 미지 함수 {fn}")
+                if fn == "steps":                          # 09-30: 판서 줄도 — [[[[frac(1,2)]]]] 이중 마커·[[frac(BC, AB)]] 가 앱에 원문 그대로 보였다
+                    for t in _steps_texts(f):
+                        _, _, e6 = mathir.parse_text(t)
+                        if e6:
+                            raise Reject("G4", f"판서 문법 오류 {e6[:1]}")
     if sol.get("model_answer"):
         _, _, e5 = mathir.parse_text(sol["model_answer"])
         if e5:
             raise Reject("G4", f"모범답안 문법 오류 {e5[:1]}")
+    if isinstance(sol.get("check"), str) and sol["check"]:          # 09-30: 기하 [확인]·채점기준·실수거리 문장도
+        _, _, e7 = mathir.parse_text(sol["check"])
+        if e7:
+            raise Reject("G4", f"확인 문법 오류 {e7[:1]}")
+    rb = sol.get("rubric") or {}
+    for t in [str(it[k]) for it in rb.get("items") or [] for k in ("element", "criterion", "partial", "zero") if it.get(k)] \
+            + [str(c["text"]) for c in rb.get("checks") or [] if c.get("text")]:
+        _, _, e8 = mathir.parse_text(t)
+        if e8:
+            raise Reject("G4", f"채점기준 문법 오류 {e8[:1]}")
+
+
+def _steps_texts(fig: dict) -> list:
+    """판서(steps) 도식의 줄 text·hint·강조(marks.on·note) 문장들"""
+    out = []
+    for ln in (fig.get("args") or {}).get("lines") or []:
+        if isinstance(ln, str):
+            out.append(ln)
+        elif isinstance(ln, dict):
+            out += [str(ln[k]) for k in ("text", "hint") if ln.get(k)]
+            out += [str(m[k]) for m in ln.get("marks") or [] if isinstance(m, dict) for k in ("on", "note") if m.get(k)]
+    return out
 
 
 # ---------------------------------------------------------------- G5
