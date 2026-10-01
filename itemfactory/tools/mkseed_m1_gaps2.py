@@ -19,6 +19,9 @@ from fractions import Fraction
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from seedlib import dump, hl, reveal, steps, with_pitfalls  # noqa: E402
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from genkit.expr import eun, ida  # noqa: E402  — 표에 굽는 문장의 조사 (엔진과 같은 규칙)
+
 
 def tpl(seed_id, no, base, **kw):
     t = dict(base)
@@ -104,34 +107,49 @@ def cg_t1(key="AB_F", no=1):
     )
 
 
-CG2_ROWS = {"ab_bc_df": {"S1": "AB", "S2": "BC", "S3": "DF", "S3C": "AC"}, "ab_ca_ef": {"S1": "AB", "S2": "CA", "S3": "EF", "S3C": "BC"}, "bc_ca_de": {"S1": "BC", "S2": "CA", "S3": "DE", "S3C": "AB"}}
+# 10-01 B: 예전에는 △ABC 두 변 + △DEF 한 변(늘 빠진 변의 대응변)이라 주어진 세 수를 다 더하면 답이 되어 '대응'을 재지 못했다.
+# 이제 △DEF 의 두 변을 준다 — 하나(TN)는 모르는 변 M 의 대응변, 다른 하나(TR)는 이미 주어진 변 RC 의 대응변(겹치는 정보, 길이가 같다).
+# 네 수를 다 더하면 오답이고, 대응을 따져 겹치는 변을 한 번만 세야 답이 된다. c 가 a·b 와 같은 이등변삼각형 행에서는
+# 같은 수만 지우는 요령도 통하지 않는다. 대응: AB↔DE, BC↔EF, CA↔FD.
+# 발문의 △DEF 두 변은 DE·EF·FD 순서로 적는다(X1, X2) — 겹치는 변이 앞에 오는 갈래(rf=1)와 뒤에 오는 갈래가 반반이라
+# '앞 세 수만 더함'·'마지막 수를 뺌' 요령이 통하지 않는다(10-01 병합 검토). recheck 는 대응으로 변을 옮겨 검산한다.
+CG2_ROWS = {
+    "ab_bc_fd_de": {"S1": "AB", "S2": "BC", "M": "CA", "TN": "FD", "RC": "AB", "TR": "DE", "wr": 1, "rf": 1, "X1": "DE", "X2": "FD"},
+    "ab_bc_fd_ef": {"S1": "AB", "S2": "BC", "M": "CA", "TN": "FD", "RC": "BC", "TR": "EF", "wr": 0, "rf": 1, "X1": "EF", "X2": "FD"},
+    "ab_ca_ef_de": {"S1": "AB", "S2": "CA", "M": "BC", "TN": "EF", "RC": "AB", "TR": "DE", "wr": 1, "rf": 1, "X1": "DE", "X2": "EF"},
+    "ab_ca_ef_fd": {"S1": "AB", "S2": "CA", "M": "BC", "TN": "EF", "RC": "CA", "TR": "FD", "wr": 0, "rf": 0, "X1": "EF", "X2": "FD"},
+    "bc_ca_de_ef": {"S1": "BC", "S2": "CA", "M": "AB", "TN": "DE", "RC": "BC", "TR": "EF", "wr": 1, "rf": 0, "X1": "DE", "X2": "EF"},
+    "bc_ca_de_fd": {"S1": "BC", "S2": "CA", "M": "AB", "TN": "DE", "RC": "CA", "TR": "FD", "wr": 0, "rf": 0, "X1": "DE", "X2": "FD"},
+}
 
 
 def cg_t2():
     return tpl(CG, 2, CG_BASE,
-        title="합동인 두 삼각형에서 대응변을 찾아 둘레 구하기",
-        skill="△ABC ≡ △DEF 에서 다른 삼각형의 변이 어느 변과 대응하는지 찾아 둘레의 길이를 구하기",
-        variant_axis={"주어진 변": "두 변은 △ABC, 한 변은 △DEF", "대응": "DF↔AC / EF↔BC / DE↔AB"},
-        discriminates="꼭짓점 순서로 대응변을 찾아(DF↔AC, EF↔BC, DE↔AB) 둘레에 넣는가",
+        title="합동인 두 삼각형에서 대응변을 찾아 둘레 구하기 — 이미 아는 변과 겹치는 변 가려내기",
+        skill="△ABC ≡ △DEF 에서 △DEF 의 두 변이 각각 △ABC 의 어느 변과 대응하는지 찾아, 이미 아는 변과 겹치는 것은 한 번만 세고 모르는 변을 옮겨 둘레의 길이를 구하기",
+        variant_axis={"주어진 변": "△ABC 두 변 + △DEF 두 변(하나는 모르는 변의 대응변, 하나는 이미 아는 변의 대응변)", "모르는 변": "AB·BC·CA",
+                      "겹치는 변": "남은 두 변 중 하나", "길이": "3~12 cm (이등변삼각형 포함)"},
+        discriminates="꼭짓점 순서로 대응변을 찾아(AB↔DE, BC↔EF, CA↔FD) 모르는 변만 둘레에 넣는가 — 주어진 네 수를 모두 더하지 않는가",
         ops=["사칙"], difficulty=2,
         params=[{"name": "k", "values": {"in": list(CG2_ROWS)}}, {"name": "a", "values": {"int": [3, 12]}}, {"name": "b", "values": {"int": [3, 12]}}, {"name": "c", "values": {"int": [3, 12]}}],
         table={"key": "k", "rows": CG2_ROWS},
-        derive={"P": "a + b + c"},
-        constraints=["a + b > c", "b + c > a", "c + a > b", "P != a", "P != b", "P != c", "a != b", "b != c", "a != c"],
-        cost_values=["a", "b", "c", "P"],
+        derive={"r": "wr*a + (1 - wr)*b", "P": "a + b + c", "x1": "rf*(wr*a + (1 - wr)*b) + (1 - rf)*c", "x2": "rf*c + (1 - rf)*(wr*a + (1 - wr)*b)"},
+        constraints=["a + b > c", "b + c > a", "c + a > b", "a != b"],
+        cost_values=["a", "b", "c", "r", "P"],
         answer_var="P",
-        verify=["ans == a + b + c", "a + b > c"],
-        question="△ABC ≡ △DEF이고 {S1} = {a} cm, {S2} = {b} cm, {S3} = {c} cm일 때, △ABC의 둘레의 길이를 구하시오.",
+        verify=["ans == a + b + c", "a + b > c", "b + c > a", "c + a > b", "ans != a + b + c + r"],
+        question="△ABC ≡ △DEF이고 {S1} = {a} cm, {S2} = {b} cm, {X1} = {x1} cm, {X2} = {x2} cm일 때, △ABC의 둘레의 길이를 구하시오.",
         answer="{P}", answer_alt=["{P} cm", "{P}cm"],
-        sol1="합동인 두 삼각형은 대응하는 변의 길이가 같다. △ABC ≡ △DEF에서 A↔D, B↔E, C↔F이므로 {S3}{eun(S3)} △ABC의 {S3C}{wa(S3C)} 대응한다. 그러면 △ABC의 세 변을 모두 알 수 있다.",
-        sol2=["{S3C} = {S3} = {c} cm (대응변)", "둘레 = {S1} + {S2} + {S3C} = {a} + {b} + {c} = {P} (cm)"],
-        sol2_fig=steps([{"text": "{S3C} = {S3} = {c}", "hint": "A↔D, B↔E, C↔F", "marks": [{"on": "{S3C}", "note": "글자 순서로 대응변"}]},
+        sol1="합동인 두 삼각형은 대응하는 변의 길이가 같다. △ABC ≡ △DEF에서 A↔D, B↔E, C↔F이므로 {TN}{eun(TN)} △ABC의 {M}{wa(M)}, {TR}{eun(TR)} {RC}{wa(RC)} 대응한다. {TR}{eun(TR)} 이미 아는 {RC}{wa(RC)} 길이가 같은 변일 뿐이고, 모르던 변 {M}의 길이는 {TN}에서 얻는다.",
+        sol2=["{TR} = {RC} = {r} cm (이미 주어진 변의 대응변이므로 새로운 길이가 아니다)", "{M} = {TN} = {c} cm (대응변)", "둘레 = {S1} + {S2} + {M} = {a} + {b} + {c} = {P} (cm)"],
+        sol2_fig=steps([{"text": "{TR} = {RC} = {r}", "hint": "이미 아는 변 — 한 번만 센다"},
+                        {"text": "{M} = {TN} = {c}", "hint": "A↔D, B↔E, C↔F", "marks": [{"on": "{M}", "note": "글자 순서로 대응변"}]},
                         {"text": "{a} + {b} + {c} = {P}", "hint": "세 변의 합"}]),
-        sol2_anim=[[reveal(0), hl("hint:0", "mark:0-0")], [reveal(1), hl("hint:1")]],
-        sol_check="△DEF의 둘레도 대응변의 합이라 {P} cm로 같다. 답은 {P} cm다.",
-        model_answer="△ABC ≡ △DEF에서 {S3C}의 대응변은 {S3}이므로 {S3C} = {c} cm이다. 따라서 △ABC의 둘레는 {a} + {b} + {c} = {P} (cm)이다.",
+        sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("hint:1", "mark:1-0")], [reveal(2), hl("hint:2")]],
+        sol_check="{TR}{wa(TR)} {RC}{eun(RC)} 대응변이고 길이가 {r} cm로 서로 같으니 대응을 바르게 찾았다. 네 길이를 모두 더한 {P + r} cm는 이 변을 두 번 센 값이라 둘레가 아니다. 답은 {P} cm다.",
+        model_answer="△ABC ≡ △DEF에서 {TR}의 대응변은 {RC}이므로 {TR}{eun(TR)} 이미 주어진 변과 같고, {TN}의 대응변은 {M}이므로 {M} = {c} cm이다. 따라서 △ABC의 둘레는 {a} + {b} + {c} = {P} (cm)이다.",
         rubric=[
-            {"element": "대응변 찾기", "points": 3, "criterion": "{S3C} = {S3} = {c} cm임을 밝혔다.", "partial": "다른 변과 대응시켰으면 인정하지 않는다."},
+            {"element": "대응변 찾기", "points": 3, "criterion": "{TN}의 대응변이 {M}임을 밝혀 {M} = {TN} = {c} cm를 구했다.", "partial": "다른 변과 대응시켰으면 인정하지 않는다."},
             {"element": "둘레 구하기", "points": 2, "criterion": "{a} + {b} + {c} = {P} (cm)를 구했다.", "partial": "계산 실수면 1점."},
         ],
         rubric_total=5,
@@ -398,11 +416,27 @@ def _sl_vals(r):
 
 
 def _sl1_rows():
-    """t1 전용 — 기준 이상인 값 전부를 그림 순서(위 줄부터, 왼쪽부터 = 작은 값부터)로 적은 GEX 를 더한다 (09-25: [확인]의 나열이 그림과 반대이고 모자랐다)."""
+    """t1 전용 — 기준 이상인 값 전부를 그림 순서(위 줄부터, 왼쪽부터 = 작은 값부터)로 적은 GEX 를 더한다 (09-25: [확인]의 나열이 그림과 반대이고 모자랐다).
+    10-01 B: [전개]·[모범답안]이 '세면 3개'뿐이라 어느 값을 골랐는지 없었다 — [전개] 줄(SLA·SLB·SLC)과 판서 줄(SFA·SFB·SFC)에
+    줄기가 큰 줄의 값 / 기준과 줄기가 같은 줄에서 고른 값을 적고, [확인]은 기준 미만인 값(LTX·NLT)을 전체에서 빼는 다른 길로."""
     out = {}
     for k, r in SL_ROWS.items():
-        ge = [v for v in _sl_vals(r) if v >= r["X"]]
-        out[k] = dict(r, GEX=", ".join(str(v) for v in ge))
+        vals, X, uu = _sl_vals(r), r["X"], r["UU"]
+        xs, xo = X // 10, X % 10
+        ge = [v for v in vals if v >= X]
+        big = [str(v) for v in vals if v // 10 > xs]
+        same = [str(v) for v in vals if v // 10 == xs and v >= X]
+        lt = [str(v) for v in vals if v < X]
+        bv, sv = ", ".join(big), ", ".join(same)
+        sla = f"줄기가 {xs}보다 큰 줄의 값 {bv}{eun(bv)} 모두 {X}{uu} 이상이다 ({len(big)}명)" if big else f"줄기가 {xs}보다 큰 줄은 없으므로 줄기가 {xs}인 줄만 보면 된다"
+        slb = (f"줄기가 {xs}인 줄에서는 잎이 {xo} 이상인 값만 센다: {sv} ({len(same)}명)" if same
+               else f"줄기가 {xs}인 줄에는 잎이 {xo} 이상인 값이 없다 (0명)")
+        slc = f"따라서 {X}{uu} 이상인 학생은 {len(big)} + {len(same)} = {len(ge)}(명)" if big and same else f"따라서 {X}{uu} 이상인 학생은 {len(ge)}명"
+        sfa = f"줄기 > {xs}: {bv} → {len(big)}명" if big else f"줄기 > {xs}: 없음"
+        sfb = f"줄기 {xs}, 잎 ≥ {xo}: {sv} → {len(same)}명" if same else f"줄기 {xs}, 잎 ≥ {xo}: 없음"
+        sfc = f"{len(big)} + {len(same)} = {len(ge)}" if big and same else f"합: {len(ge)}명"
+        out[k] = dict(r, GEX=", ".join(str(v) for v in ge), XO=xo, LTX=", ".join(lt), NLT=len(lt),
+                      SLA=sla, SLB=slb, SLC=slc, SFA=sfa, SFB=sfb, SFC=sfc)
     return out
 
 
@@ -426,8 +460,12 @@ def _sl2_weight_row(rnd, r):
                     LTOP=", ".join(str(v) for v in vals[-4:][::-1]))
 
 
+# t2 발문의 '○번째로 ○○ 학생' — 맥락마다 어울리는 말 (10-01 B: '높은(큰)' 괄호 병기가 몸무게·시간과 맞지 않았다)
+SL2_ADJ = {"수학 점수": "높은", "윗몸일으키기 기록": "높은", "줄넘기 기록": "높은", "몸무게": "무거운", "하루 독서 시간": "긴"}
+
+
 def _sl2_rows():
-    """t2 전용 — 몸무게 행만 현실 범위로 다시 뽑고(나머지 행은 SL_ROWS 그대로), K 번째보다 큰 값 목록 GT 를 더한다."""
+    """t2 전용 — 몸무게 행만 현실 범위로 다시 뽑고(나머지 행은 SL_ROWS 그대로), K 번째보다 큰 값 목록 GT 와 발문의 말(ADJ)을 더한다."""
     rnd = random.Random(1819)
     out = {}
     for k, r in SL_ROWS.items():
@@ -437,12 +475,18 @@ def _sl2_rows():
         row = {f: r[f] for f in ("CTX", "U", "N", "STEMS", "LEAVES", "NOTE", "K", "KTH", "MAXV", "MINV", "LTOP")}
         row["NOTE"] = re.sub(r"(\d)kg$", r"\1 kg", row["NOTE"])   # 단위 기호(kg)는 수와 띄어 쓴다 — '58 kg' (점·회·분은 붙여 씀)
         row["UU"] = " kg" if r["U"] == "kg" else r["U"]   # t2 가 쓰는 칸만 (몸무게 행의 X·BIGS 등 옛 값이 남지 않게)
-        out[k] = dict(row, GT=", ".join(str(v) for v in vals[-1:-r["K"]:-1]))
+        out[k] = dict(row, GT=", ".join(str(v) for v in vals[-1:-r["K"]:-1]), ADJ=SL2_ADJ[r["CTX"]])
     return out
+
+
+def _sl3_rows():
+    """t3 전용 — 줄기별 잎 개수의 합 LSUM('5 + 1 + 2')을 더한다 (10-01: [확인]이 발문의 전제만 되풀이했다 → 합이 전체 인원과 맞는지로)."""
+    return {k: dict(r, LSUM=" + ".join(str(len(ls)) for ls in r["LEAVES"])) for k, r in SL_ROWS.items()}
 
 
 SL1_ROWS = _sl1_rows()
 SL2_ROWS = _sl2_rows()
+SL3_ROWS = _sl3_rows()
 
 
 def sl_t1():
@@ -463,15 +507,15 @@ def sl_t1():
         figure=SL_FIG,
         answer="{ansv}", answer_alt=["{ansv}명"],
         sol1="줄기와 잎 그림에서 한 자료의 값은 (줄기)(잎)으로 읽는다 — {NOTE}. 기준 {X}{UU} 이상인 것을 셀 때는 줄기가 더 큰 줄의 잎은 모두 세고, 기준과 줄기가 같은 줄에서는 잎을 하나씩 비교한다.",
-        sol2=["줄기가 {X}{UU}의 십의 자리보다 큰 줄의 잎은 모두 {X}{UU} 이상이다", "줄기가 같은 줄에서는 일의 자리(잎)가 기준 이상인 것만 센다", "세어 보면 {X}{UU} 이상인 학생은 {CNTX}명"],
-        sol2_fig=steps([{"text": "큰 줄기의 잎: 모두 포함", "hint": "줄기 = 십의 자리"}, {"text": "같은 줄기: 잎 ≥ 기준의 일의 자리", "marks": [{"on": "잎", "note": "'이상'은 같은 값 포함"}]}, {"text": "합: {CNTX}명"}]),
+        sol2=["{SLA}", "{SLB}", "{SLC}"],       # 줄별로 고른 값을 적는다 (10-01) — 문장은 _sl1_rows 에서 갈래(줄 없음·잎 없음)별로
+        sol2_fig=steps([{"text": "{SFA}", "hint": "줄기 = 십의 자리 → 모두 포함"}, {"text": "{SFB}", "marks": [{"on": "잎 ≥ {XO}", "note": "'이상'은 같은 값 포함"}]}, {"text": "{SFC}"}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")], [reveal(2)]],
-        sol3="그림의 위 줄부터 왼쪽에서 오른쪽으로(작은 값부터) {X}{UU} 이상인 자료를 모두 적으면 {GEX}의 {CNTX}개다. 따라서 전체 {N}명 중 {CNTX}명이 조건에 맞다.",
-        sol3_fig=steps(["{X}{UU} 이상: {GEX}", "전체 {N}명 중 {CNTX}명"]),
+        sol3="거꾸로 {X}{UU} 미만인 값은 {LTX}의 {NLT}개다. 전체 {N}명에서 이를 빼면 {N} − {NLT} = {CNTX}(명)으로 앞에서 센 것과 같다.",
+        sol3_fig=steps(["{X}{UU} 미만: {LTX} → {NLT}명", "{N} − {NLT} = {CNTX}"]),
         sol3_anim=[[reveal(0)], [reveal(1)]],
-        model_answer="줄기와 잎 그림에서 {X}{UU} 이상인 값을 세면 {CNTX}개이다. 따라서 {CNTX}명이다.",
+        model_answer="줄기와 잎 그림에서 {X}{UU} 이상인 값은 {GEX}의 {CNTX}개이다. 따라서 {X}{UU} 이상인 학생은 {CNTX}명이다.",
         rubric=[
-            {"element": "자료 값 읽기", "points": 3, "criterion": "줄기와 잎을 합쳐 값을 읽고 {X}{UU} 이상인 것을 골랐다.", "partial": "같은 줄기의 잎 비교를 빠뜨렸으면 1점."},
+            {"element": "자료 값 읽기", "points": 3, "criterion": "줄기와 잎을 합쳐 값을 읽고 {X}{UU} 이상인 값 {GEX}{eul(GEX)} 골랐다.", "partial": "같은 줄기의 잎 비교를 빠뜨렸으면 1점."},
             {"element": "답 구하기", "points": 2, "criterion": "{CNTX}명을 답했다.", "partial": "하나 차이면 1점."},
         ],
         rubric_total=5,
@@ -492,7 +536,7 @@ def sl_t2():
         cost_values=["N", "K", "KTH"],
         answer_var="ansv",
         verify=["ans == KTH", "ans < MAXV", "ans > MINV"],
-        question="다음은 학생 {N}명의 {CTX}{eul(CTX)} 조사하여 나타낸 줄기와 잎 그림이다. {CTX}{ika(CTX)} {K}번째로 높은(큰) 학생의 {CTX}{eul(CTX)} 구하시오.",
+        question="다음은 학생 {N}명의 {CTX}{eul(CTX)} 조사하여 나타낸 줄기와 잎 그림이다. {CTX}{ika(CTX)} {K}번째로 {ADJ} 학생의 {CTX}{eul(CTX)} 구하시오.",
         figure=SL_FIG,
         answer="{ansv}", answer_alt=["{ansv}{U}", "{ansv} {U}"],
         sol1="줄기와 잎 그림은 줄기가 아래로 갈수록 크고 잎도 왼쪽부터 작은 순서로 적혀 있다. 그러므로 가장 큰 값은 마지막 줄기의 맨 오른쪽 잎이고, 거기서부터 왼쪽으로, 잎이 다 떨어지면 윗줄기의 맨 오른쪽으로 옮겨 가며 세면 된다.",
@@ -519,7 +563,7 @@ def sl_t3():
         discriminates="잎의 개수가 곧 그 범위의 자료 수임을 알고 줄기별로 정확히 세는가",
         difficulty=1,
         params=[{"name": "k", "values": {"in": list(SL_ROWS)}}],
-        table={"key": "k", "rows": SL_ROWS},
+        table={"key": "k", "rows": SL3_ROWS},
         derive={"ansv": "BIGN", "lo": "10*BIGS", "hi": "10*BIGS + 9"},
         constraints=["BIGS >= 0", "BIGN != N", "BIGN != BIGS"],
         cost_values=["N", "BIGN"],
@@ -532,9 +576,9 @@ def sl_t3():
         sol2=["줄기 {BIGS}의 잎을 센다", "잎이 {BIGN}개이므로 학생은 {BIGN}명"],
         sol2_fig=steps([{"text": "줄기 {BIGS} → 값 {lo}~{hi}", "hint": "줄기 = 십의 자리"}, {"text": "잎의 개수 = {BIGN}", "marks": [{"on": "{BIGN}", "note": "잎 하나 = 학생 한 명"}]}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")]],
-        sol3="다른 줄기의 잎은 모두 {BIGN}개보다 적으므로 줄기 {BIGS}{ika(BIGS)} 잎이 가장 많은 줄기가 맞고, 그 학생 수는 {BIGN}명이다.",
-        sol3_fig=steps(["줄기 {BIGS}: {BIGN}명 (가장 많음)"]),
-        sol3_anim=[[reveal(0)]],
+        sol3="줄기별 잎의 개수를 모두 더하면 {LSUM} = {N}{ro(N)} 전체 학생 수와 같으니 잎을 빠짐없이 셌고, 그중 줄기 {BIGS}의 잎이 {BIGN}개로 가장 많다. 답은 {BIGN}명이다.",
+        sol3_fig=steps(["{LSUM} = {N}", "줄기 {BIGS}: {BIGN}명 (가장 많음)"]),
+        sol3_anim=[[reveal(0)], [reveal(1)]],
         model_answer="줄기 {BIGS}의 잎은 {BIGN}개이므로 {lo}{UU} 이상 {hi}{UU} 이하인 학생은 {BIGN}명이다.",
         rubric=[
             {"element": "줄기의 뜻", "points": 2, "criterion": "줄기 {BIGS}{ika(BIGS)} {lo}~{hi}{UU}{eul(UR)} 뜻함을 밝혔다.", "partial": "범위를 잘못 썼으면 인정하지 않는다."},
@@ -613,6 +657,50 @@ def _hg2_rows():
 HG2_ROWS = _hg2_rows()
 
 
+def _hg_rebase(r, s0, cw, f):
+    """계급의 시작값·크기·도수 배치를 바꾼 행 — 파생 칸(계급·최빈 계급·계급값·기준값·넓이)을 새 값으로 다시 구한다.
+    도수는 자리만 바꾸므로 N(발문의 인원)은 그대로다."""
+    j = f.index(max(f))
+    jx = (r["X"] - r["S0"]) // r["CW"]
+    mid = Fraction(2 * s0 + cw * (2 * j + 1), 2)
+    return dict(r, S0=s0, CW=cw, N=sum(f), BINS=[f"{s0 + cw*i}~{s0 + cw*(i+1)}" for i in range(5)], F=f,
+                F1=f[0], F2=f[1], F3=f[2], F4=f[3], F5=f[4], JMAX=j, LOMAX=s0 + cw * j, HIMAX=s0 + cw * (j + 1),
+                MIDn=mid.numerator, MIDd=mid.denominator, X=s0 + cw * jx, CNTX=sum(f[jx:]), AREA=cw * sum(f), FMAX=max(f))
+
+
+def _hg1_rows():
+    """t1 전용 — 100 m 달리기 행을 t2(_hg2_rows)와 같은 현실 범위로: 계급의 크기 1초, 13~20초 안(13·14·15초에서 시작), 도수는 그대로
+    (10-01 B: 계급이 14~28초까지 가고 도수가 가장 큰 계급이 20초 이상인 행이 있었다 — t2 의 09-25 수정이 t1 에 안 옮겨졌다).
+    [확인]용으로 나머지 네 계급의 도수 OTHF 를 더한다."""
+    out = {}
+    for n, (k, r) in enumerate(HG_ROWS.items()):
+        if r["CTX"] == "100 m 달리기 기록":
+            r = _hg_rebase(r, 13 + n % 3, 1, list(r["F"]))
+        out[k] = dict(r, OTHF=", ".join(str(c) for i, c in enumerate(r["F"]) if i != r["JMAX"]))
+    return out
+
+
+def _hg3_rows():
+    """t3 전용 — 100 m 달리기 행을 12~22초(계급의 크기 2초 그대로)로 내리고, 도수는 가운데 계급(16~18초)이 가장 크게 자리만 바꾼다
+    (10-01 B: 22~28초 계급까지 가고 도수가 가장 큰 계급이 20초 이상인 행이 있었다).
+    t2 처럼 1초로 줄이면 넓이의 합 = 1 × 도수의 총합 = 발문의 인원이 되어(제약 AREA != N·R-05) 행이 빠지므로 2초를 둔다 —
+    계급의 크기·인원이 그대로라 답(AREA)도 그대로다."""
+    out = {}
+    for n, (k, r) in enumerate(HG_ROWS.items()):
+        if r["CTX"] == "100 m 달리기 기록":
+            order = [2, 1, 3, 0, 4] if n % 2 else [2, 3, 1, 4, 0]
+            hump = [0] * 5
+            for pos, c in zip(order, sorted(r["F"], reverse=True)):
+                hump[pos] = c
+            r = _hg_rebase(r, 12, 2, hump)
+        out[k] = r
+    return out
+
+
+HG1_ROWS = _hg1_rows()
+HG3_ROWS = _hg3_rows()
+
+
 def hg_t1():
     return tpl(HG, 1, HG_BASE,
         title="히스토그램에서 도수가 가장 큰 계급의 계급값 구하기",
@@ -621,7 +709,7 @@ def hg_t1():
         discriminates="도수(높이)가 가장 큰 계급을 고르고, 계급값을 계급의 한가운데 값으로 구하는가 (도수를 답하지 않는가)",
         difficulty=2,
         params=[{"name": "k", "values": {"in": list(HG_ROWS)}}],
-        table={"key": "k", "rows": HG_ROWS},
+        table={"key": "k", "rows": HG1_ROWS},
         derive={"ansv": "MIDn/MIDd"},
         constraints=["FMAX >= 1", "SC == 0 or S0 + 5*CW <= 100"],   # 수학 점수 계급이 100점을 넘는 행은 뺀다 (09-25 3차)
         cost_values=["N", "CW", "ansv"],
@@ -634,13 +722,13 @@ def hg_t1():
         sol2=["가장 높은 직사각형의 계급: {LOMAX}{UU} 이상 {HIMAX}{UU} 미만 (도수 {FMAX}명)", "계급값 = ({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)} ({U})"],
         sol2_fig=steps([{"text": "도수 최대: {LOMAX} ~ {HIMAX} ({FMAX}명)", "hint": "가장 높은 직사각형"}, {"text": "({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)}", "marks": [{"on": "{dec(ansv)}", "note": "도수 {FMAX}{eul(FMAX)} 답하지 말 것"}]}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")]],
-        sol3="계급값 {dec(ansv)}{UU}{eun(UR)} {LOMAX}{UU}{wa(UR)} {HIMAX}{UU}의 한가운데이므로 계급 안에 있다. 답은 {dec(ansv)}{UU}{ida(UR)}.",
-        sol3_fig=steps(["{LOMAX} < {dec(ansv)} < {HIMAX}"]),
-        sol3_anim=[[reveal(0)]],
+        sol3="도수 {FMAX}명은 나머지 네 계급의 도수 {OTHF}명보다 크므로 고른 계급이 맞다. 또 {dec(ansv)} − {LOMAX} = {HIMAX} − {dec(ansv)} = {dec(CW/2)}{ro(dec(CW/2))} 계급의 양 끝에서 같은 거리에 있으니 한가운데 값이다. 답은 {dec(ansv)}{UU}{ida(UR)}.",
+        sol3_fig=steps(["도수 {FMAX}명 > {OTHF}명", "{dec(ansv)} − {LOMAX} = {HIMAX} − {dec(ansv)} = {dec(CW/2)}"]),
+        sol3_anim=[[reveal(0)], [reveal(1)]],
         model_answer="도수가 가장 큰 계급은 {LOMAX}{UU} 이상 {HIMAX}{UU} 미만이므로 계급값은 ({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)} ({U})이다.",
         rubric=[
             {"element": "계급 찾기", "points": 2, "criterion": "가장 높은 직사각형의 계급 {LOMAX}~{HIMAX}{UU}{eul(UR)} 골랐다.", "partial": "다른 계급을 골랐으면 인정하지 않는다."},
-            {"element": "계급값 구하기", "points": 3, "criterion": "({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)}{eul(ansv)} 구했다.", "partial": "계급의 크기나 도수를 답했으면 인정하지 않는다."},
+            {"element": "계급값 구하기", "points": 3, "criterion": "({LOMAX} + {HIMAX}) ÷ 2 = {dec(ansv)}{eul(dec(ansv))} 구했다.", "partial": "계급의 크기나 도수를 답했으면 인정하지 않는다."},
         ],
         rubric_total=5,
     )
@@ -687,7 +775,7 @@ def hg_t3():
         discriminates="넓이의 합을 계급의 크기와 도수의 총합의 곱으로 구하는가 (도수의 합만 답하지 않는가)",
         difficulty=3, points=5,
         params=[{"name": "q", "values": {"in": ["hist", "poly"]}}, {"name": "k", "values": {"in": list(HG_ROWS)}}],
-        table=[{"key": "q", "rows": {"hist": {"QW": "히스토그램의 각 직사각형의 넓이의 합"}, "poly": {"QW": "이 히스토그램에서 만든 도수분포다각형과 가로축으로 둘러싸인 부분의 넓이"}}}, {"key": "k", "rows": HG_ROWS}],
+        table=[{"key": "q", "rows": {"hist": {"QW": "히스토그램의 각 직사각형의 넓이의 합"}, "poly": {"QW": "이 히스토그램에서 만든 도수분포다각형과 가로축으로 둘러싸인 부분의 넓이"}}}, {"key": "k", "rows": HG3_ROWS}],
         derive={"ansv": "AREA"},
         constraints=["AREA != N", "AREA != CW", "SC == 0 or S0 + 5*CW <= 100"],   # 수학 점수 계급이 100점을 넘는 행은 뺀다 (09-25 3차, t1 과 같은 기준)
         cost_values=["N", "CW", "AREA"],

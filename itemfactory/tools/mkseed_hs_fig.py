@@ -519,6 +519,24 @@ def _vmul(x, y, after_plus=False):
     return f"{_pn(x) if after_plus else x} × {_pn(y)}"
 
 
+# 갈래별 [방침]·[전개] 1행(과 그 힌트) — 합 벡터를 쓰는 갈래(sum·n2·n)는 평행사변형의 대각선으로 시작하고,
+# 합 벡터를 쓰지 않는 내적·(a + b)·(a − b) 갈래는 그 갈래의 방법으로 쓴다 (10-01, 1차 검토 B·minor)
+VF1_S1 = "그림에서 [[vec(a) + vec(b)]]는 두 벡터를 이웃한 변으로 하는 평행사변형의 대각선이다. 계산은 성분으로: 합은 성분끼리 더하고, 내적은 대응 성분의 곱의 합, 크기는 √(x² + y²)이다."
+VF1_PM = "[[dot((vec(a) + vec(b)), (vec(a) − vec(b)))]]"
+VF1_TXT = {
+    "sum": (VF1_S1, "합 벡터 = 평행사변형의 대각선(점선 참고)", "그림 읽기"),
+    "n2": (VF1_S1, "합 벡터 = 평행사변형의 대각선(점선 참고)", "그림 읽기"),
+    "n": (VF1_S1, "합 벡터 = 평행사변형의 대각선(점선 참고)", "그림 읽기"),
+    "dot": ("두 벡터의 내적은 대응 성분끼리 곱해 더한 값이다. [[vec(a)]] = (x₁, y₁), [[vec(b)]] = (x₂, y₂)이면 [[dot(vec(a), vec(b))]] = x₁x₂ + y₁y₂이고, 그 결과는 벡터가 아닌 실수이다.",
+            "[[dot(vec(a), vec(b))]] = (x성분끼리의 곱) + (y성분끼리의 곱)", "내적의 정의"),
+    "pm": (f"{VF1_PM}를 전개하면 [[pow(abs(vec(a)), 2)]] − [[dot(vec(a), vec(b))]] + [[dot(vec(b), vec(a))]] − [[pow(abs(vec(b)), 2)]]이고, "
+           "[[dot(vec(a), vec(b))]] = [[dot(vec(b), vec(a))]]이므로 가운데 두 항이 지워져 [[pow(abs(vec(a)), 2)]] − [[pow(abs(vec(b)), 2)]]만 남는다. "
+           "크기의 제곱은 성분의 제곱의 합(x² + y²)이므로 [[pow(abs(vec(a)), 2)]]과 [[pow(abs(vec(b)), 2)]]을 성분으로 구해 뺀다.",
+           f"{VF1_PM} = [[pow(abs(vec(a)), 2)]] − [[pow(abs(vec(b)), 2)]]", "전개하면 [[dot(vec(a), vec(b))]] 항이 지워짐"),
+}
+VF1_CHK = "그림의 화살표 방향·길이와 계산한 성분의 부호·크기가 맞는지 확인한다."
+
+
 def _vf1_rows():
     out = {}
     for _ in range(900):
@@ -532,10 +550,12 @@ def _vf1_rows():
         fig = {**_rangeof([a, b, s]), "PTS": pts, "ARR": arr, "LINES": lines}
         base = f"그림과 같이 두 벡터 [[vec(a)]] = [[vcomp({a[0]}, {a[1]})]], [[vec(b)]] = [[vcomp({b[0]}, {b[1]})]]{_wa(b[1])} 그 합 [[vec(a) + vec(b)]]를 좌표평면에 나타내었다."
         na2 = s[0] ** 2 + s[1] ** 2; nd2 = dd[0] ** 2 + dd[1] ** 2
+        a2 = a[0] ** 2 + a[1] ** 2; b2 = b[0] ** 2 + b[1] ** 2
+        # (a + b)·(a − b): STEP 은 |a|²·|b|² 의 성분 제곱합까지(채점 요소 1 '성분 계산'의 기준) — 빼는 식은 [전개] 2행 끝·모범답안에 붙인다
         asks = [("sum", Fraction(s[0] + s[1]), "[[vec(a) + vec(b)]]의 모든 성분의 합", f"[[vec(a) + vec(b)]] = ({a[0]} + {_pn(b[0])}, {a[1]} + {_pn(b[1])}) = ({s[0]}, {s[1]})"),
                 ("dot", Fraction(a[0] * b[0] + a[1] * b[1]), "[[dot(vec(a), vec(b))]]의 값", f"[[dot(vec(a), vec(b))]] = {_vmul(a[0], b[0])} + {_vmul(a[1], b[1], True)} = {a[0] * b[0] + a[1] * b[1]}"),
                 ("n2", Fraction(na2), "[[pow(abs(vec(a) + vec(b)), 2)]]의 값", f"[[vec(a) + vec(b)]] = ({s[0]}, {s[1]})에서 [[pow(abs(vec(a) + vec(b)), 2)]] = {_pn(s[0])}² + {_pn(s[1])}² = {na2}"),
-                ("pm", Fraction(a[0] ** 2 + a[1] ** 2 - b[0] ** 2 - b[1] ** 2), "[[dot((vec(a) + vec(b)), (vec(a) − vec(b)))]]의 값", f"[[dot((vec(a) + vec(b)), (vec(a) − vec(b)))]] = [[pow(abs(vec(a)), 2)]] − [[pow(abs(vec(b)), 2)]] = {a[0] ** 2 + a[1] ** 2} − {b[0] ** 2 + b[1] ** 2} = {a[0] ** 2 + a[1] ** 2 - b[0] ** 2 - b[1] ** 2}")]
+                ("pm", Fraction(a2 - b2), f"{VF1_PM}의 값", f"[[pow(abs(vec(a)), 2)]] = {_pn(a[0])}² + {_pn(a[1])}² = {a2}, [[pow(abs(vec(b)), 2)]] = {_pn(b[0])}² + {_pn(b[1])}² = {b2}")]
         na = _isq(na2)
         if na: asks.append(("n", na, "[[abs(vec(a) + vec(b))]]의 값", f"[[vec(a) + vec(b)]] = ({s[0]}, {s[1]})에서 [[abs(vec(a) + vec(b))]] = [[sqrt({na2})]]"))
         neg_ab = any(x < 0 for x in a + b)
@@ -555,7 +575,16 @@ def _vf1_rows():
         for kk, v, ask, step in asks:
             q = f"벡터그림 {a} {b} {kk}"
             pa, pb, pc = pit[kk]
-            r = _row(q, v, Q=f"{base} {ask}을 구하시오.", STEP=step, ASK=ask.replace("의 값", "").replace("의 모든 성분의 합", "의 성분의 합"), PITA=pa, PITB=pb, PITC=pc, **fig)
+            s1, l1, h1 = VF1_TXT[kk]
+            # 다른 갈래는 [전개] 2행·모범답안·[확인]이 이전과 같다(S2T·MPRE·MSUB 빈칸, CHKF = STEP)
+            txt = {"S1": s1, "L1": l1, "H1": h1, "S2T": "", "MPRE": "", "MSUB": "", "CHKT": VF1_CHK, "CHKF": step}
+            if kk == "pm":      # |a|² − |b|² 로 바꾸는 항등식 + 성분 제곱합, [확인]은 a + b, a − b 를 성분으로 직접 내적
+                prod = f"{_vmul(s[0], dd[0])} + {_vmul(s[1], dd[1], True)}"
+                txt.update(S2T=f" → {a2} − {b2} = {a2 - b2}", MSUB=f"{a2} − {b2} = ",
+                           MPRE=f"{VF1_PM} = [[pow(abs(vec(a)), 2)]] − [[dot(vec(a), vec(b))]] + [[dot(vec(b), vec(a))]] − [[pow(abs(vec(b)), 2)]] = [[pow(abs(vec(a)), 2)]] − [[pow(abs(vec(b)), 2)]]이고, ",
+                           CHKT=f"[[vec(a) + vec(b)]] = ({s[0]}, {s[1]}), [[vec(a) − vec(b)]] = ({dd[0]}, {dd[1]}){_eul(dd[1])} 성분으로 직접 내적해도 {prod} = {a2 - b2}{_ro(a2 - b2)} 같은 값이 나온다.",
+                           CHKF=f"({s[0]}, {s[1]})·({dd[0]}, {dd[1]}) = {prod} = {a2 - b2} ✓")
+            r = _row(q, v, Q=f"{base} {ask}을 구하시오.", STEP=step, ASK=ask.replace("의 값", "").replace("의 모든 성분의 합", "의 성분의 합"), PITA=pa, PITB=pb, PITC=pc, **txt, **fig)
             if r: out[f"{a}_{b}_{kk}"] = r
     return _pick(out, 330)
 
@@ -569,10 +598,10 @@ def vf_t1():
         params=[{"name": "f", "values": {"in": list(VF1_ROWS)}}], table={"key": "f", "rows": VF1_ROWS},
         derive={"ans": "VN/VD"}, cost=["ans"], verify=["ans*VD == VN"],
         q="{Q}", answer="{ans}", figure=_vf_fig(),
-        sol1="그림에서 [[vec(a) + vec(b)]]는 두 벡터를 이웃한 변으로 하는 평행사변형의 대각선이다. 계산은 성분으로: 합은 성분끼리 더하고, 내적은 대응 성분의 곱의 합, 크기는 √(x² + y²)이다.",
-        sol2=[("합 벡터 = 평행사변형의 대각선(점선 참고)", "그림 읽기"), ("{STEP}", "성분 계산"), ("{ASK} = {ans}", None, ("{ans}", "{ASK}"))],
-        sol3=["그림의 화살표 방향·길이와 계산한 성분의 부호·크기가 맞는지 확인한다. 따라서 {ASK} = {ans}이다.", "{STEP}", "답 {ans}"],
-        model="{STEP}이므로 {ASK} = {ans}이다.",
+        sol1="{S1}",
+        sol2=[("{L1}", "{H1}"), ("{STEP}{S2T}", "성분 계산"), ("{ASK} = {ans}", None, ("{ans}", "{ASK}"))],
+        sol3=["{CHKT} 따라서 {ASK} = {ans}이다.", "{CHKF}", "답 {ans}"],
+        model="{MPRE}{STEP}이므로 {ASK} = {MSUB}{ans}이다.",
         rubric=[("성분 계산", 3, "{STEP} 꼴로 계산했다.", "성분 하나가 틀렸으면 1점."), ("값 구하기", 2, "{ans}{eul(ans)} 구했다.", "부호 실수면 1점.")],
         pitfalls=[("합 벡터를 두 벡터의 크기의 합으로 봄", "성분 계산", "불인정"), ("내적을 벡터로 답함", "값 구하기", "불인정"), ("음수 성분의 부호 실수", "성분 계산", "부분")])
 

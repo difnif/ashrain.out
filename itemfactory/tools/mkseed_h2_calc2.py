@@ -413,7 +413,19 @@ def _cterm(c, X, first=False):
     return f"{'+' if c > 0 else '−'} {'' if abs(c) == 1 else abs(c)}{X}"
 
 
+def _lin_res(c1, fa, c2, ga):
+    """선형성 계산 줄 — [전개] 2줄(k∫f ± l∫g)과 같은 부호로, 계수·값이 ±1 이어도 곱하는 부호를 드러낸다 (예: 3 × 4 − (-3), −(-3) + 6)."""
+    first = _fm(fa) if c1 == 1 else (f"−{_fmp(fa)}" if c1 == -1 else f"{c1} × {_fmp(fa)}")
+    second = f"{'+' if c2 > 0 else '−'} {_fmp(ga) if abs(c2) == 1 else f'{abs(c2)} × {_fmp(ga)}'}"
+    return f"= {first} {second} = {c1 * fa + c2 * ga}"
+
+
 def _in3_rows():
+    # 10-01: 선형성 계수 (1, 1) — ∫(f + g) — 은 정답 풀이가 곧 실수거리 1번('계수를 빼고 두 값을 그대로 더함')이다. 이런 행과, 우연히
+    #        두 값을 그대로 더하거나(예: 2 × 4 − 2 = 4 + 2) 곱해도 정답이 되는 선형성 행을 PITHIT = 1 로 표시해 제약(PITHIT == 0)으로 뺀다.
+    #        후보 집합·_pick 은 그대로 두어(모듈 rng 소비가 같아야 뒤의 _in4·_in5 뽑기가 안 바뀐다) 행 색인도 그대로다.
+    #        그 밖: [방침]의 '이 문제는 … 유형이다'·약식 ∫ₐᶜ(ᵇ 위첨자) → 마커 공식(LAW), 연속함수 단서, [전개] 2줄에 좌변, 선형성 계산 줄의 부호 드러내기,
+    #        구간 뒤 조사.
     out = {}
     for a in range(1, 5):
         for p in NZ(-2, 3):
@@ -426,27 +438,27 @@ def _in3_rows():
                         q = f"[[dinteg(-{a}, {a}, {f}, x)]]"
                         if v == 0 or Fraction(v) in _nums(q):
                             continue
-                        out[f"o{a}_{p}_{s}_{r}_{od}"] = {"EXPR": q, "V": v, "LAW": "기함수(홀수 차수)의 대칭구간 적분은 0, 우함수(짝수 차수)는 0부터 위끝까지 적분한 값의 2배", "STEP": f"= 2[[dinteg(0, {a}, {abs(3 * p)}pow(x,2) {'+' if r > 0 else '−'} {abs(r)}, x)]]" if p > 0 else f"= 2[[dinteg(0, {a}, -{abs(3 * p)}pow(x,2) {'+' if r > 0 else '−'} {abs(r)}, x)]]", "RES": f"= 2({_mulx(p, a ** 3)} {'+' if r > 0 else '−'} {_mulx(abs(r), a)}) = {v}", "KIND": "대칭구간", "PIT1": "짝수 차수 항을 0부터 위끝까지 적분한 값을 2배 하지 않음", "PIT2": "홀수 차수 항도 2배 해서 남김", "PIT3": "부정적분에 대입할 때 계산·부호 실수", "LHS": q, "CHK": f"성질을 쓰지 않고 그대로 적분해도, 홀수 차수 항의 부정적분은 짝수 차수 식이라 x = {a}{_wa(a)} x = -{a}에서의 값이 같아 빼면 0이 되므로 같은 값이 나오는지 확인한다", "PART": "짝수 차수 항만 남겨 2배 하는 식은 맞게 세웠으나 식을 옮겨 적는 실수가 있으면 1점."}
+                        out[f"o{a}_{p}_{s}_{r}_{od}"] = {"EXPR": q, "V": v, "LAW": "기함수(홀수 차수)의 대칭구간 적분은 0, 우함수(짝수 차수)는 0부터 위끝까지 적분한 값의 2배", "PLAN": "정적분의 성질을 쓴다: 기함수(홀수 차수)의 대칭구간 적분은 0, 우함수(짝수 차수)는 0부터 위끝까지 적분한 값의 2배.", "STEP": f"= 2[[dinteg(0, {a}, {abs(3 * p)}pow(x,2) {'+' if r > 0 else '−'} {abs(r)}, x)]]" if p > 0 else f"= 2[[dinteg(0, {a}, -{abs(3 * p)}pow(x,2) {'+' if r > 0 else '−'} {abs(r)}, x)]]", "RES": f"= 2({_mulx(p, a ** 3)} {'+' if r > 0 else '−'} {_mulx(abs(r), a)}) = {v}", "KIND": "대칭구간", "PIT1": "짝수 차수 항을 0부터 위끝까지 적분한 값을 2배 하지 않음", "PIT2": "홀수 차수 항도 2배 해서 남김", "PIT3": "부정적분에 대입할 때 계산·부호 실수", "LHS": q, "CHK": f"성질을 쓰지 않고 그대로 적분해도, 홀수 차수 항의 부정적분은 짝수 차수 식이라 x = {a}{_wa(a)} x = -{a}에서의 값이 같아 빼면 0이 되므로 같은 값이 나오는지 확인한다", "PART": "짝수 차수 항만 남겨 2배 하는 식은 맞게 세웠으나 식을 옮겨 적는 실수가 있으면 1점.", "PITHIT": 0}
     for fa in range(-6, 8):
         for ga in range(-5, 7):
             for c1 in (1, 2, 3, -1):
                 for c2 in (1, 2, -1, -2, 3):
                     v = c1 * fa + c2 * ga
                     lin = f"{'' if c1 == 1 else ('-' if c1 == -1 else c1)}f(x) {'+' if c2 > 0 else '−'} {'' if abs(c2) == 1 else abs(c2)}g(x)"
-                    q = f"[[dinteg(1, 3, f(x), x)]] = {fa}, [[dinteg(1, 3, g(x), x)]] = {ga}일 때, [[dinteg(1, 3, {lin}, x)]]"
+                    q = f"두 연속함수 f(x), g(x)에 대하여 [[dinteg(1, 3, f(x), x)]] = {fa}, [[dinteg(1, 3, g(x), x)]] = {ga}일 때, [[dinteg(1, 3, {lin}, x)]]"
                     if v == 0 or Fraction(v) in _nums(q) or fa == 0 or ga == 0:
                         continue
-                    out[f"l{fa}_{ga}_{c1}_{c2}"] = {"EXPR": q, "V": v, "LAW": "정적분의 선형성: ∫(kf + lg) = k∫f + l∫g", "STEP": f"= {_cterm(c1, '[[dinteg(1, 3, f(x), x)]]', True)} {_cterm(c2, '[[dinteg(1, 3, g(x), x)]]')}", "RES": f"= {_mulx(c1, fa)} + {_mulx(c2, ga, paren=True)} = {v}", "KIND": "선형성", "PIT1": "계수를 빼고 두 정적분 값을 그대로 더함", "PIT2": "∫(kf + lg)를 두 정적분의 곱으로 계산함", "PIT3": "음수 계수·음수 적분값을 곱할 때 부호 실수", "LHS": f"[[dinteg(1, 3, {lin}, x)]]", "CHK": f"f(x), g(x)의 식은 몰라도 선형성만으로 값이 정해진다. 각 정적분 값에 곱한 계수 {c1}, {c2}{_ika(c2)} 식의 f(x), g(x) 앞 계수(부호 포함)와 같은지 확인한다", "PART": "계수를 곱하는 식은 맞게 세웠으나 한 항의 계수를 옮겨 적는 실수가 있으면 1점."}
+                    out[f"l{fa}_{ga}_{c1}_{c2}"] = {"EXPR": q, "V": v, "LAW": "[[dinteg(a, b, k f(x) + l g(x), x)]] = k[[dinteg(a, b, f(x), x)]] + l[[dinteg(a, b, g(x), x)]]", "PLAN": "정적분의 선형성 [[dinteg(a, b, k f(x) + l g(x), x)]] = k[[dinteg(a, b, f(x), x)]] + l[[dinteg(a, b, g(x), x)]]를 이용한다(k, l은 상수).", "STEP": f"= {_cterm(c1, '[[dinteg(1, 3, f(x), x)]]', True)} {_cterm(c2, '[[dinteg(1, 3, g(x), x)]]')}", "RES": _lin_res(c1, fa, c2, ga), "KIND": "선형성", "PIT1": "계수를 빼고 두 정적분 값을 그대로 더함", "PIT2": "∫(kf + lg)를 두 정적분의 곱으로 계산함", "PIT3": "음수 계수·음수 적분값을 곱할 때 부호 실수", "LHS": f"[[dinteg(1, 3, {lin}, x)]]", "CHK": f"f(x), g(x)의 식은 몰라도 선형성만으로 값이 정해진다. 각 정적분 값에 곱한 계수 {c1}, {c2}{_ika(c2)} 식의 f(x), g(x) 앞 계수(부호 포함)와 같은지 확인한다", "PART": "계수를 곱하는 식은 맞게 세웠으나 한 항의 계수를 옮겨 적는 실수가 있으면 1점.", "PITHIT": int(fa + ga == v or fa * ga == v)}
     for a in range(-3, 3):
         for b in range(a + 1, 5):
             for c in range(b + 1, 7):
                 for v1 in NZ(-6, 6):
                     for v2 in NZ(-6, 6):
                         v = v1 + v2
-                        q = f"[[dinteg({a}, {b}, f(x), x)]] = {v1}, [[dinteg({b}, {c}, f(x), x)]] = {v2}일 때, [[dinteg({a}, {c}, f(x), x)]]"
+                        q = f"연속함수 f(x)에 대하여 [[dinteg({a}, {b}, f(x), x)]] = {v1}, [[dinteg({b}, {c}, f(x), x)]] = {v2}일 때, [[dinteg({a}, {c}, f(x), x)]]"
                         if v == 0 or Fraction(v) in _nums(q):
                             continue
-                        out[f"c{a}_{b}_{c}_{v1}_{v2}"] = {"EXPR": q, "V": v, "LAW": "구간 나누기: ∫ₐᶜ = ∫ₐᵇ + ∫ᵇᶜ", "STEP": f"= [[dinteg({a}, {b}, f(x), x)]] + [[dinteg({b}, {c}, f(x), x)]]", "RES": f"= {v1} + {_fmp(v2)} = {v}", "KIND": "구간 나누기", "PIT1": "두 구간의 적분값을 더하지 않고 뺌", "PIT2": "이어지지 않는 구간끼리 붙임(끝점을 잘못 맞춤)", "PIT3": "음수 적분값을 더할 때 부호 실수", "LHS": f"[[dinteg({a}, {c}, f(x), x)]]", "CHK": f"f(x)의 식은 몰라도 구간을 이어 붙이면 값이 정해진다. 두 구간 [{a}, {b}], [{b}, {c}]가 겹치지도 비지도 않게 이어져 [{a}, {c}]가 되는지 확인한다", "PART": "구간은 맞게 나누었으나 위끝·아래끝을 옮겨 적는 실수가 있으면 1점."}
+                        out[f"c{a}_{b}_{c}_{v1}_{v2}"] = {"EXPR": q, "V": v, "LAW": "[[dinteg(a, c, f(x), x)]] = [[dinteg(a, b, f(x), x)]] + [[dinteg(b, c, f(x), x)]]", "PLAN": "정적분의 성질 [[dinteg(a, c, f(x), x)]] = [[dinteg(a, b, f(x), x)]] + [[dinteg(b, c, f(x), x)]]를 이용해 이어진 두 구간의 정적분을 더한다.", "STEP": f"= [[dinteg({a}, {b}, f(x), x)]] + [[dinteg({b}, {c}, f(x), x)]]", "RES": f"= {v1} + {_fmp(v2)} = {v}", "KIND": "구간 나누기", "PIT1": "두 구간의 적분값을 더하지 않고 뺌", "PIT2": "이어지지 않는 구간끼리 붙임(끝점을 잘못 맞춤)", "PIT3": "음수 적분값을 더할 때 부호 실수", "LHS": f"[[dinteg({a}, {c}, f(x), x)]]", "CHK": f"f(x)의 식은 몰라도 구간을 이어 붙이면 값이 정해진다. 두 구간 [{a}, {b}], [{b}, {c}]{_ika(c)} 겹치지도 비지도 않게 이어져 [{a}, {c}]{_ika(c)} 되는지 확인한다", "PART": "구간은 맞게 나누었으나 위끝·아래끝을 옮겨 적는 실수가 있으면 1점.", "PITHIT": 0}
     return _pick(out, 330)
 
 
@@ -457,11 +469,11 @@ def in_t3():
     return T(IN, 3, IN_B, title="정적분의 성질 — 대칭구간·선형성·구간 나누기",
         skill="기함수/우함수의 대칭구간 적분, ∫(kf + lg) = k∫f + l∫g, ∫ₐᶜ = ∫ₐᵇ + ∫ᵇᶜ 쓰기", axis={"성질": "대칭구간 / 선형성 / 구간 나누기"}, disc="홀수 차수 항이 대칭구간에서 사라짐과 정적분의 선형성·구간 합을 정확히 적용하는가", diff=2,
         params=[{"name": "f", "values": {"in": list(IN3_ROWS)}}], table={"key": "f", "rows": IN3_ROWS},
-        derive={"ans": "V"}, cost=["ans"], verify=["ans == V"],
+        derive={"ans": "V"}, constraints=["PITHIT == 0"], cost=["ans"], verify=["ans == V"],
         q="{EXPR}의 값을 구하시오.", answer="{ans}",
-        sol1="정적분의 성질을 쓴다: {LAW}. 이 문제는 {KIND} 유형이다.",
-        sol2=[("{LAW}", "성질"), ("{STEP}", "적용"), ("{RES}", None, ("{ans}", "값"))],
-        sol3=["{CHK}. 따라서 값은 {ans}이다.", "{STEP}", "답 {ans}"],
+        sol1="{PLAN}",
+        sol2=[("{LAW}", "성질"), ("{LHS} {STEP}", "적용"), ("{RES}", None, ("{ans}", "값"))],
+        sol3=["{CHK}. 따라서 값은 {ans}이다.", "{LHS} {STEP}", "답 {ans}"],
         model="{LAW}이므로 {LHS} {STEP} {RES}. 따라서 값은 {ans}이다.",
         rubric=[("성질 적용", 3, "{LHS} {STEP} 꼴로 바꿨다.", "{PART}"), ("계산", 2, "{ans}{eul(ans)} 구했다.", "부호 실수면 1점.")],
         pitfalls=[("우함수 부분을 2배 하지 않음", "성질 적용", "불인정"), ("∫(f + g)를 ∫f × ∫g로 계산", "성질 적용", "불인정"), ("구간을 이어 붙일 때 부호 실수", "계산", "부분")])

@@ -188,7 +188,10 @@ def ss_t3():
         sol3="a = {a}, b = {b}{eul(b)} 넣으면 {co(a)}x {BS} = {c1}, {co(b)}x {NAS} = {c2}이고, x = {x0}, y = {y0}{eul(y0)} 대입하면 {a*x0} {sgn(b*y0)} = {c1}, {b*x0} {sgn(-a*y0)} = {c2}{ro(c2)} 모두 성립한다. 따라서 {ASK} = {ans}이다.",
         sol3_fig=steps(["{a*x0} {sgn(b*y0)} = {c1} ✓", "{b*x0} {sgn(-a*y0)} = {c2} ✓", "{ASK} = {ans}"]),
         sol3_anim=[[reveal(0)], [reveal(1)], [reveal(2)]],
-        model_answer="x = {x0}, y = {y0}{eul(y0)} 대입하면 {co(x0)}a {Y0B} = {c1}, {co(x0)}b {Y0A} = {c2}이다. 두 식을 연립하여 풀면 a = {a}, b = {b}이므로 {ASK} = {ans}이다.",
+        # 모범답안에도 가감법 과정을 쓴다 — 채점 요소 2(가감법으로 a, b)를 모범답안 스스로 받게 (10-01, 1차 검토 B)
+        model_answer="x = {x0}, y = {y0}{eul(y0)} 대입하면 {co(x0)}a {Y0B} = {c1} … ①, {co(x0)}b {Y0A} = {c2} … ②이다. "
+                     "b를 없애기 위해 ① × {pn(x0)} − ② × {pn(y0)}{eul(y0)} 하면 {ss}a = {ra}이므로 a = {a}이다. "
+                     "a = {a}{eul(a)} ①에 대입하면 {x0a} {Y0B} = {c1}, {co(y0)}b = {rb}이므로 b = {b}이다. 따라서 {ASK} = {ans}이다.",
         rubric=[
             {"element": "대입해 식 세우기", "points": 3, "criterion": "해를 대입해 {co(x0)}a {Y0B} = {c1}, {co(x0)}b {Y0A} = {c2}{eul(c2)} 세웠다.", "partial": "한 식만 세웠거나 부호 실수가 있으면 1점."},
             {"element": "a, b 구하기", "points": 2, "criterion": "가감법으로 a = {a}, b = {b}{eul(b)} 구했다.", "partial": "하나만 맞으면 1점."},

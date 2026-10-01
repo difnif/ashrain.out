@@ -1315,17 +1315,26 @@
           "sum": {
             "ASK": "a + b",
             "w1": 1,
-            "w2": 0
+            "w2": 0,
+            "NEGL": "−(",
+            "NEGR": ") = ",
+            "BL": ""
           },
           "prod": {
             "ASK": "ab",
             "w1": 0,
-            "w2": 1
+            "w2": 1,
+            "NEGL": "−(",
+            "NEGR": ") = ",
+            "BL": ""
           },
           "diff": {
             "ASK": "a − b",
             "w1": 0,
-            "w2": 0
+            "w2": 0,
+            "NEGL": "−(",
+            "NEGR": ") = ",
+            "BL": ""
           }
         }
       },
@@ -1357,7 +1366,7 @@
       "sol2": [
         "다른 한 근: {p} − {co(qv)}i (켤레근)",
         "합 = {s}, 곱 = ({p} + {co(qv)}i)({p} − {co(qv)}i) = {prod}",
-        "a = −({s}) = {a}, b = {prod} → {ASK} = {ans}"
+        "a = {NEGL if s < 0 else BL}{s if s < 0 else BL}{NEGR if s < 0 else BL}{a}, b = {prod} → {ASK} = {ans}"
       ],
       "sol2_fig": [
         {
@@ -1373,7 +1382,7 @@
                 "hint": "합차 공식"
               },
               {
-                "text": "a = −({s}) = {a}, b = {prod} → {ASK} = {ans}",
+                "text": "a = {NEGL if s < 0 else BL}{s if s < 0 else BL}{NEGR if s < 0 else BL}{a}, b = {prod} → {ASK} = {ans}",
                 "marks": [
                   {
                     "on": "{ans}",
@@ -1417,13 +1426,13 @@
           }
         ]
       ],
-      "sol3": "x = {p} + {co(qv)}i를 x² {sgt(a)}x {sgn(b)}에 넣으면 0이 된다(직접 전개해 확인). 따라서 {ASK} = {ans}이다.",
+      "sol3": "구한 a, b로 x² {sgt(a)}x {sgn(b)} = 0을 풀면 (x {sgn(-p)})² + {qv*qv} = 0, (x {sgn(-p)})² = -{qv*qv}, x {sgn(-p)} = ±{co(qv)}i이므로 x = {p} ± {co(qv)}i가 되어 주어진 근 {p} + {co(qv)}i와 그 켤레근이 나온다. 따라서 {ASK} = {ans}이다.",
       "sol3_fig": [
         {
           "fn": "steps",
           "args": {
             "lines": [
-              "x² {sgt(a)}x {sgn(b)} = 0에 근 대입 → 0 ✓",
+              "(x {sgn(-p)})² = -{qv*qv} → x = {p} ± {co(qv)}i ✓",
               "{ASK} = {ans}"
             ]
           }
@@ -1444,7 +1453,7 @@
         ]
       ],
       "geometry": false,
-      "model_answer": "켤레근 {p} − {co(qv)}i도 근이므로 두 근의 합은 {s}, 곱은 {prod}이다. 따라서 a = {a}, b = {b}이고 {ASK} = {ans}이다.",
+      "model_answer": "a, b가 실수이므로 {p} + {co(qv)}i의 켤레복소수 {p} − {co(qv)}i도 근이다. 두 근의 합은 {s}, 곱은 ({p} + {co(qv)}i)({p} − {co(qv)}i) = {pn(p)}² + {qv}² = {prod}이므로 근과 계수의 관계에서 −a = {s}, b = {prod}이다. 따라서 a = {a}, b = {b}이고 {ASK} = {ans}이다.",
       "rubric": [
         {
           "element": "켤레근",
@@ -1462,12 +1471,12 @@
       "rubric_total": 5,
       "pitfalls": [
         {
-          "text": "켤레근을 쓰지 않고 한 근만 대입해 못 풂",
+          "text": "다른 한 근을 {-p} − {co(qv)}i처럼 실수부의 부호까지 바꾼 수로 둠",
           "on": "켤레근",
           "effect": "불인정"
         },
         {
-          "text": "a = 합(부호 반대)으로 둠",
+          "text": "a를 −(합)이 아니라 합 그대로 둠",
           "on": "계수 구하기",
           "effect": "부분"
         },

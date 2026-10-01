@@ -1270,22 +1270,27 @@
         "대응각",
         "대응변"
       ],
-      "title": "합동인 두 삼각형에서 대응변을 찾아 둘레 구하기",
-      "skill": "△ABC ≡ △DEF 에서 다른 삼각형의 변이 어느 변과 대응하는지 찾아 둘레의 길이를 구하기",
+      "title": "합동인 두 삼각형에서 대응변을 찾아 둘레 구하기 — 이미 아는 변과 겹치는 변 가려내기",
+      "skill": "△ABC ≡ △DEF 에서 △DEF 의 두 변이 각각 △ABC 의 어느 변과 대응하는지 찾아, 이미 아는 변과 겹치는 것은 한 번만 세고 모르는 변을 옮겨 둘레의 길이를 구하기",
       "variant_axis": {
-        "주어진 변": "두 변은 △ABC, 한 변은 △DEF",
-        "대응": "DF↔AC / EF↔BC / DE↔AB"
+        "주어진 변": "△ABC 두 변 + △DEF 두 변(하나는 모르는 변의 대응변, 하나는 이미 아는 변의 대응변)",
+        "모르는 변": "AB·BC·CA",
+        "겹치는 변": "남은 두 변 중 하나",
+        "길이": "3~12 cm (이등변삼각형 포함)"
       },
-      "discriminates": "꼭짓점 순서로 대응변을 찾아(DF↔AC, EF↔BC, DE↔AB) 둘레에 넣는가",
+      "discriminates": "꼭짓점 순서로 대응변을 찾아(AB↔DE, BC↔EF, CA↔FD) 모르는 변만 둘레에 넣는가 — 주어진 네 수를 모두 더하지 않는가",
       "difficulty": 2,
       "params": [
         {
           "name": "k",
           "values": {
             "in": [
-              "ab_bc_df",
-              "ab_ca_ef",
-              "bc_ca_de"
+              "ab_bc_fd_de",
+              "ab_bc_fd_ef",
+              "ab_ca_ef_de",
+              "ab_ca_ef_fd",
+              "bc_ca_de_ef",
+              "bc_ca_de_fd"
             ]
           }
         },
@@ -1320,61 +1325,118 @@
       "table": {
         "key": "k",
         "rows": {
-          "ab_bc_df": {
+          "ab_bc_fd_de": {
             "S1": "AB",
             "S2": "BC",
-            "S3": "DF",
-            "S3C": "AC"
+            "M": "CA",
+            "TN": "FD",
+            "RC": "AB",
+            "TR": "DE",
+            "wr": 1,
+            "rf": 1,
+            "X1": "DE",
+            "X2": "FD"
           },
-          "ab_ca_ef": {
+          "ab_bc_fd_ef": {
+            "S1": "AB",
+            "S2": "BC",
+            "M": "CA",
+            "TN": "FD",
+            "RC": "BC",
+            "TR": "EF",
+            "wr": 0,
+            "rf": 1,
+            "X1": "EF",
+            "X2": "FD"
+          },
+          "ab_ca_ef_de": {
             "S1": "AB",
             "S2": "CA",
-            "S3": "EF",
-            "S3C": "BC"
+            "M": "BC",
+            "TN": "EF",
+            "RC": "AB",
+            "TR": "DE",
+            "wr": 1,
+            "rf": 1,
+            "X1": "DE",
+            "X2": "EF"
           },
-          "bc_ca_de": {
+          "ab_ca_ef_fd": {
+            "S1": "AB",
+            "S2": "CA",
+            "M": "BC",
+            "TN": "EF",
+            "RC": "CA",
+            "TR": "FD",
+            "wr": 0,
+            "rf": 0,
+            "X1": "EF",
+            "X2": "FD"
+          },
+          "bc_ca_de_ef": {
             "S1": "BC",
             "S2": "CA",
-            "S3": "DE",
-            "S3C": "AB"
+            "M": "AB",
+            "TN": "DE",
+            "RC": "BC",
+            "TR": "EF",
+            "wr": 1,
+            "rf": 0,
+            "X1": "DE",
+            "X2": "EF"
+          },
+          "bc_ca_de_fd": {
+            "S1": "BC",
+            "S2": "CA",
+            "M": "AB",
+            "TN": "DE",
+            "RC": "CA",
+            "TR": "FD",
+            "wr": 0,
+            "rf": 0,
+            "X1": "DE",
+            "X2": "FD"
           }
         }
       },
       "derive": {
-        "P": "a + b + c"
+        "r": "wr*a + (1 - wr)*b",
+        "P": "a + b + c",
+        "x1": "rf*(wr*a + (1 - wr)*b) + (1 - rf)*c",
+        "x2": "rf*c + (1 - rf)*(wr*a + (1 - wr)*b)"
       },
       "constraints": [
         "a + b > c",
         "b + c > a",
         "c + a > b",
-        "P != a",
-        "P != b",
-        "P != c",
-        "a != b",
-        "b != c",
-        "a != c"
+        "a != b"
       ],
       "cost_values": [
         "a",
         "b",
         "c",
+        "r",
         "P"
       ],
       "answer_var": "P",
       "verify": [
         "ans == a + b + c",
-        "a + b > c"
+        "a + b > c",
+        "b + c > a",
+        "c + a > b",
+        "ans != a + b + c + r"
       ],
-      "question": "△ABC ≡ △DEF이고 {S1} = {a} cm, {S2} = {b} cm, {S3} = {c} cm일 때, △ABC의 둘레의 길이를 구하시오.",
+      "question": "△ABC ≡ △DEF이고 {S1} = {a} cm, {S2} = {b} cm, {X1} = {x1} cm, {X2} = {x2} cm일 때, △ABC의 둘레의 길이를 구하시오.",
       "answer": "{P}",
       "answer_alt": [
         "{P} cm",
         "{P}cm"
       ],
-      "sol1": "합동인 두 삼각형은 대응하는 변의 길이가 같다. △ABC ≡ △DEF에서 A↔D, B↔E, C↔F이므로 {S3}{eun(S3)} △ABC의 {S3C}{wa(S3C)} 대응한다. 그러면 △ABC의 세 변을 모두 알 수 있다.",
+      "sol1": "합동인 두 삼각형은 대응하는 변의 길이가 같다. △ABC ≡ △DEF에서 A↔D, B↔E, C↔F이므로 {TN}{eun(TN)} △ABC의 {M}{wa(M)}, {TR}{eun(TR)} {RC}{wa(RC)} 대응한다. {TR}{eun(TR)} 이미 아는 {RC}{wa(RC)} 길이가 같은 변일 뿐이고, 모르던 변 {M}의 길이는 {TN}에서 얻는다.",
       "sol2": [
-        "{S3C} = {S3} = {c} cm (대응변)",
-        "둘레 = {S1} + {S2} + {S3C} = {a} + {b} + {c} = {P} (cm)"
+        "{TR} = {RC} = {r} cm (이미 주어진 변의 대응변이므로 새로운 길이가 아니다)",
+        "{M} = {TN} = {c} cm (대응변)",
+        "둘레 = {S1} + {S2} + {M} = {a} + {b} + {c} = {P} (cm)"
       ],
       "sol2_fig": [
         {
@@ -1382,11 +1444,15 @@
           "args": {
             "lines": [
               {
-                "text": "{S3C} = {S3} = {c}",
+                "text": "{TR} = {RC} = {r}",
+                "hint": "이미 아는 변 — 한 번만 센다"
+              },
+              {
+                "text": "{M} = {TN} = {c}",
                 "hint": "A↔D, B↔E, C↔F",
                 "marks": [
                   {
-                    "on": "{S3C}",
+                    "on": "{M}",
                     "note": "글자 순서로 대응변"
                   }
                 ]
@@ -1407,10 +1473,7 @@
           },
           {
             "act": "hl",
-            "k": [
-              "hint:0",
-              "mark:0-0"
-            ]
+            "k": "hint:0"
           }
         ],
         [
@@ -1420,17 +1483,30 @@
           },
           {
             "act": "hl",
-            "k": "hint:1"
+            "k": [
+              "hint:1",
+              "mark:1-0"
+            ]
+          }
+        ],
+        [
+          {
+            "act": "reveal",
+            "k": "line:2"
+          },
+          {
+            "act": "hl",
+            "k": "hint:2"
           }
         ]
       ],
-      "sol_check": "△DEF의 둘레도 대응변의 합이라 {P} cm로 같다. 답은 {P} cm다.",
-      "model_answer": "△ABC ≡ △DEF에서 {S3C}의 대응변은 {S3}이므로 {S3C} = {c} cm이다. 따라서 △ABC의 둘레는 {a} + {b} + {c} = {P} (cm)이다.",
+      "sol_check": "{TR}{wa(TR)} {RC}{eun(RC)} 대응변이고 길이가 {r} cm로 서로 같으니 대응을 바르게 찾았다. 네 길이를 모두 더한 {P + r} cm는 이 변을 두 번 센 값이라 둘레가 아니다. 답은 {P} cm다.",
+      "model_answer": "△ABC ≡ △DEF에서 {TR}의 대응변은 {RC}이므로 {TR}{eun(TR)} 이미 주어진 변과 같고, {TN}의 대응변은 {M}이므로 {M} = {c} cm이다. 따라서 △ABC의 둘레는 {a} + {b} + {c} = {P} (cm)이다.",
       "rubric": [
         {
           "element": "대응변 찾기",
           "points": 3,
-          "criterion": "{S3C} = {S3} = {c} cm임을 밝혔다.",
+          "criterion": "{TN}의 대응변이 {M}임을 밝혀 {M} = {TN} = {c} cm를 구했다.",
           "partial": "다른 변과 대응시켰으면 인정하지 않는다."
         },
         {
@@ -1444,8 +1520,13 @@
       "id": "m1-2-congruent-t2",
       "pitfalls": [
         {
-          "text": "{S3}{eul(S3)} {S3C}{ika(S3C)} 아니라 {S1} 또는 {S2}{wa(S2)} 대응시킴",
+          "text": "{TN}{eul(TN)} {M}{ika(M)} 아니라 {S1} 또는 {S2}{wa(S2)} 대응시킴",
           "on": "대응변",
+          "effect": "불인정"
+        },
+        {
+          "text": "주어진 네 길이를 모두 더함 ({RC}{wa(RC)} 같은 변인 {TR}{eul(TR)} 한 번 더 셈)",
+          "on": "둘레",
           "effect": "불인정"
         },
         {

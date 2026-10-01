@@ -351,7 +351,11 @@ def cx_t4():
 
 def _cx5_rows():
     """(a, b, 묻는 것) 행 — 순서는 예전 파라미터 a × b × k 의 혼합 진법 순서 그대로(같은 색인 = 같은 문항).
-    [확인]·채점기준·실수거리를 묻는 것(합/곱/합+곱)에 맞춰 행마다 쓴다."""
+    [확인]·채점기준·실수거리를 묻는 것(합/곱/합+곱)에 맞춰 행마다 쓴다.
+    10-01: [방침] 둘째 문장(PLAN)과 [전개] 2줄(L2·H2)도 묻는 것별로 — 합(또는 곱)만 묻는 갈래에서 묻지 않은 값(실수거리가 오답으로 꼽는 값)을
+    계산해 판서에 나란히 적던 것을 뺐다. 결합(합 + 곱) 갈래는 예전 문장 그대로. [확인] 판서 첫 줄은 결합 문자 z̄ 대신 [[conj(z)]]·직접 계산 식으로,
+    곱 갈래 채점 기준 문장은 모범답안의 (실수부)² + (허수부)² 풀이도 담도록. z = 1 ± i 의 합·곱 단독 갈래는 합과 곱이 둘 다 2 라
+    바꿔 구한 값도 정답이 되므로 제약(w1 + w2 == 2 or not (a == 1 and b*b == 1))으로 뺀다."""
     from genkit.expr import co as _co, sgt as _sgt
     ask = {"sum": ("z + [[conj(z)]]", 1, 0), "prod": ("z[[conj(z)]]", 0, 1), "both": ("z + [[conj(z)]] + z[[conj(z)]]", 1, 1)}
     out = {}
@@ -365,25 +369,29 @@ def _cx5_rows():
                 c_prod = f"({z})({zc}) = {a * a} − {_co(b * b)}i² = {a * a} + {b * b} = {pp}{_ro(pp)} 실수가 된다"
                 row = {"a": a, "b": b, "ASK": ASK, "w1": w1, "w2": w2}
                 if k == "sum":
-                    row.update(CHK=f"직접 더해 보면 {c_sum}. 따라서 {ASK} = {ans}이다.", CHK1=f"z + z̄ = {sm} ✓",
+                    row.update(PLAN=f"두 수를 더하면 허수부끼리 지워지므로 z + [[conj(z)]] = 2 × (실수부) = {sm}이다.",
+                               L2=f"z + [[conj(z)]] = 2 × {_pn(a)} = {sm}", H2="합은 2 × (실수부)",
+                               CHK=f"직접 더해 보면 {c_sum}. 따라서 {ASK} = {ans}이다.", CHK1=f"({z}) + ({zc}) = {sm} ✓",
                                RC1=f"[[conj(z)]] = {zc}로 놓고 z + [[conj(z)]]를 계산해 허수부가 지워짐을 보였다.",
                                PART1="켤레는 바르게 놓았으나 덧셈에서 단순 계산 실수가 있으면 1점.",
                                MODEL=f"[[conj(z)]] = {zc}이므로 z + [[conj(z)]] = 2 × (실수부) = 2 × {_pn(a)} = {sm}이다.",
                                PITA="켤레복소수의 실수부 부호까지 바꿈", PITB="허수부가 지워지는 것을 놓쳐 z + [[conj(z)]]에 i를 남김", PITC="z[[conj(z)]]의 값을 답함")
                 elif k == "prod":
-                    row.update(CHK=f"직접 곱해 보면 {c_prod}. 따라서 {ASK} = {ans}이다.", CHK1=f"z z̄ = {a * a} + {b * b} = {pp} ✓",
-                               RC1=f"[[conj(z)]] = {zc}로 놓고 i² = −1을 써서 z[[conj(z)]]를 계산했다.",
+                    row.update(PLAN=f"두 수를 곱하면 i² = −1이므로 z[[conj(z)]] = (실수부)² + (허수부)² = {_pn(a)}² + {_pn(b)}² = {pp}이다.",
+                               L2=f"z[[conj(z)]] = {_pn(a)}² + {_pn(b)}² = {pp}", H2="곱은 (실수부)² + (허수부)²",
+                               CHK=f"직접 곱해 보면 {c_prod}. 따라서 {ASK} = {ans}이다.", CHK1=f"({z})({zc}) = {a * a} + {b * b} = {pp} ✓",
+                               RC1=f"[[conj(z)]] = {zc}로 놓고 z[[conj(z)]] = (실수부)² + (허수부)²으로(또는 i² = −1을 써서 직접 곱해) 계산했다.",
                                PART1="켤레와 i² = −1은 바르게 썼으나 전개에서 단순 계산 실수가 있으면 1점. (i² = −1을 놓친 경우는 인정하지 않는다.)",
                                MODEL=f"[[conj(z)]] = {zc}이므로 z[[conj(z)]] = (실수부)² + (허수부)² = {_pn(a)}² + {_pn(b)}² = {pp}이다.",
                                PITA="z[[conj(z)]]를 (실수부)² − (허수부)²으로 계산(i² = −1을 놓침)", PITB="(허수부)²을 계산할 때 부호 실수", PITC="z + [[conj(z)]]의 값을 답함")
                 else:
-                    row.update(CHK=f"직접 계산해 보면 합은 {c_sum}. 곱은 {c_prod}. 따라서 {ASK} = {sm} + {pp} = {ans}이다.", CHK1=f"z + z̄ = {sm}, z z̄ = {pp} ✓",
+                    row.update(PLAN=f"z + [[conj(z)]] = 2 × (실수부) = {sm}, z[[conj(z)]] = (실수부)² + (허수부)² = {_pn(a)}² + {_pn(b)}² = {pp}{_ro(pp)} 항상 실수가 된다.",
+                               L2=f"z + [[conj(z)]] = {sm}, z[[conj(z)]] = {_pn(a)}² + {_pn(b)}² = {pp}", H2="합은 2 × (실수부), 곱은 (실수부)² + (허수부)²",
+                               CHK=f"직접 계산해 보면 합은 {c_sum}. 곱은 {c_prod}. 따라서 {ASK} = {sm} + {pp} = {ans}이다.", CHK1=f"z + [[conj(z)]] = {sm}, z[[conj(z)]] = {pp} ✓",
                                RC1=f"[[conj(z)]] = {zc}로 놓고 합은 2 × (실수부) = {sm}, 곱은 (실수부)² + (허수부)² = {pp}{_ro(pp)} 계산했다.",
                                PART1="켤레와 i² = −1은 바르게 썼으나 합이나 곱에서 단순 계산 실수가 있으면 1점. (i² = −1을 놓친 경우는 인정하지 않는다.)",
                                MODEL=f"[[conj(z)]] = {zc}이므로 z + [[conj(z)]] = {sm}, z[[conj(z)]] = {_pn(a)}² + {_pn(b)}² = {pp}이다. 따라서 {ASK} = {sm} + {pp} = {ans}이다.",
                                PITA="z[[conj(z)]]를 (실수부)² − (허수부)²으로 계산(i² = −1을 놓침)", PITB="합과 곱 중 하나의 계산 실수", PITC="합과 곱 중 하나를 빠뜨리고 답함")
-                if a == 1 and abs(b) == 1 and k in ("sum", "prod"):          # z = 1 ± i 이면 합과 곱이 모두 2 — 'PITC(다른 값을 답함)' 이 정답을 가리킨다
-                    row["PITC"] = "켤레를 쓰지 않고 z + z = 2z로 계산" if k == "sum" else "z[[conj(z)]] 대신 z²을 계산"
                 out[f"{a}_{b}_{k}"] = row
     return out
 
@@ -396,10 +404,10 @@ def cx_t5():
         skill="z = a + bi의 켤레 z̄ = a − bi를 써서 합·곱을 계산하기", axis={"a, b": "±1~±6", "구하는 것": "z + z̄ / z z̄ / (z + z̄)(z z̄)"}, disc="z + z̄ = 2a, z z̄ = a² + b²(실수)임을 아는가", diff=2,
         params=[{"name": "f", "values": {"in": list(CX5_ROWS)}}], table={"key": "f", "rows": CX5_ROWS},
         derive={"s": "2*a", "pp": "a*a + b*b", "nb": "-b", "ans": "w1*2*a + w2*(a*a + b*b)"},
-        constraints=["ans != 0", "ans not in (a, b)"], cost=["a", "b", "s", "pp", "ans"], verify=["s == 2*a", "pp == a*a + b*b"],
+        constraints=["ans != 0", "ans not in (a, b)", "w1 + w2 == 2 or not (a == 1 and abs(b) == 1)"], cost=["a", "b", "s", "pp", "ans"], verify=["s == 2*a", "pp == a*a + b*b"],
         q="복소수 z = {a} {sgt(b)}i에 대하여 {ASK}의 값을 구하시오. (단, [[conj(z)]]는 z의 켤레복소수)", answer="{ans}",
-        sol1="z = {a} {sgt(b)}i의 켤레복소수는 허수부의 부호만 바꾼 [[conj(z)]] = {a} {sgt(nb)}i이다. z + [[conj(z)]] = 2 × (실수부) = {s}, z[[conj(z)]] = (실수부)² + (허수부)² = {pn(a)}² + {pn(b)}² = {pp}{ro(pp)} 항상 실수가 된다.",
-        sol2=[("[[conj(z)]] = {a} {sgt(nb)}i", "허수부의 부호만 반대"), ("z + [[conj(z)]] = {s}, z[[conj(z)]] = {pn(a)}² + {pn(b)}² = {pp}", "합은 2 × (실수부), 곱은 (실수부)² + (허수부)²"), ("{ASK} = {ans}", None, ("{ans}", "답"))],
+        sol1="z = {a} {sgt(b)}i의 켤레복소수는 허수부의 부호만 바꾼 [[conj(z)]] = {a} {sgt(nb)}i이다. {PLAN}",
+        sol2=[("[[conj(z)]] = {a} {sgt(nb)}i", "허수부의 부호만 반대"), ("{L2}", "{H2}"), ("{ASK} = {ans}", None, ("{ans}", "답"))],
         sol3=["{CHK}", "{CHK1}", "{ASK} = {ans}"],
         model="{MODEL}",
         rubric=[("켤레·계산", 3, "{RC1}", "{PART1}"), ("값 구하기", 2, "{ASK} = {ans}{eul(ans)} 구했다.", "계산 실수면 1점.")],
@@ -465,30 +473,48 @@ def qd_t3():
         pitfalls=[("x² + (합)x + (곱)으로 부호를 틀림", "방정식·답", "불인정"), ("곱의 전개에서 (α + β) 항 누락", "새 근의 합·곱", "부분"), ("원래 합의 부호 실수", "새 근의 합·곱", "불인정")])
 
 
-def _qd_conj(no, title, kind, root_q, root_sol, prod_f, prod_expr, qvals, extra_constraints, root_josa="{eul(qv)}", prod_sol=None):
+def _qd_conj(no, title, kind, root_q, root_sol, prod_f, prod_expr, qvals, extra_constraints, root_josa="{eul(qv)}", prod_sol=None,
+             model=None, step3=None, check=None, pitfalls=None, row_extra=None):
+    """t4(유리수·√q)·t6(실수·qi) 공용. model·step3·check·pitfalls·row_extra 를 주면 그 틀만 바뀐다(주지 않으면 예전 문장 그대로 — t4)."""
     prod_sol = prod_sol or prod_f
+    rows = {"sum": {"ASK": "a + b", "w1": 1, "w2": 0}, "prod": {"ASK": "ab", "w1": 0, "w2": 1}, "diff": {"ASK": "a − b", "w1": 0, "w2": 0}}
+    if row_extra:
+        rows = {k_: {**r_, **row_extra} for k_, r_ in rows.items()}
     return T(QD, no, QD_B, title=title,
         skill="켤레근도 근임을 써서 합·곱으로 a, b 구하기", axis={"p": "±1~±6", "q": qvals, "묻는 것": "a + b / ab / a − b"}, disc=f"계수가 {kind}이면 켤레근도 근임을 알고 합 2p, 곱 {prod_f}로 계수를 정하는가", diff=3,
         params=[{"name": "p", "values": {"in": NZ(-6, 6)}}, {"name": "qv", "values": {"in": [2, 3, 5, 6, 7, 10, 11, 13] if kind == "유리수" else [1, 2, 3, 4, 5, 6, 7]}}, {"name": "k", "values": {"in": ["sum", "prod", "diff"]}}],
-        table={"key": "k", "rows": {"sum": {"ASK": "a + b", "w1": 1, "w2": 0}, "prod": {"ASK": "ab", "w1": 0, "w2": 1}, "diff": {"ASK": "a − b", "w1": 0, "w2": 0}}},
+        table={"key": "k", "rows": rows},
         derive={"s": "2*p", "prod": prod_expr, "a": "-2*p", "b": prod_expr, "ans": f"w1*(-2*p + {prod_expr}) + w2*(-2*p)*({prod_expr}) + (1 - w1 - w2)*(-2*p - ({prod_expr}))"},
         constraints=["b != 0", "ans != 0", "ans not in (p, qv)"] + extra_constraints, cost=["p", "qv", "s", "prod", "ans"], verify=["a == -s", "b == prod"],
         q=f"x에 대한 이차방정식 x² + ax + b = 0의 한 근이 {{p}} + {root_q}일 때, {kind} a, b에 대하여 {{ASK}}의 값을 구하시오.", answer="{ans}",
         sol1=f"계수가 {kind}인 이차방정식의 한 근이 {{p}} + {root_q}이면 다른 한 근은 켤레인 {{p}} − {root_q}이다. 두 근의 합은 {{s}}, 곱은 {prod_sol} = {{prod}}이므로 근과 계수의 관계에서 a = −(합) = {{a}}, b = (곱) = {{b}}이다.",
-        sol2=[(f"다른 한 근: {{p}} − {root_q} (켤레근)", f"계수가 {kind}"), (f"합 = {{s}}, 곱 = ({{p}} + {root_q})({{p}} − {root_q}) = {{prod}}", "합차 공식"), ("a = −({s}) = {a}, b = {prod} → {ASK} = {ans}", None, ("{ans}", "{ASK}"))],
-        sol3=[f"x = {{p}} + {root_sol}{root_josa} x² {{sgt(a)}}x {{sgn(b)}}에 넣으면 0이 된다(직접 전개해 확인). 따라서 {{ASK}} = {{ans}}이다.", "x² {sgt(a)}x {sgn(b)} = 0에 근 대입 → 0 ✓", "{ASK} = {ans}"],
-        model=f"켤레근 {{p}} − {root_q}도 근이므로 두 근의 합은 {{s}}, 곱은 {{prod}}이다. 따라서 a = {{a}}, b = {{b}}이고 {{ASK}} = {{ans}}이다.",
+        sol2=[(f"다른 한 근: {{p}} − {root_q} (켤레근)", f"계수가 {kind}"), (f"합 = {{s}}, 곱 = ({{p}} + {root_q})({{p}} − {root_q}) = {{prod}}", "합차 공식"), (step3 or "a = −({s}) = {a}, b = {prod} → {ASK} = {ans}", None, ("{ans}", "{ASK}"))],
+        sol3=check or [f"x = {{p}} + {root_sol}{root_josa} x² {{sgt(a)}}x {{sgn(b)}}에 넣으면 0이 된다(직접 전개해 확인). 따라서 {{ASK}} = {{ans}}이다.", "x² {sgt(a)}x {sgn(b)} = 0에 근 대입 → 0 ✓", "{ASK} = {ans}"],
+        model=model or f"켤레근 {{p}} − {root_q}도 근이므로 두 근의 합은 {{s}}, 곱은 {{prod}}이다. 따라서 a = {{a}}, b = {{b}}이고 {{ASK}} = {{ans}}이다.",
         rubric=[("켤레근", 2, f"다른 한 근이 {{p}} − {root_q}임을 밝혔다.", "근거 없이 썼으면 1점."), ("계수 구하기", 3, "합 {s}, 곱 {prod}에서 a = {a}, b = {b}{ro(b)} 구해 {ASK} = {ans}{eul(ans)} 답했다.", "a의 부호가 틀렸으면 1점.")],
-        pitfalls=[("켤레근을 쓰지 않고 한 근만 대입해 못 풂", "켤레근", "불인정"), ("a = 합(부호 반대)으로 둠", "계수 구하기", "부분"), ("곱의 계산에서 (√q)² 또는 i² 실수", "계수 구하기", "부분")])
+        pitfalls=pitfalls or [("켤레근을 쓰지 않고 한 근만 대입해 못 풂", "켤레근", "불인정"), ("a = 합(부호 반대)으로 둠", "계수 구하기", "부분"), ("곱의 계산에서 (√q)² 또는 i² 실수", "계수 구하기", "부분")])
 
 
 def qd_t4():
     return _qd_conj(4, "한 근이 p + √q인 유리계수 이차방정식의 계수", "유리수", "[[sqrt({qv})]]", "[[sqrt({qv})]]", "p² − q", "p*p - qv", "2·3·5·6·7·10·11·13", [])
 
 
+# t6 (10-01): [모범답안]이 켤레근의 근거('a, b가 실수이므로')와 근과 계수의 관계를 쓰지 않아 자기 채점기준('근거 없이 썼으면 1점')에서
+# 점수를 잃던 것을 고침. 합이 양수일 때 'a = −(12)' 대신 'a = -12', [확인]은 구한 a, b로 방정식을 완전제곱꼴로 풀어 주어진 근이 나오는지 보이고,
+# 실수거리는 '켤레가 아닌 수로 둠'·'a를 합 그대로 둠'처럼 구체적으로(등록부 pitfalls.py 와 같게).
+QD6_MODEL = ("a, b가 실수이므로 {p} + {co(qv)}i의 켤레복소수 {p} − {co(qv)}i도 근이다. 두 근의 합은 {s}, 곱은 ({p} + {co(qv)}i)({p} − {co(qv)}i) = {pn(p)}² + {qv}² = {prod}이므로 "
+             "근과 계수의 관계에서 −a = {s}, b = {prod}이다. 따라서 a = {a}, b = {b}이고 {ASK} = {ans}이다.")
+QD6_STEP3 = "a = {NEGL if s < 0 else BL}{s if s < 0 else BL}{NEGR if s < 0 else BL}{a}, b = {prod} → {ASK} = {ans}"      # 합이 음수일 때만 'a = −(-2) = 2'
+QD6_CHECK = ["구한 a, b로 x² {sgt(a)}x {sgn(b)} = 0을 풀면 (x {sgn(-p)})² + {qv*qv} = 0, (x {sgn(-p)})² = -{qv*qv}, x {sgn(-p)} = ±{co(qv)}i이므로 x = {p} ± {co(qv)}i가 되어 "
+             "주어진 근 {p} + {co(qv)}i와 그 켤레근이 나온다. 따라서 {ASK} = {ans}이다.", "(x {sgn(-p)})² = -{qv*qv} → x = {p} ± {co(qv)}i ✓", "{ASK} = {ans}"]
+QD6_PITFALLS = [("다른 한 근을 {-p} − {co(qv)}i처럼 실수부의 부호까지 바꾼 수로 둠", "켤레근", "불인정"), ("a를 −(합)이 아니라 합 그대로 둠", "계수 구하기", "부분"),
+                ("켤레근끼리의 곱에서 i² = −1을 놓쳐 (실수부)² − (허수부)²으로 계산", "계수 구하기", "부분")]
+
+
 def qd_t6():
     return _qd_conj(6, "한 근이 p + qi인 실계수 이차방정식의 계수", "실수", "{co(qv)}i", "{co(qv)}i", "p² + q²", "p*p + qv*qv", "1~7", [],
-                    root_josa="를", prod_sol="{pn(p)}² + {qv}²")          # 허수 단위 i 로 끝나므로 조사는 늘 '를' · q = 1 이면 '1i' 대신 'i'
+                    root_josa="를", prod_sol="{pn(p)}² + {qv}²",          # 허수 단위 i 로 끝나므로 조사는 늘 '를' · q = 1 이면 '1i' 대신 'i'
+                    model=QD6_MODEL, step3=QD6_STEP3, check=QD6_CHECK, pitfalls=QD6_PITFALLS, row_extra={"NEGL": "−(", "NEGR": ") = ", "BL": ""})
 
 
 def qd_t5():

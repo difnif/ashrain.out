@@ -1269,35 +1269,93 @@ def gr_t1():
     )
 
 
+def _axis_tick(hi) -> Fraction:
+    """앱 렌더러(src/lib/figsvg.js 의 axes)가 0 ~ hi 축에 긋는 눈금 간격 — raw = hi/8 이상인 첫 [1, 2, 2.5, 5, 10] × 10ⁿ (10ⁿ ≤ raw)."""
+    raw = Fraction(hi, 8)
+    p = Fraction(1)
+    while p * 10 <= raw:
+        p *= 10
+    while p > raw:
+        p /= 10
+    return next((k * p for k in (1, 2, Fraction(5, 2), 5, 10) if k * p >= raw), 10 * p)
+
+
+GR2_PLACES = ["도서관", "공원", "학교", "서점", "수영장", "박물관", "체육관", "우체국"]
+
+
+def _gr2_rows():
+    """t2 전용 — 꺾인 점 P(t1, d1)·Q(t2, d1)·R(T, D)의 x·y 가 모두 앱 렌더러가 그리는 눈금선 위에 오고,
+    멈추기 전·후 두 번 걷는 구간의 속력이 모두 분속 50~90 m 인 경우만 모은다.
+    (10-01 C: 끝점이 2·2.5·5분 눈금 사이에 놓여 그림만으로 멈춘 시간이 정해지지 않았고, 전체 거리·시간을 따로 뽑아 분속 24~150 m 인 행이 있었다.)
+    그림 범위는 전과 같이 x [0, T + 2]·y [0, D + 100] — 그 범위의 눈금 간격(x 2·5분, y 100·200·500 m)에 맞춘다.
+    x 눈금이 2.5분(T = 15~18)이면 눈금값이 7.5·12.5 처럼 소수라 뺀다. 걷는 구간은 3분 이상, 멈춘 시간은 2~10분.
+    발문의 수는 D·T 둘뿐이라 (T, D) 가 같은 경우는 장소를 달리해 발문이 겹치지 않게 한다 — (T, D) 하나에 최대 장소 수만큼,
+    멈춘 시간이 고루 섞이게 골라 담는다."""
+    rows, off = {}, 0
+    for T in range(10, 36):
+        xs = _axis_tick(T + 2)
+        if xs.denominator != 1 or T % xs:
+            continue
+        xs = int(xs)
+        for D in (400, 500, 600, 700, 800, 1000, 1200, 1400, 2000):
+            ys = _axis_tick(D + 100)
+            if ys.denominator != 1 or D % ys:
+                continue
+            ys = int(ys)
+            cand = {}
+            for t1 in range(xs, T, xs):
+                for s in range(xs, 11, xs):
+                    rest = T - t1 - s
+                    if s < 2 or t1 < 3 or rest < 3:
+                        continue
+                    for d1 in range(ys, D, ys):
+                        if 50 * t1 <= d1 <= 90 * t1 and 50 * rest <= D - d1 <= 90 * rest:
+                            cand.setdefault(s, []).append((t1, d1))
+            pick, groups = [], [list(cand[s]) for s in sorted(cand)]
+            while len(pick) < len(GR2_PLACES) and any(groups):
+                for s, g in zip(sorted(cand), groups):
+                    if g and len(pick) < len(GR2_PLACES):
+                        pick.append((s, *g.pop(0)))
+            for j, (s, t1, d1) in enumerate(pick):
+                rows[f"{T}|{D}|{t1}|{s}|{d1}"] = {"T": T, "D": D, "t1": t1, "s": s, "d1": d1, "PL": GR2_PLACES[(off + j) % len(GR2_PLACES)]}
+            off += len(pick)
+    return rows
+
+
+GR2_ROWS = _gr2_rows()
+
+
 def gr_t2():
     return tpl(GR, 2, GR_BASE,
         title="거리–시간 그래프에서 멈춰 있던 시간 읽기",
         skill="시간에 따른 거리 그래프에서 수평인 부분이 '멈춤'을 뜻함을 알고 그 시간을 읽기",
-        variant_axis={"전체 거리": "600~1500 m", "전체 시간": "12~30분", "멈춘 구간": "2~8분"},
+        variant_axis={"전체 거리": "400~2000 m", "전체 시간": "10~35분", "멈춘 시간": "2·4·5·6·10분", "걷는 속력": "분속 50~90 m", "장소": "도서관·공원·학교 등 8곳"},
         discriminates="그래프가 수평인 구간에서는 거리가 변하지 않으므로 멈춘 것임을 읽고, 그 구간의 길이를 시간으로 구하는가",
         difficulty=2,
-        params=[{"name": "T", "values": {"int": [12, 30]}}, {"name": "D", "values": {"in": [600, 800, 900, 1000, 1200, 1500]}}, {"name": "t1", "values": {"int": [3, 12]}}, {"name": "s", "values": {"int": [2, 8]}}],
-        derive={"t2": "t1 + s", "rest": "T - t1 - s", "d1": "floor(D*t1/(T - s)/10)*10", "ans": "s"},
-        constraints=["rest >= 3", "d1 >= 100", "D - d1 >= 100"],
+        # 10-01: 꺾인 점이 모두 그림의 눈금선 위에 있는 경우만 표(_gr2_rows)로 — 눈금 사이 끝점·비현실 속력 제거
+        params=[{"name": "k", "values": {"in": list(GR2_ROWS)}}],
+        table={"key": "k", "rows": GR2_ROWS},
+        derive={"t2": "t1 + s", "rest": "T - t1 - s", "ans": "s"},
+        constraints=["rest >= 3", "d1 >= 50*t1", "d1 <= 90*t1", "D - d1 >= 50*rest", "D - d1 <= 90*rest"],
         cost_values=["T", "D", "s"],
         answer_var="ans",
         verify=["ans == t2 - t1", "t1 + ans + rest == T"],
-        question="지우가 집에서 출발하여 {D} m 떨어진 도서관까지 걸어가는 데 {T}분이 걸렸다. 다음은 출발한 지 x분 후 집에서 떨어진 거리를 y m라 할 때의 그래프이다. 지우가 도중에 멈춰 있던 시간은 몇 분인지 구하시오.",
+        question="지우가 집에서 출발하여 {D} m 떨어진 {PL}까지 걸어가는 데 {T}분이 걸렸다. 다음은 출발한 지 x분 후 집에서 떨어진 거리를 y m라 할 때의 그래프이다. 지우가 도중에 멈춰 있던 시간은 몇 분인지 구하시오.",
         figure=[{"fn": "coordplane", "args": {"x": [0, "{T + 2}"], "y": [0, "{D + 100}"],
                                              "points": [{"name": "P", "coord": ["{t1}", "{d1}"]}, {"name": "Q", "coord": ["{t2}", "{d1}"]}, {"name": "R", "coord": ["{T}", "{D}"]}],
                                              "lines": [{"points": [[0, 0], ["{t1}", "{d1}"], ["{t2}", "{d1}"], ["{T}", "{D}"]]}]}}],
         answer="{ans}", answer_alt=["{ans}분"],
         sol1="거리–시간 그래프에서 선이 오른쪽 위로 올라가면 움직이는 것이고, 수평이면 거리가 변하지 않으므로 멈춰 있는 것이다. 수평인 부분이 x축에서 차지하는 길이가 멈춰 있던 시간이다.",
-        sol2=["그래프가 수평인 구간은 x = {t1}부터 x = {t2}까지 (거리 {d1} m 그대로)", "멈춰 있던 시간: {t2} − {t1} = {ans} (분)"],
-        sol2_fig=steps([{"text": "수평 구간: {t1}분 ~ {t2}분", "hint": "거리가 {d1} m로 변하지 않음"}, {"text": "{t2} − {t1} = {ans}", "marks": [{"on": "{ans}", "note": "y의 차가 아니라 x의 차"}]}]),
+        sol2=["그래프가 수평인 구간은 점 P({t1}, {d1})부터 점 Q({t2}, {d1})까지, 즉 x = {t1}부터 x = {t2}까지 (거리 {d1} m 그대로)", "멈춰 있던 시간: {t2} − {t1} = {ans} (분)"],
+        sol2_fig=steps([{"text": "수평 구간 PQ: {t1}분 ~ {t2}분", "hint": "거리가 {d1} m로 변하지 않음"}, {"text": "{t2} − {t1} = {ans}", "marks": [{"on": "{ans}", "note": "y의 차가 아니라 x의 차"}]}]),
         sol2_anim=[[reveal(0), hl("hint:0")], [reveal(1), hl("mark:1-0")]],
-        sol3="멈추기 전에 걸은 {t1}분, 멈춰 있던 {ans}분, 다시 걸은 {rest}분을 모두 더하면 {t1} + {ans} + {rest} = {T}(분)으로 전체 걸린 시간과 같다. 답은 {ans}분이다.",
+        sol3="멈추기 전에 걸은 {t1}분(O에서 P까지), 멈춰 있던 {ans}분(P에서 Q까지), 다시 걸은 {rest}분(Q에서 R까지)을 모두 더하면 {t1} + {ans} + {rest} = {T}(분)으로 전체 걸린 시간과 같다. 답은 {ans}분이다.",
         sol3_fig=steps(["{t1} + {ans} + {rest} = {T}"]),
         sol3_anim=[[reveal(0)]],
-        model_answer="그래프가 수평인 x = {t1}부터 x = {t2}까지는 거리가 {d1} m로 변하지 않으므로 멈춰 있던 것이다. 따라서 멈춰 있던 시간은 {t2} − {t1} = {ans}(분)이다.",
+        model_answer="그래프가 수평인 점 P({t1}, {d1})부터 점 Q({t2}, {d1})까지는 거리가 {d1} m로 변하지 않으므로 멈춰 있던 것이다. 따라서 멈춰 있던 시간은 {t2} − {t1} = {ans}(분)이다.",
         rubric=[
             {"element": "그래프 해석", "points": 3, "criterion": "수평인 구간이 멈춘 것임을 밝히고 그 구간 {t1}~{t2}분을 찾았다.", "partial": "구간의 한쪽 끝만 맞게 읽었으면 1점."},
-            {"element": "답 구하기", "points": 2, "criterion": "{t2} − {t1} = {ans}분을 구했다.", "partial": "거리의 차를 답했으면 인정하지 않는다."},
+            {"element": "답 구하기", "points": 2, "criterion": "{t2} − {t1} = {ans}분을 구했다.", "partial": "멈춘 구간이 끝나는 시각 {t2}분만 답했으면 1점."},
         ],
         rubric_total=5,
     )
