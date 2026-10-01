@@ -1,4 +1,6 @@
 # ashrain.out — MathIR 파서·렌더·평가기 (mathir.py, v1.5 제안판 r2 — 2026-09-05, mathir.js 동형 패치 필수)
+# 09-30 r4 (표시·렉서, mathir.js 동형): 문자 하나+숫자를 붙여 쓴 이름은 아래첨자 변수(x1 → x₁, 종전 x × 1) · 거듭제곱 밑 괄호
+#   (2/3)⁴·(√2)³·(log₂ x)²·(ln x)⁶, 삼각함수 거듭제곱 sin²x(종전 sin x²) · 조합·순열의 문자 인자 첨자 ₙCᵣ(종전 nCr).
 # v1.5 r2 (2026-09-05, 보류 잔여 회수용 추가 — 역시 하위 호환):
 #   ⑨ op(기호, a, b) 사용자 정의 이항연산: op(dcirc, 2, 3)=2 ◎ 3 (기호 이름표 OPSYMS)   ⑩ nota(괄호, x[, y]) 약속 괄호 기호: nota(angle, x)=⟨x⟩, nota(lt, a, b)=<a, b>, nota(brace, x)={x}, nota(sq, a, b)=[a, b]
 #   ⑪ idx(P, x)=P[x]   ⑫ tr(A)=Aᵗ 전치   ⑬ dig(a, b, c)=abc 자릿수 나열(숫자면 값 평가)   ⑭ recdec 인자에 문자 자릿수 허용(recdec(0, a0bc)=0.ȧ0bċ) + 3인자형 recdec(정수부, 비순환, 순환마디)=0.abċḋ
@@ -89,6 +91,10 @@ NOTASYMS = {  # v1.5r2⑩ nota(괄호, …)의 괄호 이름 → (여는 글자,
 CONSTS = {"pi": math.pi, "e": math.e, "inf": math.inf, "empty": None, "i": None, "cdots": None}
 GREEK = {"alpha", "beta", "gamma", "delta", "theta", "lam", "mu", "omega", "phi", "sigma"}
 GREEK_DISP = {"alpha": "α", "beta": "β", "gamma": "γ", "delta": "δ", "theta": "θ", "lam": "λ", "mu": "μ", "omega": "ω", "phi": "φ", "sigma": "σ"}
+_SUBVAR = re.compile(r"([A-Za-z])([0-9]+)")          # 09-30 아래첨자 변수 x1·S1·a10 (문자 하나 + 숫자, 붙여 씀) — mathir.js 동형
+
+def _is_var_name(v):
+    return len(v) == 1 or v in GREEK or _SUBVAR.fullmatch(v) is not None
 _BOX = "가나다라마바사아자차카타파하"
 GRADE_ORD = {"m1": 1, "m2": 2, "m3": 3, "h1": 4, "h2": 5, "h3": 6}
 
@@ -132,6 +138,10 @@ def _lex(s):
         val = m.group()
         if kind == "id" and i < len(s) and s[i].isdigit() and (val + s[i]) in FUNCS:   # v1.5⑦ point3
             val += s[i]; i += 1
+        elif kind == "id" and len(val) == 1:                                           # 09-30 아래첨자 변수 x1 → x₁ (종전 x × 1)
+            d = re.match(r"[0-9]+", s[i:])
+            if d and not re.match(r"\.[0-9]", s[i + d.end():]):
+                val += d.group(); i += d.end()
         if kind == "op" and val in _OPMAP:
             val = _OPMAP[val]
         out.append((kind, val, m.start()))
@@ -206,7 +216,7 @@ class _P:
         if k == "num":
             return {"t": "num", "v": v}
         if k == "id":
-            if self.peek()[1] == "'" and v not in CONSTS and (len(v) == 1 or v in GREEK):   # v1.5r2⑮ 변수 프라임 a', f'(x)
+            if self.peek()[1] == "'" and v not in CONSTS and _is_var_name(v):   # v1.5r2⑮ 변수 프라임 a', f'(x)
                 np_ = 0
                 while self.peek()[1] == "'":
                     self.take(); np_ += 1
@@ -228,7 +238,7 @@ class _P:
                 return self.call(v, p)
             if v in CONSTS:
                 return {"t": "const", "v": v}
-            if len(v) == 1 or v in GREEK:
+            if _is_var_name(v):
                 return {"t": "var", "v": v}
             raise MathIRError("V-01", f"미지의 식별자 '{v}'", p)
         raise MathIRError("V-01", f"예상치 못한 토큰 '{v}'", p)
@@ -284,7 +294,7 @@ class _P:
                 raise MathIRError("V-02", "cases 인자는 (식, 조건) 쌍이어야 함", pos)
             self.max_grade = max(self.max_grade, GRADE_ORD[grade])
             return {"t": "fn", "f": name, "args": args}
-        if len(name) == 1 or name in GREEK:             # 함수 적용 f(x), v1.5④ alpha(t)
+        if _is_var_name(name):                          # 함수 적용 f(x), v1.5④ alpha(t), 09-30 f1(x)
             self.max_grade = max(self.max_grade, GRADE_ORD["h1"])
             return {"t": "apply", "f": name, "args": args}
         raise MathIRError("V-01", f"미지의 함수 '{name}'", pos)
@@ -317,6 +327,20 @@ def to_ir(n):
 # ---------------------------------------------------------------- 표시 렌더 (유니코드)
 _SUP = str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻")
 _SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+# 09-30 문자 아래첨자 — ₙCᵣ (조합·순열의 문자 인자). 유니코드에 없는 글자(b·c·d·f·g·q·w·y·z)가 끼면 None — mathir.js 동형
+_SUBL = dict(zip("0123456789aehijklmnoprstuvx+−-=()", "₀₁₂₃₄₅₆₇₈₉ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓ₊₋₋₌₍₎"))
+
+def _sub_all(s):
+    return None if any(c not in _SUBL for c in s) else "".join(_SUBL[c] for c in s)
+
+def _name_disp(v):
+    m = _SUBVAR.fullmatch(v)
+    return m.group(1) + m.group(2).translate(_SUB) if m else GREEK_DISP.get(v, v)
+
+# 거듭제곱의 밑: 닫힌 모양(|a|, a₁, f(x), P(A), {…} …)만 괄호 없이 — 09-30 (2/3)⁴, (√2)³, (log₂ x)², sin²x (mathir.js 동형)
+_POW_BARE = {"abs", "sub", "set", "setb", "point", "point3", "vcomp", "card", "prob", "cprob", "ev", "var", "sd", "binomd", "normald",
+             "app", "idx", "max", "min", "floor", "nota", "box", "vec", "seg", "line", "ray", "arc", "conj", "xbar", "hat", "prime", "itv", "mat"}
+_TRIG = {"sin", "cos", "tan", "csc", "sec", "cot"}
 
 def _atom(n):
     if n["t"] == "fn" and n["f"] == "op": return False          # v1.5r2: a ◎ b 는 원자가 아님 → 거듭제곱·분수·곱 안에서 괄호
@@ -357,7 +381,7 @@ def disp(n):
     if t == "var":
         base = n["v"].rstrip("'")
         k = len(n["v"]) - len(base)
-        return GREEK_DISP.get(base, base) + {0: "", 1: "′", 2: "″", 3: "‴"}.get(k, "′" * k)   # v1.5r2⑮ a′
+        return _name_disp(base) + {0: "", 1: "′", 2: "″", 3: "‴"}.get(k, "′" * k)   # v1.5r2⑮ a′ · 09-30 x₁
     if t == "label": return re.sub(r"\d+", lambda m: m.group().translate(_SUB), n["v"]).replace("'", "′")
     if t == "neg": return "−" + _wrap(n["a"])
     if t == "paren": return "(" + disp(n["a"]) + ")"
@@ -373,7 +397,7 @@ def disp(n):
             out += f" {op} " + disp(arg)
         return out
     if t == "apply":
-        return GREEK_DISP.get(n["f"], n["f"]) + "(" + ", ".join(disp(a) for a in n["args"]) + ")"
+        return _name_disp(n["f"]) + "(" + ", ".join(disp(a) for a in n["args"]) + ")"
     f, a = n["f"], n["args"]
     D = disp
     if f == "mat":
@@ -387,8 +411,11 @@ def disp(n):
     if f == "frac": return _wrap(a[0]) + "/" + _wrap(a[1])
     if f == "mixed": return D(a[0]) + " " + D(a[1]) + "/" + D(a[2])
     if f == "pow":
-        ex = to_ir(a[1]).replace(" ", "")
-        return _wrap(a[0]) + (ex.translate(_SUP) if re.fullmatch(r"-?\d+", ex) else "^(" + D(a[1]) + ")")
+        ex, B = to_ir(a[1]).replace(" ", ""), a[0]
+        if B["t"] == "fn" and B["f"] in _TRIG and re.fullmatch(r"\d+", ex):            # 09-30 sin²x (종전 sin x²)
+            return B["f"] + ex.translate(_SUP) + " " + _wrap(B["args"][0])
+        base = "(" + D(B) + ")" if B["t"] == "fn" and B["f"] not in _POW_BARE else _wrap(B)   # 09-30 (2/3)⁴ · (√2)³
+        return base + (ex.translate(_SUP) if re.fullmatch(r"-?\d+", ex) else "^(" + D(a[1]) + ")")
     if f == "sqrt": return "√" + _wrap(a[0])
     if f == "root": return to_ir(a[0]).translate(_SUP) + "√" + _wrap(a[1])
     if f == "abs": return "|" + D(a[0]) + "|"
@@ -458,7 +485,8 @@ def disp(n):
         n1, n2 = to_ir(a[0]), to_ir(a[1])
         if re.fullmatch(r"\d+", n1) and re.fullmatch(r"\d+", n2):
             return n1.translate(_SUB) + L + n2.translate(_SUB)
-        return f"{n1}{L}{n2}"
+        u1, u2 = _sub_all(D(a[0]).replace(" ", "")), _sub_all(D(a[1]).replace(" ", ""))   # 09-30 ₙCᵣ (종전 nCr)
+        return u1 + L + u2 if u1 is not None and u2 is not None else f"{n1}{L}{n2}"
     if f == "prob": return "P(" + D(a[0]) + ")"
     if f == "cprob": return "P(" + D(a[0]) + " | " + D(a[1]) + ")"
     if f == "ev": return "E(" + D(a[0]) + ")"
@@ -796,4 +824,17 @@ if __name__ == "__main__":
     assert parse_answer("+23")["sign"] == "+" and parse_answer("+3000")["kind"] == "ir"
     assert "sign" not in parse_answer("23")
     assert render_text("[[op(dcirc, op(dcirc, 2, 3), 4)]]의 값은?") == "(2 ◎ 3) ◎ 4의 값은?"
-    print("mathir.py 자가 시험 전부 통과 (v1.5 r2)")
+    # ---- 09-30 r4 자가 시험 (mathir.js 동형)
+    for src, d in [("frac(x1 + x2, 2)", "(x₁ + x₂)/2"), ("frac(S1, 1 - r)", "S₁/(1 − r)"), ("a100 + a1", "a₁₀₀ + a₁"),
+                   ("x1' + f1(x)", "x₁′ + f₁(x)"), ("tri(P1P2P3)", "△P₁P₂P₃"), ("x2.5", "x × 2.5"),
+                   ("pow(frac(2,3), 4)", "(2/3)⁴"), ("pow(sqrt(6), 2)", "(√6)²"), ("pow(root(3, 5), 6)", "(³√5)⁶"),
+                   ("pow(sin(x), 2) + pow(cos(x), 2) = 1", "sin² x + cos² x = 1"), ("pow(sin(x), -1)", "(sin x)⁻¹"),
+                   ("pow(log(3, x), 2)", "(log₃ x)²"), ("pow(ln(x), 6)", "(ln x)⁶"), ("pow(abs(vec(a) - vec(b)), 2)", "|a⃗ − b⃗|²"),
+                   ("comb(n, r)", "ₙCᵣ"), ("comb(n + r - 1, r)", "ₙ₊ᵣ₋₁Cᵣ"), ("hcomb(n, r)", "ₙHᵣ"), ("comb(5, 2)", "₅C₂"),
+                   ("comb(b, 2)", "bC2")]:
+        n, _ = parse(src); rt, _ = parse(to_ir(n))
+        assert to_ir(rt) == to_ir(n), "r4 왕복 실패 " + src
+        assert disp(n) == d, f"r4 표시 {disp(n)!r} != {d!r} ({src})"
+    assert to_ir(parse("frac(x1 + x2, 2)")[0]) == "frac(x1 + x2, 2)"
+    assert close(ev(parse("x1 + x2")[0], {"x1": Fraction(1), "x2": Fraction(2)}), 3)
+    print("mathir.py 자가 시험 전부 통과 (v1.5 r2 · 09-30 r4)")
