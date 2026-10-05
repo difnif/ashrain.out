@@ -53,6 +53,7 @@ const AdminCalendar = lazy(() => import("./components/AdminCalendar"));
 const AdminWell = lazy(() => import("./pages/AdminWell"));
 const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
 const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
+const AnswerKey = lazy(() => import("./pages/AnswerKey"));
 
 /** 지연 청크가 오는 동안의 얇은 자리 표시 */
 function PageFall() {
@@ -404,7 +405,7 @@ function StudentApp() {
   );
 }
 
-const KNOWN_SEGS = ["", "walking", "running", "seirocco", "jongseong"];
+const KNOWN_SEGS = ["", "walking", "running", "seirocco", "jongseong", "answers"];
 
 function usePathSeg() {
   const read = () => location.pathname.split("/")[1] || "";
@@ -469,6 +470,9 @@ function PathRouter() {
       .catch(() => {});
     return () => { alive = false; };
   }, [seg, session?.user?.id, setSeg]);
+
+  // 빠른 정답지 — 로그인 여부와 무관하게 열람(학생앱 셸 밖 단독 페이지)
+  if (seg === "answers") return <Suspense fallback={null}><AnswerKey theme={theme} /></Suspense>;
 
   if (seg === "walking" || seg === "running") return <StudentApp />;
 

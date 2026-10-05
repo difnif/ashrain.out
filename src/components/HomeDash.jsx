@@ -17,8 +17,12 @@ import { getRecentConcepts } from "../lib/review";
 import { getWx } from "../lib/wx";
 import ReviewCard from "./ReviewCard";
 
-// 기말 대비 빠른 정답지(2권) — claude.ai 아티팩트. 공유 메뉴에서 '링크가 있는 누구나'로 열어 둬야 비로그인 열람 가능
-const ANSWER_KEY_URL = "https://claude.ai/artifact/J1dVruikwnfFp994wXMAHw";
+// 기말 대비 빠른 정답지(2권) — 앱 내 단독 페이지 /answers (로그인 없이도 열림)
+function openAnswerKey() {
+  history.pushState(null, "", "/answers");
+  window.dispatchEvent(new Event("pathchange"));
+  window.scrollTo(0, 0);
+}
 
 const CSS = `
 .hd-root { min-height: 100vh; padding: 14px 14px 88px; box-sizing: border-box;
@@ -429,13 +433,13 @@ export default function HomeDash({ theme = "light", onToggleTheme }) { // eslint
             </div>
           </div>
 
-          {/* 기말 대비 빠른 정답지 — 외부 페이지(claude.ai 아티팩트, 로그인 없이 열람) */}
+          {/* 기말 대비 빠른 정답지 — 앱 내 /answers 로 이동 */}
           <div className="hd-card">
             <p className="hd-t">📗 기말 대비 빠른 정답지</p>
             <p className="hd-big">2권 · 580문항</p>
             <p className="hd-sub">연립방정식~일차함수 · 닮음 활용~확률<br />서술형은 해설까지 볼 수 있어요</p>
             <div className="hd-act">
-              <a className="hd-go" href={ANSWER_KEY_URL} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>정답지 열기 ↗</a>
+              <button type="button" className="hd-go" onClick={openAnswerKey}>정답지 열기 →</button>
             </div>
           </div>
 
