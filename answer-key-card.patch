@@ -1,0 +1,53 @@
+From f47276e2583645a44ae5fd3d20baeef2a122c0c6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 5 Oct 2026 16:01:55 +0900
+Subject: [PATCH] =?UTF-8?q?=ED=99=88=20=EB=8C=80=EC=8B=9C=EB=B3=B4?=
+ =?UTF-8?q?=EB=93=9C=EC=97=90=20=EA=B8=B0=EB=A7=90=20=EB=8C=80=EB=B9=84=20?=
+ =?UTF-8?q?=EB=B9=A0=EB=A5=B8=20=EC=A0=95=EB=8B=B5=EC=A7=80=20=EC=B9=B4?=
+ =?UTF-8?q?=EB=93=9C=20=EC=B6=94=EA=B0=80?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+claude.ai 아티팩트로 만든 2권 빠른 정답지(서술형 해설 포함)로 새 탭 링크.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01YNibXmtFq8whYu9U3XYzxS
+---
+ src/components/HomeDash.jsx | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/src/components/HomeDash.jsx b/src/components/HomeDash.jsx
+index 14cc6c3..f073ae1 100644
+--- a/src/components/HomeDash.jsx
++++ b/src/components/HomeDash.jsx
+@@ -17,6 +17,9 @@ import { getRecentConcepts } from "../lib/review";
+ import { getWx } from "../lib/wx";
+ import ReviewCard from "./ReviewCard";
+ 
++// 기말 대비 빠른 정답지(2권) — claude.ai 아티팩트. 공유 메뉴에서 '링크가 있는 누구나'로 열어 둬야 비로그인 열람 가능
++const ANSWER_KEY_URL = "https://claude.ai/artifact/J1dVruikwnfFp994wXMAHw";
++
+ const CSS = `
+ .hd-root { min-height: 100vh; padding: 14px 14px 88px; box-sizing: border-box;
+   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; background: var(--bg); }
+@@ -426,6 +429,16 @@ export default function HomeDash({ theme = "light", onToggleTheme }) { // eslint
+             </div>
+           </div>
+ 
++          {/* 기말 대비 빠른 정답지 — 외부 페이지(claude.ai 아티팩트, 로그인 없이 열람) */}
++          <div className="hd-card">
++            <p className="hd-t">📗 기말 대비 빠른 정답지</p>
++            <p className="hd-big">2권 · 580문항</p>
++            <p className="hd-sub">연립방정식~일차함수 · 닮음 활용~확률<br />서술형은 해설까지 볼 수 있어요</p>
++            <div className="hd-act">
++              <a className="hd-go" href={ANSWER_KEY_URL} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>정답지 열기 ↗</a>
++            </div>
++          </div>
++
+           {/* ④ 오늘의 복습 */}
+           <div className="hd-card wide">
+             <ReviewCard uid={uid} profile={prof} />
+-- 
+2.43.0
+
