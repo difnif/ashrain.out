@@ -152,12 +152,28 @@ export default function AnswerKey({ theme = "light" }) {
   }, [part.sol]);
   const closeHint = () => { setHintPop(false); store.set("ak_solhint", 1); };
   useEffect(() => { setOpen(new Set()); setSheet(null); }, [bi, pi, hide]);
+
+  // 해설 시트는 브라우저 기록 한 칸을 차지한다 — 안드로이드 뒤로가기는 시트만 닫고 정답지에 머문다
+  const openSheet = (i) => {
+    if (i < 0) return;
+    if (history.state?.ak !== "sheet") history.pushState({ ...(history.state || {}), ak: "sheet" }, "");
+    setSheet(i);
+  };
+  const closeSheet = () => {
+    if (history.state?.ak === "sheet") history.back(); // popstate 에서 닫힘
+    else setSheet(null);
+  };
+  useEffect(() => {
+    const onPop = () => { if (history.state?.ak !== "sheet") setSheet(null); };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   useEffect(() => {
     if (sheet == null) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e) => {
-      if (e.key === "Escape") setSheet(null);
+      if (e.key === "Escape") closeSheet();
       if (e.key === "ArrowRight") setSheet((i) => Math.min(i + 1, total - 1));
       if (e.key === "ArrowLeft") setSheet((i) => Math.max(i - 1, 0));
     };
@@ -170,7 +186,7 @@ export default function AnswerKey({ theme = "light" }) {
   const tapCell = (si, q) => {
     const key = `${si}-${q}`;
     if (hide && !open.has(key)) { setOpen((o) => new Set(o).add(key)); return; }
-    if (part.sol) { setSheet(flat.findIndex((x) => x.si === si && x.q === q)); return; }
+    if (part.sol) { openSheet(flat.findIndex((x) => x.si === si && x.q === q)); return; }
     if (hide) setOpen((o) => { const n = new Set(o); n.delete(key); return n; });
   };
 
@@ -265,7 +281,7 @@ export default function AnswerKey({ theme = "light" }) {
               <b>{pad2(it.q + 1)}번 · 정답 <Ans a={it.a} /></b>
               <small>{part.name} · {it.t}</small>
             </div>
-            <button type="button" className="ak-back" onClick={() => setSheet(null)} aria-label="해설 닫기">✕</button>
+            <button type="button" className="ak-back" onClick={closeSheet} aria-label="해설 닫기">✕</button>
           </div>
           <div className="ak-sh-body" key={sheet}>
             <div className="ak-paper">
