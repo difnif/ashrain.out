@@ -1,6 +1,7 @@
 // ashrain.out — 기말 대비 빠른 정답지 (경로 /answers · 로그인 없이 열람)
 // 교재 2권 × 파트 5개(교과서 기출·빈출 유형·서술형·고난도·실전 모의고사). 정답 가리기, 서술형은 문항별 해설 이미지.
 // 데이터: src/data/answerKey.js · 해설 이미지: public/answer-key/sol/
+// web 모드(/answerswebview): 서술형 해설을 이미지 대신 웹 글자·수식·그림으로(src/pages/AnswerKeySol.jsx + src/data/answerKeySol.js), '원본 보기'로 이미지 확인
 import { useEffect, useMemo, useState } from "react";
 import { BOOKS } from "../data/answerKey";
 
@@ -71,6 +72,18 @@ const CSS = `
 .ak-hide .ak-cell .ak-ans::before { content: ""; visibility: visible; position: absolute; inset: 3px -2px; border-radius: 5px; background: var(--cover); }
 .ak-hide .ak-cell.open .ak-ans { visibility: visible; }
 .ak-hide .ak-cell.open .ak-ans::before { display: none; }
+.ak-note { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; padding: 10px 12px; border-radius: 12px;
+  background: var(--card); border: 1.5px dashed var(--cur); font-size: 13px; line-height: 1.5; }
+.ak-note b { color: var(--cur); }
+.ak-note span:first-child { font-size: 18px; flex: 0 0 auto; }
+.ak-pop { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.ak-pop-card { background: var(--card); color: var(--ink); border-radius: 16px; padding: 20px 18px 16px; max-width: 340px; width: 100%;
+  box-shadow: 0 10px 30px rgba(0,0,0,.3); border-top: 4px solid var(--cur); }
+.ak-pop-card h3 { margin: 0 0 8px; font-size: 16px; }
+.ak-pop-card p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+.ak-pop-card p small { color: var(--mut); }
+.ak-pop-card button { margin-top: 10px; width: 100%; border: 0; background: var(--cur); color: #fff; font: inherit; font-weight: 800;
+  font-size: 14px; padding: 11px; border-radius: 10px; cursor: pointer; }
 .ak-foot { color: var(--mut); font-size: 12px; text-align: center; margin-top: 22px; }
 .ak-sheet { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
 .ak-sh-top { display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px;
@@ -82,6 +95,13 @@ const CSS = `
 .ak-sh-body { flex: 1; overflow: auto; padding: 14px 16px; -webkit-overflow-scrolling: touch; }
 .ak-paper { background: #fff; border-radius: 10px; padding: 10px; max-width: 720px; margin: 0 auto; }
 .ak-paper img { display: block; width: 100%; height: auto; }
+.ak-paper.web { padding: 16px 16px 18px; }
+.ak-orig { display: flex; justify-content: flex-end; max-width: 720px; margin: 0 auto 8px; }
+.ak-orig button { border: 1px solid var(--bd); background: var(--card); color: var(--mut); font: inherit; font-size: 12.5px;
+  padding: 5px 10px; border-radius: 8px; cursor: pointer; }
+.ak-orig button[aria-pressed="true"] { color: var(--cur); border-color: var(--cur); }
+.ak-badge { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--cur); border: 1.5px solid var(--cur);
+  border-radius: 6px; padding: 0 5px; vertical-align: 3px; }
 .ak-sh-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 10px);
   border-top: 1px solid var(--bd); background: var(--card); }
 .ak-sh-nav button { border: 1.5px solid var(--bd); background: var(--card); color: var(--ink); font: inherit; font-weight: 700;
@@ -120,12 +140,24 @@ function goHome() {
   window.dispatchEvent(new Event("pathchange"));
 }
 
-export default function AnswerKey({ theme = "light" }) {
+export default function AnswerKey({ theme = "light", web = false }) {
+  // web 모드 — 해설 렌더러·데이터는 이 경로에서만 내려받는다
+  const [W, setW] = useState(null);
+  const [orig, setOrig] = useState(false);   // 원본 이미지 보기
+  useEffect(() => {
+    if (!web) return;
+    let alive = true;
+    Promise.all([import("./AnswerKeySol"), import("../data/answerKeySol")])
+      .then(([m, d]) => { if (alive) setW({ View: m.default, SOL: d.SOL }); })
+      .catch(() => { /* 실패하면 이미지 해설로 */ });
+    return () => { alive = false; };
+  }, [web]);
   const [bi, setBi] = useState(() => { const v = +(store.get("ak_book") || 0); return BOOKS[v] ? v : 0; });
   const [pi, setPi] = useState(() => { const v = +(store.get("ak_part") || 0); return v >= 0 && v < 5 ? v : 0; });
   const [hide, setHide] = useState(false);
   const [open, setOpen] = useState(() => new Set());
   const [sheet, setSheet] = useState(null); // 서술형 해설: 평탄화 목록의 인덱스
+  const [hintPop, setHintPop] = useState(false); // 서술형 첫 진입 안내(기기당 한 번)
 
   const book = BOOKS[bi];
   const part = book.parts[pi] || book.parts[0];
@@ -134,13 +166,33 @@ export default function AnswerKey({ theme = "light" }) {
   const total = flat.length;
 
   useEffect(() => { document.title = "빠른 정답지 · ashrain.out"; }, []);
+  useEffect(() => {
+    if (part.sol && !store.get("ak_solhint")) setHintPop(true);
+  }, [part.sol]);
+  const closeHint = () => { setHintPop(false); store.set("ak_solhint", 1); };
   useEffect(() => { setOpen(new Set()); setSheet(null); }, [bi, pi, hide]);
+
+  // 해설 시트는 브라우저 기록 한 칸을 차지한다 — 안드로이드 뒤로가기는 시트만 닫고 정답지에 머문다
+  const openSheet = (i) => {
+    if (i < 0) return;
+    if (history.state?.ak !== "sheet") history.pushState({ ...(history.state || {}), ak: "sheet" }, "");
+    setSheet(i);
+  };
+  const closeSheet = () => {
+    if (history.state?.ak === "sheet") history.back(); // popstate 에서 닫힘
+    else setSheet(null);
+  };
+  useEffect(() => {
+    const onPop = () => { if (history.state?.ak !== "sheet") setSheet(null); };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   useEffect(() => {
     if (sheet == null) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e) => {
-      if (e.key === "Escape") setSheet(null);
+      if (e.key === "Escape") closeSheet();
       if (e.key === "ArrowRight") setSheet((i) => Math.min(i + 1, total - 1));
       if (e.key === "ArrowLeft") setSheet((i) => Math.max(i - 1, 0));
     };
@@ -153,12 +205,15 @@ export default function AnswerKey({ theme = "light" }) {
   const tapCell = (si, q) => {
     const key = `${si}-${q}`;
     if (hide && !open.has(key)) { setOpen((o) => new Set(o).add(key)); return; }
-    if (part.sol) { setSheet(flat.findIndex((x) => x.si === si && x.q === q)); return; }
+    if (part.sol) { openSheet(flat.findIndex((x) => x.si === si && x.q === q)); return; }
     if (hide) setOpen((o) => { const n = new Set(o); n.delete(key); return n; });
   };
 
   const cur = { "--cur": `var(${PC[pi]})` };
   const it = sheet != null ? flat[sheet] : null;
+  const solId = it ? `${part.sol}${it.si}-${pad2(it.q + 1)}` : null;
+  const webSol = web && W && solId ? W.SOL[solId] : null;
+  useEffect(() => { setOrig(false); }, [sheet]);
 
   return (
     <div className={`ak-root ak-${theme === "dark" ? "dark" : "light"}`} style={cur}>
@@ -167,7 +222,7 @@ export default function AnswerKey({ theme = "light" }) {
         <header className="ak-top">
           <button type="button" className="ak-back" onClick={goHome} aria-label="뒤로">←</button>
           <div>
-            <h1>빠른 정답지</h1>
+            <h1>빠른 정답지{web && <span className="ak-badge">웹 해설 시험판</span>}</h1>
             <p>정답만 빠르게 · 서술형은 문항을 누르면 해설이 열려요</p>
           </div>
         </header>
@@ -201,6 +256,14 @@ export default function AnswerKey({ theme = "light" }) {
           </div>
         </div>
 
+        {part.sol && (
+          <p className="ak-note" role="note">
+            <span aria-hidden="true">👆</span>
+            <span>서술형은 <b>문항 칸을 누르면 풀이와 채점기준</b>이 열려요.
+              {hide && " 정답 가리기 중에는 한 번 누르면 정답, 한 번 더 누르면 해설이에요."}</span>
+          </p>
+        )}
+
         <main className={`ak-list${hide ? " ak-hide" : ""}`}>
           {part.sections.map((s, si) => {
             const ans = s[2].split("|");
@@ -222,6 +285,17 @@ export default function AnswerKey({ theme = "light" }) {
         <p className="ak-foot">{book.name} · {part.name} · 총 {total}문항</p>
       </div>
 
+      {hintPop && (
+        <div className="ak-pop" role="dialog" aria-modal="true" aria-labelledby="ak-pop-t" onClick={closeHint}>
+          <div className="ak-pop-card" onClick={(e) => e.stopPropagation()}>
+            <h3 id="ak-pop-t">서술형은 해설까지 볼 수 있어요</h3>
+            <p>정답 칸을 누르면 그 문항의 <b>풀이와 채점기준</b>이 전체 화면으로 열려요.</p>
+            <p><small>열린 화면 아래 버튼으로 이전·다음 문항으로 넘길 수 있어요. 정답 가리기를 켜 두면 첫 번째 누름은 정답, 두 번째 누름은 해설이에요.</small></p>
+            <button type="button" onClick={closeHint} autoFocus>알겠어요</button>
+          </div>
+        </div>
+      )}
+
       {it && (
         <div className="ak-sheet" role="dialog" aria-modal="true" aria-label={`${it.t} ${it.q + 1}번 해설`}>
           <div className="ak-sh-top">
@@ -229,11 +303,18 @@ export default function AnswerKey({ theme = "light" }) {
               <b>{pad2(it.q + 1)}번 · 정답 <Ans a={it.a} /></b>
               <small>{part.name} · {it.t}</small>
             </div>
-            <button type="button" className="ak-back" onClick={() => setSheet(null)} aria-label="해설 닫기">✕</button>
+            <button type="button" className="ak-back" onClick={closeSheet} aria-label="해설 닫기">✕</button>
           </div>
           <div className="ak-sh-body" key={sheet}>
-            <div className="ak-paper">
-              <img src={`/answer-key/sol/${part.sol}${it.si}-${pad2(it.q + 1)}.png`} alt={`${it.t} ${it.q + 1}번 해설`} />
+            {webSol && (
+              <div className="ak-orig">
+                <button type="button" aria-pressed={orig} onClick={() => setOrig((v) => !v)}>{orig ? "웹 해설로 보기" : "원본 해설 이미지 보기"}</button>
+              </div>
+            )}
+            <div className={`ak-paper${webSol && !orig ? " web" : ""}`}>
+              {webSol && !orig
+                ? <W.View num={pad2(it.q + 1)} sol={webSol} />
+                : <img src={`/answer-key/sol/${solId}.png`} alt={`${it.t} ${it.q + 1}번 해설`} />}
             </div>
           </div>
           <div className="ak-sh-nav">
