@@ -405,7 +405,7 @@ function StudentApp() {
   );
 }
 
-const KNOWN_SEGS = ["", "walking", "running", "seirocco", "jongseong", "answers"];
+const KNOWN_SEGS = ["", "walking", "running", "seirocco", "jongseong", "answers", "answerswebview"];
 
 function usePathSeg() {
   const read = () => location.pathname.split("/")[1] || "";
@@ -472,7 +472,8 @@ function PathRouter() {
   }, [seg, session?.user?.id, setSeg]);
 
   // 빠른 정답지 — 로그인 여부와 무관하게 열람(학생앱 셸 밖 단독 페이지)
-  if (seg === "answers") return <Suspense fallback={null}><AnswerKey theme={theme} /></Suspense>;
+  if (seg === "answers" || seg === "answerswebview")
+    return <Suspense fallback={null}><AnswerKey theme={theme} web={seg === "answerswebview"} /></Suspense>;   // answerswebview = 서술형 웹 해설 시험판
 
   if (seg === "walking" || seg === "running") return <StudentApp />;
 

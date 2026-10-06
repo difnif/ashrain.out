@@ -1,6 +1,7 @@
 // ashrain.out — 기말 대비 빠른 정답지 (경로 /answers · 로그인 없이 열람)
 // 교재 2권 × 파트 5개(교과서 기출·빈출 유형·서술형·고난도·실전 모의고사). 정답 가리기, 서술형은 문항별 해설 이미지.
 // 데이터: src/data/answerKey.js · 해설 이미지: public/answer-key/sol/
+// web 모드(/answerswebview): 서술형 해설을 이미지 대신 웹 글자·수식·그림으로(src/pages/AnswerKeySol.jsx + src/data/answerKeySol.js), '원본 보기'로 이미지 확인
 import { useEffect, useMemo, useState } from "react";
 import { BOOKS } from "../data/answerKey";
 
@@ -94,6 +95,13 @@ const CSS = `
 .ak-sh-body { flex: 1; overflow: auto; padding: 14px 16px; -webkit-overflow-scrolling: touch; }
 .ak-paper { background: #fff; border-radius: 10px; padding: 10px; max-width: 720px; margin: 0 auto; }
 .ak-paper img { display: block; width: 100%; height: auto; }
+.ak-paper.web { padding: 16px 16px 18px; }
+.ak-orig { display: flex; justify-content: flex-end; max-width: 720px; margin: 0 auto 8px; }
+.ak-orig button { border: 1px solid var(--bd); background: var(--card); color: var(--mut); font: inherit; font-size: 12.5px;
+  padding: 5px 10px; border-radius: 8px; cursor: pointer; }
+.ak-orig button[aria-pressed="true"] { color: var(--cur); border-color: var(--cur); }
+.ak-badge { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--cur); border: 1.5px solid var(--cur);
+  border-radius: 6px; padding: 0 5px; vertical-align: 3px; }
 .ak-sh-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 10px);
   border-top: 1px solid var(--bd); background: var(--card); }
 .ak-sh-nav button { border: 1.5px solid var(--bd); background: var(--card); color: var(--ink); font: inherit; font-weight: 700;
@@ -132,7 +140,18 @@ function goHome() {
   window.dispatchEvent(new Event("pathchange"));
 }
 
-export default function AnswerKey({ theme = "light" }) {
+export default function AnswerKey({ theme = "light", web = false }) {
+  // web 모드 — 해설 렌더러·데이터는 이 경로에서만 내려받는다
+  const [W, setW] = useState(null);
+  const [orig, setOrig] = useState(false);   // 원본 이미지 보기
+  useEffect(() => {
+    if (!web) return;
+    let alive = true;
+    Promise.all([import("./AnswerKeySol"), import("../data/answerKeySol")])
+      .then(([m, d]) => { if (alive) setW({ View: m.default, SOL: d.SOL }); })
+      .catch(() => { /* 실패하면 이미지 해설로 */ });
+    return () => { alive = false; };
+  }, [web]);
   const [bi, setBi] = useState(() => { const v = +(store.get("ak_book") || 0); return BOOKS[v] ? v : 0; });
   const [pi, setPi] = useState(() => { const v = +(store.get("ak_part") || 0); return v >= 0 && v < 5 ? v : 0; });
   const [hide, setHide] = useState(false);
@@ -192,6 +211,9 @@ export default function AnswerKey({ theme = "light" }) {
 
   const cur = { "--cur": `var(${PC[pi]})` };
   const it = sheet != null ? flat[sheet] : null;
+  const solId = it ? `${part.sol}${it.si}-${pad2(it.q + 1)}` : null;
+  const webSol = web && W && solId ? W.SOL[solId] : null;
+  useEffect(() => { setOrig(false); }, [sheet]);
 
   return (
     <div className={`ak-root ak-${theme === "dark" ? "dark" : "light"}`} style={cur}>
@@ -200,7 +222,7 @@ export default function AnswerKey({ theme = "light" }) {
         <header className="ak-top">
           <button type="button" className="ak-back" onClick={goHome} aria-label="뒤로">←</button>
           <div>
-            <h1>빠른 정답지</h1>
+            <h1>빠른 정답지{web && <span className="ak-badge">웹 해설 시험판</span>}</h1>
             <p>정답만 빠르게 · 서술형은 문항을 누르면 해설이 열려요</p>
           </div>
         </header>
@@ -284,8 +306,15 @@ export default function AnswerKey({ theme = "light" }) {
             <button type="button" className="ak-back" onClick={closeSheet} aria-label="해설 닫기">✕</button>
           </div>
           <div className="ak-sh-body" key={sheet}>
-            <div className="ak-paper">
-              <img src={`/answer-key/sol/${part.sol}${it.si}-${pad2(it.q + 1)}.png`} alt={`${it.t} ${it.q + 1}번 해설`} />
+            {webSol && (
+              <div className="ak-orig">
+                <button type="button" aria-pressed={orig} onClick={() => setOrig((v) => !v)}>{orig ? "웹 해설로 보기" : "원본 해설 이미지 보기"}</button>
+              </div>
+            )}
+            <div className={`ak-paper${webSol && !orig ? " web" : ""}`}>
+              {webSol && !orig
+                ? <W.View num={pad2(it.q + 1)} sol={webSol} />
+                : <img src={`/answer-key/sol/${solId}.png`} alt={`${it.t} ${it.q + 1}번 해설`} />}
             </div>
           </div>
           <div className="ak-sh-nav">
