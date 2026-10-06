@@ -71,6 +71,18 @@ const CSS = `
 .ak-hide .ak-cell .ak-ans::before { content: ""; visibility: visible; position: absolute; inset: 3px -2px; border-radius: 5px; background: var(--cover); }
 .ak-hide .ak-cell.open .ak-ans { visibility: visible; }
 .ak-hide .ak-cell.open .ak-ans::before { display: none; }
+.ak-note { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; padding: 10px 12px; border-radius: 12px;
+  background: var(--card); border: 1.5px dashed var(--cur); font-size: 13px; line-height: 1.5; }
+.ak-note b { color: var(--cur); }
+.ak-note span:first-child { font-size: 18px; flex: 0 0 auto; }
+.ak-pop { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.ak-pop-card { background: var(--card); color: var(--ink); border-radius: 16px; padding: 20px 18px 16px; max-width: 340px; width: 100%;
+  box-shadow: 0 10px 30px rgba(0,0,0,.3); border-top: 4px solid var(--cur); }
+.ak-pop-card h3 { margin: 0 0 8px; font-size: 16px; }
+.ak-pop-card p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+.ak-pop-card p small { color: var(--mut); }
+.ak-pop-card button { margin-top: 10px; width: 100%; border: 0; background: var(--cur); color: #fff; font: inherit; font-weight: 800;
+  font-size: 14px; padding: 11px; border-radius: 10px; cursor: pointer; }
 .ak-foot { color: var(--mut); font-size: 12px; text-align: center; margin-top: 22px; }
 .ak-sheet { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
 .ak-sh-top { display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px;
@@ -126,6 +138,7 @@ export default function AnswerKey({ theme = "light" }) {
   const [hide, setHide] = useState(false);
   const [open, setOpen] = useState(() => new Set());
   const [sheet, setSheet] = useState(null); // 서술형 해설: 평탄화 목록의 인덱스
+  const [hintPop, setHintPop] = useState(false); // 서술형 첫 진입 안내(기기당 한 번)
 
   const book = BOOKS[bi];
   const part = book.parts[pi] || book.parts[0];
@@ -134,6 +147,10 @@ export default function AnswerKey({ theme = "light" }) {
   const total = flat.length;
 
   useEffect(() => { document.title = "빠른 정답지 · ashrain.out"; }, []);
+  useEffect(() => {
+    if (part.sol && !store.get("ak_solhint")) setHintPop(true);
+  }, [part.sol]);
+  const closeHint = () => { setHintPop(false); store.set("ak_solhint", 1); };
   useEffect(() => { setOpen(new Set()); setSheet(null); }, [bi, pi, hide]);
   useEffect(() => {
     if (sheet == null) return;
@@ -201,6 +218,14 @@ export default function AnswerKey({ theme = "light" }) {
           </div>
         </div>
 
+        {part.sol && (
+          <p className="ak-note" role="note">
+            <span aria-hidden="true">👆</span>
+            <span>서술형은 <b>문항 칸을 누르면 풀이와 채점기준</b>이 열려요.
+              {hide && " 정답 가리기 중에는 한 번 누르면 정답, 한 번 더 누르면 해설이에요."}</span>
+          </p>
+        )}
+
         <main className={`ak-list${hide ? " ak-hide" : ""}`}>
           {part.sections.map((s, si) => {
             const ans = s[2].split("|");
@@ -221,6 +246,17 @@ export default function AnswerKey({ theme = "light" }) {
         </main>
         <p className="ak-foot">{book.name} · {part.name} · 총 {total}문항</p>
       </div>
+
+      {hintPop && (
+        <div className="ak-pop" role="dialog" aria-modal="true" aria-labelledby="ak-pop-t" onClick={closeHint}>
+          <div className="ak-pop-card" onClick={(e) => e.stopPropagation()}>
+            <h3 id="ak-pop-t">서술형은 해설까지 볼 수 있어요</h3>
+            <p>정답 칸을 누르면 그 문항의 <b>풀이와 채점기준</b>이 전체 화면으로 열려요.</p>
+            <p><small>열린 화면 아래 버튼으로 이전·다음 문항으로 넘길 수 있어요. 정답 가리기를 켜 두면 첫 번째 누름은 정답, 두 번째 누름은 해설이에요.</small></p>
+            <button type="button" onClick={closeHint} autoFocus>알겠어요</button>
+          </div>
+        </div>
+      )}
 
       {it && (
         <div className="ak-sheet" role="dialog" aria-modal="true" aria-label={`${it.t} ${it.q + 1}번 해설`}>
