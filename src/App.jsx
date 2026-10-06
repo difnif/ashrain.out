@@ -438,6 +438,14 @@ function PathRouter() {
       seg === "seirocco" ? "seirocco" : seg === "jongseong" ? "jongseong" : "ashrain";
   }, [seg]);
 
+  // 시험판 주소 /answerswebview → 정식 /answers (2026-10-06, 웹 해설을 정식으로 교체)
+  useEffect(() => {
+    if (seg === "answerswebview") {
+      history.replaceState(null, "", "/answers" + location.search + location.hash);
+      setSeg("answers");
+    }
+  }, [seg, setSeg]);
+
   // 미지의 경로 → 관문으로 정리
   useEffect(() => {
     if (!KNOWN_SEGS.includes(seg)) {
@@ -472,8 +480,8 @@ function PathRouter() {
   }, [seg, session?.user?.id, setSeg]);
 
   // 빠른 정답지 — 로그인 여부와 무관하게 열람(학생앱 셸 밖 단독 페이지)
-  if (seg === "answers" || seg === "answerswebview")
-    return <Suspense fallback={null}><AnswerKey theme={theme} web={seg === "answerswebview"} /></Suspense>;   // answerswebview = 서술형 웹 해설 시험판
+  if (seg === "answers" || seg === "answerswebview")   // answerswebview = 시험판 시절 주소 — 위 효과가 /answers 로 바꿔 준다
+    return <Suspense fallback={null}><AnswerKey theme={theme} web /></Suspense>;
 
   if (seg === "walking" || seg === "running") return <StudentApp />;
 
