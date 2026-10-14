@@ -1,10 +1,10 @@
 // ashrain.out — 서술형 평가 알림(앱 안): 열린 평가 목록을 잠깐 캐시하고, 새로 열린 평가는 한 번 토스트로 알린다.
 // 진짜 푸시 알림은 아직 없다(마이페이지 '알림 받기'는 준비 중) — 앱을 열면 대시보드 카드·우물·토스트로 보인다.
-import { assessCall, deviceId, seenCodes, claimPending } from "./api.js";
+import { assessCall, deviceId, seenCodes } from "./api.js";
 
 const TTL = 2 * 60 * 1000;
 const TOAST_KEY = "ash.assess.toasted";
-let cache = null, at = 0, inflight = null, claimed = false;
+let cache = null, at = 0, inflight = null;
 
 /** { open:[{code,title,date,…}], mine:[{sid,code,status,total,max}] } — 실패하면 빈 목록 */
 export async function assessList({ force = false } = {}) {
@@ -12,7 +12,6 @@ export async function assessList({ force = false } = {}) {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      if (!claimed) { claimed = true; await claimPending().catch(() => 0); }
       const r = await assessCall("list", { device: deviceId() });
       cache = { open: r.open || [], mine: r.mine || [], ready: r.ready !== false };
     } catch {

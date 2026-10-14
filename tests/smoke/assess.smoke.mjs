@@ -291,9 +291,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
     // B. 로그인 학생 — 대시보드 알림 카드 · 토스트 · 학습 도구 · 목록 (이 기기에 다른 사람의 비로그인 기록이 남아 있다)
     const anonSid = Object.keys(st.sessions)[0];
-    page = await newPage({ session: true, seed: { "ash.assess.s.SAMPLE01": JSON.stringify({ sid: anonSid, secret: "sec-1", step: "result", at: Date.now() }) } });
+    page = await newPage({ session: true, seed: {
+      "ash.assess.s.SAMPLE01": JSON.stringify({ sid: anonSid, secret: "sec-1", step: "result", at: Date.now() }),
+      "ash.assess.claims": JSON.stringify([{ sid: anonSid, secret: "sec-1", at: Date.now(), code: "SAMPLE01", title: SPEC.title, name: "홍길동" }]),   // 결과 화면에서 '로그인하고 담기'를 누르고 로그인한 상황
+    } });
     await page.goto(`${base}/walking`);
     await page.getByText("📝 서술형 평가").first().waitFor({ timeout: 15000 });
+    await page.getByText("방금 이 기기에서 낸 서술형 평가").waitFor({ timeout: 10000 });
+    ok(!calls.some((c) => c.op === "claim") && (await text(page)).includes("2쪽 이름 홍길동"), "로그인 뒤 담기는 저절로 하지 않고 2쪽 이름을 보여 주며 물어봄");
+    await page.getByRole("button", { name: "내 것이 맞아요" }).click();
+    await page.getByText("내 기록에 담았어요").waitFor({ timeout: 10000 });
+    ok(calls.filter((c) => c.op === "claim").length === 1, "'내 것이 맞아요' → 그때 한 번 담기");
     t = await text(page);
     ok(t.includes(SPEC.title) && t.includes("NEW"), "대시보드: 서술형 평가 카드 + NEW");
     await page.getByText("새 서술형 평가가 열렸어요").waitFor({ timeout: 5000 });

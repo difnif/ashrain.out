@@ -5,7 +5,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MathText from "../../components/MathText";
 import { ASSESS_CSS } from "./assessCss";
-import { assessCall, deviceId, readLocalFor, writeLocal, clearLocal, localSessions, addPendingClaim, claimPending, markSeen, goAssess, accessToken, currentUid } from "../../lib/assess/api";
+import { assessCall, deviceId, readLocalFor, writeLocal, localSessions, addPendingClaim, markSeen, goAssess, accessToken, currentUid } from "../../lib/assess/api";
+import { ClaimPrompt } from "./AssessCard";
 import { processPhoto, REASON_TEXT } from "../../lib/assess/capture";
 import { setQueueContext, enqueue, jobOf, retryJob, regrade, busyCount } from "../../lib/assess/queue";
 import { invalidateAssessList } from "../../lib/assess/notify";
@@ -74,7 +75,6 @@ function ListView() {
     (async () => {
       const tok = await accessToken();
       if (alive) setLogged(!!tok);
-      if (tok) await claimPending().catch(() => 0);
       try { const r = await assessCall("list", { device: deviceId() }); if (alive) setList(r); }
       catch (e) { if (alive) { setErr(e.message); setList({ open: [], mine: [] }); } }
     })();
@@ -85,6 +85,7 @@ function ListView() {
   return (
     <>
       <Top title="서술형 평가" sub="선생님이 낸 시험지를 쪽마다 찍으면 채점돼요" />
+      {logged && <ClaimPrompt className="as-card" btnClass="as-btn as-tiny" onClaimed={async () => { try { setList(await assessCall("list", { device: deviceId() })); } catch { /* */ } }} />}
       {!list && <div className="as-busy"><span className="as-sp" />불러오는 중…</div>}
       {list && (
         <>
@@ -145,7 +146,7 @@ function Take({ code }) {
         setSet(g.set); setMeta({ store: !!g.store_images, anon: g.anon !== false, me: g.me, mine: g.mine || null });
         markSeen(code);
         const loc = readLocalFor(code, uid);
-        if (loc?.sid && loc?.secret) {
+        if (loc?.sid && (loc?.secret || uid)) {                 // 계정 기록은 비밀값 없이도(로그인으로) 이어 간다
           if (loc.step === "result") {
             try { const r = await assessCall("result", { sid: loc.sid, secret: loc.secret }); if (!alive) return; setSess({ sid: loc.sid, secret: loc.secret, status: r.result.status, pages: [] }); setResult(r.result); setStep("result"); }
             catch { /* 기록이 사라졌으면 표지부터 */ }
@@ -166,7 +167,7 @@ function Take({ code }) {
 
   const showResult = useCallback((res) => {
     setResult(res); setStep("result");
-    writeLocal(code, { step: "result" });
+    if (res?.sid) writeLocal(code, { sid: res.sid, step: "result" }, uidRef.current);      // 지금 보는 사람의 칸에만
     invalidateAssessList();
     window.scrollTo(0, 0);
   }, [code]);
@@ -178,13 +179,13 @@ function Take({ code }) {
     const r = await assessCall("start", { code, device: deviceId(), sid: loc?.sid, secret: loc?.secret, fresh });
     if (r.status === "submitted") {
       const rr = await assessCall("result", { sid: r.sid, secret: loc?.secret });
-      writeLocal(code, { sid: r.sid, secret: loc?.secret, step: "result", uid });
+      writeLocal(code, { sid: r.sid, secret: loc?.secret, step: "result" }, uid);
       setSess({ sid: r.sid, secret: loc?.secret, status: "submitted", pages: [], userBound: !!r.user_bound });
       showResult(rr.result);
       return true;
     }
     const s = { sid: r.sid, secret: r.secret || loc?.secret, status: r.status, pages: r.pages || [], info: r.info, suggestion: r.suggestion || null, userBound: !!r.user_bound };
-    writeLocal(code, { sid: s.sid, secret: s.secret, step: "shoot", uid });
+    writeLocal(code, { sid: s.sid, secret: s.secret, step: "shoot" }, uid);
     setQueueContext({ code, sid: s.sid, secret: s.secret });
     setSess(s);
     return false;
@@ -223,7 +224,8 @@ function Take({ code }) {
           onAllCaptured={() => { setStep("wrap"); window.scrollTo(0, 0); }} onBackToShoot={() => setStep("shoot")} onSubmitted={showResult} />
       )}
       {step === "result" && result && <ResultView set={set} result={result} sess={sess} setToast={setToast} onRetake={async () => {
-        try { clearLocal(code); await start({ fresh: true }); setResult(null); setStep("view"); } catch (e) { setToast(e.message); }
+        // 새 응시가 만들어진 뒤에만 이 기기의 기록을 바꾼다(실패하면 지금 결과 기록을 그대로 둔다)
+        try { if (!(await start({ fresh: true }))) { setResult(null); setStep("view"); } } catch (e) { setToast(e.message); }
       }} />}
       {toast && <div style={{ position: "fixed", left: "50%", transform: "translateX(-50%)", bottom: 22, zIndex: 50, maxWidth: "min(480px, calc(100vw - 28px))" }}
         className="as-note bad" role="alert">{toast}</div>}
@@ -236,8 +238,8 @@ function Cover({ set, meta, sess, onGo, onResume, onMyResult }) {
   const closed = set.state !== "open";
   const nItems = set.n_items ?? set.items.length;
   const pts = set.max ?? set.items.reduce((a, it) => a + it.points, 0);
-  const done = !sess?.sid && meta.mine?.status === "submitted";          // 로그인: 이 평가를 이미 제출함(다른 기기에서 등)
-  const canResume = !closed && (!!sess?.sid || meta.mine?.status === "open");
+  const done = meta.mine?.status === "submitted";                          // 로그인: 이 평가의 마지막 응시를 이미 제출함(다른 기기에서 등)
+  const canResume = !done && (!!sess?.sid || meta.mine?.status === "open");  // 마감 뒤에도 — 제출해 둔 기록이면 결과로 간다
   return (
     <div className="as-card">
       <p className="as-kick">서술형 평가 · {set.code}</p>
@@ -261,7 +263,7 @@ function Cover({ set, meta, sess, onGo, onResume, onMyResult }) {
       {!meta.me && !meta.anon && <div className="as-note warn">🔒 이 평가는 로그인한 뒤 응시할 수 있어요.</div>}
       <div className="as-row">
         {done && <button className="as-btn pri" onClick={onMyResult}>내 결과 보기</button>}
-        {canResume && <button className="as-btn pri" onClick={onResume}>이어서 찍기</button>}
+        {canResume && <button className="as-btn pri" onClick={onResume}>{closed ? "내 기록 보기" : "이어서 찍기"}</button>}
         <button className={"as-btn" + (canResume || done ? "" : " pri")} disabled={closed || (!meta.me && !meta.anon)} onClick={onGo}>{done ? "다시 응시하기" : "문제 보고 시작하기"}</button>
       </div>
       {meta.store && <p className="as-small" style={{ marginTop: 10 }}>찍은 쪽 사진은 채점 확인과 판독 개선을 위해 선생님께 보관돼요.</p>}
@@ -631,7 +633,10 @@ function ResultView({ set, result, sess, setToast, onRetake }) {
       setRes((r) => ({ ...r, items: r.items.map((x) => (x.no === no ? { ...x, flagged: true } : x)) })); setToast(""); }
     catch (e) { setToast(e.message); }
   };
-  const login = () => { addPendingClaim(sess.sid, sess.secret); history.pushState(null, "", "/walking"); window.dispatchEvent(new Event("pathchange")); };
+  const login = () => {
+    addPendingClaim(sess.sid, sess.secret, { code: set.code, title: set.title, name: res.info?.name || "" });   // 로그인 뒤 "내 것이 맞아요"를 눌러야 담긴다
+    history.pushState(null, "", "/walking"); window.dispatchEvent(new Event("pathchange"));
+  };
   return (
     <>
       <div className="as-card">
@@ -648,14 +653,14 @@ function ResultView({ set, result, sess, setToast, onRetake }) {
         {logged === false && (
           <>
             <h3>🗂 내 기록에 담기</h3>
-            <p className="as-small" style={{ margin: 0 }}>로그인하면 이 결과가 내 계정 기록으로 옮겨져요. 로그인하지 않아도 선생님께는 2쪽 이름으로 전달돼요.</p>
+            <p className="as-small" style={{ margin: 0 }}>로그인한 뒤 "내 것이 맞아요"를 누르면 이 결과가 내 계정 기록으로 옮겨져요(30분 안에). 로그인하지 않아도 선생님께는 2쪽 이름으로 전달돼요.</p>
             <div className="as-row"><button className="as-btn pri" onClick={login}>로그인하고 담기</button></div>
           </>
         )}
         <div className="as-row">
           {logged && <button className="as-btn pri" onClick={() => goApp()}>대시보드로</button>}
           <button className="as-btn" onClick={() => goAssess("")}>다른 평가 보기</button>
-          <button className="as-btn ghost" onClick={onRetake}>처음부터 다시 응시</button>
+          {!res.reveal && set.state === "open" && <button className="as-btn ghost" onClick={onRetake}>처음부터 다시 응시</button>}
         </div>
       </div>
     </>

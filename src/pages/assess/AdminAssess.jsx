@@ -6,6 +6,7 @@ import FeatureBar from "../../components/FeatureBar";
 import MathText from "../../components/MathText";
 import { assessCall } from "../../lib/assess/api";
 import { validateSpec, gradeLabel } from "../../lib/assess/spec";
+import { checkOf } from "../../lib/assess/sheet";
 
 const CSS = `
 .aa { max-width: 980px; margin: 0 auto; padding: 12px 14px 80px; color: var(--text); font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
@@ -158,8 +159,11 @@ function Register({ onDone, setToast }) {
 
 function SetList({ sets, onPick, pick, onChanged, setToast }) {
   const upd = async (code, patch) => {
-    try { await assessCall("admin_update", { code, ...patch }); onChanged(); setToast("바꿨어요"); } catch (e) { setToast(e.message); }
+    try { const r = await assessCall("admin_update", { code, ...patch }); onChanged(); setToast(r.warnings?.length ? r.warnings.join(" / ") : "바꿨어요"); } catch (e) { setToast(e.message); }
   };
+  // 쪽 번호 띠 확인값(32가지)이 같은 열린 평가끼리는 서로의 시험지를 구별하지 못한다 — 목록에 표시
+  const live = (sets || []).filter((x) => x.status === "live" && x.state !== "closed");
+  const clashOf = (s) => (s.status === "live" && s.state !== "closed" ? live.filter((x) => x.code !== s.code && checkOf(x.code) === checkOf(s.code)).map((x) => x.code) : []);
   const copy = async (code) => {
     const url = `${location.origin}/e/${code}`;
     try { await navigator.clipboard.writeText(url); setToast("주소를 복사했어요"); } catch { setToast(url); }
@@ -175,6 +179,7 @@ function SetList({ sets, onPick, pick, onChanged, setToast }) {
                 <b>{s.title}</b>
                 <span className={"aa-chip " + s.state}>{STATE_LABEL[s.state] || s.status}</span>
               </div>
+              {clashOf(s).length > 0 && <div className="aa-warn">! 확인값이 같은 열린 평가: {clashOf(s).join(", ")} — 시험지가 섞여도 구별하지 못해요. 다 쓴 평가는 마감해 주세요.</div>}
               <div className="aa-mut">{[s.code, s.test_date, s.grade_label, `${s.n_items}문제`, `제출 ${s.submitted}/${s.sessions}`, s.avg != null ? `평균 ${s.avg}/${s.max}` : null].filter(Boolean).join(" · ")}</div>
               <div className="aa-row" style={{ marginTop: 8 }}>
                 {s.status === "live" ? <button className="aa-btn" onClick={() => upd(s.code, { status: "closed" })}>마감하기</button>
@@ -199,15 +204,26 @@ function Sessions({ code, setToast }) {
   const [det, setDet] = useState(null);
   const load = async () => { try { setData(await assessCall("admin_sessions", { code })); } catch (e) { setToast(e.message); setData({ sessions: [] }); } };
   useEffect(() => { setData(null); setSid(null); setDet(null); load(); }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
+  const loadDet = () => assessCall("admin_session", { sid }).then(setDet).catch((e) => setToast(e.message));
   useEffect(() => {
     if (!sid) { setDet(null); return; }
     setDet(null);
-    assessCall("admin_session", { sid }).then(setDet).catch((e) => setToast(e.message));
+    loadDet();
   }, [sid]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [regrading, setRegrading] = useState(null);
+  const regrade = async (no) => {
+    setRegrading(no);
+    try { await assessCall("admin_regrade", { sid, page_no: no }); setToast(`${no}쪽 다시 채점했어요`); await loadDet(); load(); }
+    catch (e) { setToast(e.message); } finally { setRegrading(null); }
+  };
   const exportJson = async () => {
     try {
-      const r = await assessCall("admin_export", { code });
-      const blob = new Blob([JSON.stringify(r, null, 1)], { type: "application/json" });
+      // 응시 100건씩 나눠 받아 한 파일로
+      let r = await assessCall("admin_export", { code });
+      const all = { ...r, sessions: [...r.sessions] };
+      for (let guard = 0; r.next != null && guard < 500; guard++) { r = await assessCall("admin_export", { code, offset: r.next }); all.sessions.push(...r.sessions); }
+      delete all.offset; delete all.next;
+      const blob = new Blob([JSON.stringify(all, null, 1)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob); a.download = `assess-${code}-${new Date().toISOString().slice(0, 10)}.json`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
@@ -253,7 +269,11 @@ function Sessions({ code, setToast }) {
                     {p.read && ["s1", "s2", "s3"].map((k) => (
                       <div key={k} className="aa-lines"><b>{{ s1: "①", s2: "②", s3: "③" }[k]}</b> {(p.read[k]?.lines || []).map((l, i) => <div key={i} className={l.struck ? "st" : ""}>{l.arrow ? "→ " : ""}{l.t}</div>)}</div>
                     ))}
-                    {p.grade && <div className="aa-mut">{p.grade.marks.map((m) => `${m.no}) ${m.got}점 — ${m.reason}`).join(" / ")}{p.grade.needs_review ? " · 확인 필요" : ""}</div>}
+                    {p.grade && p.status === "graded" && <div className="aa-mut">{p.grade.marks.map((m) => `${m.no}) ${m.got}점 — ${m.reason}`).join(" / ")}{p.grade.needs_review ? " · 확인 필요" : ""}</div>}
+                    {p.kind === "item" && p.read && p.status !== "graded" && (
+                      <div className="aa-row" style={{ margin: "4px 0" }}><span className="aa-warn">채점 안 됨</span>
+                        <button className="aa-btn" disabled={regrading === p.no} onClick={() => regrade(p.no)}>{regrading === p.no ? "채점하는 중…" : "다시 채점"}</button></div>
+                    )}
                     <div className="aa-mut" style={{ fontSize: 11 }}>판독 {p.model_read || "–"} · 채점 {p.model_grade || "–"} · 시도 {p.attempts} · 선명도 {p.quality?.sharp ?? "–"} · 읽기 어려움 {p.read?.legibility?.score ?? "–"}/5</div>
                     {p.image_url && <img className="aa-img" src={p.image_url} alt={`${p.no}쪽 사진`} loading="lazy" />}
                   </div>

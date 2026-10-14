@@ -83,16 +83,20 @@ const RPC = {
     for (const key of p_keys) db.assess_calls.push({ key, created_at: nowIso() });
     return null;
   },
-  assess_reserve_page({ p_session, p_page, p_kind, p_item, p_shot, p_max }) {
+  assess_reserve_page({ p_session, p_page, p_kind, p_item, p_shot, p_max, p_keys = null, p_caps = null, p_since = null }) {
     let r = db.assess_pages.find((x) => x.session_id === p_session && x.page_no === p_page);
-    if (!r) { r = { session_id: p_session, page_no: p_page, kind: p_kind, item_no: p_item, attempts: 0, status: "reading", shot: null, grade_tries: 0, flagged: false, updated_at: nowIso() }; db.assess_pages.push(r); }
+    let isNew = false;
+    if (!r) { r = { session_id: p_session, page_no: p_page, kind: p_kind, item_no: p_item, attempts: 0, status: "reading", shot: null, grade_tries: 0, flagged: false, updated_at: nowIso() }; db.assess_pages.push(r); isNew = true; }
+    const capped = () => p_keys && RPC.assess_charge({ p_keys, p_caps, p_since }) != null;
     if (p_shot != null && r.shot === p_shot) {
       if (["read", "grading", "graded", "ok"].includes(r.status)) return [{ o_state: "done", o_attempts: r.attempts }];
       if (r.status === "reading" && Date.parse(r.updated_at) > Date.now() - 70_000) return [{ o_state: "busy", o_attempts: r.attempts }];
+      if (capped()) return [{ o_state: "capped", o_attempts: r.attempts }];
       r.status = "reading"; r.updated_at = nowIso();
       return [{ o_state: "retry", o_attempts: r.attempts }];
     }
     if (r.attempts >= p_max) return [{ o_state: "over", o_attempts: r.attempts }];
+    if (capped()) { if (isNew) db.assess_pages.splice(db.assess_pages.indexOf(r), 1); return [{ o_state: "capped", o_attempts: r.attempts }]; }
     Object.assign(r, { attempts: r.attempts + 1, shot: p_shot, status: "reading", kind: p_kind, item_no: p_item, read: null, grade: null, grade_tries: 0,
       flagged: false, flag_note: null, model_read: null, model_grade: null, image_path: null, updated_at: nowIso() });
     return [{ o_state: "fresh", o_attempts: r.attempts }];
@@ -342,19 +346,23 @@ r = await call({ op: "flag", ...A, page_no: 3, note: "7을 1로 읽음" });
 ok(r.status === 200 && row(S1.sid, 3).flagged, "잘못 읽었어요 표시");
 r = await call({ op: "start", code: "SAMPLE01", device: "dev-1", sid: S1.sid, secret: S1.secret });
 ok(r.status === 200 && r.body.sid === S1.sid && r.body.status === "submitted", "제출한 응시로 다시 시작하면 새로 만들지 않고 '제출됨'을 알려 줌(결과 응답을 놓쳤을 때)");
+r = await call({ op: "start", code: "SAMPLE01", device: "dev-1", fresh: true });
+ok(r.status === 409 && r.body.error.includes("정답을 확인"), "정답을 본 기기(after_submit·다 채점)는 다시 응시 불가");
 
 // ── 7. 로그인해서 담기 (명부는 계정에 붙이지 않음) ────────────────────────────
 r = await call({ op: "claim", ...A });
 ok(r.status === 401, "로그인 없이 담기 → 401");
-r = await call({ op: "claim", ...A }, { tok: "tok-stu" });
-ok(r.status === 200 && db.assess_sessions.find((s) => s.id === S1.sid).user_id === USERS["tok-stu"].id, "담기 → 응시에 계정 연결");
-ok(!db.assess_people.find((p) => p.person_key === "n:홍길동|m2").user_id, "명부(이름|학년)는 계정에 붙이지 않음 — 동명이인 가능");
-r = await call({ op: "claim", ...A }, { tok: "tok-stu" });
-ok(r.status === 200, "같은 계정이 두 번 담기 → 괜찮음");
 r = await call({ op: "claim", ...A }, { tok: "tok-stu2" });
+ok(r.status === 200 && db.assess_sessions.find((s) => s.id === S1.sid).user_id === USERS["tok-stu2"].id, "담기 → 응시에 계정 연결");
+ok(!db.assess_people.find((p) => p.person_key === "n:홍길동|m2").user_id, "명부(이름|학년)는 계정에 붙이지 않음 — 동명이인 가능");
+r = await call({ op: "claim", ...A }, { tok: "tok-stu2" });
+ok(r.status === 200, "같은 계정이 두 번 담기 → 괜찮음");
+r = await call({ op: "claim", ...A }, { tok: "tok-stu" });
 ok(r.status === 409, "다른 계정이 담기 → 409");
-r = await call({ op: "list" }, { tok: "tok-stu" });
+r = await call({ op: "list" }, { tok: "tok-stu2" });
 ok(r.body.mine.some((m) => m.sid === S1.sid && m.status === "submitted" && m.code === "SAMPLE01"), "로그인 목록에 내 응시");
+r = await call({ op: "start", code: "SAMPLE01", fresh: true }, { tok: "tok-stu2" });
+ok(r.status === 409, "정답을 본 응시를 담은 계정도 다시 응시 불가");
 
 // ── 8. 로그인 응시 ────────────────────────────────────────────────────────────
 r = await call({ op: "start", code: "SAMPLE01", device: "dev-9" }, { tok: "tok-stu" });
@@ -362,8 +370,11 @@ const L = r.body;
 ok(r.status === 200 && L.secret && L.user_bound && db.assess_sessions.find((s) => s.id === L.sid).user_id === USERS["tok-stu"].id, "로그인 시작 → 계정 응시");
 r = await call({ op: "start", code: "SAMPLE01" }, { tok: "tok-stu" });
 ok(r.body.sid === L.sid && r.body.resumed, "로그인은 열린 응시를 자동으로 이어 감");
-r = await call({ op: "start", code: "SAMPLE01", sid: L.sid, secret: r.body.secret });
-ok(r.body.sid !== L.sid, "로그아웃 상태로는 계정 응시를 비밀값으로 이어 받지 않음");
+ok(!("secret" in r.body), "계정 응시를 이어 갈 때 비밀값을 바꾸지 않음(다른 기기의 기록이 깨지지 않게)");
+r = await call({ op: "start", code: "SAMPLE01", device: "dev-9", sid: L.sid, secret: L.secret });
+ok(r.status === 200 && r.body.sid !== L.sid && !r.body.user_bound, "로그아웃 상태로는 계정 응시를 비밀값으로 이어 받지 않음(새 비로그인 응시)");
+r = await call({ op: "start", code: "SAMPLE01", sid: L.sid, secret: "stale-from-other-device" }, { tok: "tok-stu" });
+ok(r.status === 200 && r.body.sid === L.sid && r.body.resumed, "로그인한 주인은 비밀값이 낡아도(다른 기기) 계정으로 이어 감");
 r = await call({ op: "get", code: "SAMPLE01" }, { tok: "tok-stu" });
 ok(r.body.mine?.sid === L.sid && r.body.mine.status === "open", "열람에 내 마지막 응시(로그인)");
 r = await call({ op: "page", sid: L.sid, page_no: 3, crop: CROP, shot: "L-shot-3" }, { tok: "tok-stu" });
@@ -382,6 +393,19 @@ r = await call({ op: "grade", sid: L.sid, page_no: 4 }, { tok: "tok-stu" });
 ok(r.status === 429 && row(L.sid, 4).grade_tries === 3, "채점 맡기 3번 넘으면 429 (끝없이 부르지 않음)");
 ok(callsOf(`u:${USERS["tok-stu"].id}`) === c0 + 3, "채점만 다시도 한도로 셈 (쪽 1 + 채점 2)");
 aiMode.grade = "normal";
+// AI 가 잠깐 붐빔(529) → 채점 맡은 횟수를 깎지 않는다
+{
+  r = await call({ op: "page", sid: L.sid, page_no: 3, crop: CROP, shot: "L-shot-3b" }, { tok: "tok-stu" });
+  row(L.sid, 3).status = "read"; row(L.sid, 3).grade = null; row(L.sid, 3).grade_tries = 1;
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url, init) => (String(url).includes("api.anthropic.com") ? new Response(JSON.stringify({ error: { type: "overloaded_error", message: "Overloaded" } }), { status: 529 }) : real(url, init));
+  r = await call({ op: "grade", sid: L.sid, page_no: 3 }, { tok: "tok-stu" });
+  const r2 = await call({ op: "grade", sid: L.sid, page_no: 3 }, { tok: "tok-stu" });
+  globalThis.fetch = real;
+  ok(r.status === 503 && r2.status === 503 && /붐벼요/.test(r.body.error) && row(L.sid, 3).grade_tries === 1 && row(L.sid, 3).status === "read", "AI 붐빔(529) → 503, 채점 맡은 횟수 그대로(1)");
+  r = await call({ op: "grade", sid: L.sid, page_no: 3 }, { tok: "tok-stu" });
+  ok(r.status === 200 && row(L.sid, 3).status === "graded", "붐빔이 지나면 바로 채점");
+}
 // 동시에 채점 → 하나만 맡는다
 r = await call({ op: "page", sid: L.sid, page_no: 5, crop: CROP, shot: "L-shot-5" }, { tok: "tok-stu" });
 row(L.sid, 5).status = "read"; row(L.sid, 5).grade = null; row(L.sid, 5).grade_tries = 1;
@@ -393,6 +417,15 @@ ok(r.status === 200 && r.body.status === "graded" && !("grade" in r.body), "채�
 r = await call({ op: "finish", sid: L.sid }, { tok: "tok-stu" });
 ok(r.status === 200 && r.body.result.info.name === "김민준" && r.body.result.info.by === "profile", "로그인 제출: 2쪽 확인 없으면 프로필 이름");
 ok(r.body.result.reveal === false && r.body.result.complete === false && r.body.result.items.every((i) => i.answer === null && i.elements.every((e) => !e.reason)) && r.body.result.total === 20, "after_submit 이라도 채점 안 된 문제가 있으면 마감 전엔 정답·근거 비공개(점수는 보임)");
+r = await call({ op: "start", code: "SAMPLE01", sid: L.sid }, { tok: "tok-stu" });
+ok(r.status === 200 && r.body.sid === L.sid && r.body.status === "submitted", "다른 기기에서 제출한 계정 응시 → '제출됨'(새 응시를 만들지 않음)");
+// 관리자 다시 채점(학생 쪽 채점 시도를 다 쓴 4쪽)
+r = await call({ op: "admin_regrade", sid: L.sid, page_no: 4 }, { tok: "tok-stu" });
+ok(r.status === 403, "학생은 관리자 다시 채점 불가");
+r = await call({ op: "admin_regrade", sid: L.sid, page_no: 4 }, { tok: "tok-admin" });
+ok(r.status === 200 && r.body.status === "graded" && row(L.sid, 4).status === "graded" && db.assess_sessions.find((x) => x.id === L.sid).total === 30, "관리자 다시 채점 → 채점됨 + 제출된 응시 합계도 맞춤(20→30)");
+r = await call({ op: "admin_regrade", sid: L.sid, page_no: 4 }, { tok: "tok-admin" });
+ok(r.status === 409, "이미 채점된 쪽은 다시 채점하지 않음");
 
 // ── 9. 호출 한도(비로그인 IP) · 응시 시작 한도 ────────────────────────────────
 db.app_settings.push({ key: "assess_limits", value: JSON.stringify({ anon_ip_day: 2, anon_ip_sessions_day: 2 }) });
@@ -401,7 +434,11 @@ const B = { sid: r.body.sid, secret: r.body.secret };
 let codes = [];
 for (const pg of [2, 3, 4]) codes.push((await call({ op: "page", ...B, page_no: pg, crop: CROP }, { ip: "7.7.7.7" })).status);
 ok(JSON.stringify(codes) === "[200,200,429]", "IP 하루 한도(2) 넘으면 429");
-ok(row(B.sid, 4).status === "error", "한도에 걸린 쪽은 error 로 남음(같은 사진으로 내일 다시)");
+ok(!row(B.sid, 4), "한도에 걸린 새 쪽은 아무것도 남기지 않음");
+// 한도에 걸린 다시 찍기는 이미 채점된 쪽을 지우지 않고 시도 수도 그대로
+const before3 = { ...row(B.sid, 3) };
+r = await call({ op: "page", ...B, page_no: 3, crop: CROP, shot: "cap-reshoot-1" }, { ip: "7.7.7.7" });
+ok(r.status === 429 && row(B.sid, 3).status === before3.status && row(B.sid, 3).attempts === before3.attempts && row(B.sid, 3).shot === before3.shot && JSON.stringify(row(B.sid, 3).grade) === JSON.stringify(before3.grade), "한도에 걸린 다시 찍기 → 429, 채점된 쪽·시도 수 그대로");
 r = await call({ op: "start", code: "SAMPLE01", device: "dev-ip2" }, { ip: "7.7.7.7" });
 ok(r.status === 200, "같은 IP 두 번째 응시 시작");
 r = await call({ op: "start", code: "SAMPLE01", device: "dev-ip3" }, { ip: "7.7.7.7" });
@@ -427,7 +464,7 @@ ok(!r.body.open.some((s) => s.code === "SAMPLE01"), "마감되면 열린 목록�
 // ── 11. 관리자 조회 ───────────────────────────────────────────────────────────
 r = await call({ op: "admin_sets" }, { tok: "tok-admin" });
 const sRow = r.body.sets.find((x) => x.code === "SAMPLE01");
-ok(r.status === 200 && sRow.sessions >= 5 && sRow.submitted === 2 && sRow.avg === 20, "관리자 목록: 응시·제출·평균");
+ok(r.status === 200 && sRow.sessions >= 5 && sRow.submitted === 2 && sRow.avg === 25, "관리자 목록: 응시·제출·평균 (20점·30점 → 25)");
 r = await call({ op: "admin_sessions", code: "SAMPLE01" }, { tok: "tok-admin" });
 const srow = r.body.sessions.find((s) => s.sid === S1.sid);
 ok(r.status === 200 && srow.info.name === "홍길동" && srow.person.person_key === "n:홍길동|m2" && srow.pages.some((p) => p.flagged), "관리자 응시 기록: 응시자·명부·이의");
@@ -441,6 +478,13 @@ r = await call({ op: "admin_register", spec: SPEC }, { tok: "tok-admin" });
 ok(r.status === 409 && r.body.sessions >= 5, "응시 기록이 있으면 덮어쓰기 전에 409");
 r = await call({ op: "admin_register", spec: SPEC, overwrite: true }, { tok: "tok-admin" });
 ok(r.status === 200 && r.body.updated, "overwrite:true 면 갱신");
+r = await call({ op: "admin_update", code: "CLASH033", status: "live" }, { tok: "tok-admin" });
+ok(r.status === 200 && r.body.warnings?.some((w) => w.includes("SAMPLE01")) === false, "확인값 겹침: 상대(SAMPLE01)가 마감이면 경고 없음");
+await call({ op: "admin_update", code: "SAMPLE01", status: "live" }, { tok: "tok-admin" });
+r = await call({ op: "admin_update", code: "CLASH033", status: "live" }, { tok: "tok-admin" });
+ok(r.body.warnings?.some((w) => w.includes("SAMPLE01")), "다시 열 때도 확인값이 같은 열린 평가가 있으면 경고");
+await call({ op: "admin_update", code: "CLASH033", status: "closed" }, { tok: "tok-admin" });
+await call({ op: "admin_update", code: "SAMPLE01", status: "closed" }, { tok: "tok-admin" });
 r = await call({ op: "nope" });
 ok(r.status === 400, "모르는 op → 400");
 ok(storage.length === 0, "사진 저장 꺼짐(기본) → 버킷에 아무것도 안 올림");
@@ -460,7 +504,10 @@ ok(r.status === 200 && r.body.sessions.length === 1150 && r.body.sessions.every(
 r = await call({ op: "admin_sets" }, { tok: "tok-admin" });
 ok(r.body.sets.find((x) => x.code === "BIG01").sessions === 1150 && r.body.sets.find((x) => x.code === "BIG01").submitted === 575, "관리자 목록 통계도 1000건 넘게");
 r = await call({ op: "admin_export", code: "BIG01" }, { tok: "tok-admin" });
-ok(r.body.sessions.length === 1150, "내보내기도 1150건");
+const got = [...r.body.sessions];
+let hops = 1;
+while (r.body.next != null && hops < 50) { r = await call({ op: "admin_export", code: "BIG01", offset: r.body.next }, { tok: "tok-admin" }); got.push(...r.body.sessions); hops++; }
+ok(got.length === 1150 && new Set(got.map((x) => x.id)).size === 1150 && hops === 12 && got.every((x) => x.pages.length === 2), "내보내기는 100건씩 나눠(12번) 1150건 전부·중복 없음");
 
 // ── 12. 사진 저장 켜면 버킷에 ─────────────────────────────────────────────────
 db.app_settings.push({ key: "assess_store_images", value: "on" });
@@ -469,6 +516,11 @@ r = await call({ op: "start", code: "SAMPLE01", device: "dev-img" });
 const C = { sid: r.body.sid, secret: r.body.secret };
 r = await call({ op: "page", ...C, page_no: 3, crop: CROP, image: "QUJD", shot: "img-shot-001" });
 ok(r.status === 200 && storage.some((p) => p.includes(`/assess-pages/SAMPLE01/${C.sid}/p3-img-shot-00`)) && row(C.sid, 3).image_path, "저장 켜면 펴진 쪽 사진을 비공개 버킷에 (사진마다 다른 이름)");
+
+// 늦게 끝난 채점으로 저장된 합계가 어긋나 있으면 결과를 볼 때 바로잡는다
+db.assess_sessions.find((x) => x.id === S1.sid).total = 5;
+r = await call({ op: "result", ...A });
+ok(r.body.result.total === 20 && db.assess_sessions.find((x) => x.id === S1.sid).total === 20, "저장된 합계가 어긋나면 결과 볼 때 바로잡음");
 
 // ── 13. AI 오류는 학생 화면에 내부 사유를 보이지 않는다 ───────────────────────
 const realFetch = globalThis.fetch;

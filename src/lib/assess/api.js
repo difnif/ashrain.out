@@ -33,7 +33,9 @@ export async function assessCall(op, body = {}, { signal } = {}) {
 
 // ── 이 기기 ─────────────────────────────────────────────────────────────────
 const DEV_KEY = "ash.assess.device";
-const SESS_KEY = (code) => `ash.assess.s.${code}`;
+// 응시 기록 칸: 비로그인은 평가마다 한 칸, 로그인은 계정마다 따로 — 같은 기기를 여럿이 써도(학원 태블릿) 계정 기록과 비로그인 기록이 섞이지 않는다
+const SESS_KEY = (code, uid) => (uid ? `ash.assess.s.${code}.u.${uid}` : `ash.assess.s.${code}`);
+const ANON_KEY_RE = /^ash\.assess\.s\.([A-Z0-9]{4,12})$/;
 const CLAIM_KEY = "ash.assess.claims";
 const SEEN_KEY = "ash.assess.seen";
 
@@ -54,22 +56,18 @@ export function deviceId() {
   return d;
 }
 
-/**
- * 평가별 응시 기록 { sid, secret, at, step, uid } — uid: 만들 때 로그인해 있던 계정(비로그인 null).
- * 같은 기기를 여럿이 쓰면(학원 태블릿) 다른 사람 기록이 섞이지 않게, 읽을 때 지금 보는 사람(uid)과 같은 것만 쓴다.
- */
-export const readLocal = (code) => ls.json(SESS_KEY(code), null);
+/** 평가별 응시 기록 { sid, secret, at, step, uid } — 지금 보는 사람(uid: 계정 id, 비로그인 null)의 칸만 읽고 쓴다 */
 export function readLocalFor(code, uid) {
-  const v = readLocal(code);
+  const v = ls.json(SESS_KEY(code, uid), null);
   return v && (v.uid || null) === (uid || null) ? v : null;
 }
-export function writeLocal(code, patch) {
-  const cur = readLocal(code) || {};
-  const next = { ...cur, ...patch, at: Date.now() };
-  ls.set(SESS_KEY(code), JSON.stringify(next));
+export function writeLocal(code, patch, uid) {
+  const cur = readLocalFor(code, uid) || {};
+  const next = { ...cur, ...patch, uid: uid || null, at: Date.now() };
+  ls.set(SESS_KEY(code, uid), JSON.stringify(next));
   return next;
 }
-export const clearLocal = (code) => ls.del(SESS_KEY(code));
+export const clearLocal = (code, uid) => ls.del(SESS_KEY(code, uid));
 
 /** 이 기기에 남은 비로그인 응시(비로그인 결과 목록용) */
 export function localSessions() {
@@ -77,37 +75,44 @@ export function localSessions() {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith("ash.assess.s.")) {
+      const m = k && k.match(ANON_KEY_RE);
+      if (m) {
         const v = ls.json(k, null);
-        if (v?.sid && !v.uid) out.push({ code: k.slice("ash.assess.s.".length), ...v });
+        if (v?.sid && !v.uid) out.push({ code: m[1], ...v });
       }
     }
   } catch { /* */ }
   return out.sort((a, b) => (b.at || 0) - (a.at || 0));
 }
 
-/** 결과 화면에서 '로그인하고 담기'를 누른 응시 — 그 뒤 30분 안에 로그인하면 계정에 담는다(저절로 담지 않는다) */
+/**
+ * 계정에 담기 — 결과 화면에서 '로그인하고 담기'를 누른 응시만 30분 동안 기억한다.
+ * 로그인한 뒤 저절로 담지 않고 "이 기록을 담을까요?"로 한 번 묻는다(공용 기기에서 남의 결과가 내 계정에 들어오지 않게).
+ * label: { code, title, name } — 물을 때 보여 줄 것
+ */
 const CLAIM_TTL = 30 * 60 * 1000;
-export function addPendingClaim(sid, secret) {
-  const list = ls.json(CLAIM_KEY, []).filter((x) => x.sid !== sid && Date.now() - (x.at || 0) < CLAIM_TTL);
-  list.push({ sid, secret, at: Date.now() });
+const freshClaims = () => ls.json(CLAIM_KEY, []).filter((x) => x?.sid && Date.now() - (x.at || 0) < CLAIM_TTL);
+export function addPendingClaim(sid, secret, label = {}) {
+  const list = freshClaims().filter((x) => x.sid !== sid);
+  list.push({ sid, secret, at: Date.now(), code: label.code || null, title: label.title || "", name: label.name || "" });
   ls.set(CLAIM_KEY, JSON.stringify(list.slice(-5)));
 }
-/** 로그인 상태면 담기를 누른 지 30분 안 된 응시를 계정으로 옮긴다 — 오래된 것·성공·영구 실패는 목록에서 뺀다 */
-export async function claimPending() {
-  const list = ls.json(CLAIM_KEY, []).filter((x) => Date.now() - (x.at || 0) < CLAIM_TTL);
-  if (!list.length) { ls.del(CLAIM_KEY); return 0; }
-  if (!(await accessToken())) { ls.set(CLAIM_KEY, JSON.stringify(list)); return 0; }
-  let n = 0;
-  const keep = [];
-  for (const c of list) {
-    try { await assessCall("claim", { sid: c.sid, secret: c.secret }); n++; }
-    catch (e) { if (!(e.status >= 400 && e.status < 500)) keep.push(c); }
-  }
-  ls.set(CLAIM_KEY, JSON.stringify(keep));
-  return n;
+export function pendingClaims() {
+  const list = freshClaims();
+  if (!list.length) ls.del(CLAIM_KEY);
+  return list;
 }
-export const hasPendingClaim = (sid) => ls.json(CLAIM_KEY, []).some((x) => x.sid === sid);
+export function dropClaim(sid) {
+  const list = freshClaims().filter((x) => x.sid !== sid);
+  if (list.length) ls.set(CLAIM_KEY, JSON.stringify(list)); else ls.del(CLAIM_KEY);
+}
+/** 학생이 '내 기록이 맞아요'를 눌렀을 때만 */
+export async function claimOne(sid) {
+  const c = freshClaims().find((x) => x.sid === sid);
+  if (!c) return false;
+  try { await assessCall("claim", { sid: c.sid, secret: c.secret }); dropClaim(sid); return true; }
+  catch (e) { if (e.status >= 400 && e.status < 500) dropClaim(sid); throw e; }
+}
 
 /** 알림(새로 열린 평가) 본 표시 */
 export const seenCodes = () => new Set(ls.json(SEEN_KEY, []));

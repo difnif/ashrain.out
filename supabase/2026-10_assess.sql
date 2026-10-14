@@ -140,14 +140,18 @@ begin
 end
 $$;
 
--- ── 5-2. 쪽 맡기 (원자적) ────────────────────────────────────────────────
--- 사진(shot) 한 장을 이 요청이 맡아도 되는지 정한다. 결과 o_state:
---   fresh  새 사진 — 시도 횟수 +1, 판독·채점 비우고 reading 으로
---   retry  같은 사진인데 앞 요청이 실패했거나(error) 멈춤(reading 70초 넘음) — 횟수는 그대로
---   busy   같은 사진을 다른 요청이 지금 읽는 중
---   done   같은 사진이 이미 판독됨(read·grading·graded) — AI 를 다시 부르지 않는다
---   over   새 사진인데 이 쪽 시도 횟수(p_max)를 다 씀
-create or replace function public.assess_reserve_page(p_session uuid, p_page integer, p_kind text, p_item integer, p_shot text, p_max integer)
+-- ── 5-2. 쪽 맡기 + 한도 세기 (한 트랜잭션) ───────────────────────────────
+-- 사진(shot) 한 장을 이 요청이 맡아도 되는지 정하고, 맡을 때만 호출 한도를 센다(p_keys 가 있으면). 결과 o_state:
+--   fresh   새 사진 — 시도 횟수 +1, 판독·채점 비우고 reading 으로 (한도 1 셈)
+--   retry   같은 사진인데 앞 요청이 실패했거나(error) 멈춤(reading 70초 넘음) — 횟수는 그대로 (한도 1 셈)
+--   busy    같은 사진을 다른 요청이 지금 읽는 중
+--   done    같은 사진이 이미 판독됨(read·grading·graded) — AI 를 다시 부르지 않는다
+--   over    새 사진인데 이 쪽 시도 횟수(p_max)를 다 씀
+--   capped  오늘 호출 한도가 참 — 아무것도 바꾸지 않는다(이미 채점된 쪽도 그대로, 시도 횟수도 그대로)
+drop function if exists public.assess_reserve_page(uuid, integer, text, integer, text, integer);
+create or replace function public.assess_reserve_page(
+  p_session uuid, p_page integer, p_kind text, p_item integer, p_shot text, p_max integer,
+  p_keys text[] default null, p_caps integer[] default null, p_since timestamptz default null)
 returns table (o_state text, o_attempts integer)
 language plpgsql
 security definer
@@ -155,10 +159,12 @@ set search_path = public
 as $$
 declare
   r public.assess_pages%rowtype;
+  v_new boolean;
 begin
   insert into public.assess_pages as ap (session_id, page_no, kind, item_no, attempts, status, shot, updated_at)
     values (p_session, p_page, p_kind, p_item, 0, 'reading', null, now())
     on conflict (session_id, page_no) do nothing;
+  v_new := found;                                   -- 이번에 새로 만든 빈 행인가 (한도에 걸리면 지운다)
   select * into r from public.assess_pages ap where ap.session_id = p_session and ap.page_no = p_page for update;
   if p_shot is not null and r.shot is not distinct from p_shot then
     if r.status in ('read', 'grading', 'graded', 'ok') then
@@ -169,6 +175,10 @@ begin
       return query select 'busy'::text, r.attempts;
       return;
     end if;
+    if p_keys is not null and public.assess_charge(p_keys, p_caps, p_since) is not null then
+      return query select 'capped'::text, r.attempts;
+      return;
+    end if;
     update public.assess_pages ap set status = 'reading', updated_at = now()
       where ap.session_id = p_session and ap.page_no = p_page;
     return query select 'retry'::text, r.attempts;
@@ -176,6 +186,13 @@ begin
   end if;
   if r.attempts >= p_max then
     return query select 'over'::text, r.attempts;
+    return;
+  end if;
+  if p_keys is not null and public.assess_charge(p_keys, p_caps, p_since) is not null then
+    if v_new then
+      delete from public.assess_pages ap where ap.session_id = p_session and ap.page_no = p_page;
+    end if;
+    return query select 'capped'::text, r.attempts;
     return;
   end if;
   update public.assess_pages ap
@@ -189,9 +206,9 @@ $$;
 
 -- 서비스 롤(API)만 부른다
 revoke all on function public.assess_charge(text[], integer[], timestamptz) from public, anon, authenticated;
-revoke all on function public.assess_reserve_page(uuid, integer, text, integer, text, integer) from public, anon, authenticated;
+revoke all on function public.assess_reserve_page(uuid, integer, text, integer, text, integer, text[], integer[], timestamptz) from public, anon, authenticated;
 grant execute on function public.assess_charge(text[], integer[], timestamptz) to service_role;
-grant execute on function public.assess_reserve_page(uuid, integer, text, integer, text, integer) to service_role;
+grant execute on function public.assess_reserve_page(uuid, integer, text, integer, text, integer, text[], integer[], timestamptz) to service_role;
 
 -- ── 6. RLS — 쓰기 정책 없음(서비스 롤만). 읽기: 관리자만 ─────────────────
 alter table public.assess_sets enable row level security;
