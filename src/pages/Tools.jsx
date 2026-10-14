@@ -3,6 +3,8 @@
 // 서술형은 사진 촬영→인식→채점·첨삭(촬영 모듈)으로 교체, 스피드 연산은 삭제,
 // 오답노트·질문하기·찰칵 채점(구 사진 채점)은 개발 중으로 하단 배치.
 // sub: '' | essay | hint | read | mark | check — 서브탭이 고른 도구만 크게(무신사식 필터).
+// 맨 위 「서술형 평가」(선생님이 낸 시험지를 쪽마다 찍어 채점) 카드는 도구 순서와 별개로 따로 둔다 — 단독 페이지 /e 로 연다.
+import { goAssess } from "../lib/assess/api";
 
 export const TOOLS_OPEN = [
   { key: "essay", ic: "📝", nm: "서술형 채점·첨삭", ds: "문제와 내 풀이를 사진으로 찍으면 알아보고, 기준표로 채점하고 첨삭까지 해줘요.", to: "#/solve/photo/essay" },
@@ -80,6 +82,13 @@ export default function Tools({ sub = "", theme = "light" }) {
           <div className="tl-grid"><OpenCard t={one} big /></div>
         ) : (
           <>
+            <div className="tl-grid" style={{ marginBottom: 8 }}>
+              <button className="tl-card big" onClick={() => goAssess("")}>
+                <span className="ic">📝</span>
+                <span className="nm">서술형 평가</span>
+                <span className="ds">선생님이 낸 서술형 시험지를 다 풀었으면, 안내에 따라 1쪽부터 한 장씩 찍어 채점받아요. 시험지 2쪽 QR로도 열려요.</span>
+              </button>
+            </div>
             <div className="tl-grid">
               {TOOLS_OPEN.map((t) => <OpenCard key={t.key} t={t} />)}
             </div>

@@ -7,6 +7,8 @@ import { supabase } from "../supabaseClient";
 import { getWx } from "../lib/wx";
 import { sunPos, shadowOf } from "../lib/sun";
 import { WELL_FEATURES, WELL_DEFAULT, clampWellCfg, wellMode } from "../lib/well";
+import { assessList, pendingSets } from "../lib/assess/notify";
+import { goAssess } from "../lib/assess/api";
 
 /** 번들 기본 이미지 — 템페라 화풍 돌우물 (배경 오려낸 원형 메달) */
 export const WELL_BUNDLED = "/brand/well/base.webp";
@@ -206,11 +208,14 @@ export function WellButton({ theme = "light", cfg = WELL_DEFAULT, onOpen,
 
 /* ── 런처 시트 — 카메라 기능 바로 실행 ── */
 export function WellSheet({ open, onClose, theme = "light" }) {
+  const [pend, setPend] = useState([]);          // 아직 제출하지 않은 서술형 평가
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    let alive = true;
+    assessList().then((l) => { if (alive) setPend(pendingSets(l)); }).catch(() => {});
+    return () => { alive = false; window.removeEventListener("keydown", onKey); };
   }, [open, onClose]);
   if (!open) return null;
   const go = (to) => { onClose?.(); location.hash = to; };
@@ -220,6 +225,13 @@ export function WellSheet({ open, onClose, theme = "light" }) {
       <div className="wl-panel">
         <div className="wl-grip" aria-hidden="true" />
         <p className="wl-title">⛲ 우물 <span>문제를 찍으면, 여기서 길어 올려요</span></p>
+        {pend.length > 0 && (
+          <button type="button" className="wl-item wl-assess" onClick={() => { onClose?.(); goAssess(pend[0].code); }}>
+            <span className="ic">📝</span>
+            <span className="nm">서술형 평가 — {pend[0].title}{pend.length > 1 ? ` 외 ${pend.length - 1}개` : ""}</span>
+            <span className="ds">다 풀었으면 시험지를 쪽마다 찍어 채점받아요</span>
+          </button>
+        )}
         <div className="wl-grid">
           {WELL_FEATURES.map(([ic, nm, ds, to]) => (
             <button key={to} type="button" className="wl-item" onClick={() => go(to)}>
@@ -240,6 +252,7 @@ export function WellSheet({ open, onClose, theme = "light" }) {
 }
 
 export const WELL_CSS = `
+.wl-item.wl-assess { width: 100%; margin: 0 0 10px; border: 1.5px solid var(--ac, #0D9488); text-align: left; }
 .wl-slot { position: relative; flex: none; height: 100%; width: calc(var(--wl-d, 46px) + 26px); }
 .wl-btn { position: absolute; left: 50%; transform: translateX(-50%); width: var(--wl-d, 46px); height: var(--wl-d, 46px);
   border-radius: 50%; cursor: pointer; z-index: 3; padding: 0; font-family: inherit;
