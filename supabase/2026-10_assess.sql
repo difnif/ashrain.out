@@ -1,9 +1,10 @@
 -- ashrain.out — 서술형 평가 (2026-10) 마이그레이션
 -- 채팅방 생성기 JSON → 관리자 등록 → 학생앱 알림·QR(/e/<코드>) → 쪽마다 촬영 → 판독·채점 → 결과.
 -- 앱은 이 파일 없이도 죽지 않는다(목록이 비고, 열면 "아직 준비되지 않았어요"). SQL Editor 에서 그대로 실행 — 여러 번 실행해도 안전.
--- 원칙: 표는 전부 서비스 롤(api/_lib/assess.js)만 쓴다. 학생은 자기 응시 기록만 읽고, 관리자는 전부 읽는다.
+-- 원칙: 표는 전부 서비스 롤(api/_lib/assess.js)만 쓴다. 학생은 표를 직접 읽지 않고 API 로만 본다(해시·판독 원문이 새지 않게). 관리자는 전부 읽는다.
 --       평가 JSON(정답·채점 기준 포함)은 관리자만 읽는다 — 학생에게는 API 가 공개용만 준다.
 --       사진은 assess_store_images='on' 일 때만 비공개 버킷 assess-pages 에 쌓인다(기본 off).
+--       호출 한도·쪽 맡기는 DB 함수(assess_charge · assess_reserve_page)로 원자적으로 — 동시에 여러 번 눌러도 한 번만 센다.
 
 -- ── 1. 평가 (채팅방 JSON 한 개 = 한 행) ─────────────────────────────────
 create table if not exists public.assess_sets (
@@ -64,15 +65,20 @@ comment on table public.assess_sessions is '서술형 평가 응시 — 로그�
 create index if not exists assess_sessions_set on public.assess_sessions (set_id, started_at desc);
 create index if not exists assess_sessions_user on public.assess_sessions (user_id, started_at desc);
 create index if not exists assess_sessions_device on public.assess_sessions (device_hash, set_id);
+create index if not exists assess_sessions_person on public.assess_sessions (person_id);
 
 -- ── 4. 쪽 기록 (한 쪽 = 한 행, 다시 찍으면 덮어씀) ──────────────────────
+-- status: reading(판독 중) → read(판독됨) → grading(채점 중) → graded / ok(안내 쪽) / error(판독 실패 — 같은 사진으로 다시 보내거나 다시 찍기)
+-- shot: 사진 한 장마다 브라우저가 만든 id. 다시 찍으면 바뀌고, 늦게 끝난 옛 사진의 결과는 shot 이 달라 저장되지 않는다.
 create table if not exists public.assess_pages (
   session_id   uuid not null references public.assess_sessions(id) on delete cascade,
   page_no      integer not null,
   kind         text not null check (kind in ('guide','info','item')),
   item_no      integer,
-  attempts     integer not null default 1,
-  status       text not null default 'read' check (status in ('ok','read','graded','error')),
+  attempts     integer not null default 1,                               -- 이 쪽에 보낸 서로 다른 사진 수
+  status       text not null default 'read',
+  shot         text,
+  grade_tries  integer not null default 0,                               -- 지금 사진으로 채점을 맡은 횟수
   quality      jsonb,                                                    -- 브라우저 품질값 {sharp, paper, contrast, margin}
   read         jsonb,                                                    -- 판독(학생이 쓴 그대로·그은 줄·⍰)
   grade        jsonb,                                                    -- 채점 {marks[], total, max, final_answer, feedback, tags}
@@ -84,6 +90,10 @@ create table if not exists public.assess_pages (
   updated_at   timestamptz not null default now(),
   primary key (session_id, page_no)
 );
+alter table public.assess_pages add column if not exists shot text;
+alter table public.assess_pages add column if not exists grade_tries integer not null default 0;
+alter table public.assess_pages drop constraint if exists assess_pages_status_check;
+alter table public.assess_pages add constraint assess_pages_status_check check (status in ('ok','reading','read','grading','graded','error'));
 comment on table public.assess_pages is '서술형 평가 쪽별 판독·채점 — 손글씨 데이터(판독 원문)와 채점 결과. 사진은 저장을 켰을 때만 경로가 남는다.';
 create index if not exists assess_pages_flagged on public.assess_pages (flagged) where flagged;
 
@@ -93,9 +103,97 @@ create table if not exists public.assess_calls (
   created_at  timestamptz not null default now()
 );
 create index if not exists assess_calls_key on public.assess_calls (key, created_at desc);
-comment on table public.assess_calls is '서술형 평가 판독 호출 한도 — 하루(KST) 단위로 센다. 오래된 행은 지워도 된다.';
+create index if not exists assess_calls_at on public.assess_calls (created_at);
+comment on table public.assess_calls is '서술형 평가 호출 한도 — 하루(KST) 단위로 센다. 3일 지난 행은 assess_charge 가 가끔 지운다.';
 
--- ── 6. RLS — 쓰기 정책 없음(서비스 롤만). 읽기: 관리자 전부 · 학생 자기 것 ─
+-- ── 5-1. 호출 한도 세기 (원자적) ─────────────────────────────────────────
+-- 키마다 p_since 이후 센 수가 한도 미만이면 키마다 한 행씩 넣고 null, 하나라도 찼으면 넣지 않고 그 키를 돌려준다.
+-- 키 순서대로 잠가서(트랜잭션 잠금) 동시에 들어와도 한도를 넘지 않는다.
+create or replace function public.assess_charge(p_keys text[], p_caps integer[], p_since timestamptz)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  k text;
+  i integer;
+  n integer;
+begin
+  if p_keys is null or array_length(p_keys, 1) is null or array_length(p_keys, 1) <> array_length(p_caps, 1) then
+    raise exception 'assess_charge: keys/caps';
+  end if;
+  for k in select unnest(p_keys) as x order by 1 loop
+    perform pg_advisory_xact_lock(hashtext('assess_calls:' || k));
+  end loop;
+  for i in 1 .. array_length(p_keys, 1) loop
+    select count(*) into n from public.assess_calls where key = p_keys[i] and created_at >= p_since;
+    if n >= p_caps[i] then
+      return p_keys[i];
+    end if;
+  end loop;
+  insert into public.assess_calls (key) select unnest(p_keys);
+  if random() < 0.02 then
+    delete from public.assess_calls where created_at < now() - interval '3 days';
+  end if;
+  return null;
+end
+$$;
+
+-- ── 5-2. 쪽 맡기 (원자적) ────────────────────────────────────────────────
+-- 사진(shot) 한 장을 이 요청이 맡아도 되는지 정한다. 결과 o_state:
+--   fresh  새 사진 — 시도 횟수 +1, 판독·채점 비우고 reading 으로
+--   retry  같은 사진인데 앞 요청이 실패했거나(error) 멈춤(reading 70초 넘음) — 횟수는 그대로
+--   busy   같은 사진을 다른 요청이 지금 읽는 중
+--   done   같은 사진이 이미 판독됨(read·grading·graded) — AI 를 다시 부르지 않는다
+--   over   새 사진인데 이 쪽 시도 횟수(p_max)를 다 씀
+create or replace function public.assess_reserve_page(p_session uuid, p_page integer, p_kind text, p_item integer, p_shot text, p_max integer)
+returns table (o_state text, o_attempts integer)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  r public.assess_pages%rowtype;
+begin
+  insert into public.assess_pages as ap (session_id, page_no, kind, item_no, attempts, status, shot, updated_at)
+    values (p_session, p_page, p_kind, p_item, 0, 'reading', null, now())
+    on conflict (session_id, page_no) do nothing;
+  select * into r from public.assess_pages ap where ap.session_id = p_session and ap.page_no = p_page for update;
+  if p_shot is not null and r.shot is not distinct from p_shot then
+    if r.status in ('read', 'grading', 'graded', 'ok') then
+      return query select 'done'::text, r.attempts;
+      return;
+    end if;
+    if r.status = 'reading' and r.updated_at > now() - interval '70 seconds' then
+      return query select 'busy'::text, r.attempts;
+      return;
+    end if;
+    update public.assess_pages ap set status = 'reading', updated_at = now()
+      where ap.session_id = p_session and ap.page_no = p_page;
+    return query select 'retry'::text, r.attempts;
+    return;
+  end if;
+  if r.attempts >= p_max then
+    return query select 'over'::text, r.attempts;
+    return;
+  end if;
+  update public.assess_pages ap
+    set attempts = r.attempts + 1, shot = p_shot, status = 'reading', kind = p_kind, item_no = p_item,
+        read = null, grade = null, grade_tries = 0, flagged = false, flag_note = null,
+        model_read = null, model_grade = null, image_path = null, updated_at = now()
+    where ap.session_id = p_session and ap.page_no = p_page;
+  return query select 'fresh'::text, r.attempts + 1;
+end
+$$;
+
+-- 서비스 롤(API)만 부른다
+revoke all on function public.assess_charge(text[], integer[], timestamptz) from public, anon, authenticated;
+revoke all on function public.assess_reserve_page(uuid, integer, text, integer, text, integer) from public, anon, authenticated;
+grant execute on function public.assess_charge(text[], integer[], timestamptz) to service_role;
+grant execute on function public.assess_reserve_page(uuid, integer, text, integer, text, integer) to service_role;
+
+-- ── 6. RLS — 쓰기 정책 없음(서비스 롤만). 읽기: 관리자만 ─────────────────
 alter table public.assess_sets enable row level security;
 alter table public.assess_people enable row level security;
 alter table public.assess_sessions enable row level security;
@@ -108,13 +206,10 @@ drop policy if exists assess_people_admin on public.assess_people;
 create policy assess_people_admin on public.assess_people for select to authenticated using (is_admin());
 drop policy if exists assess_sessions_admin on public.assess_sessions;
 create policy assess_sessions_admin on public.assess_sessions for select to authenticated using (is_admin());
-drop policy if exists assess_sessions_own on public.assess_sessions;
-create policy assess_sessions_own on public.assess_sessions for select to authenticated using (auth.uid() = user_id);
+drop policy if exists assess_sessions_own on public.assess_sessions;     -- (예전 초안의 '자기 것 읽기' — 해시·판독 원문이 보여서 뺐다. 학생은 API 로만)
 drop policy if exists assess_pages_admin on public.assess_pages;
 create policy assess_pages_admin on public.assess_pages for select to authenticated using (is_admin());
 drop policy if exists assess_pages_own on public.assess_pages;
-create policy assess_pages_own on public.assess_pages for select to authenticated
-  using (exists (select 1 from public.assess_sessions s where s.id = session_id and s.user_id = auth.uid()));
 drop policy if exists assess_calls_admin on public.assess_calls;
 create policy assess_calls_admin on public.assess_calls for select to authenticated using (is_admin());
 

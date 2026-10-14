@@ -17,17 +17,27 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 // 생성기(build_assess.py check_of)가 낸 값과 같아야 한다
 const PY = { SAMPLE01: 10, SAMPLE02: 14, M1014A: 12, E1015B: 24, ABCD: 22, ZZZZZZZZZZZZ: 29 };
 ok(Object.entries(PY).every(([c, v]) => checkOf(c) === v), "checkOf = 생성기(Python) 값");
-ok(JSON.stringify(encodePage(3, 10)) === JSON.stringify([1, 1, 0, 0, 0, 1, 0, 1, 0, 0]), "encodePage(3, 10) = 생성기 비트");
+// 생성기(build_assess.py encode_page)가 낸 비트 — 해밍(13,9)+전체 패리티 14칸
+const PYBITS = { "3,10": "00101000010100", "5,17": "10100100100011", "15,31": "01111111111110", "1,0": "11100000000001" };
+ok(Object.entries(PYBITS).every(([k, s]) => { const [p, c] = k.split(",").map(Number); return encodePage(p, c).join("") === s; }), "encodePage = 생성기 비트 (14칸)");
 let rt = true;
 for (let p = 1; p <= 15; p++) for (let c = 0; c < 32; c++) { const d = decodeBits(encodePage(p, c)); if (!(d.ok && d.page === p && d.check === c)) rt = false; }
 ok(rt, "모든 쪽(1~15)·확인값(0~31) 왕복");
-let single = true;
-for (let p = 1; p <= 15; p++) for (let c = 0; c < 32; c++) for (let i = 0; i < 10; i++) {
-  const b = encodePage(p, c); b[i] ^= 1; const d = decodeBits(b);
-  if (d.ok && d.page === p && d.check === c) single = false;            // 한 칸 오독이 같은 값으로 통과하면 안 된다
+// 칸 1~3개를 잘못 읽으면 어떤 값으로도 통과하지 않는다 (최소 거리 4)
+let flips = 0, leaked = 0;
+for (let p = 1; p <= 15; p++) for (let c = 0; c < 32; c++) {
+  const base = encodePage(p, c);
+  for (let i = 0; i < 14; i++) {
+    const b1 = base.slice(); b1[i] ^= 1; flips++; if (decodeBits(b1).ok) leaked++;
+    for (let j = i + 1; j < 14; j++) {
+      const b2 = b1.slice(); b2[j] ^= 1; flips++; if (decodeBits(b2).ok) leaked++;
+      for (let k = j + 1; k < 14; k++) { const b3 = b2.slice(); b3[k] ^= 1; flips++; if (decodeBits(b3).ok) leaked++; }
+    }
+  }
 }
-ok(single, "한 칸 오독은 원래 값으로 통과하지 않음(패리티)");
-ok(!decodeBits(new Array(10).fill(0)).ok, "띠가 없는(빈) 종이는 실패");
+ok(leaked === 0 && flips === 480 * (14 + 91 + 364), `칸 1~3개 오독 ${flips}가지 모두 거부`);
+ok(!decodeBits(new Array(14).fill(0)).ok && !decodeBits(new Array(14).fill(1)).ok, "빈 띠·전부 검은 띠는 실패");
+ok(!decodeBits(encodePage(3, 10).slice(0, 10)).ok, "칸 수가 다르면 실패");
 ok(SPEC.sheet.pagecode.check === checkOf(SPEC.code), "샘플 JSON 확인값 = checkOf(code)");
 
 // ── 2. 합성 래스터에서 띠 읽기 ────────────────────────────────────────────────
@@ -50,8 +60,15 @@ const p5 = readPageCode(paintPage(5, 17), null);
 ok(p5.ok && p5.page === 5 && p5.check === 17, "합성 쪽: 5쪽·확인 17 판독");
 const p12 = readPageCode(paintPage(12, 3, { noise: 30, paper: 200, ink: 60 }), null);
 ok(p12.ok && p12.page === 12 && p12.check === 3, "잡음·낮은 대비에서도 판독");
-const holed = readPageCode(paintPage(7, 9, { holes: [0] }), null);
-ok(!holed.ok || holed.page !== 7, "칸 하나가 가려지면(손가락) 같은 값으로 통과하지 않음");
+const firstBlack = encodePage(7, 9).indexOf(1);
+const holed = readPageCode(paintPage(7, 9, { holes: [firstBlack] }), null);
+ok(!holed.ok, "검은 칸 하나가 지워지면(손가락·빛 반사) 거부");
+// 애매한 칸(회색) → 여유(margin) 부족으로 거부
+const grayCell = paintPage(6, 21);
+{ const c = codeCells()[encodePage(6, 21).indexOf(0)], s = grayCell.scale;
+  for (let yy = Math.round(c.y * s); yy < Math.round((c.y + c.h) * s); yy++) for (let xx = Math.round(c.x * s); xx < Math.round((c.x + c.w) * s); xx++) grayCell.gray[yy * grayCell.width + xx] = 140; }
+const gc = readPageCode(grayCell, null);
+ok(!gc.ok && gc.margin < 0.12, `회색으로 번진 칸 → 여유 ${gc.margin} 로 거부`);
 const q1 = pageQuality(paintPage(3, 1));
 ok(judgeQuality(q1).ok, "또렷한 합성 쪽 품질 통과");
 const dark = paintPage(3, 1, { paper: 70, ink: 20 });
@@ -111,6 +128,13 @@ const bad4 = clone(SPEC); bad4.items[0].points = 9;
 ok(validateSpec(bad4).errors.some((e) => e.includes("rubric 합")), "배점 합 불일치 → 오류");
 const bad5 = clone(SPEC); bad5.pages[2].regions.s2 = [0, 0, 2000, 10];
 ok(validateSpec(bad5).errors.some((e) => e.includes("좌표")), "칸 좌표가 시트 밖 → 오류");
+const bad3b = clone(SPEC); bad3b.items[1].figure_svg = '<svg><use xlink:href="data:x"/></svg>';
+ok(validateSpec(bad3b).errors.some((e) => e.includes("실행 코드")), "그림 SVG 에 <use>/href → 오류");
+const bad5b = clone(SPEC); bad5b.sheet.pagecode = { ...bad5b.sheet.pagecode, n: 10 };
+ok(validateSpec(bad5b).errors.some((e) => e.includes("14칸")), "옛 10칸 띠 JSON → 다시 만들라는 오류");
+const bad5c = clone(SPEC); delete bad5c.sheet.orient; bad5c.sheet.pagecode.check = (bad5c.sheet.pagecode.check + 1) % 32;
+const e5c = validateSpec(bad5c).errors;
+ok(e5c.some((e) => e.includes("orient")) && e5c.some((e) => e.includes("확인값")), "orient 누락·확인값 불일치를 함께 알림");
 const bad6 = clone(SPEC); bad6.kind = "other";
 ok(!validateSpec(bad6).ok, "kind 다르면 거부");
 const bad7 = clone(SPEC); bad7.pages = bad7.pages.filter((p) => p.kind !== "info").map((p, i) => ({ ...p, no: i + 1 }));
@@ -124,6 +148,8 @@ ok(!pubText.includes('"answer"') && !pubText.includes('"solution"') && !pubText.
 ok(pub.items[0].points === 10 && pub.items[0].elements.length === 3 && pub.items[1].figure_svg?.startsWith("<svg"), "공개용: 배점·요소 이름·그림");
 ok(answerKey(SPEC)[2].answer.includes("frac(3,10)"), "정답 키");
 ok(canReveal({ reveal: "after_submit", submitted: true }) && !canReveal({ reveal: "after_submit", submitted: false }), "after_submit");
+ok(!canReveal({ reveal: "after_submit", submitted: true, complete: false }), "after_submit: 문제 쪽을 다 찍지 않고 제출했으면 마감 전엔 비공개");
+ok(canReveal({ reveal: "after_submit", submitted: true, complete: false, status: "closed" }), "after_submit: 빠진 쪽이 있어도 마감 뒤엔 공개");
 ok(!canReveal({ reveal: "after_close", submitted: true, status: "live" }) && canReveal({ reveal: "after_close", submitted: true, status: "closed" }), "after_close: 마감 뒤에만");
 ok(canReveal({ reveal: "after_close", submitted: true, status: "live", closes_at: "2020-01-01T00:00:00Z" }), "after_close: 마감 시각이 지났으면");
 ok(!canReveal({ reveal: "never", submitted: true, status: "closed" }), "never");
@@ -134,6 +160,7 @@ ok(agg.items[0].got === 7 && agg.items[1].got === 0 && !agg.items[1].graded && a
 ok(policyOf({ policy: { carry: "weird", answer_only_max: "4" } }).carry === "half" && policyOf({ policy: { answer_only_max: "4" } }).answer_only_max === 4, "정책 기본값·정리");
 ok(normGrade("2", "mid") === "m2" && normGrade("중학교 3학년", "mid") === "m3" && normGrade("4", "elem") === "e4" && normGrade("7", "mid") === null && normGrade("", "mid") === null, "학년 정리");
 ok(normName(" 김 민준 ") === "김민준" && normName("!!") === null && normName("홍길동(1)") === "홍길동1", "이름 정리");
+ok(normName("김⍰준") === null && normName("김?준") === null, "못 읽은 글자가 섞인 이름은 버림(글자를 빼고 붙이지 않음)");
 ok(personKey({ name: "김민준", grade: "m2" }) === "n:김민준|m2" && personKey({ name: "", grade: "m2" }) === null, "응시자 키");
 ok(gradeLabel("m2") === "중2" && gradeLabel("e4") === "초4" && gradeLabel("x") === "x", "학년 표시");
 ok(PAGECODE.n === SPEC.sheet.pagecode.n && PAGECODE.x0 === SPEC.sheet.pagecode.x0, "앱·생성기 띠 좌표 일치");

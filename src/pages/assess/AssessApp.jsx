@@ -5,11 +5,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MathText from "../../components/MathText";
 import { ASSESS_CSS } from "./assessCss";
-import { assessCall, deviceId, readLocal, writeLocal, clearLocal, localSessions, addPendingClaim, claimPending, markSeen, goAssess, accessToken } from "../../lib/assess/api";
+import { assessCall, deviceId, readLocalFor, writeLocal, clearLocal, localSessions, addPendingClaim, claimPending, markSeen, goAssess, accessToken, currentUid } from "../../lib/assess/api";
 import { processPhoto, REASON_TEXT } from "../../lib/assess/capture";
 import { setQueueContext, enqueue, jobOf, retryJob, regrade, busyCount } from "../../lib/assess/queue";
 import { invalidateAssessList } from "../../lib/assess/notify";
-import { gradeLabel, normGrade, normName } from "../../lib/assess/spec";
+import { gradeLabel } from "../../lib/assess/spec";
 import { studentPath } from "../../shared/roles";
 
 const svgUrl = (svg) => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
@@ -124,8 +124,9 @@ function ListView() {
 function Take({ code }) {
   const [load, setLoad] = useState({ busy: true, err: null });
   const [set, setSet] = useState(null);
-  const [meta, setMeta] = useState({ store: false, anon: true, me: null });
-  const [sess, setSess] = useState(null);           // { sid, secret, status, pages, info, ocr }
+  const [meta, setMeta] = useState({ store: false, anon: true, me: null, mine: null });
+  const [sess, setSess] = useState(null);           // { sid, secret, status, pages, info, suggestion, userBound }
+  const uidRef = useRef(undefined);                 // 지금 보는 사람(계정 id 또는 null) — 이 기기의 남의 기록은 쓰지 않는다
   const [step, setStep] = useState("cover");        // cover | view | shoot | wrap | result
   const [result, setResult] = useState(null);
   const [toast, setToast] = useState("");
@@ -138,11 +139,12 @@ function Take({ code }) {
     let alive = true;
     (async () => {
       try {
-        const g = await assessCall("get", { code });
+        const [g, uid] = await Promise.all([assessCall("get", { code }), currentUid()]);
         if (!alive) return;
-        setSet(g.set); setMeta({ store: !!g.store_images, anon: g.anon !== false, me: g.me });
+        uidRef.current = uid;
+        setSet(g.set); setMeta({ store: !!g.store_images, anon: g.anon !== false, me: g.me, mine: g.mine || null });
         markSeen(code);
-        const loc = readLocal(code);
+        const loc = readLocalFor(code, uid);
         if (loc?.sid && loc?.secret) {
           if (loc.step === "result") {
             try { const r = await assessCall("result", { sid: loc.sid, secret: loc.secret }); if (!alive) return; setSess({ sid: loc.sid, secret: loc.secret, status: r.result.status, pages: [] }); setResult(r.result); setStep("result"); }
@@ -162,22 +164,39 @@ function Take({ code }) {
     return () => window.removeEventListener("beforeunload", h);
   }, []);
 
-  const start = useCallback(async ({ fresh = false } = {}) => {
-    const loc = readLocal(code);
-    const r = await assessCall("start", { code, device: deviceId(), sid: fresh ? undefined : loc?.sid, secret: fresh ? undefined : loc?.secret, fresh });
-    const s = { sid: r.sid, secret: r.secret || loc?.secret, status: r.status, pages: r.pages || [], info: r.info, ocr: r.ocr };
-    writeLocal(code, { sid: s.sid, secret: s.secret, step: "shoot" });
-    setQueueContext({ code, sid: s.sid, secret: s.secret });
-    setSess(s);
-    return s;
-  }, [code]);
-
   const showResult = useCallback((res) => {
     setResult(res); setStep("result");
     writeLocal(code, { step: "result" });
     invalidateAssessList();
     window.scrollTo(0, 0);
   }, [code]);
+
+  /** 응시 시작·이어 하기. 이미 제출한 응시였으면(결과 응답을 놓친 경우 등) 결과로 간다 → true */
+  const start = useCallback(async ({ fresh = false } = {}) => {
+    const uid = uidRef.current !== undefined ? uidRef.current : await currentUid();
+    const loc = fresh ? null : readLocalFor(code, uid);
+    const r = await assessCall("start", { code, device: deviceId(), sid: loc?.sid, secret: loc?.secret, fresh });
+    if (r.status === "submitted") {
+      const rr = await assessCall("result", { sid: r.sid, secret: loc?.secret });
+      writeLocal(code, { sid: r.sid, secret: loc?.secret, step: "result", uid });
+      setSess({ sid: r.sid, secret: loc?.secret, status: "submitted", pages: [], userBound: !!r.user_bound });
+      showResult(rr.result);
+      return true;
+    }
+    const s = { sid: r.sid, secret: r.secret || loc?.secret, status: r.status, pages: r.pages || [], info: r.info, suggestion: r.suggestion || null, userBound: !!r.user_bound };
+    writeLocal(code, { sid: s.sid, secret: s.secret, step: "shoot", uid });
+    setQueueContext({ code, sid: s.sid, secret: s.secret });
+    setSess(s);
+    return false;
+  }, [code, showResult]);
+
+  const myResult = useCallback(async () => {
+    const sid = meta.mine?.sid;
+    if (!sid) return;
+    const r = await assessCall("result", { sid });
+    setSess({ sid, secret: null, status: "submitted", pages: [], userBound: true });
+    showResult(r.result);
+  }, [meta.mine?.sid, showResult]);
 
   if (load.busy) return <><Top title="서술형 평가" /><div className="as-busy"><span className="as-sp" />평가를 여는 중…</div></>;
   if (load.err) return (
@@ -189,14 +208,15 @@ function Take({ code }) {
     </>
   );
 
-  const sub = [fmtDate(set.date), set.grade_label, `${set.items.length}문제`].filter(Boolean).join(" · ");
+  const sub = [fmtDate(set.date), set.grade_label, `${set.n_items ?? set.items.length}문제`].filter(Boolean).join(" · ");
   return (
     <>
       <Top title={set.title} sub={sub} onBack={step === "view" ? () => setStep("cover") : step === "shoot" || step === "wrap" ? () => setStep("view") : undefined} />
       {step === "cover" && <Cover set={set} meta={meta} sess={sess} onGo={() => { setStep("view"); window.scrollTo(0, 0); }}
-        onResume={async () => { try { await start(); setStep("shoot"); } catch (e) { setToast(e.message); } }} />}
+        onResume={async () => { try { if (!(await start())) setStep("shoot"); } catch (e) { setToast(e.message); } }}
+        onMyResult={async () => { try { await myResult(); } catch (e) { setToast(e.message); } }} />}
       {step === "view" && <Viewer set={set} onStart={async () => {
-        try { await start(); setStep("shoot"); window.scrollTo(0, 0); } catch (e) { setToast(e.message); }
+        try { if (!(await start())) { setStep("shoot"); window.scrollTo(0, 0); } } catch (e) { setToast(e.message); }
       }} />}
       {(step === "shoot" || step === "wrap") && sess && (
         <Shoot set={set} meta={meta} sess={sess} setSess={setSess} wrap={step === "wrap"} setToast={setToast}
@@ -212,9 +232,12 @@ function Take({ code }) {
 }
 
 // ── 표지 ─────────────────────────────────────────────────────────────────────
-function Cover({ set, meta, sess, onGo, onResume }) {
+function Cover({ set, meta, sess, onGo, onResume, onMyResult }) {
   const closed = set.state !== "open";
-  const pts = set.items.reduce((a, it) => a + it.points, 0);
+  const nItems = set.n_items ?? set.items.length;
+  const pts = set.max ?? set.items.reduce((a, it) => a + it.points, 0);
+  const done = !sess?.sid && meta.mine?.status === "submitted";          // 로그인: 이 평가를 이미 제출함(다른 기기에서 등)
+  const canResume = !closed && (!!sess?.sid || meta.mine?.status === "open");
   return (
     <div className="as-card">
       <p className="as-kick">서술형 평가 · {set.code}</p>
@@ -222,9 +245,9 @@ function Cover({ set, meta, sess, onGo, onResume }) {
       <div className="as-facts">
         {set.date && <span className="as-chip">🗓 {fmtDate(set.date)}</span>}
         {set.grade_label && <span className="as-chip">🎒 {set.grade_label}</span>}
-        <span className="as-chip">📝 {set.items.length}문제 · {pts}점</span>
+        <span className="as-chip">📝 {nItems}문제 · {pts}점</span>
         {set.open_book && <span className="as-chip">📖 오픈북</span>}
-        <span className="as-chip">📄 {set.pages.length}쪽</span>
+        <span className="as-chip">📄 {set.n_pages ?? set.pages.length}쪽</span>
       </div>
       <p className="as-mut" style={{ marginTop: 10 }}>
         종이에 다 풀었으면, 먼저 화면의 문제가 내 시험지와 같은지 확인하고 <b>1쪽부터 한 장씩</b> 찍어요. 찍는 동안 앞 쪽은 바로 채점돼요.
@@ -237,8 +260,9 @@ function Cover({ set, meta, sess, onGo, onResume }) {
       {closed && <div className="as-note warn">⏰ {set.state === "soon" ? "아직 열리지 않은 평가예요." : "마감된 평가예요 — 새로 찍을 수 없어요."}</div>}
       {!meta.me && !meta.anon && <div className="as-note warn">🔒 이 평가는 로그인한 뒤 응시할 수 있어요.</div>}
       <div className="as-row">
-        {sess?.sid && !closed && <button className="as-btn pri" onClick={onResume}>이어서 찍기</button>}
-        <button className={"as-btn" + (sess?.sid ? "" : " pri")} disabled={closed || (!meta.me && !meta.anon)} onClick={onGo}>문제 보고 시작하기</button>
+        {done && <button className="as-btn pri" onClick={onMyResult}>내 결과 보기</button>}
+        {canResume && <button className="as-btn pri" onClick={onResume}>이어서 찍기</button>}
+        <button className={"as-btn" + (canResume || done ? "" : " pri")} disabled={closed || (!meta.me && !meta.anon)} onClick={onGo}>{done ? "다시 응시하기" : "문제 보고 시작하기"}</button>
       </div>
       {meta.store && <p className="as-small" style={{ marginTop: 10 }}>찍은 쪽 사진은 채점 확인과 판독 개선을 위해 선생님께 보관돼요.</p>}
     </div>
@@ -289,7 +313,7 @@ function PageArt({ kind }) {
       <rect x="1" y="1" width="98" height="139" rx="4" fill="var(--card)" stroke="currentColor" strokeOpacity=".35" />
       {[[6, 6], [86, 6], [86, 127], [6, 127]].map(([x, y], i) => <rect key={i} x={x} y={y} width="8" height="8" fill="currentColor" />)}
       <rect x="15.5" y="6" width="3" height="8" fill="currentColor" />
-      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => <rect key={i} x={36 + i * 3} y={129.5} width="2.2" height="2.2" fill={i % 3 === 0 ? "currentColor" : "none"} stroke="currentColor" strokeWidth=".3" strokeOpacity=".7" />)}
+      {Array.from({ length: 14 }, (_, i) => <rect key={i} x={30.8 + i * 2.8} y={130.5} width="2" height="2" fill={[2, 4, 9, 11].includes(i) ? "currentColor" : "none"} stroke="currentColor" strokeWidth=".3" strokeOpacity=".7" />)}
       <rect x="30" y="7" width="40" height="4" rx="1" fill="currentColor" opacity=".5" />
       {kind === "guide" && [22, 30, 38, 52, 60, 68, 82, 90, 98, 106, 114].map((y, i) => <rect key={i} x="8" y={y} width={i % 3 === 2 ? 58 : 84} height="3" rx="1" fill="currentColor" opacity=".25" />)}
       {kind === "info" && (<>
@@ -335,6 +359,7 @@ function Shoot({ set, meta, sess, setSess, wrap, setToast, onAllCaptured, onBack
   const [proc, setProc] = useState(false);
   const [fail, setFail] = useState(null);       // { reason, page }
   const [flash, setFlash] = useState(null);     // { page, thumb, note }
+  const [ask, setAsk] = useState(null);         // { r, expected } — 이미 찍은 다른 쪽이 나왔을 때 바꿀지 묻기
   const lastFile = useRef(null);                // 품질에서 걸린 사진 — '이대로 보내기'용
   const serverPages = useMemo(() => new Map((sess.pages || []).map((p) => [p.no, p])), [sess.pages]);
   useTick("ash:assess");
@@ -348,11 +373,16 @@ function Shoot({ set, meta, sess, setSess, wrap, setToast, onAllCaptured, onBack
     const j = jobOf(no);
     if (j) {
       if (j.status === "error") return "err";
-      if (j.status === "done") return j.result?.kind === "item" && !j.result?.grade ? "busy" : "done";
+      if (j.status === "done") return "done";
       return "busy";
     }
     const sp = serverPages.get(no);
-    if (sp) return sp.kind === "item" && sp.status !== "graded" ? "read" : "done";
+    if (sp) {
+      if (sp.kind === "guide") return "done";
+      if (sp.status === "reading" || sp.status === "error") return "todo";     // 끊긴 판독 — 다시 찍기
+      if (sp.kind === "info") return "done";
+      return sp.status === "graded" ? "done" : "read";
+    }
     return "todo";
   };
   const captured = (no) => ["done", "busy", "read"].includes(state(no));
@@ -376,25 +406,31 @@ function Shoot({ set, meta, sess, setSess, wrap, setToast, onAllCaptured, onBack
   const nextMissing = set.pages.find((p) => p.no !== page.no && !captured(p.no))?.no || null;
   const g = guideOf(set, page, nextMissing);
 
+  /** 확인된 사진을 대기열에 넣고 다음 쪽으로 */
+  const accept = (r, expected) => {
+    const before = captured(r.page);              // 넣기 전에 판단해야 한다(넣고 나면 늘 '찍은 쪽')
+    enqueue(r.page, r.kind, { crop: r.crop, image: r.image, quality: r.quality }, r.thumb);
+    const note = r.page === expected ? (before ? `${r.page}쪽을 새 사진으로 바꿨어요` : `${r.page}쪽을 받았어요`)
+      : (before ? `${r.page}쪽을 새 사진으로 바꿨어요` : `${expected}쪽이 아니라 ${r.page}쪽이었어요 — ${r.page}쪽으로 받았어요`);
+    setFlash({ page: r.page, thumb: r.thumb, note });
+    setTimeout(() => setFlash((f) => (f && f.page === r.page ? null : f)), 1800);
+    if (r.page === expected) {
+      setPinned(false);
+      const next = set.pages.find((p) => p.no !== r.page && !captured(p.no));
+      if (next) setCur(next.no);
+    }
+  };
   const onFile = async (file, { force = false } = {}) => {
     if (!file) return;
-    setProc(true); setFail(null); setFlash(null);
+    setProc(true); setFail(null); setFlash(null); setAsk(null);
     try {
       const r = await processPhoto(file, set, { wantImage: meta.store, skipQuality: force });
       if (!r.ok) { lastFile.current = ["blur", "flat", "dark"].includes(r.reason) ? file : null; setFail({ reason: r.reason, page: r.page || null }); return; }
       lastFile.current = null;
       const expected = page.no;
-      const before = captured(r.page);              // 넣기 전에 판단해야 한다(넣고 나면 늘 '찍은 쪽')
-      enqueue(r.page, r.kind, { crop: r.crop, image: r.image, quality: r.quality }, r.thumb);
-      const note = r.page === expected ? (before ? `${r.page}쪽을 새 사진으로 바꿨어요` : `${r.page}쪽을 받았어요`)
-        : (before ? `${r.page}쪽을 새 사진으로 바꿨어요` : `${expected}쪽이 아니라 ${r.page}쪽이었어요 — ${r.page}쪽으로 받았어요`);
-      setFlash({ page: r.page, thumb: r.thumb, note });
-      setTimeout(() => setFlash((f) => (f && f.page === r.page ? null : f)), 1800);
-      if (r.page === expected) {
-        setPinned(false);
-        const next = set.pages.find((p) => p.no !== r.page && !captured(p.no));
-        if (next) setCur(next.no);
-      }
+      // 찍으려던 쪽이 아니라 이미 찍은 다른 쪽이면, 잘 찍힌 사진을 말없이 바꾸지 않고 물어본다
+      if (r.page !== expected && captured(r.page)) { setAsk({ r, expected }); return; }
+      accept(r, expected);
     } catch (e) {
       setFail({ reason: "open", msg: e?.message });
     } finally { setProc(false); }
@@ -417,7 +453,7 @@ function Shoot({ set, meta, sess, setSess, wrap, setToast, onAllCaptured, onBack
   );
 
   if (wrap) return <>{steps}<Wrap set={set} sess={sess} setSess={setSess} state={state} errPages={errPages} missing={missing} setToast={setToast}
-    loggedIn={!!meta.me} onRetake={(no) => { setCur(no); setPinned(true); onBackToShoot(); }} onSubmitted={onSubmitted} /></>;
+    onRetake={(no) => { setCur(no); setPinned(true); onBackToShoot(); }} onSubmitted={onSubmitted} /></>;
 
   return (
     <>
@@ -444,6 +480,14 @@ function Shoot({ set, meta, sess, setSess, wrap, setToast, onAllCaptured, onBack
             {lastFile.current && <button className="as-btn as-tiny" onClick={() => onFile(lastFile.current, { force: true })}>이대로 보내기</button>}
           </div>
         )}
+        {ask && (
+          <div className="as-note warn" role="alert">🔁 <span style={{ flex: 1 }}>{ask.expected}쪽이 아니라 이미 찍은 <b>{ask.r.page}쪽</b>이 찍혔어요. {ask.r.page}쪽을 이 사진으로 바꿀까요?</span>
+            <span style={{ display: "flex", gap: 6 }}>
+              <button className="as-btn as-tiny" onClick={() => { const a = ask; setAsk(null); accept(a.r, a.expected); }}>바꾸기</button>
+              <button className="as-btn as-tiny ghost" onClick={() => setAsk(null)}>그대로 두기</button>
+            </span>
+          </div>
+        )}
         {flash && <div className="as-flash">{flash.thumb && <img src={flash.thumb} alt="" />}<span>✓ {flash.note}</span></div>}
       </div>
       <QueueNote set={set} state={state} />
@@ -467,7 +511,7 @@ function QueueNote({ set, state }) {
   );
 }
 
-function Wrap({ set, sess, setSess, state, errPages, missing, setToast, loggedIn, onRetake, onSubmitted }) {
+function Wrap({ set, sess, setSess, state, errPages, missing, setToast, onRetake, onSubmitted }) {
   const [busy, setBusy] = useState(false);
   const [force, setForce] = useState(false);
   const itemPages = set.pages.filter((p) => p.kind === "item");
@@ -475,9 +519,9 @@ function Wrap({ set, sess, setSess, state, errPages, missing, setToast, loggedIn
   const pending = itemPages.filter((p) => ["busy", "read"].includes(state(p.no)));
   const infoPage = set.pages.find((p) => p.kind === "info");
   const infoJob = infoPage ? jobOf(infoPage.no) : null;
-  const suggestion = infoJob?.result?.suggestion
-    || (sess.ocr ? { name: normName(sess.ocr.name), grade: normGrade(sess.ocr.grade, set.level || "mid"), nickname: sess.ocr.nickname || null } : null);
+  const suggestion = infoJob?.result?.suggestion || sess.suggestion || null;
   const infoReady = !!sess.info?.name;
+  const needInfo = !infoReady && !sess.userBound;          // 계정 응시면 이름 확인 없이도(프로필 이름) — 서버와 같은 기준
   const allDone = graded === itemPages.length && !errPages.length && !missing.length;
 
   // 판독만 되고 채점이 안 된 쪽(이어 하기 등)은 채점을 다시 건다
@@ -488,8 +532,7 @@ function Wrap({ set, sess, setSess, state, errPages, missing, setToast, loggedIn
   const submit = async () => {
     setBusy(true);
     try {
-      const r = await assessCall("finish", { sid: sess.sid, secret: sess.secret });
-      if (!(await accessToken())) addPendingClaim(sess.sid, sess.secret);
+      const r = await assessCall("finish", { sid: sess.sid, secret: sess.secret, force: !allDone && force });
       onSubmitted(r.result);
     } catch (e) { setToast(e.message); } finally { setBusy(false); }
   };
@@ -515,9 +558,9 @@ function Wrap({ set, sess, setSess, state, errPages, missing, setToast, loggedIn
       {infoPage && <InfoCard set={set} sess={sess} setSess={setSess} suggestion={suggestion} reading={!suggestion && ["busy"].includes(state(infoPage.no))} setToast={setToast} />}
       <div className="as-card">
         {!allDone && <label className="as-check" style={{ marginTop: 0 }}><input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />채점이 안 된 문제는 0점으로 하고 지금 제출할게요</label>}
-        <button className="as-btn pri wide" style={{ marginTop: allDone ? 0 : 10 }} disabled={busy || (!allDone && !force) || (!infoReady && !loggedIn)} onClick={submit}>
+        <button className="as-btn pri wide" style={{ marginTop: allDone ? 0 : 10 }} disabled={busy || (!allDone && !force) || needInfo} onClick={submit}>
           {busy ? "제출하는 중…" : "제출하고 결과 보기"}</button>
-        {!infoReady && !loggedIn && <p className="as-small" style={{ margin: "8px 0 0" }}>위에서 2쪽 이름·학년을 확인하면 제출할 수 있어요.</p>}
+        {needInfo && <p className="as-small" style={{ margin: "8px 0 0" }}>위에서 2쪽 이름·학년을 확인하면 제출할 수 있어요.</p>}
       </div>
     </>
   );
@@ -596,7 +639,9 @@ function ResultView({ set, result, sess, setToast, onRetake }) {
         <div className="as-score"><b>{res.total}</b><span>/ {res.max}점</span></div>
         <div className="as-prog"><i style={{ width: `${pct}%` }} /></div>
         <p className="as-small" style={{ margin: 0 }}>{res.graded < res.n_items ? `채점된 문제 ${res.graded}/${res.n_items} — 채점되지 않은 문제는 0점이에요. ` : ""}AI가 읽은 내 풀이와 채점 근거를 문제마다 확인할 수 있어요. 잘못 읽었으면 알려 주세요 — 선생님이 다시 봐요.</p>
-        {!res.reveal && res.reveal_policy !== "never" && <div className="as-note info">🔐 <span>정답과 모범 풀이는 {res.reveal_policy === "after_close" ? "평가가 마감되면" : "제출하면"} 볼 수 있어요.</span></div>}
+        {!res.reveal && res.reveal_policy !== "never" && <div className="as-note info">🔐 <span>{res.reveal_policy === "after_submit" && !res.complete
+          ? "채점되지 않은 문제가 있어서, 정답과 모범 풀이·채점 근거는 평가가 마감되면 볼 수 있어요."
+          : "정답과 모범 풀이·채점 근거는 평가가 마감되면 볼 수 있어요."}</span></div>}
       </div>
       {res.items.map((it) => <ResultItem key={it.no} it={it} set={set} onFlag={flag} />)}
       <div className="as-card">

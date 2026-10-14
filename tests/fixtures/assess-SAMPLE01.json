@@ -30,11 +30,11 @@
    "h": 60
   },
   "pagecode": {
-   "n": 10,
-   "x0": 345,
-   "y0": 1323,
-   "size": 22,
-   "pitch": 32,
+   "n": 14,
+   "x0": 308,
+   "y0": 1324,
+   "size": 20,
+   "pitch": 28,
    "check": 10
   }
  },
@@ -322,7 +322,7 @@
  ],
  "meta": {
   "generator": "build_assess.py v1",
-  "built_at": "2026-10-14T11:08:23+09:00",
+  "built_at": "2026-10-14T11:57:53+09:00",
   "qr": "https://ashrainout.com/e/SAMPLE01"
  }
 }

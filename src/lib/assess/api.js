@@ -9,6 +9,10 @@ export class AssessError extends Error {
 export async function accessToken() {
   try { const { data } = await supabase.auth.getSession(); return data?.session?.access_token || null; } catch { return null; }
 }
+/** 지금 로그인한 계정 id (없으면 null) — 이 기기의 응시 기록을 '지금 보는 사람' 것만 쓰려고 */
+export async function currentUid() {
+  try { const { data } = await supabase.auth.getSession(); return data?.session?.user?.id || null; } catch { return null; }
+}
 
 export async function assessCall(op, body = {}, { signal } = {}) {
   const headers = { "content-type": "application/json" };
@@ -50,8 +54,15 @@ export function deviceId() {
   return d;
 }
 
-/** 평가별 응시 기록 { sid, secret, at, step } */
+/**
+ * 평가별 응시 기록 { sid, secret, at, step, uid } — uid: 만들 때 로그인해 있던 계정(비로그인 null).
+ * 같은 기기를 여럿이 쓰면(학원 태블릿) 다른 사람 기록이 섞이지 않게, 읽을 때 지금 보는 사람(uid)과 같은 것만 쓴다.
+ */
 export const readLocal = (code) => ls.json(SESS_KEY(code), null);
+export function readLocalFor(code, uid) {
+  const v = readLocal(code);
+  return v && (v.uid || null) === (uid || null) ? v : null;
+}
 export function writeLocal(code, patch) {
   const cur = readLocal(code) || {};
   const next = { ...cur, ...patch, at: Date.now() };
@@ -60,7 +71,7 @@ export function writeLocal(code, patch) {
 }
 export const clearLocal = (code) => ls.del(SESS_KEY(code));
 
-/** 이 기기에 남은 모든 응시(비로그인 결과 목록용) */
+/** 이 기기에 남은 비로그인 응시(비로그인 결과 목록용) */
 export function localSessions() {
   const out = [];
   try {
@@ -68,23 +79,25 @@ export function localSessions() {
       const k = localStorage.key(i);
       if (k && k.startsWith("ash.assess.s.")) {
         const v = ls.json(k, null);
-        if (v?.sid) out.push({ code: k.slice("ash.assess.s.".length), ...v });
+        if (v?.sid && !v.uid) out.push({ code: k.slice("ash.assess.s.".length), ...v });
       }
     }
   } catch { /* */ }
   return out.sort((a, b) => (b.at || 0) - (a.at || 0));
 }
 
-/** 로그인하면 계정에 담을 비로그인 응시 */
+/** 결과 화면에서 '로그인하고 담기'를 누른 응시 — 그 뒤 30분 안에 로그인하면 계정에 담는다(저절로 담지 않는다) */
+const CLAIM_TTL = 30 * 60 * 1000;
 export function addPendingClaim(sid, secret) {
-  const list = ls.json(CLAIM_KEY, []).filter((x) => x.sid !== sid);
+  const list = ls.json(CLAIM_KEY, []).filter((x) => x.sid !== sid && Date.now() - (x.at || 0) < CLAIM_TTL);
   list.push({ sid, secret, at: Date.now() });
-  ls.set(CLAIM_KEY, JSON.stringify(list.slice(-20)));
+  ls.set(CLAIM_KEY, JSON.stringify(list.slice(-5)));
 }
-/** 로그인 상태면 담아 두었던 응시를 계정으로 옮긴다 — 성공·영구 실패는 목록에서 뺀다 */
+/** 로그인 상태면 담기를 누른 지 30분 안 된 응시를 계정으로 옮긴다 — 오래된 것·성공·영구 실패는 목록에서 뺀다 */
 export async function claimPending() {
-  const list = ls.json(CLAIM_KEY, []);
-  if (!list.length || !(await accessToken())) return 0;
+  const list = ls.json(CLAIM_KEY, []).filter((x) => Date.now() - (x.at || 0) < CLAIM_TTL);
+  if (!list.length) { ls.del(CLAIM_KEY); return 0; }
+  if (!(await accessToken())) { ls.set(CLAIM_KEY, JSON.stringify(list)); return 0; }
   let n = 0;
   const keep = [];
   for (const c of list) {

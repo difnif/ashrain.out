@@ -92,8 +92,9 @@ function Register({ onDone, setToast }) {
   const [check, setCheck] = useState(null);     // { spec, v }
   const [busy, setBusy] = useState(false);
   const [conflict, setConflict] = useState(null);
+  const [notice, setNotice] = useState(null);   // 등록 뒤 서버 경고(확인값 겹침 등)
   const parse = (text) => {
-    setRaw(text); setConflict(null);
+    setRaw(text); setConflict(null); setNotice(null);
     try {
       const spec = JSON.parse(text);
       setCheck({ spec, v: validateSpec(spec, { bytes: new Blob([text]).size }) });
@@ -106,7 +107,8 @@ function Register({ onDone, setToast }) {
     try {
       const r = await assessCall("admin_register", { spec: raw, overwrite });
       setToast(`${r.set.code} ${r.updated ? "갱신" : "등록"} 완료`);
-      setRaw(""); setCheck(null); setConflict(null); onDone();
+      const extra = (r.warnings || []).filter((w) => !(check?.v?.warnings || []).includes(w));
+      setRaw(""); setCheck(null); setConflict(null); setNotice(extra.length ? { code: r.set.code, list: extra } : null); onDone();
     } catch (e) {
       if (e.status === 409) setConflict(e.message);
       else setToast(e.message + (e.extra?.errors ? " — " + e.extra.errors.join(" / ") : ""));
@@ -122,6 +124,7 @@ function Register({ onDone, setToast }) {
         onDrop={(e) => { e.preventDefault(); setDrag(false); readFile(e.dataTransfer?.files?.[0]); }}>
         📄 JSON 파일을 끌어다 놓거나 눌러서 고르기
       </div>
+      {notice && <div style={{ marginTop: 8 }}>{notice.list.map((m, i) => <div key={i} className="aa-warn">! {notice.code}: {m}</div>)}</div>}
       <details style={{ marginTop: 8 }}><summary className="aa-mut">붙여넣기로 등록</summary>
         <textarea value={raw} onChange={(e) => parse(e.target.value)} placeholder='{"kind":"ashrain.assess", …}' /></details>
       {check && (

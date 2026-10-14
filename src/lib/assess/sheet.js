@@ -3,7 +3,8 @@
 // 시험지 한 쪽 = 찰칵 채점(OMR) 카드와 같은 좌표계: 가로 1000 × 세로 1414 단위(1단위 = 0.19mm → 190 × 268.66mm, A4 여백 10mm).
 //   · 네 귀퉁이 검은 정사각형 마커 60(안쪽 여백 50) + 왼쪽 위 마커 오른쪽 방향 막대(x 122~146, y 50~110)
 //     → src/lib/omr/detect.js 의 threshold · findMarkers · orientCorners · warpToSpec 를 그대로 쓴다.
-//   · 아래 가운데 「쪽 번호 띠」 10칸(검은 칸 = 1): 쪽 번호 4비트 + 평가 확인 5비트 + 짝수 패리티 1비트.
+//   · 아래 가운데 「쪽 번호 띠」 14칸(검은 칸 = 1): 쪽 번호 4비트 + 평가 확인 5비트 → 해밍(13,9) + 전체 패리티(SECDED, 거리 4).
+//     칸 3개까지 잘못 읽어도 다른 값으로 통과하지 않는다(고치지는 않고 다시 찍게 한다).
 //     찍은 사진이 몇 쪽인지, 이 평가의 시험지가 맞는지 브라우저에서 바로 안다(서버·AI 없이).
 // 생성기(build_assess.py)가 같은 값으로 그린다 — 값을 바꾸면 양쪽을 함께 바꿀 것.
 
@@ -13,7 +14,8 @@ export const MM_PER_UNIT = 0.19;
 export const MARKER_SIZE = 60;
 export const MARKER_INSET = 50;
 export const ORIENT = { x: 122, y: 50, w: 24, h: 60 };
-export const PAGECODE = { n: 10, x0: 345, y0: 1323, size: 22, pitch: 32 };
+export const PAGECODE = { n: 14, x0: 308, y0: 1324, size: 20, pitch: 28 };
+export const CODE_MARGIN_MIN = 0.12;   // 가장 애매한 칸이 기준선에서 이만큼은 떨어져야 믿는다
 export const MAX_PAGES = 15;          // 쪽 번호 4비트 (1~15)
 
 /** 마커 4개 (TL, TR, BR, BL) — detect.js 가 받는 모양 */
@@ -44,24 +46,34 @@ export function checkOf(code) {
   return ((h >>> 27) ^ (h >>> 22) ^ (h >>> 17) ^ (h >>> 12) ^ (h >>> 7) ^ (h >>> 2) ^ h) & 31;
 }
 
-/** 쪽 번호 + 확인값 → 10비트 (LSB 먼저: 쪽 4 · 확인 5 · 패리티 1) */
+// 해밍(13,9): 위치 1~13 중 1·2·4·8 은 패리티, 나머지 9자리에 데이터(쪽 4비트 → 확인 5비트, 각각 낮은 자리부터). 14번째 = 전체 패리티.
+const DATA_POS = [3, 5, 6, 7, 9, 10, 11, 12, 13];
+const PAR_POS = [1, 2, 4, 8];
+
+/** 쪽 번호 + 확인값 → 14비트 (칸 0 = 위치 1) */
 export function encodePage(page, check) {
   if (!(page >= 1 && page <= MAX_PAGES)) throw new Error("쪽 번호는 1~15");
-  const bits = [];
-  for (let i = 0; i < 4; i++) bits.push((page >> i) & 1);
-  for (let i = 0; i < 5; i++) bits.push((check >> i) & 1);
-  bits.push(bits.reduce((a, b) => a ^ b, 0));
-  return bits;
+  const d = [];
+  for (let i = 0; i < 4; i++) d.push((page >> i) & 1);
+  for (let i = 0; i < 5; i++) d.push((check >> i) & 1);
+  const c = new Array(15).fill(0);
+  DATA_POS.forEach((pos, i) => { c[pos] = d[i]; });
+  for (const p of PAR_POS) { let x = 0; for (let j = 1; j <= 13; j++) if (j !== p && (j & p)) x ^= c[j]; c[p] = x; }
+  let all = 0; for (let j = 1; j <= 13; j++) all ^= c[j];
+  c[14] = all;
+  return c.slice(1);
 }
 
-/** 10비트 → { page, check, ok } — 패리티가 어긋나거나 쪽 0 이면 ok=false */
+/** 14비트 → { page, check, ok } — 증후군·전체 패리티가 하나라도 어긋나거나 쪽 0 이면 ok=false (고치지 않는다) */
 export function decodeBits(bits) {
   if (!Array.isArray(bits) || bits.length !== PAGECODE.n) return { page: 0, check: -1, ok: false };
+  const c = [0, ...bits.map((b) => (b ? 1 : 0))];
+  let syn = 0;
+  for (const p of PAR_POS) { let x = 0; for (let j = 1; j <= 13; j++) if (j & p) x ^= c[j]; if (x) syn |= p; }
+  let all = 0; for (let j = 1; j <= 14; j++) all ^= c[j];
   let page = 0, check = 0;
-  for (let i = 0; i < 4; i++) page |= (bits[i] ? 1 : 0) << i;
-  for (let i = 0; i < 5; i++) check |= (bits[4 + i] ? 1 : 0) << i;
-  const par = bits.slice(0, 9).reduce((a, b) => a ^ (b ? 1 : 0), 0);
-  return { page, check, ok: page >= 1 && par === (bits[9] ? 1 : 0) };
+  DATA_POS.forEach((pos, i) => { if (i < 4) page |= c[pos] << i; else check |= c[pos] << (i - 4); });
+  return { page, check, ok: syn === 0 && all === 0 && page >= 1 };
 }
 
 /** 띠 칸 좌표 (단위) */
@@ -118,7 +130,7 @@ export function readPageCode(warped, sheet = null) {
     return m < t ? 1 : 0;
   });
   const dec = decodeBits(bits);
-  return { bits, ...dec, ok: dec.ok && contrast >= 40, contrast: Math.round(contrast), margin: Math.round(margin * 100) / 100 };
+  return { bits, ...dec, ok: dec.ok && contrast >= 40 && margin >= CODE_MARGIN_MIN, contrast: Math.round(contrast), margin: Math.round(margin * 100) / 100 };
 }
 
 /**

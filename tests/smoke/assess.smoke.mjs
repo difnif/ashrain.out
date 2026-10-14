@@ -26,37 +26,40 @@ const SPEC = JSON.parse(fs.readFileSync(path.join(ROOT, "tests/fixtures/assess-S
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "assess-smoke-"));
 
 // ── 모의 서버 상태 ────────────────────────────────────────────────────────────
-const calls = [];                 // [{op, page_no, hasCrop, hasImage}]
-const st = { sets: [], sessions: {}, adminCalls: [] };
-const PUB = { ...publicView(SPEC), status: "live", opens_at: null, closes_at: null, reveal: "after_submit", state: "open" };
+const calls = [];                 // [{op, page_no, hasCrop, hasImage, shot}]
+const st = { sets: [], sessions: {}, adminCalls: [], gradeBusyOnce: true };
+const PUB = { ...publicView(SPEC), n_items: 3, n_pages: 5, max: 30, status: "live", opens_at: null, closes_at: null, reveal: "after_submit", state: "open" };
 function itemRead(no) {
   return { s1: { lines: [{ t: no === 1 ? "x + y = 12" : "y = 200 − 8x", struck: false }], empty: false }, s2: { lines: [{ t: "x = 6", struck: true }, { t: "x = 5, y = 7", struck: false }], empty: false }, s3: { lines: [{ t: "7명", struck: false }], empty: false }, outside: [], legibility: { score: 4, issues: [] }, unreadable: 0 };
 }
 const itemGrade = (no) => ({ marks: [{ no: 1, got: 4, reason: "두 식을 세움" }, { no: 2, got: no === 2 ? 1 : 3, reason: "계산" }, { no: 3, got: 3, reason: "답" }], total: no === 2 ? 8 : 10, max: 10, final_answer: "7명", final_ok: true, needs_review: false, feedback: ["식을 잘 세웠어요."], tags: ["없음"] });
 function mockAssess(body, authed) {
   const { op } = body;
-  calls.push({ op, page_no: body.page_no, hasCrop: typeof body.crop === "string" && body.crop.length > 1000, hasImage: !!body.image, authed });
+  calls.push({ op, page_no: body.page_no, hasCrop: typeof body.crop === "string" && body.crop.length > 1000, hasImage: !!body.image, authed, shot: body.shot || null, force: !!body.force });
   if (op === "list") return { open: [{ code: "SAMPLE01", title: SPEC.title, level: "mid", grade_label: "중2", date: SPEC.date, n_items: 3, closes_at: null }], mine: [], ready: true };
-  if (op === "get") return { set: PUB, store_images: false, anon: true, me: authed ? { name: "김민준", nick: "민준이" } : null };
-  if (op === "start") { const sid = "5e55e55e-0000-4000-8000-00000000000" + (Object.keys(st.sessions).length + 1); st.sessions[sid] = { pages: {}, info: null }; return { sid, secret: "sec-" + sid.slice(-1), resumed: false, status: "open", pages: [] }; }
+  if (op === "get") return { set: PUB, store_images: false, anon: true, me: authed ? { name: "김민준", nick: "민준이" } : null, mine: null };
+  if (op === "start") { const sid = "5e55e55e-0000-4000-8000-00000000000" + (Object.keys(st.sessions).length + 1); st.sessions[sid] = { pages: {}, info: null }; return { sid, secret: "sec-" + sid.slice(-1), resumed: false, status: "open", pages: [], suggestion: null, user_bound: authed }; }
   const s = st.sessions[body.sid];
   if (!s) return { __status: 404, error: "응시 기록을 찾을 수 없어요" };
   if (op === "page") {
     const pg = SPEC.pages.find((p) => p.no === body.page_no);
     s.pages[pg.no] = true;
     if (pg.kind === "guide") return { kind: "guide", page_no: pg.no, status: "ok" };
-    if (pg.kind === "info") return { kind: "info", page_no: pg.no, status: "read", read: { grade: "2", name: "홍길동", nickname: null, phrase: [] }, suggestion: { name: "홍길동", grade: "m2", nickname: null } };
-    if (pg.item === 3) return { kind: "item", page_no: pg.no, item: 3, status: "read", read: itemRead(3), grade: null };      // 채점은 grade 로 따로
-    return { kind: "item", page_no: pg.no, item: pg.item, status: "graded", read: itemRead(pg.item), grade: itemGrade(pg.item) };
+    if (pg.kind === "info") return { kind: "info", page_no: pg.no, status: "read", suggestion: { name: "홍길동", grade: "m2", nickname: null } };
+    if (pg.item === 3) return { kind: "item", page_no: pg.no, item: 3, status: "read", read: itemRead(3) };      // 채점은 grade 로 따로
+    return { kind: "item", page_no: pg.no, item: pg.item, status: "graded", read: itemRead(pg.item) };          // 제출 전에는 점수 없음
   }
-  if (op === "grade") return { page_no: body.page_no, status: "graded", grade: itemGrade(3) };
+  if (op === "grade") {
+    if (st.gradeBusyOnce) { st.gradeBusyOnce = false; return { __status: 409, error: "채점하는 중이에요 — 잠시만요", busy: true }; }   // 처음엔 '채점 중' → 기다렸다 다시
+    return { page_no: body.page_no, status: "graded" };
+  }
   if (op === "info") { s.info = { name: body.name, grade: "m" + body.grade, nickname: body.nickname || null, by: "ocr" }; return { info: s.info, person_id: "p1" }; }
   if (op === "finish" || op === "result") {
     const key = answerKey(SPEC);
     const items = SPEC.items.map((it, i) => ({ no: it.no, page: it.page, topic: it.topic, got: itemGrade(it.no).total, max: 10, graded: true,
       elements: it.rubric.map((r) => ({ no: r.no, element: r.element, points: r.points, got: itemGrade(it.no).marks[r.no - 1].got, reason: itemGrade(it.no).marks[r.no - 1].reason })),
       read: itemRead(it.no), feedback: ["식을 잘 세웠어요."], final_answer: "7명", final_ok: true, needs_review: false, flagged: false, captured: true, answer: key[i] }));
-    return { result: { sid: body.sid, code: "SAMPLE01", title: SPEC.title, status: "submitted", total: 28, max: 30, graded: 3, n_items: 3, info: s.info, submitted_at: new Date().toISOString(), reveal: true, reveal_policy: "after_submit", items } };
+    return { result: { sid: body.sid, code: "SAMPLE01", title: SPEC.title, status: "submitted", total: 28, max: 30, graded: 3, n_items: 3, info: s.info, submitted_at: new Date().toISOString(), reveal: true, reveal_policy: "after_submit", complete: true, items } };
   }
   if (op === "flag") return { page_no: body.page_no, flagged: true };
   if (op === "claim") return { claimed: true };
@@ -105,7 +108,7 @@ const USER = { id: "00000000-0000-4000-8000-000000000001", aud: "authenticated",
 const JWT = `${b64u({ alg: "HS256", typ: "JWT" })}.${b64u({ sub: USER.id, aud: "authenticated", role: "authenticated", email: USER.email, exp: 9999999999, iat: 1700000000, aal: "aal1", amr: [{ method: "password", timestamp: 1700000000 }], app_metadata: USER.app_metadata, user_metadata: {}, session_id: "s1" })}.sig`;
 const SESSION = { access_token: JWT, token_type: "bearer", expires_in: 3600, expires_at: 9999999999, refresh_token: "r1", user: USER };
 const PROFILE = { role: "student", member_code: "SMOKE", trial_expires_at: null, merged_into: null, phone_verified: true, is_minor: false, birth_date: "2011-03-01", username: "민준이", name: "김민준", honor_path: false };
-async function mockSupabase(page, { session = false, role = "student" } = {}) {
+async function mockSupabase(page, { session = false, role = "student", seed = null } = {}) {
   await page.route("https://placeholder.supabase.co/**", (route) => {
     const req = route.request(); const u = new URL(req.url()); const accept = req.headers()["accept"] || "";
     const json = (obj, headers = {}) => route.fulfill({ status: 200, contentType: "application/json", headers, body: JSON.stringify(obj) });
@@ -124,10 +127,11 @@ async function mockSupabase(page, { session = false, role = "student" } = {}) {
     }
     return json({});
   });
-  await page.addInitScript(([key, sess, theme, withSession]) => {
+  await page.addInitScript(([key, sess, theme, withSession, seed]) => {
     if (withSession) localStorage.setItem(key, JSON.stringify(sess)); else localStorage.removeItem(key);
     localStorage.setItem("ashrain-theme", theme);
-  }, ["sb-placeholder-auth-token", SESSION, THEME, session]);
+    if (seed && !sessionStorage.getItem("seeded")) { for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v); sessionStorage.setItem("seeded", "1"); }
+  }, ["sb-placeholder-auth-token", SESSION, THEME, session, seed]);
 }
 
 // ── 시험 사진: 시험지 한 쪽을 기울여 그려 PNG 로 ─────────────────────────────
@@ -238,16 +242,25 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     t = await text(page);
     ok(t.includes("3쪽 찍기"), "순서가 바뀐 쪽(4쪽) → 4쪽으로 받고 3쪽 안내 유지");
     await shot(page, "03-shoot-swap");
+    // 이미 찍은 4쪽을 또 찍으면 말없이 바꾸지 않고 묻는다
+    const nPage = calls.filter((c) => c.op === "page").length;
+    await upload(page, "p4");
+    await page.getByText(/이미 찍은 4쪽이 찍혔어요/).waitFor({ timeout: 15000 });
+    await shot(page, "03b-ask-replace");
+    await page.getByRole("button", { name: "그대로 두기" }).click();
+    await sleep(400);
+    ok(calls.filter((c) => c.op === "page").length === nPage && (await text(page)).includes("3쪽 찍기"), "이미 찍은 다른 쪽 → '바꿀까요?' → 그대로 두기(보내지 않음)");
     await upload(page, "p3");
     await page.getByText("3쪽을 받았어요").waitFor({ timeout: 15000 });
     await upload(page, "p5");
     await page.getByText(/2쪽에 쓴 이름이 맞나요|채점이 끝났어요|채점하는 중/).first().waitFor({ timeout: 20000 });
     ok((await text(page)).includes("채점") , "마지막 쪽 뒤 → 채점 기다리기 화면");
-    await page.getByText("✅ 채점이 끝났어요").waitFor({ timeout: 20000 });
+    await page.getByText("✅ 채점이 끝났어요").waitFor({ timeout: 30000 });
     const pageCalls = calls.filter((c) => c.op === "page");
     ok(JSON.stringify(pageCalls.map((c) => c.page_no)) === "[1,2,4,3,5]", `서버로 간 쪽 번호 = 사진에서 읽은 쪽 (${pageCalls.map((c) => c.page_no).join(",")})`);
     ok(!pageCalls[0].hasCrop && pageCalls.slice(1).every((c) => c.hasCrop) && pageCalls.every((c) => !c.hasImage), "1쪽은 사진 없이, 2~5쪽은 판독 영역만(저장 꺼짐 → 전체 사진 안 보냄)");
-    ok(calls.some((c) => c.op === "grade" && c.page_no === 5), "판독만 된 쪽(문제 3)은 채점을 따로 요청");
+    ok(calls.filter((c) => c.op === "grade" && c.page_no === 5).length === 2, "판독만 된 쪽(문제 3)은 채점을 따로 요청 — '채점 중'이면 기다렸다 다시");
+    ok(new Set(pageCalls.map((c) => c.shot)).size === pageCalls.length && pageCalls.every((c) => /^[0-9a-f-]{36}$/.test(c.shot || "")), "사진마다 다른 사진 id(shot)를 보냄");
     t = await text(page);
     ok(t.includes("홍길동") && t.includes("중2"), "2쪽 판독 이름 확인 카드");
     ok(await page.getByRole("button", { name: "제출하고 결과 보기" }).isDisabled(), "이름 확인 전에는 제출 잠김(비로그인)");
@@ -256,6 +269,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.getByText("👤 응시자").waitFor();
     await page.getByRole("button", { name: "제출하고 결과 보기" }).click();
     await page.locator(".as-score").waitFor({ timeout: 10000 });
+    ok(calls.filter((c) => c.op === "finish").every((c) => !c.force), "다 채점된 뒤 제출 → force 없이");
+    ok(!(await page.evaluate(() => localStorage.getItem("ash.assess.claims"))), "비로그인 제출 → 계정 담기 예약을 저절로 만들지 않음(공용 기기)");
     t = await text(page);
     ok(t.includes("28") && t.includes("/ 30점") && (await page.locator(".as-res").count()) === 3, "결과: 28/30 · 문제 3개");
     ok(t.includes("정답") && t.includes("7명"), "결과: 정답 공개(after_submit)");
@@ -274,8 +289,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(true, "같은 기기에서 다시 열면 결과 화면");
     await page.context().close();
 
-    // B. 로그인 학생 — 대시보드 알림 카드 · 토스트 · 학습 도구 · 목록
-    page = await newPage({ session: true });
+    // B. 로그인 학생 — 대시보드 알림 카드 · 토스트 · 학습 도구 · 목록 (이 기기에 다른 사람의 비로그인 기록이 남아 있다)
+    const anonSid = Object.keys(st.sessions)[0];
+    page = await newPage({ session: true, seed: { "ash.assess.s.SAMPLE01": JSON.stringify({ sid: anonSid, secret: "sec-1", step: "result", at: Date.now() }) } });
     await page.goto(`${base}/walking`);
     await page.getByText("📝 서술형 평가").first().waitFor({ timeout: 15000 });
     t = await text(page);
@@ -286,6 +302,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.getByText("새 서술형 평가가 열렸어요").click();
     await page.getByText("김민준").first().waitFor({ timeout: 10000 });
     ok(page.url().endsWith("/e/SAMPLE01"), "토스트 → /e/SAMPLE01 (로그인 이름으로 응시)");
+    ok((await page.locator(".as-score").count()) === 0 && (await page.getByRole("button", { name: "이어서 찍기" }).count()) === 0 && (await page.getByRole("button", { name: "문제 보고 시작하기" }).count()) === 1,
+      "같은 기기의 다른 사람(비로그인) 기록은 보이지 않음 — 결과·이어서 찍기 없음");
     await page.goto(`${base}/walking#/tools`);
     await page.getByText("선생님이 낸 서술형 시험지를").waitFor({ timeout: 10000 });
     ok(true, "학습 도구: 서술형 평가 카드");

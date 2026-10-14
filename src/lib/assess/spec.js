@@ -2,7 +2,7 @@
 //
 // 흐름: 채팅방에서 PDF(확인·인쇄용) + JSON(앱 등록용)을 만든다 → 관리자 화면에서 JSON 을 올리면 validateSpec 통과 후 등록.
 // 학생에게는 publicView(문제·배점·쪽 좌표)만 간다. 정답·모범 풀이·채점 기준은 서버에만 남고, 공개 시점(reveal)이 되면 결과 화면에 붙는다.
-import { checkOf, SHEET_W, SHEET_H, MAX_PAGES } from "./sheet.js";
+import { checkOf, SHEET_W, SHEET_H, MAX_PAGES, PAGECODE } from "./sheet.js";
 
 export const SPEC_KIND = "ashrain.assess";
 export const SPEC_VERSION = 1;
@@ -12,7 +12,7 @@ export const LEVELS = ["elem", "mid", "high"];
 export const MAX_ITEMS = 13;               // 1쪽 안내 + 2쪽 응시 정보 + 문제 쪽(쪽 번호 4비트 → 15쪽)
 export const MAX_SPEC_BYTES = 2_000_000;
 export const MAX_SVG_BYTES = 200_000;
-const UNSAFE_SVG = /<script|<foreignObject|\son[a-z]+\s*=|javascript:|<iframe|<object|<embed|xlink:href\s*=\s*["']\s*(?!#)/i;
+const UNSAFE_SVG = /<script|<foreignObject|<iframe|<object|<embed|<image|<use|\bon[a-z]+\s*=|javascript|&#|href\s*=/i;   // 그림은 <img> 로만 그리지만, 실행·외부 참조 흔적은 아예 받지 않는다
 
 const isStr = (v) => typeof v === "string";
 const nonEmpty = (v) => isStr(v) && v.trim().length > 0;
@@ -51,8 +51,12 @@ export function validateSpec(spec, { bytes = null } = {}) {
   const sh = spec.sheet || {};
   if (+sh.w !== SHEET_W || +sh.h !== SHEET_H) err("sheet 좌표계가 1000×1414 가 아니에요");
   const pc = sh.pagecode || {};
-  if (!(+pc.n === 10 && +pc.size > 0 && +pc.pitch > 0)) err("sheet.pagecode 값이 없어요");
-  else if (CODE_RE.test(String(spec.code || "")) && +pc.check !== checkOf(spec.code)) err("쪽 번호 띠 확인값이 code 와 맞지 않아요 — code 를 손으로 바꿨다면 생성기로 다시 만들어 주세요");
+  const num = (v) => Number.isFinite(+v) && v !== null && v !== "";
+  if (!(+pc.n === PAGECODE.n && num(pc.x0) && num(pc.y0) && +pc.size > 0 && +pc.pitch > 0)) err("sheet.pagecode 값이 없거나 이 앱의 쪽 번호 띠(14칸)와 달라요 — 생성기로 다시 만들어 주세요");
+  else if (+pc.x0 < 0 || +pc.x0 + +pc.pitch * (+pc.n - 1) + +pc.size > SHEET_W || +pc.y0 < 0 || +pc.y0 + +pc.size > SHEET_H) err("sheet.pagecode 좌표가 시트 밖이에요");
+  if (!(+sh.markers?.size > 0 && num(sh.markers?.inset))) err("sheet.markers 값이 없어요");
+  if (!["x", "y", "w", "h"].every((k) => num(sh.orient?.[k]))) err("sheet.orient 값이 없어요");
+  if (CODE_RE.test(String(spec.code || "")) && +pc.check !== checkOf(spec.code)) err("쪽 번호 띠 확인값이 code 와 맞지 않아요 — code 를 손으로 바꿨다면 생성기로 다시 만들어 주세요");
 
   // 쪽
   const pages = Array.isArray(spec.pages) ? spec.pages : [];
@@ -138,12 +142,15 @@ export function answerKey(spec) {
   }));
 }
 
-/** 공개 여부 — reveal 정책 × 제출 여부 × 마감 여부 */
-export function canReveal({ reveal = "after_close", submitted = false, status = "live", closes_at = null, now = Date.now() } = {}) {
-  if (reveal === "never") return false;
-  if (reveal === "after_submit") return !!submitted;
+/**
+ * 공개 여부 — reveal 정책 × 제출 여부 × 마감 여부 × 다 채점됐는지(complete).
+ * after_submit 도 모든 문제 쪽이 채점된 제출에만 바로 공개한다(빈 제출로 정답부터 보는 것을 막는다). 마감되면 제출한 사람 모두에게.
+ */
+export function canReveal({ reveal = "after_close", submitted = false, status = "live", closes_at = null, now = Date.now(), complete = true } = {}) {
+  if (reveal === "never" || !submitted) return false;
   const closed = status === "closed" || (closes_at && Date.parse(closes_at) <= now);
-  return !!submitted && !!closed;
+  if (closed) return true;
+  return reveal === "after_submit" && !!complete;
 }
 
 /** 채점 결과(문항별 marks) → 문항 점수 · 합계. 칸이 빠진 문항은 0점 */
@@ -171,8 +178,9 @@ export function normGrade(raw, level = "mid") {
   const max = lv === "e" ? 6 : 3;
   return n >= 1 && n <= max ? `${lv}${n}` : null;
 }
-/** 이름 정리: 공백·기호 제거 (한글·영문·숫자만) */
+/** 이름 정리: 공백·기호 제거 (한글·영문·숫자만). 못 읽은 글자(⍰·?)가 섞이면 null — 글자를 빼고 붙이면 다른 이름이 된다 */
 export function normName(raw) {
+  if (/[⍰?？]/.test(String(raw ?? ""))) return null;
   const s = String(raw ?? "").normalize("NFC").replace(/[^0-9A-Za-z가-힣]/g, "");
   return s.length >= 1 && s.length <= 20 ? s : null;
 }
