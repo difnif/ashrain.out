@@ -54,6 +54,9 @@ const AdminWell = lazy(() => import("./pages/AdminWell"));
 const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
 const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
 const AnswerKey = lazy(() => import("./pages/AnswerKey"));
+// 서술형 평가 — /e(/코드) 단독 페이지(로그인 무관) · 관리자 등록 화면
+const AssessApp = lazy(() => import("./pages/assess/AssessApp"));
+const AdminAssess = lazy(() => import("./pages/assess/AdminAssess"));
 
 /** 지연 청크가 오는 동안의 얇은 자리 표시 */
 function PageFall() {
@@ -311,6 +314,7 @@ function AppRoutes() {
   if (hash.startsWith("#/admin/practice")) return <Rx theme={theme}><AdminPractice /></Rx>;
   if (hash.startsWith("#/admin/codes")) return <Rx theme={theme}><AdminCodes /></Rx>;
   if (hash.startsWith("#/admin/users")) return <Rx theme={theme}><AdminUsers /></Rx>;
+  if (hash.startsWith("#/admin/assess")) return <Rx theme={theme}><AdminAssess theme={theme} /></Rx>;
 
   // 기록 탭(구 게시판 자리) — 촬영 학습 기록. 게시판 라우트는 잠들어 있음(종성 때 재공개).
   if (hash.startsWith("#/records")) return <Rx theme={theme}><Records /></Rx>;
@@ -405,7 +409,7 @@ function StudentApp() {
   );
 }
 
-const KNOWN_SEGS = ["", "walking", "running", "seirocco", "jongseong", "answers", "answerswebview"];
+const KNOWN_SEGS = ["", "walking", "running", "seirocco", "jongseong", "answers", "answerswebview", "e"];
 
 function usePathSeg() {
   const read = () => location.pathname.split("/")[1] || "";
@@ -482,6 +486,9 @@ function PathRouter() {
   // 빠른 정답지 — 로그인 여부와 무관하게 열람(학생앱 셸 밖 단독 페이지)
   if (seg === "answers" || seg === "answerswebview")   // answerswebview = 시험판 시절 주소 — 위 효과가 /answers 로 바꿔 준다
     return <Suspense fallback={null}><AnswerKey theme={theme} web /></Suspense>;
+
+  // 서술형 평가 — QR(/e/<코드>)·앱 알림이 여는 단독 페이지. 로그인돼 있으면 계정에, 아니면 기기·2쪽 이름으로 남는다
+  if (seg === "e") return <Suspense fallback={<PageFall />}><AssessApp theme={theme} /></Suspense>;
 
   if (seg === "walking" || seg === "running") return <StudentApp />;
 

@@ -31,3 +31,7 @@ itemfactory/reference/**/*.json
 itemfactory/reference/**/*.txt
 tests/smoke/shots/
 tests/smoke/img/
+
+# 서술형 평가 생성기 산출물(PDF·JSON·래스터) — 채팅방에서 만들어 PDF 는 확인·인쇄, JSON 은 관리자 화면에 등록
+assessgen/out/
+assessgen/verify/img*/
