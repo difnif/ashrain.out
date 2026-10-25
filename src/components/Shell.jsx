@@ -125,6 +125,7 @@ export function ShellTop({ theme, hash }) {
               ["🗓 일정", "#/admin/calendar"], ["⛲ 우물", "#/admin/well"], ["🛡 보호자", "#/admin/guardians"]].map(([l, to]) => (
               <button key={to} className="sh-abtn" onClick={() => (location.hash = to)}>{l}</button>
             ))}
+            <button className="sh-abtn" onClick={() => (location.hash = "#/admin/display")}>🖥 교실 모니터</button>
           </div>
         )}
         {subs && (

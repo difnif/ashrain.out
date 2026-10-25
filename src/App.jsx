@@ -51,6 +51,7 @@ const AdminSchemas = lazy(() => import("./components/AdminSchemas"));
 const AdminGuardians = lazy(() => import("./components/AdminGuardians"));
 const AdminCalendar = lazy(() => import("./components/AdminCalendar"));
 const AdminWell = lazy(() => import("./pages/AdminWell"));
+const AdminDisplay = lazy(() => import("./pages/AdminDisplay"));   // 교실 모니터(가로 화면 도형 애니메이션)
 const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
 const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
 const AnswerKey = lazy(() => import("./pages/AnswerKey"));
@@ -337,6 +338,7 @@ function AppRoutes() {
   if (hash.startsWith("#/guardian")) return <Rx theme={theme}><GuardianConsent /></Rx>;
   if (hash === "#/admin/calendar") return <Rx theme={theme}><AdminCalendar theme={theme} /></Rx>;
   if (hash === "#/admin/well") return <Rx theme={theme}><AdminWell theme={theme} /></Rx>;
+  if (hash === "#/admin/display") return <AdminDisplay />;
   const c = hash.match(/^#\/c\/(.+)$/);
   if (c) return <ConceptViewer conceptId={decodeURIComponent(c[1])} theme={theme} />;
   if (hash.startsWith("#/portrait")) {
