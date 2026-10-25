@@ -109,9 +109,10 @@ function Elem({ t, C }) {
           {k >= 1 && <Lbl x={mid[0] + (i === 1 ? -6 : 14)} y={mid[1] - 26} s={`${R} cm`} size={28} fill={C.gold} C={C} />}
         </g>;
       })}
+      {/* 지름 — 돌린 축 위에 (반지름·이름표와 겹치지 않게) */}
       {t >= diaT && <g opacity={seg(t, diaT, diaT + 600)}>
-        <Path pts={[pt(200), pt(20)]} stroke={C.coral} sw={5} />
-        <Lbl x={pt(20)[0] + 70} y={pt(20)[1] - 10} s={`${2 * R} cm`} size={30} fill={C.coral} C={C} />
+        <Path pts={[pt(90), pt(270)]} stroke={C.coral} sw={5} />
+        <Lbl x={CEN[0] + 18} y={CEN[1] - RP * 0.64} s={`${2 * R} cm`} size={30} anchor="start" fill={C.coral} C={C} />
       </g>}
       {/* 어느 쪽에서 보아도 원 */}
       {views.map(([s, y], i) => (
