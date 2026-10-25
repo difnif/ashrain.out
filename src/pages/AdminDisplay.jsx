@@ -5,11 +5,11 @@
 // 화면은 탭·마우스 움직임에 조작 막대가 잠깐 뜨고 스스로 숨는다. 전체 화면·화면 꺼짐 방지 포함.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { PAIRS } from "../features/display/pairs";
+import { PAIRS, GROUPS } from "../features/display/pairs";
 import { PALETTE, W, H, SceneTitle, clearMeasureCache } from "../features/display/draw";
 import { E, clamp } from "../features/display/core";
 
-const LS = { mode: "ash.display.mode", theme: "ash.display.theme", idx: "ash.display.idx", rep: "ash.display.repeat" };
+const LS = { mode: "ash.display.mode", theme: "ash.display.theme", idx: "ash.display.idx", rep: "ash.display.repeat", grp: "ash.display.group" };
 const lsGet = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, String(v)); } catch { /* 사생활 모드 등 */ } };
 
@@ -18,6 +18,16 @@ const PAIR_FADE = 1300;   // 다음 장면으로
 const FRAME_MS = 1000 / 40;
 const IDLE_MS = 3600;
 const PRETENDARD = "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css";
+
+/* ── 묶음: 전체 / 도형 / 경우의 수·확률 — 고른 묶음 안에서만 돈다 ── */
+const orderOf = (g) => PAIRS.map((_, i) => i).filter((i) => g === "all" || PAIRS[i].group === g);
+function stepIdx(cur, dir, g) {
+  const ord = orderOf(g);
+  if (!ord.length) return cur;
+  const pos = ord.indexOf(cur);
+  if (pos < 0) return dir >= 0 ? ord[0] : ord[ord.length - 1];
+  return ord[(pos + dir + ord.length) % ord.length];
+}
 
 export default function AdminDisplay() {
   const [me, setMe] = useState(undefined);   // undefined 확인 중 | false | true
@@ -47,6 +57,7 @@ function Stage() {
     return Number.isInteger(n) && n >= 0 && n < PAIRS.length ? n : 0;
   });
   const [thm, setThm] = useState(() => (lsGet(LS.theme, "dark") === "light" ? "light" : "dark"));
+  const [grp, setGrp] = useState(() => { const g = lsGet(LS.grp, "all"); return GROUPS.some((x) => x.key === g) ? g : "all"; });
   const [paused, setPaused] = useState(false);
   const [repeat, setRepeat] = useState(() => lsGet(LS.rep, "0") === "1");
   const [ctl, setCtl] = useState(true);
@@ -59,7 +70,7 @@ function Stage() {
   const mfade = useRef(null);   // { from, t0 }
   const pfade = useRef(null);   // { idx, mode, t, t0 }
   const S = useRef({});         // 루프가 읽는 최신 상태
-  S.current = { idx, mode, repeat, paused, list };
+  S.current = { idx, mode, repeat, paused, list, grp };
 
   const elapsed = (now = performance.now()) => (clk.current.held != null ? clk.current.held : now - clk.current.start);
 
@@ -67,6 +78,7 @@ function Stage() {
   useEffect(() => { lsSet(LS.idx, idx); }, [idx]);
   useEffect(() => { lsSet(LS.theme, thm); }, [thm]);
   useEffect(() => { lsSet(LS.rep, repeat ? 1 : 0); }, [repeat]);
+  useEffect(() => { lsSet(LS.grp, grp); }, [grp]);
 
   /* ── 장면 이동 (다음 쌍은 겹치며 넘어간다) ── */
   const goTo = useCallback((i, fade = true) => {
@@ -100,7 +112,7 @@ function Stage() {
       last = now;
       const cur = S.current;
       if (clk.current.held == null && now - clk.current.start >= PAIRS[cur.idx].dur) {
-        goTo(cur.repeat ? cur.idx : cur.idx + 1, true);
+        goTo(cur.repeat ? cur.idx : stepIdx(cur.idx, 1, cur.grp), true);
       }
       if (mfade.current && now - mfade.current.t0 > MODE_FADE) mfade.current = null;
       if (pfade.current && now - pfade.current.t0 > PAIR_FADE) pfade.current = null;
@@ -169,8 +181,8 @@ function Stage() {
     const onKey = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const k = e.key;
-      if (k === "ArrowRight") { goTo(S.current.idx + 1); poke(); }
-      else if (k === "ArrowLeft") { goTo(S.current.idx - 1); poke(); }
+      if (k === "ArrowRight") { goTo(stepIdx(S.current.idx, 1, S.current.grp)); poke(); }
+      else if (k === "ArrowLeft") { goTo(stepIdx(S.current.idx, -1, S.current.grp)); poke(); }
       else if (k === " ") { e.preventDefault(); togglePause(); poke(); }
       else if (k === "e" || k === "E") flipMode("e");
       else if (k === "m" || k === "M") flipMode("m");
@@ -182,6 +194,24 @@ function Stage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [goTo, flipMode, togglePause, toggleFs, poke]);
+
+  /* ── 묶음 고르기: 지금 장면이 그 묶음에 없으면 묶음의 첫 장면으로 ── */
+  const pickGroup = (g) => {
+    setGrp(g);
+    const ord = orderOf(g);
+    if (!ord.includes(S.current.idx)) goTo(ord[0]);
+  };
+  const card = (i) => {
+    const p = PAIRS[i];
+    return (
+      <button key={p.key} type="button" className={"dsp-card" + (i === idx ? " on" : "")}
+        onClick={() => { if (grp !== "all" && p.group !== grp) setGrp(p.group); goTo(i); setList(false); }}>
+        <span className="n">{String(i + 1).padStart(2, "0")}</span>
+        <span className="e">{p.title.e}</span>
+        <span className="m">{p.title.m}</span>
+      </button>
+    );
+  };
 
   /* ── 그릴 층 계산 ── */
   const now = performance.now();
@@ -205,7 +235,7 @@ function Stage() {
       <div className="dsp-frame">
         <div className="dsp-paper" />
         <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
-          role="img" aria-label={`${pair.title[mode]} — 도형 애니메이션`}>
+          role="img" aria-label={`${pair.title[mode]} — 수학 애니메이션`}>
           {layers.map((L) => (
             <g key={L.key + "@" + L.pair.key} opacity={L.o}>
               <SceneTitle title={L.pair.title[L.mode]} sub={L.pair.sub[L.mode]} C={C} mode={L.mode} />
@@ -223,11 +253,11 @@ function Stage() {
 
         {/* 조작 막대 */}
         <div className={"dsp-ctl" + (ctl ? " show" : "")} onPointerDown={(e) => e.stopPropagation()}>
-          <Btn title="이전 장면 (←)" onClick={() => { goTo(idx - 1); poke(); }}><Ic d="M15 5 8 12l7 7M6 5v14" /></Btn>
+          <Btn title="이전 장면 (←)" onClick={() => { goTo(stepIdx(idx, -1, grp)); poke(); }}><Ic d="M15 5 8 12l7 7M6 5v14" /></Btn>
           <Btn title={paused ? "재생 (스페이스)" : "멈춤 (스페이스)"} onClick={() => { togglePause(); poke(); }}>
             {paused ? <Ic d="M8 5v14l11-7z" fill /> : <Ic d="M8 5v14M16 5v14" />}
           </Btn>
-          <Btn title="다음 장면 (→)" onClick={() => { goTo(idx + 1); poke(); }}><Ic d="m9 5 7 7-7 7M18 5v14" /></Btn>
+          <Btn title="다음 장면 (→)" onClick={() => { goTo(stepIdx(idx, 1, grp)); poke(); }}><Ic d="m9 5 7 7-7 7M18 5v14" /></Btn>
           <span className="dsp-sep" />
           <Btn title="이 장면 반복" on={repeat} onClick={() => { setRepeat((v) => !v); poke(); }}>
             <Ic d="M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4" />
@@ -246,7 +276,7 @@ function Stage() {
 
         {/* 진행 — 장면 점 + 지금 장면의 흐름 */}
         <div className="dsp-dots" aria-hidden="true">
-          {PAIRS.map((p, i) => <i key={p.key} className={i === idx ? "on" : ""} />)}
+          {orderOf(grp).map((i) => <i key={PAIRS[i].key} className={i === idx ? "on" : ""} />)}
         </div>
         <div className="dsp-prog" aria-hidden="true"><i style={{ transform: `scaleX(${t / pair.dur})` }} /></div>
         {paused && <div className="dsp-paused">멈춤</div>}
@@ -258,16 +288,21 @@ function Stage() {
                 <b>장면 목록</b>
                 <button type="button" onClick={() => setList(false)} aria-label="닫기">✕</button>
               </div>
-              <div className="dsp-grid">
-                {PAIRS.map((p, i) => (
-                  <button key={p.key} type="button" className={"dsp-card" + (i === idx ? " on" : "")}
-                    onClick={() => { goTo(i); setList(false); }}>
-                    <span className="n">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="e">{p.title.e}</span>
-                    <span className="m">{p.title.m}</span>
+              <div className="dsp-chips" role="radiogroup" aria-label="돌릴 묶음">
+                <span className="lb">돌릴 묶음</span>
+                {GROUPS.map((g) => (
+                  <button key={g.key} type="button" role="radio" aria-checked={grp === g.key}
+                    className={"dsp-chip" + (grp === g.key ? " on" : "")} onClick={() => pickGroup(g.key)}>
+                    {g.label}<small>{orderOf(g.key).length}</small>
                   </button>
                 ))}
               </div>
+              {GROUPS.filter((g) => g.key !== "all").map((g) => (
+                <div key={g.key} className={"dsp-sec" + (grp !== "all" && grp !== g.key ? " off" : "")}>
+                  <div className="dsp-sec-h">{g.label}</div>
+                  <div className="dsp-grid">{orderOf(g.key).map(card)}</div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -351,6 +386,16 @@ const DSP_CSS = `
 .dsp-list-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2cqw; font-size: 1.7cqw; }
 .dsp-list-h button { border: 0; background: none; color: var(--soft); font-size: 1.7cqw; cursor: pointer; }
 .dsp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9cqw; }
+.dsp-chips { display: flex; align-items: center; gap: .6cqw; margin-bottom: 1.1cqw; flex-wrap: wrap; }
+.dsp-chips .lb { font-size: 1.2cqw; color: var(--soft); font-weight: 700; margin-right: .4cqw; }
+.dsp-chip { border: 1px solid var(--chipbd); background: transparent; color: var(--ink); border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 1.25cqw; font-weight: 700; padding: .45cqw 1.1cqw; -webkit-tap-highlight-color: transparent; }
+.dsp-chip small { font-size: .95cqw; color: var(--soft); margin-left: .45cqw; font-weight: 600; }
+.dsp-chip.on { border-color: var(--gold); color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.dsp-chip.on small { color: var(--gold); }
+.dsp-sec { margin-top: 1.1cqw; transition: opacity .25s; }
+.dsp-sec.off { opacity: .42; }
+.dsp-sec-h { font-size: 1.15cqw; font-weight: 800; color: var(--soft); margin: 0 0 .6cqw .2cqw; letter-spacing: .02em; }
 .dsp-card { text-align: left; border: 1px solid var(--chipbd); border-radius: 1cqw; background: transparent; color: var(--ink);
   padding: .9cqw 1.1cqw; cursor: pointer; display: grid; grid-template-columns: auto 1fr; column-gap: .9cqw; row-gap: .15cqw;
   font: inherit; -webkit-tap-highlight-color: transparent; }

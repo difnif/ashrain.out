@@ -8,6 +8,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   BLOCKS, CIRCLE, LEAF, NETS, CYL, SPHERE, TRI3, POLY, DIAG, ISO, PARA, TRAP, interiorAngles, sameEdge, fmt,
+  SORT, SEASON, DICE2, NUMCARDS, FREQ, CHANCE, fracTxt,
 } from "../src/features/display/facts.js";
 import { SOLIDS, foldAt, netEdgesOf, isHinge, lineRelation, linePlane } from "../src/features/display/solids.js";
 
@@ -244,6 +245,89 @@ test("사다리꼴 42 · 마름모 24, x = 5 · x = 8", () => {
   has(TRAP.M.board[2].s, "x* = 5"); has(TRAP.M.board[5].s, "x* = 8");
 });
 
+/* ══════════ 자료와 가능성 ↔ 경우의 수와 확률 ══════════ */
+test("분류: 카드 12장 — 모양 5·4·3, 색 4·5·3, 빨간 동그라미 2", () => {
+  const C = SORT.CARDS;
+  assert.equal(C.length, 12);
+  assert.equal(new Set(C.map((c) => c.shape + c.color)).size <= 9, true);
+  assert.deepEqual(SORT.byShape, [5, 4, 3]); assert.deepEqual(SORT.byColor, [4, 5, 3]);
+  assert.equal(SORT.byShape.reduce((a, b) => a + b, 0), 12); assert.equal(SORT.byColor.reduce((a, b) => a + b, 0), 12);
+  assert.equal(SORT.circleRed, 2); assert.equal(SORT.mostColor, "b");
+  has(SORT.E.shapeLine, "5장"); has(SORT.E.colorLine, "파랑 5"); has(SORT.E.most, "파란 카드");
+});
+test("합의 법칙: 동그라미 또는 세모 9, 파랑 또는 노랑 8, 동그라미 또는 빨강 7(겹침 빼기)", () => {
+  const C = SORT.CARDS;
+  assert.equal(C.filter((c) => c.shape === "circle" || c.shape === "tri").length, SORT.orCT);
+  assert.equal(C.filter((c) => c.color === "b" || c.color === "y").length, SORT.orBY);
+  assert.equal(C.filter((c) => c.shape === "circle" || c.color === "r").length, SORT.orCR);
+  assert.deepEqual([SORT.orCT, SORT.orBY, SORT.orCR], [9, 8, 7]);
+  // 앞의 두 경우는 정말로 동시에 일어나지 않는다(겹치는 카드 0장)
+  assert.equal(C.filter((c) => c.shape === "circle" && c.shape === "tri").length, 0);
+  assert.equal(C.filter((c) => c.color === "b" && c.color === "y").length, 0);
+  has(SORT.M.ct, "5 + 4 = ‹9›"); has(SORT.M.by, "5 + 3 = ‹8›"); has(SORT.M.cr, "5 + 4 − 2 = ‹7›"); has(SORT.M.all, "12");
+});
+test("표: 계절 쪽지 16장 — 봄 5·여름 4·가을 3·겨울 4, 가장 많은 계절 봄", () => {
+  assert.deepEqual(SEASON.COUNTS, [5, 4, 3, 4]); assert.equal(SEASON.TOTAL, 16);
+  assert.equal(SEASON.COUNTS.reduce((a, b) => a + b, 0), SEASON.NOTES.length);
+  assert.equal(SEASON.most, "봄");
+  assert.equal(SEASON.COUNTS.filter((c) => c === Math.max(...SEASON.COUNTS)).length, 1);   // 가장 많은 것이 하나
+  has(SEASON.sumLine, "5 + 4 + 3 + 4 = ‹16›");
+});
+test("두 주사위: 6 × 6 = 36, 합별 1~6~1, 합 7 확률 1/6", () => {
+  assert.equal(DICE2.TOTAL, 36);
+  assert.deepEqual(DICE2.BY_SUM, [1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1]);
+  assert.equal(DICE2.BY_SUM.reduce((a, b) => a + b, 0), 36);
+  assert.equal(DICE2.best, 7); assert.equal(DICE2.n7, 6);
+  let n7 = 0; for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) if (a + b === 7) n7++;
+  assert.equal(n7, 6); near(n7 / 36, 1 / 6);
+  has(DICE2.p7Line, "{6/36}"); has(DICE2.p7Line, "{1/6}"); has(DICE2.mulLine, "36");
+});
+test("수 카드 0·1·2·3: 두 자리 9개(3 × 3), 세 자리 18개(3 × 3 × 2), 가장 큰 수 32·작은 수 10", () => {
+  // 따로 세기: 서로 다른 두 장, 십의 자리 0 아님
+  const two = new Set();
+  for (const a of [0, 1, 2, 3]) for (const b of [0, 1, 2, 3]) if (a !== b && a !== 0) two.add(10 * a + b);
+  assert.equal(two.size, 9); assert.deepEqual([...two].sort((x, y) => x - y), NUMCARDS.TWO);
+  assert.equal(NUMCARDS.tens * NUMCARDS.ones, 9);
+  const three = new Set();
+  for (const a of [0, 1, 2, 3]) for (const b of [0, 1, 2, 3]) for (const c of [0, 1, 2, 3])
+    if (a && a !== b && b !== c && a !== c) three.add(100 * a + 10 * b + c);
+  assert.equal(three.size, 18); assert.equal(NUMCARDS.THREE.length, 18);
+  assert.equal(NUMCARDS.tens * NUMCARDS.ones * (NUMCARDS.ones - 1), 18);
+  assert.equal(NUMCARDS.max, 32); assert.equal(NUMCARDS.min, 10);
+  assert.deepEqual(NUMCARDS.ROWS.map((r) => r.length), [3, 3, 3]);
+  // 지우는 칸: 십의 자리 0(4칸) + 같은 카드(1·2·3 의 3칸) = 7칸, 남는 칸 9
+  const g = NUMCARDS.GRID.flat();
+  assert.equal(g.filter((c) => c.zero).length, 4); assert.equal(g.filter((c) => c.same && !c.zero).length, 3);
+  assert.equal(g.filter((c) => c.ok).length, 9);
+  has(NUMCARDS.M.two, "3 × 3 = ‹9›"); has(NUMCARDS.M.three, "3 × 3 × 2 = ‹18›"); has(NUMCARDS.E.count, "3 + 3 + 3 = ‹9›");
+});
+test("주사위 기록: 30번·60번 — 가장 많이/적게 나온 눈이 하나씩, 6000번 상대도수는 1/6 가까이", () => {
+  assert.equal(FREQ.ROLLS.length, 6000);
+  assert.ok(FREQ.ROLLS.every((v) => v >= 1 && v <= 6));
+  const cnt = (n) => [1, 2, 3, 4, 5, 6].map((f) => FREQ.ROLLS.slice(0, n).filter((x) => x === f).length);
+  assert.deepEqual(cnt(30), FREQ.c30); assert.deepEqual(cnt(60), FREQ.c60); assert.deepEqual(cnt(6000), FREQ.c6000);
+  for (const c of [FREQ.c30, FREQ.c60]) {
+    assert.equal(c.filter((v) => v === Math.max(...c)).length, 1, "가장 많이 나온 눈이 둘 이상");
+    assert.equal(c.filter((v) => v === Math.min(...c)).length, 1, "가장 적게 나온 눈이 둘 이상");
+  }
+  assert.equal(FREQ.c30[FREQ.max30 - 1], Math.max(...FREQ.c30)); assert.equal(FREQ.c60[FREQ.max60 - 1], Math.max(...FREQ.c60));
+  assert.equal(FREQ.c60[FREQ.min60 - 1], Math.min(...FREQ.c60));
+  assert.ok(Math.max(...FREQ.c30) <= 10, "30번 그래프 눈금(10) 넘침"); assert.ok(Math.max(...FREQ.c60) <= 20, "60번 그래프 눈금(20) 넘침");
+  for (const c of FREQ.c6000) assert.ok(Math.abs(c / 6000 - 1 / 6) < 0.01, `6000번 상대도수 ${c / 6000}`);
+  assert.equal(FREQ.lo, 0.16); assert.equal(FREQ.hi, 0.17);
+  has(FREQ.E.max30, `⟪d${FREQ.max30}⟫ ‹${Math.max(...FREQ.c30)}›번`); has(FREQ.M.ex30, `{${Math.max(...FREQ.c30)}/30}`);
+  near(Number(FREQ.M.ex30.split("≈ ")[1]), Math.round((Math.max(...FREQ.c30) / 30) * 100) / 100);
+});
+test("가능성 ↔ 확률: 0 · 1/4 · 1/2 · 3/4 · 1, 일어나지 않을 확률 1 − 3/4 = 1/4", () => {
+  assert.deepEqual(CHANCE.P, ["0", "{1/4}", "{1/2}", "{3/4}", "1"]);
+  assert.deepEqual(CHANCE.WORDS, ["불가능하다", "~아닐 것 같다", "반반이다", "~일 것 같다", "확실하다"]);
+  assert.equal(CHANCE.REDS.length, CHANCE.WORDS.length);
+  CHANCE.REDS.forEach((r) => assert.ok(r / CHANCE.TOTAL >= 0 && r / CHANCE.TOTAL <= 1));
+  near(1 - CHANCE.comp / CHANCE.TOTAL, 1 / 4);
+  has(CHANCE.compLine, "1 − {3/4} = ‹{1/4}›");
+  assert.equal(fracTxt(6, 36), "{1/6}"); assert.equal(fracTxt(4, 4), "1"); assert.equal(fracTxt(0, 4), "0"); assert.equal(fracTxt(2, 4), "{1/2}");
+});
+
 test("fmt: 소수 둘째 자리·끝 0 지우기", () => {
   assert.equal(fmt(31.400000000000002), "31.4"); assert.equal(fmt(207.24), "207.24"); assert.equal(fmt(57), "57");
 });
@@ -269,9 +353,11 @@ export const frame = (p, mode, t, th) => renderToStaticMarkup(<g><SceneTitle tit
     banner: { js: "import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);" },
   });
   const m = await import(pathToFileURL(out).href);
-  test("장면 12쌍 · 키 중복 없음 · 제목/부제 두 판 모두 있음", () => {
-    assert.equal(m.PAIRS.length, 12);
-    assert.equal(new Set(m.PAIRS.map((p) => p.key)).size, 12);
+  test("장면 17쌍(도형 12 · 경우의 수·확률 5) · 키 중복 없음 · 제목/부제 두 판 모두 있음", () => {
+    assert.equal(m.PAIRS.length, 17);
+    assert.equal(new Set(m.PAIRS.map((p) => p.key)).size, 17);
+    assert.equal(m.PAIRS.filter((p) => p.group === "geo").length, 12);
+    assert.equal(m.PAIRS.filter((p) => p.group === "data").length, 5);
     for (const p of m.PAIRS) { assert.ok(p.title.e && p.title.m && p.sub.e && p.sub.m, p.key); assert.ok(p.dur > 15000 && p.dur < 60000, `${p.key} ${p.dur}`); }
   });
   for (const p of m.PAIRS) {

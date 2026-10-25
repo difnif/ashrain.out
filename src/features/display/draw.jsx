@@ -19,6 +19,8 @@ export const PALETTE = {
     halo: "#18213e", paper: "#1c2647",
     gold: "#F4C65A", coral: "#F2877B", teal: "#6BD3C3", sky: "#8FB9F6", lilac: "#C6A8F6", leaf: "#A6D886",
     wood: "#E3B57A", woodEdge: "#5B3A1A",
+    card: "#2c3a68", cardEdge: "rgba(242,232,208,0.38)",
+    red: "#F2685C", blue: "#6EA6F5", yellow: "#F5CF4E",
     capBg: "rgba(8,12,27,0.58)", capInk: "#F5ECD5",
     bar: "#F4C65A", fillA: 0.42,
   },
@@ -29,6 +31,8 @@ export const PALETTE = {
     halo: "#f4ecd9", paper: "#f3ead6",
     gold: "#B37A0E", coral: "#C34E3E", teal: "#13877A", sky: "#2D65B2", lilac: "#7550BC", leaf: "#478A28",
     wood: "#D9A867", woodEdge: "#6B4720",
+    card: "#fffaf0", cardEdge: "rgba(59,48,33,0.32)",
+    red: "#D2463A", blue: "#2F6FC4", yellow: "#E0AC12",
     capBg: "rgba(255,251,241,0.80)", capInk: "#3B3021",
     bar: "#B37A0E", fillA: 0.36,
   },
@@ -84,6 +88,14 @@ export function textW(s, size, weight = 500, italic = false, serif = false) {
 /* ══════════ 수식 글자 ══════════ */
 // 표기: ‹강조› · {분자/분모} · *S*(대문자 이탤릭) · 홀로 선 소문자 라틴 글자와 π 는 자동 이탤릭(세리프).
 //       cm, cm² 처럼 붙은 글자는 바로 선다. ² ³ 은 유니코드 위 첨자를 그대로 쓴다.
+//       ⟪아이콘⟫ — 글꼴에 없을 수 있는 기호는 그림으로: ⟪○⟫ ⟪△⟫ ⟪□⟫ ⟪●⟫ ⟪✓⟫ ⟪×⟫, 주사위 눈 ⟪d1⟫~⟪d6⟫.
+//       뒤에 색 글자를 붙이면 칠한다(r 빨강 · b 파랑 · y 노랑 · g 초록 · p 보라 · t 청록 · k 글자색): ⟪○r⟫ ⟪●b⟫
+const ICON_KIND = { "○": "circle", "△": "tri", "□": "square", "●": "dot", "✓": "check", "×": "cross" };
+export const ICON_COLOR = { r: "red", b: "blue", y: "yellow", g: "leaf", p: "lilac", t: "teal", k: "ink", o: "coral", s: "sky" };
+function parseIcon(s) {
+  if (/^d[1-6]/.test(s)) return { kind: "die", n: Number(s[1]), color: s[2] || null };
+  return { kind: ICON_KIND[s[0]] || "circle", color: s[1] || null };
+}
 function runs(s, accent) {
   const out = [];
   let buf = "";
@@ -111,6 +123,10 @@ export function parseMath(str) {
     const ch = str[i];
     if (ch === "‹") { flush(); accent = true; continue; }
     if (ch === "›") { flush(); accent = false; continue; }
+    if (ch === "⟪") {
+      const j = str.indexOf("⟫", i + 1);
+      if (j > i) { flush(); toks.push({ icon: parseIcon(str.slice(i + 1, j)), ac: accent }); i = j; continue; }
+    }
     if (ch === "{") {
       const j = str.indexOf("}", i + 1), inner = str.slice(i + 1, j), k = inner.indexOf("/");
       if (j > i && k >= 0) {
@@ -136,6 +152,11 @@ export function layoutMath(str, size, weight = 500) {
   let x = 0;
   const fs = size * 0.72, axis = -size * 0.31;
   for (const t of toks) {
+    if (t.icon) {
+      items.push({ icon: t.icon, x: x + size * 0.06, w: size * 0.82, size, ac: t.ac });
+      x += size * 0.94;
+      continue;
+    }
     if (!t.frac) {
       const w = runW(t, size, weight);
       items.push({ s: t.s, x, dy: 0, size, it: t.it, ac: t.ac, w });
@@ -168,7 +189,10 @@ export function MText({ x, y, s, size = 40, weight = 500, anchor = "start", fill
   const hs = halo ? { paintOrder: "stroke", stroke: halo, strokeWidth: size * 0.2, strokeLinejoin: "round" } : null;
   return (
     <g opacity={opacity}>
-      {L.items.map((it, i) => it.bar
+      {L.items.map((it, i) => it.icon
+        ? <ShapeIcon key={i} kind={it.icon.kind} n={it.icon.n} cx={x0 + it.x + it.w / 2} cy={y - it.size * 0.34} r={it.size * 0.34}
+            fill={it.icon.color && C ? C[ICON_COLOR[it.icon.color]] : null} stroke={it.ac ? acc : col} C={C} />
+        : it.bar
         ? <line key={i} x1={x0 + it.bar[0]} x2={x0 + it.bar[1]} y1={y + it.dy} y2={y + it.dy}
             stroke={it.ac ? acc : col} strokeWidth={Math.max(2, size * 0.055)} strokeLinecap="round" />
         : <text key={i} x={x0 + it.x} y={y + it.dy} fontSize={it.size}
@@ -367,6 +391,103 @@ export function Path3({ cam, pts, ...rest }) {
 export function Lbl3({ cam, p, ...rest }) {
   const q = cam.p(p);
   return <Lbl x={q[0]} y={q[1]} {...rest} />;
+}
+
+/* ══════════ 모양 아이콘 · 주사위 · 표 ══════════ */
+const DIE_PIPS = {
+  1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
+  5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [-1, 0], [-1, 1], [1, -1], [1, 0], [1, 1]],
+};
+/** 주사위 한 면 — 가운데 (cx, cy), 한 변 s */
+export function DieFace({ cx, cy, s, n, C, fill, pip, edge, o = 1, rot = 0, sw }) {
+  if (o <= 0.001) return null;
+  const k = s * 0.27, pr = s * 0.095;
+  return (
+    <g opacity={o} transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}>
+      <rect x={cx - s / 2} y={cy - s / 2} width={s} height={s} rx={s * 0.2} fill={fill || C.card}
+        stroke={edge || C.ink} strokeWidth={sw ?? Math.max(1.6, s * 0.045)} />
+      {(DIE_PIPS[n] || []).map(([a, b], i) => <circle key={i} cx={cx + a * k} cy={cy + b * k} r={pr} fill={pip || (n === 1 ? C.red : C.ink)} />)}
+    </g>
+  );
+}
+/** 체크 표시(✓) */
+export function Check({ cx, cy, r = 14, color, sw = 4, p = 1, o = 1 }) {
+  if (p <= 0 || o <= 0.001) return null;
+  const pts = [[cx - r * 0.55, cy + r * 0.02], [cx - r * 0.12, cy + r * 0.45], [cx + r * 0.62, cy - r * 0.5]];
+  return <Path pts={partial(pts, p)} stroke={color} sw={sw} o={o} />;
+}
+/** 모양 아이콘: circle · tri · square · dot · check · cross · die */
+export function ShapeIcon({ kind, cx, cy, r, fill, stroke, sw, C, n = 1, halo, o = 1 }) {
+  if (o <= 0.001) return null;
+  const w = sw ?? Math.max(2, r * 0.16);
+  const f = fill || "none";
+  const st = stroke || C?.ink;
+  const hal = halo ? <circle cx={cx} cy={cy} r={r * 1.15} fill={halo} opacity={0.6} /> : null;
+  if (kind === "die") return <g opacity={o}>{hal}<DieFace cx={cx} cy={cy} s={r * 1.9} n={n} C={C} fill={fill || C?.card} edge={st} sw={w * 0.8} /></g>;
+  if (kind === "check") return <g opacity={o}><Check cx={cx} cy={cy} r={r} color={fill || st} sw={w * 1.3} /></g>;
+  if (kind === "cross") return <g opacity={o}><Path pts={[[cx - r * 0.6, cy - r * 0.6], [cx + r * 0.6, cy + r * 0.6]]} stroke={fill || st} sw={w * 1.2} />
+    <Path pts={[[cx + r * 0.6, cy - r * 0.6], [cx - r * 0.6, cy + r * 0.6]]} stroke={fill || st} sw={w * 1.2} /></g>;
+  if (kind === "dot") return <circle cx={cx} cy={cy} r={r * 0.78} fill={fill || st} opacity={o} />;
+  if (kind === "tri") {
+    const R = r * 1.12, pts = [0, 1, 2].map((i) => polar([cx, cy + r * 0.14], R, 90 + i * 120));
+    return <g opacity={o}>{hal}<Path pts={pts} closed fill={f} fo={fill ? 1 : 0} stroke={fill ? shadeEdge(fill) : st} sw={w} /></g>;
+  }
+  if (kind === "square") {
+    const h = r * 0.86;
+    return <g opacity={o}>{hal}<rect x={cx - h} y={cy - h} width={2 * h} height={2 * h} rx={r * 0.12} fill={f}
+      stroke={fill ? shadeEdge(fill) : st} strokeWidth={w} /></g>;
+  }
+  return <g opacity={o}>{hal}<circle cx={cx} cy={cy} r={r * 0.92} fill={f} stroke={fill ? shadeEdge(fill) : st} strokeWidth={w} /></g>;
+}
+const shadeEdge = (hex) => (typeof hex === "string" && hex.startsWith("#") ? shade(hex, 0.72) : hex);
+
+/**
+ * 표. cols: 열 너비들, rh: 행 높이(수 또는 배열), rows: 행마다 칸 배열.
+ * 칸: 문자열 | { s, t(나타나는 시각), fill, fo, color, cross(지움 표시 시각), hi(강조), size, weight }
+ */
+export function Table({ x, y, cols, rh, rows, C, t = 1e12, size = 30, o = 1, line }) {
+  if (o <= 0.001) return null;
+  const xs = [x]; for (const w of cols) xs.push(xs.at(-1) + w);
+  const hs = rows.map((_, i) => (Array.isArray(rh) ? rh[i] : rh));
+  const ys = [y]; for (const h of hs) ys.push(ys.at(-1) + h);
+  const lc = line || C.soft;
+  const cells = [];
+  rows.forEach((row, r) => row.forEach((cell, c) => {
+    if (cell == null) return;
+    const cs = typeof cell === "string" || typeof cell === "number" ? { s: String(cell) } : cell;
+    const x0 = xs[c], x1 = xs[c + 1], y0 = ys[r], y1 = ys[r + 1], cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    const a = cs.t == null ? 1 : seg(t, cs.t, cs.t + 320, E.sine);
+    const k = `${r}-${c}`;
+    if (cs.fill) cells.push(<rect key={"f" + k} x={x0} y={y0} width={x1 - x0} height={y1 - y0} fill={C[cs.fill] || cs.fill} fillOpacity={(cs.fo ?? 0.16) * (cs.fillT == null ? 1 : seg(t, cs.fillT, cs.fillT + 300))} />);
+    if (cs.s != null && cs.s !== "" && a > 0) {
+      const sz = cs.size || size;
+      cells.push(<MText key={"s" + k} x={cx} y={cy + sz * 0.36} s={cs.s} size={sz} weight={cs.weight || 600} anchor="middle"
+        fill={cs.color ? C[cs.color] || cs.color : C.ink} opacity={a} C={C} />);
+    }
+    if (cs.cross != null) {
+      const p = seg(t, cs.cross, cs.cross + 380, E.out);
+      if (p > 0) {
+        const m = Math.min(x1 - x0, y1 - y0) * 0.26;
+        cells.push(<g key={"x" + k} opacity={0.85}>
+          <Path pts={partial([[cx - m, cy - m], [cx + m, cy + m]], Math.min(1, p * 2))} stroke={C.coral} sw={4} />
+          {p > 0.5 && <Path pts={partial([[cx + m, cy - m], [cx - m, cy + m]], p * 2 - 1)} stroke={C.coral} sw={4} />}
+        </g>);
+      }
+    }
+    if (cs.hi != null) {
+      const h = seg(t, cs.hi, cs.hi + 400, E.out) * (cs.hiU == null ? 1 : 1 - seg(t, cs.hiU, cs.hiU + 400));
+      if (h > 0) cells.push(<rect key={"h" + k} x={x0 + 3} y={y0 + 3} width={x1 - x0 - 6} height={y1 - y0 - 6} rx={6}
+        fill="none" stroke={C[cs.hiCol] || C.gold} strokeWidth={4} opacity={h} />);
+    }
+  }));
+  return (
+    <g opacity={o}>
+      {cells.filter((c) => c.key.startsWith("f"))}
+      {xs.map((xx, i) => <line key={"v" + i} x1={xx} x2={xx} y1={ys[0]} y2={ys.at(-1)} stroke={lc} strokeWidth={i === 0 || i === xs.length - 1 ? 2.6 : 1.6} />)}
+      {ys.map((yy, i) => <line key={"h" + i} x1={xs[0]} x2={xs.at(-1)} y1={yy} y2={yy} stroke={lc} strokeWidth={i === 0 || i === ys.length - 1 ? 2.6 : 1.6} />)}
+      {cells.filter((c) => !c.key.startsWith("f"))}
+    </g>
+  );
 }
 
 /* ══════════ 무대 머리글 ══════════ */
