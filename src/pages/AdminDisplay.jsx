@@ -3,13 +3,19 @@
 // 지금 장면이 짝이 되는 장면으로 같은 시각에 겹쳐 넘어간다 — 두 판은 같은 박자표를 쓰도록 저작되어 있다.
 // 장면 목록: src/features/display/pairs.js · 엔진: core.js(계산) + draw.jsx(그리기)
 // 화면은 탭·마우스 움직임에 조작 막대가 잠깐 뜨고 스스로 숨는다. 전체 화면·화면 꺼짐 방지 포함.
-import { useCallback, useEffect, useRef, useState } from "react";
+// 액자: 토글 왼쪽의 액자 단추 → 액자 목록 → 고르면 수업 장면 대신 그 액자가 계속 돈다(지금은 하노이의 탑).
+//       액자는 벽시계로 흘러서 새로고침해도 이어진다. 액자: src/features/display/frames/ · 계산: hanoi.js
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { PAIRS, GROUPS } from "../features/display/pairs";
 import { PALETTE, W, H, SceneTitle, clearMeasureCache } from "../features/display/draw";
 import { E, clamp } from "../features/display/core";
+import { FRAMES } from "../features/display/frames/index.js";
+import { HanoiArt, HanoiThumb } from "../features/display/frames/hanoi.jsx";
+import { HANOI, hanoiTimeline, hanoiAt, remapElapsed, fmtDur, comma } from "../features/display/hanoi";
 
-const LS = { mode: "ash.display.mode", theme: "ash.display.theme", idx: "ash.display.idx", rep: "ash.display.repeat", grp: "ash.display.group" };
+const LS = { mode: "ash.display.mode", theme: "ash.display.theme", idx: "ash.display.idx", rep: "ash.display.repeat", grp: "ash.display.group",
+  view: "ash.display.view", hanoi: "ash.display.hanoi" };
 const lsGet = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, String(v)); } catch { /* 사생활 모드 등 */ } };
 
@@ -62,15 +68,19 @@ function Stage() {
   const [repeat, setRepeat] = useState(() => lsGet(LS.rep, "0") === "1");
   const [ctl, setCtl] = useState(true);
   const [list, setList] = useState(false);
+  const [gal, setGal] = useState(false);       // 액자 목록
+  const [view, setView] = useState(() => (FRAMES.some((f) => f.key === lsGet(LS.view, "")) ? lsGet(LS.view, "") : null));   // null = 수업 장면
   const [isFs, setIsFs] = useState(false);
   const [, setFrame] = useState(0);
 
   const rootRef = useRef(null);
-  const clk = useRef({ start: performance.now(), held: null });   // held = 멈춘 동안의 경과(ms)
+  // held = 멈춘 동안의 경과(ms). 액자로 시작하면 수업 장면 시계는 0에서 멈춰 둔다.
+  const clk = useRef(view ? { start: performance.now(), held: 0 } : { start: performance.now(), held: null });
+  const sceneHold = useRef(view ? { wasPaused: false } : null);   // 액자로 가며 멈춘 수업 장면 — 돌아오면 다시 흐른다
   const mfade = useRef(null);   // { from, t0 }
   const pfade = useRef(null);   // { idx, mode, t, t0 }
   const S = useRef({});         // 루프가 읽는 최신 상태
-  S.current = { idx, mode, repeat, paused, list, grp };
+  S.current = { idx, mode, repeat, paused, list, grp, view, gal };
 
   const elapsed = (now = performance.now()) => (clk.current.held != null ? clk.current.held : now - clk.current.start);
 
@@ -79,6 +89,26 @@ function Stage() {
   useEffect(() => { lsSet(LS.theme, thm); }, [thm]);
   useEffect(() => { lsSet(LS.rep, repeat ? 1 : 0); }, [repeat]);
   useEffect(() => { lsSet(LS.grp, grp); }, [grp]);
+  useEffect(() => { lsSet(LS.view, view || ""); }, [view]);
+
+  /* ── 액자 열기·닫기 — 수업 장면 시계는 액자 동안 멈춰 둔다 ── */
+  const openFrame = useCallback((key) => {
+    setGal(false); setList(false);
+    if (!S.current.view) {
+      sceneHold.current = { wasPaused: clk.current.held != null };
+      if (clk.current.held == null) clk.current = { start: clk.current.start, held: performance.now() - clk.current.start };
+    }
+    pfade.current = null; mfade.current = null;
+    setView(key);
+  }, []);
+  const closeFrame = useCallback(() => {
+    setGal(false);
+    if (S.current.view && sceneHold.current && !sceneHold.current.wasPaused && clk.current.held != null) {
+      clk.current = { start: performance.now() - clk.current.held, held: null };
+    }
+    sceneHold.current = null;
+    setView(null);
+  }, []);
 
   /* ── 장면 이동 (다음 쌍은 겹치며 넘어간다) ── */
   const goTo = useCallback((i, fade = true) => {
@@ -111,6 +141,7 @@ function Stage() {
       if (now - last < FRAME_MS) return;
       last = now;
       const cur = S.current;
+      if (cur.view) return;   // 액자는 FrameStage 가 따로 그린다
       if (clk.current.held == null && now - clk.current.start >= PAIRS[cur.idx].dur) {
         goTo(cur.repeat ? cur.idx : stepIdx(cur.idx, 1, cur.grp), true);
       }
@@ -171,16 +202,18 @@ function Stage() {
   const poke = useCallback(() => {
     setCtl(true);
     clearTimeout(idleT.current);
-    idleT.current = setTimeout(() => { if (!S.current.list) setCtl(false); }, IDLE_MS);
+    idleT.current = setTimeout(() => { if (!S.current.list && !S.current.gal) setCtl(false); }, IDLE_MS);
   }, []);
   useEffect(() => { poke(); return () => clearTimeout(idleT.current); }, [poke]);
-  useEffect(() => { if (!list) poke(); }, [list, poke]);
+  useEffect(() => { if (!list && !gal) poke(); }, [list, gal, poke]);
 
-  /* ── 키보드 (노트북에 띄울 때) ── */
+  /* ── 키보드 (노트북에 띄울 때) — 액자 동안은 FrameStage 가 받는다 ── */
   useEffect(() => {
     const onKey = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const k = e.key;
+      if (k === "Escape") { setList(false); setGal(false); return; }
+      if (S.current.view || S.current.gal) return;
       if (k === "ArrowRight") { goTo(stepIdx(S.current.idx, 1, S.current.grp)); poke(); }
       else if (k === "ArrowLeft") { goTo(stepIdx(S.current.idx, -1, S.current.grp)); poke(); }
       else if (k === " ") { e.preventDefault(); togglePause(); poke(); }
@@ -189,7 +222,6 @@ function Stage() {
       else if (k === "t" || k === "T" || k === "Tab") { e.preventDefault(); flipMode(); }
       else if (k === "f" || k === "F") toggleFs();
       else if (k === "l" || k === "L") setList((v) => !v);
-      else if (k === "Escape") setList(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -228,12 +260,18 @@ function Stage() {
     layers.push({ key: "to-" + mode, pair, mode, t, o: kin * k });
   } else layers.push({ key: "cur-" + mode, pair, mode, t, o: kin });
 
+  const toggleThm = () => { setThm((v) => (v === "dark" ? "light" : "dark")); poke(); };
+
   return (
     <div ref={rootRef} className={"dsp-root dsp-" + thm + (ctl ? "" : " dsp-idle")}
       onPointerMove={poke} onPointerDown={poke}>
       <style>{DSP_CSS}</style>
       <div className="dsp-frame">
         <div className="dsp-paper" />
+        {view ? (
+          <FrameStage key={view} fkey={view} C={C} ctl={ctl} poke={poke} isFs={isFs} toggleFs={toggleFs}
+            onTheme={toggleThm} onGallery={() => setGal(true)} onExit={closeFrame} inert={gal} />
+        ) : (<>
         <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
           role="img" aria-label={`${pair.title[mode]} — 수학 애니메이션`}>
           {layers.map((L) => (
@@ -244,11 +282,16 @@ function Stage() {
           ))}
         </svg>
 
-        {/* 학년 토글 — 늘 보인다 */}
-        <div className={"dsp-mode on-" + mode} role="radiogroup" aria-label="학년">
-          <span className="dsp-knob" aria-hidden="true" />
-          <button type="button" role="radio" aria-checked={mode === "e"} onClick={() => { flipMode("e"); poke(); }}>초등</button>
-          <button type="button" role="radio" aria-checked={mode === "m"} onClick={() => { flipMode("m"); poke(); }}>중등</button>
+        {/* 오른쪽 위 — 액자 단추 · 학년 토글, 늘 보인다 */}
+        <div className="dsp-tr">
+          <button type="button" className="dsp-fbtn" title="액자" aria-label="액자" onClick={() => { setGal(true); poke(); }}>
+            <FrameIc />
+          </button>
+          <div className={"dsp-mode on-" + mode} role="radiogroup" aria-label="학년">
+            <span className="dsp-knob" aria-hidden="true" />
+            <button type="button" role="radio" aria-checked={mode === "e"} onClick={() => { flipMode("e"); poke(); }}>초등</button>
+            <button type="button" role="radio" aria-checked={mode === "m"} onClick={() => { flipMode("m"); poke(); }}>중등</button>
+          </div>
         </div>
 
         {/* 조작 막대 */}
@@ -263,7 +306,7 @@ function Stage() {
             <Ic d="M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4" />
           </Btn>
           <Btn title="장면 목록 (L)" on={list} onClick={() => setList((v) => !v)}><Ic d="M4 6h16M4 12h16M4 18h16" /></Btn>
-          <Btn title="밝기 바꾸기" onClick={() => { setThm((v) => (v === "dark" ? "light" : "dark")); poke(); }}>
+          <Btn title="밝기 바꾸기" onClick={toggleThm}>
             <Ic d="M12 3a9 9 0 1 0 0 18V3z" fill />
           </Btn>
           <Btn title={isFs ? "전체 화면 끝내기 (F)" : "전체 화면 (F)"} onClick={() => { toggleFs(); poke(); }}>
@@ -306,15 +349,203 @@ function Stage() {
             </div>
           </div>
         )}
+        </>)}
+
+        {gal && <FrameGallery C={C} view={view} onPick={openFrame} onClose={() => setGal(false)} onScenes={closeFrame} />}
       </div>
     </div>
   );
 }
 
-function Btn({ title, on, onClick, children }) {
+/* ══════════ 액자 목록 ══════════ */
+const THUMB_TL = { hanoi: null };
+function FrameGallery({ C, view, onPick, onClose, onScenes }) {
+  if (!THUMB_TL.hanoi) THUMB_TL.hanoi = hanoiTimeline(5, "fast");
   return (
-    <button type="button" className={"dsp-btn" + (on ? " on" : "")} title={title} aria-label={title}
+    <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="dsp-list-in dsp-gal-in">
+        <div className="dsp-list-h">
+          <b>액자</b>
+          <button type="button" onClick={onClose} aria-label="닫기">✕</button>
+        </div>
+        <p className="dsp-gal-sub">수업 장면과 따로, 오래 켜 두는 그림이에요. 고르면 바로 돌기 시작해요.</p>
+        <div className="dsp-gal">
+          {FRAMES.map((f) => (
+            <button key={f.key} type="button" className={"dsp-fcard" + (view === f.key ? " on" : "")} onClick={() => onPick(f.key)}>
+              <svg viewBox={`0 120 ${W} 760`} aria-hidden="true">
+                {f.key === "hanoi" && <HanoiThumb C={C} TL={THUMB_TL.hanoi} />}
+              </svg>
+              <span className="t">{f.title}{view === f.key && <small>지금 켜 둔 액자</small>}</span>
+              <span className="d">{f.desc}</span>
+            </button>
+          ))}
+        </div>
+        {view && (
+          <div className="dsp-gal-foot">
+            <button type="button" className="dsp-chip" onClick={onScenes}>← 수업 장면으로 돌아가기</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ 액자 무대 ══════════ */
+function FrameStage({ fkey, ...rest }) {
+  if (fkey === "hanoi") return <HanoiFrame {...rest} />;
+  return null;
+}
+
+/** 저장된 하노이 상태: 원판 수 · 빠르기 · 시작 시각(벽시계 ms) · 멈춘 경과 */
+function loadHanoi() {
+  try {
+    const o = JSON.parse(localStorage.getItem(LS.hanoi) || "null");
+    if (o && Number.isInteger(o.n) && o.n >= HANOI.MIN && o.n <= HANOI.MAX && (o.sp === "fast" || o.sp === "natural")
+      && Number.isFinite(o.t0) && o.t0 <= Date.now()) {
+      return { n: o.n, sp: o.sp, t0: o.t0, held: Number.isFinite(o.held) && o.held >= 0 ? o.held : null };
+    }
+  } catch { /* 처음이거나 망가진 값 */ }
+  return { n: HANOI.DEF, sp: "fast", t0: Date.now(), held: null };
+}
+
+/**
+ * 하노이의 탑 액자 — 끝없이 옮긴다(A → C, 쉬고, C → A …).
+ * 시계는 벽시계(Date.now)라 새로고침·잠깐 나갔다 와도 그 자리에서 이어진다. 원판 수를 바꾸면 처음부터,
+ * 빠르기를 바꾸면 지금 옮기던 그 이동의 같은 진행 비율에서 이어진다.
+ */
+function HanoiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, onExit, inert }) {
+  const init = useRef(null);
+  if (!init.current) init.current = loadHanoi();
+  const [n, setN] = useState(init.current.n);
+  const [sp, setSp] = useState(init.current.sp);
+  const [paused, setPaused] = useState(init.current.held != null);
+  const clk = useRef({ t0: init.current.t0, held: init.current.held });
+  const [, setFrame] = useState(0);
+  const TLs = useMemo(() => ({ fast: hanoiTimeline(n, "fast"), natural: hanoiTimeline(n, "natural") }), [n]);
+  const TL = TLs[sp];
+  const R = useRef({});
+  R.current = { n, sp, TLs, inert };
+
+  const save = (nn, ss) => lsSet(LS.hanoi, JSON.stringify({ n: nn, sp: ss, t0: clk.current.t0, held: clk.current.held }));
+  useEffect(() => { save(n, sp); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  const elapsedNow = () => (clk.current.held != null ? clk.current.held : Date.now() - clk.current.t0);
+
+  const togglePause = useCallback(() => {
+    const now = Date.now(), c = clk.current;
+    if (c.held != null) { clk.current = { t0: now - c.held, held: null }; setPaused(false); }
+    else { clk.current = { t0: c.t0, held: now - c.t0 }; setPaused(true); }
+    save(R.current.n, R.current.sp);
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  const restart = useCallback(() => {
+    clk.current = { t0: Date.now(), held: clk.current.held != null ? 0 : null };
+    save(R.current.n, R.current.sp); setFrame((f) => f + 1);
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  const setDisks = useCallback((k) => {
+    const nn = clamp(k, HANOI.MIN, HANOI.MAX);
+    if (nn === R.current.n) return;
+    clk.current = { t0: Date.now(), held: clk.current.held != null ? 0 : null };
+    setN(nn); save(nn, R.current.sp);
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  const setSpeed = useCallback((s2) => {
+    const { sp: s1, TLs: T, n: nn } = R.current;
+    if (s2 === s1) return;
+    const now = Date.now(), c = clk.current;
+    const e2 = remapElapsed(T[s1], T[s2], c.held != null ? c.held : now - c.t0);
+    clk.current = c.held != null ? { t0: c.t0, held: e2 } : { t0: now - e2, held: null };
+    setSp(s2); save(nn, s2);
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── 그리기 루프 (최대 40fps, 멈추면 쉰다) ── */
+  useEffect(() => {
+    let raf = 0, last = 0;
+    const loop = (now) => {
+      raf = requestAnimationFrame(loop);
+      if (now - last < FRAME_MS || clk.current.held != null) return;
+      last = now;
+      setFrame((f) => (f + 1) % 1e9);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  /* ── 키보드 ── */
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || R.current.inert) return;
+      const k = e.key;
+      if (k === " ") { e.preventDefault(); togglePause(); poke(); }
+      else if (k === "ArrowUp" || k === "+" || k === "=") { e.preventDefault(); setDisks(R.current.n + 1); poke(); }
+      else if (k === "ArrowDown" || k === "-" || k === "_") { e.preventDefault(); setDisks(R.current.n - 1); poke(); }
+      else if (k === "s" || k === "S") { setSpeed(R.current.sp === "fast" ? "natural" : "fast"); poke(); }
+      else if (k === "r" || k === "R") { restart(); poke(); }
+      else if (k === "f" || k === "F") toggleFs();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [togglePause, setDisks, setSpeed, restart, toggleFs, poke]);
+
+  const st = hanoiAt(TL, elapsedNow());
+  const prog = st.hold != null ? 1 : st.tau / TL.total;
+  const total = { fast: TLs.fast.total, natural: TLs.natural.total };
+  const stop = (e) => e.stopPropagation();
+
+  return (
+    <>
+      <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
+        role="img" aria-label={`하노이의 탑 — 원판 ${n}개`}>
+        <HanoiArt L={TL.L} st={st} C={C} uid="hnf" info={{ total: TL.total, speed: sp }} />
+      </svg>
+
+      <div className={"dsp-ctl" + (ctl ? " show" : "")} onPointerDown={stop}>
+        <Btn title="처음부터 (R)" onClick={() => { restart(); poke(); }}><Ic d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4.6h4.6" /></Btn>
+        <Btn title={paused ? "재생 (스페이스)" : "멈춤 (스페이스)"} onClick={() => { togglePause(); poke(); }}>
+          {paused ? <Ic d="M8 5v14l11-7z" fill /> : <Ic d="M8 5v14M16 5v14" />}
+        </Btn>
+        <span className="dsp-sep" />
+        <Btn title="원판 하나 빼기 (↓)" disabled={n <= HANOI.MIN} onClick={() => { setDisks(n - 1); poke(); }}><Ic d="M6 12h12" /></Btn>
+        <span className="dsp-num" aria-live="polite"><b>{n}</b><small>원판</small></span>
+        <Btn title="원판 하나 더 (↑)" disabled={n >= HANOI.MAX} onClick={() => { setDisks(n + 1); poke(); }}><Ic d="M12 6v12M6 12h12" /></Btn>
+        <span className="dsp-sep" />
+        <div className="dsp-seg" role="radiogroup" aria-label="빠르기">
+          <button type="button" role="radio" aria-checked={sp === "natural"} onClick={() => { setSpeed("natural"); poke(); }}>자연스럽게</button>
+          <button type="button" role="radio" aria-checked={sp === "fast"} onClick={() => { setSpeed("fast"); poke(); }}>빠르게</button>
+        </div>
+        <span className="dsp-sep" />
+        <Btn title="밝기 바꾸기" onClick={onTheme}><Ic d="M12 3a9 9 0 1 0 0 18V3z" fill /></Btn>
+        <Btn title={isFs ? "전체 화면 끝내기 (F)" : "전체 화면 (F)"} onClick={() => { toggleFs(); poke(); }}>
+          {isFs ? <Ic d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <Ic d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
+        </Btn>
+        <Btn title="액자 목록" onClick={() => { onGallery(); poke(); }}><FrameIc /></Btn>
+        <Btn title="수업 장면으로" onClick={onExit}><Ic d="M6 6l12 12M18 6 6 18" /></Btn>
+      </div>
+      <div className={"dsp-hint" + (ctl ? " show" : "")} aria-hidden={!ctl}>
+        원판 {n}개 → {comma(TL.moves)}번 · 빠르게 <b className={sp === "fast" ? "on" : ""}>{fmtDur(total.fast)}</b>
+        {" · "}자연스럽게 <b className={sp === "natural" ? "on" : ""}>{fmtDur(total.natural)}</b>
+      </div>
+
+      <div className="dsp-prog" aria-hidden="true"><i style={{ transform: `scaleX(${prog})` }} /></div>
+      {paused && <div className="dsp-paused fr">멈춤</div>}
+    </>
+  );
+}
+
+function Btn({ title, on, onClick, disabled, children }) {
+  return (
+    <button type="button" className={"dsp-btn" + (on ? " on" : "")} title={title} aria-label={title} disabled={disabled}
       aria-pressed={on === undefined ? undefined : !!on} onClick={onClick}>{children}</button>
+  );
+}
+/** 액자 모양(못에 걸린 그림틀 · 산과 해) */
+function FrameIc() {
+  return (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.9}
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8.6 7.2 12 3.6l3.4 3.6" />
+      <circle cx="12" cy="3.4" r="0.9" fill="currentColor" stroke="none" />
+      <rect x="3.2" y="7.2" width="17.6" height="13.4" rx="1.6" />
+      <path d="M6.2 17.6l3.6-4.4 2.6 2.7 1.9-1.9 3.5 3.6" />
+      <circle cx="15.6" cy="11" r="1.35" />
+    </svg>
   );
 }
 function Ic({ d, fill }) {
@@ -346,9 +577,16 @@ const DSP_CSS = `
 .dsp-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
 .dsp-svg text { font-kerning: normal; }
 
+/* 오른쪽 위: 액자 단추 + 학년 토글 */
+.dsp-tr { position: absolute; right: 2.6cqw; top: 2.4cqw; display: flex; align-items: center; gap: .9cqw; z-index: 5; }
+.dsp-fbtn { width: 4.3cqw; height: 4.3cqw; padding: 0; border-radius: 999px; border: 1px solid var(--chipbd); background: var(--chip);
+  color: var(--ink); display: grid; place-items: center; font-size: 2.15cqw; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: color .25s, border-color .25s; }
+.dsp-fbtn:hover { color: var(--gold); border-color: var(--gold); }
+
 /* 학년 토글 */
-.dsp-mode { position: absolute; right: 2.6cqw; top: 2.4cqw; display: flex; background: var(--chip);
-  border: 1px solid var(--chipbd); border-radius: 999px; padding: .35cqw; z-index: 5; }
+.dsp-mode { position: relative; display: flex; background: var(--chip);
+  border: 1px solid var(--chipbd); border-radius: 999px; padding: .35cqw; }
 .dsp-mode button { position: relative; z-index: 1; border: 0; background: none; color: var(--soft); cursor: pointer;
   font: inherit; font-size: 1.62cqw; font-weight: 800; letter-spacing: .04em; padding: .62cqw 1.75cqw; border-radius: 999px;
   -webkit-tap-highlight-color: transparent; transition: color .35s; min-width: 7.2cqw; }
@@ -367,7 +605,24 @@ const DSP_CSS = `
   font-size: 1.65cqw; display: grid; place-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .dsp-btn:hover { background: rgba(127,127,127,.16); }
 .dsp-btn.on { color: var(--gold); background: rgba(127,127,127,.14); }
+.dsp-btn:disabled { opacity: .28; cursor: default; background: none; }
 .dsp-sep { width: 1px; height: 2.2cqw; background: var(--chipbd); margin: 0 .3cqw; }
+
+/* 액자 조작: 원판 수 · 빠르기 · 걸리는 시간 */
+.dsp-num { display: inline-flex; flex-direction: column; align-items: center; min-width: 3.3cqw; line-height: 1; color: var(--ink); }
+.dsp-num b { font-size: 1.9cqw; font-weight: 800; font-variant-numeric: tabular-nums; }
+.dsp-num small { font-size: .8cqw; color: var(--soft); font-weight: 700; margin-top: .28cqw; }
+.dsp-seg { display: flex; border: 1px solid var(--chipbd); border-radius: 999px; padding: .25cqw; gap: .2cqw; }
+.dsp-seg button { border: 0; background: none; color: var(--soft); font: inherit; font-size: 1.2cqw; font-weight: 800; cursor: pointer; white-space: nowrap;
+  padding: .55cqw 1.1cqw; border-radius: 999px; -webkit-tap-highlight-color: transparent; transition: background .25s, color .25s; }
+.dsp-seg button[aria-checked="true"] { background: var(--gold); color: #1c2647; }
+.dsp-light .dsp-seg button[aria-checked="true"] { color: #fffdf6; }
+.dsp-hint { position: absolute; left: 50%; top: 7.5cqw; transform: translate(-50%, -.5cqw); z-index: 6; white-space: nowrap;
+  font-size: 1.08cqw; font-weight: 600; color: var(--soft); background: var(--chip); border: 1px solid var(--chipbd);
+  border-radius: 999px; padding: .42cqw 1.25cqw; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; }
+.dsp-hint.show { opacity: 1; transform: translate(-50%, 0); }
+.dsp-hint b { color: var(--ink); font-weight: 800; }
+.dsp-hint b.on { color: var(--gold); }
 
 /* 진행 */
 .dsp-dots { position: absolute; right: 2.8cqw; bottom: 1.6cqw; display: flex; gap: .55cqw; opacity: .55; }
@@ -377,6 +632,7 @@ const DSP_CSS = `
 .dsp-prog i { display: block; height: 100%; background: var(--gold); transform-origin: 0 50%; }
 .dsp-paused { position: absolute; left: 50%; bottom: 7.4cqw; transform: translateX(-50%); font-size: 1.25cqw; font-weight: 800;
   color: var(--ink); background: var(--chip); border: 1px solid var(--chipbd); border-radius: 999px; padding: .3cqw 1.1cqw; }
+.dsp-paused.fr { left: 3.4cqw; top: 3cqw; bottom: auto; transform: none; }   /* 액자: 받침 글자를 가리지 않게 왼쪽 위 */
 
 /* 장면 목록 */
 .dsp-list { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: rgba(0,0,0,.35);
@@ -403,4 +659,18 @@ const DSP_CSS = `
 .dsp-card .n { grid-row: span 2; font-size: 1.5cqw; font-weight: 800; color: var(--gold); align-self: center; }
 .dsp-card .e { font-size: 1.25cqw; font-weight: 700; color: var(--e); }
 .dsp-card .m { font-size: 1.25cqw; font-weight: 700; color: var(--m); }
+
+/* 액자 목록 */
+.dsp-gal-in { width: 64cqw; }
+.dsp-gal-sub { margin: -.4cqw 0 1.2cqw .1cqw; font-size: 1.15cqw; color: var(--soft); }
+.dsp-gal { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.2cqw; }
+.dsp-fcard { text-align: left; border: 1px solid var(--chipbd); border-radius: 1.2cqw; background: transparent; color: var(--ink);
+  padding: 0 0 1.1cqw; cursor: pointer; overflow: hidden; display: flex; flex-direction: column; gap: .4cqw; font: inherit;
+  -webkit-tap-highlight-color: transparent; transition: border-color .25s, box-shadow .25s; }
+.dsp-fcard svg { width: 100%; aspect-ratio: 1600 / 760; display: block; background: rgba(127,127,127,.09); border-bottom: 1px solid var(--chipbd); }
+.dsp-fcard .t { padding: .7cqw 1.2cqw 0; font-size: 1.55cqw; font-weight: 800; display: flex; align-items: baseline; gap: .7cqw; }
+.dsp-fcard .t small { font-size: .95cqw; color: var(--gold); font-weight: 700; }
+.dsp-fcard .d { padding: 0 1.2cqw; font-size: 1.1cqw; color: var(--soft); line-height: 1.45; }
+.dsp-fcard:hover, .dsp-fcard.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.dsp-gal-foot { margin-top: 1.2cqw; display: flex; justify-content: flex-end; }
 `;
