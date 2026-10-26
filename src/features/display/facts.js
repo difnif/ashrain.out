@@ -1,6 +1,6 @@
 // ashrain.out — 교실 모니터 장면의 수치 (facts.js)
 // 화면에 나오는 수는 모두 여기서 계산해 장면으로 넘긴다. tests/display.test.mjs 가 하나하나 다시 검산한다.
-import { fmt } from "./core.js";
+import { fmt, rng } from "./core.js";
 
 /* ── 1. 쌓기나무 ↔ 최단 경로 ── */
 export const BLOCKS = (() => {
@@ -392,5 +392,151 @@ export const TRAP = (() => {
         { k: "h", s: `마름모의 넓이가 ${rArea} cm²` }, { s: `{1/2} × *x* × ${d2} = ${rArea}` }, { s: `3*x* = ${rArea},  ‹*x* = ${rx}›` },
       ],
     },
+  };
+})();
+
+
+/* ══════════ 자료와 가능성(초등) ↔ 경우의 수와 확률(중2) ══════════ */
+const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
+/** 기약분수 글자: (6, 36) → "{1/6}", (4, 4) → "1", (0, 4) → "0" */
+export function fracTxt(n, d) {
+  if (n === 0) return "0";
+  const g = gcd(n, d), a = n / g, b = d / g;
+  return b === 1 ? String(a) : `{${a}/${b}}`;
+}
+
+/* ── 13. 분류하기 ↔ 사건과 경우의 수 · 합의 법칙 ── */
+// 카드 12장: 모양(동그라미·세모·네모) × 색(빨강·파랑·노랑). 색 글자 r·b·y 는 아이콘 색 글자와 같다.
+export const SORT = (() => {
+  const spec = [["circle", "r"], ["circle", "r"], ["circle", "b"], ["circle", "b"], ["circle", "y"],
+    ["tri", "r"], ["tri", "b"], ["tri", "b"], ["tri", "y"], ["square", "r"], ["square", "b"], ["square", "y"]];
+  const CARDS = spec.map(([shape, color], id) => ({ id, shape, color }));
+  const SHAPES = ["circle", "tri", "square"], COLORS = ["r", "b", "y"];
+  const SH = { circle: "○", tri: "△", square: "□" }, CN = { r: "빨강", b: "파랑", y: "노랑" };
+  const CA = { r: "빨간", b: "파란", y: "노란" };                // 꾸밈말: 파란 카드
+  const byShape = SHAPES.map((k) => CARDS.filter((c) => c.shape === k).length);
+  const byColor = COLORS.map((k) => CARDS.filter((c) => c.color === k).length);
+  const circleRed = CARDS.filter((c) => c.shape === "circle" && c.color === "r").length;
+  const orCT = byShape[0] + byShape[1];                 // 동그라미 또는 세모
+  const orBY = byColor[1] + byColor[2];                 // 파랑 또는 노랑
+  const orCR = byShape[0] + byColor[0] - circleRed;     // 동그라미 또는 빨강 (겹침 빼기)
+  const mostColor = COLORS[byColor.indexOf(Math.max(...byColor))];
+  const icon = (k) => `⟪${SH[k]}⟫`;
+  return {
+    CARDS, SHAPES, COLORS, SH, CN, byShape, byColor, circleRed, orCT, orBY, orCR, mostColor,
+    E: {
+      shapeLine: SHAPES.map((k, i) => `${icon(k)} ${byShape[i]}장`).join("   "),
+      colorLine: COLORS.map((k, i) => `⟪●${k}⟫ ${CN[k]} ${byColor[i]}`).join("  "),
+      most: `${CA[mostColor]} 카드가 가장 많아요 (${Math.max(...byColor)}장)`,
+    },
+    M: {
+      all: `일어나는 모든 경우 : ‹${CARDS.length}›가지`,
+      ct: `${icon("circle")} 또는 ${icon("tri")} : ${byShape[0]} + ${byShape[1]} = ‹${orCT}›(가지)`,
+      by: `파랑 또는 노랑 : ${byColor[1]} + ${byColor[2]} = ‹${orBY}›(가지)`,
+      cr: `${icon("circle")} 또는 빨강 : ${byShape[0]} + ${byColor[0]} − ${circleRed} = ‹${orCR}›(가지)`,
+    },
+  };
+})();
+
+/* ── 14. 표와 ○그래프 ↔ 두 주사위의 합 ── */
+export const SEASON = (() => {
+  const NAMES = ["봄", "여름", "가을", "겨울"];
+  const NOTES = ["봄", "여름", "가을", "봄", "겨울", "여름", "봄", "겨울", "가을", "여름", "봄", "겨울", "여름", "가을", "봄", "겨울"];
+  const COUNTS = NAMES.map((n) => NOTES.filter((x) => x === n).length);
+  const TOTAL = NOTES.length;
+  const most = NAMES[COUNTS.indexOf(Math.max(...COUNTS))];
+  return {
+    NAMES, NOTES, COUNTS, TOTAL, most,
+    sumLine: `합계 : ${COUNTS.join(" + ")} = ‹${TOTAL}›(명)`,
+    mostLine: `가장 많은 학생이 좋아하는 계절 : ‹${most}›`,
+  };
+})();
+export const DICE2 = (() => {
+  const CELLS = [];
+  for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) CELLS.push({ a, b, s: a + b });
+  const SUMS = Array.from({ length: 11 }, (_, i) => i + 2);
+  const BY_SUM = SUMS.map((s) => CELLS.filter((c) => c.s === s).length);
+  const TOTAL = CELLS.length;
+  const best = SUMS[BY_SUM.indexOf(Math.max(...BY_SUM))];
+  const n7 = BY_SUM[SUMS.indexOf(7)];
+  return {
+    CELLS, SUMS, BY_SUM, TOTAL, best, n7,
+    mulLine: `6 × 6 = ‹${TOTAL}›(가지)`,
+    n7Line: `합이 7인 경우 : ‹${n7}›가지`,
+    p7Line: `(합이 7일 확률) = {${n7}/${TOTAL}} = ‹${fracTxt(n7, TOTAL)}›`,
+    bestLine: `가장 일어나기 쉬운 합 : ‹${best}›`,
+  };
+})();
+
+/* ── 15. 수 카드 표 ↔ 자연수 만들기 (포지티브·네거티브 규칙) ── */
+export const NUMCARDS = (() => {
+  const DIGITS = [0, 1, 2, 3];
+  const GRID = DIGITS.map((t) => DIGITS.map((o) => ({ t, o, zero: t === 0, same: t === o, ok: t !== 0 && t !== o, v: 10 * t + o })));
+  const TWO = GRID.flat().filter((c) => c.ok).map((c) => c.v);
+  const ROWS = DIGITS.filter((t) => t !== 0).map((t) => TWO.filter((v) => Math.floor(v / 10) === t));
+  const THREE = [];
+  for (const a of DIGITS) for (const b of DIGITS) for (const c of DIGITS)
+    if (a !== 0 && a !== b && a !== c && b !== c) THREE.push(100 * a + 10 * b + c);
+  const tens = DIGITS.filter((d) => d !== 0).length;            // 십의 자리: 0 빼고
+  const ones = DIGITS.length - 1;                                // 일의 자리: 남은 카드
+  return {
+    DIGITS, GRID, TWO, ROWS, THREE, tens, ones,
+    max: Math.max(...TWO), min: Math.min(...TWO),
+    E: {
+      count: `${ROWS.map((r) => r.length).join(" + ")} = ‹${TWO.length}›(개)`,
+      maxmin: `가장 큰 수 ‹${Math.max(...TWO)}› · 가장 작은 수 ‹${Math.min(...TWO)}›`,
+    },
+    M: {
+      pos: `포지티브 : 카드 ${DIGITS.join(", ")}`,
+      neg1: "네거티브 : 2장만, 같은 카드 두 번 ×",
+      neg2: "네거티브 : 십의 자리에 0 ×",
+      strat: `십의 자리 ${tens}가지 × 일의 자리 ${ones}가지`,
+      two: `= ${tens} × ${ones} = ‹${tens * ones}›(개)`,
+      three: `세 자리 정수 : ${tens} × ${ones} × ${ones - 1} = ‹${tens * ones * (ones - 1)}›(개)`,
+    },
+  };
+})();
+
+/* ── 16. 막대그래프 ↔ 상대도수와 확률 ── */
+// 결정적 난수(씨앗 9)로 던진 주사위 6000번. 30번·60번 결과는 가장 많은/적은 눈이 하나씩만 나오도록 고른 씨앗.
+export const FREQ = (() => {
+  const SEED = 9, N = 6000;
+  const r = rng(SEED);
+  const ROLLS = Array.from({ length: N }, () => 1 + Math.floor(r() * 6));
+  const PREF = [1, 2, 3, 4, 5, 6].map((f) => { const a = [0]; for (let i = 0; i < N; i++) a.push(a[i] + (ROLLS[i] === f ? 1 : 0)); return a; });
+  const countAt = (n) => PREF.map((a) => a[Math.max(0, Math.min(N, Math.floor(n)))]);
+  const argOf = (c, f) => c.indexOf(f(...c)) + 1;
+  const c30 = countAt(30), c60 = countAt(60);
+  const max30 = argOf(c30, Math.max), max60 = argOf(c60, Math.max), min60 = argOf(c60, Math.min);
+  const c6000 = countAt(6000), rf = c6000.map((c) => c / N);
+  const r2 = rf.map((v) => Math.round(v * 100) / 100);           // 소수 둘째 자리까지 반올림해 보여 준다
+  const lo = Math.min(...r2), hi = Math.max(...r2);
+  return {
+    SEED, N, ROLLS, PREF, countAt,
+    max30, min30: argOf(c30, Math.min), max60, min60,
+    c30, c60, c600: countAt(600), c6000, lo, hi,
+    E: {
+      max30: `가장 많이 나온 눈 : ⟪d${max30}⟫ ‹${c30[max30 - 1]}›번`,
+      max60: `가장 많이 나온 눈 : ⟪d${max60}⟫ ‹${c60[max60 - 1]}›번`,
+      min60: `가장 적게 나온 눈 : ⟪d${min60}⟫ ‹${c60[min60 - 1]}›번`,
+      cap: `가장 많이 나온 눈은 ⟪d${max60}⟫, 가장 적게 나온 눈은 ⟪d${min60}⟫`,
+    },
+    M: {
+      ex30: `30번 : ⟪d${max30}⟫ {${c30[max30 - 1]}/30} ≈ ${(c30[max30 - 1] / 30).toFixed(2)}`,
+      range: `${N}번 : 모두 약 ${lo.toFixed(2)} ~ ${hi.toFixed(2)}`,
+    },
+  };
+})();
+
+/* ── 17. 가능성 ↔ 확률의 성질 ── */
+export const CHANCE = (() => {
+  const TOTAL = 4, REDS = [0, 1, 2, 3, 4];
+  const WORDS = ["불가능하다", "~아닐 것 같다", "반반이다", "~일 것 같다", "확실하다"];
+  const P = REDS.map((r) => fracTxt(r, TOTAL));
+  const PRAW = REDS.map((r) => `{${r}/${TOTAL}}`);
+  const comp = 3;                                     // 빨강 3개 주머니로 여사건
+  return {
+    TOTAL, REDS, WORDS, P, PRAW, comp,
+    compLine: `1 − ${P[comp]} = ‹${fracTxt(TOTAL - comp, TOTAL)}›`,
   };
 })();
