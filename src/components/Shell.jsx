@@ -122,7 +122,7 @@ export function ShellTop({ theme, hash }) {
           <div className="sh-admin">
             {[["📚 등록", "#/admin/concepts"], ["🔍 문항", "#/admin/items"], ["📄 자료", "#/admin/corpus"],
               ["💬 검토", "#/admin/qna"], ["🗂 대화", "#/admin/chats"], ["🖼 이미지", "#/admin/images"],
-              ["🗓 일정", "#/admin/calendar"], ["⛲ 우물", "#/admin/well"], ["🛡 보호자", "#/admin/guardians"]].map(([l, to]) => (
+              ["🗓 일정", "#/admin/calendar"], ["⛲ 우물", "#/admin/well"], ["🛡 보호자", "#/admin/guardians"], ["📝 평가", "#/admin/assess"]].map(([l, to]) => (
               <button key={to} className="sh-abtn" onClick={() => (location.hash = to)}>{l}</button>
             ))}
             <button className="sh-abtn" onClick={() => (location.hash = "#/admin/display")}>🖥 교실 모니터</button>
@@ -202,7 +202,10 @@ export function ShellTabs({ theme, hash }) {
         <TabsRow theme={theme} hash={hash} cfg={cfg} onWell={() => setSheet(true)} recDot={recDot} />
       </nav>
       {jtoast && (
-        <button type="button" className={"sh-jtoast sh-" + theme} onClick={() => { setJtoast(null); location.hash = "#/records"; }}>
+        <button type="button" className={"sh-jtoast sh-" + theme} onClick={() => {
+          const to = jtoast.to || "#/records"; setJtoast(null);
+          if (to.startsWith("/")) navigatePath(to); else location.hash = to;   // 서술형 평가 알림은 경로(/e/코드)로
+        }}>
           <b>{jtoast.title}</b>{jtoast.body ? <span>{jtoast.body}</span> : null}
         </button>
       )}

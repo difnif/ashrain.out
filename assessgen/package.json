@@ -1,0 +1,9 @@
+{
+  "name": "ashrain-assessgen",
+  "private": true,
+  "description": "서술형 평가 시험지 생성기(assessgen/build_assess.py)가 PDF 에 넣는 글꼴 — 앱 빌드와 무관",
+  "dependencies": {
+    "@fontsource/gaegu": "^5.3.0",
+    "@fontsource/noto-sans-kr": "^5.3.1"
+  }
+}

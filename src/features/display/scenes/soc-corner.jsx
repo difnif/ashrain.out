@@ -6,7 +6,7 @@ import { beats, seg, win, E, mix2, fmt } from "../core";
 import { Path, RightMark } from "../draw";
 import { UBoard, UCaption, Tape, Chip, UDim, SegLbl } from "../kit-story";
 import { mapper, Grass, PLines, boxLines, Goal, Player, Rival, Ball, GoalFlash, DirNote } from "../kit-soccer";
-import { CORNER } from "../facts-soccer";
+import { CORNER, who } from "../facts-soccer";
 
 const { P, GOAL, KH, HF, KT, KF, FT, HT, flight, E: TE, M: TM } = CORNER;
 const B = beats([["intro", 2600], ["kick", 3800], ["given", 6200], ["step1", 6400], ["step2", 6000], ["wrap", 4600], ["hold", 2400]]);
@@ -14,8 +14,10 @@ const MP = mapper({ ox: 118, oy: 300, s: 18 });
 const GR = [-3.2, -4.6, 45.6, 24];                      // 잔디(세계 좌표)
 const K = MP.p(P.K), F = MP.p(P.F), H = MP.p(P.H), T = MP.p(P.T), NET = MP.p([P.T[0], -1.4]);
 const SILVA = MP.p([-2.1, -2.3]);
-const RIVALS = [[35.4, 6.4], [39.6, 9.4], [31.2, 14.2], [26.2, 17.4]].map(MP.p);
-const KEEPER = MP.p([34.6, 0.9]);
+// 회색 = 맨유(그날 선발). 콤파니를 놓친 스몰링, 골키퍼 데 헤아 — 나머지 자리는 명단으로 짐작
+const RIVALS = [[[35.4, 6.4], "퍼디낸드", "r"], [[39.6, 9.4], "에브라", "r"], [[31.2, 14.2], "존스", "r"], [[26.2, 17.4], "스몰링", "r"]]
+  .map(([q, nm, lp]) => ({ p: MP.p(q), id: who("derby2012United", nm), lp }));
+const KEEPER = { p: MP.p([34.6, 0.9]), id: who("derby2012United", "데 헤아"), lp: "r" };
 
 // 공: 코너킥(포물선) → 헤더 → 그물
 const KA = B.a.kick + 200, KB = KA + 1600, KC = KB + 900, KD = KC + 320;
@@ -58,7 +60,7 @@ function Scene({ t, C, mode }) {
       <g opacity={pitchO}>
         <Grass M={MP} rect={GR} C={C} band={4} along="x" />
         <Goal M={MP} C={C} cx={GOAL.c} w={GOAL.w} depth={2} dir={-1} />
-        <DirNote x={MP.p([GR[0], 0])[0] + 2} y={MP.p([0, GR[3]])[1] + 30} s="위치는 실제 장면을 바탕으로 다듬은 값" anchor="start" size={18} C={C} />
+        <DirNote x={MP.p([GR[0], 0])[0] + 2} y={MP.p([0, GR[3]])[1] + 30} s="위치는 실제 장면을 바탕으로 다듬은 값 · 흐린 선수는 그날 선발, 자리는 짐작" anchor="start" size={18} C={C} />
         <PLines M={MP} C={C} lines={lines} clip={GR} />
         <PLines M={MP} C={C} lines={[cornerArc]} w={2.2} />
         <circle cx={MP.p([GOAL.c, 11])[0]} cy={MP.p([GOAL.c, 11])[1]} r={3} fill={C.name === "light" ? "#fff" : "#e9f1e3"} opacity={0.8} />
@@ -83,8 +85,8 @@ function Scene({ t, C, mode }) {
       </g>}
 
       {/* 선수 */}
-      {RIVALS.map((q, i) => <Rival key={i} x={q[0]} y={q[1]} C={C} o={playersO} />)}
-      <Rival x={KEEPER[0]} y={KEEPER[1]} C={C} o={playersO} r={15} />
+      {RIVALS.map((q, i) => <Rival key={i} x={q.p[0]} y={q.p[1]} C={C} o={playersO} n={q.id[0]} name={q.id[1]} lp={q.lp} />)}
+      <Rival x={KEEPER.p[0]} y={KEEPER.p[1]} C={C} o={playersO} r={15} n={KEEPER.id[0]} name={KEEPER.id[1]} lp={KEEPER.lp} />
       <Player x={SILVA[0]} y={SILVA[1]} n={21} team="city" C={C} o={playersO} label="실바" lp="l" r={20} lsize={22} />
       <Player x={H[0]} y={H[1] + (isM ? 0 : 0)} n={4} team="city" C={C} o={playersO} label="콤파니" lp="b" ring={jump} r={22 + 4 * jump} lsize={22} />
       <Ball x={ball.p[0]} y={ball.p[1]} h={ball.h} C={C} o={playersO} />

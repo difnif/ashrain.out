@@ -6,16 +6,18 @@ import { beats, seg, win, E, mix2 } from "../core";
 import { Path, RightMark } from "../draw";
 import { UText, UBoard, UCaption, UTable, RowHi, Tape, SegLbl, IconGrid } from "../kit-story";
 import { mapper, Grass, PLines, boxLines, Goal, Player, Rival, Ball, GoalFlash, DirNote } from "../kit-soccer";
-import { SETPIECE as S } from "../facts-soccer";
+import { SETPIECE as S, who } from "../facts-soccer";
 
 const B = beats([["intro", 2400], ["kick", 3600], ["dist", 6400], ["table", 7200], ["freq", 8800], ["hold", 2600]]);
 const MP = mapper({ ox: 312, oy: 214, s: 11 });
 const GR = [-22, -3, 30, 26];
 const G = MP.p(S.G), F = MP.p(S.F), H = MP.p(S.H), NET = MP.p([0.6, -1.5]);
 const Q1 = MP.p([S.H[0], S.F[1]]), Q2 = MP.p([S.H[0], 0]);          // 직각의 꼭짓점(FH · HG)
-const RIVALS = [[-5, 6.5], [-9.5, 3.4], [10.6, 4.0], [-2.6, 12.6], [16.6, 9.4]].map(MP.p);
-const MATES = [[-12, 10], [21, 6.5]].map(MP.p);
-const KEEPER = MP.p([-2.2, 0.9]);
+// 회색 = 뉴캐슬, 옅은 빨강 = 맨유(그날 선발). 골키퍼는 카리우스 — 나머지 자리는 명단으로 짐작
+const RIVALS = [[[-5, 6.5], "보트만", "l"], [[-9.5, 3.4], "번", "l"], [[10.6, 4.0], "셰어", "r"], [[-2.6, 12.6], "조엘린통", "b"], [[16.6, 9.4], "트리피어", "r"]]
+  .map(([q, nm, lp]) => ({ p: MP.p(q), id: who("cup2023Newcastle", nm), lp }));
+const MATES = [[[-12, 10], "바란", "l"], [[21, 6.5], "마르티네스", "r"]].map(([q, nm, lp]) => ({ p: MP.p(q), id: who("cup2023United", nm), lp }));
+const KEEPER = { p: MP.p([-2.2, 0.9]), id: who("cup2023Newcastle", "카리우스"), lp: "l" };
 
 const KA = B.a.kick + 300, KB = KA + 1500, KC = KB + 650, KD = KC + 300;
 function ballAt(t) {
@@ -58,7 +60,7 @@ function Scene({ t, C, mode }) {
       {/* 경기장 */}
       <g opacity={pitchO}>
         <Grass M={MP} rect={GR} C={C} band={4} along="y" />
-        <DirNote x={MP.p([GR[0], 0])[0] + 2} y={MP.p([0, GR[1]])[1] - 12} s="위치는 실제 장면을 바탕으로 다듬은 값" anchor="start" size={18} C={C} />
+        <DirNote x={MP.p([GR[0], 0])[0] + 2} y={MP.p([0, GR[1]])[1] - 12} s="위치는 실제 장면을 바탕으로 다듬은 값 · 흐린 선수는 그날 선발, 자리는 짐작" anchor="start" size={18} C={C} />
         <Goal M={MP} C={C} cx={0} dir={-1} />
         <PLines M={MP} C={C} lines={[[[-22, 0], [30, 0]], ...boxLines(0)]} clip={GR} w={2.2} />
       </g>
@@ -80,9 +82,9 @@ function Scene({ t, C, mode }) {
         <SegLbl P={Q2} Q={G} s={S.M.lab.hx} side={-1} off={16} C={C} size={24} fill={C.teal} />
       </g>}
       {/* 선수 */}
-      {RIVALS.map((q, i) => <Rival key={i} x={q[0]} y={q[1]} C={C} o={playersO} r={14} />)}
-      <Rival x={KEEPER[0]} y={KEEPER[1]} C={C} o={playersO} r={13} />
-      {MATES.map((q, i) => <Player key={i} x={q[0]} y={q[1]} team="united" C={C} o={playersO * 0.7} r={14} />)}
+      {RIVALS.map((q, i) => <Rival key={i} x={q.p[0]} y={q.p[1]} C={C} o={playersO} r={14} n={q.id[0]} name={q.id[1]} lp={q.lp} lsize={14} />)}
+      <Rival x={KEEPER.p[0]} y={KEEPER.p[1]} C={C} o={playersO} r={13} n={KEEPER.id[0]} name={KEEPER.id[1]} lp={KEEPER.lp} lsize={14} />
+      {MATES.map((q, i) => <Player key={i} x={q.p[0]} y={q.p[1]} team="united" C={C} o={playersO * 0.7} r={14} n={q.id[0]} label={q.id[1]} lp={q.lp} lsize={14} faint />)}
       <Player x={F[0]} y={F[1]} n={23} team="united" C={C} o={playersO} r={19} label="루크 쇼" lp="b" lsize={20} />
       <Player x={H[0]} y={H[1]} n={18} team="united" C={C} o={playersO} r={19 + 3 * jump} ring={jump} label="카세미루" lp="l" lsize={20} />
       <Ball x={ball.p[0]} y={ball.p[1]} h={ball.h} r={9} C={C} o={playersO} />
