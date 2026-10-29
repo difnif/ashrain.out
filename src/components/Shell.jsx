@@ -21,7 +21,7 @@ export const TABS = [
 ];
 
 const SUBTABS = {
-  study: [["개념 공부", "#/study/concept"], ["연습문제", "#/study/practice"], ["시험 보기", "#/study/exam"]],
+  study: [["개념 공부", "#/study/concept"], ["연습문제", "#/study/practice"], ["컨셉 문제", "#/study/sets"], ["시험 보기", "#/study/exam"]],
   tools: [["전체", "#/tools"], ["서술형", "#/tools/essay"], ["사진 힌트", "#/tools/hint"],
           ["문장 해설", "#/tools/read"], ["표시 연습", "#/tools/mark"], ["풀이 검사", "#/tools/check"]],
   board: [["공지", "#/board/notice"], ["커뮤니티", "#/board/community"], ["질문", "#/board/qna"]],

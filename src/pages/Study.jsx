@@ -1,5 +1,5 @@
-// 공부하기 탭 (#/study) — 서브탭: 개념 공부 · 연습문제 · 시험 보기 (셸이 상·하단을 그린다)
-// sub: '' | 'concept' | 'practice' | 'exam'  (''=concept)
+// 공부하기 탭 (#/study) — 서브탭: 개념 공부 · 연습문제 · 컨셉 문제 · 시험 보기 (셸이 상·하단을 그린다)
+// sub: '' | 'concept' | 'practice' | 'sets[/<범주>]' | 'exam'  (''=concept)
 import { useEffect, useMemo, useState } from "react";
 import { UNIT_NAMES, UNIT_ORDER } from "../lib/items";
 import { readLastResult } from "../lib/setplay";
@@ -8,6 +8,8 @@ import { TEST_TYPES, describeTimer, presetOf, isExamOpen } from "../lib/exam";
 import { swrConcepts } from "../lib/studyCache";
 import { koFilter } from "../lib/koSearch";
 import ItemPicker from "./solve/ItemPicker";
+import { CATEGORIES, loadIndex, readProgress, setProgressUser, pad2 } from "../lib/conceptsets";
+import { supabase } from "../supabaseClient";
 import "./solve/solve.css";
 
 const CSS = `
@@ -57,6 +59,31 @@ const CSS = `
 .st-meta { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
 .st-tag { font-size: 10.5px; font-weight: 700; color: var(--muted); border: 1px solid var(--border);
   border-radius: 999px; padding: 1px 7px; }
+/* 컨셉 문제 — 범주 폴더 · 세트 아이콘 */
+.st-folder { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px; color: var(--text); cursor: pointer; font-family: inherit; }
+.st-folder .fi { flex: none; width: 52px; height: 52px; border-radius: 15px; background: var(--surface2); display: flex; align-items: center;
+  justify-content: center; font-size: 28px; position: relative; }
+.st-folder .fi::after { content: ""; position: absolute; left: 7px; right: 7px; top: -4px; height: 6px; border-radius: 4px 4px 0 0; background: var(--surface3); }
+.st-folder .nm { flex: 1; min-width: 0; }
+.st-folder .nm b { display: block; font-size: 15px; font-weight: 800; }
+.st-folder .nm small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+.st-folder .go { flex: none; color: var(--muted); font-size: 18px; }
+.st-crumb { display: flex; align-items: center; gap: 6px; margin: 2px 0 10px; font-size: 13px; }
+.st-crumb button { background: none; border: none; padding: 0; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; }
+.st-crumb b { font-weight: 800; }
+.st-cdesc { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 0 2px 4px; }
+.st-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.st-ic { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 4px 9px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 16px; color: var(--text); cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; }
+.st-ic:active { transform: scale(.97); }
+.st-ic .em { font-size: 30px; line-height: 1.1; }
+.st-ic .nm { font-size: 12px; font-weight: 800; text-align: center; line-height: 1.25; word-break: keep-all; }
+.st-ic .no { position: absolute; top: 5px; left: 7px; font-size: 9.5px; font-weight: 800; color: var(--muted); }
+.st-ic .pg { width: 70%; height: 4px; border-radius: 999px; background: var(--surface3); overflow: hidden; }
+.st-ic .pg i { display: block; height: 100%; background: var(--accent); }
+.st-ic.done { border-color: var(--good); }
+.st-ic.done .pg i { background: var(--good); }
 `;
 
 function readLastConcept() {
@@ -199,13 +226,95 @@ function ExamSub() {
   );
 }
 
+/* ── 컨셉 문제: 범주 폴더 → 세트(파일)별 아이콘 ── */
+function useCsProgressUser() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let ok = true;
+    supabase.auth.getSession().then(({ data }) => { setProgressUser(data?.session?.user?.id || ""); if (ok) setReady(true); })
+      .catch(() => { if (ok) setReady(true); });
+    return () => { ok = false; };
+  }, []);
+  return ready;
+}
+
+function SetsSub({ path }) {
+  const catId = path[0] || "";
+  const ready = useCsProgressUser();
+  const [cat, setCat] = useState(null);
+  const [err, setErr] = useState(null);
+  useEffect(() => {
+    if (!catId) return undefined;
+    let ok = true;
+    setCat(null); setErr(null);
+    loadIndex(catId).then((c) => { if (ok) { if (c) setCat(c); else setErr("없는 범주예요"); } })
+      .catch((e) => { if (ok) setErr(e?.message || String(e)); });
+    return () => { ok = false; };
+  }, [catId]);
+
+  if (!catId) {
+    return (
+      <>
+        <p className="st-cdesc">주제 하나로 경우의 수와 확률을 끝까지 — 스포츠 · 음악 · 역사 · 판례까지, 실제 자료로 만든 50제 묶음이에요. 앱에서 바로 풀고 3단 해설을 보거나, 문제지 · 해설지 · OMR 카드를 인쇄해 풀고 OMR 사진으로 채점해요.</p>
+        <div className="st-list">
+          {CATEGORIES.map((c) => (
+            <button key={c.id} className="st-folder" onClick={() => (location.hash = `#/study/sets/${c.id}`)}>
+              <span className="fi" aria-hidden="true">{c.icon}</span>
+              <span className="nm"><b>{c.title}</b><small>{c.sub} · 38종 · 1,900문항</small></span>
+              <span className="go" aria-hidden="true">›</span>
+            </button>
+          ))}
+        </div>
+      </>
+    );
+  }
+  const crumb = (
+    <div className="st-crumb">
+      <button onClick={() => (location.hash = "#/study/sets")}>컨셉 문제</button><span aria-hidden="true">›</span><b>{cat?.title || "…"}</b>
+    </div>
+  );
+  if (err) return <>{crumb}<div className="st-empty">목록을 불러오지 못했어요. {err}</div></>;
+  if (!cat) return <>{crumb}<div className="st-empty">불러오는 중…</div></>;
+  const byNo = Object.fromEntries(cat.sets.map((x) => [x.no, x]));
+  return (
+    <>
+      {crumb}
+      {cat.desc && <p className="st-cdesc">{cat.desc}</p>}
+      {cat.groups.map((g) => (
+        <div key={g.title}>
+          <p className="st-sec">{g.icon ? `${g.icon} ` : ""}{g.title}</p>
+          <div className="st-icons">
+            {g.sets.map((no) => {
+              const x = byNo[no];
+              if (!x) return null;
+              const p = ready ? readProgress(catId, no) : null;
+              const done = p ? Object.keys(p.items).length : 0;
+              const pct = x.n ? Math.min(100, Math.round((done / x.n) * 100)) : 0;
+              return (
+                <button key={no} className={"st-ic" + (done >= x.n ? " done" : "")} title={x.title}
+                  onClick={() => (location.hash = `#/sets/${catId}/${pad2(no)}`)}>
+                  <span className="no">{pad2(no)}</span>
+                  <span className="em" aria-hidden="true">{x.icon}</span>
+                  <span className="nm">{x.short}</span>
+                  <span className="pg" aria-label={`${done}/${x.n}`}><i style={{ width: `${pct}%` }} /></span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 export default function Study({ sub = "", theme = "light" }) {
-  const s = (sub || "concept").split("?")[0].split("/")[0] || "concept";
+  const segs = (sub || "concept").split("?")[0].split("/").filter(Boolean);
+  const s = segs[0] || "concept";
   return (
     <div className={`st-root st-${theme}`}>
       <style>{CSS}</style>
       <div className="st-wrap">
-        {s === "practice" ? <PracticeSub /> : s === "exam" ? <ExamSub /> : <ConceptSub />}
+        {s === "practice" ? <PracticeSub /> : s === "exam" ? <ExamSub /> : s === "sets" ? <SetsSub path={segs.slice(1)} /> : <ConceptSub />}
       </div>
     </div>
   );

@@ -181,6 +181,14 @@ iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정) · 흐리�
 - 코드: `src/features/display/hanoi.js`(배치·순서·시간표 — 2²⁰번도 재귀로 바로 센다) · `frames/hanoi.jsx`(그리기) · `frames/index.js`(액자 목록) · `AdminDisplay.jsx`(`HanoiFrame` 조작·시계).
 - 검산: `node tests/hanoi.test.mjs` — 모든 이동을 기둥 셋으로 따로 흉내 내 규칙·최소 횟수(2ⁿ − 1)·닫힌 식과 맞추고, 빠르게 = (2ⁿ − 1)초, 자연스럽게 = 이동 시간 ∝ 길이, 길이 기둥 끝을 넘어서만 옆으로 가는지, 원판 3·7·14·20을 두 빠르기·두 테마로 끝까지 그려 본다.
 
+### 공부하기 › 컨셉 문제 — 주제별 경우의 수·확률 38세트 (`#/study/sets` · `#/sets/*`, 2026-10-29)
+공부하기 서브탭 「컨셉 문제」 → 범주 폴더(「경우의 수와 확률」) → 세트 아이콘 38개(스포츠 · 패션·뷰티 · 음악 · 역사 · 사회·과학 · 영상). 세트마다 50문항(하 15 · 중 25 · 상 10), 실제 자료로 만든 주제 문항.
+- **바로 풀기** `#/sets/prob/NN/q/<번호>` — 정수 · 분수(분자/분모 칸, 값이 같으면 정답 + 기약분수 안내) · 보기 고르기 · 두 수. 채점하면 **3단 해설**(방침: 포지티브 · 네거티브 → 전략 / 전개 / 확인) + 모범 답안 · 채점 기준(요소 비중 · 못 채운 것 · 감점). 전개는 판서 줄 · 빨간 메모 · 도식(표 · SVG)이 figanim 으로 맞춰 움직인다. 진도는 기기 · 계정별(localStorage).
+- **자료** — 문제지 · 해설지 · OMR 카드를 골라 **바로 인쇄**(PDF 와 같은 HTML `public/concept-sets/prob/print/` 을 한 창에 합쳐 인쇄, 쪽 나눔 동일) 또는 **다운로드**(하나면 PDF, 여럿이면 ZIP — 한글 파일 이름).
+- **OMR 채점** `#/sets/prob/NN/omr` — 2쪽 숫자 칸 카드(`src/lib/omr/grid.js`: 네 모서리 마커 · 방향 막대 · 세트/쪽 코드 띠). 쪽마다 사진 → 기기 안에서 판독(올리지 않음) → 노란 칸 확인 · 고치기 → 채점 → 틀린 문항 해설로.
+- 데이터: `public/concept-sets/<범주>/index.json · NN.json`(문항 · 답 · OMR 칸 · 해설 · 애니메이션 큐) — 생성기(guard-daily `tk_export.py`)가 만든다. PDF 는 저장소에 넣지 않고, main 머지 때 워크플로 `push-concept-files` 가 같은 HTML 로 찍어(쪽 수 검사) Supabase Storage 공개 버킷 `concept-sets` 에 올린다(`scripts/concept-files.mjs` · `scripts/push-concept-files.mjs`).
+- 검산: `node tests/conceptsets.test.mjs`(데이터 · 판정 · 해설 큐 · 인쇄 합치기 · ZIP · 합성 사진 OMR 판독) · `node tests/smoke/conceptsets.smoke.mjs`(빌드 후 목록 → 풀기 → 해설 움직임 → 인쇄 → 다운로드 → 카드 사진 채점).
+
 ## 구조
 ```
 supabase/schema.sql        프로필·권한·개념·QnA·아바타 버킷 (RLS 포함)
@@ -190,6 +198,7 @@ src/lib/concepts.js        개념·QnA 데이터 접근
 src/components/            SplashAuth · Home · ConceptViewer(+ReviewMode) · ReviewCard · PointsCard · AdminQna · Signup
 src/components/Well.jsx    우물 — 탭바 중앙 버튼·런처 시트·자리그림 (lib/wx·sun·well + pages/AdminWell.jsx 편집)
 src/pages/solve/           학생앱 문제풀이 화면들 (Solve 허브 · ItemPlay · Exam · Omr · Read · Mark · Essay · AskItem)
+src/pages/sets/            컨셉 문제 (세트 · 풀기 · 3단 해설 · 인쇄 합치기 · OMR 채점) + lib/conceptsets.js · lib/omr/grid.js
 src/features/portrait/     ribbedGlass(필터) · facePipeline(MediaPipe) · PortraitStudio
 api/                       Vercel 서버리스 — ai(힌트·OMR·질문) · points(지갑) · review(복습 보상) · transcribeJob …
 supabase/2026-09_*.sql     학생앱 베타 선택 마이그레이션 (student_beta · wallet_review)
