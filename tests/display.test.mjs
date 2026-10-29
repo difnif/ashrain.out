@@ -543,9 +543,10 @@ export const frame = (p, mode, t, th, P) => renderToStaticMarkup(<g><SceneTitle 
     banner: { js: "import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);" },
   });
   const m = await import(pathToFileURL(out).href);
-  const GROUP_N = { geo: 12, data: 5, guess: 3, branch: 3, galton: 1 };
-  test("장면 묶음(도형 12 · 경우의 수·확률 5 · 몬티홀·찍기 3 · 갈림길·구슬 3 · 정규분포 1) · 키 중복 없음 · 제목/부제 두 판 · 길이 15~70초", () => {
+  const GROUP_N = { geo: 12, data: 5, soccer: 6, essay: 6, guess: 3, branch: 3, galton: 1 };
+  test("장면 묶음(도형 12 · 경우의 수·확률 5 · 축구 6 · 서술형 6 · 몬티홀·찍기 3 · 갈림길·구슬 3 · 정규분포 1) · 키 중복 없음 · 제목/부제 두 판 · 길이 15~70초", () => {
     for (const [g, n] of Object.entries(GROUP_N)) assert.equal(m.PAIRS.filter((p) => p.group === g).length, n, g);
+    assert.equal(m.PAIRS.length, Object.values(GROUP_N).reduce((a, b) => a + b, 0));
     assert.equal(new Set(m.PAIRS.map((p) => p.key)).size, m.PAIRS.length);
     for (const p of m.PAIRS) {
       assert.ok(p.title.e && p.title.m && p.sub.e && p.sub.m, p.key);
