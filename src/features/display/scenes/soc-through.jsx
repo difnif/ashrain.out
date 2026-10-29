@@ -7,7 +7,7 @@ import { beats, seg, win, E, mix2, fmt, clamp } from "../core";
 import { Path, RightMark } from "../draw";
 import { UText, UBoard, UCaption, Tape, Chip, SegLbl, Stopwatch } from "../kit-story";
 import { mapper, Grass, Player, Rival, Ball, DirNote } from "../kit-soccer";
-import { THROUGH as TH } from "../facts-soccer";
+import { THROUGH as TH, who } from "../facts-soccer";
 
 const B = beats([["intro", 2400], ["play", 6800], ["lines", 6400], ["dist", 5600], ["time", 6600], ["replay", 6600], ["hold", 2200]]);
 const MP = mapper({ ox: 130, oy: 680, s: 20, flipY: true });
@@ -16,7 +16,8 @@ const O = MP.p(TH.pts.O), S = MP.p(TH.pts.S), M = MP.p(TH.pts.M);
 const MOUNT = MP.p([-1.3, -0.9]);                    // 공(O) 바로 뒤
 const SLOW = 2000;                                     // 실제 1초 = 그림 2초
 const GOALWARD = MP.p([31, 7.6]);
-const DEF = TH.defenders.map(MP.p);
+// 회색 = 맨시티 수비(그날 선발): 하베르츠를 늦게 따라간 진첸코, 베르너에게 끌려 나간 스톤스·디아스 — 자리는 다듬은 값
+const DEF = TH.defenders.map((q, i) => ({ p: MP.p(q), id: who("final2021City", ["스톤스", "디아스", "진첸코"][i]), lp: ["r", "r", "r"][i] }));
 const RUNS = [B.a.play + 700, B.a.replay + 500];       // 하베르츠가 달리기 시작하는 시각
 
 /** 하베르츠 · 공 위치와 지난 실제 초 */
@@ -54,7 +55,7 @@ function Scene({ t, C, mode }) {
     <g>
       <g opacity={pitchO}>
         <Grass M={MP} rect={GR} C={C} band={4} along="x" />
-        <DirNote x={MP.p([GR[0], 0])[0] + 2} y={MP.p([0, GR[3]])[1] - 12} s="위치는 실제 장면을 바탕으로 다듬은 값" anchor="start" size={18} C={C} />
+        <DirNote x={MP.p([GR[0], 0])[0] + 2} y={MP.p([0, GR[3]])[1] - 12} s="위치는 실제 장면을 바탕으로 다듬은 값 · 흐린 선수는 그날 선발, 자리는 짐작" anchor="start" size={18} C={C} />
         <DirNote x={MP.p([31.6, -2.6])[0]} y={MP.p([31.6, -2.6])[1]} s="상대 골대 쪽 →" anchor="end" C={C} />
       </g>
       {/* 중등: 좌표축과 두 직선 */}
@@ -98,7 +99,7 @@ function Scene({ t, C, mode }) {
       </g>}
       {isM && mDot > 0 && <Chip x={S[0] - 84} y={S[1] + 2} s={TH.M.sLab} size={22} C={C} o={mDot} fill={C.paper} color={C.ink} stroke={C.ink} />}
       {/* 선수 */}
-      {DEF.map((q, i) => <Rival key={i} x={q[0]} y={q[1]} C={C} o={seg(t, 400, 1200)} />)}
+      {DEF.map((q, i) => <Rival key={i} x={q.p[0]} y={q.p[1]} C={C} o={seg(t, 400, 1200)} n={q.id[0]} name={q.id[1]} lp={q.lp} />)}
       <Player x={MOUNT[0]} y={MOUNT[1]} n={19} team="chelsea" C={C} o={seg(t, 400, 1200)} label="마운트" lp="b" lsize={22} r={21} />
       <Player x={st.hv[0]} y={st.hv[1]} n={29} team="chelsea" C={C} o={playersO} label="하베르츠" lp="r" lsize={22} r={21} />
       <Ball x={st.ball[0]} y={st.ball[1]} h={0} C={C} o={playersO} />

@@ -8,7 +8,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { CORNER, SETPIECE, THROUGH, TRIANGLE, COUNTER, XG } from "../src/features/display/facts-soccer.js";
+import { CORNER, SETPIECE, THROUGH, TRIANGLE, COUNTER, XG, LINEUPS, who } from "../src/features/display/facts-soccer.js";
 import { RAILS, WRONGWAY, CLUB, RPS, SIGN, SHIRT } from "../src/features/display/facts-essay.js";
 
 let n = 0, failed = 0;
@@ -249,6 +249,20 @@ test("서술형 6 반티: A = 6000x + 24000, B = 8000x 의 교점 P(12, 96000) �
   for (const m of [0, 5, 12, 13, 14]) assert.equal(SHIRT.E.gap(m), SHIRT.A(m) - SHIRT.B(m));
   has(SHIRT.E.meet1, "24000 ÷ 2000 = 12"); has(SHIRT.E.meet, "12벌에서 둘 다 96000원"); has(SHIRT.E.ans, "‹13벌›"); has(SHIRT.E.trap, "12벌은 두 업체가 같아요");
   has(SHIRT.M.a, "y = 6000x + 24000"); has(SHIRT.M.b, "y = 8000x"); has(SHIRT.M.solve, "x = 12"); has(SHIRT.M.p, "P(12, 96000)"); has(SHIRT.M.ans, "‹13벌›");
+});
+
+test("축구 흐린 선수 이름표: 선발 명단 넷 모두 11명 · 등번호 겹침 없음 · 장면의 주인공 등번호와도 맞음 · 명단에 없는 이름은 거부", () => {
+  for (const [team, xi] of Object.entries(LINEUPS)) {
+    assert.equal(xi.length, 11, team);
+    assert.equal(new Set(xi.map(([k]) => k)).size, 11, `${team} 등번호 겹침`);
+    assert.equal(new Set(xi.map(([, nm]) => nm)).size, 11, `${team} 이름 겹침`);
+  }
+  // 경기 기록에서 확인한 자리: 콤파니를 놓친 스몰링(12) · 골키퍼 데 헤아(1) · 카리우스(18) · 하베르츠를 놓친 진첸코(11)
+  assert.deepEqual(who("derby2012United", "스몰링"), [12, "스몰링"]); assert.deepEqual(who("derby2012United", "데 헤아"), [1, "데 헤아"]);
+  assert.deepEqual(who("cup2023Newcastle", "카리우스"), [18, "카리우스"]); assert.deepEqual(who("final2021City", "진첸코"), [11, "진첸코"]);
+  // 장면 주인공(같은 경기 맨유): 루크 쇼 23 · 카세미루 18
+  assert.deepEqual(who("cup2023United", "루크 쇼"), [23, "루크 쇼"]); assert.deepEqual(who("cup2023United", "카세미루"), [18, "카세미루"]);
+  assert.throws(() => who("derby2012United", "비디치"));     // 그날 결장 — 명단에 없다
 });
 
 test("분수 글자: 기약분수 · 정수", () => {
