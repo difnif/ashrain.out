@@ -530,10 +530,11 @@ try {
   const entry = path.join(tmp, "entry.jsx");
   fs.writeFileSync(entry, `
 import { renderToStaticMarkup } from "react-dom/server";
-import { PAIRS } from ${JSON.stringify(path.join(ROOT, "src/features/display/pairs.js"))};
+import { PAIRS, GROUPS } from ${JSON.stringify(path.join(ROOT, "src/features/display/pairs.js"))};
+import { EXPLAIN } from ${JSON.stringify(path.join(ROOT, "src/features/display/stories.js"))};
 import { PALETTE, SceneTitle } from ${JSON.stringify(path.join(ROOT, "src/features/display/draw.jsx"))};
 import { paramCases, durOf } from ${JSON.stringify(path.join(ROOT, "src/features/display/params.js"))};
-export { PAIRS, paramCases, durOf };
+export { PAIRS, GROUPS, EXPLAIN, paramCases, durOf };
 export const frame = (p, mode, t, th, P) => renderToStaticMarkup(<g><SceneTitle title={p.title[mode]} sub={p.sub[mode]} C={PALETTE[th]} mode={mode} />{p.render(mode, t, PALETTE[th], P)}</g>);
 `);
   const out = path.join(tmp, "bundle.mjs");
@@ -543,24 +544,33 @@ export const frame = (p, mode, t, th, P) => renderToStaticMarkup(<g><SceneTitle 
     banner: { js: "import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);" },
   });
   const m = await import(pathToFileURL(out).href);
-  const GROUP_N = { geo: 12, data: 5, soccer: 6, essay: 6, guess: 3, branch: 3, galton: 1 };
-  test("장면 묶음(도형 12 · 경우의 수·확률 5 · 축구 6 · 서술형 6 · 몬티홀·찍기 3 · 갈림길·구슬 3 · 정규분포 1) · 키 중복 없음 · 제목/부제 두 판 · 길이 15~70초", () => {
+  // 수업 장면 순환은 도형 · 경우의 수·확률 두 묶음. 몬티홀·찍기 · 갈림길·구슬 · 정규분포 장면은 실험 액자의 「풀이 보기」(stories.js 의 EXPLAIN),
+  // 축구·서술형은 장면 묶음 액자(tests/display-stories.test.mjs). 실험 액자 자체는 tests/display-labs.test.mjs.
+  const GROUP_N = { geo: 12, data: 5 };
+  const EXPL = [...new Set(Object.values(m.EXPLAIN).flat())];
+  const SWEEP = [...m.PAIRS, ...EXPL];
+  test("장면 묶음(도형 12 · 경우의 수·확률 5) · 풀이 보기 장면(몬티홀 3 · 갈림길 3 · 갈톤 1)은 순환에 없음 · 키 중복 없음 · 제목/부제 두 판 · 길이 15~70초", () => {
     for (const [g, n] of Object.entries(GROUP_N)) assert.equal(m.PAIRS.filter((p) => p.group === g).length, n, g);
     assert.equal(m.PAIRS.length, Object.values(GROUP_N).reduce((a, b) => a + b, 0));
-    assert.equal(new Set(m.PAIRS.map((p) => p.key)).size, m.PAIRS.length);
-    for (const p of m.PAIRS) {
+    assert.deepEqual(m.GROUPS.map((g) => g.key), ["all", "geo", "data"]);
+    assert.deepEqual(Object.fromEntries(Object.entries(m.EXPLAIN).map(([k, v]) => [k, v.map((p) => p.key)])),
+      { monty: ["monty", "pick5", "linked"], branch: ["fork", "forkn", "bump"], galton: ["galton"] });
+    assert.ok(!m.PAIRS.some((p) => EXPL.includes(p) || EXPL.some((q) => q.key === p.key)));
+    assert.equal(new Set(SWEEP.map((p) => p.key)).size, SWEEP.length);
+    for (const p of SWEEP) {
       assert.ok(p.title.e && p.title.m && p.sub.e && p.sub.m, p.key);
       for (const P of m.paramCases(p)) { const d = m.durOf(p, P); assert.ok(d > 15000 && d < 70000, `${p.key} ${JSON.stringify(P)} ${d}`); }
     }
   });
-  test("장면 설정(controls): 기본값이 고를 수 있는 값 · 단계/구슬/문 개수", () => {
-    for (const p of m.PAIRS.filter((q) => q.controls)) for (const c of p.controls) {
+  test("장면 설정(controls): 기본값이 고를 수 있는 값 · 단계/구슬/문 개수 — 풀이 보기 장면만 가진다", () => {
+    for (const p of SWEEP.filter((q) => q.controls)) for (const c of p.controls) {
       assert.ok(c.options.some((o) => (Array.isArray(o) ? o[0] : o) === c.def), `${p.key}.${c.key}`);
       assert.ok(["step", "seg"].includes(c.kind));
     }
-    assert.deepEqual(m.PAIRS.filter((q) => q.controls).map((q) => q.key).sort(), ["bump", "forkn", "galton", "monty"]);
+    assert.deepEqual(SWEEP.filter((q) => q.controls).map((q) => q.key).sort(), ["bump", "forkn", "galton", "monty"]);
+    assert.equal(m.PAIRS.filter((q) => q.controls).length, 0);
   });
-  for (const p of m.PAIRS) for (const P of m.paramCases(p)) {
+  for (const p of SWEEP) for (const P of m.paramCases(p)) {
     const dur = m.durOf(p, P), tag = Object.keys(P).length ? ` ${JSON.stringify(P)}` : "";
     test(`그리기 훑기: ${p.key}${tag} (${(dur / 1000).toFixed(1)}초) — 두 판·두 테마, 오류·NaN 없음`, () => {
       for (const mode of ["e", "m"]) for (const th of ["dark", "light"]) {
