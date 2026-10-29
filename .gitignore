@@ -35,3 +35,6 @@ tests/smoke/img/
 # 서술형 평가 생성기 산출물(PDF·JSON·래스터) — 채팅방에서 만들어 PDF 는 확인·인쇄, JSON 은 관리자 화면에 등록
 assessgen/out/
 assessgen/verify/img*/
+
+# 컨셉 문제 PDF 작업 폴더 (scripts/concept-files.mjs) — PDF 는 저장소에 넣지 않고 워크플로 push-concept-files 가 찍어 Storage 에 올린다
+.concept-files/

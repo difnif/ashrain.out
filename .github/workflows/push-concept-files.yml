@@ -1,0 +1,52 @@
+# 컨셉 문제 PDF(문제지 · 해설지 · OMR 카드) → Supabase Storage 공개 버킷 concept-sets (앱의 「다운로드」가 받는 곳)
+#
+# 언제 도나
+#   ① 자동 — main 에 컨셉 문제 데이터 · 인쇄 HTML · OMR 카드 배치가 바뀐 push 가 오면. PR 을 머지하는 순간이 곧 승인이다.
+#   ② 수동 — Actions 탭 → "push-concept-files" → Run workflow.
+# 무엇을 하나
+#   scripts/concept-files.mjs — public/concept-sets/<범주>/print/*.html(생성기가 PDF 를 찍은 바로 그 HTML)과 grid.js OMR 카드를
+#     Chromium 으로 PDF 114개로 찍고, 쪽 수가 index.json 과 하나라도 다르면 멈춘다(올리지 않는다).
+#   scripts/push-concept-files.mjs — 버킷이 없으면 공개 버킷(PDF 전용)으로 만들고, 덮어쓰기로 올린 뒤 공개 주소로 다시 받아 sha256 을 맞춘다.
+#   PDF 는 저장소에 넣지 않는다(74 MB). 앱의 「바로 인쇄」는 이 워크플로와 상관없이 같은 HTML 로 바로 된다.
+# 비밀: Settings → Secrets and variables → Actions → SUPABASE_URL, SUPABASE_SERVICE_KEY (push-items 와 같은 것)
+name: push-concept-files
+on:
+  push:
+    branches: [main]
+    paths:
+      - "public/concept-sets/**"
+      - "src/lib/omr/grid.js"
+      - "src/pages/sets/printdoc.js"
+      - "scripts/concept-files.mjs"
+      - "scripts/push-concept-files.mjs"
+      - ".github/workflows/push-concept-files.yml"
+  workflow_dispatch:
+concurrency: { group: push-concept-files, cancel-in-progress: false }
+permissions:
+  contents: read
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Chromium (Playwright 1.56 — 로컬에서 PDF 를 검증한 것과 같은 판) + 한글 글꼴
+        run: |
+          npm i --no-save --no-audit --no-fund playwright@1.56.0
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+      - name: PDF 만들기 (문제지 · 해설지 · OMR) + 쪽 수 검사
+        env: { FONTSOURCE: "" }
+        run: |
+          set -e
+          for idx in public/concept-sets/*/index.json; do
+            cat=$(basename "$(dirname "$idx")")
+            node scripts/concept-files.mjs --cat "$cat" --out .cf
+          done
+      - name: Storage 에 올리기 + 공개 주소 확인
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/push-concept-files.mjs .cf .cf/build-*.json

@@ -1,0 +1,207 @@
+/* 컨셉 문제(#/sets/*) — App.jsx 의 <Rx> 변수(--text --muted --surface --surface2 --surface3 --border --accent --good --bad) 위에서.
+   문항 본문은 앱 글꼴(고딕), 판서 · 도식 판은 문제지와 같은 명조 종이판. */
+.cs-wrap { max-width: 680px; margin: 0 auto; padding: 12px 14px 90px; color: var(--text); box-sizing: border-box;
+  font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
+.cs-wrap * { box-sizing: border-box; }
+.cs-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin: 10px 0; }
+.cs-ch { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.cs-ch b { font-size: 14.5px; font-weight: 800; }
+.cs-ch span { font-size: 12px; color: var(--muted); }
+.cs-sec { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: var(--muted); margin: 18px 2px 8px; }
+.cs-sec small { font-weight: 700; }
+.cs-dnote { font-size: 11.5px; color: var(--muted); line-height: 1.6; margin: 10px 2px 0; }
+.cs-toast { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 28px); text-align: center; white-space: normal; line-height: 1.45; border-radius: 16px; }
+
+/* 세트 머리 */
+.cs-hero { display: flex; gap: 14px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px; }
+.cs-hero .ic { flex: none; width: 64px; height: 64px; border-radius: 18px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 38px; }
+.cs-hero .tx { flex: 1; min-width: 0; }
+.cs-hero h1 { font-size: 16.5px; line-height: 1.35; margin: 0; font-weight: 800; letter-spacing: -.2px; word-break: keep-all; }
+.cs-hero .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.cs-pbar { height: 6px; border-radius: 999px; background: var(--surface3); overflow: hidden; margin-top: 9px; }
+.cs-pbar > i { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .3s; }
+.cs-pt { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+.cs-pt b { color: var(--text); }
+.cs-go { margin-top: 10px; padding: 13px 14px; font-size: 15px; border-radius: 14px; }
+
+/* 자료 고르기 */
+.cs-dchips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cs-dchip { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 6px 10px; border-radius: 14px;
+  border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; }
+.cs-dchip .ic { font-size: 22px; line-height: 1; }
+.cs-dchip .nm { font-size: 13px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.cs-dchip .nm small { font-size: 10.5px; font-weight: 600; color: var(--muted); }
+.cs-dchip .ck { position: absolute; top: 6px; right: 7px; width: 18px; height: 18px; border-radius: 999px; border: 1.5px solid var(--border);
+  font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center; color: #fff; }
+.cs-dchip.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+.cs-dchip.on .ck { background: var(--accent); border-color: var(--accent); }
+.cs-dbtns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.cs-dbtns .sv-btn { flex: 1 1 140px; }
+.cs-omrhist { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.cs-tagx { font-size: 11px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; }
+
+/* 문항 목록 */
+.cs-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 0 8px; }
+.cs-chips::-webkit-scrollbar { display: none; }
+.cs-chip { flex: none; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; color: var(--text); font-size: 12px;
+  font-weight: 700; padding: 6px 12px; cursor: pointer; font-family: inherit; }
+.cs-chip.on { border-color: var(--accent); color: var(--accent); border-width: 1.5px; }
+.cs-list { display: flex; flex-direction: column; gap: 6px; }
+.cs-row { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 12px; color: var(--text); cursor: pointer; font-family: inherit; }
+.cs-row .no { flex: none; width: 24px; font-size: 12.5px; font-weight: 800; color: var(--muted); text-align: right; }
+.cs-row .lv { flex: none; font-size: 10.5px; font-weight: 800; color: #fff; border-radius: 6px; padding: 2px 6px; }
+.cs-row .tx { flex: 1; min-width: 0; }
+.cs-row .tx b { display: block; font-size: 13.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-row .tx small { display: block; font-size: 11.5px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-row .st { flex: none; width: 22px; text-align: center; font-weight: 900; font-size: 15px; }
+.cs-row .st.ok { color: var(--good); } .cs-row .st.bad { color: var(--bad); }
+.cs-notes { margin-top: 18px; background: var(--surface2); border-radius: 12px; padding: 10px 12px; }
+.cs-notes p { margin: 0; font-size: 11.5px; line-height: 1.6; color: var(--muted); }
+.cs-notes p + p { margin-top: 4px; }
+.cs-facts { margin-top: 10px; border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; font-size: 12.5px; line-height: 1.65; background: var(--surface); }
+.cs-facts summary { cursor: pointer; font-weight: 800; color: var(--muted); font-size: 13px; }
+.cs-facts summary small { font-weight: 700; margin-left: 2px; }
+.cs-facts .fi { color: var(--muted); font-size: 11.5px; margin: 8px 0 4px; }
+.cs-facts ol { margin: 6px 0 0 18px; padding: 0; }
+.cs-facts li { margin: 4px 0; }
+.cs-facts .src { color: var(--muted); font-size: 11px; word-break: break-all; }
+
+/* 문항 */
+.cs-q { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 15px; }
+.cs-qh { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.cs-no { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px;
+  background: var(--text); color: var(--surface); font-size: 13px; font-weight: 800; }
+.cs-lv { font-size: 11px; font-weight: 800; color: #fff; border-radius: 6px; padding: 2px 7px; }
+.cs-sp { font-size: 11.5px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; }
+.cs-ty { font-size: 11.5px; color: var(--muted); }
+.cs-qt { font-size: 15.5px; line-height: 1.75; word-break: keep-all; }
+.cs-box { position: relative; margin: 12px 0 2px; border: 1px solid var(--border); border-radius: 10px; padding: 14px 12px 8px; }
+.cs-box-h { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: var(--surface); padding: 0 8px; font-size: 12px; font-weight: 800; color: var(--muted); }
+.cs-box p { margin: 3px 0; font-size: 14.5px; line-height: 1.7; padding-left: 1.3em; text-indent: -1.3em; word-break: keep-all; }
+.cs-rows { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13.5px; }
+.cs-rows th, .cs-rows td { border: 1px solid var(--border); padding: 6px 8px; line-height: 1.5; text-align: left; vertical-align: top; }
+.cs-rows th { background: var(--surface2); font-weight: 800; white-space: nowrap; width: 1%; text-align: center; }
+.cs-qfig { text-align: center; }
+/* 생성기 표기 */
+.cs-wrap .nw { white-space: nowrap; }
+.cs-wrap .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; line-height: 1.08; margin: 0 2px; font-size: .86em; }
+.cs-wrap .fr .n { border-bottom: 1.4px solid currentColor; padding: 0 3px 1px; }
+.cs-wrap .fr .d { padding: 1px 3px 0; }
+.cs-wrap i.v { font-family: 'Times New Roman', 'Noto Serif KR', serif; font-style: italic; font-size: 1.08em; }
+.cs-wrap .cd { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .9em; background: var(--surface2); border-radius: 4px; padding: 0 4px; }
+
+/* 답 입력 */
+.cs-ansbox { padding: 12px 14px; }
+.cs-ahint { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.cs-arow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cs-arow .cs-sub { flex: none; padding: 11px 18px; }
+.cs-iin { display: flex; align-items: center; gap: 6px; flex: 1 1 160px; min-width: 0; }
+.cs-iin .cs-ii { flex: 1; min-width: 0; font-size: 18px; font-weight: 700; text-align: center; letter-spacing: .5px; }
+.cs-unit { font-style: normal; font-size: 14px; font-weight: 700; color: var(--muted); flex: none; }
+.cs-fin { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 14px; background: var(--surface2); }
+.cs-fi { width: 92px; text-align: center; font-size: 18px; font-weight: 700; padding: 7px 6px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none; font-family: inherit; }
+.cs-fi:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+.cs-fbar { display: block; width: 100px; height: 2px; border-radius: 2px; background: var(--text); }
+.cs-pin { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1 1 200px; }
+.cs-pick { width: 46px; height: 46px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+  font-size: 18px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.cs-pick.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cs-pin-h { font-size: 11.5px; color: var(--muted); }
+.cs-pair { display: flex; gap: 10px; flex-wrap: wrap; flex: 1 1 220px; }
+.cs-pl { display: flex; align-items: center; gap: 6px; flex: 1 1 140px; }
+.cs-pl > span { font-size: 12.5px; font-weight: 800; color: var(--muted); flex: none; }
+.cs-pl .cs-ii { flex: 1; min-width: 0; text-align: center; font-size: 17px; font-weight: 700; }
+.cs-pl em { font-style: normal; font-size: 13px; color: var(--muted); }
+.cs-ain.ok .cs-ii, .cs-ain.ok.cs-fin, .cs-ain.ok .cs-pick.on { border-color: var(--good); }
+.cs-ain.bad .cs-ii, .cs-ain.bad.cs-fin { border-color: var(--bad); }
+.cs-ain.shake { animation: csShake .42s; }
+@keyframes csShake { 15%, 85% { transform: translateX(-3px); } 30%, 70% { transform: translateX(5px); } 50% { transform: translateX(-6px); } }
+.cs-prev { font-size: 12px; color: var(--muted); margin-top: 9px; }
+.cs-note { font-size: 13px; margin-top: 4px; }
+.cs-giveup { margin-top: 10px; color: var(--muted); }
+.cs-ansline { margin-top: 10px; }
+.cs-ansbox .iv-banner { margin-top: 12px; }
+.cs-retry { margin-top: 4px; }
+.cs-nav { display: flex; gap: 8px; margin-top: 18px; }
+.cs-nav .sv-btn { flex: 1; }
+
+/* 3단 해설 */
+.cs-solwrap { margin-top: 6px; scroll-margin-top: 64px; }
+.cs-sol { border-top: none; margin-top: 4px; padding-top: 0; font-size: 14.5px; }
+.cs-sol .lv { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px; margin: 10px 0; }
+.cs-sol .lv p { margin: 4px 0; padding: 0; line-height: 1.7; word-break: keep-all; }
+.cs-sol .lv-title { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--text); }
+.cs-tg { font-size: 12px; font-weight: 800; letter-spacing: .5px; color: #fff; border-radius: 7px; padding: 3px 9px; }
+.cs-tg.t1 { background: #46604e; } .cs-tg.t2 { background: #6f5f44; } .cs-tg.t3 { background: #50546a; }
+.cs-tgs { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.cs-pn { color: #3f7a4f; font-weight: 800; margin-right: 2px; }
+.cs-ng { color: #a3463e; font-weight: 800; margin-right: 2px; }
+.rx-dark .cs-pn { color: #7fc496; } .rx-dark .cs-ng { color: #f19a8f; }
+.cs-plan { font-weight: 700; }
+.cs-sol .lv .cs-stage { margin: 4px 0 2px; padding: 14px 14px 24px; font-family: 'Noto Serif KR', 'Nanum Myeongjo', serif; }
+.cs-board { border-left: 3px solid #2f2f2f; padding: 4px 0 4px 12px; font-size: 14.5px; line-height: 1.8; font-variant-numeric: tabular-nums; color: #161616; }
+.cs-board .fig-line { padding: 1px 6px; margin: 0 -6px 2px; }
+.cs-board .fig-hint { display: block; font-size: .78em; color: #d1495b; opacity: .9; margin: 2px 0 0; line-height: 1.4; font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; font-weight: 700; }
+.cs-board .fr .n { border-bottom-color: #161616; }
+.cs-dg { margin-top: 14px; display: flex; justify-content: center; overflow-x: auto; }
+.cs-dg svg { display: block; }
+.cs-dg .tbl { border-collapse: collapse; font-size: 13px; margin: 0 auto; color: #161616; }
+.cs-dg .tbl td, .cs-dg .tbl th { border: 1px solid #a9a9a9; padding: 4px 9px; text-align: center; line-height: 1.45; transition: background .25s, color .25s; }
+.cs-dg .tbl th { background: #eeeeee; font-weight: 700; }
+.cs-dg .tbl td:first-child, .cs-dg .tbl th { white-space: nowrap; }
+.cs-dg .tbl tfoot td { font-weight: 700; color: #8a3028; border: 0; text-align: right; padding-top: 6px; }
+.anim-level .cs-dg .tbl tr.anim-hl td, .anim-level .cs-dg .tbl tr.anim-hl th { background: rgba(255, 222, 80, .42); color: #b3263a; font-weight: 700; }
+.anim-level .cs-dg .tbl tfoot tr.anim-hl td { background: transparent; color: #d1495b; text-decoration: underline; text-decoration-thickness: 2px; }
+.cs-ma { margin: 10px 0; background: var(--surface2); border-radius: 14px; padding: 12px 14px; font-size: 14px; line-height: 1.75; }
+.cs-ma b { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.cs-rub { margin: 10px 0; border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; background: var(--surface); font-size: 13px; line-height: 1.65; }
+.cs-rub summary { cursor: pointer; font-weight: 800; font-size: 13px; color: var(--muted); }
+.cs-rub[open] summary { margin-bottom: 8px; }
+.cs-rt { width: 100%; border-collapse: collapse; }
+.cs-rt th, .cs-rt td { border-top: 1px solid var(--border); padding: 6px 4px; text-align: left; vertical-align: top; }
+.cs-rt th { color: var(--muted); font-weight: 700; font-size: 11.5px; border-top: none; }
+.cs-rt .cs-rn { width: 22px; font-weight: 800; color: var(--accent); }
+.cs-rt .cs-pc { width: 46px; text-align: right; font-weight: 800; white-space: nowrap; }
+.cs-miss { margin-top: 8px; }
+.cs-miss b, .cs-ded b { font-size: 12px; color: var(--muted); }
+.cs-miss ul { margin: 4px 0 0 18px; padding: 0; }
+.cs-el { color: var(--muted); font-size: 11.5px; }
+.cs-ded { margin-top: 6px; }
+.cs-rnote { margin: 8px 0 0; font-size: 11px; color: var(--muted); }
+
+/* OMR */
+.cs-tips { margin: 0 0 10px 18px; padding: 0; font-size: 12.5px; line-height: 1.7; color: var(--text); }
+.cs-pages { display: flex; gap: 8px; }
+.cs-pg { flex: 1; display: flex; flex-direction: column; gap: 1px; border: 1.5px dashed var(--border); border-radius: 12px; padding: 8px 10px; font-size: 13px; font-weight: 800; color: var(--muted); }
+.cs-pg small { font-size: 11px; font-weight: 600; }
+.cs-pg.on { border-style: solid; border-color: var(--good); color: var(--good); background: color-mix(in srgb, var(--good) 8%, var(--surface)); }
+.cs-busy { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.cs-busy .sp { width: 16px; height: 16px; border-radius: 999px; border: 2.5px solid var(--border); border-top-color: var(--accent); animation: csSpin .8s linear infinite; }
+@keyframes csSpin { to { transform: rotate(360deg); } }
+.cs-pending { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, #eaa000 12%, var(--surface)); border: 1px solid #eaa000; font-size: 13px; }
+.cs-previews { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.cs-prv { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
+.cs-prv img { display: block; width: 100%; height: auto; border-radius: 6px; }
+.cs-prv figcaption { font-size: 10.5px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+.cs-warn { font-size: 12.5px; line-height: 1.6; background: color-mix(in srgb, #eaa000 12%, var(--surface)); border: 1px solid #eaa000; border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; }
+.cs-ogrp { margin-bottom: 12px; }
+.cs-ogh { font-size: 12.5px; font-weight: 800; margin: 4px 2px 6px; }
+.cs-ogh small { color: var(--muted); font-weight: 600; }
+.cs-orows { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+@media (max-width: 400px) { .cs-orows { grid-template-columns: 1fr; } }
+.cs-orow { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 5px 8px; flex-wrap: wrap; }
+.cs-orow .no { flex: none; width: 22px; font-weight: 800; font-size: 12.5px; text-align: right; }
+.cs-orow .kd { flex: none; font-size: 10.5px; color: var(--muted); width: 26px; }
+.cs-orow .sv-in { flex: 1; min-width: 80px; padding: 7px 9px; font-size: 15px; font-weight: 700; border-radius: 8px; }
+.cs-orow em { flex-basis: 100%; font-style: normal; font-size: 11px; color: #b07a00; padding-left: 54px; }
+.cs-orow.warn { border-color: #eaa000; background: color-mix(in srgb, #eaa000 10%, var(--surface)); }
+.cs-orow.me { border-color: var(--accent); }
+.cs-gradebtn { margin-top: 6px; padding: 13px; font-size: 15px; }
+.cs-score { text-align: center; }
+.cs-score .big { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
+.cs-score .big b { font-size: 46px; font-weight: 900; letter-spacing: -1px; }
+.cs-score .big span { font-size: 18px; color: var(--muted); font-weight: 800; }
+.cs-score .lvs { display: flex; justify-content: center; gap: 14px; margin-top: 4px; font-size: 13px; font-weight: 700; }
+.cs-score .lvs i { font-style: normal; color: #fff; font-size: 10.5px; font-weight: 800; border-radius: 6px; padding: 1px 6px; margin-right: 4px; }
+.cs-rrow .tx small .fr { font-size: .8em; }
