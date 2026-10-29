@@ -47,7 +47,7 @@ const USER = { id: "00000000-0000-4000-8000-000000000001", aud: "authenticated",
 const JWT = `${b64u({ alg: "HS256", typ: "JWT" })}.${b64u({ sub: USER.id, aud: "authenticated", role: "authenticated", email: USER.email, exp: 9999999999, iat: 1700000000, aal: "aal1", amr: [{ method: "password", timestamp: 1700000000 }], app_metadata: USER.app_metadata, user_metadata: {}, session_id: "s1" })}.sig`;
 const SESSION = { access_token: JWT, token_type: "bearer", expires_in: 3600, expires_at: 9999999999, refresh_token: "r1", user: USER };
 const PROFILE = { role: "student", member_code: "SMOKE", trial_expires_at: null, merged_into: null, phone_verified: true, is_minor: false, birth_date: "2011-03-01", settings: {} };
-let storageMode = "ok";        // ok | missing
+let storageMode = "ok";        // ok | missing | nocors(CORS 헤더 없음 → 앱이 ?download= 링크로)
 const PDF = (doc) => {
   const p = path.join(ROOT, ".concept-files/prob/01", `${doc}.pdf`);
   return fs.existsSync(p) ? fs.readFileSync(p) : Buffer.from(`%PDF-1.4\n% fake ${doc}\n%%EOF\n`);
@@ -75,6 +75,8 @@ async function mockAll(ctx, page) {
     const u = new URL(route.request().url());
     const doc = (u.pathname.match(/\/(problems|solutions|omr)\.pdf$/) || [])[1];
     const cors = { "access-control-allow-origin": "*" };
+    // nocors: 앱의 fetch 가 막힌 상황(브라우저가 CORS 로 막으면 fetch 는 네트워크 오류) — route.fulfill 은 CORS 를 검사하지 않아 abort 로 흉내
+    if (storageMode === "nocors" && !u.searchParams.has("download")) return route.abort("failed");
     if (storageMode === "missing" || !doc) return route.fulfill({ status: 400, contentType: "application/json", headers: cors, body: JSON.stringify({ statusCode: "404", error: "not_found" }) });
     const h = { ...cors, "content-type": "application/pdf" };
     if (u.searchParams.has("download")) h["content-disposition"] = `attachment; filename*=UTF-8''${encodeURIComponent(u.searchParams.get("download"))}`;
@@ -265,6 +267,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.locator(".cs-dbtns .sv-btn", { hasText: "다운로드" }).click();
     await page.locator(".cs-toast").waitFor({ timeout: 8000 });
     ok(/아직 올라가지 않았어요/.test(await page.locator(".cs-toast").innerText()), "G3 파일이 없으면 안내(바로 인쇄로 PDF 저장)");
+    storageMode = "nocors";
+    await chip("OMR").click();                                           // 문제지만
+    [dl] = await Promise.all([page.waitForEvent("download", { timeout: 10000 }), page.locator(".cs-dbtns .sv-btn", { hasText: "다운로드" }).click()]);
+    ok(dl.suggestedFilename() === "01-야구-문제.pdf" && /download=/.test(dl.url()), `G4 받아 오기가 막히면 서버 링크(?download=)로 → ${dl.suggestedFilename()} ${dl.url().slice(0, 50)}`);
     storageMode = "ok";
 
     // H. OMR 사진 채점 — 정답대로 칠하되 3문항 틀리게 · 1문항 비움

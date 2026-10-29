@@ -240,9 +240,21 @@ export function DocsPanel({ catId, set, files, say }) {
         say(`${DOCS.find((d) => d.id === id).label}를 받았어요`);
       } else {
         const out = [];
-        for (let i = 0; i < order.length; i++) {
-          setProg(`${i + 1}/${order.length}`);
-          out.push({ name: downloadName(set, order[i]), data: await fetchPdf(pdfRawUrl(catId, set.no, order[i])) });
+        try {
+          for (let i = 0; i < order.length; i++) {
+            setProg(`${i + 1}/${order.length}`);
+            out.push({ name: downloadName(set, order[i]), data: await fetchPdf(pdfRawUrl(catId, set.no, order[i])) });
+          }
+        } catch (e) {
+          if (e.message !== "NET") throw e;
+          // 받아 오기가 막히면(CORS 등) ZIP 대신 하나씩 서버 링크로
+          for (let i = 0; i < order.length; i++) {
+            setProg(`${i + 1}/${order.length}`);
+            clickLink(pdfUrl(catId, set, order[i]));
+            await new Promise((r) => setTimeout(r, 900));
+          }
+          say(`${order.length}개 파일을 하나씩 받아요`);
+          return;
         }
         saveBlob(new Blob([zipStore(out)], { type: "application/zip" }), `${set.key}.zip`);
         say(`${order.length}개 파일을 ZIP 하나로 받았어요`);

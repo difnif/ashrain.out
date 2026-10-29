@@ -6,7 +6,7 @@
 // 1) 목록의 파일이 폴더에 다 있고 sha256 · 크기가 맞는지 먼저 본다 — 하나라도 어긋나면 아무것도 올리지 않는다.
 // 2) 버킷이 없으면 공개 버킷으로 만든다(PDF 만, 한 파일 20 MB 까지). 있는데 비공개면 공개로 바꾼다.
 // 3) 파일마다 덮어쓰기(upsert)로 올린다 — 여러 번 돌려도 같다. 실패하면 세 번까지 다시.
-// 4) 공개 주소로 다시 받아 sha256 을 비교하고, ?download= 이 한글 파일 이름(Content-Disposition)을 붙이는지 하나 확인한다.
+// 4) 공개 주소로 다시 받아 sha256 을 비교한다. CORS 헤더와 ?download= 의 Content-Disposition 도 한 파일로 살펴 요약에 남긴다.
 // service_role 키는 이 스크립트(서버 쪽)에서만 쓴다 — 앱(클라이언트)에는 절대 넣지 않는다.
 import fs from "node:fs";
 import path from "node:path";
@@ -102,15 +102,18 @@ for (const mf of manifests) {
   try {
     await pool(jobs, 6, async (j) => { await verify(bucket, j.rel, j.sha); checked++; });
   } catch (e) { failed = true; log(`✗ ${e.message}`); }
-  // 내려받기 이름(?download=) — 한 파일만
+  // 앱이 쓰는 두 길을 한 파일로 확인(알림만 — 실패로 치지 않는다):
+  //   ① 다른 출처(앱)에서 fetch → CORS 허용 헤더 (앱이 받아서 한글 이름을 붙인다)
+  //   ② ?download= → Content-Disposition: attachment (①이 막힐 때 앱이 쓰는 길)
   const j0 = jobs[0];
   if (j0) {
-    const name = encodeURIComponent("확인용-문제.pdf");
-    const r = await fetch(`${BASE}/storage/v1/object/public/${bucket}/${j0.rel}?download=${name}`, { cache: "no-store" });
-    const cd = r.headers.get("content-disposition") || "";
-    try { await r.arrayBuffer(); } catch { /* 무시 */ }
-    if (r.status !== 200 || !/attachment/i.test(cd)) { failed = true; log(`✗ ?download= 확인 실패 (${r.status}, ${cd || "Content-Disposition 없음"})`); }
-    else log(`?download= → ${cd}`);
+    const u = `${BASE}/storage/v1/object/public/${bucket}/${j0.rel}`;
+    const r1 = await fetch(u, { cache: "no-store", headers: { origin: "https://ashrain.example" } });
+    try { await r1.arrayBuffer(); } catch { /* 무시 */ }
+    log(`CORS(Access-Control-Allow-Origin) → ${r1.headers.get("access-control-allow-origin") || "없음 — 앱은 ?download= 링크로 받는다"}`);
+    const r2 = await fetch(`${u}?download=${encodeURIComponent("확인용-문제.pdf")}`, { cache: "no-store" });
+    try { await r2.arrayBuffer(); } catch { /* 무시 */ }
+    log(`?download= → ${r2.status} ${r2.headers.get("content-disposition") || "Content-Disposition 없음"}`);
   }
   log(`${failed ? "✗" : "✓"} ${m.cat}: 올림 ${done}/${jobs.length} · 공개 주소 확인 ${checked}/${jobs.length}`);
 }
