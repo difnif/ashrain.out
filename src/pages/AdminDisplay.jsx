@@ -5,17 +5,20 @@
 // 화면은 탭·마우스 움직임에 조작 막대가 잠깐 뜨고 스스로 숨는다. 전체 화면·화면 꺼짐 방지 포함.
 // 액자: 토글 왼쪽의 액자 단추 → 액자 목록 → 고르면 수업 장면 대신 그 액자가 계속 돈다(지금은 하노이의 탑).
 //       액자는 벽시계로 흘러서 새로고침해도 이어진다. 액자: src/features/display/frames/ · 계산: hanoi.js
+// 장면 설정: 장면이 controls(구슬 수·단계·문 개수 …)를 가지면 조작 막대 아래에 설정 칩이 뜬다. 바꾸면 그 장면을
+//       처음부터 다시 튼다. 장면마다 기기에 기억한다. 장면은 render(mode, t, C, P) 의 P 로 설정을 받는다.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { PAIRS, GROUPS } from "../features/display/pairs";
 import { PALETTE, W, H, SceneTitle, clearMeasureCache } from "../features/display/draw";
 import { E, clamp } from "../features/display/core";
 import { FRAMES } from "../features/display/frames/index.js";
+import { paramsOf, durOf, optVal } from "../features/display/params.js";
 import { HanoiArt, HanoiThumb } from "../features/display/frames/hanoi.jsx";
 import { HANOI, hanoiTimeline, hanoiAt, remapElapsed, fmtDur, comma } from "../features/display/hanoi";
 
 const LS = { mode: "ash.display.mode", theme: "ash.display.theme", idx: "ash.display.idx", rep: "ash.display.repeat", grp: "ash.display.group",
-  view: "ash.display.view", hanoi: "ash.display.hanoi" };
+  view: "ash.display.view", hanoi: "ash.display.hanoi", prm: "ash.display.params" };
 const lsGet = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, String(v)); } catch { /* 사생활 모드 등 */ } };
 
@@ -25,7 +28,12 @@ const FRAME_MS = 1000 / 40;
 const IDLE_MS = 3600;
 const PRETENDARD = "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css";
 
-/* ── 묶음: 전체 / 도형 / 경우의 수·확률 — 고른 묶음 안에서만 돈다 ── */
+/* ── 장면 설정: 기기에 기억(장면 key 마다) ── */
+function loadPrm() {
+  try { const o = JSON.parse(localStorage.getItem(LS.prm) || "{}"); return o && typeof o === "object" ? o : {}; } catch { return {}; }
+}
+
+/* ── 묶음: 전체 / 도형 / 경우의 수·확률 … — 고른 묶음 안에서만 돈다 ── */
 const orderOf = (g) => PAIRS.map((_, i) => i).filter((i) => g === "all" || PAIRS[i].group === g);
 function stepIdx(cur, dir, g) {
   const ord = orderOf(g);
@@ -71,6 +79,7 @@ function Stage() {
   const [gal, setGal] = useState(false);       // 액자 목록
   const [view, setView] = useState(() => (FRAMES.some((f) => f.key === lsGet(LS.view, "")) ? lsGet(LS.view, "") : null));   // null = 수업 장면
   const [isFs, setIsFs] = useState(false);
+  const [prm, setPrm] = useState(loadPrm);     // { 장면 key: { 설정 key: 값 } }
   const [, setFrame] = useState(0);
 
   const rootRef = useRef(null);
@@ -80,7 +89,7 @@ function Stage() {
   const mfade = useRef(null);   // { from, t0 }
   const pfade = useRef(null);   // { idx, mode, t, t0 }
   const S = useRef({});         // 루프가 읽는 최신 상태
-  S.current = { idx, mode, repeat, paused, list, grp, view, gal };
+  S.current = { idx, mode, repeat, paused, list, grp, view, gal, prm, P: paramsOf(PAIRS[idx], prm) };
 
   const elapsed = (now = performance.now()) => (clk.current.held != null ? clk.current.held : now - clk.current.start);
 
@@ -90,6 +99,7 @@ function Stage() {
   useEffect(() => { lsSet(LS.rep, repeat ? 1 : 0); }, [repeat]);
   useEffect(() => { lsSet(LS.grp, grp); }, [grp]);
   useEffect(() => { lsSet(LS.view, view || ""); }, [view]);
+  useEffect(() => { lsSet(LS.prm, JSON.stringify(prm)); }, [prm]);
 
   /* ── 액자 열기·닫기 — 수업 장면 시계는 액자 동안 멈춰 둔다 ── */
   const openFrame = useCallback((key) => {
@@ -115,7 +125,7 @@ function Stage() {
     const now = performance.now();
     const cur = S.current;
     const from = PAIRS[cur.idx];
-    if (fade) pfade.current = { idx: cur.idx, mode: cur.mode, t: Math.min(elapsed(now), from.dur), t0: now };
+    if (fade) pfade.current = { idx: cur.idx, mode: cur.mode, t: Math.min(elapsed(now), durOf(from, cur.P)), t0: now, P: cur.P };
     clk.current = { start: now, held: cur.paused ? 0 : null };
     mfade.current = null;
     setIdx(((i % PAIRS.length) + PAIRS.length) % PAIRS.length);
@@ -132,6 +142,19 @@ function Stage() {
     if (clk.current.held != null) { clk.current = { start: now - clk.current.held, held: null }; setPaused(false); }
     else { clk.current = { start: clk.current.start, held: now - clk.current.start }; setPaused(true); }
   }, []);
+  /** 지금 장면의 설정 하나를 바꾸고 처음부터 다시 튼다 */
+  const setParam = useCallback((k, v) => {
+    const cur = S.current, pair = PAIRS[cur.idx];
+    if (cur.P[k] === v) return;
+    goTo(cur.idx, true);
+    setPrm((o) => ({ ...o, [pair.key]: { ...(o[pair.key] || {}), [k]: v } }));
+  }, [goTo]);
+  /** 단계형 설정을 한 칸 앞뒤로 */
+  const stepParam = useCallback((c, dir) => {
+    const ops = c.options.map(optVal), i = ops.indexOf(S.current.P[c.key]);
+    const j = clamp(i + dir, 0, ops.length - 1);
+    if (j !== i) setParam(c.key, ops[j]);
+  }, [setParam]);
 
   /* ── 그리기 루프 (최대 40fps) ── */
   useEffect(() => {
@@ -142,7 +165,7 @@ function Stage() {
       last = now;
       const cur = S.current;
       if (cur.view) return;   // 액자는 FrameStage 가 따로 그린다
-      if (clk.current.held == null && now - clk.current.start >= PAIRS[cur.idx].dur) {
+      if (clk.current.held == null && now - clk.current.start >= durOf(PAIRS[cur.idx], cur.P)) {
         goTo(cur.repeat ? cur.idx : stepIdx(cur.idx, 1, cur.grp), true);
       }
       if (mfade.current && now - mfade.current.t0 > MODE_FADE) mfade.current = null;
@@ -222,10 +245,14 @@ function Stage() {
       else if (k === "t" || k === "T" || k === "Tab") { e.preventDefault(); flipMode(); }
       else if (k === "f" || k === "F") toggleFs();
       else if (k === "l" || k === "L") setList((v) => !v);
+      else if (k === "ArrowUp" || k === "ArrowDown") {
+        const c = (PAIRS[S.current.idx].controls || []).find((x) => x.kind === "step");
+        if (c) { e.preventDefault(); stepParam(c, k === "ArrowUp" ? 1 : -1); poke(); }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goTo, flipMode, togglePause, toggleFs, poke]);
+  }, [goTo, flipMode, togglePause, toggleFs, poke, stepParam]);
 
   /* ── 묶음 고르기: 지금 장면이 그 묶음에 없으면 묶음의 첫 장면으로 ── */
   const pickGroup = (g) => {
@@ -249,16 +276,18 @@ function Stage() {
   const now = performance.now();
   const C = PALETTE[thm];
   const pair = PAIRS[idx];
-  const t = clamp(elapsed(now), 0, pair.dur);
+  const P = paramsOf(pair, prm);
+  const dur = durOf(pair, P);
+  const t = clamp(elapsed(now), 0, dur);
   const layers = [];
   const pf = pfade.current, mf = mfade.current;
   const kin = pf ? E.sine(clamp((now - pf.t0) / PAIR_FADE)) : 1;
-  if (pf && kin < 1) layers.push({ key: "out", pair: PAIRS[pf.idx], mode: pf.mode, t: pf.t, o: 1 - kin });
+  if (pf && kin < 1) layers.push({ key: "out", pair: PAIRS[pf.idx], mode: pf.mode, t: pf.t, o: 1 - kin, P: pf.P });
   if (mf) {
     const k = E.sine(clamp((now - mf.t0) / MODE_FADE));
-    if (k < 1) layers.push({ key: "from-" + mf.from, pair, mode: mf.from, t, o: kin * (1 - k * k) });
-    layers.push({ key: "to-" + mode, pair, mode, t, o: kin * k });
-  } else layers.push({ key: "cur-" + mode, pair, mode, t, o: kin });
+    if (k < 1) layers.push({ key: "from-" + mf.from, pair, mode: mf.from, t, o: kin * (1 - k * k), P });
+    layers.push({ key: "to-" + mode, pair, mode, t, o: kin * k, P });
+  } else layers.push({ key: "cur-" + mode, pair, mode, t, o: kin, P });
 
   const toggleThm = () => { setThm((v) => (v === "dark" ? "light" : "dark")); poke(); };
 
@@ -277,7 +306,7 @@ function Stage() {
           {layers.map((L) => (
             <g key={L.key + "@" + L.pair.key} opacity={L.o}>
               <SceneTitle title={L.pair.title[L.mode]} sub={L.pair.sub[L.mode]} C={C} mode={L.mode} />
-              {L.pair.render(L.mode, L.t, C)}
+              {L.pair.render(L.mode, L.t, C, L.P || paramsOf(L.pair, prm))}
             </g>
           ))}
         </svg>
@@ -317,11 +346,37 @@ function Stage() {
           </Btn>
         </div>
 
+        {/* 장면 설정 — 이 장면이 고를 것을 가지고 있을 때만 */}
+        {pair.controls && (
+          <div className={"dsp-pctl" + (ctl ? " show" : "")} onPointerDown={(e) => e.stopPropagation()}>
+            {pair.controls.map((c, ci) => (
+              <div key={c.key} className="dsp-pc">
+                {ci > 0 && <span className="dsp-sep" />}
+                <span className="lb">{c.label}</span>
+                {c.kind === "step" ? (<>
+                  <Btn title={`${c.label} 줄이기${ci === 0 ? " (↓)" : ""}`} disabled={P[c.key] === optVal(c.options[0])}
+                    onClick={() => { stepParam(c, -1); poke(); }}><Ic d="M6 12h12" /></Btn>
+                  <span className="dsp-num" aria-live="polite"><b>{c.fmt ? c.fmt(P[c.key]) : P[c.key]}</b>{c.unit && <small>{c.unit}</small>}</span>
+                  <Btn title={`${c.label} 늘리기${ci === 0 ? " (↑)" : ""}`} disabled={P[c.key] === optVal(c.options.at(-1))}
+                    onClick={() => { stepParam(c, 1); poke(); }}><Ic d="M12 6v12M6 12h12" /></Btn>
+                </>) : (
+                  <div className="dsp-seg" role="radiogroup" aria-label={c.label}>
+                    {c.options.map((o) => (
+                      <button key={optVal(o)} type="button" role="radio" aria-checked={P[c.key] === optVal(o)}
+                        onClick={() => { setParam(c.key, optVal(o)); poke(); }}>{Array.isArray(o) ? o[1] : o}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* 진행 — 장면 점 + 지금 장면의 흐름 */}
         <div className="dsp-dots" aria-hidden="true">
           {orderOf(grp).map((i) => <i key={PAIRS[i].key} className={i === idx ? "on" : ""} />)}
         </div>
-        <div className="dsp-prog" aria-hidden="true"><i style={{ transform: `scaleX(${t / pair.dur})` }} /></div>
+        <div className="dsp-prog" aria-hidden="true"><i style={{ transform: `scaleX(${t / dur})` }} /></div>
         {paused && <div className="dsp-paused">멈춤</div>}
 
         {list && (
@@ -623,6 +678,15 @@ const DSP_CSS = `
 .dsp-hint.show { opacity: 1; transform: translate(-50%, 0); }
 .dsp-hint b { color: var(--ink); font-weight: 800; }
 .dsp-hint b.on { color: var(--gold); }
+
+/* 장면 설정 칩 — 조작 막대 아래 */
+.dsp-pctl { position: absolute; left: 50%; top: 7.5cqw; transform: translate(-50%, -.5cqw); display: flex; align-items: center;
+  gap: .4cqw; padding: .35cqw .8cqw; border-radius: 999px; background: var(--chip); border: 1px solid var(--chipbd);
+  opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; z-index: 6; white-space: nowrap; }
+.dsp-pctl.show { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+.dsp-pc { display: flex; align-items: center; gap: .35cqw; }
+.dsp-pc .lb { font-size: 1.1cqw; font-weight: 800; color: var(--soft); margin: 0 .3cqw 0 .2cqw; }
+.dsp-pctl .dsp-num { min-width: 4.6cqw; }
 
 /* 진행 */
 .dsp-dots { position: absolute; right: 2.8cqw; bottom: 1.6cqw; display: flex; gap: .55cqw; opacity: .55; }
