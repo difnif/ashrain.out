@@ -206,7 +206,7 @@ iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정) · 흐리�
   | 서술형 5 | 불이 켜지는 간판 — 직사각형에서 빼기 | 움직이는 점과 일차함수 |
   | 서술형 6 | 반티 두 업체 — 한 벌씩 쌓아 보기 | 두 그래프가 만나는 점(연립방정식) |
 
-코드: `src/pages/AdminDisplay.jsx`(무대·토글·순환·설정 칩·액자 목록·하노이 조작) · `src/features/display/` — `core.js`(시간·이징·직교 카메라·전개도 접기) · `draw.jsx`(수식 글자·인라인 아이콘·표·주사위·판서·자막·각 표시·입체 면) · `facts.js` · `facts-soccer.js` · `facts-essay.js`(화면에 나오는 모든 수) · `kit-story.jsx` · `kit-soccer.jsx` · `kit-essay.jsx`(축구·서술형 그리기 부품) · `solids.js`(전개도·위치 관계 판정) · `params.js`(장면 설정) · `physics.js`(구슬 물리) · `galton.js`(갈톤 보드) · `branch.js`(갈림길·물리 판) · `guess.js`(몬티홀·찍기) · `scenes/*.jsx`(장면 36쌍) · `pairs.js`(수업 장면 순서·묶음) · `stories.js`(장면 묶음 · 풀이 보기 목록) · `hanoi.js` · `montylab.js` · `branchlab.js`(액자 계산) · `frames/` — `index.js`(액자 목록) · `hanoi.jsx` · `story.jsx`(장면 묶음 재생기) · `xkit.jsx`(실험 액자 공용 — 벽시계·조작 막대·해 보기/풀이 보기) · `monty.jsx` · `branchlab.jsx` · `galtonlab.jsx`.
+코드: `src/pages/AdminDisplay.jsx`(무대·토글·순환·설정 칩·액자 목록·하노이 조작) · `src/features/display/` — `stage-ui.jsx`(무대 CSS · 조작 막대 단추 — 컨셉 문제 해설 영상과 공용) · `core.js`(시간·이징·직교 카메라·전개도 접기) · `draw.jsx`(수식 글자·인라인 아이콘·표·주사위·판서·자막·각 표시·입체 면) · `facts.js` · `facts-soccer.js` · `facts-essay.js`(화면에 나오는 모든 수) · `kit-story.jsx` · `kit-soccer.jsx` · `kit-essay.jsx`(축구·서술형 그리기 부품) · `solids.js`(전개도·위치 관계 판정) · `params.js`(장면 설정) · `physics.js`(구슬 물리) · `galton.js`(갈톤 보드) · `branch.js`(갈림길·물리 판) · `guess.js`(몬티홀·찍기) · `scenes/*.jsx`(장면 36쌍) · `pairs.js`(수업 장면 순서·묶음) · `stories.js`(장면 묶음 · 풀이 보기 목록) · `hanoi.js` · `montylab.js` · `branchlab.js`(액자 계산) · `frames/` — `index.js`(액자 목록) · `hanoi.jsx` · `player.jsx`(장면 묶음 재생기 StoryPlayer — 컨셉 문제 해설 영상도 쓴다) · `story.jsx`(장면 묶음 액자) · `xkit.jsx`(실험 액자 공용 — 벽시계·조작 막대·해 보기/풀이 보기) · `monty.jsx` · `branchlab.jsx` · `galtonlab.jsx`.
 물리 엔진(`physics.js`): 움직이는 것은 구슬(원)뿐, 못·벽은 고정. 1/240초 고정 간격이라 같은 설정이면 언제나 같은 결과(결정적)이고, 장면은 "시간 → 그림"이라 `simAt` 이 시각까지 돌린 세계를 캐시해 앞으로만 이어 돌린다. 바닥에 멈춘 구슬은 얼려 장애물로 쓴다(2000개도 실시간).
 - 갈톤 보드: 크기와 상관없이 같은 비율(못 간격에 비례하는 중력·흔들림), 구슬이 많을수록 작게 — 줄 6~12 · 구슬 100~2000개에서 칸별 개수가 B(R, 1/2)에 맞도록 맞춘 값. 액자는 다시 켰을 때 따라 돌릴 양(구슬 수 × 초)이 많으면 그 바퀴를 처음부터 튼다.
 - 갈림길 물리 판: 갈림목은 뾰족한 지붕, 목(좁은 길)이 옆으로 가던 힘을 없앤다. 혼자 지나는 구슬의 작은 흔들림은 갈림목마다 동전 던지기로 대신하고, 다른 구슬과 나란히/바로 아래 붙어 오면 동전 대신 부딪힘이 길을 정한다. 실험 액자는 출발 통 대신 주머니 + 깔때기를 단다(한꺼번에 = 주머니 속 자리에서 동시에 떨어진다). 300판 비교에 쓰는 씨앗 묶음은 하나씩 굴린 기록이 모든 설정에서 이론값과 4%p 안인 것을 골랐다.
@@ -216,11 +216,13 @@ iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정) · 흐리�
 
 ### 공부하기 › 컨셉 문제 — 주제별 경우의 수·확률 38세트 (`#/study/sets` · `#/sets/*`, 2026-10-29)
 공부하기 서브탭 「컨셉 문제」 → 범주 폴더(「경우의 수와 확률」) → 세트 아이콘 38개(스포츠 · 패션·뷰티 · 음악 · 역사 · 사회·과학 · 영상). 세트마다 50문항(하 15 · 중 25 · 상 10), 실제 자료로 만든 주제 문항.
-- **바로 풀기** `#/sets/prob/NN/q/<번호>` — 정수 · 분수(분자/분모 칸, 값이 같으면 정답 + 기약분수 안내) · 보기 고르기 · 두 수. 채점하면 **3단 해설**(방침: 포지티브 · 네거티브 → 전략 / 전개 / 확인) + 모범 답안 · 채점 기준(요소 비중 · 못 채운 것 · 감점). 전개는 판서 줄 · 빨간 메모 · 도식(표 · SVG)이 figanim 으로 맞춰 움직인다. 진도는 기기 · 계정별(localStorage).
+- **바로 풀기 · 문제지 그대로** `#/sets/prob/NN/paper` — 인쇄용 문제지 HTML 을 PDF 보듯 펼쳐(그림자 DOM · 폭 맞춤 · 확대) 그 위에 푼다. 괄호를 누르면 답 시트: **손글씨**(손가락 · 펜 · 마우스, 펜이 닿으면 손바닥 무시, 분수 판은 분자/분모 · 두 수 판은 왼쪽/오른쪽) 또는 **타자**. 쓴 답은 괄호 안에 연필 글씨로. <보기> 줄을 누르면 **빨간 색연필 체크** — 여러 개 가능 · 다시 누르면 해제(실수를 막지 않는다). **빈칸이 있어도 제출** → 손글씨만 번호 칸 이미지 한 장으로 모아 기존 `/api/ai`(task `omr`, 서버 변경 없음)로 읽고 바로 채점 — 문제지 위에 동그라미 · 빗금 · 정답 · 점수. 못 읽은 손글씨는 「확인 필요」(눌러서 타자로). 채점 뒤 문항을 누르면 해설 시트, 「틀린 것만 다시」 · 「처음부터」. 답안은 기기 · 계정별로 바로 저장(`ink.js` · `paperlogic.js` · `paper.js` · `InkPad.jsx` · `PaperSolve.jsx`).
+- **한 문제씩 풀기** `#/sets/prob/NN/q/<번호>` — 정수 · 분수(분자/분모 칸, 값이 같으면 정답 + 기약분수 안내) · 보기 고르기 · 두 수. 채점하면 **3단 해설**(방침: 포지티브 · 네거티브 → 전략 / 전개 / 확인) + 모범 답안 · 채점 기준(요소 비중 · 못 채운 것 · 감점). 전개는 판서 줄 · 빨간 메모 · 도식(표 · SVG)이 figanim 으로 맞춰 움직인다. 진도는 기기 · 계정별(localStorage).
+- **해설 영상** `#/sets/prob/NN/video[?no=N]` — 교실 모니터와 같은 무대 · 재생기(`features/display/stage-ui.jsx` · `frames/player.jsx`)로 50문항 해설을 끝없이 돌린다(문제 → 방침 → 전개: 판서 줄마다 도식의 그 부분이 빛남 → 확인 · 답, 50번 다음은 1번). 벽시계로 흘러 새로고침해도 이어지고, 조작 막대(이전 · 멈춤 · 다음 · 이 문항 반복 · 밝기 · 전체 화면 · 문항 목록 · 나가기 / ←→ · 스페이스 · R · F · L), 화면 꺼짐 방지. 장면은 `pages/sets/videoScenes.jsx`가 문항 JSON(해설 · 큐)에서 만든다 — 박자는 글자 수로 어림(한 바퀴 약 36~41분). 해설 · 해설 시트에서 「영상으로 보기」는 그 문항부터.
 - **자료** — 문제지 · 해설지 · OMR 카드를 골라 **바로 인쇄**(PDF 와 같은 HTML `public/concept-sets/prob/print/` 을 한 창에 합쳐 인쇄, 쪽 나눔 동일) 또는 **다운로드**(하나면 PDF, 여럿이면 ZIP — 한글 파일 이름).
 - **OMR 채점** `#/sets/prob/NN/omr` — 2쪽 숫자 칸 카드(`src/lib/omr/grid.js`: 네 모서리 마커 · 방향 막대 · 세트/쪽 코드 띠). 쪽마다 사진 → 기기 안에서 판독(올리지 않음) → 노란 칸 확인 · 고치기 → 채점 → 틀린 문항 해설로.
 - 데이터: `public/concept-sets/<범주>/index.json · NN.json`(문항 · 답 · OMR 칸 · 해설 · 애니메이션 큐) — 생성기(guard-daily `tk_export.py`)가 만든다. PDF 는 저장소에 넣지 않고, main 머지 때 워크플로 `push-concept-files` 가 같은 HTML 로 찍어(쪽 수 검사) Supabase Storage 공개 버킷 `concept-sets` 에 올린다(`scripts/concept-files.mjs` · `scripts/push-concept-files.mjs`).
-- 검산: `node tests/conceptsets.test.mjs`(데이터 · 판정 · 해설 큐 · 인쇄 합치기 · ZIP · 합성 사진 OMR 판독) · `node tests/smoke/conceptsets.smoke.mjs`(빌드 후 목록 → 풀기 → 해설 움직임 → 인쇄 → 다운로드 → 카드 사진 채점).
+- 검산: `node tests/conceptsets.test.mjs`(데이터 · 판정 · 해설 큐 · 인쇄 합치기 · ZIP · 합성 사진 OMR 판독) · `node tests/conceptsets-paper.test.mjs`(손글씨 꼴 · 보기 체크 · 빈칸 제출 채점) · `node tests/conceptsets-video.test.mjs`(1900장면을 박자 지점마다 두 테마로 그려 보기 · 배치가 무대 안 · 도식 큐 키) · `node tests/smoke/conceptsets.smoke.mjs`(빌드 후 목록 → 풀기 → 해설 움직임 → 인쇄 → 다운로드 → 카드 사진 채점 → 종이처럼 풀기 → 해설 영상).
 
 ## 구조
 ```
@@ -231,7 +233,7 @@ src/lib/concepts.js        개념·QnA 데이터 접근
 src/components/            SplashAuth · Home · ConceptViewer(+ReviewMode) · ReviewCard · PointsCard · AdminQna · Signup
 src/components/Well.jsx    우물 — 탭바 중앙 버튼·런처 시트·자리그림 (lib/wx·sun·well + pages/AdminWell.jsx 편집)
 src/pages/solve/           학생앱 문제풀이 화면들 (Solve 허브 · ItemPlay · Exam · Omr · Read · Mark · Essay · AskItem)
-src/pages/sets/            컨셉 문제 (세트 · 풀기 · 3단 해설 · 인쇄 합치기 · OMR 채점) + lib/conceptsets.js · lib/omr/grid.js
+src/pages/sets/            컨셉 문제 (세트 · 종이처럼 풀기 · 한 문제씩 · 3단 해설 · 해설 영상 · 인쇄 합치기 · OMR 채점) + lib/conceptsets.js · lib/omr/grid.js
 src/features/portrait/     ribbedGlass(필터) · facePipeline(MediaPipe) · PortraitStudio
 api/                       Vercel 서버리스 — ai(힌트·OMR·질문) · points(지갑) · review(복습 보상) · transcribeJob …
 supabase/2026-09_*.sql     학생앱 베타 선택 마이그레이션 (student_beta · wallet_review)

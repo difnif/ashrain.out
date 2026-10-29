@@ -1,4 +1,5 @@
 // 공부하기 › 컨셉 문제 흐름 스모크 — 목록(폴더 · 아이콘) → 세트 → 풀기 · 3단 해설(움직임) → 바로 인쇄 → 다운로드 → OMR 사진 채점
+//   → 종이처럼 풀기(타자 · 손글씨 · 보기 체크 · 빈칸 제출 · 자동 채점) → 해설 영상(조작 막대 · 목록 · 이어 보기)
 //   node tests/smoke/conceptsets.smoke.mjs [--headed]
 // 준비: `npx vite build` (dist/ 필요) · playwright(전역) + Chromium.
 //   다운로드 확인에 쓸 PDF 가 .concept-files/prob/01/ 에 있으면(scripts/concept-files.mjs --only 01) 그걸 Storage 응답으로 쓰고, 없으면 가짜 PDF.
@@ -173,9 +174,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await shot("cs-set");
 
     // C. 풀기 — 오답 → 해설(3단 + 움직임) → 다시 풀기 → 정답
-    await page.locator(".cs-go").click();
+    await page.locator(".cs-go2 .sv-btn", { hasText: "한 문제씩" }).click();
     await page.locator(".cs-q").waitFor({ timeout: 10000 });
-    ok(/#\/sets\/prob\/01\/q\/1$/.test(page.url()), "C1 바로 풀기 → 1번");
+    ok(/#\/sets\/prob\/01\/q\/1$/.test(page.url()), "C1 한 문제씩 풀기 → 1번");
     await page.locator(".cs-ii").fill("13");
     await page.locator(".cs-sub").click();
     await page.locator(".iv-banner.bad").waitFor({ timeout: 5000 });
@@ -191,6 +192,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const lineHl = await page.locator(".cs-stage .fig-line.anim-hl").count();
     ok(hl >= 2 && lineHl === 1, `C5 움직임 — 판서 한 줄 + 도식 강조 (${hl}, ${lineHl})`);
     ok(/정답\s*12가지/.test(await text()), "C6 해설을 열면 정답 표시");
+    ok((await page.locator(".cs-vlink", { hasText: "해설 영상" }).count()) === 1, "C6b 해설 아래 「이 문제 해설 영상으로 보기」");
     await shot("cs-solution");
     await page.locator(".cs-retry").click();
     await page.locator(".cs-ii:not([disabled])").fill("12");
@@ -300,6 +302,97 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.locator(".cs-rrow").first().click();
     await page.locator(".cs-q").waitFor({ timeout: 10000 });
     ok(/지난 기록/.test(await text()), "H5 틀린 문항 → 문항 화면(지난 기록 표시)");
+
+    // P. 종이처럼 풀기 — 문제지 그대로 · 타자 · 손글씨(분수) · 보기 체크(여러 개 · 다시 누르면 해제) · 빈칸 그냥 제출 → 자동 채점
+    let aiCalls = 0, aiItems = [];
+    await page.route("**/api/ai", async (r) => {
+      aiCalls++;
+      const body = JSON.parse(r.request().postData() || "{}");
+      aiItems = body.items || [];
+      const okImg = body.task === "omr" && typeof body.image === "string" && body.image.length > 1000;
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ answers: aiItems.map((it) => ({ no: it.no, answer: okImg && it.no === 6 ? "5/12" : "" })) }) });
+    });
+    await page.goto(base + "#/sets/prob/01");
+    await page.locator(".cs-go").waitFor({ timeout: 10000 });
+    ok(/바로 풀기 · 문제지 그대로/.test(await page.locator(".cs-go").innerText()), "P1 세트 첫 단추 = 바로 풀기(문제지 그대로)");
+    await page.locator(".cs-go").click();
+    await page.locator(".cs-paperhost .pg").first().waitFor({ timeout: 20000 });
+    ok((await page.locator(".cs-paperhost .pg").count()) === 9 && /\/paper$/.test(page.url()), "P2 문제지 9쪽을 그대로 펼침");
+    // 1번: 타자
+    await page.locator(".q#H1").click();
+    await page.locator(".cs-sheet").waitFor();
+    await page.locator(".cs-modes button", { hasText: "타자" }).click();
+    await page.locator(".cs-sheet .cs-ii").fill("12");
+    await page.locator(".cs-sheet .sv-btn.pri", { hasText: "확인" }).click();
+    await sleep(300);
+    ok(/12/.test(await page.locator(".q#H1 .ans i").innerText()), "P3 타자 답이 문제지 괄호 안에");
+    // 6번: 손글씨(분수 5/12)
+    await page.locator(".q#H6").click();
+    await page.locator(".cs-sheet").waitFor();
+    await page.locator(".cs-modes button", { hasText: "손글씨" }).click();
+    const pad = page.locator(".cs-pad"); const bb = await pad.boundingBox();
+    const stroke = async (pts) => { await page.mouse.move(bb.x + pts[0][0], bb.y + pts[0][1]); await page.mouse.down(); for (const q of pts.slice(1)) await page.mouse.move(bb.x + q[0], bb.y + q[1], { steps: 4 }); await page.mouse.up(); };
+    const cx = bb.width / 2;
+    await stroke([[cx + 14, 30], [cx - 6, 30], [cx - 8, 56], [cx + 10, 54], [cx + 16, 70], [cx + 8, 90], [cx - 10, 88]]);
+    await stroke([[cx - 22, 140], [cx - 16, 132], [cx - 16, 200]]);
+    await stroke([[cx + 2, 145], [cx + 14, 134], [cx + 26, 142], [cx + 22, 162], [cx + 2, 198], [cx + 30, 198]]);
+    await page.locator(".cs-sheet .sv-btn.pri", { hasText: "확인" }).click();
+    await sleep(300);
+    ok((await page.locator(".q#H6 .ans i svg.cs-ink path").count()) === 3, "P4 손글씨(획 3개)가 괄호 안에 연필 글씨로");
+    // 31번: 보기 — 셋을 체크, 하나 해제, 다시 체크
+    // 체크는 다음 그리기에서 문제지에 얹힌다 — 개수가 맞을 때까지 잠깐 기다려 센다
+    const checks = async (n) => { for (let i = 0; i < 20; i++) { const c = await page.locator(".q#M16 .cs-check").count(); if (c === n) return c; await sleep(100); } return page.locator(".q#M16 .cs-check").count(); };
+    for (const lab of ["ㄱ", "ㄴ", "ㄷ"]) await page.locator(`.q#M16 p.cs-pk[data-pk="${lab}"]`).click();
+    const c3 = await checks(3);
+    await page.locator(`.q#M16 p.cs-pk[data-pk="ㄴ"]`).click();
+    const c2 = await checks(2);
+    await page.locator(`.q#M16 p.cs-pk[data-pk="ㄴ"]`).click();
+    const c3b = await checks(3);
+    ok(c3 === 3 && c2 === 2 && c3b === 3, `P5 보기 여러 개 체크 · 다시 누르면 해제 (${c3} → ${c2} → ${c3b})`);
+    // 빈칸 47개인 채로 제출 → 손글씨는 AI 로 읽고 채점
+    await page.locator(".cs-submit").click();
+    await page.locator(".cs-gsum").waitFor({ timeout: 15000 });
+    await sleep(500);
+    ok((await page.locator(".cs-gsum > b").innerText()) === "3/50" && aiCalls === 1 && JSON.stringify(aiItems) === JSON.stringify([{ no: 6, type: "short" }]),
+      `P6 빈칸이 있어도 제출 → 3/50 · 손글씨만 판독 1번 (${aiCalls}, ${JSON.stringify(aiItems)})`);
+    const marks = await page.locator(".cs-paperhost .cs-mark").count(), keys = await page.locator(".cs-paperhost .cs-key").count();
+    ok(marks === 50 && keys === 47 && (await page.locator(".cs-paperhost .cs-score").count()) === 1, `P7 동그라미 · 빗금 50 · 정답 글씨 47 · 점수 (${marks}, ${keys})`);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await shot("cs-paper-graded");
+    await page.locator(".q#H2").click();
+    await page.locator(".cs-solsheet").waitFor({ timeout: 5000 });
+    ok(/틀렸어요/.test(await page.locator(".cs-solsheet .iv-verdict").innerText()) && (await page.locator(".cs-solsheet .cs-tg").count()) === 3, "P8 채점 뒤 문항을 누르면 해설 시트(3단)");
+    await page.locator(".cs-solsheet .sv-btn", { hasText: "영상" }).click();
+
+    // V. 해설 영상 — 그 문항부터 · 조작 막대 · 다음 · 목록 · 이어 보기 · 나가기
+    await page.locator(".dsp-svg").waitFor({ timeout: 15000 });
+    const aria = async () => (await page.locator(".dsp-svg").getAttribute("aria-label")) || "";
+    ok(/— 2\. /.test(await aria()) && (await page.evaluate(() => location.hash)) === "#/sets/prob/01/video", `V1 해설 시트 → 영상 2번부터 · 주소의 ?no 는 지움 (${await aria()})`);
+    ok((await page.locator(".dsp-ctl.show .dsp-btn").count()) === 8, "V2 조작 막대(이전 · 멈춤 · 다음 · 반복 · 밝기 · 전체 화면 · 목록 · 나가기)");
+    await shot("cs-video");
+    const prog0 = await page.locator(".dsp-prog i").getAttribute("style");
+    await sleep(4300);
+    const prog1 = await page.locator(".dsp-prog i").getAttribute("style");
+    const sx = (st) => Number((String(st).match(/scaleX\(([\d.e-]+)\)/) || [])[1] || 0);
+    ok((await page.locator(".dsp-ctl.show").count()) === 0 && sx(prog1) > sx(prog0), `V3 가만히 두면 막대가 숨고 영상은 흐른다 (${sx(prog0).toFixed(3)} → ${sx(prog1).toFixed(3)})`);
+    await page.mouse.move(200, 300);
+    await page.locator(".dsp-ctl.show").waitFor({ timeout: 3000 });
+    await page.locator(".dsp-ctl .dsp-btn[title^='다음']").click();
+    await sleep(300);
+    ok(/— 3\. /.test(await aria()), "V4 다음 → 3번");
+    await page.keyboard.press("l");
+    await page.locator(".dsp-list .dsp-card").first().waitFor({ timeout: 3000 });
+    ok((await page.locator(".dsp-list .dsp-card").count()) === 50 && (await page.locator(".dsp-list .dsp-card.on .n").innerText()) === "3", "V5 목록(L) 50문항 · 지금 문항 표시");
+    await page.locator(".dsp-list .dsp-card").nth(19).click();
+    await sleep(300);
+    ok(/— 20\. /.test(await aria()) && (await page.locator(".dsp-list").count()) === 0, "V6 목록에서 고르면 그 문항부터");
+    await page.reload();
+    await page.locator(".dsp-svg").waitFor({ timeout: 15000 });
+    ok(/— 20\. /.test(await aria()), "V7 새로고침해도 그 자리에서 이어서(벽시계)");
+    await page.mouse.move(220, 320);
+    await page.locator(".dsp-ctl .dsp-btn[title^='나가기']").click();
+    await page.locator(".cs-hero").waitFor({ timeout: 10000 });
+    ok(/#\/sets\/prob\/01$/.test(page.url()) && /채점한 문제지 보기 · 3\/50/.test(await page.locator(".cs-go").innerText()), "V8 나가기 → 세트 화면(문제지 채점 기록 유지)");
 
     ok(errors.length === 0, "Z 콘솔 오류 없음" + (errors.length ? ": " + errors.slice(0, 3).join(" / ") : ""));
   } catch (e) {

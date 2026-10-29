@@ -149,6 +149,21 @@ export function saveOmrResult(cat, no, res) {
   return p;
 }
 
+/** 종이처럼 풀기 — 문제지 위 답안(초안 · 채점 결과). { answers:{no: 답}, reads:{no: 손글씨 판독}, graded:{score,n,at,rows}|null } */
+const PK = (cat, no) => `${LS(cat, no)}.paper`;
+export function readPaper(cat, no) {
+  try {
+    const v = JSON.parse(localStorage.getItem(PK(cat, no)) || "null");
+    if (v && typeof v === "object") return { answers: v.answers || {}, reads: v.reads || {}, graded: v.graded || null };
+  } catch { /* 무시 */ }
+  return { answers: {}, reads: {}, graded: null };
+}
+export function savePaper(cat, no, paper) {
+  try { localStorage.setItem(PK(cat, no), JSON.stringify({ answers: paper.answers || {}, reads: paper.reads || {}, graded: paper.graded || null })); return true; }
+  catch { return false; }
+}
+export function clearPaper(cat, no) { try { localStorage.removeItem(PK(cat, no)); } catch { /* 무시 */ } }
+
 /** 세트 진도 요약 { done, ok, n } */
 export function progressSummary(set, p) {
   const ids = (set?.items || []).map((it) => it.id);

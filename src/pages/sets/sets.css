@@ -205,3 +205,92 @@
 .cs-score .lvs { display: flex; justify-content: center; gap: 14px; margin-top: 4px; font-size: 13px; font-weight: 700; }
 .cs-score .lvs i { font-style: normal; color: #fff; font-size: 10.5px; font-weight: 800; border-radius: 6px; padding: 1px 6px; margin-right: 4px; }
 .cs-rrow .tx small .fr { font-size: .8em; }
+
+/* ── 종이처럼 풀기 ── */
+.cs-paperpage { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+.cs-paperbox { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.cs-paperhost { display: block; }
+.cs-gsum { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 8px auto 4px; padding: 8px 14px;
+  max-width: 680px; font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; color: var(--text); font-size: 13px; }
+.cs-gsum > b { font-size: 22px; font-weight: 900; color: #d42a3c; letter-spacing: -.5px; }
+.cs-gsum i { font-style: normal; font-weight: 700; margin-right: 8px; }
+.cs-gsum em { font-style: normal; color: #fff; font-size: 10.5px; font-weight: 800; border-radius: 6px; padding: 1px 6px; margin-right: 4px; }
+.cs-gx { font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
+.cs-gx.warn { color: #b06a00; border-color: #eaa000; }
+.cs-pbar2 { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--border);
+  font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; color: var(--text); box-shadow: 0 -4px 18px rgba(0,0,0,.08); }
+.cs-fill { flex: 1; }
+.cs-zoom { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+.cs-tb { border: 0; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 700; padding: 8px 11px; cursor: pointer;
+  border-radius: 999px; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+.cs-zoom .cs-tb { border-radius: 0; padding: 8px 12px; }
+.cs-pbar2 > .cs-tb { border: 1px solid var(--border); }
+.cs-tb:disabled { opacity: .35; }
+.cs-zv { min-width: 46px; font-size: 12px; padding-left: 4px !important; padding-right: 4px !important; }
+.cs-submit { padding: 10px 16px; border-radius: 999px; font-size: 14px; }
+.cs-gbar { display: flex; align-items: center; gap: 6px; }
+.cs-gs { font-size: 18px; font-weight: 900; color: #d42a3c; margin-right: 2px; }
+.cs-gs small { font-size: 12px; color: var(--muted); margin-left: 1px; }
+.cs-busyover { position: fixed; inset: 0; z-index: 130; display: grid; place-items: center; background: rgba(0,0,0,.28); }
+.cs-busyover > div { display: flex; align-items: center; gap: 10px; background: var(--surface); color: var(--text); border-radius: 14px; padding: 14px 18px;
+  font-size: 14px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.3); font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif; }
+.cs-busyover .sp { width: 18px; height: 18px; border-radius: 999px; border: 2.5px solid var(--border); border-top-color: var(--accent); animation: csSpin .8s linear infinite; }
+.cs-go2 { display: flex; gap: 8px; margin-top: 8px; }
+.cs-go2 .sv-btn { flex: 1; font-size: 13.5px; }
+
+/* 시트(아래에서 올라오는 창) */
+.cs-sheetbg { position: fixed; inset: 0; z-index: 120; background: rgba(10, 12, 18, .38); display: flex; align-items: flex-end; justify-content: center;
+  font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
+.cs-sheet { width: min(660px, 100%); max-height: 92vh; display: flex; flex-direction: column; background: var(--surface); color: var(--text);
+  border-radius: 18px 18px 0 0; box-shadow: 0 -10px 34px rgba(0,0,0,.28); padding-bottom: env(safe-area-inset-bottom, 0px); animation: csUp .22s ease-out; }
+.cs-sheet * { box-sizing: border-box; }
+@keyframes csUp { from { transform: translateY(24px); opacity: .4; } to { transform: none; opacity: 1; } }
+.cs-shh { display: flex; align-items: center; gap: 10px; padding: 12px 14px 8px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.cs-shno { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; border-radius: 999px; background: var(--text);
+  color: var(--surface); font-weight: 800; font-size: 14px; padding: 0 8px; }
+.cs-sht { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cs-sht b { font-size: 15px; }
+.cs-sht small { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.cs-modes { display: flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; }
+.cs-modes button { border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; font-weight: 800; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.cs-modes button.on { background: var(--accent); color: #fff; }
+.cs-shb { padding: 14px; overflow: auto; }
+.cs-shf { display: flex; align-items: center; gap: 8px; padding: 10px 14px 12px; border-top: 1px solid var(--border); }
+.cs-x { border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 6px; }
+.cs-padwrap { width: 100%; display: flex; justify-content: center; }
+.cs-pad { display: block; touch-action: none; border-radius: 14px; background: #fffef8; border: 1.5px solid var(--border); cursor: crosshair;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.06); }
+.cs-typein { display: flex; justify-content: center; padding: 6px 0 2px; }
+.cs-typein .cs-iin, .cs-typein .cs-pair { max-width: 360px; }
+.cs-solsheet { height: 94vh; max-height: 94vh; }
+.cs-solsheet .cs-qh { margin: 0; flex: 1; min-width: 0; }
+.cs-solbody { flex: 1; }
+.cs-qsmall .cs-qt { font-size: 14.5px; line-height: 1.7; }
+.cs-solbody .iv-banner { margin: 10px 0 4px; }
+.cs-myink { display: inline-block; vertical-align: middle; }
+.cs-myinksvg { height: 46px; width: auto; max-width: 200px; display: inline-block; vertical-align: middle; background: #fffef8; border-radius: 8px; padding: 2px 6px; }
+.cs-readas { color: var(--muted); }
+.cs-jump { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; padding: 12px 14px 18px; overflow: auto; }
+.cs-jn { height: 42px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-weight: 800;
+  font-size: 14px; cursor: pointer; }
+.cs-jn.done { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border-color: var(--accent); }
+.cs-jn.ok { border-color: var(--good); color: var(--good); background: color-mix(in srgb, var(--good) 10%, var(--surface)); }
+.cs-jn.bad { border-color: #d42a3c; color: #d42a3c; background: color-mix(in srgb, #d42a3c 8%, var(--surface)); }
+.cs-jn.warn { border-color: #eaa000; color: #b06a00; }
+
+/* 채점 결과 띠(문항 화면 · 해설 시트) — ItemView 의 iv-* 와 같은 모양을 여기서도 */
+.cs-verdict { margin-top: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); line-height: 1.6; }
+.cs-verdict.ok { border-color: var(--good); background: color-mix(in srgb, var(--good) 10%, var(--surface)); }
+.cs-verdict.bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 8%, var(--surface)); }
+.cs-verdict .iv-verdict { font-size: 16px; font-weight: 800; }
+.cs-verdict.ok .iv-verdict { color: var(--good); }
+.cs-verdict.bad .iv-verdict { color: var(--bad); }
+.cs-verdict .iv-ans, .cs-verdict .iv-mine { font-size: 14.5px; margin-top: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cs-verdict .iv-lab { color: var(--muted); font-size: 12.5px; margin-right: 2px; }
+.cs-verdict .iv-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.cs-verdict .fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; line-height: 1.05; font-size: .86em; }
+.cs-verdict .fr .n { border-bottom: 1.4px solid currentColor; padding: 0 3px 1px; }
+.cs-gbar .sv-btn.sm { white-space: nowrap; padding: 7px 10px; font-size: 12px; }
+@media (max-width: 400px) { .cs-pbar2 { gap: 6px; padding-left: 8px; padding-right: 8px; } .cs-tb { padding: 8px 9px; } }
+.cs-vlink { margin-top: 10px; }

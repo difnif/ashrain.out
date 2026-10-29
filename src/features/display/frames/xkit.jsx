@@ -8,7 +8,7 @@
 // 단추 모양(Btn · Ic · FrameIc)은 교실 모니터 무대가 ui 로 넘겨준다.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { E, clamp } from "../core.js";
-import { StoryPlayer } from "./story.jsx";
+import { StoryPlayer } from "./player.jsx";
 
 export const FRAME_MS = 1000 / 40;
 export const MODE_FADE = 1000;

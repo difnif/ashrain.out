@@ -70,7 +70,7 @@ function ItemSolveInner({ catId, set, it, uid, say }) {
           <div className="cs-prev">지난 기록 · 내 답 <b>{prev.raw || "—"}</b> {prev.ok ? <span className="sv-ok">정답</span> : <span className="sv-bad">오답</span>}{prev.n > 1 ? ` · ${prev.n}번 풀었어요` : ""}</div>
         )}
         {res && (
-          <div className={"iv-banner " + (res.ok ? "ok" : "bad")}>
+          <div className={"cs-verdict iv-banner " + (res.ok ? "ok" : "bad")}>
             <div className="iv-verdict">{res.ok ? "정답! 🎉" : "아쉬워요"}</div>
             {res.note && <div className="cs-note">{res.note}</div>}
             {(res.ok || open) && <div className="iv-ans"><span className="iv-lab">정답</span><span dangerouslySetInnerHTML={{ __html: answerHtml(it) }} /></div>}
@@ -88,6 +88,7 @@ function ItemSolveInner({ catId, set, it, uid, say }) {
       </div>
 
       {open && <div ref={solRef} className="cs-solwrap" dangerouslySetInnerHTML={{ __html: sHtml }} />}
+      {open && <button className="sv-btn full cs-vlink" onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/video?no=${it.no}`)}>🎬 이 문제 해설 영상으로 보기</button>}
       {open && res && !res.ok && <button className="sv-btn full cs-retry" onClick={retry}>↺ 다시 풀어 보기</button>}
 
       <div className="cs-nav">
