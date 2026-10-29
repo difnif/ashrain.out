@@ -9,11 +9,13 @@
 // app_settings: photo_model(기본 claude-sonnet-4-6 · 전사/등급/방침) · photo_model_grade(기본 claude-opus-4-8 · 채점/검사)
 //               · photo_model_fallback(전사 실패 시 강한 모델 — 없으면 grade 모델) · photo_retention(labels|gated|all)
 // task: scan(problem|answer|page) · approach · essay · process   — 전부 로그인 필수, 학생 자격 게이트, 일일 한도(ai_calls)
+// task: assess — 서술형 평가(api/_lib/assess.js). 로그인 없이도 된다(기기 토큰·응시 비밀값·호출 한도)
 // scan 은 retry_strong:true 를 받으면 폴백(강한) 모델로 읽는다 — 클라이언트가 1차 실패 때만 보낸다(한도 1회 추가 차감).
 
 import { createClient } from "@supabase/supabase-js";
 import { parseText } from "../src/lib/mathir.js";
 import { overlapScore, decideRetention, buildLabels, normalizePolicy, GRADES } from "../src/lib/retention.js";
+import { assessHandler } from "./_lib/assess.js";
 
 export const config = { maxDuration: 60 };
 
@@ -318,6 +320,8 @@ async function retain({ uid, feature, question, answer, std, result, policy, uni
 // ─────────────────────────────────────────────────────────────── 핸들러
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST만 지원해요" });
+  // 서술형 평가(api/_lib/assess.js) — 로그인 없이도 쓰는 흐름이 있어 인증 전에 넘긴다 (Vercel 함수 개수를 늘리지 않으려고 이 함수에 얹음)
+  if (String(req.body?.task || "") === "assess") return assessHandler(req, res);
   const t0 = Date.now();
   try {
     const auth = req.headers.authorization || "";

@@ -16,6 +16,7 @@ import { mcLabel } from "../lib/misconceptions";
 import { getRecentConcepts } from "../lib/review";
 import { getWx } from "../lib/wx";
 import ReviewCard from "./ReviewCard";
+import AssessCard from "../pages/assess/AssessCard";
 
 // 기말 대비 빠른 정답지(2권) — 앱 내 단독 페이지 /answers (로그인 없이도 열림)
 function openAnswerKey() {
@@ -395,6 +396,9 @@ export default function HomeDash({ theme = "light", onToggleTheme }) { // eslint
         )}
 
         <div className="hd-grid">
+
+          {/* 서술형 평가 알림 — 열린 평가가 있을 때만 (새로 열리면 토스트도 한 번) */}
+          <AssessCard />
 
           {/* ③ 이어서 공부하기 — 마지막 개념 + 최근 세트, 한 카드 두 줄 */}
           <div className="hd-card hd-pillar wide">
