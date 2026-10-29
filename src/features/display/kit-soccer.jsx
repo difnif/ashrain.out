@@ -1,5 +1,6 @@
 // ashrain.out — 교실 모니터 「축구」 묶음의 그리기 부품 (kit-soccer.jsx)
 // 경기장(잔디·선·골대), 선수(등번호를 쓴 원 — 얼굴·구단 로고는 그리지 않는다, 팀 색만), 공.
+// 장면의 주인공이 아닌 선수(회색 상대 선수 · 옅은 같은 팀 선수)도 등번호와 이름을 작고 연하게 단다(그날 선발 명단에서).
 // 좌표: 장면마다 세계 좌표(m)를 무대(1600×900) 위로 옮기는 mapper 를 만든다.
 import { shade } from "./core.js";
 import { SANS } from "./draw.jsx";
@@ -105,17 +106,20 @@ export function Goal({ M, C, cx, w = 7.32, depth = 2, dir = -1, o = 1 }) {
 /** 팀 색(팔레트 이름) — 실제 구단 로고·얼굴은 그리지 않고 색만 쓴다 */
 export const TEAM = { city: "sky", united: "red", chelsea: "blue", rival: "soft" };
 
+/** 이름표 자리: lp — "b" 아래 · "t" 위 · "l" 왼쪽 · "r" 오른쪽 → [x, y, anchor] */
+const labelAt = (x, y, r, lp, lsize) => ({
+  b: [x, y + r + lsize * 1.05, "middle"], t: [x, y - r - lsize * 0.55, "middle"],
+  l: [x - r - 10, y + lsize * 0.34, "end"], r: [x + r + 10, y + lsize * 0.34, "start"],
+}[lp]);
+
 /**
  * 선수: 팀 색 원 + 등번호. label 이 있으면 원 옆에 이름표(lp: "b" 아래, "t" 위, "l" 왼쪽, "r" 오른쪽).
- *   ring: 0~1 — 공을 받을 때 금빛 고리
+ *   ring: 0~1 — 공을 받을 때 금빛 고리 · faint: 이름표를 작고 연하게(장면의 주인공이 아닌 같은 팀 선수)
  */
-export function Player({ x, y, n, team = "city", C, r = 22, o = 1, label, lp = "b", ring = 0, lsize = 24, dim = false }) {
+export function Player({ x, y, n, team = "city", C, r = 22, o = 1, label, lp = "b", ring = 0, lsize = 24, dim = false, faint = false }) {
   if (o <= 0.001) return null;
   const col = C[TEAM[team] || team] || team;
-  const L = label && {
-    b: [x, y + r + lsize * 1.05, "middle"], t: [x, y - r - lsize * 0.55, "middle"],
-    l: [x - r - 10, y + lsize * 0.34, "end"], r: [x + r + 10, y + lsize * 0.34, "start"],
-  }[lp];
+  const L = label && labelAt(x, y, r, lp, lsize);
   return (
     <g opacity={o}>
       <ellipse cx={x + 3} cy={y + r * 0.82} rx={r * 0.95} ry={r * 0.32} fill="#000" opacity={0.18} />
@@ -123,18 +127,22 @@ export function Player({ x, y, n, team = "city", C, r = 22, o = 1, label, lp = "
       <circle cx={x} cy={y} r={r} fill={col} stroke={shade(hexOf(col), 0.55)} strokeWidth={2.6} opacity={dim ? 0.55 : 1} />
       {n != null && <text x={x} y={y + r * 0.36} textAnchor="middle" fontFamily={SANS} fontSize={r * (String(n).length > 1 ? 0.92 : 1.02)}
         fontWeight={800} fill={C.paper}>{n}</text>}
-      {L && <UText x={L[0]} y={L[1]} s={label} size={lsize} weight={700} anchor={L[2]} fill={C.ink} halo={C.halo} C={C} />}
+      {L && <UText x={L[0]} y={L[1]} s={label} size={lsize} weight={faint ? 600 : 700} anchor={L[2]} fill={faint ? C.soft : C.ink} halo={C.halo} C={C} />}
     </g>
   );
 }
 const hexOf = (c) => (typeof c === "string" && c.startsWith("#") ? c : "#888888");
 
-/** 상대 선수(번호 없음, 옅게) */
-export function Rival({ x, y, C, r = 17, o = 1 }) {
+/** 상대 선수(옅게). n · name 이 있으면 원 안에 등번호, 옆에 이름을 작고 연하게(lp 는 Player 와 같다) */
+export function Rival({ x, y, C, r = 17, o = 1, n, name, lp = "b", lsize = 15 }) {
   if (o <= 0.001) return null;
+  const L = name && labelAt(x, y, r, lp, lsize);
   return (
     <g opacity={o * 0.75}>
       <circle cx={x} cy={y} r={r} fill={C.soft} fillOpacity={0.45} stroke={C.soft} strokeWidth={2.2} />
+      {n != null && <text x={x} y={y + r * 0.34} textAnchor="middle" fontFamily={SANS} fontSize={r * (String(n).length > 1 ? 0.8 : 0.92)}
+        fontWeight={700} fill={C.ink} opacity={0.8}>{n}</text>}
+      {L && <UText x={L[0]} y={L[1]} s={name} size={lsize} weight={600} anchor={L[2]} fill={C.soft} halo={C.halo} C={C} />}
     </g>
   );
 }
