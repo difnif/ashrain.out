@@ -175,7 +175,7 @@ function Door({ C, x, w, i, open, o, car, picked, isM }) {
     </g>
   );
 }
-function Car({ C, cx, cy, s }) {
+export function Car({ C, cx, cy, s }) {
   const b = s / 2;
   return (
     <g>
@@ -189,7 +189,7 @@ function Car({ C, cx, cy, s }) {
     </g>
   );
 }
-function Goat({ C, cx, cy, s }) {
+export function Goat({ C, cx, cy, s }) {
   return (
     <g>
       {/* 뿔 */}

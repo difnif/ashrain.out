@@ -1,8 +1,9 @@
-// node tests/display-stories.test.mjs — 교실 모니터 「축구」·「서술형」 묶음 검산. 실패 시 exit 1.
+// node tests/display-stories.test.mjs — 교실 모니터 「숫자로 읽는 축구」·「서술형 이야기」 액자 검산. 실패 시 exit 1.
 //   1) 화면에 나오는 수를 facts-soccer.js · facts-essay.js 와 따로 다시 계산해 맞춰 본다
 //      (피타고라스 · 교점 · 계급(이상·미만) · 확률은 분수로 정확히, 경우의 수는 모두 늘어놓아 센다).
 //   2) 판서 · 자막에 쓰는 글자에 맞는 수가 들어 있는지 본다.
-//   3) 열두 장면 × 초등/중등 × 다크/라이트를 처음부터 끝까지 그려 보고 오류 · NaN 이 없는지 본다.
+//   3) 두 액자(축구 · 서술형)의 목록 · 이어 돌기를 보고, 열두 장면 × 초등/중등 × 다크/라이트를 처음부터 끝까지 그려
+//      오류 · NaN 이 없는지 본다.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -279,9 +280,13 @@ try {
   fs.writeFileSync(entry, `
 import { renderToStaticMarkup } from "react-dom/server";
 import { PAIRS, GROUPS } from ${JSON.stringify(path.join(ROOT, "src/features/display/pairs.js"))};
+import { STORIES } from ${JSON.stringify(path.join(ROOT, "src/features/display/stories.js"))};
+import { FRAMES } from ${JSON.stringify(path.join(ROOT, "src/features/display/frames/index.js"))};
+import { StoryThumb, loadStory } from ${JSON.stringify(path.join(ROOT, "src/features/display/frames/story.jsx"))};
 import { PALETTE, SceneTitle } from ${JSON.stringify(path.join(ROOT, "src/features/display/draw.jsx"))};
-export { PAIRS, GROUPS };
+export { PAIRS, GROUPS, STORIES, FRAMES, loadStory };
 export const frame = (p, mode, t, th, opt) => renderToStaticMarkup(<g><SceneTitle title={p.title[mode]} sub={p.sub[mode]} C={PALETTE[th]} mode={mode} />{p.render(mode, t, PALETTE[th], opt)}</g>);
+export const thumb = (fkey, mode, th) => renderToStaticMarkup(<svg><StoryThumb fkey={fkey} C={PALETTE[th]} mode={mode} /></svg>);
 `);
   const out = path.join(tmp, "bundle.mjs");
   await build({
@@ -290,18 +295,47 @@ export const frame = (p, mode, t, th, opt) => renderToStaticMarkup(<g><SceneTitl
     banner: { js: "import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);" },
   });
   const m = await import(pathToFileURL(out).href);
-  const mine = m.PAIRS.filter((p) => p.group === "soccer" || p.group === "essay");
-  test("묶음: 축구 6 · 서술형 6, 키 soc-* · ess-*, 키 중복 없음, 제목 · 부제 두 판 모두 있음", () => {
-    assert.ok(m.GROUPS.some((x) => x.key === "soccer" && x.label === "축구"));
-    assert.ok(m.GROUPS.some((x) => x.key === "essay" && x.label === "서술형"));
-    const soc = m.PAIRS.filter((p) => p.group === "soccer"), ess = m.PAIRS.filter((p) => p.group === "essay");
+  const mine = [...m.STORIES.soccer.scenes, ...m.STORIES.essay.scenes];
+  test("액자: 「숫자로 읽는 축구」 6 · 「서술형 이야기」 6 — 수업 장면 순환(묶음)에는 없음, 키 중복 없음, 제목 · 부제 두 판", () => {
+    for (const k of ["soccer", "essay"]) {
+      const f = m.FRAMES.find((x) => x.key === k);
+      assert.ok(f && f.story === true && f.title && f.desc, k);
+    }
+    const soc = m.STORIES.soccer.scenes, ess = m.STORIES.essay.scenes;
     assert.equal(soc.length, 6); assert.equal(ess.length, 6);
     assert.ok(soc.every((p) => p.key.startsWith("soc-"))); assert.ok(ess.every((p) => p.key.startsWith("ess-")));
-    assert.equal(new Set(m.PAIRS.map((p) => p.key)).size, m.PAIRS.length);
+    // 수업 장면 순환에서는 빠졌다
+    assert.ok(!m.PAIRS.some((p) => /^(soc|ess)-/.test(p.key) || p.group === "soccer" || p.group === "essay"));
+    assert.ok(!m.GROUPS.some((g) => g.key === "soccer" || g.key === "essay"));
+    const keys = [...m.PAIRS, ...mine].map((p) => p.key);
+    assert.equal(new Set(keys).size, keys.length);
     for (const p of mine) {
       assert.ok(p.title.e && p.title.m && p.sub.e && p.sub.m, p.key);
       assert.ok(p.dur > 15000 && p.dur < 60000, `${p.key} ${p.dur}`);
       assert.equal(typeof p.render, "function");
+    }
+    for (const k of ["soccer", "essay"]) {
+      const { thumb: th, scenes } = m.STORIES[k];
+      assert.ok(Number.isInteger(th.i) && th.i >= 0 && th.i < scenes.length && th.t >= 0 && th.t <= scenes[th.i].dur, k);
+    }
+  });
+  test("액자 이어 돌기: 비운 동안 돈 만큼 앞으로 · 한 바퀴 넘게 비워도 같은 자리 · 반복 · 멈춤 · 망가진 값", () => {
+    const L = m.STORIES.essay.scenes, d = L.map((p) => p.dur), total = d.reduce((a, b) => a + b, 0), now = 10_000_000_000;
+    const at = (raw) => { const s = m.loadStory(L, now, raw); return [s.i, now - s.t0, s.held, s.rep]; };
+    assert.deepEqual(at(null), [0, 0, null, false]);
+    assert.deepEqual(at({ i: 1, t0: now - (d[1] + 500) }), [2, 500, null, false]);              // 장면 하나 넘김
+    assert.deepEqual(at({ i: 4, t0: now - (d[4] + d[5] + 700) }), [0, 700, null, false]);       // 끝에서 처음으로
+    assert.deepEqual(at({ i: 0, t0: now - (total * 3 + 1000) }), [0, 1000, null, false]);       // 세 바퀴 넘게 비움
+    assert.deepEqual(at({ i: 2, t0: now - (d[2] * 5 + 300), rep: true }), [2, 300, null, true]); // 한 장면 반복
+    const held = m.loadStory(L, now, { i: 3, t0: now - 99999, held: 1234 });
+    assert.equal(held.i, 3); assert.equal(held.held, 1234);
+    assert.deepEqual(at({ i: 99, t0: now - 5 }), [0, 0, null, false]);
+    assert.deepEqual(at({ i: 1, t0: now + 5000 }), [0, 0, null, false]);                        // 앞날의 시각
+  });
+  test("액자 목록 그림: 두 묶음 × 두 판 × 두 테마 — 오류 · NaN 없음", () => {
+    for (const k of ["soccer", "essay"]) for (const mode of ["e", "m"]) for (const th of ["dark", "light"]) {
+      const s = m.thumb(k, mode, th);
+      assert.ok(s.length > 2000 && !/NaN|undefined|Infinity/.test(s), `${k} ${mode}/${th}`);
     }
   });
   for (const p of mine) {

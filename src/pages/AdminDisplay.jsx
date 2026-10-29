@@ -3,8 +3,13 @@
 // 지금 장면이 짝이 되는 장면으로 같은 시각에 겹쳐 넘어간다 — 두 판은 같은 박자표를 쓰도록 저작되어 있다.
 // 장면 목록: src/features/display/pairs.js · 엔진: core.js(계산) + draw.jsx(그리기)
 // 화면은 탭·마우스 움직임에 조작 막대가 잠깐 뜨고 스스로 숨는다. 전체 화면·화면 꺼짐 방지 포함.
-// 액자: 토글 왼쪽의 액자 단추 → 액자 목록 → 고르면 수업 장면 대신 그 액자가 계속 돈다(지금은 하노이의 탑).
-//       액자는 벽시계로 흘러서 새로고침해도 이어진다. 액자: src/features/display/frames/ · 계산: hanoi.js
+// 액자: 토글 왼쪽의 액자 단추 → 액자 목록 → 고르면 수업 장면 대신 그 액자가 계속 돈다. 액자는 벽시계로 흘러서 새로고침해도
+//       이어진다. 목록: src/features/display/frames/index.js
+//       · 하노이의 탑(frames/hanoi.jsx · hanoi.js)
+//       · 실험 액자 — 몬티홀 · 갈림길과 구슬 · 구슬 낙하 실험(frames/monty.jsx · branchlab.jsx · galtonlab.jsx, 공용 frames/xkit.jsx).
+//         교육과정에 딱 맞기보다 융합·탐구에 가까워 수업 장면 순환에서 빼고, 직접 해 보는 것을 먼저 보여 준다.
+//         「풀이 보기」를 고르면 예전 설명 장면(몬티홀·찍기 · 갈림길·구슬 · 정규분포)을 그대로 돌린다.
+//       · 장면 묶음 — 숫자로 읽는 축구 · 서술형 이야기(stories.js · frames/story.jsx): 여러 단원을 섞는 융합 장면.
 // 장면 설정: 장면이 controls(구슬 수·단계·문 개수 …)를 가지면 조작 막대 아래에 설정 칩이 뜬다. 바꾸면 그 장면을
 //       처음부터 다시 튼다. 장면마다 기기에 기억한다. 장면은 render(mode, t, C, P) 의 P 로 설정을 받는다.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +20,10 @@ import { E, clamp } from "../features/display/core";
 import { FRAMES } from "../features/display/frames/index.js";
 import { paramsOf, durOf, optVal } from "../features/display/params.js";
 import { HanoiArt, HanoiThumb } from "../features/display/frames/hanoi.jsx";
+import { StoryFrame, StoryThumb } from "../features/display/frames/story.jsx";
+import { MontyFrame, MontyThumb } from "../features/display/frames/monty.jsx";
+import { BranchFrame, BranchThumb } from "../features/display/frames/branchlab.jsx";
+import { GaltonFrame, GaltonThumb } from "../features/display/frames/galtonlab.jsx";
 import { HANOI, hanoiTimeline, hanoiAt, remapElapsed, fmtDur, comma } from "../features/display/hanoi";
 
 const LS = { mode: "ash.display.mode", theme: "ash.display.theme", idx: "ash.display.idx", rep: "ash.display.repeat", grp: "ash.display.group",
@@ -299,7 +308,7 @@ function Stage() {
         <div className="dsp-paper" />
         {view ? (
           <FrameStage key={view} fkey={view} C={C} ctl={ctl} poke={poke} isFs={isFs} toggleFs={toggleFs}
-            onTheme={toggleThm} onGallery={() => setGal(true)} onExit={closeFrame} inert={gal} />
+            onTheme={toggleThm} onGallery={() => setGal(true)} onExit={closeFrame} inert={gal} mode={mode} onMode={flipMode} />
         ) : (<>
         <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
           role="img" aria-label={`${pair.title[mode]} — 수학 애니메이션`}>
@@ -406,7 +415,7 @@ function Stage() {
         )}
         </>)}
 
-        {gal && <FrameGallery C={C} view={view} onPick={openFrame} onClose={() => setGal(false)} onScenes={closeFrame} />}
+        {gal && <FrameGallery C={C} mode={mode} view={view} onPick={openFrame} onClose={() => setGal(false)} onScenes={closeFrame} />}
       </div>
     </div>
   );
@@ -414,7 +423,7 @@ function Stage() {
 
 /* ══════════ 액자 목록 ══════════ */
 const THUMB_TL = { hanoi: null };
-function FrameGallery({ C, view, onPick, onClose, onScenes }) {
+function FrameGallery({ C, mode, view, onPick, onClose, onScenes }) {
   if (!THUMB_TL.hanoi) THUMB_TL.hanoi = hanoiTimeline(5, "fast");
   return (
     <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()}>
@@ -423,13 +432,18 @@ function FrameGallery({ C, view, onPick, onClose, onScenes }) {
           <b>액자</b>
           <button type="button" onClick={onClose} aria-label="닫기">✕</button>
         </div>
-        <p className="dsp-gal-sub">수업 장면과 따로, 오래 켜 두는 그림이에요. 고르면 바로 돌기 시작해요.</p>
+        <p className="dsp-gal-sub">수업 장면과 따로, 오래 켜 두는 그림 · 실험 · 이야기예요. 고르면 바로 돌기 시작해요.</p>
         <div className="dsp-gal">
           {FRAMES.map((f) => (
             <button key={f.key} type="button" className={"dsp-fcard" + (view === f.key ? " on" : "")} onClick={() => onPick(f.key)}>
-              <svg viewBox={`0 120 ${W} 760`} aria-hidden="true">
+              <svg viewBox={`0 150 ${W} 700`} aria-hidden="true">
                 {f.key === "hanoi" && <HanoiThumb C={C} TL={THUMB_TL.hanoi} />}
+                {f.story && <StoryThumb fkey={f.key} C={C} mode={mode} />}
+                {f.key === "monty" && <MontyThumb C={C} mode={mode} />}
+                {f.key === "branch" && <BranchThumb C={C} mode={mode} />}
+                {f.key === "galton" && <GaltonThumb C={C} mode={mode} />}
               </svg>
+              <span className="k">{f.lab ? "실험" : f.story ? "장면 묶음" : "그림"}</span>
               <span className="t">{f.title}{view === f.key && <small>지금 켜 둔 액자</small>}</span>
               <span className="d">{f.desc}</span>
             </button>
@@ -446,8 +460,12 @@ function FrameGallery({ C, view, onPick, onClose, onScenes }) {
 }
 
 /* ══════════ 액자 무대 ══════════ */
+const UI = { Btn, Ic, FrameIc };
+const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame };
 function FrameStage({ fkey, ...rest }) {
   if (fkey === "hanoi") return <HanoiFrame {...rest} />;
+  if (LABS[fkey]) { const Lab = LABS[fkey]; return <Lab ui={UI} {...rest} />; }
+  if (FRAMES.some((f) => f.key === fkey && f.story)) return <StoryFrame fkey={fkey} ui={UI} {...rest} />;
   return null;
 }
 
@@ -697,6 +715,7 @@ const DSP_CSS = `
 .dsp-paused { position: absolute; left: 50%; bottom: 7.4cqw; transform: translateX(-50%); font-size: 1.25cqw; font-weight: 800;
   color: var(--ink); background: var(--chip); border: 1px solid var(--chipbd); border-radius: 999px; padding: .3cqw 1.1cqw; }
 .dsp-paused.fr { left: 3.4cqw; top: 3cqw; bottom: auto; transform: none; }   /* 액자: 받침 글자를 가리지 않게 왼쪽 위 */
+.dsp-paused.lab { left: auto; right: 2.8cqw; bottom: 2.6cqw; transform: none; }   /* 실험 액자: 기록·자막을 가리지 않게 오른쪽 아래 */
 
 /* 장면 목록 */
 .dsp-list { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: rgba(0,0,0,.35);
@@ -725,16 +744,19 @@ const DSP_CSS = `
 .dsp-card .m { font-size: 1.25cqw; font-weight: 700; color: var(--m); }
 
 /* 액자 목록 */
-.dsp-gal-in { width: 64cqw; }
+.dsp-gal-in { width: 84cqw; max-height: 94%; padding-bottom: 1.2cqw; }
 .dsp-gal-sub { margin: -.4cqw 0 1.2cqw .1cqw; font-size: 1.15cqw; color: var(--soft); }
-.dsp-gal { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.2cqw; }
+.dsp-gal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1cqw; }
 .dsp-fcard { text-align: left; border: 1px solid var(--chipbd); border-radius: 1.2cqw; background: transparent; color: var(--ink);
   padding: 0 0 1.1cqw; cursor: pointer; overflow: hidden; display: flex; flex-direction: column; gap: .4cqw; font: inherit;
   -webkit-tap-highlight-color: transparent; transition: border-color .25s, box-shadow .25s; }
-.dsp-fcard svg { width: 100%; aspect-ratio: 1600 / 760; display: block; background: rgba(127,127,127,.09); border-bottom: 1px solid var(--chipbd); }
-.dsp-fcard .t { padding: .7cqw 1.2cqw 0; font-size: 1.55cqw; font-weight: 800; display: flex; align-items: baseline; gap: .7cqw; }
-.dsp-fcard .t small { font-size: .95cqw; color: var(--gold); font-weight: 700; }
-.dsp-fcard .d { padding: 0 1.2cqw; font-size: 1.1cqw; color: var(--soft); line-height: 1.45; }
+.dsp-fcard svg { width: 100%; aspect-ratio: 1600 / 700; display: block; background: rgba(127,127,127,.09); border-bottom: 1px solid var(--chipbd); }
+.dsp-fcard .t { padding: .6cqw 1.1cqw 0; font-size: 1.4cqw; font-weight: 800; display: flex; align-items: baseline; flex-wrap: wrap; column-gap: .7cqw; }
+.dsp-fcard .t small { font-size: .9cqw; color: var(--gold); font-weight: 700; }
+.dsp-fcard .d { padding: 0 1.1cqw; font-size: 1.02cqw; color: var(--soft); line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dsp-fcard .k { margin: 0 1.1cqw; align-self: flex-start; font-size: .82cqw; font-weight: 800; letter-spacing: .04em; color: var(--soft);
+  border: 1px solid var(--chipbd); border-radius: 999px; padding: .12cqw .6cqw; }
 .dsp-fcard:hover, .dsp-fcard.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
 .dsp-gal-foot { margin-top: 1.2cqw; display: flex; justify-content: flex-end; }
 `;
