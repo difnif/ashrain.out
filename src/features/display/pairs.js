@@ -20,13 +20,30 @@ import table from "./scenes/table.jsx";
 import numcards from "./scenes/numcards.jsx";
 import freq from "./scenes/freq.jsx";
 import chance from "./scenes/chance.jsx";
+import socCorner from "./scenes/soc-corner.jsx";
+import socSetpiece from "./scenes/soc-setpiece.jsx";
+import socThrough from "./scenes/soc-through.jsx";
+import socTriangle from "./scenes/soc-triangle.jsx";
+import socCounter from "./scenes/soc-counter.jsx";
+import socXg from "./scenes/soc-xg.jsx";
+import essRails from "./scenes/ess-rails.jsx";
+import essWrongway from "./scenes/ess-wrongway.jsx";
+import essClub from "./scenes/ess-club.jsx";
+import essRps from "./scenes/ess-rps.jsx";
+import essSign from "./scenes/ess-sign.jsx";
+import essShirt from "./scenes/ess-shirt.jsx";
 
 const GEO = [blocks, tri3, nets, circle, poly, cylinder, diag, leaf, iso, sphere, para, trap];
 const DATA = [sort, table, numcards, freq, chance];
+const SOCCER = [socCorner, socSetpiece, socThrough, socTriangle, socCounter, socXg];
+const ESSAY = [essRails, essWrongway, essClub, essRps, essSign, essShirt];
 
 export const GROUPS = [
   { key: "all", label: "전체" },
   { key: "geo", label: "도형" },
   { key: "data", label: "경우의 수·확률" },
+  { key: "soccer", label: "축구" },
+  { key: "essay", label: "서술형" },
 ];
-export const PAIRS = [...GEO.map((p) => ({ ...p, group: "geo" })), ...DATA.map((p) => ({ ...p, group: "data" }))];
+export const PAIRS = [...GEO.map((p) => ({ ...p, group: "geo" })), ...DATA.map((p) => ({ ...p, group: "data" })),
+  ...SOCCER.map((p) => ({ ...p, group: "soccer" })), ...ESSAY.map((p) => ({ ...p, group: "essay" }))];
