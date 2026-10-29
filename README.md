@@ -140,7 +140,7 @@ iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정) · 흐리�
 
 패치 반입(웹만으로): `main` 에서 `difnif-patch-<n>` 브랜치를 만들고 `*.patch` 를 루트에 올리면 `.github/workflows/apply-patch.yml` 이 `beta/student-app` 에 적용하고 PR 을 연다.
 
-### 교실 모니터 — 수업 장면(도형 · 경우의 수·확률) + 액자(하노이의 탑 · 실험 셋 · 장면 묶음 둘) (`#/admin/display`, 2026-10-26 · 10-29)
+### 교실 모니터 — 수업 장면(도형 · 경우의 수·확률) + 액자(하노이의 탑 · 실험 셋 · 장면 묶음 둘 · 3D 축구) (`#/admin/display`, 2026-10-26 · 10-29 · 10-30)
 교실 대시보드 모니터에 띄우는 가로(16:9) 전체 화면(관리자 전용, 상단 관리자 줄 「🖥 교실 모니터」).
 **수업 장면**은 교육과정에 맞춘 도형 · 경우의 수·확률 애니메이션 17쌍이 자막·판서와 함께 자동으로 돈다.
 교육과정에 딱 맞기보다 융합·탐구에 가까운 것(축구 · 서술형 · 몬티홀 · 갈림길과 구슬 · 갈톤 보드)은 수업 장면 순환에서 빼고 **액자**로 켜 둔다.
@@ -206,11 +206,24 @@ iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정) · 흐리�
   | 서술형 5 | 불이 켜지는 간판 — 직사각형에서 빼기 | 움직이는 점과 일차함수 |
   | 서술형 6 | 반티 두 업체 — 한 벌씩 쌓아 보기 | 두 그래프가 만나는 점(연립방정식) |
 
-코드: `src/pages/AdminDisplay.jsx`(무대·토글·순환·설정 칩·액자 목록·하노이 조작) · `src/features/display/` — `stage-ui.jsx`(무대 CSS · 조작 막대 단추 — 컨셉 문제 해설 영상과 공용) · `core.js`(시간·이징·직교 카메라·전개도 접기) · `draw.jsx`(수식 글자·인라인 아이콘·표·주사위·판서·자막·각 표시·입체 면) · `facts.js` · `facts-soccer.js` · `facts-essay.js`(화면에 나오는 모든 수) · `kit-story.jsx` · `kit-soccer.jsx` · `kit-essay.jsx`(축구·서술형 그리기 부품) · `solids.js`(전개도·위치 관계 판정) · `params.js`(장면 설정) · `physics.js`(구슬 물리) · `galton.js`(갈톤 보드) · `branch.js`(갈림길·물리 판) · `guess.js`(몬티홀·찍기) · `scenes/*.jsx`(장면 36쌍) · `pairs.js`(수업 장면 순서·묶음) · `stories.js`(장면 묶음 · 풀이 보기 목록) · `hanoi.js` · `montylab.js` · `branchlab.js`(액자 계산) · `frames/` — `index.js`(액자 목록) · `hanoi.jsx` · `player.jsx`(장면 묶음 재생기 StoryPlayer — 컨셉 문제 해설 영상도 쓴다) · `story.jsx`(장면 묶음 액자) · `xkit.jsx`(실험 액자 공용 — 벽시계·조작 막대·해 보기/풀이 보기) · `monty.jsx` · `branchlab.jsx` · `galtonlab.jsx`.
+  - **⚽ 3D 축구** (2026-10-30) — 축구 여섯 장면에만 오른쪽 위에 **2D | 3D** 토글(키보드 3)이 뜬다. 3D 를 켜면 위에서 내려다본 그림 대신
+    경기장 속 **사람 눈높이**에서 그 장면이 시뮬레이션으로 돈다(화면 전체 — 16:9 무대 바깥 여백까지). 더 지니어스의 규칙 설명 그림처럼
+    단순한 사람 모형(머리 · 몸통 · 팔다리, 팀 색 옷 · 회색 상대)과 경기장(잔디 줄무늬 · 선 · 골대와 출렁이는 그물 · 수학 기호 광고판 · 관중석 · 지붕 조명).
+    - 흐름(장면마다 45~58초): 눈높이 컷(박스 안 · 터치라인 밖 · 골대 옆 · 키커 뒤 · 함께 달리는 카메라 · 관중석 앞줄)으로 경기가 흐르다가,
+      **설명할 때만 장면이 멈추고 화면 전체가 어두워진다** — 카메라가 위로 올라가 멈춘 경기장 바닥에 빛나는 선(줄자 · 직각삼각형 · 좌표평면 · 넓이)이
+      그려지고, 큰 글씨 설명이 왼쪽 반을 채운다(주인공 선수 · 공만 밝게 남는다). 설명이 끝나면 다시 눈높이로 내려와 이어진다. 골 · 다시 보기 · 정리.
+    - 초등 | 중등 토글은 그대로 — 시뮬레이션은 같고 멈췄을 때의 설명만 바뀐다(2D 장면과 같은 수: `facts-soccer.js`).
+    - 선수 이름표: 주인공은 크게(팀 색 번호 동그라미), 흐린 선수는 작고 연하게 — 멀면 사라지고 겹치면 뒤엣것이 흐려지며 공을 가리지 않는다.
+      그날 선발 명단(3D 판에서 맨시티 2012 · 첼시 2021(39분 교체 반영) · 2009 두 팀을 더함)으로 이름을 붙이고, 자리는 짐작임을 오른쪽 아래에 밝힌다.
+    - 3D 판은 박자표가 따로라 켜고 끌 때 그 장면을 처음부터 튼다. 기기에 기억한다. three.js(WebGL)는 3D 를 처음 켤 때만 내려받는다(따로 나뉜 파일).
+      WebGL 을 못 쓰는 기기면 2D 로 돌아오고 잠깐 알린다. 느린 기기에서는 그리는 해상도를 스스로 낮춘다. 밝기 토글 = 밤 경기 · 낮 경기.
+
+코드: `src/pages/AdminDisplay.jsx`(무대·토글·순환·설정 칩·액자 목록·하노이 조작) · `src/features/display/` — `stage-ui.jsx`(무대 CSS · 조작 막대 단추 — 컨셉 문제 해설 영상과 공용) · `core.js`(시간·이징·직교 카메라·전개도 접기) · `draw.jsx`(수식 글자·인라인 아이콘·표·주사위·판서·자막·각 표시·입체 면) · `facts.js` · `facts-soccer.js` · `facts-essay.js`(화면에 나오는 모든 수) · `kit-story.jsx` · `kit-soccer.jsx` · `kit-essay.jsx`(축구·서술형 그리기 부품) · `solids.js`(전개도·위치 관계 판정) · `params.js`(장면 설정) · `physics.js`(구슬 물리) · `galton.js`(갈톤 보드) · `branch.js`(갈림길·물리 판) · `guess.js`(몬티홀·찍기) · `scenes/*.jsx`(장면 36쌍) · `pairs.js`(수업 장면 순서·묶음) · `stories.js`(장면 묶음 · 풀이 보기 목록) · `hanoi.js` · `montylab.js` · `branchlab.js`(액자 계산) · `frames/` — `index.js`(액자 목록) · `hanoi.jsx` · `player.jsx`(장면 묶음 재생기 StoryPlayer — 컨셉 문제 해설 영상도 쓴다 · 2D | 3D 토글) · `story.jsx`(장면 묶음 액자) · `xkit.jsx`(실험 액자 공용 — 벽시계·조작 막대·해 보기/풀이 보기) · `monty.jsx` · `branchlab.jsx` · `galtonlab.jsx` · `sim3d/` — `persp.js`(원근 카메라 · 설명 컷 맞추기) · `script.js`(박자표 play/hold · 자리 잇기 · 공 · 카메라 컷 · 세계 한 장면) · `rig.js`(사람 모형 자세: 달리기 · 차기 · 헤더 · 다이빙 · 세리머니) · `kits.js` · `kit3d.js` · `overlay.jsx`(이름표 · 공의 자취 · 바닥 그림 · 설명 카드 · 다큐 자막 — SVG) · `engine.js`(three.js 그리기 — 이 파일만 three.js) · `Stage3D.jsx`(캔버스, 늦게 들여온다) · `scenes/*.jsx`(3D 대본 여섯) · `index.js`.
 물리 엔진(`physics.js`): 움직이는 것은 구슬(원)뿐, 못·벽은 고정. 1/240초 고정 간격이라 같은 설정이면 언제나 같은 결과(결정적)이고, 장면은 "시간 → 그림"이라 `simAt` 이 시각까지 돌린 세계를 캐시해 앞으로만 이어 돌린다. 바닥에 멈춘 구슬은 얼려 장애물로 쓴다(2000개도 실시간).
 - 갈톤 보드: 크기와 상관없이 같은 비율(못 간격에 비례하는 중력·흔들림), 구슬이 많을수록 작게 — 줄 6~12 · 구슬 100~2000개에서 칸별 개수가 B(R, 1/2)에 맞도록 맞춘 값. 액자는 다시 켰을 때 따라 돌릴 양(구슬 수 × 초)이 많으면 그 바퀴를 처음부터 튼다.
 - 갈림길 물리 판: 갈림목은 뾰족한 지붕, 목(좁은 길)이 옆으로 가던 힘을 없앤다. 혼자 지나는 구슬의 작은 흔들림은 갈림목마다 동전 던지기로 대신하고, 다른 구슬과 나란히/바로 아래 붙어 오면 동전 대신 부딪힘이 길을 정한다. 실험 액자는 출발 통 대신 주머니 + 깔때기를 단다(한꺼번에 = 주머니 속 자리에서 동시에 떨어진다). 300판 비교에 쓰는 씨앗 묶음은 하나씩 굴린 기록이 모든 설정에서 이론값과 4%p 안인 것을 골랐다.
-검산: `node tests/display.test.mjs`(수업 장면 + 풀이 보기 장면) · `node tests/display-stories.test.mjs`(축구·서술형) · `node tests/display-labs.test.mjs`(실험 액자 — 몬티홀 이론값을 모든 경우를 늘어놓아 센 값과 맞추고, 주머니 판은 잃어버린 구슬 · 시간 안에 끝나는지 · 하나씩이 이론과 가까운지 보고, 세 액자를 여러 설정 · 순간 · 두 판 · 두 테마로 그려 본다) · `node tests/hanoi.test.mjs` — 화면의 수를 따로 다시 계산하고, 모든 장면 × 설정을 두 판·두 테마로 끝까지 그려 오류가 없는지 본다.
+검산: `node tests/display.test.mjs`(수업 장면 + 풀이 보기 장면) · `node tests/display-stories.test.mjs`(축구·서술형) · `node tests/display-sim3d.test.mjs`(3D 축구 — 원근 투영을 three.js 카메라와 맞추고, 박자표 · 자리 · 공 · 설명 컷의 성질, 여섯 장면을 50 ms 마다 훑어 NaN · 카메라 자리 · 설명 때 밝힌 선수가 화면 안인지, 3D 글자를 두 판 · 두 테마로 그려 보고 설명 카드의 수를 맞춘다) · `node tests/display-labs.test.mjs`(실험 액자 — 몬티홀 이론값을 모든 경우를 늘어놓아 센 값과 맞추고, 주머니 판은 잃어버린 구슬 · 시간 안에 끝나는지 · 하나씩이 이론과 가까운지 보고, 세 액자를 여러 설정 · 순간 · 두 판 · 두 테마로 그려 본다) · `node tests/hanoi.test.mjs` — 화면의 수를 따로 다시 계산하고, 모든 장면 × 설정을 두 판·두 테마로 끝까지 그려 오류가 없는지 본다.
+3D 대본 추가: `sim3d/scenes/` 에 `{ key(2D 장면과 같게), dur, world(t), overlay(mode, t, C, P, W) }` 를 만들어 `sim3d/index.js` 에 넣으면 `stories.js` 가 같은 key 의 장면에 붙인다 — `timeline([{ kind: "play", tw, dur, speed? } | { kind: "hold", dur, spot? }])` · `actor({ keys, acts })` · `ballPath([...])` · `shots([...])` · `makeWorld(...)`, 설명 컷은 `frameCam(점들, { yaw, pitch, box })`.
 장면 추가: `scenes/` 에 `{ key, dur, title:{e,m}, sub:{e,m}, render(mode, t, C, P), controls? }` 를 만들고 수업 장면이면 `pairs.js` 의 묶음(`GEO`·`DATA`), 장면 묶음 액자면 `stories.js` 의 `STORIES`, 실험 액자의 풀이면 `EXPLAIN` 에 넣는다. `dur` 은 수(ms) 또는 설정을 받는 함수 `(P) => ms`, `controls` 는 `[{ key, label, kind: "step" | "seg", options, def, unit? }]`. 두 판이 같은 `beats([...])` 박자표를 쓰게 하면 토글 겹침이 자연스럽다.
 액자 추가: `frames/index.js` 에 `{ key, title, desc, lab? | story? }` 를 더하고 `AdminDisplay.jsx` 의 `FrameStage` · 액자 목록 그림에서 key 로 그릴 것을 고른다.
 

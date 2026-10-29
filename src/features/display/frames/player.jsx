@@ -5,10 +5,20 @@
 // 조작: 이전 · 멈춤 · 다음 · 이 장면 반복 · 밝기 · 전체 화면 · 나가기. 키보드 ←/→ · 스페이스 · T(E 초등 · M 중등) · R 반복 · F.
 // 장면이 controls(문 개수 · 단계 …)를 가지면 조작 막대 아래에 설정 칩이 뜬다(수업 장면과 같다, ../params.js).
 // 단추 모양(Btn · Ic · FrameIc)은 쓰는 화면이 ui 로 넘겨준다(../stage-ui.jsx).
-import { useCallback, useEffect, useRef, useState } from "react";
+// 3D: 장면이 sim3d(../sim3d/index.js — 지금은 축구 여섯 장면)를 가지면 오른쪽 위에 「2D | 3D」 토글이 뜬다(키보드 3).
+//   3D 를 켜면 경기장 속 눈높이의 시뮬레이션이 화면 전체에 돌고(WebGL — three.js 는 이때 처음 불러온다), 설명할 때만 장면이
+//   멈추며 화면이 어두워지고 큰 글씨가 나온다. 3D 판은 박자표가 따로라 켜고 끌 때 그 장면을 처음부터 튼다. 기기에 기억한다.
+//   WebGL 을 못 쓰는 기기면 2D 로 돌아오고 잠깐 알린다.
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { W, H, SceneTitle } from "../draw.jsx";
 import { E, clamp } from "../core.js";
 import { paramsOf, durOf, optVal } from "../params.js";
+import { Title3D } from "../sim3d/overlay.jsx";
+
+const Stage3D = lazy(() => import("../sim3d/Stage3D.jsx"));
+/** 3D 를 켰고 그 장면에 3D 판이 있으면 3D 박자표 */
+export const durFor = (pair, P, v3) => (v3 && pair.sim3d ? pair.sim3d.dur : durOf(pair, P));
+const FRAME_3D = 1000 / 60;
 
 const MODE_FADE = 1000;   // 초등↔중등 겹침
 const PAIR_FADE = 1300;   // 다음 장면으로
@@ -18,9 +28,9 @@ const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null")
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* 사생활 모드 등 */ } };
 
 /** 저장된 자리(장면 번호 · 시작 벽시계 · 멈춘 경과 · 반복). 흐르던 중이면 비운 동안 돈 만큼 앞으로 간다 */
-export function loadStory(list, now = Date.now(), o = null, prm = null) {
+export function loadStory(list, now = Date.now(), o = null, prm = null, v3 = false) {
   const n = list.length;
-  const d = (i) => durOf(list[i], paramsOf(list[i], prm));
+  const d = (i) => durFor(list[i], paramsOf(list[i], prm), v3);
   if (!o || !Number.isInteger(o.i) || o.i < 0 || o.i >= n || !Number.isFinite(o.t0) || o.t0 > now) return { i: 0, t0: now, held: null, rep: false };
   const rep = o.rep === true;
   if (Number.isFinite(o.held) && o.held >= 0) return { i: o.i, t0: o.t0, held: Math.min(o.held, d(o.i)), rep };
@@ -51,7 +61,9 @@ export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, is
   if (!init.current) {
     const prm0 = read(lsKey + ".prm") || {};
     const o = read(lsKey);
-    const st = loadStory(list, Date.now(), o, prm0);
+    const v30 = read(lsKey + ".v3") === true && list.some((p) => p.sim3d);
+    const st = loadStory(list, Date.now(), o, prm0, v30);
+    st.v3 = v30;
     if (fresh) {
       const i = o && Number.isInteger(o.i) && o.i >= 0 && o.i < n ? o.i : 0;
       Object.assign(st, { i, t0: Date.now(), held: null });
@@ -63,25 +75,30 @@ export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, is
   const [paused, setPaused] = useState(init.current.held != null);
   const [repeat, setRepeat] = useState(init.current.rep);
   const [prm, setPrm] = useState(init.current.prm);       // { 장면 key: { 설정 key: 값 } }
+  const [v3, setV3] = useState(init.current.v3);          // 3D 로 보기(sim3d 가 있는 장면만)
+  const [hint3, setHint3] = useState(null);               // 3D 를 못 열었을 때 잠깐 알림
   const clk = useRef({ t0: init.current.t0, held: init.current.held });
-  const pf = useRef(null);          // { idx, mode, t, t0, P } — 앞 장면이 사라지는 중
+  const pf = useRef(null);          // { idx, mode, t, t0, P, v3 } — 앞 장면이 사라지는 중
   const mf = useRef(null);          // { from, t0 } — 학년이 바뀌는 중
   const lastMode = useRef(mode);
   if (lastMode.current !== mode) { mf.current = { from: lastMode.current, t0: performance.now() }; lastMode.current = mode; }
   const [, setFrame] = useState(0);
   const R = useRef({});
   const P = paramsOf(list[idx], prm);
-  R.current = { idx, repeat, mode, inert, P };
+  const use3d = v3 && !!list[idx].sim3d;
+  R.current = { idx, repeat, mode, inert, P, use3d, v3 };
 
   const save = useCallback((i, rep) => write(lsKey, { i, t0: clk.current.t0, held: clk.current.held, rep }), [lsKey]);
   useEffect(() => { if (onIdx) onIdx(idx); }, [idx, onIdx]);
   useEffect(() => { save(init.current.i, init.current.rep); }, [save]);
   useEffect(() => { write(lsKey + ".prm", prm); }, [lsKey, prm]);
+  useEffect(() => { if (list.some((p) => p.sim3d)) write(lsKey + ".v3", v3); }, [lsKey, v3, list]);
+  useEffect(() => { if (!hint3) return undefined; const h = setTimeout(() => setHint3(null), 4200); return () => clearTimeout(h); }, [hint3]);
 
   /** 장면 i 로 — 앞 장면은 겹치며 사라진다. 멈춰 있었으면 새 장면도 처음에서 멈춘 채 */
   const goTo = useCallback((i, fade = true) => {
     const cur = R.current;
-    if (fade) pf.current = { idx: cur.idx, mode: cur.mode, t: Math.min(elapsedOf(clk.current), durOf(list[cur.idx], cur.P)), t0: performance.now(), P: cur.P };
+    if (fade) pf.current = { idx: cur.idx, mode: cur.mode, t: Math.min(elapsedOf(clk.current), durFor(list[cur.idx], cur.P, cur.use3d)), t0: performance.now(), P: cur.P, v3: cur.use3d };
     clk.current = { t0: Date.now(), held: clk.current.held != null ? 0 : null };
     mf.current = null;
     const j = ((i % n) + n) % n;
@@ -105,21 +122,33 @@ export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, is
     goTo(cur.idx, true);
     setPrm((o) => ({ ...o, [pair.key]: { ...(o[pair.key] || {}), [k]: v } }));
   }, [goTo, list]);
+  /** 2D ↔ 3D — 박자표가 달라서 그 장면을 처음부터 다시 튼다(앞 그림은 겹치며 사라진다) */
+  const set3d = useCallback((on) => {
+    const cur = R.current;
+    if (!!on === !!cur.v3) return;
+    goTo(cur.idx, true);
+    setV3(!!on);
+  }, [goTo]);
+  const on3dFail = useCallback(() => {
+    if (pf.current) pf.current.v3 = false;
+    setV3(false);
+    setHint3("이 화면에서는 3D 를 열 수 없어서 2D 로 보여 줘요");
+  }, []);
   const stepParam = useCallback((c, dir) => {
     const ops = c.options.map(optVal), i = ops.indexOf(R.current.P[c.key]);
     const j = clamp(i + dir, 0, ops.length - 1);
     if (j !== i) setParam(c.key, ops[j]);
   }, [setParam]);
 
-  /* ── 그리기 루프 (최대 40fps, 멈추고 겹침도 끝나면 쉰다) ── */
+  /* ── 그리기 루프 (최대 40fps · 3D 는 60fps, 멈추고 겹침도 끝나면 쉰다) ── */
   useEffect(() => {
     let raf = 0, last = 0;
     const loop = (now) => {
       raf = requestAnimationFrame(loop);
-      if (now - last < FRAME_MS) return;
-      last = now;
       const cur = R.current;
-      if (clk.current.held == null && Date.now() - clk.current.t0 >= durOf(list[cur.idx], cur.P)) goTo(cur.repeat ? cur.idx : cur.idx + 1, true);
+      if (now - last < (cur.use3d ? FRAME_3D - 1 : FRAME_MS)) return;
+      last = now;
+      if (clk.current.held == null && Date.now() - clk.current.t0 >= durFor(list[cur.idx], cur.P, cur.use3d)) goTo(cur.repeat ? cur.idx : cur.idx + 1, true);
       const busy = !!(mf.current || pf.current);
       if (mf.current && now - mf.current.t0 > MODE_FADE) mf.current = null;
       if (pf.current && now - pf.current.t0 > PAIR_FADE) pf.current = null;
@@ -142,6 +171,7 @@ export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, is
       else if (!noMode && (k === "m" || k === "M")) onMode("m");
       else if (!noMode && (k === "t" || k === "T" || k === "Tab")) { e.preventDefault(); onMode(); }
       else if (k === "r" || k === "R") { toggleRepeat(); poke(); }
+      else if (k === "3" && list[R.current.idx].sim3d) { set3d(!R.current.v3); poke(); }
       else if (k === "f" || k === "F") toggleFs();
       else if (k === "ArrowUp" || k === "ArrowDown") {
         const c = (list[R.current.idx].controls || []).find((x) => x.kind === "step");
@@ -150,41 +180,64 @@ export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, is
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goTo, togglePause, toggleRepeat, stepParam, onMode, toggleFs, poke, list, noMode]);
+  }, [goTo, togglePause, toggleRepeat, stepParam, onMode, toggleFs, poke, list, noMode, set3d]);
 
   /* ── 그릴 층: 사라지는 앞 장면 · 학년 겹침 ── */
   const now = performance.now();
   const pair = list[idx];
-  const dur = durOf(pair, P);
+  const dur = durFor(pair, P, use3d);
   const t = clamp(elapsedOf(clk.current), 0, dur);
   const layers = [];
   const p = pf.current, m = mf.current;
   const kin = p ? E.sine(clamp((now - p.t0) / PAIR_FADE)) : 1;
-  if (p && kin < 1) layers.push({ key: "out", pair: list[p.idx], mode: p.mode, t: p.t, o: 1 - kin, P: p.P });
+  if (p && kin < 1) layers.push({ key: "out", pair: list[p.idx], mode: p.mode, t: p.t, o: 1 - kin, P: p.P, v3: !!p.v3 });
   if (m) {
     const k = E.sine(clamp((now - m.t0) / MODE_FADE));
-    if (k < 1) layers.push({ key: "from-" + m.from, pair, mode: m.from, t, o: kin * (1 - k * k), P });
-    layers.push({ key: "to-" + mode, pair, mode, t, o: kin * k, P });
-  } else layers.push({ key: "cur-" + mode, pair, mode, t, o: kin, P });
+    if (k < 1) layers.push({ key: "from-" + m.from, pair, mode: m.from, t, o: kin * (1 - k * k), P, v3: use3d });
+    layers.push({ key: "to-" + mode, pair, mode, t, o: kin * k, P, v3: use3d });
+  } else layers.push({ key: "cur-" + mode, pair, mode, t, o: kin, P, v3: use3d });
+  // 3D 세계: 지금 장면(3D 면) — 아니면 3D 로 돌던 앞 장면이 사라지는 동안 그 장면
+  const outgoing3d = p && kin < 1 && p.v3 ? list[p.idx] : null;
+  const world3d = use3d ? pair.sim3d.world(t) : outgoing3d ? outgoing3d.sim3d.world(p.t) : null;
+  for (const L of layers) if (L.v3) L.W = L.key === "out" ? (outgoing3d ? outgoing3d.sim3d.world(p.t) : null) : use3d ? world3d : null;
+  const canvasO = use3d ? (p && !p.v3 && kin < 1 ? kin : 1) : outgoing3d ? 1 - kin : 0;
+  const has3d = !!pair.sim3d;
   const stop = (e) => e.stopPropagation();
 
   return (
     <>
+      {world3d && (
+        <Suspense fallback={<div className="dsp-3d dsp-3d-wait"><span>3D 경기장을 불러오는 중…</span></div>}>
+          <Stage3D world={world3d} theme={C.name === "light" ? "light" : "dark"} o={canvasO} onFail={on3dFail} />
+        </Suspense>
+      )}
       <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
-        role="img" aria-label={`${label} — ${pair.title[mode]}`}>
+        role="img" aria-label={`${label} — ${pair.title[mode]}${use3d ? " (3D)" : ""}`}>
         {layers.map((L) => (
-          <g key={L.key + "@" + L.pair.key} opacity={L.o}>
-            <SceneTitle title={L.pair.title[L.mode]} sub={L.pair.sub[L.mode]} C={C} mode={L.mode} />
-            {L.pair.render(L.mode, L.t, C, L.P)}
+          <g key={L.key + "@" + L.pair.key + (L.v3 ? "@3d" : "")} opacity={L.o}>
+            {L.v3 && L.W ? (
+              <g opacity={1 - (L.W.edge || 0)}>
+                {L.pair.sim3d.overlay(L.mode, L.t, C, L.P, L.W)}
+                <Title3D title={L.pair.title[L.mode]} sub={L.pair.sub[L.mode]} mode={L.mode} o={1 - clamp(L.W.dim / 0.55)} />
+              </g>
+            ) : (<>
+              <SceneTitle title={L.pair.title[L.mode]} sub={L.pair.sub[L.mode]} C={C} mode={L.mode} />
+              {L.pair.render(L.mode, L.t, C, L.P)}
+            </>)}
           </g>
         ))}
       </svg>
 
       {/* 오른쪽 위 — 액자 단추 · 학년 토글 (수업 장면과 같은 자리) */}
-      {!(noMode && noGallery) && <div className="dsp-tr">
+      {!(noMode && noGallery && !has3d) && <div className="dsp-tr">
         {!noGallery && <button type="button" className="dsp-fbtn" title="액자 목록" aria-label="액자 목록" onClick={() => { onGallery(); poke(); }}>
           <FrameIc />
         </button>}
+        {has3d && <div className={"dsp-vw on-" + (v3 ? "3d" : "2d")} role="radiogroup" aria-label="보기 (키보드 3)">
+          <span className="dsp-knob" aria-hidden="true" />
+          <button type="button" role="radio" aria-checked={!v3} title="위에서 내려다본 그림" onClick={() => { set3d(false); poke(); }}>2D</button>
+          <button type="button" role="radio" aria-checked={v3} title="경기장 속 눈높이 시뮬레이션 (키보드 3)" onClick={() => { set3d(true); poke(); }}>3D</button>
+        </div>}
         {!noMode && <div className={"dsp-mode on-" + mode} role="radiogroup" aria-label="학년">
           <span className="dsp-knob" aria-hidden="true" />
           <button type="button" role="radio" aria-checked={mode === "e"} onClick={() => { onMode("e"); poke(); }}>초등</button>
@@ -242,6 +295,7 @@ export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, is
       </div>}
       <div className="dsp-prog" aria-hidden="true"><i style={{ transform: `scaleX(${t / dur})` }} /></div>
       {paused && <div className="dsp-paused">멈춤</div>}
+      {hint3 && <div className="dsp-hint show dsp-hint3">{hint3}</div>}
     </>
   );
 }

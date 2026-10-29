@@ -10,6 +10,7 @@
 //         교육과정에 딱 맞기보다 융합·탐구에 가까워 수업 장면 순환에서 빼고, 직접 해 보는 것을 먼저 보여 준다.
 //         「풀이 보기」를 고르면 예전 설명 장면(몬티홀·찍기 · 갈림길·구슬 · 정규분포)을 그대로 돌린다.
 //       · 장면 묶음 — 숫자로 읽는 축구 · 서술형 이야기(stories.js · frames/story.jsx): 여러 단원을 섞는 융합 장면.
+//         축구 여섯 장면은 「2D | 3D」 토글로 경기장 속 눈높이의 3D 시뮬레이션으로도 본다(frames/player.jsx · sim3d/ — three.js 는 3D 를 켤 때만).
 // 장면 설정: 장면이 controls(구슬 수·단계·문 개수 …)를 가지면 조작 막대 아래에 설정 칩이 뜬다. 바꾸면 그 장면을
 //       처음부터 다시 튼다. 장면마다 기기에 기억한다. 장면은 render(mode, t, C, P) 의 P 로 설정을 받는다.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
