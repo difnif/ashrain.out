@@ -150,14 +150,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const text = async () => (await page.locator("body").innerText()).replace(/\s+/g, " ");
 
   try {
-    // A. 공부하기 › 컨셉 문제 › 경우의 수와 확률 — 아이콘 38개
+    // A. 공부하기 › 컨셉 문제 › 경우의 수와 확률 — 아이콘 39개
     await page.goto(base + "#/study/sets");
     await page.locator(".st-folder").first().waitFor({ timeout: 20000 });
     ok(await page.locator(".sh-stab.on", { hasText: "컨셉 문제" }).count() === 1, "A1 서브탭 「컨셉 문제」 활성");
-    ok(/경우의 수와 확률/.test(await page.locator(".st-folder").first().innerText()), "A2 범주 폴더");
+    await page.locator(".st-folder", { hasText: "종 ·" }).first().waitFor({ timeout: 10000 }).catch(() => {});
+    const folder = (await page.locator(".st-folder").first().innerText()).replace(/\s+/g, " ");
+    ok(/경우의 수와 확률/.test(folder) && /39종 · 1,950문항/.test(folder), `A2 범주 폴더 · 세트 수는 index 에서 (${folder})`);
     await page.locator(".st-folder").first().click();
     await page.locator(".st-ic").first().waitFor({ timeout: 10000 });
-    ok(await page.locator(".st-ic").count() === 38, "A3 세트 아이콘 38개");
+    ok(await page.locator(".st-ic").count() === 39, "A3 세트 아이콘 39개");
     const groups = await page.locator(".st-sec").allInnerTexts();
     ok(groups.length === 6 && groups.some((g) => /스포츠/.test(g)) && groups.some((g) => /사회/.test(g)), `A4 묶음 6개 (${groups.join(" | ")})`);
     await shot("cs-icons");
