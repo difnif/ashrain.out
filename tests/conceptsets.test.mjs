@@ -172,8 +172,12 @@ test("ZIP(store): 파이썬 zipfile 로 열림 · UTF-8 이름 · CRC", () => {
 });
 
 console.log("OMR 카드");
-test("쪽 코드 띠: 세트 1~63 · 쪽 0~3 왕복 · 한 칸 뒤집히면 거부", () => {
-  for (let set = 1; set <= 63; set++) for (let page = 0; page < 4; page++) {
+test("쪽 코드 띠: 세트 1~126 · 쪽 0~3 왕복 · 한 칸 뒤집히면 거부 · 1~63번은 예전 띠 그대로", () => {
+  // 예전(확장 전) 띠: 범주 코드 1 + 세트 6비트 — 이미 인쇄한 카드가 그대로 읽혀야 한다
+  const old = (set, page) => { const d = [0, 1, ...[5, 4, 3, 2, 1, 0].map((x) => (set >> x) & 1), ...[1, 0].map((x) => (page >> x) & 1)]; const o = d.reduce((a, c) => a + c, 0) % 4; return [1, ...d, (o >> 1) & 1, o & 1, 1]; };
+  for (let set = 1; set <= 63; set++) for (let page = 0; page < 4; page++) assert.deepEqual(bandBits("prob", set, page), old(set, page));
+  assert.throws(() => bandBits("prob", 127, 0));
+  for (let set = 1; set <= 126; set++) for (let page = 0; page < 4; page++) {
     const b = bandBits("prob", set, page);
     assert.equal(b.length, BAND.n);
     assert.deepEqual(parseBand(b), { cat: "prob", set, page });
