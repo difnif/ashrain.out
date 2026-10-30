@@ -49,6 +49,9 @@ export const DSP_CSS = `
 .dsp-light .dsp-paper { background: radial-gradient(70% 70% at 50% 35%, #fcf8ee 0%, #f3ead6 55%, #e6d9bb 100%); }
 .dsp-paper::after { content: ""; position: absolute; inset: 0; opacity: .06; mix-blend-mode: overlay; background-image: ${NOISE}; }
 .dsp-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+/* 3D 축구: 캔버스는 무대 바깥 여백까지 화면 전체를 덮는다(무대 가운데 맞춤) — 시야각은 엔진이 무대에 맞춘다 */
+.dsp-3d { position: absolute; left: 50%; top: 50%; width: 100vw; height: 100vh; transform: translate(-50%, -50%); display: block;
+  pointer-events: none; }
 .dsp-svg text { font-kerning: normal; }
 
 /* 오른쪽 위: 액자 단추 + 학년 토글 */
@@ -69,6 +72,18 @@ export const DSP_CSS = `
 .dsp-knob { position: absolute; top: .35cqw; bottom: .35cqw; left: .35cqw; width: calc(50% - .35cqw); border-radius: 999px;
   background: var(--e); transition: transform .45s cubic-bezier(.65,0,.35,1), background .45s; }
 .dsp-mode.on-m .dsp-knob { transform: translateX(100%); background: var(--m); }
+
+/* 2D | 3D 토글(축구 장면) — 학년 토글과 같은 모양, 조금 작게 */
+.dsp-vw { position: relative; display: flex; background: var(--chip); border: 1px solid var(--chipbd); border-radius: 999px; padding: .3cqw; }
+.dsp-vw button { position: relative; z-index: 1; border: 0; background: none; color: var(--soft); cursor: pointer; font: inherit;
+  font-size: 1.4cqw; font-weight: 900; letter-spacing: .03em; padding: .55cqw 1.2cqw; border-radius: 999px; min-width: 5cqw;
+  -webkit-tap-highlight-color: transparent; transition: color .35s; }
+.dsp-vw button[aria-checked="true"] { color: #1c2647; }
+.dsp-light .dsp-vw button[aria-checked="true"] { color: #fffdf6; }
+.dsp-vw .dsp-knob { top: .3cqw; bottom: .3cqw; left: .3cqw; width: calc(50% - .3cqw); background: var(--soft); }
+.dsp-vw.on-3d .dsp-knob { transform: translateX(100%); background: var(--gold); }
+.dsp-3d-wait { display: grid; place-items: center; background: #05080f; color: #b8b0a0; font-size: 1.3cqw; font-weight: 700; }
+.dsp-hint3 { top: auto; bottom: 5.2cqw; }
 
 /* 조작 막대 */
 .dsp-ctl { position: absolute; left: 50%; top: 2.4cqw; transform: translate(-50%, -.6cqw); display: flex; align-items: center;
