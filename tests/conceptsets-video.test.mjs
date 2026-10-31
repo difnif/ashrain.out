@@ -1,6 +1,6 @@
 // 컨셉 문제 「해설 영상」 — 장면(videoScenes.jsx) 노드 테스트
 //   node tests/conceptsets-video.test.mjs
-// 세트 39개 × 50문항 = 1950장면을 만들어, 박자 지점마다 두 테마로 그려 보고(오류 · NaN 없음) 배치가 무대 안에 드는지,
+// 세트 90개 × 50문항 = 4500장면을 만들어, 박자 지점마다 두 테마로 그려 보고(오류 · NaN 없음) 배치가 무대 안에 드는지,
 // 글자 변환이 꼬리표를 남기지 않는지, 도식 큐가 짚는 키가 도식에 있는지 본다. 글자 폭은 노드에서 어림치(draw.jsx estimate)로 잰다.
 import assert from "node:assert/strict";
 import fs from "node:fs";

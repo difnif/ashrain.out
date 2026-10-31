@@ -30,9 +30,9 @@ const CAT = INDEX.categories[0];
 const SETS = CAT.sets.map((s) => JSON.parse(fs.readFileSync(path.join(DIR, `${String(s.no).padStart(2, "0")}.json`), "utf8")));
 
 console.log("데이터");
-test("index: 범주 prob · 세트 39 · 묶음이 세트를 한 번씩", () => {
+test("index: 범주 prob · 세트 90 · 묶음이 세트를 한 번씩", () => {
   assert.equal(CAT.id, "prob");
-  assert.equal(CAT.sets.length, 39);
+  assert.equal(CAT.sets.length, 90);
   const inGroups = CAT.groups.flatMap((g) => g.sets).sort((a, b) => a - b);
   assert.deepEqual(inGroups, CAT.sets.map((s) => s.no).sort((a, b) => a - b));
   for (const s of CAT.sets) { assert.ok(s.icon && s.short && s.key && s.title); assert.equal(s.n, 50); assert.ok(s.pages.problems >= 8 && s.pages.solutions >= 15); }
@@ -184,7 +184,7 @@ test("쪽 코드 띠: 세트 1~126 · 쪽 0~3 왕복 · 한 칸 뒤집히면 거
     for (let i = 1; i < BAND.n - 1; i++) { const c = b.slice(); c[i] ^= 1; const r = parseBand(c); assert.ok(!r || r.set !== set || r.page !== page || r.cat !== "prob", `flip ${i}`); }
   }
 });
-test("배치: 39세트 모두 2쪽 · 칸은 영역 안 · 서로 겹치지 않음 · 마커/띠와 떨어짐", () => {
+test("배치: 90세트 모두 2쪽 · 칸은 영역 안 · 서로 겹치지 않음 · 마커/띠와 떨어짐", () => {
   for (const s of SETS) {
     const card = layoutCard({ cat: "prob", no: s.no, title: s.title, items: s.items });
     assert.equal(card.pages.length, 2, s.key);
