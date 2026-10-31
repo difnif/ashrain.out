@@ -1,6 +1,6 @@
 // 컨셉 문제(주제별 50제) — 데이터 · 답 판정 · OMR(grid.js) 노드 테스트
 //   node tests/conceptsets.test.mjs
-// 실제 세트 JSON 38개를 읽어 형식을 확인하고, 카드를 그려 원근 · 조명 · 잡음을 얹은 "사진"에서 답을 되읽는지 본다.
+// 실제 세트 JSON 39개를 읽어 형식을 확인하고, 카드를 그려 원근 · 조명 · 잡음을 얹은 "사진"에서 답을 되읽는지 본다.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -30,9 +30,9 @@ const CAT = INDEX.categories[0];
 const SETS = CAT.sets.map((s) => JSON.parse(fs.readFileSync(path.join(DIR, `${String(s.no).padStart(2, "0")}.json`), "utf8")));
 
 console.log("데이터");
-test("index: 범주 prob · 세트 38 · 묶음이 세트를 한 번씩", () => {
+test("index: 범주 prob · 세트 90 · 묶음이 세트를 한 번씩", () => {
   assert.equal(CAT.id, "prob");
-  assert.equal(CAT.sets.length, 38);
+  assert.equal(CAT.sets.length, 90);
   const inGroups = CAT.groups.flatMap((g) => g.sets).sort((a, b) => a - b);
   assert.deepEqual(inGroups, CAT.sets.map((s) => s.no).sort((a, b) => a - b));
   for (const s of CAT.sets) { assert.ok(s.icon && s.short && s.key && s.title); assert.equal(s.n, 50); assert.ok(s.pages.problems >= 8 && s.pages.solutions >= 15); }
@@ -172,15 +172,19 @@ test("ZIP(store): 파이썬 zipfile 로 열림 · UTF-8 이름 · CRC", () => {
 });
 
 console.log("OMR 카드");
-test("쪽 코드 띠: 세트 1~38 · 쪽 0~3 왕복 · 한 칸 뒤집히면 거부", () => {
-  for (let set = 1; set <= 38; set++) for (let page = 0; page < 4; page++) {
+test("쪽 코드 띠: 세트 1~126 · 쪽 0~3 왕복 · 한 칸 뒤집히면 거부 · 1~63번은 예전 띠 그대로", () => {
+  // 예전(확장 전) 띠: 범주 코드 1 + 세트 6비트 — 이미 인쇄한 카드가 그대로 읽혀야 한다
+  const old = (set, page) => { const d = [0, 1, ...[5, 4, 3, 2, 1, 0].map((x) => (set >> x) & 1), ...[1, 0].map((x) => (page >> x) & 1)]; const o = d.reduce((a, c) => a + c, 0) % 4; return [1, ...d, (o >> 1) & 1, o & 1, 1]; };
+  for (let set = 1; set <= 63; set++) for (let page = 0; page < 4; page++) assert.deepEqual(bandBits("prob", set, page), old(set, page));
+  assert.throws(() => bandBits("prob", 127, 0));
+  for (let set = 1; set <= 126; set++) for (let page = 0; page < 4; page++) {
     const b = bandBits("prob", set, page);
     assert.equal(b.length, BAND.n);
     assert.deepEqual(parseBand(b), { cat: "prob", set, page });
     for (let i = 1; i < BAND.n - 1; i++) { const c = b.slice(); c[i] ^= 1; const r = parseBand(c); assert.ok(!r || r.set !== set || r.page !== page || r.cat !== "prob", `flip ${i}`); }
   }
 });
-test("배치: 38세트 모두 2쪽 · 칸은 영역 안 · 서로 겹치지 않음 · 마커/띠와 떨어짐", () => {
+test("배치: 90세트 모두 2쪽 · 칸은 영역 안 · 서로 겹치지 않음 · 마커/띠와 떨어짐", () => {
   for (const s of SETS) {
     const card = layoutCard({ cat: "prob", no: s.no, title: s.title, items: s.items });
     assert.equal(card.pages.length, 2, s.key);
