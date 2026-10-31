@@ -84,7 +84,7 @@ export const frame = (sc, t, th) => renderToStaticMarkup(<g><SceneTitle title={s
     }
   });
 
-  const BAD = /NaN|undefined|Infinity/;   // (「null²」은 실제 전시관 이름이라 null 은 보지 않는다)
+  const BAD = /NaN|undefined|(?<!Do As |Another )Infinity/;   // (「null²」은 실제 전시관 이름이라 null 은, Do As Infinity · Another Infinity 는 가수 이름이라 그 Infinity 는 보지 않는다)
   const TAGS = /<[a-z/][^>]*>|&(amp|lt|gt|quot|#x27|#39|nbsp);/i;
   for (const { set, scenes } of ALL) {
     const tag = `${String(set.no).padStart(2, "0")} ${set.short}`;
