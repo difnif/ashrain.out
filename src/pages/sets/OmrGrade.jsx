@@ -1,7 +1,8 @@
 // ashrain.out — 컨셉 문제: OMR 카드 사진 → 자동 판독(grid.js) → 확인(고치기) → 채점 → 틀린 문항 해설로
 // 카드(v2)는 3쪽 — 정수 · 두 수 · 보기는 동그라미, 분수는 손으로 쓰는 칸. 쪽 아래쪽 띠에 세트 · 쪽 번호가 있어 어느 순서로 찍어도 된다.
 // 예전에 인쇄한 카드(v1, 2쪽 · 분수도 동그라미 · 띠가 위쪽)도 띠의 자리로 알아보고 그대로 읽는다.
-// 동그라미 · 칸의 글씨 유무는 이 기기 안에서 읽는다. 손으로 쓴 분수 칸만 잘라(사진 전체가 아니라) AI(/api/ai task "omr")가 읽는다.
+// 일차함수 범주(lin)는 2쪽 손글씨 카드 — 답(수 · 식 · 점)은 한 줄 칸에 손으로 쓰고 보기만 동그라미(예전 판 없음).
+// 동그라미 · 칸의 글씨 유무는 이 기기 안에서 읽는다. 손으로 쓴 칸만 잘라(사진 전체가 아니라) AI(/api/ai task "omr")가 읽는다.
 import { useMemo, useRef, useState } from "react";
 import { judge, saveAttempt, saveOmrResult, pad2 } from "../../lib/conceptsets";
 import { layoutCard, readCardPhoto, handCrops, CONF_OK } from "../../lib/omr/grid.js";
@@ -12,7 +13,7 @@ import { handSheets } from "./omrhand";
 import { readSheets } from "./recognize";
 
 const tick = () => new Promise((r) => setTimeout(r, 30));
-const PLACE = { int: "예: 12", frac: "예: 5/12", pick: "예: ㄱ, ㄷ", pair: "예: 14, 21" };
+const PLACE = { int: "예: 12", frac: "예: 5/12", pick: "예: ㄱ, ㄷ", pair: "예: 14, 21", num: "예: −3 · 3/4 · 0.5", lin: "예: y = −2x + 3", pt: "예: (2, −1)" };
 const EMPTY = { raw: "", conf: null, flag: null, src: null };
 
 /** 확인이 필요한 줄: 동그라미를 흐리게 · 두 개 칠함 · 자리 빔, 또는 손글씨를 AI 가 못 읽음 */
@@ -44,7 +45,7 @@ function previewOf(res, page) {
 export default function OmrGrade({ catId, set, uid, say }) {
   const cards = useMemo(() => {
     const s = { cat: catId, no: set.no, title: set.title, short: set.short, items: set.items };
-    return { 2: layoutCard(s), 1: layoutCard(s, { ver: 1 }) };
+    return catId === "prob" ? { 2: layoutCard(s), 1: layoutCard(s, { ver: 1 }) } : { 2: layoutCard(s) };
   }, [catId, set]);
   const [ver, setVer] = useState(2);             // 찍은 카드의 판 — 예전 카드를 찍으면 1
   const card = cards[ver];
@@ -68,8 +69,8 @@ export default function OmrGrade({ catId, set, uid, say }) {
     });
     let aiNote = "", aiErr = null;
     if (nHand) {
-      // 손글씨 분수 칸: 그 칸만 잘라 AI 로
-      setBusy(`손으로 쓴 분수 ${nHand}개를 AI가 읽는 중…`);
+      // 손글씨 칸(분수 · 일차함수의 답): 그 칸만 잘라 AI 로
+      setBusy(`손으로 쓴 답 ${nHand}개를 AI가 읽는 중…`);
       const crops = handCrops(res);
       let reads = {};
       try {
@@ -86,7 +87,7 @@ export default function OmrGrade({ catId, set, uid, say }) {
         return n;
       });
       const ok = crops.filter((c) => String(reads[c.no] ?? "").trim()).length;
-      aiNote = ok ? ` · 손글씨 분수 ${ok}개는 AI가 읽었어요` : "";
+      aiNote = ok ? ` · 손글씨 ${ok}개는 AI가 읽었어요` : "";
       if (ok < crops.length && !aiErr) aiNote += ` · ${crops.length - ok}개는 직접 써 주세요`;
     }
     const nWarn = res.answers.filter((a) => a.flag !== "hand" && a.raw && (a.flag || a.conf < CONF_OK)).length;
@@ -164,7 +165,7 @@ export default function OmrGrade({ catId, set, uid, say }) {
         <ul className="cs-tips">
           <li><b>네 모서리의 검은 네모</b>가 모두 나오게, 위에서 똑바로 찍어요.</li>
           <li>그림자 없이 밝은 곳에서 · 카드는 평평하게 펴서.</li>
-          <li>동그라미는 이 기기 안에서 읽어요. <b>손으로 쓴 분수 칸</b>만 잘라 AI가 읽어요(로그인 필요).</li>
+          <li>동그라미는 이 기기 안에서 읽어요. <b>손으로 쓴 칸</b>({catId === "lin" ? "수 · 식 · 점" : "분수"})만 잘라 AI가 읽어요(로그인 필요).</li>
         </ul>
         <div className="cs-pages">
           {card.pages.map((p) => {
@@ -197,7 +198,7 @@ export default function OmrGrade({ catId, set, uid, say }) {
 
       <div className="cs-sec">읽은 답 확인 <small>{nFilled}/50 · 고칠 칸은 눌러서 고쳐요</small></div>
       {warnNos.length > 0 && <div className="cs-warn">⚠ 노란 칸 {warnNos.length}개({warnNos.join(", ")}번)는 사진과 비교해 확인해 주세요. 「?」는 읽지 못한 자리, 빈 노란 칸은 AI가 못 읽은 손글씨예요.</div>}
-      {nAi > 0 && <div className="cs-ainote">✍ 손으로 쓴 분수 {nAi}개는 AI가 읽었어요 — 카드와 한 번 비교해 주세요.</div>}
+      {nAi > 0 && <div className="cs-ainote">✍ 손으로 쓴 답 {nAi}개는 AI가 읽었어요 — 카드와 한 번 비교해 주세요.</div>}
       {card.pages.map((p) => (
         <div key={p.index} className="cs-ogrp">
           <div className="cs-ogh">{p.index + 1}쪽 {pages[`${ver}:${p.index}`] ? "" : <small>· 아직 안 찍음 — 찍거나 직접 써도 돼요</small>}</div>
@@ -209,8 +210,8 @@ export default function OmrGrade({ catId, set, uid, say }) {
               return (
                 <label key={b.no} className={"cs-orow" + (warn ? " warn" : "") + (r.src === "me" ? " me" : "") + (r.src === "ai" && r.flag === "ai" ? " ai" : "")}>
                   <span className="no">{b.no}</span>
-                  <span className="kd">{omrKindName(b.kind)}</span>
-                  <input className="sv-in" value={r.raw} placeholder={r.flag === "reading" ? "읽는 중…" : PLACE[b.kind]} inputMode={b.kind === "int" ? "numeric" : "text"}
+                  <span className="kd">{omrKindName(b.kind, b.ak)}</span>
+                  <input className="sv-in" value={r.raw} placeholder={r.flag === "reading" ? "읽는 중…" : PLACE[b.ak || b.kind]} inputMode={b.kind === "int" ? "numeric" : "text"}
                     onChange={(e) => edit(b.no, e.target.value)} aria-label={`${b.no}번 답`} />
                   {note && <em className={warn ? "" : "info"}>{note}</em>}
                 </label>

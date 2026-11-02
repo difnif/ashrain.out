@@ -26,8 +26,11 @@ async function getJson(url) {
   return r.json();
 }
 
-/** 범주 목록 — 지금은 「경우의 수와 확률」(prob) 하나. 범주가 늘면 categories.json 으로 묶는다 */
-export const CATEGORIES = [{ id: "prob", title: "경우의 수와 확률", sub: "중2-2 · 주제별 50제", icon: "🎲" }];
+/** 범주 목록 — 「경우의 수와 확률」(prob · 중2-2) · 「일차함수와 그래프」(lin · 중2-1 · 과학 단원별) */
+export const CATEGORIES = [
+  { id: "prob", title: "경우의 수와 확률", sub: "중2-2 · 주제별 50제", icon: "🎲" },
+  { id: "lin", title: "일차함수와 그래프", sub: "중2-1 · 과학 단원별 50제", icon: "📈" },
+];
 
 export async function loadIndex(cat = "prob") {
   if (indexCache?.[cat]) return indexCache[cat];
@@ -66,12 +69,128 @@ export function parseFrac(s) {
   return null;
 }
 
-/** 정답의 '쓰는 꼴' — OMR 판독 결과와 같은 꼴 ("12" · "5/12" · "ㄱ, ㄷ" · "14, 21") */
+// ── 유리수 · 일차식 (일차함수 범주: 음수 · 분수 · 소수 · y = ax + b · 점) ──────────────────
+/** [n, d] 기약 · 분모 양수 */
+export function rat(n, d = 1) {
+  if (d < 0) { n = -n; d = -d; }
+  const g = gcd(n, d) || 1;
+  return [n / g + 0, d / g];      // + 0: −0 → 0
+}
+const rAdd = (a, b) => rat(a[0] * b[1] + b[0] * a[1], a[1] * b[1]);
+const rSub = (a, b) => rat(a[0] * b[1] - b[0] * a[1], a[1] * b[1]);
+const rDiv = (a, b) => rat(a[0] * b[1], a[1] * b[0]);
+const rNeg = (a) => [0 - a[0], a[1]];
+const rEq = (a, b) => !!a && !!b && a[0] * b[1] === b[0] * a[1];
+const MINUS = "−";
+const unify = (s) => String(s ?? "").normalize("NFKC").replace(/[−–—‐]/g, "-").replace(/[{}]/g, "");
+
+function decRat(str) {
+  const [i, f = ""] = String(str).split(".");
+  return rat(Number(i + f), 10 ** f.length);
+}
+
+/** "−3" · "3/4" · "-0.5" · "12.5" · "4분의 3" · "−4분의 3" → [n, d] (수가 아니면 null) */
+export function parseRat(s) {
+  const t = unify(s).replace(/\s+/g, "");
+  let m = t.match(/^([+-]?)(\d+)분의(\d+)$/u);
+  if (m) return +m[2] === 0 ? null : rat((m[1] === "-" ? -1 : 1) * +m[3], +m[2]);
+  m = t.match(/^([+-]?)(\d+(?:\.\d+)?)(?:\/(\d+(?:\.\d+)?))?$/);
+  if (!m) return null;
+  const num = decRat(m[2]), den = m[3] ? decRat(m[3]) : [1, 1];
+  if (den[0] === 0) return null;
+  return rat((m[1] === "-" ? -1 : 1) * num[0] * den[1], num[1] * den[0]);
+}
+
+/** 수 → 쓰는 꼴: "−3" · "3/4" · (dec) "12.5" */
+export function ratText(r, dec = false) {
+  const [n, d] = r;
+  const sg = n < 0 ? MINUS : "";
+  const an = Math.abs(n);
+  if (d === 1) return sg + an;
+  if (dec) {
+    let dd = d, k = 0;
+    while (dd % 2 === 0) { dd /= 2; k++; }
+    let k5 = 0;
+    while (dd % 5 === 0) { dd /= 5; k5++; }
+    if (dd === 1) {
+      const p = Math.max(k, k5), scale = 10 ** p, v = (an * scale) / d;
+      const s = String(v).padStart(p + 1, "0");
+      return sg + s.slice(0, s.length - p) + "." + s.slice(s.length - p);
+    }
+  }
+  return `${sg}${an}/${d}`;
+}
+
+/** 일차식 한 쪽 → { x, y, c } 계수 (꼴이 아니면 null). "2x+3" · "-x" · "1/2x" · "x/2" · "0.5x" · "(1/2)x" */
+function linSide(e) {
+  const out = { x: [0, 1], y: [0, 1], c: [0, 1] };
+  e = e.replace(/\(([\d./]+)\)/g, "$1");
+  if (!e) return null;
+  const re = /([+-]?)(\d+(?:\.\d+)?(?:\/\d+(?:\.\d+)?)?)?([xy])?(?:\/(\d+(?:\.\d+)?))?/y;
+  let pos = 0;
+  while (pos < e.length) {
+    re.lastIndex = pos;
+    const m = re.exec(e);
+    if (!m || !m[0] || (!m[2] && !m[3])) return null;
+    const [, sg, num, v, den] = m;
+    let r = num ? parseRat(num) : [1, 1];
+    if (!r) return null;
+    if (den) { const dr = parseRat(den); if (!dr || dr[0] === 0) return null; r = rDiv(r, dr); }
+    if (sg === "-") r = rNeg(r);
+    out[v || "c"] = rAdd(out[v || "c"], r);
+    pos = re.lastIndex;
+    if (pos < e.length && !/[+-]/.test(e[pos])) return null;
+  }
+  return out;
+}
+
+/** "y = 2x + 3" · "y=-x" · "2x − 3"(y = 생략) · "2x − y + 3 = 0" → { a, b } (y = ax + b, 꼴이 아니면 null) */
+export function parseLine(s) {
+  const t = unify(s).toLowerCase().replace(/\s+/g, "").replace(/[×·*]/g, "");
+  if (!t) return null;
+  const sides = t.split("=");
+  if (sides.length > 2 || sides.some((x) => !x)) return null;
+  const L = linSide(sides.length === 2 ? sides[0] : "y"), R = linSide(sides.length === 2 ? sides[1] : sides[0]);
+  if (!L || !R) return null;
+  const cx = rSub(L.x, R.x), cy = rSub(L.y, R.y), c = rSub(L.c, R.c);
+  if (cy[0] === 0) return null;
+  return { a: rNeg(rDiv(cx, cy)), b: rNeg(rDiv(c, cy)) };
+}
+
+/** "(2, −3)" · "2, -3" · "(1/2, 4)" → { x, y } */
+export function parsePt(s) {
+  const t = unify(s).replace(/[()（）\s]/g, "");
+  const parts = t.split(/[,，]/);
+  if (parts.length !== 2) return null;
+  const x = parseRat(parts[0]), y = parseRat(parts[1]);
+  return x && y ? { x, y } : null;
+}
+
+/** y = ax + b → 쓰는 꼴 "y = −1/2x + 3" (dec 이면 "y = 0.5x + 12") */
+export function lineText(a, b, dec = false) {
+  const head = a[0] === 0 ? "" : (a[0] === a[1] ? "x" : a[0] === -a[1] ? `${MINUS}x` : `${ratText(a, dec)}x`);
+  if (!head) return `y = ${ratText(b, dec)}`;
+  if (b[0] === 0) return `y = ${head}`;
+  return `y = ${head} ${b[0] < 0 ? MINUS : "+"} ${ratText([Math.abs(b[0]), b[1]], dec)}`;
+}
+
+/** 단위 떼기 — 정답 단위(u)가 끝에 있으면 떼고, 남은 끝 글자(가지 · cm · ℃ …)도 뗀다 */
+function stripUnit(s, u) {
+  let t = unify(s).trim();
+  const uu = unify(u || "").trim();
+  if (uu && t.endsWith(uu)) t = t.slice(0, -uu.length).trim();
+  return t.replace(/[^\d)]+$/u, "").trim();
+}
+
+/** 정답의 '쓰는 꼴' — OMR 판독 결과와 같은 꼴 ("12" · "5/12" · "ㄱ, ㄷ" · "14, 21" · "−3" · "y = 2x + 3" · "(2, −1)") */
 export function rawOf(item) {
   const a = item?.a || {};
   if (a.k === "frac") return a.d === 1 ? String(a.n) : `${a.n}/${a.d}`;
   if (a.k === "pick") return (a.v || []).join(", ");
   if (a.k === "pair") return `${a.v[0]}, ${a.v[1]}`;
+  if (a.k === "num") return ratText([a.n, a.d], !!a.dec);
+  if (a.k === "lin") return lineText(a.a, a.b, !!a.dec);
+  if (a.k === "pt") return `(${ratText(a.x, !!a.dec)}, ${ratText(a.y, !!a.dec)})`;
   return String(a.v);
 }
 
@@ -110,6 +229,25 @@ export function judge(item, raw) {
     const nums = (s.match(/\d[\d,]*/g) || []).map((x) => Number(x.replace(/,/g, "")));
     if (nums.length !== 2) return { ok: false, note: "두 수를 차례로 써 주세요 (예: 14, 21)" };
     return { ok: nums[0] === a.v[0] && nums[1] === a.v[1], note: "" };
+  }
+  if (a.k === "num") {
+    const t = stripUnit(s, a.u);
+    const r = parseRat(t);
+    if (!r) return { ok: false, note: "수로 써 주세요 (예: −3 · 3/4 · 0.5)" };
+    const ok = rEq(r, [a.n, a.d]);
+    const m = unify(t).replace(/\s+/g, "").match(/^[+-]?(\d+)\/(\d+)$/);
+    const unreduced = ok && m && gcd(+m[1], +m[2]) > 1;
+    return { ok, note: unreduced ? `기약분수로 쓰면 ${ratText([a.n, a.d])}이에요` : "" };
+  }
+  if (a.k === "lin") {
+    const L = parseLine(s);
+    if (!L) return { ok: false, note: "y = ax + b 꼴로 써 주세요 (예: y = −2x + 3)" };
+    return { ok: rEq(L.a, a.a) && rEq(L.b, a.b), note: "" };
+  }
+  if (a.k === "pt") {
+    const P = parsePt(s);
+    if (!P) return { ok: false, note: "점은 (x좌표, y좌표)로 써 주세요 (예: (2, −1))" };
+    return { ok: rEq(P.x, a.x) && rEq(P.y, a.y), note: "" };
   }
   return { ok: null, note: "" };
 }

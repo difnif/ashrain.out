@@ -70,6 +70,17 @@ export const V2 = {
 V2.BLOCK_H = V2.HEAD + V2.BOX_H + V2.BOX_GAP + 10 * V2.PY + V2.FOOT;    // 340
 export const BAND2 = { x0: 230, y: GH - MARKER_INSET - MARKER_SIZE / 2 - 11, cell: 22, gap: 14, n: 14 };   // v2 띠: 아래쪽 마커 사이
 
+// v2 일차함수(lin) 카드 — 답이 음수 · 분수 · 소수 · 식(y = ax + b) · 점이라 동그라미 대신 손글씨 한 줄 칸, 보기만 동그라미.
+//   줄 높이가 낮아 2쪽(쪽마다 9줄)에 들어간다. 칸 폭은 답 꼴마다(수 < 점 < 식), 식 칸 앞에는 「y =」를 칸 밖에 인쇄한다.
+export const LINE = {
+  HEAD: 24, BOX_H: 76, FOOT: 6, PAD: 4, PRE: 36,
+  W: { num: 196, pt: 236, lin: 300 },
+  PICK_DX: 36, PICK_R: 13,
+  GAP_X: 18, GAP_MAX: 64, GAP_Y: 14, ROW_MAX: 5,
+  AREA: { x0: 40, x1: 960, yFirst: 284, yOther: 208, yMax: 1352 },
+};
+LINE.ROW_H = LINE.HEAD + LINE.BOX_H + LINE.FOOT;   // 106
+
 export const FILL_MIN = 0.3;         // 이 이상 채워졌으면 칠한 것 (빈 동그라미의 속 숫자 · 테두리 번짐은 열마다 바탕으로 빼고 잰다)
 export const MARGIN = 0.18;          // 한 자리에서 1위·2위 차이가 이보다 작으면 "?"(두 개 칠함)
 export const FAINT_MIN = 0.16;       // FILL_MIN 아래라도 이만큼 칠했고 다른 동그라미보다 FAINT_GAP 넘게 어두우면 「흐리게 칠함」으로 읽는다
@@ -93,7 +104,7 @@ export function markerRects() {
 // ── 쪽 코드 띠: [1][범주 2비트][세트 6비트][쪽 2비트][검사 2비트][1] ──────────────────────────
 // 세트 칸은 6비트(1~63)다. 64번부터는 범주의 확장 코드(prob → 2)에 (세트 − 63)을 담는다 —
 // 이미 인쇄한 1~63번 카드의 띠는 그대로이고, 한 범주에 126세트까지 담는다. 판(v1 · v2)은 띠의 자리로 가린다(위 · 아래).
-export const CAT_CODES = { prob: 1 };
+export const CAT_CODES = { prob: 1, lin: 3 };
 export const CAT_EXT = { prob: 2 };
 export const SET_MAX = 126;
 export function bandBits(cat, set, page) {
@@ -130,6 +141,7 @@ export function kindOf(it) {
   if (k === "pick") return { kind: "pick", opts: it.a.o || ["ㄱ", "ㄴ", "ㄷ", "ㄹ"] };
   if (k === "frac") return { kind: "frac", cols: (it.omr?.c || [2, 2]).slice(0, 2) };
   if (k === "pair") return { kind: "pair", cols: (it.omr?.c || [3, 3]).slice(0, 2), labels: it.omr?.l || it.a.l || ["", ""] };
+  if (k === "num" || k === "lin" || k === "pt") return { kind: "line", ak: k };     // 일차함수: 손글씨 한 줄 칸(수 · 식 · 점)
   return { kind: "int", cols: [(it.omr?.c || [3])[0]] };
 }
 
@@ -256,14 +268,63 @@ function layoutV2(blocks) {
   return pages;
 }
 
+// 일차함수(lin) — 손글씨 한 줄 칸 · 보기
+function blockWidthLine(b) {
+  const G = LINE;
+  if (b.kind === "pick") return b.opts.length * G.PICK_DX + 2 * G.PAD;
+  return G.W[b.ak] || G.W.num;
+}
+
+function placeBlockLine(b, x, y) {
+  const G = LINE;
+  const out = { ...b, x, y, w: blockWidthLine(b), h: G.ROW_H, grids: [], picks: null, hand: null };
+  if (b.kind === "pick") {
+    out.picks = b.opts.map((label, i) => ({ x: x + G.PAD + i * G.PICK_DX + G.PICK_DX / 2, y: y + G.HEAD + G.BOX_H / 2, label, r: G.PICK_R }));
+  } else {
+    const pre = b.ak === "lin" ? G.PRE : 0;
+    out.hand = { num: { x: x + G.PAD + pre, y: y + G.HEAD, w: out.w - 2 * G.PAD - pre, h: G.BOX_H }, den: null, bar: null,
+      pre: pre ? { x: x + G.PAD, y: y + G.HEAD + G.BOX_H / 2 } : null };
+  }
+  return out;
+}
+
+function layoutLine(blocks) {
+  const G = LINE, A = G.AREA, AW = A.x1 - A.x0;
+  const fits = (list) => list.reduce((a, b) => a + blockWidthLine(b), 0) + G.GAP_X * (list.length - 1) <= AW;
+  const rows = [];
+  let row = [];
+  for (const b of blocks) {
+    if (row.length && (row.length >= G.ROW_MAX || !fits([...row, b]))) { rows.push(row); row = []; }
+    row.push(b);
+  }
+  if (row.length) rows.push(row);
+  const per = (pi) => Math.floor(((A.yMax - (pi === 0 ? A.yFirst : A.yOther)) + G.GAP_Y) / (G.ROW_H + G.GAP_Y));
+  const pages = [];
+  let pi = 0, k = 0;
+  for (const list of rows) {
+    if (k >= per(pi)) { pi++; k = 0; }
+    if (!pages[pi]) pages[pi] = { index: pi, blocks: [] };
+    const y = (pi === 0 ? A.yFirst : A.yOther) + k * (G.ROW_H + G.GAP_Y);
+    const ws = list.map(blockWidthLine), sum = ws.reduce((a, c) => a + c, 0);
+    const gap = list.length > 1 ? Math.min(G.GAP_MAX, (AW - sum) / (list.length - 1)) : 0;
+    let x = A.x0 + (AW - sum - gap * (list.length - 1)) / 2;
+    list.forEach((b, i) => { pages[pi].blocks.push(placeBlockLine(b, x, y)); x += ws[i] + gap; });
+    k++;
+  }
+  return pages;
+}
+
 /**
  * 카드 배치. set: { cat:"prob", no, title, short, items:[{ no, a, omr }] } · opts.ver: 1(예전) | 2(지금, 기본)
+ * 일차함수(cat "lin")는 v2 의 손글씨 한 줄 카드(layoutLine) — 예전 판이 없다.
  * → { cat, set, ver, title, pages:[{ index, n, ver, W, H, markers, orient, band, bandPos, blocks:[…] }] }
  */
 export function layoutCard(set, opts = {}) {
   const ver = opts.ver === 1 ? 1 : OMR_VER;
+  const cat = set.cat || "prob";
+  if (ver === 1 && cat !== "prob") throw new Error("예전(v1) 카드는 경우의 수와 확률 범주에만 있다");
   const blocks = (set.items || []).map((it, i) => ({ no: it.no ?? i + 1, ...kindOf(it) }));
-  const pages = ver === 1 ? layoutV1(blocks) : layoutV2(blocks);
+  const pages = ver === 1 ? layoutV1(blocks) : cat === "lin" ? layoutLine(blocks) : layoutV2(blocks);
   const n = pages.length;
   if (n > 4) throw new Error(`OMR 카드가 ${n}쪽 — 쪽 코드는 4쪽까지`);
   for (const p of pages) {
@@ -288,6 +349,11 @@ export const INSTRUCTION2 = [
   "정수는 자리마다 숫자 하나를 진하게 칠해요(남는 앞자리는 비워요) · 보기는 맞는 것을 모두 칠해요",
   "분수는 칸에 손으로 크게 써요 — 위 칸에 분자, 아래 칸에 분모 (0 · 1은 위 칸에만)",
 ];
+export const INSTRUCTION_LIN = [
+  "답은 칸 안에 손으로 또박또박 한 줄로 써요 — 수(−3 · 3/4 · 0.5) · 식(y = −2x + 3) · 점((2, −1))",
+  "보기는 맞는 것을 모두 칠해요 · 단위는 쓰지 않아도 돼요 · 사진은 네 모서리의 검은 네모가 모두 나오게",
+];
+const LINE_TAG = { num: "수", lin: "식", pt: "점 (x, y)" };
 export const PHOTO_TIP = "사진은 네 모서리의 검은 네모가 모두 나오게 위에서 찍어요";
 const FONT = `font-family="'Pretendard Variable',Pretendard,'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif"`;
 
@@ -355,18 +421,19 @@ const INK2 = { text: "#000", sub: "#222", line: "#1f1f1f", digit: "#6b6b6b", pic
 
 function pageSvgV2(card, p) {
   const G = V2, C = INK2;
+  const lin = card.cat === "lin";
   const s = [];
   frameSvg(p, s, "#cfcfcf");
   const pg = `${p.index + 1}/${p.n}쪽`;
   if (p.index === 0) {
     s.push(`<text x="500" y="150" text-anchor="middle" font-size="30" font-weight="800" fill="${C.text}">${esc(card.title)}</text>`);
-    s.push(`<text x="500" y="182" text-anchor="middle" font-size="17" font-weight="600" fill="${C.sub}">OMR 답안 카드 · ${esc(pg)} · 중2-2 · 50제</text>`);
+    s.push(`<text x="500" y="182" text-anchor="middle" font-size="17" font-weight="600" fill="${C.sub}">OMR 답안 카드 · ${esc(pg)} · ${lin ? "중2-1" : "중2-2"} · 50제</text>`);
     s.push(`<text x="150" y="222" font-size="18" font-weight="700" fill="${C.text}">이름</text><line x1="196" y1="226" x2="460" y2="226" stroke="${C.text}" stroke-width="1.6"/>`);
     s.push(`<text x="540" y="222" font-size="18" font-weight="700" fill="${C.text}">날짜</text><line x1="586" y1="226" x2="850" y2="226" stroke="${C.text}" stroke-width="1.6"/>`);
-    INSTRUCTION2.forEach((t, i) => s.push(`<text x="500" y="${252 + i * 21}" text-anchor="middle" font-size="14.5" font-weight="600" fill="${C.sub}">${esc(t)}</text>`));
+    (lin ? INSTRUCTION_LIN : INSTRUCTION2).forEach((t, i) => s.push(`<text x="500" y="${252 + i * 21}" text-anchor="middle" font-size="14.5" font-weight="600" fill="${C.sub}">${esc(t)}</text>`));
   } else {
     s.push(`<text x="500" y="148" text-anchor="middle" font-size="22" font-weight="800" fill="${C.text}">${esc(card.title)} <tspan font-weight="600" font-size="17" fill="${C.sub}">· OMR ${esc(pg)}</tspan></text>`);
-    s.push(`<text x="500" y="176" text-anchor="middle" font-size="14" font-weight="600" fill="${C.hint}">${esc(PHOTO_TIP)} · 분수는 위 칸 분자, 아래 칸 분모</text>`);
+    s.push(`<text x="500" y="176" text-anchor="middle" font-size="14" font-weight="600" fill="${C.hint}">${esc(PHOTO_TIP)} · ${lin ? "답은 칸 안에 한 줄로" : "분수는 위 칸 분자, 아래 칸 분모"}</text>`);
   }
   for (const b of p.blocks) {
     const nx = b.x + G.PAD, ny = b.y + 20;
@@ -378,6 +445,13 @@ function pageSvgV2(card, p) {
         s.push(`<circle cx="${q.x}" cy="${q.y}" r="${q.r}" fill="none" stroke="${C.line}" stroke-width="1.6"/>`);
         s.push(`<text x="${q.x}" y="${q.y + 5.5}" text-anchor="middle" font-size="15" font-weight="700" fill="${C.pickLabel}">${esc(q.label)}</text>`);
       }
+      continue;
+    }
+    if (b.kind === "line") {                       // 일차함수: 손글씨 한 줄 칸 (식은 칸 앞에 「y =」)
+      const r = b.hand.num;
+      s.push(`<text x="${tagX}" y="${ny - 1}" font-size="13" font-weight="700" fill="${C.hint}">${LINE_TAG[b.ak] || "수"}</text>`);
+      s.push(`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="4" fill="none" stroke="${C.line}" stroke-width="1.8"/>`);
+      if (b.hand.pre) s.push(`<text x="${b.hand.pre.x}" y="${b.hand.pre.y + 7}" font-size="20" font-weight="700" fill="${C.text}"><tspan font-style="italic">y</tspan> =</text>`);
       continue;
     }
     if (b.kind === "frac") {
@@ -571,8 +645,8 @@ export function handCrop(wp, rect, ink, inset = 4) {
 /** 칸 하나 → { no, kind, raw(학생이 쓴 꼴: "12" · "5/12" · "ㄱ, ㄷ" · "14, 21"), conf, flag[, hand] } */
 export function readBlock(wp, b, ink, pageBase = 0.06) {
   if (b.hand) {
-    // v2 분수: 글씨가 있는지만 — 읽기는 AI(handCrops → OmrGrade)
-    const num = handInk(wp, b.hand.num, ink), den = handInk(wp, b.hand.den, ink);
+    // v2 분수 · 일차함수 한 줄 칸: 글씨가 있는지만 — 읽기는 AI(handCrops → OmrGrade)
+    const num = handInk(wp, b.hand.num, ink), den = b.hand.den ? handInk(wp, b.hand.den, ink) : { ink: false };
     const any = num.ink || den.ink;
     return { no: b.no, kind: b.kind, raw: "", conf: any ? 0 : 0.95, flag: any ? "hand" : null, hand: { num: num.ink, den: den.ink } };
   }
@@ -625,7 +699,7 @@ export function layoutFit(wp, p) {
     }
     sum += (off - ring) / 16; n++;
   }
-  for (const b of p.blocks) if (b.hand) for (const r of [b.hand.num, b.hand.den]) {
+  for (const b of p.blocks) if (b.hand) for (const r of [b.hand.num, b.hand.den].filter(Boolean)) {
     for (let k = 1; k < 8; k++) {
       const x = r.x + (r.w * k) / 8;
       for (const [ey, iy] of [[r.y, r.y + 6], [r.y + r.h, r.y + r.h - 6]]) {

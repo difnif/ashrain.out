@@ -9,7 +9,7 @@ import {
   layoutCard, cardHtml, pageSvg, bandBits, parseBand, bandCells, readCardPhoto, kindOf, handCrops,
   GW, GH, BAND, BAND2, V2, OMR_VER, MARKER_SIZE,
 } from "../src/lib/omr/grid.js";
-import { homography, applyH, invertH } from "../src/lib/omr/detect.js";
+import { raster, fillRect, fillCircle, ring, strokeRect, handText, photograph } from "./fixtures/omrsynth.mjs";
 import { judge, rawOf, toInt, parseFrac, answerText, pdfUrl, printUrl, progressSummary, downloadName, fmtBytes } from "../src/lib/conceptsets.js";
 import { questionHtml, solutionHtml, missingCueKeys, scaleSvg, safeHtml, boardHtml } from "../src/pages/sets/render.js";
 import { scopeCss, splitDoc, composePrint } from "../src/pages/sets/printdoc.js";
@@ -200,10 +200,13 @@ test("판: 지금 카드는 v2 · 띠는 v1 위쪽 · v2 아래쪽(마커 사이
   const refX = GW - c2.pages[0].orient.x - c2.pages[0].orient.w;
   for (const pos of [BAND, BAND2]) assert.ok(pos.x0 + pos.n * (pos.cell + pos.gap) < refX);
 });
-test("v1 배치(예전 카드 읽기용)는 한 점도 바뀌지 않았다 — 90세트 지문", () => {
-  const r3 = (v) => Math.round(v * 1000) / 1000;
+// 이미 인쇄해 나간 카드(1~90번)의 배치 지문 — 판독은 이 배치로 사진을 읽으니 한 점이라도 바뀌면 예전 카드를 못 읽는다.
+// 세트가 늘어도(91번~) 이 지문은 1~90번만 본다.
+const PRINTED = SETS.filter((s) => s.no <= 90);
+const r3 = (v) => Math.round(v * 1000) / 1000;
+test("v1 배치(예전 카드 읽기용)는 한 점도 바뀌지 않았다 — 1~90번 지문", () => {
   const parts = [];
-  for (const S of SETS) {
+  for (const S of PRINTED) {
     const c = cardOf(S, 1);
     for (const p of c.pages) {
       parts.push(`${S.no}:${p.index}/${p.n}:${p.band.join("")}`);
@@ -214,8 +217,26 @@ test("v1 배치(예전 카드 읽기용)는 한 점도 바뀌지 않았다 — 9
       }
     }
   }
+  assert.equal(PRINTED.length, 90);
   const h = crypto.createHash("sha256").update(parts.join("\n")).digest("hex");
   assert.equal(h, "3bb60a8b2b7963c2fd1c4086fe10f99d309f25cee5e3f2bf7c8bc480e41dfeba");
+});
+test("v2 배치(지금 카드)도 1~90번은 한 점도 바뀌지 않았다 — 손글씨 칸까지 지문", () => {
+  const parts = [];
+  for (const S of PRINTED) {
+    for (const p of cardOf(S).pages) {
+      parts.push(`${S.no}:${p.index}/${p.n}:${p.band.join("")}`);
+      for (const b of p.blocks) {
+        parts.push(`${b.no}${b.kind}@${r3(b.x)},${r3(b.y)},${r3(b.w)},${r3(b.h)}`);
+        for (const g of b.grids) parts.push(g.bubbles.map((col) => col.map((q) => `${r3(q.x)},${r3(q.y)},${q.d}`).join(";")).join("|"));
+        if (b.picks) parts.push(b.picks.map((q) => `${r3(q.x)},${r3(q.y)},${q.label}`).join(";"));
+        if (b.hand) parts.push(["num", "den"].map((k) => { const x = b.hand[k]; return `${k}:${r3(x.x)},${r3(x.y)},${r3(x.w)},${r3(x.h)}`; }).join(";") + `|bar:${r3(b.hand.bar.x1)},${r3(b.hand.bar.x2)},${r3(b.hand.bar.y)}`);
+      }
+    }
+  }
+  assert.equal(parts.length, 9271);
+  const h = crypto.createHash("sha256").update(parts.join("\n")).digest("hex");
+  assert.equal(h, "68d4b26c3d75b66bf5cfcdd5dbaf789315ef4e1b7f9ccb09caa4e8d02288ed85");
 });
 test("배치(v2): 90세트 모두 3쪽 · 쪽마다 18/17/15칸 · 영역 안 · 겹치지 않음 · 마커 · 띠(위 자리도)와 떨어짐", () => {
   for (const s of SETS) {
@@ -268,53 +289,7 @@ test("cardHtml: 쪽마다 SVG 한 장 · viewBox · 분수 손글씨 칸 · 위�
   assert.ok(cardHtml(cardOf(s, 1)).includes("분자"), "v1 그림도 그대로 그린다(시험용)");
 });
 
-// ── 합성 사진 ─────────────────────────────────────────────────────────────────
-function raster(w, h, v) { return { w, h, px: new Float32Array(w * h).fill(v) }; }
-function fillRect(r, x, y, w, h, v) {
-  for (let j = Math.max(0, Math.floor(y)); j < Math.min(r.h, Math.ceil(y + h)); j++)
-    for (let i = Math.max(0, Math.floor(x)); i < Math.min(r.w, Math.ceil(x + w)); i++) r.px[j * r.w + i] = v;
-}
-function fillCircle(r, cx, cy, rad, v) {
-  for (let j = Math.max(0, Math.floor(cy - rad)); j <= Math.min(r.h - 1, Math.ceil(cy + rad)); j++)
-    for (let i = Math.max(0, Math.floor(cx - rad)); i <= Math.min(r.w - 1, Math.ceil(cx + rad)); i++) {
-      const dx = i + 0.5 - cx, dy = j + 0.5 - cy;
-      if (dx * dx + dy * dy <= rad * rad) r.px[j * r.w + i] = Math.min(r.px[j * r.w + i], v);
-    }
-}
-function ring(r, cx, cy, rad, width, v) {
-  const a = (rad - width / 2) ** 2, b = (rad + width / 2) ** 2;
-  for (let j = Math.max(0, Math.floor(cy - rad - width)); j <= Math.min(r.h - 1, Math.ceil(cy + rad + width)); j++)
-    for (let i = Math.max(0, Math.floor(cx - rad - width)); i <= Math.min(r.w - 1, Math.ceil(cx + rad + width)); i++) {
-      const dx = i + 0.5 - cx, dy = j + 0.5 - cy, d = dx * dx + dy * dy;
-      if (d >= a && d <= b) r.px[j * r.w + i] = Math.min(r.px[j * r.w + i], v);
-    }
-}
-function strokeRect(r, x, y, w, h, lw, v) { fillRect(r, x, y, w, lw, v); fillRect(r, x, y + h - lw, w, lw, v); fillRect(r, x, y, lw, h, v); fillRect(r, x + w - lw, y, lw, h, v); }
-/** 굵기 lw 의 선분 (연필 획) */
-function seg(r, x0, y0, x1, y1, lw, v) {
-  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 0.7));
-  for (let k = 0; k <= n; k++) fillCircle(r, x0 + ((x1 - x0) * k) / n, y0 + ((y1 - y0) * k) / n, lw / 2, v);
-}
-// 손글씨 숫자 흉내 — 7획 표시기 꼴을 살짝 기울여
-const SEG7 = { 0: "abcdef", 1: "bc", 2: "abged", 3: "abgcd", 4: "fgbc", 5: "afgcd", 6: "afgedc", 7: "abc", 8: "abcdefg", 9: "abcdfg" };
-function handText(r, rect, text, v = 58) {
-  const ch = String(text).split(""), H = rect.h * 0.52, W = Math.min(rect.w * 0.8 / ch.length, H * 0.62) * 0.8;
-  const x0 = rect.x + (rect.w - ch.length * W * 1.25) / 2, y0 = rect.y + (rect.h - H) / 2, sl = 0.12;
-  ch.forEach((c, i) => {
-    const L = x0 + i * W * 1.25, P = { tl: [L, y0], tr: [L + W, y0], ml: [L, y0 + H / 2], mr: [L + W, y0 + H / 2], bl: [L, y0 + H], br: [L + W, y0 + H] };
-    const sk = ([x, y]) => [x + (y0 + H - y) * sl, y];
-    const S = { a: ["tl", "tr"], b: ["tr", "mr"], c: ["mr", "br"], d: ["bl", "br"], e: ["ml", "bl"], f: ["tl", "ml"], g: ["ml", "mr"] };
-    for (const s of SEG7[c] || "") { const [p, q] = S[s].map((k) => sk(P[k])); seg(r, p[0], p[1], q[0], q[1], 3, v); }
-  });
-}
-function sampleBilinear(r, x, y) {
-  x = Math.max(0, Math.min(r.w - 1.001, x)); y = Math.max(0, Math.min(r.h - 1.001, y));
-  const x0 = x | 0, y0 = y | 0, fx = x - x0, fy = y - y0, i = y0 * r.w + x0;
-  const top = r.px[i] * (1 - fx) + r.px[i + 1] * fx, bot = r.px[i + r.w] * (1 - fx) + r.px[i + r.w + 1] * fx;
-  return top * (1 - fy) + bot * fy;
-}
-function prng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
-
+// ── 합성 사진(tests/fixtures/omrsynth.mjs) ──────────────────────────────────────
 /** 자리마다 칠할 숫자 — 오른쪽 맞춤. "" = 빈자리 */
 function digitsRight(str, cols) { const d = String(str).split(""); return Array.from({ length: cols }, (_, i) => d[i - (cols - d.length)] ?? ""); }
 
@@ -394,30 +369,6 @@ function drawPage(card, p, fills, { maskBand = false } = {}) {
     }));
   }
   return r;
-}
-
-/** 원근 · 조명 · 잡음 · 흐림을 얹은 "사진". shadow: 이미지 좌표 y ≈ shadow 아래를 38% 어둡게(조금 기운 그림자 경계, 반그림자 40px) */
-function photograph(card, W, H, quad, seed = 1, table = 100, shadow = null) {
-  const Hc2i = homography([[0, 0], [card.w, 0], [card.w, card.h], [0, card.h]], quad);
-  const Hi2c = invertH(Hc2i);
-  const rnd = prng(seed);
-  const g = new Float32Array(W * H);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const [cx, cy] = applyH(Hi2c, x + 0.5, y + 0.5);
-    let v = table;
-    if (cx >= 0 && cy >= 0 && cx < card.w && cy < card.h) v = sampleBilinear(card, cx, cy);
-    v *= 0.74 + 0.3 * (x / W) - 0.08 * (y / H);
-    if (shadow != null) { const t = (y - shadow - (x - W / 2) * 0.15) / 40; v *= 1 - 0.38 * Math.max(0, Math.min(1, t)); }   // 반그림자 40px
-    g[y * W + x] = v + (rnd() - 0.5) * 14;
-  }
-  const b = new Float32Array(W * H);
-  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-    let s = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) s += g[(y + dy) * W + x + dx];
-    b[y * W + x] = s / 9;
-  }
-  const data = new Uint8ClampedArray(W * H * 4);
-  for (let i = 0; i < W * H; i++) { const v = Math.max(0, Math.min(255, Math.round(b[i]))); data[i * 4] = v; data[i * 4 + 1] = v; data[i * 4 + 2] = v; data[i * 4 + 3] = 255; }
-  return { width: W, height: H, data };
 }
 
 const SET = SETS[0];

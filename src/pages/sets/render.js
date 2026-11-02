@@ -92,15 +92,16 @@ export function diagramHtml(dg) {
 }
 
 /**
- * 3단 해설 — 방침(포지티브 · 네거티브 → 전략) · 전개(판서 + 도식, 움직임) · 확인 → 모범 답안 · 채점 기준.
+ * 3단 해설 — 방침(포지티브 · 네거티브 → 전략, 일차함수는 주어진 것 · 구할 것) · 전개(판서 + 도식, 움직임) · 확인 → 모범 답안 · 채점 기준.
  * opts.anim=false 면 움직임 없이(인쇄 · 미리보기) 그린다.
  */
 export function solutionHtml(it, opts = {}) {
   const s = it?.s || {};
   const anim = opts.anim !== false && Array.isArray(s.anim) && s.anim.length ? s.anim : null;
-  const plan = `<div class="lv cs-st"><div class="lv-title"><span class="cs-tg t1">방침</span><span class="cs-tgs">규칙을 나눠 읽고 셀 길을 정해요</span></div>`
-    + `<p><span class="cs-pn">포지티브</span> ${safeHtml(s.pos)}</p>`
-    + `<p><span class="cs-ng">네거티브</span> ${safeHtml(s.neg)}</p>`
+  const [L1, L2] = Array.isArray(s.labs) && s.labs.length === 2 ? s.labs : ["포지티브", "네거티브"];   // 일차함수: 주어진 것 · 구할 것
+  const plan = `<div class="lv cs-st"><div class="lv-title"><span class="cs-tg t1">방침</span><span class="cs-tgs">${s.labs ? "주어진 것과 구할 것을 나눠 적고 길을 정해요" : "규칙을 나눠 읽고 셀 길을 정해요"}</span></div>`
+    + `<p><span class="cs-pn">${esc(L1)}</span> ${safeHtml(s.pos)}</p>`
+    + `<p><span class="cs-ng">${esc(L2)}</span> ${safeHtml(s.neg)}</p>`
     + `<p class="cs-plan">→ ${safeHtml(s.plan)}</p></div>`;
   const stage = `<div class="fig-stage cs-stage">${boardHtml(s.board && s.board.length ? s.board : (s.steps || []).map((t) => ({ h: "", t })))}${diagramHtml(s.dg)}</div>`;
   const dev = `<div class="lv cs-st${anim ? " anim-level" : ""}"${anim ? ` data-anim="${esc(JSON.stringify(anim))}"` : ""}>`

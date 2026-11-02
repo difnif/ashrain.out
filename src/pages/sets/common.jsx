@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import {
   loadIndex, loadSet, loadFiles, fileInfo, fmtBytes, DOCS, pdfUrl, pdfRawUrl, printUrl, downloadName,
-  readProgress, setProgressUser,
+  readProgress, setProgressUser, parseRat, parseLine, parsePt, ratText, lineText,
 } from "../../lib/conceptsets";
 import { layoutCard, cardHtml } from "../../lib/omr/grid.js";
 import { zipStore } from "../../lib/zipstore";
@@ -89,7 +89,23 @@ export function useAnim(ref, deps) {
 // ── 답 입력 ───────────────────────────────────────────────────────────────────
 const onlyNum = (v) => String(v || "").replace(/[^\d]/g, "").slice(0, 7);
 
-/** raw(쓰는 꼴) ↔ 칸. kind: int · frac · pick · pair */
+// 일차함수 범주의 답(수 · 식 · 점) — 한 줄 입력 + 기호 단추(휴대폰 숫자 자판에 없는 − · / · x · y …)
+const XKEYS = {
+  num: ["−", "/", "."],
+  lin: ["y = ", "x", "+", "−", "/", "."],
+  pt: ["(", ",", ")", "−", "/", "."],
+};
+const XHOLD = { num: "예: −3 · 3/4 · 0.5", lin: "예: y = −2x + 3", pt: "예: (2, −1)" };
+/** 쓴 답을 읽은 꼴(맞는 꼴이면 보여 주기) */
+export function xPreview(k, v, dec = false) {
+  if (!String(v || "").trim()) return "";
+  if (k === "num") { const r = parseRat(String(v).replace(/[^\d)]+$/u, "")); return r ? ratText(r, dec) : ""; }
+  if (k === "lin") { const L = parseLine(v); return L ? lineText(L.a, L.b, dec) : ""; }
+  if (k === "pt") { const P = parsePt(v); return P ? `(${ratText(P.x, dec)}, ${ratText(P.y, dec)})` : ""; }
+  return "";
+}
+
+/** raw(쓰는 꼴) ↔ 칸. kind: int · frac · pick · pair · num · lin · pt */
 export function AnswerInput({ item, value, onChange, onSubmit, disabled, state }) {
   const a = item?.a || {};
   const k = a.k;
@@ -97,6 +113,33 @@ export function AnswerInput({ item, value, onChange, onSubmit, disabled, state }
   useEffect(() => { if (!disabled) setTimeout(() => first.current?.focus?.({ preventScroll: true }), 30); }, [item?.id]); // eslint-disable-line
   const key = (e) => { if (e.key === "Enter") { e.preventDefault(); onSubmit?.(); } };
   const cls = "cs-ain" + (state ? " " + state : "");
+  if (k === "num" || k === "lin" || k === "pt") {
+    const v = String(value || "");
+    const ins = (sym) => {
+      const el = first.current;
+      const s0 = el?.selectionStart ?? v.length, e0 = el?.selectionEnd ?? v.length;
+      onChange(v.slice(0, s0) + sym + v.slice(e0));
+      setTimeout(() => { try { el.focus({ preventScroll: true }); el.setSelectionRange(s0 + sym.length, s0 + sym.length); } catch { /* 무시 */ } }, 0);
+    };
+    const prev = xPreview(k, v, !!a.dec);
+    return (
+      <div className={"cs-xin " + cls}>
+        <div className="cs-xrow">
+          <input ref={first} className="sv-in cs-ii cs-xi" inputMode="decimal" autoComplete="off" autoCapitalize="off" spellCheck={false}
+            aria-label="답" value={v} disabled={disabled} placeholder={XHOLD[k]} onChange={(e) => onChange(e.target.value)} onKeyDown={key} />
+          {k === "num" && a.u && <em className="cs-unit">{a.u}</em>}
+        </div>
+        {!disabled && (
+          <div className="cs-xkeys" aria-label="기호">
+            {XKEYS[k].map((sym) => (
+              <button key={sym} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => ins(sym)}>{sym.trim()}</button>
+            ))}
+          </div>
+        )}
+        {prev && <div className="cs-xprev">읽은 꼴 <b>{prev}</b></div>}
+      </div>
+    );
+  }
   if (k === "frac") {
     const [n = "", d = ""] = String(value || "").split("/");
     const set = (nn, dd) => onChange(dd ? `${nn}/${dd}` : nn);
@@ -309,7 +352,7 @@ export function DocsPanel({ catId, set, files, say }) {
         <button className="sv-btn pri" disabled={!!busy} onClick={onPrint}>{busy === "print" ? "준비 중…" : "🖨 바로 인쇄"}</button>
         <button className="sv-btn" disabled={!!busy} onClick={onDown}>{busy === "down" ? `받는 중… ${prog}` : "⬇ 다운로드"}</button>
       </div>
-      <p className="cs-dnote">여러 개를 고르면 인쇄는 한 번에 이어서, 다운로드는 ZIP 하나 또는 파일 각각으로 받아요(받는 방식에서 골라요). OMR 카드는 A4 {omrPages}쪽이고, 분수 답은 손으로 쓰는 칸이에요.</p>
+      <p className="cs-dnote">여러 개를 고르면 인쇄는 한 번에 이어서, 다운로드는 ZIP 하나 또는 파일 각각으로 받아요(받는 방식에서 골라요). OMR 카드는 A4 {omrPages}쪽이고, {catId === "lin" ? "보기 말고는 답을 손으로 쓰는 칸이에요" : "분수 답은 손으로 쓰는 칸이에요"}.</p>
     </div>
   );
 }
