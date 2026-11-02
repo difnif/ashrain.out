@@ -1,6 +1,6 @@
 // 컨셉 문제(주제별 50제) — 데이터 · 답 판정 · OMR(grid.js) 노드 테스트
 //   node tests/conceptsets.test.mjs
-// 실제 세트 JSON 90개를 읽어 형식을 확인하고, 카드(v2 · 예전 v1)를 그려 원근 · 조명 · 잡음 · 그림자를 얹은 "사진"에서 답을 되읽는지 본다.
+// 실제 세트 JSON 116개를 읽어 형식을 확인하고, 카드(v2 · 예전 v1)를 그려 원근 · 조명 · 잡음 · 그림자를 얹은 "사진"에서 답을 되읽는지 본다.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -31,9 +31,12 @@ const CAT = INDEX.categories[0];
 const SETS = CAT.sets.map((s) => JSON.parse(fs.readFileSync(path.join(DIR, `${String(s.no).padStart(2, "0")}.json`), "utf8")));
 
 console.log("데이터");
-test("index: 범주 prob · 세트 90 · 묶음이 세트를 한 번씩", () => {
+test("index: 범주 prob · 세트 116 · 묶음이 세트를 한 번씩 · 역사는 한국사 · 유럽사 · 중국사 · 일본사", () => {
   assert.equal(CAT.id, "prob");
-  assert.equal(CAT.sets.length, 90);
+  assert.equal(CAT.sets.length, 116);
+  const gt = CAT.groups.map((g) => g.title);
+  for (const t of ["한국사", "유럽사", "중국사", "일본사", "과학"]) assert.ok(gt.includes(t), t);
+  assert.deepEqual(CAT.groups.find((g) => g.title === "일본사").sets, [111, 112, 25, 26, 27, 28]);
   const inGroups = CAT.groups.flatMap((g) => g.sets).sort((a, b) => a - b);
   assert.deepEqual(inGroups, CAT.sets.map((s) => s.no).sort((a, b) => a - b));
   for (const s of CAT.sets) { assert.ok(s.icon && s.short && s.key && s.title); assert.equal(s.n, 50); assert.ok(s.pages.problems >= 8 && s.pages.solutions >= 15); }
@@ -238,7 +241,7 @@ test("v2 배치(지금 카드)도 1~90번은 한 점도 바뀌지 않았다 — 
   const h = crypto.createHash("sha256").update(parts.join("\n")).digest("hex");
   assert.equal(h, "68d4b26c3d75b66bf5cfcdd5dbaf789315ef4e1b7f9ccb09caa4e8d02288ed85");
 });
-test("배치(v2): 90세트 모두 3쪽 · 쪽마다 18/17/15칸 · 영역 안 · 겹치지 않음 · 마커 · 띠(위 자리도)와 떨어짐", () => {
+test("배치(v2): 모든 세트 3쪽 · 쪽마다 18/17/15칸 · 영역 안 · 겹치지 않음 · 마커 · 띠(위 자리도)와 떨어짐", () => {
   for (const s of SETS) {
     const card = cardOf(s);
     assert.equal(card.pages.length, 3, s.key);
