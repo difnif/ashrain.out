@@ -199,6 +199,10 @@
 .cs-orow em { flex-basis: 100%; font-style: normal; font-size: 11px; color: #b07a00; padding-left: 54px; }
 .cs-orow.warn { border-color: #eaa000; background: color-mix(in srgb, #eaa000 10%, var(--surface)); }
 .cs-orow.me { border-color: var(--accent); }
+.cs-orow em.info { color: #2563eb; }
+.rx-dark .cs-orow em.info { color: #8fb4ff; }
+.cs-orow.ai { border-color: color-mix(in srgb, #2563eb 55%, var(--border)); background: color-mix(in srgb, #2563eb 6%, var(--surface)); }
+.cs-ainote { font-size: 12.5px; line-height: 1.6; background: color-mix(in srgb, #2563eb 8%, var(--surface)); border: 1px solid color-mix(in srgb, #2563eb 45%, var(--border)); border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; }
 .cs-gradebtn { margin-top: 6px; padding: 13px; font-size: 15px; }
 .cs-score { text-align: center; }
 .cs-score .big { display: flex; align-items: baseline; justify-content: center; gap: 6px; }

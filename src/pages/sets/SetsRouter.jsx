@@ -10,6 +10,7 @@ import { lazy, Suspense, useMemo, useState } from "react";
 import FeatureBar, { FbAct } from "../../components/FeatureBar";
 import { pad2, progressSummary, readPaper } from "../../lib/conceptsets";
 import { LEVELS } from "./labels";
+import { layoutCard } from "../../lib/omr/grid.js";
 import { DocsPanel, Toast, useCsUser, useProgress, useSay, useSetData } from "./common";
 import { LV_COLOR, safeHtml } from "./render";
 import "../solve/solve.css";
@@ -87,6 +88,7 @@ function SetHome({ catId, set, cat, files, uid, say }) {
   const paper = useMemo(() => (uid === undefined ? { answers: {}, graded: null } : readPaper(catId, set.no)), [catId, set.no, uid]);
   const paperN = Object.keys(paper.answers || {}).length;
   const pct = sum.n ? Math.round((sum.done / sum.n) * 100) : 0;
+  const omrPages = useMemo(() => layoutCard({ cat: catId, no: set.no, items: set.items }).pages.length, [catId, set]);
   return (
     <div className="cs-wrap">
       <div className="cs-hero">
@@ -111,7 +113,7 @@ function SetHome({ catId, set, cat, files, uid, say }) {
 
       <div className="cs-card cs-omrcard">
         <div className="cs-ch"><b>📷 OMR 채점</b><span>카드에 칠하고 찍으면 바로 채점</span></div>
-        <p className="cs-dnote" style={{ marginTop: 0 }}>문제지를 풀고 OMR 카드(2쪽)에 답을 칠한 뒤, 쪽마다 사진을 찍어요. 읽은 답을 확인하고 채점하면 틀린 문항의 해설로 바로 가요.</p>
+        <p className="cs-dnote" style={{ marginTop: 0 }}>문제지를 풀고 OMR 카드({omrPages}쪽)에 답을 칠한 뒤(분수는 칸에 손으로 써요), 쪽마다 사진을 찍어요. 읽은 답을 확인하고 채점하면 틀린 문항의 해설로 바로 가요.</p>
         <div className="cs-dbtns">
           <button className="sv-btn pri" onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/omr`)}>📷 OMR 카드 찍어서 채점</button>
         </div>

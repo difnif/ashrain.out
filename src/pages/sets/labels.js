@@ -16,9 +16,17 @@ export function omrKindName(kind) {
   return kind === "frac" ? "분수" : kind === "pick" ? "보기" : kind === "pair" ? "두 수" : "정수";
 }
 
-/** OMR 판독 경고 */
+/** OMR 판독 경고 · 안내 */
+const FLAG_NAME = {
+  double: "한 자리에 두 개 칠함",
+  gap: "숫자 사이가 비었어요",
+  weak: "흐리게 칠함",
+  hand: "손글씨를 읽지 못했어요 — 직접 써 주세요",
+  ai: "✍ AI가 읽음",
+  reading: "손글씨 읽는 중…",
+};
 export function flagName(flag) {
-  return flag === "double" ? "한 자리에 두 개 칠함" : flag === "gap" ? "숫자 사이가 비었어요" : flag === "weak" ? "흐리게 칠함" : "";
+  return FLAG_NAME[flag] || "";
 }
 
 /** 판독 실패 이유 → 안내 */
@@ -29,6 +37,7 @@ export function reasonText(reason, extra = {}) {
     case "warp": return "카드를 펴지 못했어요 — 조금 떨어져서 다시 찍어 주세요";
     case "other-set": return `다른 세트의 OMR 카드예요${extra.set ? ` (${String(extra.set).padStart(2, "0")}번 세트)` : ""} — 이 세트의 카드를 찍어 주세요`;
     case "band": return "몇 쪽인지 읽지 못했어요 — 아래에서 쪽을 골라 주세요";
+    case "version": return "이 카드는 읽을 수 없는 판이에요 — 「자료」에서 새 카드를 인쇄해 주세요";
     default: return "사진을 읽지 못했어요 — 다시 찍어 주세요";
   }
 }

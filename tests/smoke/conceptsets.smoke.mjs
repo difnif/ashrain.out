@@ -1,4 +1,4 @@
-// 공부하기 › 컨셉 문제 흐름 스모크 — 목록(폴더 · 아이콘) → 세트 → 풀기 · 3단 해설(움직임) → 해설지 바로 보기 → 바로 인쇄 → 다운로드(ZIP · 각각) → OMR 사진 채점
+// 공부하기 › 컨셉 문제 흐름 스모크 — 목록(폴더 · 아이콘) → 세트 → 풀기 · 3단 해설(움직임) → 해설지 바로 보기 → 바로 인쇄 → 다운로드(ZIP · 각각) → OMR 사진 채점(분수 손글씨는 AI 모의)
 //   → 종이처럼 풀기(타자 · 손글씨 · 보기 체크 · 빈칸 제출 · 자동 채점) → 해설 영상(조작 막대 · 목록 · 이어 보기)
 //   node tests/smoke/conceptsets.smoke.mjs [--headed]
 // 준비: `npx vite build` (dist/ 필요) · playwright(전역) + Chromium.
@@ -9,7 +9,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { layoutCard, cardHtml, BUB_R } from "../../src/lib/omr/grid.js";
+import { layoutCard, cardHtml } from "../../src/lib/omr/grid.js";
 import { rawOf } from "../../src/lib/conceptsets.js";
 
 const require = createRequire(import.meta.url);
@@ -98,11 +98,18 @@ function marks(card, p, fills) {
   for (const b of p.blocks) {
     const f = fills[b.no];
     if (f == null || f === "") continue;
-    if (b.kind === "pick") { const on = String(f).match(/[ㄱ-ㅎ]/gu) || []; for (const q of b.picks) if (on.includes(q.label)) dot(q.x, q.y, BUB_R + 2.2); continue; }
+    if (b.kind === "pick") { const on = String(f).match(/[ㄱ-ㅎ]/gu) || []; for (const q of b.picks) if (on.includes(q.label)) dot(q.x, q.y, q.r - 0.8); continue; }
+    if (b.hand) {                                                         // 분수: 칸에 손글씨(분자 위 · 분모 아래)
+      const [n, d] = String(f).split("/");
+      const w = (r, t) => out.push(`<text x="${r.x + r.w / 2}" y="${r.y + r.h * 0.72}" text-anchor="middle" font-family="cursive,sans-serif" font-style="italic" font-size="${t.length > 2 ? 52 : 66}" fill="#333" stroke="#333" stroke-width="1.2">${t}</text>`);
+      if (n) w(b.hand.num, n);
+      if (d) w(b.hand.den, d);
+      continue;
+    }
     const parts = b.kind === "frac" ? (String(f).includes("/") ? String(f).split("/") : [String(f), ""]) : b.kind === "pair" ? String(f).split(/,\s*/) : [String(f)];
     b.grids.forEach((g, gi) => {
       const d = String(parts[gi] ?? "").split("");
-      g.bubbles.forEach((col, ci) => { const dg = d[ci - (g.cols - d.length)]; if (dg != null && dg !== "") dot(col[+dg].x, col[+dg].y, BUB_R - 0.8); });
+      g.bubbles.forEach((col, ci) => { const dg = d[ci - (g.cols - d.length)]; if (dg != null && dg !== "") dot(col[+dg].x, col[+dg].y, g.r - 0.8); });
     });
   }
   return out.join("");
@@ -114,7 +121,7 @@ async function cardPhotos(browser, card, fills) {
     const svg = cardHtml({ ...card, pages: [p] }).replace(/<\/svg>/, `${marks(card, p, fills)}</svg>`);
     await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>
       body{margin:0;background:#7a756d;display:flex;align-items:center;justify-content:center;height:1600px;overflow:hidden}
-      .ph{transform:perspective(1600px) rotateX(${p.index ? 7 : -5}deg) rotateY(${p.index ? -4 : 3}deg) rotateZ(${p.index ? 182 : -2.5}deg);background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+      .ph{transform:perspective(1600px) rotateX(${p.index % 2 ? 7 : -5}deg) rotateY(${p.index % 2 ? -4 : 3}deg) rotateZ(${p.index % 2 ? 182 : -2.5}deg);background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.4)}
       .ph .omr-pg{width:${1000 * 0.9}px!important;height:${1478 * 0.9}px!important}.ph svg{width:100%!important;height:100%!important}
       .shade{position:fixed;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.18),rgba(0,0,0,.16));pointer-events:none}
       </style></head><body><div class="ph">${svg}</div><div class="shade"></div></body></html>`);
@@ -169,7 +176,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.locator(".cs-hero").waitFor({ timeout: 10000 });
     let t = await text();
     ok(/야구로 익히는 경우의 수와 확률/.test(t) && (await page.locator(".cs-row").count()) === 50, "B1 세트 머리 · 문항 50");
-    ok((await page.locator(".cs-dchip").count()) === 3 && /9쪽/.test(t) && /19쪽/.test(t) && /2쪽/.test(t), "B2 자료 칩 3개 + 쪽 수(files.json)");
+    const omrChip = (await page.locator(".cs-dchip", { hasText: "OMR" }).innerText()).replace(/\s+/g, " ");
+    ok((await page.locator(".cs-dchip").count()) === 3 && /9쪽/.test(t) && /19쪽/.test(t) && /3쪽/.test(omrChip), `B2 자료 칩 3개 + 쪽 수(문제 · 해설은 files.json, OMR 은 카드 배치) (${omrChip})`);
+    ok(/OMR 카드\(3쪽\)/.test(t) && /분수는 칸에 손으로/.test(t), "B2b OMR 채점 안내: 3쪽 · 분수는 손으로");
     await page.locator(".cs-chip", { hasText: /^상$/ }).click();
     ok((await page.locator(".cs-row").count()) === 10, "B3 「상」 거르기 → 10");
     await page.locator(".cs-chip", { hasText: "전체" }).click();
@@ -253,9 +262,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const [pop] = await Promise.all([ctx.waitForEvent("page"), page.locator(".cs-dbtns .sv-btn", { hasText: "바로 인쇄" }).click()]);
     // window.open("") 빈 창에는 초기화 스크립트가 늦게 붙을 수 있어 바로 덮는다(document.open 뒤에도 같은 window)
     await pop.evaluate(() => { window.print = () => { window.__printed = (window.__printed || 0) + 1; }; }).catch(() => {});
-    await pop.waitForFunction(() => document.querySelectorAll(".omr-pg").length === 2 && document.querySelector(".cs-doc"), null, { timeout: 15000 });
+    await pop.waitForFunction(() => document.querySelectorAll(".omr-pg").length === 3 && document.querySelector(".cs-doc"), null, { timeout: 15000 });
     const info = await pop.evaluate(() => ({ pg: document.querySelectorAll(".csx-p .pg").length, spg: document.querySelectorAll(".csx-s .spg").length, omr: document.querySelectorAll(".omr-pg").length, title: document.title }));
-    ok(info.pg === 9 && info.spg === 19 && info.omr === 2, `F1 인쇄 창: 문제 ${info.pg}쪽 · 해설 ${info.spg}쪽 · OMR ${info.omr}쪽`);
+    ok(info.pg === 9 && info.spg === 19 && info.omr === 3, `F1 인쇄 창: 문제 ${info.pg}쪽 · 해설 ${info.spg}쪽 · OMR ${info.omr}쪽`);
     // 자동 인쇄: Playwright 는 가로채기(route)가 하나라도 있으면 window.open("") 창의 하위 자원을 멈춰 load 가 오지 않는다(도구 문제).
     // 그래서 인쇄 창에 쓰인 문서를 그대로 꺼내, 가로채기 없는 새 컨텍스트에서 같은 방식(window.open + document.write)으로 다시 연다.
     const written = await pop.evaluate(() => "<!doctype html>" + document.documentElement.outerHTML);
@@ -310,7 +319,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(dl.suggestedFilename() === "01-야구-문제.pdf" && /download=/.test(dl.url()), `G4 받아 오기가 막히면 서버 링크(?download=)로 → ${dl.suggestedFilename()} ${dl.url().slice(0, 50)}`);
     storageMode = "ok";
 
-    // H. OMR 사진 채점 — 정답대로 칠하되 3문항 틀리게 · 1문항 비움
+    // H. OMR 사진 채점 — 정답대로 칠하되 3문항 틀리게 · 분수 1문항 비움. 분수는 손글씨 칸 → 그 칸만 잘라 AI(모의)가 읽는다
     const card = layoutCard({ cat: "prob", no: SET.no, title: SET.title, items: SET.items });
     const fills = Object.fromEntries(SET.items.map((it) => [it.no, rawOf(it)]));
     const ints = SET.items.filter((it) => it.a.k === "int" && it.a.v < 900).slice(2, 5);
@@ -318,16 +327,33 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const blankNo = SET.items.find((it) => it.a.k === "frac" && it.no > 30).no;
     fills[blankNo] = "";
     const photos = await cardPhotos(browser, card, fills);
+    const omrCalls = [];
+    const omrAi = async (r) => {
+      const body = JSON.parse(r.request().postData() || "{}");
+      const nos = (body.items || []).map((it) => it.no);
+      omrCalls.push({ nos, img: typeof body.image === "string" ? body.image.length : 0, task: body.task });
+      // 모의 AI: 보낸 번호의 손글씨를 「쓴 대로」 돌려준다(실제로는 잘라 보낸 조각을 읽는다)
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ answers: nos.map((no) => ({ no, answer: fills[no] || "" })) }) });
+    };
+    await page.route("**/api/ai", omrAi);
     await page.goto(base + "#/sets/prob/01/omr");
     await page.locator(".cs-shot").waitFor({ timeout: 10000 });
     await page.locator('input[type=file][multiple]').setInputFiles(photos);
-    await page.locator(".cs-pg.on").nth(1).waitFor({ timeout: 30000 });
-    ok((await page.locator(".cs-pg.on").count()) === 2 && (await page.locator(".cs-prv img").count()) === 2, "H1 두 쪽 모두 읽음(2쪽은 거꾸로 찍음) + 미리보기");
+    await page.locator(".cs-pg.on").nth(2).waitFor({ timeout: 40000 });
+    for (let i = 0; i < 60 && (await page.locator('.cs-orow input[placeholder="읽는 중…"]').count()); i++) await sleep(200);
+    await page.locator(".cs-busy").waitFor({ state: "detached", timeout: 20000 }).catch(() => {});
+    ok((await page.locator(".cs-pg.on").count()) === 3 && (await page.locator(".cs-prv img").count()) === 3, "H1 세 쪽 모두 읽음(2쪽은 거꾸로 찍음) + 미리보기");
     const vals = await page.locator(".cs-orow input").evaluateAll((els) => els.map((e) => e.value));
     const want = SET.items.map((it) => fills[it.no]);
     const diff = want.map((w, i) => (w === vals[i] ? null : `${i + 1}:${vals[i]}≠${w}`)).filter(Boolean);
-    ok(diff.length === 0, `H2 읽은 답 = 칠한 답 50/50 ${diff.length ? diff.slice(0, 6).join(" ") : ""}`);
+    ok(diff.length === 0, `H2 읽은 답 = 칠하고 쓴 답 50/50 ${diff.length ? diff.slice(0, 6).join(" ") : ""}`);
+    const handNos = SET.items.filter((it) => it.a.k === "frac" && fills[it.no]).map((it) => it.no);
+    const sent = omrCalls.flatMap((c) => c.nos).sort((a, b) => a - b);
+    ok(omrCalls.length === 3 && omrCalls.every((c) => c.task === "omr" && c.img > 2000) && JSON.stringify(sent) === JSON.stringify(handNos),
+      `H2b 손글씨 분수만 쪽마다 한 번씩 AI로(빈 분수 칸 ${blankNo}번은 안 보냄) — ${omrCalls.length}번 · ${sent.length}칸`);
+    ok((await page.locator(".cs-orow.ai").count()) === handNos.length && (await page.locator(".cs-ainote").count()) === 1, "H2c AI가 읽은 칸 표시 · 안내");
     await shot("cs-omr-confirm");
+    await page.unroute("**/api/ai", omrAi);
     await page.locator(".cs-gradebtn").click();
     await page.locator(".cs-score").waitFor({ timeout: 10000 });
     const score = await page.locator(".cs-score .big b").innerText();

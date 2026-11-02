@@ -309,7 +309,7 @@ export function DocsPanel({ catId, set, files, say }) {
         <button className="sv-btn pri" disabled={!!busy} onClick={onPrint}>{busy === "print" ? "준비 중…" : "🖨 바로 인쇄"}</button>
         <button className="sv-btn" disabled={!!busy} onClick={onDown}>{busy === "down" ? `받는 중… ${prog}` : "⬇ 다운로드"}</button>
       </div>
-      <p className="cs-dnote">여러 개를 고르면 인쇄는 한 번에 이어서, 다운로드는 ZIP 하나 또는 파일 각각으로 받아요(받는 방식에서 골라요). OMR 카드는 A4 {omrPages}쪽이에요.</p>
+      <p className="cs-dnote">여러 개를 고르면 인쇄는 한 번에 이어서, 다운로드는 ZIP 하나 또는 파일 각각으로 받아요(받는 방식에서 골라요). OMR 카드는 A4 {omrPages}쪽이고, 분수 답은 손으로 쓰는 칸이에요.</p>
     </div>
   );
 }
