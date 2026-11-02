@@ -1,5 +1,5 @@
 // ashrain.out — 컨셉 문제 화면 공용: 계정 · 세트 불러오기 · 답 입력 · 자료(문제지 · 해설지 · OMR) 인쇄/다운로드 · 해설 애니메이션
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import {
   loadIndex, loadSet, loadFiles, fileInfo, fmtBytes, DOCS, pdfUrl, pdfRawUrl, printUrl, downloadName,
@@ -154,6 +154,9 @@ export function AnswerInput({ item, value, onChange, onSubmit, disabled, state }
 
 // ── 자료: 문제지 · 해설지 · OMR — 바로 인쇄 / 다운로드 ─────────────────────────
 const PICK_KEY = "ash.cs.docs";
+const MODE_KEY = "ash.cs.dlmode";                 // 여럿 받을 때: "zip"(ZIP 하나) | "each"(파일 각각)
+function readMode() { try { return localStorage.getItem(MODE_KEY) === "each" ? "each" : "zip"; } catch { return "zip"; } }
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 function readPick() {
   try { const v = JSON.parse(localStorage.getItem(PICK_KEY) || "null"); if (Array.isArray(v) && v.length) return v.filter((x) => DOCS.some((d) => d.id === x)); } catch { /* 무시 */ }
   return ["problems", "omr"];
@@ -201,13 +204,16 @@ async function fetchPdf(url) {
 export function DocsPanel({ catId, set, files, say }) {
   const [picks, setPicks] = useState(readPick);
   const [busy, setBusy] = useState(null);   // "print" | "down" | null
+  const [mode, setModeS] = useState(readMode);
+  const setMode = (m) => { setModeS(m); try { localStorage.setItem(MODE_KEY, m); } catch { /* 무시 */ } };
   const [prog, setProg] = useState("");
   const tog = (id) => setPicks((p) => {
     const n = p.includes(id) ? p.filter((x) => x !== id) : [...p, id];
     try { localStorage.setItem(PICK_KEY, JSON.stringify(n)); } catch { /* 무시 */ }
     return n;
   });
-  const pages = (id) => fileInfo(files, set.no, id)?.pages || (id === "omr" ? 2 : null);
+  const omrPages = useMemo(() => layoutCard({ cat: catId, no: set.no, title: set.title, short: set.short, items: set.items }).pages.length, [catId, set]);
+  const pages = (id) => (id === "omr" ? omrPages : fileInfo(files, set.no, id)?.pages || null);   // OMR 쪽 수는 카드 배치에서 바로 센다
   const size = (id) => fmtBytes(fileInfo(files, set.no, id)?.bytes);
 
   const onPrint = () => {
@@ -256,6 +262,16 @@ export function DocsPanel({ catId, set, files, say }) {
           say(`${order.length}개 파일을 하나씩 받아요`);
           return;
         }
+        if (mode === "each") {
+          // 파일 각각 — 브라우저가 연달아 받기를 막지 않게 조금씩 쉬어 가며
+          for (let i = 0; i < out.length; i++) {
+            setProg(`${i + 1}/${out.length}`);
+            saveBlob(new Blob([out[i].data], { type: "application/pdf" }), out[i].name);
+            if (i < out.length - 1) await wait(800);
+          }
+          say(`${order.length}개 파일을 하나씩 받았어요 — 브라우저가 묻으면 「여러 파일 받기」를 허용해 주세요`);
+          return;
+        }
         saveBlob(new Blob([zipStore(out)], { type: "application/zip" }), `${set.key}.zip`);
         say(`${order.length}개 파일을 ZIP 하나로 받았어요`);
       }
@@ -280,11 +296,20 @@ export function DocsPanel({ catId, set, files, say }) {
           );
         })}
       </div>
+      {picks.length > 1 && (
+        <div className="cs-dlmode" role="radiogroup" aria-label="여럿을 받는 방식">
+          <span>받는 방식</span>
+          <div className="cs-modes">
+            <button type="button" role="radio" aria-checked={mode === "zip"} className={mode === "zip" ? "on" : ""} onClick={() => setMode("zip")}>🗜 ZIP 하나로</button>
+            <button type="button" role="radio" aria-checked={mode === "each"} className={mode === "each" ? "on" : ""} onClick={() => setMode("each")}>📄 파일 각각</button>
+          </div>
+        </div>
+      )}
       <div className="cs-dbtns">
         <button className="sv-btn pri" disabled={!!busy} onClick={onPrint}>{busy === "print" ? "준비 중…" : "🖨 바로 인쇄"}</button>
         <button className="sv-btn" disabled={!!busy} onClick={onDown}>{busy === "down" ? `받는 중… ${prog}` : "⬇ 다운로드"}</button>
       </div>
-      <p className="cs-dnote">여러 개를 고르면 인쇄는 한 번에 이어서, 다운로드는 ZIP 파일 하나로 받아요. OMR 카드는 A4 2쪽(1쪽에 앞 번호, 2쪽에 나머지)이에요.</p>
+      <p className="cs-dnote">여러 개를 고르면 인쇄는 한 번에 이어서, 다운로드는 ZIP 하나 또는 파일 각각으로 받아요(받는 방식에서 골라요). OMR 카드는 A4 {omrPages}쪽이에요.</p>
     </div>
   );
 }

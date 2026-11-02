@@ -1,4 +1,4 @@
-// 공부하기 › 컨셉 문제 흐름 스모크 — 목록(폴더 · 아이콘) → 세트 → 풀기 · 3단 해설(움직임) → 바로 인쇄 → 다운로드 → OMR 사진 채점
+// 공부하기 › 컨셉 문제 흐름 스모크 — 목록(폴더 · 아이콘) → 세트 → 풀기 · 3단 해설(움직임) → 해설지 바로 보기 → 바로 인쇄 → 다운로드(ZIP · 각각) → OMR 사진 채점
 //   → 종이처럼 풀기(타자 · 손글씨 · 보기 체크 · 빈칸 제출 · 자동 채점) → 해설 영상(조작 막대 · 목록 · 이어 보기)
 //   node tests/smoke/conceptsets.smoke.mjs [--headed]
 // 준비: `npx vite build` (dist/ 필요) · playwright(전역) + Chromium.
@@ -225,6 +225,26 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     t = await text();
     ok(/푼 문항 3\/50/.test(t) && (await page.locator(".cs-row .st.ok").count()) === 3, "E1 진도 3/50 · ✓ 3");
 
+    // S. 해설지 바로 보기 — 빠른 정답 50칸 · 번호 칸 누르면 그 해설로 · 번호로 가기
+    await page.locator(".cs-go2 .sv-btn", { hasText: "해설지 보기" }).click();
+    await page.locator(".cs-paperhost .keyt td.n").first().waitFor({ timeout: 15000 });
+    ok(/#\/sets\/prob\/01\/sol$/.test(page.url()) && (await page.locator(".cs-paperhost .keyt td.n").count()) === 50, `S1 해설지 화면 · 빠른 정답 50칸 (${await page.locator(".cs-paperhost .keyt td.n").count()})`);
+    const keyFit = await page.evaluate(() => { const t = document.querySelector(".cs-paperhost").shadowRoot.querySelector(".keyt"); const r = t.getBoundingClientRect(); return r.right <= innerWidth + 1 && r.left >= -1; });
+    ok(keyFit, "S2 휴대폰 폭에서 빠른 정답 표가 화면 안에(폭 맞춤)");
+    await shot("cs-sol-view");
+    const inView = (no) => page.evaluate((id) => { const el = document.querySelector(".cs-paperhost").shadowRoot.getElementById("s-" + id); if (!el) return null; const r = el.getBoundingClientRect(); return r.top > -40 && r.top < innerHeight * 0.6; }, SET.items[no - 1].id);
+    await page.locator(".cs-paperhost .keyt td.n", { hasText: /^37$/ }).click();
+    await sleep(1200);
+    ok(await inView(37), "S3 빠른 정답의 37 → 37번 해설로");
+    await page.locator(".cs-pbar2 .cs-tb", { hasText: "번호로 가기" }).click();
+    await page.locator(".cs-jump .cs-jn").first().waitFor({ timeout: 5000 });
+    ok((await page.locator(".cs-jump .cs-jn").count()) === 50, "S4 번호로 가기 50칸");
+    await page.locator(".cs-jump .cs-jn", { hasText: /^12$/ }).click();
+    await sleep(1200);
+    ok(await inView(12), "S5 번호로 가기 12 → 12번 해설");
+    await page.goto(base + "#/sets/prob/01");
+    await page.locator(".cs-hero").waitFor({ timeout: 10000 });
+
     // F. 바로 인쇄 — 문제지 + 해설지 + OMR 한 창
     const chip = (l) => page.locator(".cs-dchip", { hasText: l });
     if (!(await chip("해설지").getAttribute("aria-pressed")).includes("true")) await chip("해설지").click();
@@ -267,6 +287,19 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const zf = path.join(TMP, "dl.zip"); await dl.saveAs(zf);
     const names = execFileSync("python3", ["-c", "import zipfile,sys;z=zipfile.ZipFile(sys.argv[1]);assert z.testzip() is None;print('|'.join(i.filename for i in z.infolist()))", zf]).toString().trim();
     ok(dl.suggestedFilename() === "01-야구.zip" && names === "01-야구-문제.pdf|01-야구-OMR.pdf", `G2 여럿 → ZIP (${names})`);
+    {
+      // 받는 방식 「파일 각각」 — PDF 두 개가 따로
+      await page.locator(".cs-dlmode .cs-modes button", { hasText: "파일 각각" }).click();
+      const got = [];
+      const on = (d) => got.push(d.suggestedFilename());
+      page.on("download", on);
+      await page.locator(".cs-dbtns .sv-btn", { hasText: "다운로드" }).click();
+      for (let i = 0; i < 40 && got.length < 2; i++) await sleep(150);
+      await sleep(300);
+      page.off("download", on);
+      ok(got.join("|") === "01-야구-문제.pdf|01-야구-OMR.pdf", `G2b 받는 방식 「파일 각각」 → PDF ${got.length}개 (${got.join(", ")})`);
+      await page.locator(".cs-dlmode .cs-modes button", { hasText: "ZIP" }).click();
+    }
     storageMode = "missing";
     await page.locator(".cs-dbtns .sv-btn", { hasText: "다운로드" }).click();
     await page.locator(".cs-toast").waitFor({ timeout: 8000 });

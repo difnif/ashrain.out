@@ -7,7 +7,10 @@
 //     쪽 번호는 합친 문서 안에서 이어진다.
 // OMR 카드는 grid.js 가 그린 SVG(184 × 272 mm) — 쪽 여백 12·13·13·13 mm 에 꼭 맞는다.
 // 창은 클릭하는 순간 먼저 열고(팝업 차단 회피) 내용은 불러온 뒤 채운다. 글꼴이 다 오면 인쇄 창을 띄운다.
+// 화면 폭: 휴대폰에서 기기 폭(device-width)으로 펼치면 A4 쪽의 오른쪽이 잘려 보인다(빠른 정답 31 ~ 50번이 안 보이던 일).
+//   그래서 창의 화면 폭을 쪽 폭(210 mm ≈ 794 px)보다 조금 넓은 840 px 로 두어 쪽 전체가 화면에 들어오게 한다.
 
+export const PAGE_VIEWPORT = '<meta name="viewport" content="width=840">';
 export const PAGE_CSS = "@page{size:A4;margin:12mm 13mm 13mm 13mm;@bottom-center{content:counter(page);font-size:8px;color:#555;letter-spacing:2px}}";
 export const OMR_PAGE_CSS = "@page{size:A4;margin:12mm 13mm 13mm 13mm}";
 export const OMR_FONTS = [
@@ -99,10 +102,10 @@ const PRINT_BTN_CSS = "#cs-print-btn{position:fixed;right:14px;bottom:14px;z-ind
 export function composePrint(parts, title = "인쇄") {
   const list = (parts || []).filter((p) => p && p.html);
   if (!list.length) return "";
-  const head = (extra) => `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(title)}</title>${extra}`;
+  const head = (extra) => `<!doctype html><html lang="ko"><head><meta charset="utf-8">${PAGE_VIEWPORT}<title>${escHtml(title)}</title>${extra}`;
   if (list.length === 1 && list[0].kind === "doc") {
     const h = String(list[0].html);
-    const inj = `<style>${PRINT_BTN_CSS}</style>`;
+    const inj = (/<meta[^>]+name=["']?viewport/i.test(h) ? "" : PAGE_VIEWPORT) + `<style>${PRINT_BTN_CSS}</style>`;
     let doc = /<\/head>/i.test(h) ? h.replace(/<\/head>/i, `${inj}</head>`) : inj + h;
     doc = doc.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escHtml(title)}</title>`);
     return /<\/body>/i.test(doc) ? doc.replace(/<\/body>/i, `${PRINT_BTN}${PRINT_SCRIPT}</body>`) : doc + PRINT_BTN + PRINT_SCRIPT;
