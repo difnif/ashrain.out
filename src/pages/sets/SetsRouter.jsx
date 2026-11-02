@@ -4,11 +4,13 @@
 //   #/sets/<범주>/<NN>/omr         OMR 카드 사진 → 판독 → 확인 → 채점
 //   #/sets/<범주>/<NN>/paper       종이처럼 풀기 — 문제지를 그대로 펼쳐 손글씨 · 타자 · 체크 → 제출하면 자동 채점
 //   #/sets/<범주>/<NN>/video       해설 영상 — 50문항 해설을 교실 모니터처럼 끝없이 돈다(조작 막대 · 전체 화면)
+//   #/sets/<범주>/<NN>/sol         해설지 바로 보기 — 인쇄용 해설지를 화면 폭에 맞춰 펼침(빠른 정답 번호 → 그 해설, ?no=N)
 // 목록(범주 · 아이콘)은 공부하기 탭(#/study/sets[/<범주>])에 있다.
 import { lazy, Suspense, useMemo, useState } from "react";
 import FeatureBar, { FbAct } from "../../components/FeatureBar";
 import { pad2, progressSummary, readPaper } from "../../lib/conceptsets";
 import { LEVELS } from "./labels";
+import { layoutCard } from "../../lib/omr/grid.js";
 import { DocsPanel, Toast, useCsUser, useProgress, useSay, useSetData } from "./common";
 import { LV_COLOR, safeHtml } from "./render";
 import "../solve/solve.css";
@@ -19,14 +21,15 @@ const ItemSolve = lazy(() => import("./ItemSolve"));
 const OmrGrade = lazy(() => import("./OmrGrade"));
 const PaperSolve = lazy(() => import("./PaperSolve"));
 const SetVideo = lazy(() => import("./SetVideo"));
+const SolView = lazy(() => import("./SolView"));
 
 export function parseSetsHash(hash) {
   const parts = String(hash || "").split("?")[0].replace(/^#\/sets\/?/, "").split("/").filter(Boolean);
   const cat = parts[0] || "prob";
   const no = parseInt(parts[1], 10);
-  const view = ["q", "omr", "paper", "video"].includes(parts[2]) ? parts[2] : "home";
+  const view = ["q", "omr", "paper", "video", "sol"].includes(parts[2]) ? parts[2] : "home";
   const qno = view === "q" ? parseInt(parts[3], 10) || 1 : null;
-  const at = Number((String(hash || "").split("?")[1] || "").match(/(?:^|&)no=(\d+)/)?.[1]) || null;   // ?no=7 — 영상을 그 문항부터
+  const at = Number((String(hash || "").split("?")[1] || "").match(/(?:^|&)no=(\d+)/)?.[1]) || null;   // ?no=7 — 영상 · 해설지를 그 문항부터
   return { cat, no: Number.isFinite(no) ? no : null, view, qno, at };
 }
 
@@ -50,13 +53,14 @@ function SetScreen({ r, theme }) {
   else if (r.view === "omr") body = <Suspense fallback={fall}><OmrGrade catId={r.cat} set={set} uid={uid} say={setSay} /></Suspense>;
   else if (r.view === "paper") body = uid === undefined ? fall : <Suspense fallback={fall}><PaperSolve catId={r.cat} set={set} say={setSay} /></Suspense>;
   else if (r.view === "video") return set ? <Suspense fallback={fall}><SetVideo catId={r.cat} set={set} at={r.at} /></Suspense> : fall;
+  else if (r.view === "sol") body = <Suspense fallback={fall}><SolView catId={r.cat} set={set} at={r.at} say={setSay} /></Suspense>;
   else body = <SetHome catId={r.cat} set={set} cat={cat} files={files} uid={uid} say={setSay} />;
-  const actions = set && (r.view === "q" || r.view === "paper")
+  const actions = set && (r.view === "q" || r.view === "paper" || r.view === "sol")
     ? <FbAct onClick={() => (location.hash = `#/sets/${r.cat}/${pad2(r.no)}`)}>목록</FbAct>
     : set && r.view === "home" ? <FbAct pri onClick={() => (location.hash = `#/sets/${r.cat}/${pad2(r.no)}/omr`)}>📷 OMR 채점</FbAct> : null;
   return (
     <>
-      <FeatureBar theme={theme} title={title} sub={r.view === "q" ? `${r.qno}번` : r.view === "omr" ? "OMR 채점" : r.view === "paper" ? "종이처럼 풀기" : cat?.title || ""} back={back} actions={actions} />
+      <FeatureBar theme={theme} title={title} sub={r.view === "q" ? `${r.qno}번` : r.view === "omr" ? "OMR 채점" : r.view === "paper" ? "종이처럼 풀기" : r.view === "sol" ? "해설지" : cat?.title || ""} back={back} actions={actions} />
       {body}
       <Toast msg={say} />
     </>
@@ -84,6 +88,7 @@ function SetHome({ catId, set, cat, files, uid, say }) {
   const paper = useMemo(() => (uid === undefined ? { answers: {}, graded: null } : readPaper(catId, set.no)), [catId, set.no, uid]);
   const paperN = Object.keys(paper.answers || {}).length;
   const pct = sum.n ? Math.round((sum.done / sum.n) * 100) : 0;
+  const omrPages = useMemo(() => layoutCard({ cat: catId, no: set.no, items: set.items }).pages.length, [catId, set]);
   return (
     <div className="cs-wrap">
       <div className="cs-hero">
@@ -100,6 +105,7 @@ function SetHome({ catId, set, cat, files, uid, say }) {
       </button>
       <div className="cs-go2">
         <button className="sv-btn" onClick={() => go(nextNo)}>☝ 한 문제씩 풀기{sum.done ? ` · ${nextNo}번` : ""}</button>
+        <button className="sv-btn" onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/sol`)}>📘 해설지 보기</button>
         <button className="sv-btn" onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/video`)}>🎬 해설 영상</button>
       </div>
 
@@ -107,7 +113,7 @@ function SetHome({ catId, set, cat, files, uid, say }) {
 
       <div className="cs-card cs-omrcard">
         <div className="cs-ch"><b>📷 OMR 채점</b><span>카드에 칠하고 찍으면 바로 채점</span></div>
-        <p className="cs-dnote" style={{ marginTop: 0 }}>문제지를 풀고 OMR 카드(2쪽)에 답을 칠한 뒤, 쪽마다 사진을 찍어요. 읽은 답을 확인하고 채점하면 틀린 문항의 해설로 바로 가요.</p>
+        <p className="cs-dnote" style={{ marginTop: 0 }}>문제지를 풀고 OMR 카드({omrPages}쪽)에 답을 칠한 뒤(분수는 칸에 손으로 써요), 쪽마다 사진을 찍어요. 읽은 답을 확인하고 채점하면 틀린 문항의 해설로 바로 가요.</p>
         <div className="cs-dbtns">
           <button className="sv-btn pri" onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/omr`)}>📷 OMR 카드 찍어서 채점</button>
         </div>

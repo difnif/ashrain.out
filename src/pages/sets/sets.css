@@ -36,6 +36,8 @@
 .cs-dchip.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
 .cs-dchip.on .ck { background: var(--accent); border-color: var(--accent); }
 .cs-dbtns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.cs-dlmode { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--muted); flex-wrap: wrap; }
+.cs-dlmode .cs-modes button { font-size: 12.5px; padding: 6px 11px; }
 .cs-dbtns .sv-btn { flex: 1 1 140px; }
 .cs-omrhist { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 .cs-tagx { font-size: 11px; font-weight: 700; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; }
@@ -197,6 +199,10 @@
 .cs-orow em { flex-basis: 100%; font-style: normal; font-size: 11px; color: #b07a00; padding-left: 54px; }
 .cs-orow.warn { border-color: #eaa000; background: color-mix(in srgb, #eaa000 10%, var(--surface)); }
 .cs-orow.me { border-color: var(--accent); }
+.cs-orow em.info { color: #2563eb; }
+.rx-dark .cs-orow em.info { color: #8fb4ff; }
+.cs-orow.ai { border-color: color-mix(in srgb, #2563eb 55%, var(--border)); background: color-mix(in srgb, #2563eb 6%, var(--surface)); }
+.cs-ainote { font-size: 12.5px; line-height: 1.6; background: color-mix(in srgb, #2563eb 8%, var(--surface)); border: 1px solid color-mix(in srgb, #2563eb 45%, var(--border)); border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; }
 .cs-gradebtn { margin-top: 6px; padding: 13px; font-size: 15px; }
 .cs-score { text-align: center; }
 .cs-score .big { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
@@ -237,7 +243,8 @@
   font-size: 14px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.3); font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif; }
 .cs-busyover .sp { width: 18px; height: 18px; border-radius: 999px; border: 2.5px solid var(--border); border-top-color: var(--accent); animation: csSpin .8s linear infinite; }
 .cs-go2 { display: flex; gap: 8px; margin-top: 8px; }
-.cs-go2 .sv-btn { flex: 1; font-size: 13.5px; }
+.cs-go2 .sv-btn { flex: 1; font-size: 13.5px; padding-left: 6px; padding-right: 6px; white-space: nowrap; }
+@media (max-width: 380px) { .cs-go2 .sv-btn { font-size: 12.5px; } }
 
 /* 시트(아래에서 올라오는 창) */
 .cs-sheetbg { position: fixed; inset: 0; z-index: 120; background: rgba(10, 12, 18, .38); display: flex; align-items: flex-end; justify-content: center;

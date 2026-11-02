@@ -1,6 +1,6 @@
 // 컨셉 문제 PDF 만들기 — 문제지 · 해설지 · OMR 카드 (앱의 「바로 인쇄」와 같은 문서를 Chromium 으로 찍는다)
 //
-//   node scripts/concept-files.mjs [--cat prob] [--out .concept-files] [--manifest] [--only 01,02]
+//   node scripts/concept-files.mjs [--cat prob] [--out .concept-files] [--manifest] [--only 01,02] [--docs omr]
 //
 //   · 문제지 · 해설지: public/concept-sets/<범주>/print/NN-{problems,solutions}.html — 생성기(guard-daily)가 PDF 를 찍은
 //     바로 그 HTML(글꼴만 jsDelivr 고정 버전)이라 쪽 나눔 · 모양이 처음 배포한 PDF 와 같다. 쪽 수가 index.json 과 다르면 멈춘다.
@@ -9,6 +9,8 @@
 //   <out>/<범주>/NN/{problems,solutions,omr}.pdf     Storage 에 올라갈 경로 그대로
 //   <out>/build-<범주>.json                           sha256 · 크기 · 쪽 수 — scripts/push-concept-files.mjs 가 올리고 검사할 때 쓴다
 //   --manifest 면 public/concept-sets/<범주>/files.json(쪽 수 · 크기)도 고친다 — 앱의 자료 칸에 보이는 값
+//     (--only · --docs 로 일부만 찍었으면 찍은 세트 · 문서만 바꿔 넣고 나머지는 그대로 둔다)
+//   --docs 로 문서를 고른다(problems,solutions,omr — 기본 셋 다). 예: OMR 카드 배치만 바뀌었을 때 --docs omr --manifest
 // 글꼴: 로컬 @fontsource 가 있으면(FONTSOURCE, 콜론 구분) 거기서, 없으면(워크플로) jsDelivr 에서 받는다.
 // 워크플로 push-concept-files 가 main 머지 때 이 스크립트로 PDF 를 만들고 Storage 에 올린다 — PDF 는 저장소에 넣지 않는다.
 import fs from "node:fs";
@@ -28,6 +30,8 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? proces
 const CAT = arg("--cat", "prob");
 const OUT = path.resolve(arg("--out", path.join(ROOT, ".concept-files")));
 const ONLY = (arg("--only", "") || "").split(",").filter(Boolean);
+const DOCS = (arg("--docs", "") || "problems,solutions,omr").split(",").filter(Boolean);
+if (DOCS.some((d) => !["problems", "solutions", "omr"].includes(d))) throw new Error(`--docs 는 problems · solutions · omr 중에서: ${DOCS}`);
 const PUB = path.join(ROOT, "public/concept-sets", CAT);
 const FONT_DIRS = (process.env.FONTSOURCE ?? "/home/claude/ashrain.out/assessgen/node_modules/@fontsource:/home/claude/work/guard-daily/fonts/node_modules/@fontsource")
   .split(":").filter((d) => d && fs.existsSync(d));
@@ -73,7 +77,7 @@ for (const s of index.sets) {
   const dir = path.join(OUT, CAT, nn);
   fs.mkdirSync(dir, { recursive: true });
   const entry = {};
-  for (const doc of ["problems", "solutions"]) {
+  for (const doc of ["problems", "solutions"].filter((d) => DOCS.includes(d))) {
     const src = path.join(PUB, "print", `${nn}-${doc}.html`);
     await page.goto(pathToFileURL(src).href, { waitUntil: "networkidle" });
     const buf = await toPdf();
@@ -82,24 +86,30 @@ for (const s of index.sets) {
     if (entry[doc].pages !== s.pages[doc]) { bad++; console.error(`✗ ${set.key} ${doc}: 쪽 수 ${entry[doc].pages} ≠ index ${s.pages[doc]}`); }
   }
   const card = layoutCard({ cat: CAT, no: set.no, title: set.title, short: set.short, items: set.items });
-  await page.setContent(composePrint([{ kind: "omr", html: cardHtml(card) }], `${set.key} OMR`).replace(/<script>[\s\S]*?<\/script>/g, ""), { waitUntil: "networkidle" });
-  const buf = await toPdf();
-  fs.writeFileSync(path.join(dir, "omr.pdf"), buf);
-  entry.omr = { path: `${CAT}/${nn}/omr.pdf`, bytes: buf.length, pages: pdfPages(buf), sha256: sha256(buf) };
-  if (entry.omr.pages !== card.pages.length) { bad++; console.error(`✗ ${set.key} OMR: 쪽 수 ${entry.omr.pages} ≠ ${card.pages.length}`); }
+  if (DOCS.includes("omr")) {
+    await page.setContent(composePrint([{ kind: "omr", html: cardHtml(card) }], `${set.key} OMR`).replace(/<script>[\s\S]*?<\/script>/g, ""), { waitUntil: "networkidle" });
+    const buf = await toPdf();
+    fs.writeFileSync(path.join(dir, "omr.pdf"), buf);
+    entry.omr = { path: `${CAT}/${nn}/omr.pdf`, bytes: buf.length, pages: pdfPages(buf), sha256: sha256(buf) };
+    if (entry.omr.pages !== card.pages.length) { bad++; console.error(`✗ ${set.key} OMR: 쪽 수 ${entry.omr.pages} ≠ ${card.pages.length}`); }
+  }
   build.sets[nn] = entry;
-  console.log(`  ${set.key.padEnd(10)} 문제 ${entry.problems.pages}쪽 · 해설 ${entry.solutions.pages}쪽 · OMR ${entry.omr.pages}쪽`);
+  console.log(`  ${set.key.padEnd(10)} ` + [["problems", "문제"], ["solutions", "해설"], ["omr", "OMR"]].filter(([d]) => entry[d]).map(([d, l]) => `${l} ${entry[d].pages}쪽`).join(" · "));
 }
 await browser.close();
 
 const n = Object.keys(build.sets).length;
-const total = Object.values(build.sets).reduce((t, e) => t + e.problems.bytes + e.solutions.bytes + e.omr.bytes, 0);
+const total = Object.values(build.sets).reduce((t, e) => t + Object.values(e).reduce((a, x) => a + x.bytes, 0), 0);
 fs.writeFileSync(path.join(OUT, `build-${CAT}.json`), JSON.stringify(build, null, 1) + "\n");
-console.log(`\n${n}세트 · PDF ${n * 3}개 · ${(total / 1e6).toFixed(1)} MB · 글꼴 로컬 ${routed} / 네트워크 ${net}`);
-if (process.argv.includes("--manifest") && !ONLY.length) {
-  const files = { v: 1, cat: CAT, bucket: build.bucket, made: build.made.slice(0, 10), sets: {} };
+console.log(`\n${n}세트 · PDF ${n * DOCS.length}개 · ${(total / 1e6).toFixed(1)} MB · 글꼴 로컬 ${routed} / 네트워크 ${net}`);
+if (process.argv.includes("--manifest")) {
+  const fp = path.join(PUB, "files.json");
+  const partial = ONLY.length || DOCS.length < 3;
+  // 일부만 찍었으면 찍은 세트 · 문서만 바꿔 넣는다 — 나머지는 그대로
+  const files = partial && fs.existsSync(fp) ? JSON.parse(fs.readFileSync(fp, "utf8")) : { v: 1, cat: CAT, bucket: build.bucket, made: "", sets: {} };
+  files.made = build.made.slice(0, 10);
   for (const [nn, e] of Object.entries(build.sets)) {
-    files.sets[nn] = Object.fromEntries(Object.entries(e).map(([d, x]) => [d, { path: x.path, pages: x.pages, bytes: x.bytes }]));
+    files.sets[nn] = { ...(partial ? files.sets[nn] : {}), ...Object.fromEntries(Object.entries(e).map(([d, x]) => [d, { path: x.path, pages: x.pages, bytes: x.bytes }])) };
   }
   fs.writeFileSync(path.join(PUB, "files.json"), JSON.stringify(files) + "\n");
   console.log(`목록 → ${path.relative(ROOT, path.join(PUB, "files.json"))}`);
