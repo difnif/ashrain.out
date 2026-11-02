@@ -227,15 +227,15 @@ iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정) · 흐리�
 장면 추가: `scenes/` 에 `{ key, dur, title:{e,m}, sub:{e,m}, render(mode, t, C, P), controls? }` 를 만들고 수업 장면이면 `pairs.js` 의 묶음(`GEO`·`DATA`), 장면 묶음 액자면 `stories.js` 의 `STORIES`, 실험 액자의 풀이면 `EXPLAIN` 에 넣는다. `dur` 은 수(ms) 또는 설정을 받는 함수 `(P) => ms`, `controls` 는 `[{ key, label, kind: "step" | "seg", options, def, unit? }]`. 두 판이 같은 `beats([...])` 박자표를 쓰게 하면 토글 겹침이 자연스럽다.
 액자 추가: `frames/index.js` 에 `{ key, title, desc, lab? | story? }` 를 더하고 `AdminDisplay.jsx` 의 `FrameStage` · 액자 목록 그림에서 key 로 그릴 것을 고른다.
 
-### 공부하기 › 컨셉 문제 — 주제별 경우의 수·확률 38세트 (`#/study/sets` · `#/sets/*`, 2026-10-29)
-공부하기 서브탭 「컨셉 문제」 → 범주 폴더(「경우의 수와 확률」) → 세트 아이콘 38개(스포츠 · 패션·뷰티 · 음악 · 역사 · 사회·과학 · 영상). 세트마다 50문항(하 15 · 중 25 · 상 10), 실제 자료로 만든 주제 문항.
+### 공부하기 › 컨셉 문제 — 주제별 경우의 수·확률 39세트 (`#/study/sets` · `#/sets/*`, 2026-10-30)
+공부하기 서브탭 「컨셉 문제」 → 범주 폴더(「경우의 수와 확률」) → 세트 아이콘 39개(스포츠 · 패션·뷰티 · 음악 · 역사 · 사회·과학 · 영상 — 39번 태권도는 2026-10-30에 스포츠 묶음에 추가). 세트마다 50문항(하 15 · 중 25 · 상 10), 실제 자료로 만든 주제 문항.
 - **바로 풀기 · 문제지 그대로** `#/sets/prob/NN/paper` — 인쇄용 문제지 HTML 을 PDF 보듯 펼쳐(그림자 DOM · 폭 맞춤 · 확대) 그 위에 푼다. 괄호를 누르면 답 시트: **손글씨**(손가락 · 펜 · 마우스, 펜이 닿으면 손바닥 무시, 분수 판은 분자/분모 · 두 수 판은 왼쪽/오른쪽) 또는 **타자**. 쓴 답은 괄호 안에 연필 글씨로. <보기> 줄을 누르면 **빨간 색연필 체크** — 여러 개 가능 · 다시 누르면 해제(실수를 막지 않는다). **빈칸이 있어도 제출** → 손글씨만 번호 칸 이미지 한 장으로 모아 기존 `/api/ai`(task `omr`, 서버 변경 없음)로 읽고 바로 채점 — 문제지 위에 동그라미 · 빗금 · 정답 · 점수. 못 읽은 손글씨는 「확인 필요」(눌러서 타자로). 채점 뒤 문항을 누르면 해설 시트, 「틀린 것만 다시」 · 「처음부터」. 답안은 기기 · 계정별로 바로 저장(`ink.js` · `paperlogic.js` · `paper.js` · `InkPad.jsx` · `PaperSolve.jsx`).
 - **한 문제씩 풀기** `#/sets/prob/NN/q/<번호>` — 정수 · 분수(분자/분모 칸, 값이 같으면 정답 + 기약분수 안내) · 보기 고르기 · 두 수. 채점하면 **3단 해설**(방침: 포지티브 · 네거티브 → 전략 / 전개 / 확인) + 모범 답안 · 채점 기준(요소 비중 · 못 채운 것 · 감점). 전개는 판서 줄 · 빨간 메모 · 도식(표 · SVG)이 figanim 으로 맞춰 움직인다. 진도는 기기 · 계정별(localStorage).
 - **해설 영상** `#/sets/prob/NN/video[?no=N]` — 교실 모니터와 같은 무대 · 재생기(`features/display/stage-ui.jsx` · `frames/player.jsx`)로 50문항 해설을 끝없이 돌린다(문제 → 방침 → 전개: 판서 줄마다 도식의 그 부분이 빛남 → 확인 · 답, 50번 다음은 1번). 벽시계로 흘러 새로고침해도 이어지고, 조작 막대(이전 · 멈춤 · 다음 · 이 문항 반복 · 밝기 · 전체 화면 · 문항 목록 · 나가기 / ←→ · 스페이스 · R · F · L), 화면 꺼짐 방지. 장면은 `pages/sets/videoScenes.jsx`가 문항 JSON(해설 · 큐)에서 만든다 — 박자는 글자 수로 어림(한 바퀴 약 36~41분). 해설 · 해설 시트에서 「영상으로 보기」는 그 문항부터.
 - **자료** — 문제지 · 해설지 · OMR 카드를 골라 **바로 인쇄**(PDF 와 같은 HTML `public/concept-sets/prob/print/` 을 한 창에 합쳐 인쇄, 쪽 나눔 동일) 또는 **다운로드**(하나면 PDF, 여럿이면 ZIP — 한글 파일 이름).
 - **OMR 채점** `#/sets/prob/NN/omr` — 2쪽 숫자 칸 카드(`src/lib/omr/grid.js`: 네 모서리 마커 · 방향 막대 · 세트/쪽 코드 띠). 쪽마다 사진 → 기기 안에서 판독(올리지 않음) → 노란 칸 확인 · 고치기 → 채점 → 틀린 문항 해설로.
 - 데이터: `public/concept-sets/<범주>/index.json · NN.json`(문항 · 답 · OMR 칸 · 해설 · 애니메이션 큐) — 생성기(guard-daily `tk_export.py`)가 만든다. PDF 는 저장소에 넣지 않고, main 머지 때 워크플로 `push-concept-files` 가 같은 HTML 로 찍어(쪽 수 검사) Supabase Storage 공개 버킷 `concept-sets` 에 올린다(`scripts/concept-files.mjs` · `scripts/push-concept-files.mjs`).
-- 검산: `node tests/conceptsets.test.mjs`(데이터 · 판정 · 해설 큐 · 인쇄 합치기 · ZIP · 합성 사진 OMR 판독) · `node tests/conceptsets-paper.test.mjs`(손글씨 꼴 · 보기 체크 · 빈칸 제출 채점) · `node tests/conceptsets-video.test.mjs`(1900장면을 박자 지점마다 두 테마로 그려 보기 · 배치가 무대 안 · 도식 큐 키) · `node tests/smoke/conceptsets.smoke.mjs`(빌드 후 목록 → 풀기 → 해설 움직임 → 인쇄 → 다운로드 → 카드 사진 채점 → 종이처럼 풀기 → 해설 영상).
+- 검산: `node tests/conceptsets.test.mjs`(데이터 · 판정 · 해설 큐 · 인쇄 합치기 · ZIP · 합성 사진 OMR 판독) · `node tests/conceptsets-paper.test.mjs`(손글씨 꼴 · 보기 체크 · 빈칸 제출 채점) · `node tests/conceptsets-video.test.mjs`(1950장면을 박자 지점마다 두 테마로 그려 보기 · 배치가 무대 안 · 도식 큐 키) · `node tests/smoke/conceptsets.smoke.mjs`(빌드 후 목록 → 풀기 → 해설 움직임 → 인쇄 → 다운로드 → 카드 사진 채점 → 종이처럼 풀기 → 해설 영상).
 
 ## 구조
 ```

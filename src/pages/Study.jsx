@@ -251,6 +251,18 @@ function SetsSub({ path }) {
       .catch((e) => { if (ok) setErr(e?.message || String(e)); });
     return () => { ok = false; };
   }, [catId]);
+  // 범주 폴더의 '○종 · ○문항'은 index.json 에서 센다(세트가 늘어도 손댈 곳 없음)
+  const [counts, setCounts] = useState({});
+  useEffect(() => {
+    if (catId) return undefined;
+    let ok = true;
+    Promise.all(CATEGORIES.map((c) => loadIndex(c.id).then((x) => [c.id, x]).catch(() => [c.id, null]))).then((rows) => {
+      if (!ok) return;
+      setCounts(Object.fromEntries(rows.filter(([, x]) => x?.sets?.length)
+        .map(([id, x]) => [id, { sets: x.sets.length, items: x.sets.reduce((a, s) => a + (s.n || 0), 0) }])));
+    });
+    return () => { ok = false; };
+  }, [catId]);
 
   if (!catId) {
     return (
@@ -260,7 +272,7 @@ function SetsSub({ path }) {
           {CATEGORIES.map((c) => (
             <button key={c.id} className="st-folder" onClick={() => (location.hash = `#/study/sets/${c.id}`)}>
               <span className="fi" aria-hidden="true">{c.icon}</span>
-              <span className="nm"><b>{c.title}</b><small>{c.sub} · 38종 · 1,900문항</small></span>
+              <span className="nm"><b>{c.title}</b><small>{c.sub}{counts[c.id] ? ` · ${counts[c.id].sets}종 · ${counts[c.id].items.toLocaleString("ko-KR")}문항` : ""}</small></span>
               <span className="go" aria-hidden="true">›</span>
             </button>
           ))}
