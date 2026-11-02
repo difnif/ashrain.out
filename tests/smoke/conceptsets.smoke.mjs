@@ -317,8 +317,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     }
     storageMode = "missing";
     await page.locator(".cs-dbtns .sv-btn", { hasText: "다운로드" }).click();
-    await page.locator(".cs-toast").waitFor({ timeout: 8000 });
-    ok(/아직 올라가지 않았어요/.test(await page.locator(".cs-toast").innerText()), "G3 파일이 없으면 안내(바로 인쇄로 PDF 저장)");
+    // 앞 단계의 안내(토스트)가 아직 떠 있을 수 있어 이 안내 글자가 뜰 때까지 기다린다
+    const g3 = await page.locator(".cs-toast", { hasText: "아직 올라가지 않았어요" }).waitFor({ timeout: 12000 }).then(() => true).catch(() => false);
+    ok(g3, "G3 파일이 없으면 안내(바로 인쇄로 PDF 저장)");
     storageMode = "nocors";
     await chip("OMR").click();                                           // 문제지만
     [dl] = await Promise.all([page.waitForEvent("download", { timeout: 10000 }), page.locator(".cs-dbtns .sv-btn", { hasText: "다운로드" }).click()]);
@@ -554,6 +555,25 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const ls = await page.locator(".cs-score .big b").innerText();
       const lexp = 50 - 2 - (blankP ? 1 : 0);
       ok(ls === String(lexp), `L11 채점 ${lexp}/50 (${ls})`);
+      // 종이처럼 풀기 — 일차함수 문제지 · 식 답을 타자로(ASCII) → 빈칸이 있어도 제출 → 1/50
+      const noAi = (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ answers: [] }) });
+      await page.route("**/api/ai", noAi);
+      await page.goto(base + `#/sets/lin/${nn}/paper`);
+      await page.locator(".cs-paperhost .pg").first().waitFor({ timeout: 20000 });
+      const lpg = await page.locator(".cs-paperhost .pg").count();
+      ok(lpg === LCAT.sets[0].pages.problems, `L12 일차함수 문제지 ${lpg}쪽을 그대로 펼침`);
+      const hid = `#${LI.id}`;
+      await page.locator(`.q${hid}`).click();
+      await page.locator(".cs-sheet").waitFor();
+      if (await page.locator(".cs-modes button", { hasText: "타자" }).count()) await page.locator(".cs-modes button", { hasText: "타자" }).click();
+      await page.locator(".cs-sheet .cs-xi").fill(asc(rawOf(LI)));
+      await page.locator(".cs-sheet .sv-btn.pri", { hasText: "확인" }).click();
+      await sleep(300);
+      await page.locator(".cs-submit").click();
+      await page.locator(".cs-gsum").waitFor({ timeout: 15000 });
+      await sleep(400);
+      ok((await page.locator(".cs-gsum > b").innerText()) === "1/50", `L13 식 답을 타자로 써서 제출 → 1/50 (${await page.locator(".cs-gsum > b").innerText()})`);
+      await page.unroute("**/api/ai", noAi);
     }
 
     ok(errors.length === 0, "Z 콘솔 오류 없음" + (errors.length ? ": " + errors.slice(0, 3).join(" / ") : ""));
