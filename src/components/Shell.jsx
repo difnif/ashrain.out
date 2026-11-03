@@ -122,7 +122,7 @@ export function ShellTop({ theme, hash }) {
           <div className="sh-admin">
             {[["📚 등록", "#/admin/concepts"], ["🔍 문항", "#/admin/items"], ["📄 자료", "#/admin/corpus"],
               ["💬 검토", "#/admin/qna"], ["🗂 대화", "#/admin/chats"], ["🖼 이미지", "#/admin/images"],
-              ["🗓 일정", "#/admin/calendar"], ["⛲ 우물", "#/admin/well"], ["🛡 보호자", "#/admin/guardians"], ["📝 평가", "#/admin/assess"]].map(([l, to]) => (
+              ["🗓 일정", "#/admin/calendar"], ["⛲ 우물", "#/admin/well"], ["🛡 보호자", "#/admin/guardians"], ["📝 평가", "#/admin/assess"], ["🏆 경시", "#/admin/contest"]].map(([l, to]) => (
               <button key={to} className="sh-abtn" onClick={() => (location.hash = to)}>{l}</button>
             ))}
             <button className="sh-abtn" onClick={() => (location.hash = "#/admin/display")}>🖥 교실 모니터</button>
