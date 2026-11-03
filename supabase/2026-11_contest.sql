@@ -39,6 +39,7 @@ create table if not exists public.contest_items (
   accept       text[] not null,                      -- 정답. 여럿이면 모두 정답
   text         text,                                 -- 발문 (관리자 전용 · 지표 계산 · 오답 프린트 인쇄)
   figure       text,                                 -- 그림 (data URI 또는 URL) — 오답 프린트 인쇄용
+  crop         text,                                 -- 원본 문항 이미지 (contest-files 경로) — 있으면 오답 프린트에 그대로 인쇄
   features     jsonb not null default '{}'::jsonb,   -- 채팅방 판단 특성
   metrics      jsonb not null default '{}'::jsonb,   -- 앱이 원문에서 센 지표
   solution     jsonb,
@@ -46,6 +47,8 @@ create table if not exists public.contest_items (
   src_no       integer,                              -- 원본 문항 번호
   primary key (set_id, no)
 );
+
+alter table public.contest_items add column if not exists crop text;
 
 -- ── 3. 분석 대상 (학생) ──────────────────────────────────────────────────
 create table if not exists public.contest_takers (

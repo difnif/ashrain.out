@@ -4,6 +4,7 @@
 // 앱은 AI 를 부르지 않는다. 규격: docs/SPEC-contest-v1.md
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/authx";
+import { readZip } from "../lib/unzip";
 import {
   HALVES, validatePackage, packageToRows, judge, gradeAll, takerCode, setLabel,
   collectWrong, wrongPrintRows, printHtml, buildStudentExport,
@@ -304,8 +305,15 @@ function WrongView({ taker, sets, attempts, setById, reload }) {
 
   const print = async (s) => {
     const { data: it } = await supabase.from("contest_items").select("*").eq("set_id", s.id).order("no");
+    const items = it || [];
+    const paths = items.map((x) => x.crop).filter(Boolean);
+    if (paths.length) {
+      const { data: signed } = await supabase.storage.from("contest-files").createSignedUrls(paths, 3600);
+      const url = new Map((signed || []).map((u) => [u.path, u.signedUrl]));
+      for (const x of items) if (x.crop && url.get(x.crop)) x.cropUrl = url.get(x.crop);
+    }
     const html = printHtml({
-      set: s, items: it || [], taker, perPage,
+      set: s, items, taker, perPage,
       srcLabel: (x) => (x.src_set_id ? `${setById.get(x.src_set_id)?.code || "원본"} ${x.src_no}번` : ""),
     });
     const w = window.open("", "_blank");
@@ -495,6 +503,61 @@ function PrintsView({ sets, reload }) {
   const [mk, setMk] = useState(null);
   const fileRef = useRef(null);
 
+  const [prog, setProg] = useState("");
+
+  // 패키지 하나 반영 — pdfs: { student, teacher } (Uint8Array), crops: Map(no → Uint8Array PNG)
+  const importOne = async (label, j, pdfs = {}, crops = new Map()) => {
+    const why = validatePackage(j);
+    if (why) return `✗ ${label}: ${why}`;
+    const { set: srow, items: irows } = packageToRows(j);
+    const code = srow.code;
+    // 1) 파일 올리기 (같은 경로면 덮어씀)
+    const put = async (path, bytes, type) => {
+      const { error } = await supabase.storage.from("contest-files").upload(path, new Blob([bytes], { type }), { contentType: type, upsert: true });
+      if (error) throw new Error(`${path}: ${error.message}`);
+    };
+    const newFiles = [];
+    if (pdfs.student) { setProg(`${code} 학생용 PDF`); await put(`${code}/student.pdf`, pdfs.student, "application/pdf"); newFiles.push({ name: `${code}_학생용.pdf`, path: `${code}/student.pdf`, kind: "problem", size: pdfs.student.length }); }
+    if (pdfs.teacher) { setProg(`${code} 교사용 PDF`); await put(`${code}/teacher.pdf`, pdfs.teacher, "application/pdf"); newFiles.push({ name: `${code}_교사용.pdf`, path: `${code}/teacher.pdf`, kind: "solution", size: pdfs.teacher.length }); }
+    let nCrop = 0;
+    for (const r of irows) {
+      const png = crops.get(r.no);
+      if (!png) continue;
+      setProg(`${code} 문항 이미지 ${r.no}/${irows.length}`);
+      const path = `${code}/items/${String(r.no).padStart(2, "0")}.png`;
+      await put(path, png, "image/png");
+      r.crop = path; nCrop++;
+    }
+    // 2) 프린트 행 (기존 파일 목록은 경로 기준으로 합침)
+    const { data: prev } = await supabase.from("contest_sets").select("files").eq("code", code).maybeSingle();
+    const files = [...(prev?.files || []).filter((f) => !newFiles.some((n) => n.path === f.path)), ...newFiles];
+    const { data: up, error } = await supabase.from("contest_sets")
+      .upsert({ ...srow, files, updated_at: new Date().toISOString() }, { onConflict: "code" }).select("id").single();
+    if (error) return `✗ ${label}: ${error.message}`;
+    // 3) 문항 교체 — 이미지 경로를 이전 것에서 이어받기
+    const { data: oldItems } = await supabase.from("contest_items").select("no, crop").eq("set_id", up.id);
+    const oldCrop = new Map((oldItems || []).map((x) => [x.no, x.crop]));
+    for (const r of irows) if (!r.crop && oldCrop.get(r.no)) r.crop = oldCrop.get(r.no);
+    await supabase.from("contest_items").delete().eq("set_id", up.id);
+    const { error: e2 } = await supabase.from("contest_items").insert(irows.map((r) => ({ ...r, set_id: up.id })));
+    if (e2) return `✗ ${label}: 문항 저장 실패 (${e2.message})`;
+    // 4) 정답이 바뀌었을 수 있으니 기존 응답·채점을 다시 매긴다
+    const { data: old } = await supabase.from("contest_responses").select("*").eq("set_id", up.id);
+    let regraded = 0;
+    if (old?.length) {
+      const byNo = new Map(irows.map((r) => [r.no, r]));
+      await supabase.from("contest_responses").upsert(old.map((r) => ({ ...r, is_correct: byNo.has(r.item_no) ? judge(byNo.get(r.item_no), r.response) : null })));
+      const who = [...new Set(old.map((r) => r.taker_id))];
+      for (const t of who) {
+        const ans = Object.fromEntries(old.filter((r) => r.taker_id === t).map((r) => [r.item_no, r.response]));
+        const g = gradeAll(irows, ans);
+        await supabase.from("contest_attempts").update({ score: g.score, max_score: g.max, n_right: g.right, n_wrong: g.wrong, n_blank: g.blank }).eq("set_id", up.id).eq("taker_id", t);
+      }
+      regraded = who.length;
+    }
+    return `✓ ${code} · ${irows.length}문항 · 만점 ${srow.max_score}${newFiles.length ? ` · PDF ${newFiles.length}` : ""}${nCrop ? ` · 문항 이미지 ${nCrop}` : ""}${regraded ? ` · ${regraded}명 재채점` : ""}`;
+  };
+
   const importFiles = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -502,34 +565,35 @@ function PrintsView({ sets, reload }) {
     const out = [];
     for (const f of files) {
       try {
-        const j = JSON.parse(await f.text());
-        const why = validatePackage(j);
-        if (why) { out.push(`✗ ${f.name}: ${why}`); continue; }
-        const { set: srow, items: irows } = packageToRows(j);
-        const { data: up, error } = await supabase.from("contest_sets")
-          .upsert({ ...srow, updated_at: new Date().toISOString() }, { onConflict: "code" }).select("id").single();
-        if (error) { out.push(`✗ ${f.name}: ${error.message}`); continue; }
-        await supabase.from("contest_items").delete().eq("set_id", up.id);
-        const { error: e2 } = await supabase.from("contest_items").insert(irows.map((r) => ({ ...r, set_id: up.id })));
-        if (e2) { out.push(`✗ ${f.name}: 문항 저장 실패 (${e2.message})`); continue; }
-        // 정답이 바뀌었을 수 있으니 기존 응답·채점을 다시 매긴다
-        const { data: old } = await supabase.from("contest_responses").select("*").eq("set_id", up.id);
-        let regraded = 0;
-        if (old?.length) {
-          const byNo = new Map(irows.map((r) => [r.no, r]));
-          await supabase.from("contest_responses").upsert(old.map((r) => ({ ...r, is_correct: byNo.has(r.item_no) ? judge(byNo.get(r.item_no), r.response) : null })));
-          const who = [...new Set(old.map((r) => r.taker_id))];
-          for (const t of who) {
-            const ans = Object.fromEntries(old.filter((r) => r.taker_id === t).map((r) => [r.item_no, r.response]));
-            const g = gradeAll(irows, ans);
-            await supabase.from("contest_attempts").update({ score: g.score, max_score: g.max, n_right: g.right, n_wrong: g.wrong, n_blank: g.blank }).eq("set_id", up.id).eq("taker_id", t);
+        if (/\.zip$/i.test(f.name)) {
+          // 묶음: <코드>/package.json · student.pdf · teacher.pdf · items/NN.png
+          const entries = await readZip(await f.arrayBuffer());
+          const groups = new Map();
+          for (const z of entries) {
+            const parts = z.name.split("/").filter(Boolean);
+            if (parts.length < 2) continue;
+            const key = parts.length > 2 && parts[parts.length - 2] === "items" ? parts.slice(0, -2).join("/") : parts.slice(0, -1).join("/");
+            if (!groups.has(key)) groups.set(key, { pkg: null, pdfs: {}, crops: new Map() });
+            const g = groups.get(key), base = parts[parts.length - 1];
+            if (base === "package.json") g.pkg = JSON.parse(new TextDecoder().decode(z.data));
+            else if (/^student\.pdf$/i.test(base)) g.pdfs.student = z.data;
+            else if (/^teacher\.pdf$/i.test(base)) g.pdfs.teacher = z.data;
+            else if (parts.includes("items") && /^\d+\.png$/i.test(base)) g.crops.set(parseInt(base, 10), z.data);
           }
-          regraded = who.length;
+          if (!groups.size) { out.push(`✗ ${f.name}: 묶음 안에 프린트 폴더가 없어요`); continue; }
+          for (const [key, g] of groups) {
+            if (!g.pkg) { out.push(`✗ ${f.name} › ${key}: package.json 없음`); continue; }
+            try { out.push(await importOne(`${f.name} › ${key}`, g.pkg, g.pdfs, g.crops)); }
+            catch (err) { out.push(`✗ ${f.name} › ${key}: ${err.message}`); }
+            setLog([...out]);
+          }
+        } else {
+          out.push(await importOne(f.name, JSON.parse(await f.text())));
         }
-        out.push(`✓ ${f.name} › ${srow.code} · ${irows.length}문항 · 만점 ${srow.max_score}${regraded ? ` · ${regraded}명 재채점` : ""}`);
-      } catch (err) { out.push(`✗ ${f.name}: JSON 해석 실패 (${err.message})`); }
+      } catch (err) { out.push(`✗ ${f.name}: ${err.message}`); }
+      setLog([...out]);
     }
-    setLog(out); setBusy(false);
+    setLog(out); setBusy(false); setProg("");
     if (fileRef.current) fileRef.current.value = "";
     reload();
   };
@@ -548,9 +612,10 @@ function PrintsView({ sets, reload }) {
   return (
     <>
       <div className="cx-card">
-        <h3 className="cx-sub">문항 패키지 가져오기 (JSON)</h3>
-        <input ref={fileRef} type="file" accept=".json,application/json" multiple onChange={importFiles} disabled={busy} className="cx-file" />
-        <p className="cx-hint">같은 코드면 문항을 교체하고, 이미 채점한 학생은 새 정답으로 다시 채점해요.</p>
+        <h3 className="cx-sub">프린트 등록 — 묶음(zip) 또는 문항 패키지(JSON)</h3>
+        <input ref={fileRef} type="file" accept=".zip,.json,application/zip,application/json" multiple onChange={importFiles} disabled={busy} className="cx-file" />
+        {busy && prog && <p className="cx-hint">올리는 중… {prog}</p>}
+        <p className="cx-hint">채팅방에서 받은 묶음(zip) 하나로 학생용·교사용 PDF, 문항, 문항 이미지가 한꺼번에 들어가요. 같은 코드면 교체하고, 이미 채점한 학생은 새 정답으로 다시 채점해요.</p>
         {log.map((l, i) => <p key={i} className={"cx-log" + (l.startsWith("✓") ? " good" : " bad")}>{l}</p>)}
       </div>
       <div className="cx-card">
