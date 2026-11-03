@@ -1,7 +1,8 @@
-// src/lib/contest.js — 경시 대비: 가져오기 검증 · 정오 판정 · 기계 지표 · 분석용 md 내보내기
-// 전부 결정적 계산(AI 없음). 규격은 프로젝트 문서 claude/SPEC-경시대비-v1.md.
+// src/lib/contest.js — 경시 대비: 가져오기 검증 · 채점 · 기계 지표 · 오답 프린트 · 분석용 md
+// 전부 결정적 계산(AI 없음). 규격: docs/SPEC-contest-v1.md
 
 export const FORMAT = "contest-set/v1";
+export const HALVES = ["상반기", "하반기"];
 
 // ── 답 정규화 · 판정 ─────────────────────────────────────────────────────
 const CIRCLED = { "①": "1", "②": "2", "③": "3", "④": "4", "⑤": "5", "⑥": "6", "⑦": "7", "⑧": "8", "⑨": "9", "⑩": "10" };
@@ -11,46 +12,52 @@ export function normAnswer(s) {
   t = t.replace(/[①-⑩]/g, (c) => CIRCLED[c] || c);
   t = t.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
   t = t.replace(/[－−–]/g, "-").replace(/\s+/g, "").replace(/번$/, "").toLowerCase();
-  if (/^-?\d+(\.\d+)?$/.test(t)) t = String(Number(t));            // 007 → 7
+  if (/^-?\d+(\.\d+)?$/.test(t)) t = String(Number(t));
   return t;
 }
 export function judge(item, response) {
   const r = normAnswer(response);
-  if (!r) return null;                                                // 무응답
+  if (!r) return null;
   return (item.accept || []).some((a) => normAnswer(a) === r);
 }
+export function gradeAll(items, answers) {
+  let score = 0, right = 0, wrong = 0, blank = 0, max = 0;
+  const rows = items.map((x) => {
+    const v = (answers[x.no] ?? "").toString().trim();
+    const c = judge(x, v);
+    max += Number(x.points);
+    if (c === true) { score += Number(x.points); right++; } else if (c === false) wrong++; else blank++;
+    return { item_no: x.no, response: v || null, is_correct: c };
+  });
+  return { rows, score, max, right, wrong, blank };
+}
 
-// ── 원문에서 세는 지표 (A) ───────────────────────────────────────────────
+// ── 원문에서 세는 지표 ───────────────────────────────────────────────────
 export function computeMetrics(text, item = {}) {
   const t = String(text || "");
   const body = t.replace(/\$[^$]*\$/g, " 수식 ");
-  const chars = t.replace(/\s/g, "").length;
-  const sentences = (body.match(/[^.?!。]+[.?!。]/g) || []).length || (t.trim() ? 1 : 0);
   const dollar = t.match(/\$[^$]+\$/g) || [];
-  const plainMath = dollar.length ? [] : (t.match(/[0-9a-zA-Z()]+(?:\s*[=<>≤≥+\-×÷*/^]\s*[0-9a-zA-Z()]+)+/g) || []);
-  const formulas = dollar.length || plainMath.length;
-  const longestFormula = Math.max(0, ...[...dollar, ...plainMath].map((f) => f.replace(/[$\s]/g, "").length));
-  const conditions = (t.match(/\((?:가|나|다|라|마|바|사)\)|(?:^|\s)[ㄱㄴㄷㄹㅁㅂ]\s*[.)]/g) || []).length;
-  const numbers = (body.match(/\d+(?:\.\d+)?/g) || []).length;
+  const plainMath = dollar.length ? [] : (t.match(/[0-9a-zA-Z()²³]+(?:\s*[=<>≤≥+\-×÷*/^]\s*[0-9a-zA-Z()²³]+)+/g) || []);
   return {
-    chars,
-    sentences,
-    formulas,
-    longest_formula: longestFormula,
-    conditions,
-    numbers,
-    ref_figure: /그림|도형|그래프/.test(t),
+    chars: t.replace(/\s/g, "").length,
+    sentences: (body.match(/[^.?!。]+[.?!。]/g) || []).length || (t.trim() ? 1 : 0),
+    formulas: dollar.length || plainMath.length,
+    longest_formula: Math.max(0, ...[...dollar, ...plainMath].map((f) => f.replace(/[$\s]/g, "").length)),
+    conditions: (t.match(/\((?:가|나|다|라|마|바|사)\)|(?:^|\s)[ㄱㄴㄷㄹㅁㅂ]\s*[.)]/g) || []).length,
+    numbers: (body.match(/\d+(?:\.\d+)?/g) || []).length,
+    ref_figure: /그림|도형|그래프/.test(t) || !!item.figure,
     ref_table: /표\s|표에|표를|표의|다음 표/.test(t),
     n_choices: item.n_choices || null,
   };
 }
 
-// ── 가져오기 JSON 검증 ───────────────────────────────────────────────────
+// ── 가져오기 JSON ────────────────────────────────────────────────────────
 export function validatePackage(j) {
   if (!j || typeof j !== "object") return "JSON 객체가 아님";
   if (j.format && j.format !== FORMAT) return `format 이 ${FORMAT} 가 아님`;
   const s = j.set;
   if (!s || !s.code || !s.title) return "set.code · set.title 필요";
+  if (s.half && !HALVES.includes(s.half)) return "set.half 는 상반기|하반기";
   if (!Array.isArray(j.items) || !j.items.length) return "items 배열이 비어 있음";
   const seen = new Set();
   for (const it of j.items) {
@@ -65,24 +72,26 @@ export function validatePackage(j) {
 }
 export function packageToRows(j) {
   const items = j.items.map((it) => {
-    const accept = (Array.isArray(it.answer) ? it.answer : [it.answer]).map(String);
-    return {
+    const r = {
       no: it.no,
       points: Number(it.points ?? 1),
       answer_type: it.answer_type || "int",
-      n_choices: it.n_choices ?? (it.answer_type === "choice" ? 5 : null),
-      accept,
+      n_choices: it.n_choices ?? (it.answer_type === "choice" ? (it.choices?.length || 5) : null),
+      choices: Array.isArray(it.choices) ? it.choices.map(String) : null,
+      accept: (Array.isArray(it.answer) ? it.answer : [it.answer]).map(String),
       text: it.text || "",
+      figure: it.figure || null,
       features: it.features || {},
       solution: it.solution || null,
     };
+    r.metrics = computeMetrics(r.text, r);
+    return r;
   }).sort((a, b) => a.no - b.no);
-  for (const r of items) r.metrics = computeMetrics(r.text, r);
   const s = j.set;
   return {
     set: {
-      code: s.code, title: s.title, contest: s.contest || null, year: s.year || null,
-      round: s.round || null, grade_label: s.grade_label || null, test_date: s.test_date || null,
+      code: s.code, kind: "original", title: s.title, contest: s.contest || null, year: s.year || null,
+      half: s.half || null, grade_label: s.grade_label || null, test_date: s.test_date || null,
       n_items: items.length, max_score: items.reduce((a, r) => a + r.points, 0), spec: j,
     },
     items,
@@ -90,138 +99,189 @@ export function packageToRows(j) {
 }
 
 export const takerCode = (t) => "S" + String(t.seq).padStart(4, "0");
+export const setLabel = (s) => s.kind === "wrong"
+  ? s.title
+  : [s.year, s.half, s.grade_label].filter(Boolean).join(" ") + (s.title ? ` · ${s.title}` : "");
 
-// ── 집계 ─────────────────────────────────────────────────────────────────
-export function aggregate(items, takers, responses) {
-  const rmap = new Map();                                             // takerId → (no → row)
-  for (const r of responses) {
-    if (!rmap.has(r.taker_id)) rmap.set(r.taker_id, new Map());
-    rmap.get(r.taker_id).set(r.item_no, r);
+// ── 오답 프린트 ──────────────────────────────────────────────────────────
+// sources: [{ set, items, responses(이 학생) }] → 오답 문항(원본 기준 중복 제거)
+export function collectWrong(sources) {
+  const out = [];
+  const seen = new Set();
+  for (const { set, items, responses } of sources) {
+    const rmap = new Map(responses.map((r) => [r.item_no, r]));
+    for (const x of items) {
+      const r = rmap.get(x.no);
+      if (r?.is_correct === true) continue;               // 오답 + 무응답 모두 담는다
+      const rootSet = x.src_set_id || set.id, rootNo = x.src_no ?? x.no;
+      const key = rootSet + "#" + rootNo;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ item: x, from: set, rootSet, rootNo, response: r?.response ?? null });
+    }
   }
-  const active = takers.filter((t) => rmap.has(t.id));
-  const st = active.map((t) => {
-    const m = rmap.get(t.id);
-    let score = 0, right = 0, wrong = 0, blank = 0;
-    for (const it of items) {
-      const r = m.get(it.no);
-      const c = r ? judge(it, r.response) : null;
-      if (c === true) { score += it.points; right++; } else if (c === false) wrong++; else blank++;
-    }
-    return { taker: t, code: takerCode(t), score, right, wrong, blank, cells: m };
-  }).sort((a, b) => b.score - a.score || a.code.localeCompare(b.code));
-  st.forEach((s, i) => { s.rank = i && st[i - 1].score === s.score ? st[i - 1].rank : i + 1; });
-
-  const n = st.length;
-  const k = n >= 4 ? Math.max(1, Math.round(n * 0.27)) : 0;
-  const upper = st.slice(0, k), lower = k ? st.slice(n - k) : [];
-  const rate = (group, no, it) => group.length
-    ? group.filter((s) => judge(it, s.cells.get(no)?.response) === true).length / group.length : null;
-
-  const it = items.map((x) => {
-    const p = rate(st, x.no, x);
-    const blanks = st.filter((s) => judge(x, s.cells.get(x.no)?.response) === null).length;
-    const dist = {};
-    if (x.answer_type === "choice") {
-      for (let c = 1; c <= (x.n_choices || 5); c++) dist[c] = 0;
-      for (const s of st) {
-        const v = normAnswer(s.cells.get(x.no)?.response);
-        if (v) dist[v] = (dist[v] || 0) + 1;
-      }
-    }
-    return {
-      no: x.no, p, blank_rate: n ? blanks / n : null,
-      d: k ? rate(upper, x.no, x) - rate(lower, x.no, x) : null, dist,
-    };
-  });
-  return { students: st, items: it, n, k };
+  return out;
+}
+export function wrongPrintRows(wrongs) {
+  return wrongs.map((w, i) => ({
+    no: i + 1,
+    points: w.item.points,
+    answer_type: w.item.answer_type,
+    n_choices: w.item.n_choices,
+    choices: w.item.choices,
+    accept: w.item.accept,
+    text: w.item.text,
+    figure: w.item.figure,
+    features: w.item.features,
+    metrics: w.item.metrics,
+    solution: w.item.solution,
+    src_set_id: w.rootSet,
+    src_no: w.rootNo,
+  }));
 }
 
-// ── 분석용 md ────────────────────────────────────────────────────────────
-const pct = (v) => (v == null ? "—" : Math.round(v * 100) + "%");
+// 인쇄용 HTML (새 창에서 인쇄)
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const CIRC = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"];
+export function printHtml({ set, items, taker, perPage = 2, srcLabel = () => "" }) {
+  const blocks = items.map((x) => `
+    <section class="q">
+      <div class="qh"><b>${x.no}.</b> <span class="src">${esc(srcLabel(x))}</span><span class="pt">${x.points}점</span></div>
+      <div class="qt">${esc(String(x.text || "").replace(/\$/g, "")).replace(/\n/g, "<br>")}</div>
+      ${x.figure ? `<img class="fig" src="${esc(x.figure)}">` : ""}
+      ${x.choices?.length ? `<ol class="ch">${x.choices.map((c, i) => `<li><span>${CIRC[i] || i + 1}</span> ${esc(c)}</li>`).join("")}</ol>` : ""}
+      <div class="ans">답: ______________</div>
+    </section>`);
+  const pages = [];
+  for (let i = 0; i < blocks.length; i += perPage) pages.push(blocks.slice(i, i + perPage).join(""));
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(set.title)}</title>
+<style>
+@page{size:A4;margin:16mm 15mm}
+body{font-family:"Noto Sans KR","Apple SD Gothic Neo",sans-serif;color:#111;margin:0}
+.page{page-break-after:always;display:flex;flex-direction:column;gap:10mm;min-height:250mm}
+.page:last-child{page-break-after:auto}
+.head{display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:3mm;font-size:12pt}
+.q{flex:1;display:flex;flex-direction:column;gap:3mm;font-size:11.5pt;line-height:1.7}
+.qh{display:flex;gap:3mm;align-items:baseline}.src{color:#777;font-size:9pt}.pt{margin-left:auto;color:#777;font-size:9pt}
+.fig{max-width:70%;max-height:70mm;object-fit:contain;align-self:center}
+.ch{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:2mm 8mm}.ch span{margin-right:1mm}
+.ans{margin-top:auto;text-align:right;font-size:11pt}
+.noprint{position:fixed;top:8px;right:8px}@media print{.noprint{display:none}}
+</style></head><body>
+<button class="noprint" onclick="print()">인쇄</button>
+${pages.map((p, i) => `<div class="page"><div class="head"><span>${esc(set.title)}</span><span>${esc(taker?.name || "")} · ${i + 1}/${pages.length}</span></div>${p}</div>`).join("")}
+</body></html>`;
+}
+
+// ── 분석용 md (학생 1명 · 고른 프린트들) ─────────────────────────────────
+// prints: [{ set, items, responses(이 학생), attempt }]
+// group: Map(rootSet#rootNo → { n, right })  — 같은 원본 문항을 푼 모든 학생 기준 정답률
+const pct = (v) => (v == null || Number.isNaN(v) ? "—" : Math.round(v * 100) + "%");
 const yn = (v) => (v === true ? "있음" : v === false ? "없음" : "—");
 const cell = (v) => (v == null || v === "" ? "—" : String(v).replace(/\|/g, "／").replace(/\n/g, " "));
+const mark = (c, r) => (c === true ? "○" : c === false ? "×" + cell(normAnswer(r)) : "·");
 
-export function buildExportMd(set, items, takers, responses) {
-  const ag = aggregate(items, takers, responses);
-  const domains = [...new Set(items.map((x) => x.features?.domain).filter(Boolean))];
+export function buildStudentExport({ taker, prints, group, setById }) {
   const L = [];
-  L.push(`# 경시 분석용 데이터 — ${set.title}`, "");
-  L.push(`- 세트 코드: ${set.code}`);
-  L.push(`- 대회: ${set.contest || "—"} · ${set.year || "—"} · ${set.round || "—"}`);
-  L.push(`- 대상: ${set.grade_label || "—"} · 응시일: ${set.test_date || "—"}`);
-  L.push(`- 문항 수: ${items.length} · 만점: ${set.max_score} · 응시 인원: ${ag.n}`);
-  L.push(`- 내보낸 시각: ${new Date().toLocaleString("ko-KR")}`);
-  L.push(`- 학생 표기: 익명 코드(S0000). 실명은 앱 안에서만 연결됨.`);
-  L.push(`- 변별도: 상위·하위 ${ag.k ? ag.k + "명(27%)" : "— (응시 4명 미만이라 계산 안 함)"} 정답률 차`, "");
+  const code = takerCode(taker);
+  const keyOf = (set, x) => (x.src_set_id || set.id) + "#" + (x.src_no ?? x.no);
+  const srcName = (x) => {
+    if (!x.src_set_id) return "";
+    const s = setById.get(x.src_set_id);
+    return s ? `${s.code} ${x.src_no}번` : `원본 ${x.src_no}번`;
+  };
 
-  L.push("## 1. 문항 특성표", "");
-  L.push("### 1-1. 판단 지표 (채팅방) · 실측 지표 (앱)", "");
-  L.push("| 번호 | 배점 | 형식 | 정답 | 단원(주) | 부 단원 | 영역 | 세부 유형 | 전략 | 단계 | 개념 수 | 계산량 | 발상/정형 | 예상 난이도 | 실측 정답률 | 변별도 | 무응답률 |");
-  L.push("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
-  items.forEach((x, i) => {
-    const f = x.features || {}, a = ag.items[i];
-    L.push(`| ${x.no} | ${x.points} | ${x.answer_type}${x.n_choices ? "/" + x.n_choices : ""} | ${cell(x.accept.join(", "))} | ${cell(f.concept_main || f.unit)} | ${cell((f.concept_sub || []).join(", "))} | ${cell(f.domain)} | ${cell(f.type_code ? f.type_code + " " + (f.type_name || "") : f.type_name)} | ${cell((f.strategies || []).join(", "))} | ${cell(f.steps)} | ${cell(f.concepts_needed)} | ${cell(f.calc_load)} | ${cell(f.insight)} | ${cell(f.difficulty)} | ${pct(a.p)} | ${a.d == null ? "—" : a.d.toFixed(2)} | ${pct(a.blank_rate)} |`);
-  });
-  L.push("", "### 1-2. 문장·도형 지표 (앱이 원문에서 셈 / 도형은 채팅방 판단)", "");
-  L.push("| 번호 | 글자 수 | 문장 수 | 수식 수 | 최장 수식 | 조건 항목 | 수치 개수 | 그림 참조 | 표 참조 | 도형 | 도형 종류 | 보조선 |");
-  L.push("|---|---|---|---|---|---|---|---|---|---|---|---|");
-  for (const x of items) {
-    const m = x.metrics || {}, g = x.features?.figure || {};
-    L.push(`| ${x.no} | ${cell(m.chars)} | ${cell(m.sentences)} | ${cell(m.formulas)} | ${cell(m.longest_formula)} | ${cell(m.conditions)} | ${cell(m.numbers)} | ${yn(m.ref_figure)} | ${yn(m.ref_table)} | ${yn(g.has)} | ${cell(g.kind)} | ${yn(g.aux_line)} |`);
-  }
-  L.push("", "### 1-3. 문항별 메모 (함정 · 오답 예측)", "");
-  for (const x of items) {
-    const f = x.features || {};
-    const dis = f.distractors ? Object.entries(f.distractors).map(([k, v]) => `${k}번←${v}`).join(" / ") : "";
-    if (!f.trap && !dis) continue;
-    L.push(`- ${x.no}번${f.trap ? ` — 함정: ${cell(f.trap)}` : ""}${dis ? ` — 오답 예측: ${cell(dis)}` : ""}`);
+  L.push(`# 경시 분석 의뢰 — ${code}`, "");
+  L.push(`- 학생: ${code} · 학년 ${taker.grade || "—"} (실명은 앱 안에서만)`);
+  L.push(`- 프린트 ${prints.length}개 · 내보낸 시각 ${new Date().toLocaleString("ko-KR")}`);
+  L.push(`- 집단 정답률 = 같은 원본 문항을 푼 모든 분석 대상 기준 (오답 프린트 재응시 포함하지 않음)`, "");
+
+  L.push("## 1. 프린트 요약", "");
+  L.push("| 프린트 | 종류 | 연도 | 반기 | 대상 | 응시일 | 점수 | 정답 | 오답 | 무응답 |");
+  L.push("|---|---|---|---|---|---|---|---|---|---|");
+  for (const p of prints) {
+    const a = p.attempt || {};
+    L.push(`| ${cell(p.set.code)} | ${p.set.kind === "wrong" ? "오답 프린트" : "기출"} | ${cell(p.set.year)} | ${cell(p.set.half)} | ${cell(p.set.grade_label)} | ${cell(a.taken_on)} | ${a.score ?? "—"}/${a.max_score ?? p.set.max_score} | ${a.n_right ?? "—"} | ${a.n_wrong ?? "—"} | ${a.n_blank ?? "—"} |`);
   }
 
-  L.push("", "## 2. 응답 행렬", "", "○ 정답 · ×값 오답(쓴 답) · · 무응답", "");
-  L.push(`| 코드 | 학년 | 점수 | 순위 | ${items.map((x) => x.no).join(" | ")} |`);
-  L.push(`|---|---|---|---|${items.map(() => "---").join("|")}|`);
-  for (const s of ag.students) {
-    const cs = items.map((x) => {
-      const r = s.cells.get(x.no)?.response;
-      const c = judge(x, r);
-      return c === true ? "○" : c === false ? "×" + cell(normAnswer(r)) : "·";
-    });
-    L.push(`| ${s.code} | ${cell(s.taker.grade)} | ${s.score} | ${s.rank} | ${cs.join(" | ")} |`);
-  }
-
-  L.push("", "## 3. 집계 (앱 계산)", "", "### 3-1. 학생별", "");
-  L.push(`| 코드 | 점수 | 순위 | 정답 | 오답 | 무응답 |${domains.map((d) => ` ${d} |`).join("")}`);
-  L.push(`|---|---|---|---|---|---|${domains.map(() => "---|").join("")}`);
-  for (const s of ag.students) {
-    const dr = domains.map((d) => {
-      const its = items.filter((x) => x.features?.domain === d);
-      const ok = its.filter((x) => judge(x, s.cells.get(x.no)?.response) === true).length;
-      return ` ${ok}/${its.length} |`;
-    });
-    L.push(`| ${s.code} | ${s.score} | ${s.rank} | ${s.right} | ${s.wrong} | ${s.blank} |${dr.join("")}`);
-  }
-  const choiceItems = items.filter((x) => x.answer_type === "choice");
-  if (choiceItems.length) {
-    const maxC = Math.max(...choiceItems.map((x) => x.n_choices || 5));
-    L.push("", "### 3-2. 객관식 선택 분포 (명)", "");
-    L.push(`| 번호 | 정답 |${Array.from({ length: maxC }, (_, i) => ` ${i + 1} |`).join("")} 무응답 |`);
-    L.push(`|---|---|${Array.from({ length: maxC }, () => "---|").join("")}---|`);
-    for (const x of choiceItems) {
-      const a = ag.items[items.indexOf(x)];
-      const blanks = Math.round((a.blank_rate || 0) * ag.n);
-      L.push(`| ${x.no} | ${cell(x.accept.join(","))} |${Array.from({ length: maxC }, (_, i) => ` ${a.dist[i + 1] ?? "—"} |`).join("")} ${blanks} |`);
+  for (const p of prints) {
+    const rmap = new Map(p.responses.map((r) => [r.item_no, r]));
+    L.push("", `## 2. 문항별 — ${p.set.code}${p.set.kind === "wrong" ? " (오답 프린트)" : ""}`, "");
+    L.push("| 번호 | 원본 | 결과 | 정답 | 배점 | 단원(주) | 영역 | 세부 유형 | 전략 | 단계 | 개념 수 | 계산량 | 발상/정형 | 예상 난이도 | 집단 정답률 | 글자 수 | 문장 수 | 수식 | 조건 | 도형 | 보조선 |");
+    L.push("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+    for (const x of p.items) {
+      const f = x.features || {}, m = x.metrics || {}, g = f.figure || {};
+      const r = rmap.get(x.no);
+      const gs = group.get(keyOf(p.set, x));
+      L.push(`| ${x.no} | ${cell(srcName(x))} | ${mark(r?.is_correct ?? null, r?.response)} | ${cell(x.accept.join(","))} | ${x.points} | ${cell(f.concept_main || f.unit)} | ${cell(f.domain)} | ${cell(f.type_code ? f.type_code + " " + (f.type_name || "") : f.type_name)} | ${cell((f.strategies || []).join(", "))} | ${cell(f.steps)} | ${cell(f.concepts_needed)} | ${cell(f.calc_load)} | ${cell(f.insight)} | ${cell(f.difficulty)} | ${gs ? pct(gs.right / gs.n) + ` (${gs.n}명)` : "—"} | ${cell(m.chars)} | ${cell(m.sentences)} | ${cell(m.formulas)} | ${cell(m.conditions)} | ${g.has ? cell(g.kind || "있음") : yn(m.ref_figure ? true : g.has)} | ${yn(g.aux_line)} |`);
     }
+    const memo = p.items.filter((x) => x.features?.trap || x.features?.distractors);
+    if (memo.length) {
+      L.push("", "메모 (함정 · 오답 예측):");
+      for (const x of memo) {
+        const f = x.features;
+        const dis = f.distractors ? Object.entries(f.distractors).map(([k, v]) => `${k}←${v}`).join(" / ") : "";
+        L.push(`- ${x.no}번${f.trap ? ` 함정: ${cell(f.trap)}` : ""}${dis ? ` · 오답 예측: ${cell(dis)}` : ""}`);
+      }
+    }
+  }
+
+  // 재응시 추적: 원본 문항 하나의 시도 이력
+  const hist = new Map();
+  const order = [...prints].sort((a, b) => String(a.attempt?.graded_at || "").localeCompare(String(b.attempt?.graded_at || "")));
+  for (const p of order) {
+    const rmap = new Map(p.responses.map((r) => [r.item_no, r]));
+    for (const x of p.items) {
+      const k = keyOf(p.set, x);
+      if (!hist.has(k)) hist.set(k, { label: x.src_set_id ? srcName(x) : `${p.set.code} ${x.no}번`, tries: [] });
+      const r = rmap.get(x.no);
+      hist.get(k).tries.push(mark(r?.is_correct ?? null, r?.response));
+    }
+  }
+  const multi = [...hist.values()].filter((h) => h.tries.length > 1);
+  if (multi.length) {
+    L.push("", "## 3. 재응시 추적 (원본 문항별 시도 순서)", "");
+    L.push("| 원본 문항 | 시도 |", "|---|---|");
+    for (const h of multi) L.push(`| ${cell(h.label)} | ${h.tries.join(" → ")} |`);
+  }
+
+  // 영역별
+  const dom = new Map();
+  for (const p of prints) {
+    if (p.set.kind === "wrong") continue;
+    const rmap = new Map(p.responses.map((r) => [r.item_no, r]));
+    for (const x of p.items) {
+      const d = x.features?.domain || "미분류";
+      if (!dom.has(d)) dom.set(d, { n: 0, right: 0, pts: 0, got: 0 });
+      const o = dom.get(d), c = rmap.get(x.no)?.is_correct;
+      o.n++; o.pts += Number(x.points);
+      if (c === true) { o.right++; o.got += Number(x.points); }
+    }
+  }
+  if (dom.size) {
+    L.push("", "## 4. 영역별 (기출 프린트만)", "");
+    L.push("| 영역 | 문항 | 정답 | 정답률 | 득점/배점 |", "|---|---|---|---|---|");
+    for (const [d, o] of dom) L.push(`| ${d} | ${o.n} | ${o.right} | ${pct(o.right / o.n)} | ${o.got}/${o.pts} |`);
   }
 
   const raw = {
-    format: "contest-export/v1",
-    set: { code: set.code, title: set.title, contest: set.contest, year: set.year, round: set.round, grade_label: set.grade_label, test_date: set.test_date, max_score: Number(set.max_score) },
-    items: items.map((x, i) => ({ no: x.no, points: x.points, answer_type: x.answer_type, n_choices: x.n_choices, accept: x.accept, features: x.features, metrics: x.metrics, stats: ag.items[i] })),
-    students: ag.students.map((s) => ({
-      code: s.code, grade: s.taker.grade || null, score: s.score, rank: s.rank,
-      responses: Object.fromEntries(items.map((x) => [x.no, s.cells.get(x.no)?.response ?? null])),
+    format: "contest-student-export/v1",
+    student: { code, grade: taker.grade || null },
+    prints: prints.map((p) => ({
+      code: p.set.code, kind: p.set.kind, year: p.set.year, half: p.set.half, grade_label: p.set.grade_label,
+      attempt: p.attempt ? { taken_on: p.attempt.taken_on, score: Number(p.attempt.score), max: Number(p.attempt.max_score), graded_at: p.attempt.graded_at } : null,
+      items: p.items.map((x) => {
+        const r = p.responses.find((y) => y.item_no === x.no);
+        const gs = group.get(keyOf(p.set, x));
+        return {
+          no: x.no, src: x.src_set_id ? srcName(x) : null, points: Number(x.points), answer_type: x.answer_type,
+          accept: x.accept, response: r?.response ?? null, correct: r?.is_correct ?? null,
+          group_rate: gs ? +(gs.right / gs.n).toFixed(3) : null, group_n: gs?.n ?? 0,
+          features: x.features, metrics: x.metrics,
+        };
+      }),
     })),
   };
-  L.push("", "## 4. 원자료 (JSON)", "", "```json", JSON.stringify(raw, null, 1), "```", "");
+  L.push("", "## 5. 원자료 (JSON)", "", "```json", JSON.stringify(raw), "```", "");
   return L.join("\n");
 }
