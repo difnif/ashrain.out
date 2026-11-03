@@ -1,0 +1,619 @@
+{
+ "seed_id": "m2-1-sangwa-equation",
+ "category": "산과",
+ "test_type": "sangwa",
+ "title": "일차함수의 식 구하기 — 서술형",
+ "unit_id": "m2-1",
+ "concept_ids": [
+  "m2-1-19"
+ ],
+ "schema_id": "8dea0362-a176-42f3-a743-98a70f3780c6",
+ "source_item_ids": [],
+ "note": "기존 생성 틀(concept_set)을 문정중 서답형 꼴로 다시 씀 — 파라미터·검증·해설은 원래 틀을 물려받음 (11-04)",
+ "geometry": false,
+ "templates": [
+  {
+   "process": "절차수행",
+   "context": "무맥락",
+   "prereq": [
+    "일차함수의 그래프",
+    "기울기"
+   ],
+   "ops": [
+    "함수",
+    "사칙"
+   ],
+   "traps": [
+    "기울기 계산",
+    "부호"
+   ],
+   "time_limit": 300,
+   "points": 7,
+   "tags": [
+    "일차함수",
+    "일차함수의 식",
+    "서술형",
+    "산과"
+   ],
+   "skill": "직선의 식을 구해 x = k를 대입하기(또는 어느 두 점이든 기울기가 같다는 성질 쓰기)",
+   "variant_axis": {
+    "기울기": "±1~±4",
+    "k": "−6~6",
+    "원 틀": "m2-1-line-two-points-t3"
+   },
+   "discriminates": "세 점이 한 직선 위에 있다는 조건을 '직선의 식에 대입' 또는 '기울기가 같다'로 옮기는가",
+   "difficulty": 3,
+   "params": [
+    {
+     "name": "a",
+     "values": {
+      "in": [
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4
+      ]
+     }
+    },
+    {
+     "name": "x1",
+     "values": {
+      "int": [
+       -5,
+       4
+      ]
+     }
+    },
+    {
+     "name": "dx",
+     "values": {
+      "in": [
+       1,
+       2,
+       3,
+       4
+      ]
+     }
+    },
+    {
+     "name": "b",
+     "values": {
+      "in": [
+       -6,
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     }
+    },
+    {
+     "name": "k",
+     "values": {
+      "in": [
+       -6,
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     }
+    }
+   ],
+   "derive": {
+    "x2": "x1 + dx",
+    "y1": "a*x1 + b",
+    "y2": "a*(x1 + dx) + b",
+    "dy": "a*dx",
+    "m": "a*k + b",
+    "xlo": "min(x1, x2, 0, k) - 2",
+    "xhi": "max(x1, x2, 0, k) + 2",
+    "ylo": "min(y1, y2, 0, m) - 2",
+    "yhi": "max(y1, y2, 0, m) + 2",
+    "xs": "max(xlo, min((ylo - b)/a, (yhi - b)/a))",
+    "xe": "min(xhi, max((ylo - b)/a, (yhi - b)/a))",
+    "ys": "a*xs + b",
+    "ye": "a*xe + b"
+   },
+   "constraints": [
+    "x1 != 0",
+    "x2 != 0",
+    "abs(y1) <= 18",
+    "abs(y2) <= 18",
+    "y1 != y2",
+    "k != x1",
+    "k != x2",
+    "abs(m) <= 25",
+    "m != k",
+    "m != 0"
+   ],
+   "cost_values": [
+    "x1",
+    "y1",
+    "x2",
+    "y2",
+    "a",
+    "b",
+    "k",
+    "m"
+   ],
+   "relation": "X - ((y2 - y1)/(x2 - x1)*k + (y1 - (y2 - y1)/(x2 - x1)*x1))",
+   "unknown": "X",
+   "answer_var": "m",
+   "verify": [
+    "ans == a*k + b",
+    "(ans - y1)*(x2 - x1) == (y2 - y1)*(k - x1)"
+   ],
+   "answer": "{m}",
+   "answer_alt": [],
+   "sol1": "세 점이 한 직선 위에 있으려면 두 점으로 구한 직선의 식이 세 번째 점도 만족해야 한다. 먼저 기울기 a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]]를 구하고 한 점을 대입해 b를 구한 뒤, x = {k}일 때의 y값이 m이다. (어느 두 점을 잡아도 기울기가 같다는 성질로 바로 세울 수도 있다.)",
+   "sol1_fig": [
+    {
+     "fn": "coordplane",
+     "args": {
+      "x": [
+       "{xlo}",
+       "{xhi}"
+      ],
+      "y": [
+       "{ylo}",
+       "{yhi}"
+      ],
+      "points": [
+       {
+        "name": "A",
+        "coord": [
+         "{x1}",
+         "{y1}"
+        ]
+       },
+       {
+        "name": "B",
+        "coord": [
+         "{x2}",
+         "{y2}"
+        ]
+       },
+       {
+        "name": "P",
+        "coord": [
+         "{k}",
+         "{m}"
+        ]
+       }
+      ],
+      "lines": [
+       {
+        "points": [
+         [
+          "{xs}",
+          "{ys}"
+         ],
+         [
+          "{xe}",
+          "{ye}"
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ],
+   "sol2": [
+    "기울기 a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}",
+    "y = {co(a)}x + b에 ({x1}, {y1}){eul(y1)} 대입하면 b = {y1} − {pn(a*x1)} = {b}이므로 직선의 식은 y = {co(a)}x {sgn(b)}",
+    "x = {k}{eul(k)} 대입하면 m = {a} × {pn(k)} {sgn(b)} = {m}"
+   ],
+   "sol2_fig": [
+    {
+     "fn": "steps",
+     "args": {
+      "lines": [
+       {
+        "text": "a = [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}",
+        "hint": "기울기"
+       },
+       {
+        "text": "y = {co(a)}x {sgn(b)}",
+        "hint": "b = {y1} − {pn(a*x1)}"
+       },
+       {
+        "text": "m = {a} × {pn(k)} {sgn(b)} = {m}",
+        "hint": "x = {k} 대입"
+       }
+      ]
+     }
+    }
+   ],
+   "sol2_anim": [
+    [
+     {
+      "act": "reveal",
+      "k": "line:0"
+     },
+     {
+      "act": "hl",
+      "k": "hint:0"
+     }
+    ],
+    [
+     {
+      "act": "reveal",
+      "k": "line:1"
+     },
+     {
+      "act": "hl",
+      "k": "hint:1"
+     }
+    ],
+    [
+     {
+      "act": "reveal",
+      "k": "line:2"
+     },
+     {
+      "act": "hl",
+      "k": "hint:2"
+     }
+    ]
+   ],
+   "sol3": "기울기로 확인: 점 ({x1}, {y1})과 ({k}, {m})의 기울기는 [[frac({m} − {pn(y1)}, {k} − {pn(x1)})]] = {a}{ro(a)} 처음 두 점의 기울기 {a}{wa(a)} 같으므로 세 점은 한 직선 위에 있다. 답은 {m}이다.",
+   "id": "m2-1-sangwa-equation-t1",
+   "title": "두 점을 지나는 직선의 식을 세우고 다른 점의 좌표 구하기",
+   "qtype": "essay",
+   "pool_target": 40,
+   "rubric_total": 7,
+   "question": "두 점 ({x1}, {y1}), ({x2}, {y2}){eul(y2)} 지나는 직선이 점 ({k}, m)을 지난다. 다음 물음에 답하시오. (단, 풀이 과정을 자세히 쓰시오.)\n(1) 두 점을 지나는 직선의 식을 구하시오.\n(2) m의 값을 구하시오.",
+   "model_answer": "(1) 기울기는 [[frac({y2} − {pn(y1)}, {x2} − {pn(x1)})]] = {a}이므로 직선의 식을 y = {co(a)}x + b로 놓고 점 ({x1}, {y1}){eul(y1)} 대입하면 b = {b}이다. 따라서 y = {co(a)}x {sgn(b)}이다.\n(2) y = {co(a)}x {sgn(b)}에 x = {k}{eul(k)} 대입하면 m = {m}이다.",
+   "rubric": [
+    {
+     "element": "(1) 직선의 식",
+     "points": 4,
+     "criterion": "기울기 {a}, y절편 {b}{ro(b)} y = {co(a)}x {sgn(b)}{eul(b)} 구했다.",
+     "partial": "기울기만 옳으면 2점."
+    },
+    {
+     "element": "(2) m 구하기",
+     "points": 3,
+     "criterion": "x = {k}{eul(k)} 대입해 m = {m}{eul(m)} 구했다.",
+     "partial": "대입은 옳고 계산이 틀렸으면 1점."
+    }
+   ],
+   "pitfalls": [
+    {
+     "text": "기울기를 (x의 증가량) ÷ (y의 증가량)으로 거꾸로 구함",
+     "on": "직선의 식",
+     "effect": "불인정"
+    },
+    {
+     "text": "기울기의 부호를 반대로 구함",
+     "on": "직선의 식",
+     "effect": "부분"
+    },
+    {
+     "text": "x = {k} 대신 y = {k}{eul(k)} 대입함",
+     "on": "m 구하기",
+     "effect": "불인정"
+    }
+   ]
+  },
+  {
+   "process": "절차수행",
+   "context": "무맥락",
+   "prereq": [
+    "일차함수의 그래프",
+    "기울기"
+   ],
+   "ops": [
+    "함수",
+    "사칙"
+   ],
+   "traps": [
+    "기울기 계산",
+    "부호"
+   ],
+   "time_limit": 300,
+   "points": 7,
+   "tags": [
+    "일차함수",
+    "일차함수의 식",
+    "서술형",
+    "산과"
+   ],
+   "skill": "평행하면 기울기가 같다는 성질로 기울기를 정하고, 점을 대입해 y절편 구하기",
+   "variant_axis": {
+    "기울기": "±1~±4",
+    "주어진 직선의 y절편": "−6~6",
+    "원 틀": "m2-1-line-two-points-t4"
+   },
+   "discriminates": "'평행 → 기울기 같음'을 근거로 쓰는가, 주어진 직선의 y절편을 그대로 답하지 않는가",
+   "difficulty": 2,
+   "params": [
+    {
+     "name": "a",
+     "values": {
+      "in": [
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4
+      ]
+     }
+    },
+    {
+     "name": "c",
+     "values": {
+      "in": [
+       -6,
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     }
+    },
+    {
+     "name": "px",
+     "values": {
+      "in": [
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5
+      ]
+     }
+    },
+    {
+     "name": "b",
+     "values": {
+      "in": [
+       -6,
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     }
+    }
+   ],
+   "derive": {
+    "py": "a*px + b",
+    "apx": "a*px",
+    "xlo": "min(px, 0) - 2",
+    "xhi": "max(px, 0) + 2",
+    "ylo": "min(py, b, c, 0) - 2",
+    "yhi": "max(py, b, c, 0) + 2",
+    "xs": "max(xlo, min((ylo - b)/a, (yhi - b)/a))",
+    "xe": "min(xhi, max((ylo - b)/a, (yhi - b)/a))",
+    "ys": "a*xs + b",
+    "ye": "a*xe + b",
+    "xs2": "max(xlo, min((ylo - c)/a, (yhi - c)/a))",
+    "xe2": "min(xhi, max((ylo - c)/a, (yhi - c)/a))",
+    "ys2": "a*xs2 + c",
+    "ye2": "a*xe2 + c"
+   },
+   "constraints": [
+    "b != c",
+    "abs(py) <= 20",
+    "b != px",
+    "b != py",
+    "b != a",
+    "py != 0"
+   ],
+   "cost_values": [
+    "a",
+    "c",
+    "px",
+    "py",
+    "b"
+   ],
+   "relation": "a*px + X - py",
+   "unknown": "X",
+   "answer_var": "b",
+   "verify": [
+    "py == a*px + ans",
+    "ans != c"
+   ],
+   "answer": "{b}",
+   "answer_alt": [],
+   "sol1": "평행한 두 직선은 기울기가 같다. 따라서 구하는 직선의 기울기는 {a}이고, y = {co(a)}x + b에 점 ({px}, {py}){eul(py)} 대입해 b를 구한다. y절편은 b이다. (y절편 {c}까지 같으면 평행이 아니라 같은 직선이 된다.)",
+   "sol1_fig": [
+    {
+     "fn": "coordplane",
+     "args": {
+      "x": [
+       "{xlo}",
+       "{xhi}"
+      ],
+      "y": [
+       "{ylo}",
+       "{yhi}"
+      ],
+      "points": [
+       {
+        "name": "P",
+        "coord": [
+         "{px}",
+         "{py}"
+        ]
+       },
+       {
+        "name": "y절편",
+        "coord": [
+         0,
+         "{b}"
+        ]
+       }
+      ],
+      "lines": [
+       {
+        "points": [
+         [
+          "{xs2}",
+          "{ys2}"
+         ],
+         [
+          "{xe2}",
+          "{ye2}"
+         ]
+        ],
+        "style": "dashed"
+       },
+       {
+        "points": [
+         [
+          "{xs}",
+          "{ys}"
+         ],
+         [
+          "{xe}",
+          "{ye}"
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ],
+   "sol2": [
+    "평행하므로 기울기가 같다: a = {a}, 구하는 직선은 y = {co(a)}x + b",
+    "점 ({px}, {py}){eul(py)} 대입하면 {py} = {a} × {pn(px)} + b = {apx} + b",
+    "b = {py} − {pn(apx)} = {b}이므로 y절편은 {b}이다."
+   ],
+   "sol2_fig": [
+    {
+     "fn": "steps",
+     "args": {
+      "lines": [
+       {
+        "text": "y = {co(a)}x + b",
+        "hint": "평행 → 기울기 {a} 그대로"
+       },
+       {
+        "text": "{py} = {apx} + b",
+        "hint": "점 ({px}, {py}) 대입"
+       },
+       {
+        "text": "b = {b}",
+        "hint": "y절편"
+       }
+      ]
+     }
+    }
+   ],
+   "sol2_anim": [
+    [
+     {
+      "act": "reveal",
+      "k": "line:0"
+     },
+     {
+      "act": "hl",
+      "k": "hint:0"
+     }
+    ],
+    [
+     {
+      "act": "reveal",
+      "k": "line:1"
+     },
+     {
+      "act": "hl",
+      "k": "hint:1"
+     }
+    ],
+    [
+     {
+      "act": "reveal",
+      "k": "line:2"
+     },
+     {
+      "act": "hl",
+      "k": "hint:2"
+     }
+    ]
+   ],
+   "sol3": "y = {co(a)}x {sgn(b)}{eun(b)} 기울기가 {a}{ro(a)} 주어진 직선과 같고 y절편 {b}{eun(b)} {c}{wa(c)} 다르므로 평행하며, x = {px}{eul(px)} 넣으면 {apx} {sgn(b)} = {py}{ro(py)} 점을 지난다. 답은 {b}이다.",
+   "id": "m2-1-sangwa-equation-t2",
+   "title": "평행한 직선의 기울기를 근거로 y절편 구하기",
+   "qtype": "essay",
+   "pool_target": 40,
+   "rubric_total": 7,
+   "question": "일차함수 y = {co(a)}x {sgn(c)}의 그래프와 평행하고 점 ({px}, {py}){eul(py)} 지나는 직선이 있다. 다음 물음에 답하시오. (단, 풀이 과정을 자세히 쓰시오.)\n(1) 이 직선의 기울기를 구하고, 그렇게 구한 이유를 쓰시오.\n(2) 이 직선의 y절편을 구하시오.",
+   "model_answer": "(1) 평행한 두 직선은 기울기가 같으므로 구하는 직선의 기울기는 {a}이다.\n(2) 구하는 직선을 y = {co(a)}x + b로 놓고 점 ({px}, {py}){eul(py)} 대입하면 {py} = {apx} + b에서 b = {b}이다. 따라서 y절편은 {b}이다.",
+   "rubric": [
+    {
+     "element": "(1) 기울기와 근거",
+     "points": 3,
+     "criterion": "평행하므로 기울기가 {a}{ro(a)} 같음을 근거와 함께 밝혔다.",
+     "partial": "기울기만 쓰고 근거(평행)가 없으면 1점."
+    },
+    {
+     "element": "(2) y절편 구하기",
+     "points": 4,
+     "criterion": "점을 대입해 b = {b}{eul(b)} 구했다.",
+     "partial": "대입은 옳고 계산이 틀렸으면 2점."
+    }
+   ],
+   "pitfalls": [
+    {
+     "text": "기울기의 값이나 부호를 바꾸어 씀 — 평행이면 기울기가 {a}로 같다",
+     "on": "기울기와 근거",
+     "effect": "불인정"
+    },
+    {
+     "text": "주어진 직선의 y절편 {c}{eul(c)} 그대로 답함",
+     "on": "y절편",
+     "effect": "불인정"
+    },
+    {
+     "text": "점의 좌표를 (y, x)로 바꿔 대입하거나 이항 부호 실수",
+     "on": "y절편",
+     "effect": "부분"
+    }
+   ]
+  }
+ ]
+}

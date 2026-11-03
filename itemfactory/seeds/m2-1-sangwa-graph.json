@@ -1,0 +1,318 @@
+{
+ "seed_id": "m2-1-sangwa-graph",
+ "category": "산과",
+ "test_type": "sangwa",
+ "title": "일차함수의 그래프(절편) — 서술형",
+ "unit_id": "m2-1",
+ "concept_ids": [
+  "m2-1-17"
+ ],
+ "schema_id": null,
+ "source_item_ids": [],
+ "note": "기존 생성 틀(concept_set)을 문정중 서답형 꼴로 다시 씀 — 파라미터·검증·해설은 원래 틀을 물려받음 (11-04)",
+ "geometry": false,
+ "templates": [
+  {
+   "process": "절차수행",
+   "context": "기하맥락",
+   "time_limit": 300,
+   "points": 5,
+   "prereq": [
+    "일차함수의 뜻",
+    "좌표평면"
+   ],
+   "ops": [
+    "일차함수"
+   ],
+   "traps": [
+    "평행이동 방향",
+    "절편 혼동"
+   ],
+   "tags": [
+    "일차함수",
+    "그래프",
+    "서술형",
+    "산과"
+   ],
+   "skill": "x절편과 y절편을 구해 두 절편의 절댓값으로 직각삼각형의 넓이를 구하기",
+   "variant_axis": {
+    "기울기": "±1/1~±4",
+    "y절편": "±2~±8",
+    "원 틀": "m2-1-line-props-t5"
+   },
+   "discriminates": "절편에 음수가 있어도 길이는 절댓값으로 잡는가, 1/2을 곱하는가",
+   "difficulty": 3,
+   "params": [
+    {
+     "name": "a",
+     "values": {
+      "in": [
+       -6,
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     }
+    },
+    {
+     "name": "b",
+     "values": {
+      "in": [
+       -16,
+       -15,
+       -14,
+       -13,
+       -12,
+       -11,
+       -10,
+       -9,
+       -8,
+       -7,
+       -6,
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10,
+       11,
+       12,
+       13,
+       14,
+       15,
+       16
+      ]
+     }
+    }
+   ],
+   "derive": {
+    "p": "-b/a",
+    "q": "b",
+    "ap": "abs(p)",
+    "ab": "abs(b)",
+    "ans": "abs(p)*abs(b)/2",
+    "xlo": "min(-3, floor(p) - 2)",
+    "xhi": "max(3, ceiling(p) + 2)",
+    "ylo": "min(-3, floor(q) - 2)",
+    "yhi": "max(3, ceiling(q) + 2)",
+    "lxa": "(ylo - (b))/(a)",
+    "lxb": "(yhi - (b))/(a)",
+    "lxs": "max(xlo, min(lxa, lxb))",
+    "lxe": "min(xhi, max(lxa, lxb))",
+    "lys": "(a)*lxs + (b)",
+    "lye": "(a)*lxe + (b)"
+   },
+   "constraints": [
+    "abs(p) <= 8",
+    "ap >= 2",
+    "ans not in (a, abs(b))",
+    "ans != ap"
+   ],
+   "cost_values": [
+    "a",
+    "b",
+    "p",
+    "ap",
+    "ab",
+    "ans"
+   ],
+   "answer_var": "ans",
+   "verify": [
+    "a*p + b == 0",
+    "2*ans == ap*ab"
+   ],
+   "answer": "{ans}",
+   "answer_alt": [],
+   "sol1": "그래프가 x축, y축과 만나는 점이 삼각형의 두 꼭짓점이고 원점이 나머지 꼭짓점이다. 이 삼각형은 원점에서 직각인 직각삼각형이므로, 밑변과 높이는 x절편과 y절편의 절댓값이다. 절편이 음수여도 길이는 절댓값으로 잡는다.",
+   "sol1_fig": [
+    {
+     "fn": "coordplane",
+     "args": {
+      "x": [
+       "{xlo}",
+       "{xhi}"
+      ],
+      "y": [
+       "{ylo}",
+       "{yhi}"
+      ],
+      "points": [
+       {
+        "name": "A",
+        "coord": [
+         "{p}",
+         0
+        ]
+       },
+       {
+        "name": "B",
+        "coord": [
+         0,
+         "{b}"
+        ]
+       }
+      ],
+      "lines": [
+       {
+        "points": [
+         [
+          "{lxs}",
+          "{lys}"
+         ],
+         [
+          "{lxe}",
+          "{lye}"
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ],
+   "sol2": [
+    "x절편: y = 0에서 {co(a)}x {sgn(b)} = 0, x = {p}이므로 A({p}, 0). y절편: x = 0에서 y = {b}이므로 B(0, {b})",
+    "삼각형 OAB는 ∠O = 90°인 직각삼각형이고 OA = {ap}, OB = {ab}",
+    "넓이 = [[frac(1,2)]] × {ap} × {ab} = {ans}"
+   ],
+   "sol2_fig": [
+    {
+     "fn": "steps",
+     "args": {
+      "lines": [
+       {
+        "text": "A({p}, 0),  B(0, {b})",
+        "hint": "x절편·y절편"
+       },
+       {
+        "text": "OA = {ap},  OB = {ab}",
+        "hint": "길이는 절댓값"
+       },
+       {
+        "text": "[[frac(1,2)]] × {ap} × {ab} = {ans}",
+        "marks": [
+         {
+          "on": "{ans}",
+          "note": "직각삼각형 넓이"
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ],
+   "sol2_anim": [
+    [
+     {
+      "act": "reveal",
+      "k": "line:0"
+     },
+     {
+      "act": "hl",
+      "k": "hint:0"
+     }
+    ],
+    [
+     {
+      "act": "reveal",
+      "k": "line:1"
+     },
+     {
+      "act": "hl",
+      "k": "hint:1"
+     }
+    ],
+    [
+     {
+      "act": "reveal",
+      "k": "line:2"
+     },
+     {
+      "act": "hl",
+      "k": "mark:2-0"
+     }
+    ]
+   ],
+   "sol3": "두 절편 {p}, {b}의 절댓값 {ap}, {ab}{ika(ab)} 밑변과 높이이므로 넓이는 {ap} × {ab} ÷ 2 = {ans}이다. 절댓값을 빼먹어 음수가 나오지 않았는지 확인한다. 따라서 답은 {ans}이다.",
+   "sol3_fig": [
+    {
+     "fn": "steps",
+     "args": {
+      "lines": [
+       "{ap} × {ab} ÷ 2 = {ans}",
+       "넓이 = {ans}"
+      ]
+     }
+    }
+   ],
+   "sol3_anim": [
+    [
+     {
+      "act": "reveal",
+      "k": "line:0"
+     }
+    ],
+    [
+     {
+      "act": "reveal",
+      "k": "line:1"
+     }
+    ]
+   ],
+   "id": "m2-1-sangwa-graph-t1",
+   "title": "절편으로 좌표축과 둘러싸인 삼각형의 넓이",
+   "qtype": "essay",
+   "pool_target": 40,
+   "rubric_total": 5,
+   "question": "일차함수 y = {co(a)}x {sgn(b)}의 그래프와 x축, y축으로 둘러싸인 삼각형이 있다. 다음 물음에 답하시오. (단, 풀이 과정을 자세히 쓰시오.)\n(1) 이 그래프의 x절편과 y절편을 각각 구하시오.\n(2) 삼각형의 넓이를 구하시오.",
+   "model_answer": "(1) y = 0을 대입하면 x = {p}이므로 x절편은 {p}이고, x = 0을 대입하면 y = {b}이므로 y절편은 {b}이다.\n(2) 삼각형의 밑변의 길이와 높이는 각각 {ap}, {ab}이므로 넓이는 [[frac(1,2)]] × {ap} × {ab} = {ans}이다.",
+   "rubric": [
+    {
+     "element": "(1) 절편 구하기",
+     "points": 3,
+     "criterion": "x절편 {p}, y절편 {b}{eul(b)} 구했다.",
+     "partial": "하나만 맞으면 1점."
+    },
+    {
+     "element": "(2) 넓이 구하기",
+     "points": 2,
+     "criterion": "밑변 {ap}, 높이 {ab}{ro(ab)} [[frac(1,2)]] × {ap} × {ab} = {ans}{eul(ans)} 구했다.",
+     "partial": "절댓값을 쓰지 않아 부호가 틀렸으면 1점."
+    }
+   ],
+   "pitfalls": [
+    {
+     "text": "x절편을 y = 0이 아닌 x = 0으로 구함",
+     "on": "절편",
+     "effect": "불인정"
+    },
+    {
+     "text": "절편이 음수일 때 절댓값을 쓰지 않아 넓이가 음수",
+     "on": "넓이",
+     "effect": "부분"
+    },
+    {
+     "text": "2로 나누지 않음",
+     "on": "넓이",
+     "effect": "불인정"
+    }
+   ]
+  }
+ ]
+}

@@ -80,9 +80,73 @@ def _figargs(it, fn):
 SUPD = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789")             # 위첨자 지수 → 숫자
 
 
+def _sangwa_m2(it):
+    """11-04 산과(서술형) 중2 일차함수·확률 (mkseed_sangwa_m2.py) — (1)(2)로 바뀐 발문에서 수를 다시 읽어 (2)의 답을 재계산"""
+    tid, q = it["template_id"], it["question"]
+    S = re.S
+    sgn = lambda s: 1 if s == "+" else -1
+    if tid.startswith("m2-1-sangwa-func-t1"):
+        m = re.search(r"\(가\) f\((-?\d+)\) = (-?\d+)\n\(나\) f\((-?\d+)\) = (-?\d+)", q); p, v1, qv, v2 = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]
+        a = (v2 - v1) / (qv - p); b = v1 - a * p; w = re.search(r"\(2\) (a \+ b|a − b|ab)의 값", q).group(1)
+        return a + b if w == "a + b" else (a - b if w == "a − b" else a * b)
+    if tid.startswith("m2-1-sangwa-graph-t1"):
+        m = re.match(r"일차함수 y = (-?\d*)x ([+−]) (\d+)의 그래프와 x축, y축", q); a = _coef(m.group(1)); b = Fraction(m.group(3)) * sgn(m.group(2)); return abs(b / a) * abs(b) / 2
+    if tid.startswith("m2-1-sangwa-parallel-t1"):
+        m = re.match(r"두 일차함수 y = (-?\d*)x ([+−]) (\d+)[와과] y = \((-?\d*)k ([+−]) (\d+)\)x", q); a = _coef(m.group(1)); c = _coef(m.group(4)); d = Fraction(m.group(6)) * sgn(m.group(5)); return (a - d) / c
+    if tid.startswith("m2-1-sangwa-equation-t1"):
+        m = re.match(r"두 점 \((-?\d+), (-?\d+)\), \((-?\d+), (-?\d+)\)[을를] 지나는 직선이 점 \((-?\d+), m\)", q); x1, y1, x2, y2, k = [Fraction(m.group(i)) for i in (1, 2, 3, 4, 5)]
+        return y1 + (y2 - y1) / (x2 - x1) * (k - x1)
+    if tid.startswith("m2-1-sangwa-equation-t2"):
+        m = re.match(r"일차함수 y = (-?\d*)x ([+−]) (\d+)의 그래프와 평행하고 점 \((-?\d+), (-?\d+)\)", q); a = _coef(m.group(1)); return Fraction(m.group(5)) - a * Fraction(m.group(4))
+    if tid.startswith("m2-1-sangwa-apply-t1"):
+        m = re.match(r"(\d+) L의 물이 들어 있는 물통에 매분 (\d+) L씩 물을 (넣는다|뺀다).+?\(2\) 물의 양이 (\d+) L가 되는", q, S); V0, r, T = Fraction(m.group(1)), Fraction(m.group(2)), Fraction(m.group(4))
+        return (T - V0) / r if m.group(3) == "넣는다" else (V0 - T) / r
+    if tid.startswith("m2-1-sangwa-apply-t2"):
+        m = re.match(r"길이가 (\d+) cm인 양초에 불을 붙이면 (\d+)분마다 (\d+) cm씩 짧아진다.+?\(2\) 남은 길이가 (\d+) cm가 되는", q, S); L0, t, d, R = [Fraction(m.group(i)) for i in (1, 2, 3, 4)]; return (L0 - R) * t / d
+    if tid.startswith("m2-1-sangwa-apply-t3"):
+        m = re.match(r"지면의 기온이 (\d+) ℃이고, 높이가 1 km 높아질 때마다 기온은 (\d+) ℃씩.+?\(2\) 높이가 (\d+) km인 곳", q, S); return Fraction(m.group(1)) - Fraction(m.group(2)) * Fraction(m.group(3))
+    if tid.startswith("m2-1-sangwa-apply-t4"):
+        m = re.search(r"\[\[seg\(AB\)\]\] = (\d+) cm, \[\[seg\(BC\)\]\] = (\d+) cm.+?매초 (\d+) cm.+?\(2\) 넓이가 (\d+) cm²가 되는", q, S); a, v, Sq = Fraction(m.group(1)), Fraction(m.group(3)), Fraction(m.group(4)); return 2 * Sq / (a * v)
+    if tid.startswith("m2-1-sangwa-apply-t5"):
+        m = re.match(r"어떤 용수철에 (\d+) g의 추를 매달면 길이가 (\d+) cm가 되고, (\d+) g의 추를 매달면 길이가 (\d+) cm가 된다.+?\(2\) (\d+) g의 추를 매달면", q, S); w1, L1, w2, L2, w3 = [Fraction(m.group(i)) for i in (1, 2, 3, 4, 5)]
+        return L1 + (L2 - L1) / (w2 - w1) * (w3 - w1)
+    if tid.startswith("m2-1-sangwa-system-t1"):
+        m = re.match(r"두 직선 (.+?), (.+?)의 교점의 좌표를 \(p, q\)라 할 때.+?\(2\) (p \+ q|pq)의 값", q, S); X, Y = _solve2(_lineq(m.group(1)), _lineq(m.group(2))); return X + Y if m.group(3) == "p + q" else X * Y
+    if tid.startswith(("m2-1-sangwa-system-t2", "m2-1-sangwa-system-t3")):
+        m = re.match(r"연립방정식 (-?\d*)x ([+−]) (\d*)y = (-?\d+), ax ([+−]) (\d*)y = (b|-?\d+)의 해가 (무수히 많다|없다)", q); p = _coef(m.group(1)); qv = _coef(m.group(3)) * sgn(m.group(2)); r = Fraction(m.group(4))
+        k = _coef(m.group(6)) * sgn(m.group(5)) / qv
+        if m.group(8) == "무수히 많다":
+            return k * p + k * r
+        return k * p if Fraction(m.group(7)) != k * r else None          # 상수항까지 같으면 해가 무수히 많아 '해가 없다'가 거짓
+    if tid.startswith("m2-1-sangwa-system-t4"):
+        m = re.match(r"세 직선 (.+?), (.+?), ax − y = (-?\d+)[이가] 한 점에서", q); X, Y = _solve2(_lineq(m.group(1)), _lineq(m.group(2))); return (Fraction(m.group(3)) + Y) / X
+    if tid.startswith("m2-2-sangwa-counting-t1"):
+        mm = int(re.match(r"0부터 (\d+)까지의 정수", q).group(1)); return Fraction(sum(1 for t in range(1, mm + 1) for u in range(0, mm + 1) if u != t))
+    if tid.startswith("m2-2-sangwa-counting-t2"):
+        m = re.search(r"(\d+)명 중에서 (대표 2명|회장 1명과 부회장 1명)", q); k = int(m.group(1)); pairs = sum(1 for i in range(k) for j in range(k) if i != j)
+        return Fraction(pairs // 2 if m.group(2) == "대표 2명" else pairs)
+    if tid.startswith("m2-2-sangwa-counting-t3"):
+        m = re.search(r"B 지점으로 가는 길은 (\d+)가지, B 지점에서 C 지점으로 가는 길은 (\d+)가지, A 지점에서 C 지점으로 바로 가는 길은 (\d+)가지", q); return Fraction(int(m.group(1)) * int(m.group(2)) + int(m.group(3)))
+    if tid.startswith("m2-2-sangwa-prob-basic-t1"):
+        k = int(re.match(r"서로 다른 (\d+)개의 동전", q).group(1)); return Fraction(2 ** k - 1, 2 ** k)
+    if tid.startswith("m2-2-sangwa-prob-basic-t2"):
+        k = int(re.search(r"적어도 하나는 (\d+) 이상의 눈이 나올 확률", q).group(1)); return Fraction(sum(1 for x in range(1, 7) for y in range(1, 7) if x >= k or y >= k), 36)
+    if tid.startswith("m2-2-sangwa-prob-calc-t1"):
+        m = re.search(r"1부터 (\d+)까지의 자연수.+?\(2\) (\d+)의 배수 또는 (\d+)의 배수", q, S); N, a, b = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        return Fraction(sum(1 for x in range(1, N + 1) if x % a == 0 or x % b == 0), N)
+    if tid.startswith("m2-2-sangwa-prob-calc-t2"):
+        fr = re.findall(r"frac\((\d+),\s*(\d+)\)", q); p = Fraction(int(fr[0][0]), int(fr[0][1])); r = Fraction(int(fr[1][0]), int(fr[1][1])); return 1 - (1 - p) * (1 - r)
+    if tid.startswith("m2-2-sangwa-prob-calc-t3"):
+        m = re.search(r"흰 공 (\d+)개, 검은 공 (\d+)개", q); a, b = int(m.group(1)), int(m.group(2)); T = a + b
+        return Fraction(a * a, T * T) if "다시 넣은 후" in q else Fraction(a * (a - 1), T * (T - 1))
+    return "skip"
+
+
 def recompute(it):
     tid, q = it["template_id"], it["question"]
     n = nums(q)
+    if tid.startswith(("m2-1-sangwa", "m2-2-sangwa")):
+        return _sangwa_m2(it)
     # ── 09-21 중1 빈 개념 채우기 (mkseed_m1_gaps.py) — 발문에서 수를 다시 읽어 재계산
     if tid.startswith("m1-1-power-t1"):
         m = re.match(r"(\d+)([⁰¹²³⁴⁵⁶⁷⁸⁹]+)의 값", q); return Fraction(int(m.group(1)) ** int(m.group(2).translate(SUPD)))
