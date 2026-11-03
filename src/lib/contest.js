@@ -132,6 +132,7 @@ export function wrongPrintRows(wrongs) {
     accept: w.item.accept,
     text: w.item.text,
     figure: w.item.figure,
+    crop: w.item.crop,
     features: w.item.features,
     metrics: w.item.metrics,
     solution: w.item.solution,
@@ -144,7 +145,12 @@ export function wrongPrintRows(wrongs) {
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const CIRC = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"];
 export function printHtml({ set, items, taker, perPage = 2, srcLabel = () => "" }) {
-  const blocks = items.map((x) => `
+  const blocks = items.map((x) => x.cropUrl ? `
+    <section class="q">
+      <div class="qh"><b>${x.no}.</b> <span class="src">${esc(srcLabel(x))} (그림 속 번호는 원본 번호)</span><span class="pt">${x.points}점</span></div>
+      <img class="crop" src="${esc(x.cropUrl)}">
+      <div class="ans">답: ______________</div>
+    </section>` : `
     <section class="q">
       <div class="qh"><b>${x.no}.</b> <span class="src">${esc(srcLabel(x))}</span><span class="pt">${x.points}점</span></div>
       <div class="qt">${esc(String(x.text || "").replace(/\$/g, "")).replace(/\n/g, "<br>")}</div>
@@ -164,6 +170,7 @@ body{font-family:"Noto Sans KR","Apple SD Gothic Neo",sans-serif;color:#111;marg
 .q{flex:1;display:flex;flex-direction:column;gap:3mm;font-size:11.5pt;line-height:1.7}
 .qh{display:flex;gap:3mm;align-items:baseline}.src{color:#777;font-size:9pt}.pt{margin-left:auto;color:#777;font-size:9pt}
 .fig{max-width:70%;max-height:70mm;object-fit:contain;align-self:center}
+.crop{width:100%;max-height:105mm;object-fit:contain;object-position:left top}
 .ch{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:2mm 8mm}.ch span{margin-right:1mm}
 .ans{margin-top:auto;text-align:right;font-size:11pt}
 .noprint{position:fixed;top:8px;right:8px}@media print{.noprint{display:none}}
