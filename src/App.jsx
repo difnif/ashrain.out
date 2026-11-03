@@ -41,6 +41,7 @@ const AdminConcepts = lazy(() => import("./components/AdminConcepts"));
 const AdminCodes = lazy(() => import("./pages/AdminCodes"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminPractice = lazy(() => import("./pages/AdminPractice"));
+const AdminContest = lazy(() => import("./pages/AdminContest"));
 const AdminChats = lazy(() => import("./components/AdminChats"));
 const AdminImages = lazy(() => import("./components/AdminImages"));
 const AdminItemGen = lazy(() => import("./components/AdminItemGen"));
@@ -313,6 +314,7 @@ function AppRoutes() {
       <PracticeViewer conceptId={cid} />
     </Rx>;
   }
+  if (hash.startsWith("#/admin/contest")) return <Rx theme={theme}><AdminContest /></Rx>;
   if (hash.startsWith("#/admin/practice")) return <Rx theme={theme}><AdminPractice /></Rx>;
   if (hash.startsWith("#/admin/codes")) return <Rx theme={theme}><AdminCodes /></Rx>;
   if (hash.startsWith("#/admin/users")) return <Rx theme={theme}><AdminUsers /></Rx>;
