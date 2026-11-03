@@ -267,7 +267,7 @@ function SetsSub({ path }) {
   if (!catId) {
     return (
       <>
-        <p className="st-cdesc">주제 하나로 경우의 수와 확률을 끝까지 — 스포츠 · 음악 · 역사 · 판례까지, 실제 자료로 만든 50제 묶음이에요. 앱에서 바로 풀고 3단 해설을 보거나, 문제지 · 해설지 · OMR 카드를 인쇄해 풀고 OMR 사진으로 채점해요.</p>
+        <p className="st-cdesc">주제 하나로 한 단원을 끝까지 — 경우의 수와 확률은 스포츠 · 음악 · 시대별 역사 · 판례로, 일차함수는 중학교 과학 단원의 실제 법칙으로 만든 50제 묶음이에요. 앱에서 바로 풀고 3단 해설을 보거나, 문제지 · 해설지 · OMR 카드를 인쇄해 풀고 OMR 사진으로 채점해요.</p>
         <div className="st-list">
           {CATEGORIES.map((c) => (
             <button key={c.id} className="st-folder" onClick={() => (location.hash = `#/study/sets/${c.id}`)}>

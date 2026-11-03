@@ -100,6 +100,14 @@
 .cs-arow .cs-sub { flex: none; padding: 11px 18px; }
 .cs-iin { display: flex; align-items: center; gap: 6px; flex: 1 1 160px; min-width: 0; }
 .cs-iin .cs-ii { flex: 1; min-width: 0; font-size: 18px; font-weight: 700; text-align: center; letter-spacing: .5px; }
+.cs-xin { display: flex; flex-direction: column; gap: 6px; flex: 1 1 220px; min-width: 0; }
+.cs-xrow { display: flex; align-items: center; gap: 6px; }
+.cs-xi { flex: 1; min-width: 0; font-size: 18px; font-weight: 700; letter-spacing: .3px; }
+.cs-xkeys { display: flex; flex-wrap: wrap; gap: 6px; }
+.cs-xkeys button { min-width: 40px; height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 16px; font-weight: 800; cursor: pointer; }
+.cs-xkeys button:active { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.cs-xprev { font-size: 12.5px; color: var(--muted); }
+.cs-xprev b { color: var(--text); font-size: 14px; }
 .cs-unit { font-style: normal; font-size: 14px; font-weight: 700; color: var(--muted); flex: none; }
 .cs-fin { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 14px; background: var(--surface2); }
 .cs-fi { width: 92px; text-align: center; font-size: 18px; font-weight: 700; padding: 7px 6px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none; font-family: inherit; }
@@ -269,7 +277,7 @@
 .cs-pad { display: block; touch-action: none; border-radius: 14px; background: #fffef8; border: 1.5px solid var(--border); cursor: crosshair;
   box-shadow: inset 0 1px 3px rgba(0,0,0,.06); }
 .cs-typein { display: flex; justify-content: center; padding: 6px 0 2px; }
-.cs-typein .cs-iin, .cs-typein .cs-pair { max-width: 360px; }
+.cs-typein .cs-iin, .cs-typein .cs-pair, .cs-typein .cs-xin { max-width: 360px; }
 .cs-solsheet { height: 94vh; max-height: 94vh; }
 .cs-solsheet .cs-qh { margin: 0; flex: 1; min-width: 0; }
 .cs-solbody { flex: 1; }

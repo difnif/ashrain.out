@@ -1,5 +1,6 @@
 // 공부하기 › 컨셉 문제 흐름 스모크 — 목록(폴더 · 아이콘) → 세트 → 풀기 · 3단 해설(움직임) → 해설지 바로 보기 → 바로 인쇄 → 다운로드(ZIP · 각각) → OMR 사진 채점(분수 손글씨는 AI 모의)
 //   → 종이처럼 풀기(타자 · 손글씨 · 보기 체크 · 빈칸 제출 · 자동 채점) → 해설 영상(조작 막대 · 목록 · 이어 보기)
+//   → 일차함수 범주(폴더 · 세트 · 수 · 식 · 점 입력 · 「주어진 것 · 구할 것」 해설 · 해설지 · 손글씨 한 줄 OMR 카드 사진 채점)
 //   node tests/smoke/conceptsets.smoke.mjs [--headed]
 // 준비: `npx vite build` (dist/ 필요) · playwright(전역) + Chromium.
 //   다운로드 확인에 쓸 PDF 가 .concept-files/prob/01/ 에 있으면(scripts/concept-files.mjs --only 01) 그걸 Storage 응답으로 쓰고, 없으면 가짜 PDF.
@@ -99,6 +100,11 @@ function marks(card, p, fills) {
     const f = fills[b.no];
     if (f == null || f === "") continue;
     if (b.kind === "pick") { const on = String(f).match(/[ㄱ-ㅎ]/gu) || []; for (const q of b.picks) if (on.includes(q.label)) dot(q.x, q.y, q.r - 0.8); continue; }
+    if (b.kind === "line") {                                              // 일차함수: 한 줄 칸에 손글씨(식은 「y =」가 칸 밖에 인쇄돼 있다)
+      const r = b.hand.num, t = String(f).replace(/^y = /, "");
+      out.push(`<text x="${r.x + 10}" y="${r.y + r.h * 0.7}" font-family="cursive,sans-serif" font-style="italic" font-size="36" fill="#333" stroke="#333" stroke-width=".9">${t.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</text>`);
+      continue;
+    }
     if (b.hand) {                                                         // 분수: 칸에 손글씨(분자 위 · 분모 아래)
       const [n, d] = String(f).split("/");
       const w = (r, t) => out.push(`<text x="${r.x + r.w / 2}" y="${r.y + r.h * 0.72}" text-anchor="middle" font-family="cursive,sans-serif" font-style="italic" font-size="${t.length > 2 ? 52 : 66}" fill="#333" stroke="#333" stroke-width="1.2">${t}</text>`);
@@ -157,18 +163,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const text = async () => (await page.locator("body").innerText()).replace(/\s+/g, " ");
 
   try {
-    // A. 공부하기 › 컨셉 문제 › 경우의 수와 확률 — 아이콘 90개
+    // A. 공부하기 › 컨셉 문제 › 경우의 수와 확률 — 아이콘 116개
     await page.goto(base + "#/study/sets");
     await page.locator(".st-folder").first().waitFor({ timeout: 20000 });
     ok(await page.locator(".sh-stab.on", { hasText: "컨셉 문제" }).count() === 1, "A1 서브탭 「컨셉 문제」 활성");
     await page.locator(".st-folder", { hasText: "종 ·" }).first().waitFor({ timeout: 10000 }).catch(() => {});
     const folder = (await page.locator(".st-folder").first().innerText()).replace(/\s+/g, " ");
-    ok(/경우의 수와 확률/.test(folder) && /90종 · 4,500문항/.test(folder), `A2 범주 폴더 · 세트 수는 index 에서 (${folder})`);
+    ok(/경우의 수와 확률/.test(folder) && /116종 · 5,800문항/.test(folder), `A2 범주 폴더 · 세트 수는 index 에서 (${folder})`);
     await page.locator(".st-folder").first().click();
     await page.locator(".st-ic").first().waitFor({ timeout: 10000 });
-    ok(await page.locator(".st-ic").count() === 90, "A3 세트 아이콘 90개");
+    ok(await page.locator(".st-ic").count() === 116, "A3 세트 아이콘 116개");
     const groups = await page.locator(".st-sec").allInnerTexts();
-    ok(groups.length === 8 && groups.some((g) => /스포츠/.test(g)) && groups.some((g) => /사회/.test(g)) && groups.some((g) => /애니메이션/.test(g)) && groups.some((g) => /웹툰/.test(g)), `A4 묶음 8개 (${groups.join(" | ")})`);
+    ok(groups.length === 12 && ["스포츠", "한국사", "유럽사", "중국사", "일본사", "사회", "과학", "애니메이션", "웹툰"].every((w) => groups.some((g) => g.includes(w))), `A4 묶음 12개 — 역사는 지역별 (${groups.join(" | ")})`);
     await shot("cs-icons");
 
     // B. 세트 화면
@@ -311,8 +317,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     }
     storageMode = "missing";
     await page.locator(".cs-dbtns .sv-btn", { hasText: "다운로드" }).click();
-    await page.locator(".cs-toast").waitFor({ timeout: 8000 });
-    ok(/아직 올라가지 않았어요/.test(await page.locator(".cs-toast").innerText()), "G3 파일이 없으면 안내(바로 인쇄로 PDF 저장)");
+    // 앞 단계의 안내(토스트)가 아직 떠 있을 수 있어 이 안내 글자가 뜰 때까지 기다린다
+    const g3 = await page.locator(".cs-toast", { hasText: "아직 올라가지 않았어요" }).waitFor({ timeout: 12000 }).then(() => true).catch(() => false);
+    ok(g3, "G3 파일이 없으면 안내(바로 인쇄로 PDF 저장)");
     storageMode = "nocors";
     await chip("OMR").click();                                           // 문제지만
     [dl] = await Promise.all([page.waitForEvent("download", { timeout: 10000 }), page.locator(".cs-dbtns .sv-btn", { hasText: "다운로드" }).click()]);
@@ -454,6 +461,120 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.locator(".dsp-ctl .dsp-btn[title^='나가기']").click();
     await page.locator(".cs-hero").waitFor({ timeout: 10000 });
     ok(/#\/sets\/prob\/01$/.test(page.url()) && /채점한 문제지 보기 · 3\/50/.test(await page.locator(".cs-go").innerText()), "V8 나가기 → 세트 화면(문제지 채점 기록 유지)");
+
+    // L. 일차함수와 그래프(lin) — 범주 폴더 · 세트 · 한 문제씩(수 · 식 · 점) · 해설 이름표 · 해설지 · 손글씨 한 줄 OMR
+    {
+      const LDIR = path.join(DIST, "concept-sets/lin");
+      const LCAT = JSON.parse(fs.readFileSync(path.join(LDIR, "index.json"), "utf8")).categories[0];
+      const nn = String(LCAT.sets[0].no).padStart(2, "0");
+      const LS = JSON.parse(fs.readFileSync(path.join(LDIR, `${nn}.json`), "utf8"));
+      const nItems = LCAT.sets.reduce((a, x) => a + x.n, 0);
+      await page.goto(base + "#/study/sets");
+      await page.locator(".st-folder").nth(1).waitFor({ timeout: 10000 });
+      await page.locator(".st-folder", { hasText: "종 ·" }).nth(1).waitFor({ timeout: 10000 }).catch(() => {});
+      const lf = (await page.locator(".st-folder").nth(1).innerText()).replace(/\s+/g, " ");
+      ok((await page.locator(".st-folder").count()) === 2 && /일차함수와 그래프/.test(lf) && lf.includes(`${LCAT.sets.length}종 · ${nItems.toLocaleString("ko-KR")}문항`), `L1 두 번째 범주 폴더 「일차함수와 그래프」 (${lf})`);
+      await page.locator(".st-folder").nth(1).click();
+      await page.locator(".st-ic").first().waitFor({ timeout: 10000 });
+      const lg = await page.locator(".st-sec").allInnerTexts();
+      ok((await page.locator(".st-ic").count()) === LCAT.sets.length && lg.length === LCAT.groups.length && lg.every((g) => /과학 [12]-[12]/.test(g)), `L2 세트 아이콘 ${LCAT.sets.length}개 · 묶음 ${lg.join(" | ")}`);
+      await shot("cs-lin-icons");
+      await page.locator(".st-ic").first().click();
+      await page.locator(".cs-hero").waitFor({ timeout: 10000 });
+      const lcard = layoutCard({ cat: "lin", no: LS.no, title: LS.title, items: LS.items });
+      const lt = await text();
+      ok(lt.includes(LS.title) && (await page.locator(".cs-row").count()) === 50 && lt.includes(`OMR 카드(${lcard.pages.length}쪽)`) && /수 · 식 · 점/.test(lt), `L3 세트 화면 · 문항 50 · OMR ${lcard.pages.length}쪽 안내`);
+      await shot("cs-lin-set");
+      // 식 답: 오답 → 해설(주어진 것 · 구할 것) → 다시 → 정답(ASCII · y= 없이)
+      const LI = LS.items.find((it) => it.a.k === "lin");
+      const asc = (x) => String(x).replace(/−/g, "-").replace(/\s+/g, "");
+      await page.goto(base + `#/sets/lin/${nn}/q/${LI.no}`);
+      await page.locator(".cs-xi").waitFor({ timeout: 10000 });
+      ok((await page.locator(".cs-xkeys button").count()) === 6, "L4 식 입력 칸 · 기호 단추 6개");
+      await page.locator(".cs-xkeys button", { hasText: /^y =$/ }).click();
+      await page.locator(".cs-xi").type("100x+1");
+      ok(/읽은 꼴\s*y = 100x \+ 1/.test(await page.locator(".cs-xprev").innerText()), "L5 기호 단추로 「y =」 넣기 · 읽은 꼴 미리 보기");
+      await page.locator(".cs-sub").click();
+      await page.locator(".iv-banner.bad").waitFor({ timeout: 5000 });
+      await page.locator(".iv-row .sv-btn", { hasText: "해설 보기" }).click();
+      await page.locator(".cs-sol").waitFor({ timeout: 5000 });
+      const solT = await page.locator(".cs-sol").innerText();
+      ok(/주어진 것/.test(solT) && /구할 것/.test(solT) && !/포지티브/.test(solT), "L6 해설 방침 = 주어진 것 · 구할 것");
+      await shot("cs-lin-solution");
+      await page.locator(".cs-retry").click();
+      await page.locator(".cs-xi:not([disabled])").fill(asc(rawOf(LI)).replace(/^y=/, ""));
+      await page.locator(".cs-sub").click();
+      await page.locator(".iv-banner.ok").waitFor({ timeout: 5000 });
+      ok(true, `L7 식 ${asc(rawOf(LI)).replace(/^y=/, "")} (y = 없이 · - 마이너스) → 정답`);
+      // 수 · 점 답
+      for (const k of ["num", "pt"]) {
+        const it = LS.items.find((x) => x.a.k === k);
+        if (!it) continue;
+        await page.goto(base + `#/sets/lin/${nn}/q/${it.no}`);
+        await page.locator(".cs-xi").waitFor({ timeout: 10000 });
+        await page.locator(".cs-xi").fill(asc(rawOf(it)) + (k === "num" && it.a.u ? it.a.u : ""));
+        await page.locator(".cs-sub").click();
+        const okb = await page.locator(".iv-banner.ok").waitFor({ timeout: 5000 }).then(() => true).catch(() => false);
+        ok(okb, `L8 ${k === "num" ? "수" : "점"} ${asc(rawOf(it))}${k === "num" && it.a.u ? it.a.u : ""} → 정답`);
+      }
+      // 해설지 바로 보기
+      await page.goto(base + `#/sets/lin/${nn}/sol`);
+      await page.locator(".cs-paperhost .keyt td.n").first().waitFor({ timeout: 15000 });
+      ok((await page.locator(".cs-paperhost .keyt td.n").count()) === 50, "L9 일차함수 해설지 · 빠른 정답 50칸");
+      // OMR: 정답대로 쓰되 식 하나 · 수 하나는 틀리게, 보기 하나는 비움
+      const lf2 = Object.fromEntries(LS.items.map((it) => [it.no, rawOf(it)]));
+      const wrongL = LS.items.find((it) => it.a.k === "lin" && it.no !== LI.no), wrongN = LS.items.find((it) => it.a.k === "num");
+      lf2[wrongL.no] = "y = 100x + 1"; lf2[wrongN.no] = "9999";
+      const blankP = LS.items.find((it) => it.a.k === "pick");
+      if (blankP) lf2[blankP.no] = "";
+      const lphotos = await cardPhotos(browser, lcard, lf2);
+      const lcalls = [];
+      const linAi = async (r) => {
+        const body = JSON.parse(r.request().postData() || "{}");
+        const nos = (body.items || []).map((it) => it.no);
+        lcalls.push(nos);
+        r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ answers: nos.map((no) => ({ no, answer: asc(lf2[no] || "").replace(/^y=/, "") })) }) });
+      };
+      await page.route("**/api/ai", linAi);
+      await page.goto(base + `#/sets/lin/${nn}/omr`);
+      await page.locator(".cs-shot").waitFor({ timeout: 10000 });
+      await page.locator('input[type=file][multiple]').setInputFiles(lphotos);
+      await page.locator(".cs-pg.on").nth(lcard.pages.length - 1).waitFor({ timeout: 40000 });
+      for (let i = 0; i < 60 && (await page.locator('.cs-orow input[placeholder="읽는 중…"]').count()); i++) await sleep(200);
+      await page.locator(".cs-busy").waitFor({ state: "detached", timeout: 20000 }).catch(() => {});
+      const lv = await page.locator(".cs-orow input").evaluateAll((els) => els.map((e) => e.value));
+      const lwant = LS.items.map((it) => (it.a.k === "pick" ? lf2[it.no] : asc(lf2[it.no] || "").replace(/^y=/, "")));
+      const ldiff = lwant.map((w, i) => (w === lv[i] ? null : `${i + 1}:${lv[i]}≠${w}`)).filter(Boolean);
+      const handN = LS.items.filter((it) => it.a.k !== "pick" && lf2[it.no]).length;
+      ok((await page.locator(".cs-pg.on").count()) === lcard.pages.length && ldiff.length === 0 && lcalls.flat().length === handN && lcalls.length >= lcard.pages.length,
+        `L10 손글씨 한 줄 칸은 쪽마다 한 번 AI로 · 보기는 기기에서 — 50/50 (${ldiff.slice(0, 4).join(" ")}) · AI ${lcalls.length}번 ${lcalls.flat().length}칸`);
+      await shot("cs-lin-omr-confirm");
+      await page.unroute("**/api/ai", linAi);
+      await page.locator(".cs-gradebtn").click();
+      await page.locator(".cs-score").waitFor({ timeout: 10000 });
+      const ls = await page.locator(".cs-score .big b").innerText();
+      const lexp = 50 - 2 - (blankP ? 1 : 0);
+      ok(ls === String(lexp), `L11 채점 ${lexp}/50 (${ls})`);
+      // 종이처럼 풀기 — 일차함수 문제지 · 식 답을 타자로(ASCII) → 빈칸이 있어도 제출 → 1/50
+      const noAi = (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ answers: [] }) });
+      await page.route("**/api/ai", noAi);
+      await page.goto(base + `#/sets/lin/${nn}/paper`);
+      await page.locator(".cs-paperhost .pg").first().waitFor({ timeout: 20000 });
+      const lpg = await page.locator(".cs-paperhost .pg").count();
+      ok(lpg === LCAT.sets[0].pages.problems, `L12 일차함수 문제지 ${lpg}쪽을 그대로 펼침`);
+      const hid = `#${LI.id}`;
+      await page.locator(`.q${hid}`).click();
+      await page.locator(".cs-sheet").waitFor();
+      if (await page.locator(".cs-modes button", { hasText: "타자" }).count()) await page.locator(".cs-modes button", { hasText: "타자" }).click();
+      await page.locator(".cs-sheet .cs-xi").fill(asc(rawOf(LI)));
+      await page.locator(".cs-sheet .sv-btn.pri", { hasText: "확인" }).click();
+      await sleep(300);
+      await page.locator(".cs-submit").click();
+      await page.locator(".cs-gsum").waitFor({ timeout: 15000 });
+      await sleep(400);
+      ok((await page.locator(".cs-gsum > b").innerText()) === "1/50", `L13 식 답을 타자로 써서 제출 → 1/50 (${await page.locator(".cs-gsum > b").innerText()})`);
+      await page.unroute("**/api/ai", noAi);
+    }
 
     ok(errors.length === 0, "Z 콘솔 오류 없음" + (errors.length ? ": " + errors.slice(0, 3).join(" / ") : ""));
   } catch (e) {

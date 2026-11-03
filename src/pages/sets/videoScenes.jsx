@@ -4,7 +4,7 @@
 // 그대로 돌린다(자동으로 다음 장면 · 끝나면 처음부터 · 이 장면 반복 · 조작 막대 · 벽시계로 이어 보기).
 // 한 장면의 흐름(박자표 — 글자 수로 읽는 시간을 어림한다)
 //   ① 문제   — 발문(+자료 줄 · 보기 · 그림)을 크게
-//   ② 방침   — 포지티브 · 네거티브 → 전략 (판서). 도식이 오른쪽에 함께 뜬다
+//   ② 방침   — 포지티브 · 네거티브(일차함수는 주어진 것 · 구할 것) → 전략 (판서). 도식이 오른쪽에 함께 뜬다
 //   ③ 전개   — 판서 줄이 하나씩, 줄마다 도식(표 · 그림)의 그 부분이 함께 빛난다(생성기가 붙인 애니메이션 큐 그대로)
 //   ④ 확인 · 답
 // 글자는 생성기 HTML(분수 · 강조)을 무대 수식 글자({분자/분모} · ‹강조›)로 바꿔 쓴다. 도식의 표는 무대 표(Table)로 다시 그리고,
@@ -177,8 +177,9 @@ export function timing(it) {
   const cueOf = (i) => anim.find((st) => (st || []).some((c) => c.act === "reveal" && c.k === `line:${i}`)) || anim[i] || [];
   const stepKeys = board.map((_, i) => keysOf(cueOf(i)));
   const resKeys = anim.some((st) => (st || []).some((c) => [].concat(c.k).includes("res"))) ? new Set(["res"]) : EMPTY;
+  const labs = Array.isArray(s.labs) && s.labs.length === 2 ? s.labs : null;   // 일차함수: 주어진 것 · 구할 것
   const T = { q, rows, box, board, pos, neg, pl, check, ans, tA, tPos, tNeg, tPlan, tB, steps, tC, tChk, tAns, dur,
-    dg, isTbl, tbl: isTbl ? parseTbl(dg) : null, stepKeys, resKeys };
+    dg, isTbl, tbl: isTbl ? parseTbl(dg) : null, stepKeys, resKeys, labs };
   T.caps = captions(T, it);
   return T;
 }
@@ -195,7 +196,7 @@ export function activeKeys(T, t) {
 /** 자막 — 흐름을 짧게 */
 function captions(T, it) {
   const caps = [{ t: 300, s: `${it.no}번 — 문제를 천천히 읽어요`, u: T.tA }];
-  caps.push({ t: T.tA + 200, s: "되는 것 · 안 되는 것으로 나눠 읽어요", u: T.tB });
+  caps.push({ t: T.tA + 200, s: T.labs ? "주어진 것과 구할 것을 나눠 적어요" : "되는 것 · 안 되는 것으로 나눠 읽어요", u: T.tB });
   T.board.forEach((b, i) => caps.push({
     t: T.steps[i].t, u: T.steps[i].t + T.steps[i].d,
     s: b.h ? flat(b.h) : i === T.board.length - 1 ? "식을 마무리해요" : "식을 세워 계산해요",
@@ -221,9 +222,10 @@ function boardLines(T, bw, size) {
       lines.push({ t, u, s: p, row: row++, size: opt.size, ind: opt.dot ? ind : 0, dot: i === 0 ? opt.dot : undefined }));
   };
   // ② 방침
-  lines.push({ t: T.tA + 100, u: T.tB, s: "방침 — 규칙을 나눠 읽고 셀 길을 정해요", k: "h", row: row++ });
-  add(`포지티브 · ${T.pos}`, T.tPos, T.tB, { dot: "teal" });
-  add(`네거티브 · ${T.neg}`, T.tNeg, T.tB, { dot: "coral" });
+  const [L1, L2] = T.labs || ["포지티브", "네거티브"];
+  lines.push({ t: T.tA + 100, u: T.tB, s: T.labs ? "방침 — 주어진 것과 구할 것을 나눠 적어요" : "방침 — 규칙을 나눠 읽고 셀 길을 정해요", k: "h", row: row++ });
+  add(`${L1} · ${T.pos}`, T.tPos, T.tB, { dot: "teal" });
+  add(`${L2} · ${T.neg}`, T.tNeg, T.tB, { dot: "coral" });
   add(`→ ${T.pl}`, T.tPlan, T.tB);
   // ③ 전개
   row = 0;

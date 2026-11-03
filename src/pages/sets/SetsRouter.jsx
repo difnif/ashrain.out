@@ -113,7 +113,9 @@ function SetHome({ catId, set, cat, files, uid, say }) {
 
       <div className="cs-card cs-omrcard">
         <div className="cs-ch"><b>📷 OMR 채점</b><span>카드에 칠하고 찍으면 바로 채점</span></div>
-        <p className="cs-dnote" style={{ marginTop: 0 }}>문제지를 풀고 OMR 카드({omrPages}쪽)에 답을 칠한 뒤(분수는 칸에 손으로 써요), 쪽마다 사진을 찍어요. 읽은 답을 확인하고 채점하면 틀린 문항의 해설로 바로 가요.</p>
+        <p className="cs-dnote" style={{ marginTop: 0 }}>{catId === "lin"
+          ? <>문제지를 풀고 OMR 카드({omrPages}쪽)의 칸에 답(수 · 식 · 점)을 손으로 한 줄로 쓰고 보기는 칠한 뒤, 쪽마다 사진을 찍어요. 손글씨는 AI가 읽고, 확인한 뒤 채점하면 틀린 문항의 해설로 바로 가요.</>
+          : <>문제지를 풀고 OMR 카드({omrPages}쪽)에 답을 칠한 뒤(분수는 칸에 손으로 써요), 쪽마다 사진을 찍어요. 읽은 답을 확인하고 채점하면 틀린 문항의 해설로 바로 가요.</>}</p>
         <div className="cs-dbtns">
           <button className="sv-btn pri" onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/omr`)}>📷 OMR 카드 찍어서 채점</button>
         </div>

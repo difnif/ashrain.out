@@ -1,6 +1,6 @@
 // 컨셉 문제 「해설 영상」 — 장면(videoScenes.jsx) 노드 테스트
 //   node tests/conceptsets-video.test.mjs
-// 세트 90개 × 50문항 = 4500장면을 만들어, 박자 지점마다 두 테마로 그려 보고(오류 · NaN 없음) 배치가 무대 안에 드는지,
+// 모든 세트(확률 prob · 일차함수 lin) × 50문항의 장면을 만들어, 박자 지점마다 두 테마로 그려 보고(오류 · NaN 없음) 배치가 무대 안에 드는지,
 // 글자 변환이 꼬리표를 남기지 않는지, 도식 큐가 짚는 키가 도식에 있는지 본다. 글자 폭은 노드에서 어림치(draw.jsx estimate)로 잰다.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -18,6 +18,12 @@ function test(name, fn) {
 
 const INDEX = JSON.parse(fs.readFileSync(path.join(DIR, "index.json"), "utf8"));
 const SETS = INDEX.categories[0].sets.map((s) => JSON.parse(fs.readFileSync(path.join(DIR, `${String(s.no).padStart(2, "0")}.json`), "utf8")));
+// 일차함수 범주(방침 이름표가 「주어진 것 · 구할 것」) — 데이터가 있으면 같이 본다
+const LDIR = process.env.CS_LIN_DIR || path.join(ROOT, "public/concept-sets/lin");     // CS_LIN_DIR: 만드는 중인 데이터로 미리 보기
+if (fs.existsSync(path.join(LDIR, "index.json"))) {
+  for (const s of JSON.parse(fs.readFileSync(path.join(LDIR, "index.json"), "utf8")).categories[0].sets)
+    SETS.push(JSON.parse(fs.readFileSync(path.join(LDIR, `${String(s.no).padStart(2, "0")}.json`), "utf8")));
+}
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "csv-test-"));
 try {
@@ -87,7 +93,7 @@ export const frame = (sc, t, th) => renderToStaticMarkup(<g><SceneTitle title={s
   const BAD = /NaN|undefined|(?<!Do As |Another )Infinity/;   // (「null²」은 실제 전시관 이름이라 null 은, Do As Infinity · Another Infinity 는 가수 이름이라 그 Infinity 는 보지 않는다)
   const TAGS = /<[a-z/][^>]*>|&(amp|lt|gt|quot|#x27|#39|nbsp);/i;
   for (const { set, scenes } of ALL) {
-    const tag = `${String(set.no).padStart(2, "0")} ${set.short}`;
+    const tag = `${set.cat === "lin" ? "일차함수 " : ""}${String(set.no).padStart(2, "0")} ${set.short}`;
     test(`${tag}: 그리기 훑기(박자 지점 × 두 테마 · 오류 · NaN 없음) · 배치가 무대 안 · 글자 변환 · 도식 큐`, () => {
       for (const sc of scenes) {
         const T = sc.timing, L = sc.layout(), it = set.items.find((x) => `${set.key}-${x.id}` === sc.key);
@@ -155,6 +161,10 @@ export const frame = (sc, t, th) => renderToStaticMarkup(<g><SceneTitle title={s
             assert.ok(T.dg.includes(`data-k="${k}"`) || new RegExp(`data-ka="([^"]*\\s)?${esc}(\\s[^"]*)?"`).test(T.dg), `${id} 그림 키 ${k}`);
           }
         }
+        // 방침 이름표: 일차함수는 「주어진 것 · 구할 것」, 확률은 포지티브 · 네거티브
+        const planText = [...T.caps.map((c) => c.s), ...L.lines.map((x) => x.s)].join(" ");
+        if (set.cat === "lin") assert.ok(/주어진 것/.test(planText) && /구할 것/.test(planText) && !/포지티브/.test(planText), `${id} 방침 이름표`);
+        else assert.ok(/포지티브/.test(planText), `${id} 방침 이름표`);
         // 짚는 키는 전개 줄 동안만 바뀐다
         assert.equal(m.activeKeys(T, T.tA + 100).size, 0);
         if (T.steps.length) assert.deepEqual([...m.activeKeys(T, T.steps[0].t + 1)], [...T.stepKeys[0]]);

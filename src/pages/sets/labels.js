@@ -8,11 +8,15 @@ export function kindLabel(item) {
   if (a.k === "frac") return "확률은 기약분수로 — 분자와 분모를 칸에 써요 (0 · 1 은 분자 칸에만)";
   if (a.k === "pick") return "옳은 것을 모두 골라요";
   if (a.k === "pair") return `${(a.l || []).join(" · ")}을 차례로 써요`;
+  if (a.k === "num") return a.u ? `수로 써요 — 음수 · 분수 · 소수도 그대로 (단위 ${a.u}는 빼고)` : "수로 써요 — 음수 · 분수 · 소수도 그대로 (분수는 기약분수로)";
+  if (a.k === "lin") return "식은 y = ax + b 꼴로 써요 (예: y = −2x + 3)";
+  if (a.k === "pt") return "점은 (x좌표, y좌표)로 써요 (예: (2, −1))";
   return a.u ? `수만 써요 (단위 ${a.u}는 빼고)` : "수만 써요";
 }
 
-/** OMR 칸 종류 이름 */
-export function omrKindName(kind) {
+/** OMR 칸 종류 이름 (일차함수 범주의 손글씨 한 줄 칸은 w: 수 · 식 · 점) */
+export function omrKindName(kind, w) {
+  if (kind === "line") return w === "lin" ? "식" : w === "pt" ? "점" : "수";
   return kind === "frac" ? "분수" : kind === "pick" ? "보기" : kind === "pair" ? "두 수" : "정수";
 }
 

@@ -9,6 +9,7 @@
 //   · 보기 고르기 문항의 <보기> 줄(ㄱ. ㄴ. …) 누르기 → onPick(no, "ㄱ") — 빨간 색연필 체크, 다시 누르면 해제, 여럿 가능.
 //   · render(state) 가 괄호 안 답(타자 글씨 · 손글씨 SVG), 체크, 채점 표시(빨간 동그라미 · 빗금 · 정답)를 다시 그린다.
 import { scopeCss } from "./printdoc.js";
+import { rawOf } from "../../lib/conceptsets.js";
 import { inkSvg, hasInk } from "./ink.js";
 
 export const PAGE_W_PX = 210 * 96 / 25.4;   // 쪽 너비 210 mm(본문 184 + 여백 26) — 화면 CSS 의 .pg 상자
@@ -63,10 +64,8 @@ const SLASH_D = "M8.5 33.5C15 25.5 22.5 15.5 32.5 5.5";
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 /** 손 글씨처럼 보일 답 글자 — 분수는 위아래 */
 export function answerTextHtml(raw) {
-  const s = String(raw ?? "").trim();
-  const m = s.match(/^(\d+)\s*\/\s*(\d+)$/);
-  if (m) return `<span class="fr"><span class="n">${m[1]}</span><span class="d">${m[2]}</span></span>`;
-  return esc(s);
+  // 분수는 어디에 있든 위아래로(−3/4 · y = 1/2x + 3 · (1/2, 4))
+  return esc(String(raw ?? "").trim()).replace(/(\d+)\s*\/\s*(\d+)/g, '<span class="fr"><span class="n">$1</span><span class="d">$2</span></span>');
 }
 const seedRot = (a, b = 0) => (((a * 37 + b * 17) % 13) - 6) * 1.1;   // 표시마다 살짝 다른 기울기(늘 같은 값)
 
@@ -200,11 +199,5 @@ export class Paper {
   }
 }
 
-/** 문항의 정답 쓰는 꼴(분수 · 정수 · 보기) — conceptsets.rawOf 와 같다(이 파일만 따로 쓸 수 있게) */
-function rawAnswer(it) {
-  const a = it?.a || {};
-  if (a.k === "frac") return a.d === 1 ? String(a.n) : `${a.n}/${a.d}`;
-  if (a.k === "pick") return (a.v || []).join(", ");
-  if (a.k === "pair") return `${a.v[0]}, ${a.v[1]}`;
-  return String(a.v);
-}
+/** 문항의 정답 쓰는 꼴(분수 · 정수 · 보기 · 일차함수의 수 · 식 · 점) */
+const rawAnswer = rawOf;

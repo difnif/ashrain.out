@@ -1,4 +1,4 @@
-// ashrain.out — 컨셉 문제 OMR 카드(v2)의 분수 손글씨 칸 → AI 판독용 묶음 이미지
+// ashrain.out — 컨셉 문제 OMR 카드(v2)의 손글씨 칸(분수 · 일차함수의 수 · 식 · 점) → AI 판독용 묶음 이미지
 // grid.handCrops 가 사진에서 잘라 밝기를 편 조각(분자 칸 · 분모 칸)을 번호 붙은 칸에 모은다.
 //   분자 위 · 굵은 분수 막대 · 분모 아래로 다시 그려 AI 가 「5/12」처럼 읽게 하고, 분모 칸이 비었으면(0 · 1) 분자만 둔다.
 //   사진 전체는 보내지 않는다 — 이 조각들만 /api/ai(task "omr")로 간다(recognize.readSheets).
@@ -20,17 +20,21 @@ function grayCanvas(doc, crop) {
 
 /**
  * crops: [{ no, num:{width,height,gray}, den|null }] → [{ canvas, nos }]
- * 한 장에 최대 per 칸(cols 열). 긴 변이 1568px 를 넘으면 줄인다.
+ * 분수 칸(분자 · 분모)이 있으면 칸을 위아래 둘로, 일차함수 한 줄 칸뿐이면 한 줄로(한 장에 더 많이).
+ * 한 장에 최대 per 칸(분수 12 · 한 줄 24), 열 수는 긴 변 1568px 안에 들도록. 그래도 넘으면 줄인다.
  */
-export function handSheets(crops, { per = 12, cols: colsMax = 6, scale = 1.6, doc = typeof document !== "undefined" ? document : null } = {}) {
+export function handSheets(crops, { per, cols: colsMax = 6, scale = 1.6, doc = typeof document !== "undefined" ? document : null } = {}) {
   if (!doc || !crops.length) return [];
   const out = [];
+  const stacked = crops.some((c) => c.den);
+  per = per || (stacked ? 12 : 24);
   const cw = Math.max(...crops.map((c) => c.num.width)), chh = Math.max(...crops.map((c) => c.num.height));
   const boxW = Math.round(cw * scale), boxH = Math.round(chh * scale);
-  const CW = boxW + 2 * PAD, CH = LAB + boxH + BAR + boxH + PAD;
+  const CW = boxW + 2 * PAD, CH = LAB + boxH + (stacked ? BAR + boxH : 0) + PAD;
+  const fitCols = Math.max(1, Math.floor((MAX_EDGE - GAP) / (CW + GAP)));
   for (let s = 0; s < crops.length; s += per) {
     const chunk = crops.slice(s, s + per);
-    const cols = Math.max(1, Math.min(colsMax, chunk.length));
+    const cols = Math.max(1, Math.min(colsMax, fitCols, chunk.length));
     const rows = Math.ceil(chunk.length / cols);
     const W = GAP + cols * (CW + GAP), H = GAP + rows * (CH + GAP);
     const k = Math.min(1, MAX_EDGE / Math.max(W, H));
