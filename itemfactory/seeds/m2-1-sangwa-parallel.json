@@ -1,0 +1,282 @@
+{
+ "seed_id": "m2-1-sangwa-parallel",
+ "category": "산과",
+ "test_type": "sangwa",
+ "title": "일차함수의 그래프의 성질(평행) — 서술형",
+ "unit_id": "m2-1",
+ "concept_ids": [
+  "m2-1-18"
+ ],
+ "schema_id": null,
+ "source_item_ids": [],
+ "note": "기존 생성 틀(concept_set)을 문정중 서답형 꼴로 다시 씀 — 파라미터·검증·해설은 원래 틀을 물려받음 (11-04)",
+ "geometry": false,
+ "templates": [
+  {
+   "process": "절차수행",
+   "context": "무맥락",
+   "time_limit": 300,
+   "points": 7,
+   "prereq": [
+    "일차함수의 뜻",
+    "좌표평면"
+   ],
+   "ops": [
+    "일차함수"
+   ],
+   "traps": [
+    "평행이동 방향",
+    "절편 혼동"
+   ],
+   "tags": [
+    "일차함수",
+    "그래프",
+    "서술형",
+    "산과"
+   ],
+   "skill": "두 그래프가 평행하면 기울기가 같고 y절편이 다름을 이용해 k를 구하기",
+   "variant_axis": {
+    "기울기": "±1~±5",
+    "k의 계수": "±1~±3",
+    "원 틀": "m2-1-line-props-t4"
+   },
+   "discriminates": "평행 조건을 '기울기가 같다'로 쓰는가(y절편이 같다고 하지 않는가)",
+   "difficulty": 2,
+   "params": [
+    {
+     "name": "b",
+     "values": {
+      "in": [
+       -6,
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     }
+    },
+    {
+     "name": "c",
+     "values": {
+      "in": [
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3
+      ]
+     }
+    },
+    {
+     "name": "d",
+     "values": {
+      "in": [
+       -6,
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     }
+    },
+    {
+     "name": "k",
+     "values": {
+      "in": [
+       -6,
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     }
+    },
+    {
+     "name": "e",
+     "values": {
+      "in": [
+       -6,
+       -5,
+       -4,
+       -3,
+       -2,
+       -1,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6
+      ]
+     }
+    }
+   ],
+   "derive": {
+    "ck": "c*k",
+    "a": "c*k + d",
+    "ans": "k"
+   },
+   "constraints": [
+    "a != 0",
+    "abs(a) <= 6",
+    "b != e",
+    "ans not in (a, abs(b), c, abs(d), abs(e))"
+   ],
+   "cost_values": [
+    "a",
+    "c",
+    "d",
+    "ck",
+    "ans"
+   ],
+   "answer_var": "ans",
+   "verify": [
+    "c*ans + d == a"
+   ],
+   "answer": "{ans}",
+   "answer_alt": [],
+   "sol1": "두 일차함수의 그래프가 서로 평행하려면 기울기가 같고 y절편은 달라야 한다. 두 식의 y절편 {b}{wa(b)} {e}{eun(e)} 이미 다르므로, 기울기 {a}{wa(a)} {co(c)}k {sgn(d)}{ika(d)} 같다는 방정식을 풀면 된다.",
+   "sol2": [
+    "평행하려면 기울기가 같아야 하므로 {co(c)}k {sgn(d)} = {a}",
+    "{co(c)}k = {a} − {pn(d)} = {ck}",
+    "따라서 k = {ans}"
+   ],
+   "sol2_fig": [
+    {
+     "fn": "steps",
+     "args": {
+      "lines": [
+       {
+        "text": "{co(c)}k {sgn(d)} = {a}",
+        "hint": "평행 ⟺ 기울기가 같다"
+       },
+       {
+        "text": "{co(c)}k = {ck}  →  k = {ans}",
+        "marks": [
+         {
+          "on": "{ans}",
+          "note": "y절편 {b} ≠ {e} 확인"
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ],
+   "sol2_anim": [
+    [
+     {
+      "act": "reveal",
+      "k": "line:0"
+     },
+     {
+      "act": "hl",
+      "k": "hint:0"
+     }
+    ],
+    [
+     {
+      "act": "reveal",
+      "k": "line:1"
+     },
+     {
+      "act": "hl",
+      "k": "mark:1-0"
+     }
+    ]
+   ],
+   "sol3": "k = {ans}이면 둘째 함수는 y = {co(a)}x {sgn(e)}{ika(e)} 되어 기울기가 {a}{ro(a)} 첫째 함수와 같고 y절편은 {e}{ro(e)} {b}{wa(b)} 다르므로 두 그래프는 평행하다. 따라서 k = {ans}이다.",
+   "sol3_fig": [
+    {
+     "fn": "steps",
+     "args": {
+      "lines": [
+       "k = {ans}: y = {co(a)}x {sgn(e)} — 기울기 {a} 같음, y절편 {e} ≠ {b}",
+       "k = {ans}"
+      ]
+     }
+    }
+   ],
+   "sol3_anim": [
+    [
+     {
+      "act": "reveal",
+      "k": "line:0"
+     }
+    ],
+    [
+     {
+      "act": "reveal",
+      "k": "line:1"
+     }
+    ]
+   ],
+   "id": "m2-1-sangwa-parallel-t1",
+   "title": "평행할 조건을 쓰고 미지의 계수 구하기",
+   "qtype": "essay",
+   "pool_target": 40,
+   "rubric_total": 7,
+   "question": "두 일차함수 y = {co(a)}x {sgn(b)}{wa(b)} y = ({co(c)}k {sgn(d)})x {sgn(e)}의 그래프가 서로 평행하다. 다음 물음에 답하시오. (단, 풀이 과정을 자세히 쓰시오.)\n(1) 두 일차함수의 그래프가 서로 평행할 조건을 쓰시오.\n(2) 상수 k의 값을 구하시오.",
+   "model_answer": "(1) 두 일차함수의 그래프가 서로 평행하려면 기울기는 같고 y절편은 달라야 한다. 두 그래프의 y절편은 {b}, {e}{ro(e)} 서로 다르다.\n(2) 기울기가 같아야 하므로 {co(c)}k {sgn(d)} = {a}이다. 이 방정식을 풀면 k = {ans}이다.",
+   "rubric": [
+    {
+     "element": "(1) 평행 조건",
+     "points": 2,
+     "criterion": "기울기는 같고 y절편은 다르다는 조건을 썼다.",
+     "partial": "기울기가 같다는 것만 썼으면 1점."
+    },
+    {
+     "element": "(2) 기울기 식",
+     "points": 3,
+     "criterion": "기울기가 같다는 식 {co(c)}k {sgn(d)} = {a}{eul(a)} 세웠다.",
+     "partial": "y절편이 같다는 식을 세웠으면 인정하지 않는다."
+    },
+    {
+     "element": "(2) k 구하기",
+     "points": 2,
+     "criterion": "k = {ans}{eul(ans)} 구했다.",
+     "partial": "이항 부호 실수면 1점."
+    }
+   ],
+   "pitfalls": [
+    {
+     "text": "평행을 'y절편이 같다'로 생각함",
+     "on": "평행 조건",
+     "effect": "불인정"
+    },
+    {
+     "text": "기울기 ck + d를 c + d로 잘못 읽음",
+     "on": "기울기 식",
+     "effect": "불인정"
+    },
+    {
+     "text": "이항 부호 실수",
+     "on": "k 구하기",
+     "effect": "부분"
+    }
+   ]
+  }
+ ]
+}

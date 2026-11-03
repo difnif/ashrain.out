@@ -21,6 +21,7 @@ import MathText, { mathHtml } from "./MathText";
 import { figureHtml } from "./ItemFigure";
 import { solutionLevels } from "../lib/items";
 import { bustStudyCache } from "../lib/studyCache";
+import AdminSangwaDist from "./AdminSangwaDist";
 
 const PAGE = 50;
 const UNIT_ORDER = ["m1-1", "m1-2", "m2-1", "m2-2", "m3-1", "m3-2", "h1-1", "h1-2", "h2-1", "h2-2", "h3-1", "h3-2", "h3-3"];
@@ -89,7 +90,7 @@ export default function AdminItemReview() {
   const [msg, setMsg] = useState("");
 
   // 틀별 보기
-  const [view, setView] = useState("items");      // "items" | "tpls"
+  const [view, setView] = useState("items");      // "items" | "tpls" | "dist"(단원·개념별 분포, 11-04)
   const [stats, setStats] = useState(null);       // admin_template_stats() 결과 (null = 아직)
   const [statsErr, setStatsErr] = useState("");
   const [tUnit, setTUnit] = useState("all");
@@ -300,6 +301,16 @@ export default function AdminItemReview() {
   const tShown = tplRows.slice(tPage * PAGE, tPage * PAGE + PAGE);   // 한 쪽에 50틀 — 190개를 한 번에 그리면 무겁다
   const tUnits = stats ? [...new Set(stats.map((r) => r.unit_id))].sort((a, b) => unitRank(a) - unitRank(b)) : [];
 
+  if (view === "dist") {
+    return (
+      <>
+        <style>{CSS}</style>
+        <AdminSangwaDist concepts={concepts} onBack={() => setView("items")}
+          onOpen={(c, u, tt) => { setTtype(tt); setUnit(u || "all"); setCid(c); setTpl("all"); setStatus("all"); setQtype("all"); setDiff(0); setNeedsFix(false); setSearch(""); setSearchQ(""); setView("items"); }} />
+      </>
+    );
+  }
+
   if (view === "tpls") {
     let lastCid = null;
     return (
@@ -310,6 +321,7 @@ export default function AdminItemReview() {
           <div className="irv-bulk">
             <button className="irv-chip" onClick={() => setView("items")}>문항</button>
             <button className="irv-chip on">틀별</button>
+            <button className="irv-chip" onClick={() => setView("dist")}>분포</button>
           </div>
         </div>
         <div className="irv-filters">
@@ -380,6 +392,7 @@ export default function AdminItemReview() {
         <div className="irv-bulk">
           <button className="irv-chip on">문항</button>
           <button className="irv-chip" onClick={() => setView("tpls")}>틀별</button>
+          <button className="irv-chip" onClick={() => setView("dist")}>분포</button>
           <button className="irv-btn go" disabled={busy} onClick={() => bulkStatus("draft", "live")}>필터 전체 draft → live</button>
           <button className="irv-btn" disabled={busy} onClick={() => bulkStatus("live", "draft")}>live → draft</button>
         </div>
@@ -395,8 +408,8 @@ export default function AdminItemReview() {
           {conceptOpts.map((c) => <option key={c.id} value={c.id}>{c.id.split("-").pop()} {c.title}</option>)}
         </select>
         <select value={ttype} onChange={(e) => setTtype(e.target.value)}>
-          {["concept_set", "unit", "calc", "rain", "mock", "out", "all"].map((t) =>
-            <option key={t} value={t}>{t === "all" ? "종류 전체" : t}</option>)}
+          {["concept_set", "unit", "calc", "sangwa", "rain", "mock", "out", "all"].map((t) =>
+            <option key={t} value={t}>{t === "all" ? "종류 전체" : t === "sangwa" ? "sangwa (산과)" : t}</option>)}
         </select>
         {(tpls.length > 0 || tpl !== "all") && (
           <select value={tpl} onChange={(e) => setTpl(e.target.value)}>
@@ -419,7 +432,7 @@ export default function AdminItemReview() {
             onClick={() => setDiff(d)}>{d === 0 ? "난이도 전체" : `${d} ${D_NAME[d]}`}</button>
         ))}
         <span className="irv-gap" />
-        {["all", "choice", "short"].map((t) => (
+        {["all", "choice", "short", "essay"].map((t) => (
           <button key={t} className={"irv-chip" + (qtype === t ? " on" : "")}
             onClick={() => setQtype(t)}>{t === "all" ? "문항형 전체" : t}</button>
         ))}
