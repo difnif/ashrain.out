@@ -26,8 +26,9 @@ export function gradeAll(items, answers) {
     const v = (answers[x.no] ?? "").toString().trim();
     const c = judge(x, v);
     max += Number(x.points);
-    if (c === true) { score += Number(x.points); right++; } else if (c === false) wrong++; else blank++;
-    return { item_no: x.no, response: v || null, is_correct: c };
+    // 무응답은 따로 세되 오답에 포함한다 (wrong = 틀린 답 + 무응답, blank = 그중 무응답)
+    if (c === true) { score += Number(x.points); right++; } else { wrong++; if (c === null) blank++; }
+    return { item_no: x.no, response: v || null, is_correct: c === true };
   });
   return { rows, score, max, right, wrong, blank };
 }
@@ -186,7 +187,7 @@ ${pages.map((p, i) => `<div class="page"><div class="head"><span>${esc(set.title
 const pct = (v) => (v == null || Number.isNaN(v) ? "—" : Math.round(v * 100) + "%");
 const yn = (v) => (v === true ? "있음" : v === false ? "없음" : "—");
 const cell = (v) => (v == null || v === "" ? "—" : String(v).replace(/\|/g, "／").replace(/\n/g, " "));
-const mark = (c, r) => (c === true ? "○" : c === false ? "×" + cell(normAnswer(r)) : "·");
+const mark = (c, r) => (c === true ? "○" : normAnswer(r) ? "×" + cell(normAnswer(r)) : "×·");
 
 export function buildStudentExport({ taker, prints, group, setById }) {
   const L = [];
@@ -201,10 +202,11 @@ export function buildStudentExport({ taker, prints, group, setById }) {
   L.push(`# 경시 분석 의뢰 — ${code}`, "");
   L.push(`- 학생: ${code} · 학년 ${taker.grade || "—"} (실명은 앱 안에서만)`);
   L.push(`- 프린트 ${prints.length}개 · 내보낸 시각 ${new Date().toLocaleString("ko-KR")}`);
-  L.push(`- 집단 정답률 = 같은 원본 문항을 푼 모든 분석 대상 기준 (오답 프린트 재응시 포함하지 않음)`, "");
+  L.push(`- 집단 정답률 = 같은 원본 문항을 푼 모든 분석 대상 기준 (오답 프린트 재응시 포함하지 않음)`);
+  L.push(`- 결과 표기: ○ 정답 · ×값 오답(쓴 답) · ×· 무응답(오답으로 채점)`, "");
 
   L.push("## 1. 프린트 요약", "");
-  L.push("| 프린트 | 종류 | 연도 | 반기 | 대상 | 응시일 | 점수 | 정답 | 오답 | 무응답 |");
+  L.push("| 프린트 | 종류 | 연도 | 반기 | 대상 | 등록일 | 점수 | 정답 | 오답(무응답 포함) | 그중 무응답 |");
   L.push("|---|---|---|---|---|---|---|---|---|---|");
   for (const p of prints) {
     const a = p.attempt || {};
@@ -276,7 +278,7 @@ export function buildStudentExport({ taker, prints, group, setById }) {
     student: { code, grade: taker.grade || null },
     prints: prints.map((p) => ({
       code: p.set.code, kind: p.set.kind, year: p.set.year, half: p.set.half, grade_label: p.set.grade_label,
-      attempt: p.attempt ? { taken_on: p.attempt.taken_on, score: Number(p.attempt.score), max: Number(p.attempt.max_score), graded_at: p.attempt.graded_at } : null,
+      attempt: p.attempt ? { registered_on: p.attempt.taken_on, score: Number(p.attempt.score), max: Number(p.attempt.max_score), graded_at: p.attempt.graded_at } : null,
       items: p.items.map((x) => {
         const r = p.responses.find((y) => y.item_no === x.no);
         const gs = group.get(keyOf(p.set, x));

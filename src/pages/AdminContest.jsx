@@ -146,7 +146,6 @@ function GradeView({ taker, sets, attempts, reload }) {
   const [sid, setSid] = useState("");
   const [items, setItems] = useState([]);
   const [ans, setAns] = useState({});
-  const [day, setDay] = useState(today());
   const [result, setResult] = useState(null);
   const [msg, setMsg] = useState("");
 
@@ -169,7 +168,6 @@ function GradeView({ taker, sets, attempts, reload }) {
       for (const r of rs || []) a[r.item_no] = r.response ?? "";
       setAns(a);
       const at = done(sid);
-      setDay(at?.taken_on || today());
       if (at) setResult(gradeAll(it || [], a));
     })();
   }, [sid, taker.id]);
@@ -180,7 +178,7 @@ function GradeView({ taker, sets, attempts, reload }) {
     const { error } = await supabase.from("contest_responses").upsert(g.rows.map((r) => ({ ...r, set_id: sid, taker_id: taker.id, updated_at: now })));
     if (error) { setMsg("저장 실패: " + error.message); return; }
     const { error: e2 } = await supabase.from("contest_attempts").upsert({
-      set_id: sid, taker_id: taker.id, taken_on: day || null, score: g.score, max_score: g.max,
+      set_id: sid, taker_id: taker.id, taken_on: done(sid)?.taken_on || today(), /* 등록일 — 처음 채점한 날로 자동 기록 */ score: g.score, max_score: g.max,
       n_right: g.right, n_wrong: g.wrong, n_blank: g.blank, graded_at: now,
     });
     if (e2) { setMsg("채점 기록 실패: " + e2.message); return; }
@@ -231,14 +229,14 @@ function GradeView({ taker, sets, attempts, reload }) {
         <div className="cx-card">
           <div className="cx-row cx-between">
             <h3 className="cx-sub">{taker.name} · {set.code}</h3>
-            <label className="cx-muted">응시일 <input type="date" className="cx-in cx-date" value={day} onChange={(e) => setDay(e.target.value)} /></label>
+            {done(sid)?.taken_on && <span className="cx-muted">등록일 {done(sid).taken_on}</span>}
           </div>
           <input className="cx-in" placeholder="한 줄로 입력: 3 5 12 - 4 … (빈칸은 -)" onKeyDown={(e) => { if (e.key === "Enter") { fillLine(e.currentTarget.value); e.currentTarget.value = ""; } }} />
           <div className="cx-grid">
             {items.map((x) => {
               const c = result ? judge(x, ans[x.no]) : undefined;
               return (
-                <label key={x.no} className={"cx-cell" + (c === true ? " good" : c === false ? " bad" : c === null ? " blank" : "")}>
+                <label key={x.no} className={"cx-cell" + (c === true ? " good" : c === false ? " bad" : c === null ? " bad blank" : "")}>
                   <span>{x.no}{result && c !== true ? ` (${x.accept[0]})` : ""}</span>
                   <input inputMode={x.answer_type === "text" ? "text" : "numeric"} value={ans[x.no] ?? ""}
                     onChange={(e) => { setAns({ ...ans, [x.no]: e.target.value }); setResult(null); }} />
@@ -249,7 +247,7 @@ function GradeView({ taker, sets, attempts, reload }) {
           <div className="cx-row">
             <button className="cx-btn cx-primary" onClick={grade}>채점</button>
             {done(sid) && <button className="cx-btn cx-mini" onClick={ungrade}>채점 지우기</button>}
-            {result && <span className="cx-score">{result.score}/{result.max}점 · 정답 {result.right} · 오답 {result.wrong} · 무응답 {result.blank}</span>}
+            {result && <span className="cx-score">{result.score}/{result.max}점 · 정답 {result.right} · 오답 {result.wrong}{result.blank ? ` (무응답 ${result.blank} 포함)` : ""}</span>}
           </div>
           {msg && <p className="cx-hint">{msg}</p>}
         </div>
@@ -334,7 +332,7 @@ function WrongView({ taker, sets, attempts, setById, reload }) {
         {mine.map(({ a, s }) => (
           <label key={s.id} className="cx-check">
             <input type="checkbox" checked={pick.has(s.id)} onChange={() => toggle(s.id)} />
-            <span>{s.kind === "wrong" ? "📝 " : ""}{setLabel(s)} <span className="cx-muted">· {a.score}/{a.max_score} · 오답 {a.n_wrong} · 무응답 {a.n_blank}</span></span>
+            <span>{s.kind === "wrong" ? "📝 " : ""}{setLabel(s)} <span className="cx-muted">· {a.score}/{a.max_score} · 오답 {a.n_wrong}{a.n_blank ? ` (무응답 ${a.n_blank})` : ""}</span></span>
           </label>
         ))}
         {!mine.length && <p className="cx-hint">채점한 프린트가 없어요.</p>}
@@ -445,7 +443,7 @@ function AnalyzeView({ taker, sets, attempts, setById }) {
         {mine.map(({ a, s }) => (
           <label key={s.id} className="cx-check">
             <input type="checkbox" checked={pick.has(s.id)} onChange={() => toggle(s.id)} />
-            <span>{s.kind === "wrong" ? "📝 " : ""}{setLabel(s)} <span className="cx-muted">· {a.taken_on || "—"} · {a.score}/{a.max_score}</span></span>
+            <span>{s.kind === "wrong" ? "📝 " : ""}{setLabel(s)} <span className="cx-muted">· 등록 {a.taken_on || "—"} · {a.score}/{a.max_score}</span></span>
           </label>
         ))}
         {!mine.length && <p className="cx-hint">채점한 프린트가 없어요.</p>}
@@ -547,7 +545,7 @@ function PrintsView({ sets, reload }) {
     let regraded = 0;
     if (old?.length) {
       const byNo = new Map(irows.map((r) => [r.no, r]));
-      await supabase.from("contest_responses").upsert(old.map((r) => ({ ...r, is_correct: byNo.has(r.item_no) ? judge(byNo.get(r.item_no), r.response) : null })));
+      await supabase.from("contest_responses").upsert(old.map((r) => ({ ...r, is_correct: byNo.has(r.item_no) ? judge(byNo.get(r.item_no), r.response) === true : false })));
       const who = [...new Set(old.map((r) => r.taker_id))];
       for (const t of who) {
         const ans = Object.fromEntries(old.filter((r) => r.taker_id === t).map((r) => [r.item_no, r.response]));
