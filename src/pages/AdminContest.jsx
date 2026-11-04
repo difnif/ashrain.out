@@ -111,6 +111,7 @@ function TakersView({ takers, attempts, reload, pick }) {
     <>
       <div className="cx-card">
         <h3 className="cx-sub">분석 대상 등록</h3>
+        <p className="cx-hint">앱 회원과 상관없이 직접 적어 등록해요. 앱에 가입하지 않은 학생도 됩니다.</p>
         <div className="cx-row">
           <input className="cx-in" placeholder="이름" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
           <input className="cx-in cx-short" placeholder="학년" value={f.grade} onChange={(e) => setF({ ...f, grade: e.target.value })} />

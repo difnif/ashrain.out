@@ -57,12 +57,11 @@ create table if not exists public.contest_takers (
   name         text not null,
   grade        text not null default '',
   phone4       text not null default '' check (phone4 ~ '^[0-9]{0,4}$'),   -- 전화번호 뒷자리
-  user_id      uuid references auth.users(id) on delete set null,
   memo         text,
   created_at   timestamptz not null default now(),
   unique (name, phone4)
 );
-comment on table public.contest_takers is '경시 대비 분석 대상 — 내보내기에는 익명 코드(S+seq)와 학년만 나간다.';
+comment on table public.contest_takers is '경시 대비 분석 대상 — 관리자가 수기로 등록(앱 계정과 무관). 내보내기에는 익명 코드(S+seq)와 학년만 나간다.';
 
 -- ── 4. 응답 · 채점 ───────────────────────────────────────────────────────
 create table if not exists public.contest_responses (
