@@ -238,10 +238,10 @@ export const thumbs = (mode, th) => [MontyThumb, BranchThumb, GaltonThumb].map((
   const BAD = /NaN|undefined|Infinity|\[object Object\]/;
   const bad = (s) => (s.match(/.{50}(NaN|undefined|Infinity|\[object Object\]).{30}/) || [""])[0];
 
-  test("액자 목록: 하노이 · 실험 셋(풀이 보기 장면 있음) · 장면 묶음 둘 — 키 중복 없음", () => {
-    assert.deepEqual(m.FRAMES.map((f) => f.key), ["hanoi", "monty", "branch", "galton", "soccer", "essay"]);
+  test("액자 목록: 하노이 · 해설(그래프 그리기) · 실험 셋(풀이 보기 장면 있음) · 장면 묶음 둘 — 키 중복 없음", () => {
+    assert.deepEqual(m.FRAMES.map((f) => f.key), ["hanoi", "graph", "monty", "branch", "galton", "soccer", "essay"]);
     for (const f of m.FRAMES.filter((x) => x.lab)) { assert.ok(m.EXPLAIN[f.key]?.length >= 1, f.key); assert.ok(f.title && f.desc); }
-    assert.equal(new Set(m.FRAMES.map((f) => f.key)).size, 6);
+    assert.equal(new Set(m.FRAMES.map((f) => f.key)).size, 7);
   });
   test("액자 목록 그림(실험 셋): 두 판 × 두 테마 — 오류 · NaN 없음", () => {
     for (const mode of ["e", "m"]) for (const th of ["dark", "light"]) for (const s of m.thumbs(mode, th)) {
