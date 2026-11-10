@@ -8,6 +8,8 @@
 //       · 하노이의 탑(frames/hanoi.jsx · hanoi.js)
 //       · 해설 액자 — 일차함수 그래프 그리기 해설(frames/graphdraw.jsx · graphdraw.js): 학원 프린트 기본 96제 · 심화 64제를
 //         한 문항씩 풀이 순서(네모 칸)대로 점 찍기 → 칸 세며 옮기기 → 직선으로 그린다. 기본 | 심화 · 1× | 1.5× · 번호 목록(L).
+//         · 일차함수 10단계 계산 해설(frames/lin10.jsx · lin10.js): 프린트 세트 1 · 2(200문항씩)의 계산 과정을 한 줄씩 판서로.
+//         세트 1 | 세트 2 · 1× | 1.5× · 번호 · 단계 목록(L — 단계를 고르면 그 단계만).
 //       · 실험 액자 — 몬티홀 · 갈림길과 구슬 · 구슬 낙하 실험(frames/monty.jsx · branchlab.jsx · galtonlab.jsx, 공용 frames/xkit.jsx).
 //         교육과정에 딱 맞기보다 융합·탐구에 가까워 수업 장면 순환에서 빼고, 직접 해 보는 것을 먼저 보여 준다.
 //         「풀이 보기」를 고르면 예전 설명 장면(몬티홀·찍기 · 갈림길·구슬 · 정규분포)을 그대로 돌린다.
@@ -28,6 +30,7 @@ import { MontyFrame, MontyThumb } from "../features/display/frames/monty.jsx";
 import { BranchFrame, BranchThumb } from "../features/display/frames/branchlab.jsx";
 import { GaltonFrame, GaltonThumb } from "../features/display/frames/galtonlab.jsx";
 import { GraphFrame, GraphThumb } from "../features/display/frames/graphdraw.jsx";
+import { Lin10Frame, Lin10Thumb } from "../features/display/frames/lin10.jsx";
 import { HANOI, hanoiTimeline, hanoiAt, remapElapsed, fmtDur, comma } from "../features/display/hanoi";
 import { DSP_CSS, Btn, Ic, FrameIc } from "../features/display/stage-ui.jsx";
 
@@ -448,6 +451,7 @@ function FrameGallery({ C, mode, view, onPick, onClose, onScenes }) {
                 {f.key === "branch" && <BranchThumb C={C} mode={mode} />}
                 {f.key === "galton" && <GaltonThumb C={C} mode={mode} />}
                 {f.key === "graph" && <GraphThumb C={C} />}
+                {f.key === "lin10" && <Lin10Thumb C={C} />}
               </svg>
               <span className="k">{f.lab ? "실험" : f.story ? "장면 묶음" : f.lesson ? "해설" : "그림"}</span>
               <span className="t">{f.title}{view === f.key && <small>지금 켜 둔 액자</small>}</span>
@@ -467,7 +471,7 @@ function FrameGallery({ C, mode, view, onPick, onClose, onScenes }) {
 
 /* ══════════ 액자 무대 ══════════ */
 const UI = { Btn, Ic, FrameIc };
-const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame };
+const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame, lin10: Lin10Frame };
 function FrameStage({ fkey, ...rest }) {
   if (fkey === "hanoi") return <HanoiFrame {...rest} />;
   if (LABS[fkey]) { const Lab = LABS[fkey]; return <Lab ui={UI} {...rest} />; }
