@@ -4,12 +4,15 @@
 //   story: true — 장면 묶음(../stories.js 의 같은 key). 수업 장면처럼 짝 장면을 차례로 돌린다(frames/story.jsx).
 //   lab: true   — 실험 액자. 하노이의 탑처럼 고르는 수(문 개수 · 단계 · 구슬 수 …)를 바꿔 가며 직접 해 보고,
 //                 「풀이 보기」를 고르면 설명 장면(../stories.js 의 EXPLAIN)을 돌린다(frames/xkit.jsx).
-//   lesson: true — 해설 액자. 학원 프린트 문항을 한 문항씩 풀이 순서대로 그려 보인다(장면 묶음과 같은 재생기 — frames/graphdraw.jsx).
-// 순서: 하노이의 탑 · 해설 액자 · 실험 액자 셋 · 장면 묶음 둘
+//   lesson: true — 해설 액자. 학원 프린트 문항을 한 문항씩 풀이 순서대로 보인다(장면 묶음과 같은 재생기)
+//                 — 그래프 그리기(frames/graphdraw.jsx) · 10단계 계산(frames/lin10.jsx).
+// 순서: 하노이의 탑 · 해설 액자 둘 · 실험 액자 셋 · 장면 묶음 둘
 export const FRAMES = [
   { key: "hanoi", title: "하노이의 탑", desc: "원판을 하나씩 옮겨 탑을 통째로 옮겨요. 다 옮기면 거꾸로 — 쉬지 않고 돌아요." },
   { key: "graph", lesson: true, title: "일차함수 그래프 그리기 해설",
     desc: "프린트 기본 96제 · 심화 64제. 점을 찍고, 기울기만큼 칸을 세며 옮기고, 두 점을 이어 직선을 그어요. 번호를 골라 그 문항부터." },
+  { key: "lin10", lesson: true, title: "일차함수 10단계 계산 해설",
+    desc: "프린트 세트 1 · 2(10단계 × 20문항). 문제 → 방침 → 계산을 한 줄씩 → 답. 단계를 고르면 그 단계만 돌아요." },
   { key: "monty", lab: true, title: "몬티홀 — 바꿀까, 그대로 둘까?",
     desc: "문을 눌러 고르고, 사회자가 문을 연 뒤 바꿀지 정해요. 문 수를 바꿔 가며 기록을 모아요." },
   { key: "branch", lab: true, title: "갈림길과 구슬 — 하나씩, 한꺼번에",
