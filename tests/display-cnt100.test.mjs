@@ -1,0 +1,172 @@
+// node tests/display-cnt100.test.mjs — 교실 모니터 「경우의 수와 확률 100제 해설」 액자 검산. 실패 시 exit 1.
+// 판서: 줄마다 「=」로 이은 쪽 가운데 계산식(수 · {a/b} · 괄호 · + − × ÷)인 것을 분수로 직접 계산해 모두 같은지 본다.
+//       확률(분수) 답은 판서 마지막 줄의 마지막 값과 같은지.
+// 박자표: 문제 → 전략 → 줄 차례 → 답. 목록: 세트마다 1~100번 · 단계 1~5(15 · 20 · 25 · 22 · 18).
+// 그리기: 200문항을 여러 순간 × 두 테마로 그려 오류 · NaN 이 없는지, 글자 판이 무대 안인지 훑는다.
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { C100_SETS, C100_KEYS } from "../src/features/display/cnt100.js";
+import { l10Plan, lineAt } from "../src/features/display/lin10.js";
+
+let n = 0, failed = 0;
+function test(name, fn) {
+  n++;
+  try { fn(); console.log(`✓ ${name}`); }
+  catch (e) { failed++; console.log(`✗ ${name}\n   ${e.message}`); }
+}
+const ALL = C100_KEYS.flatMap((k) => C100_SETS[k].items.map((it) => [k, it]));
+
+/* ══════════ 분수 ══════════ */
+const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a || 1; };
+const Q = (n, d = 1) => { if (d < 0) { n = -n; d = -d; } const g = gcd(n, d); return { n: n / g, d: d / g }; };
+const add = (a, b) => Q(a.n * b.d + b.n * a.d, a.d * b.d);
+const sub = (a, b) => Q(a.n * b.d - b.n * a.d, a.d * b.d);
+const mul = (a, b) => Q(a.n * b.n, a.d * b.d);
+const div = (a, b) => Q(a.n * b.d, a.d * b.n);
+const same = (a, b) => a.n === b.n && a.d === b.d;
+
+/** 계산식이면 값, 아니면 null */
+function calc(s) {
+  const t = s.trim();
+  if (!t || !/\d/.test(t) || !/^[\d{}/()+−×÷ ]+$/.test(t)) return null;
+  const tk = [];
+  for (let i = 0; i < t.length;) {
+    const c = t[i];
+    if (c === " ") { i++; continue; }
+    if (c === "{") { const j = t.indexOf("}", i), [a, b] = t.slice(i + 1, j).split("/"); tk.push(Q(+a, +b)); i = j + 1; continue; }
+    if (/\d/.test(c)) { let j = i; while (/\d/.test(t[j] || "")) j++; tk.push(Q(+t.slice(i, j))); i = j; continue; }
+    tk.push(c); i++;
+  }
+  let p = 0;
+  const atom = () => { const x = tk[p++]; if (x === "(") { const v = expr(); if (tk[p++] !== ")") throw 0; return v; } if (typeof x !== "object") throw 0; return x; };
+  const term = () => { let v = atom(); while (tk[p] === "×" || tk[p] === "÷") { const o = tk[p++], r = atom(); v = o === "×" ? mul(v, r) : div(v, r); } return v; };
+  const expr = () => { let v = term(); while (tk[p] === "+" || tk[p] === "−") { const o = tk[p++], r = term(); v = o === "+" ? add(v, r) : sub(v, r); } return v; };
+  try { const v = expr(); return p === tk.length ? v : null; } catch { return null; }
+}
+/** 「=」 한 쪽에서 계산식 꼬리(앞의 말머리는 뗀다) */
+const tail = (piece) => (piece.match(/[\d{}/()+−×÷ ]*$/) || [""])[0].replace(/^[\s)]*/, "");
+const ansQ = (s) => calc(s.replace(/개$/, ""));
+
+test("판서 계산: 「=」로 이은 계산식이 모두 같은 값 · 답이 판서와 맞음", () => {
+  let lines = 0, eqs = 0;
+  for (const [k, it] of ALL) {
+    let last = null;
+    for (const ln of it.lines) {
+      const vals = ln.s.split(" = ").map((p) => calc(tail(p))).filter(Boolean);
+      for (let i = 1; i < vals.length; i++) { assert.ok(same(vals[0], vals[i]), `${k} ${it.no}: ${ln.s}`); eqs++; }
+      if (vals.length) { last = vals[vals.length - 1]; lines++; }
+    }
+    const a = ansQ(it.ans);
+    assert.ok(a, `${k} ${it.no} 답 ${it.ans}`);
+    // 확률 답(분수)은 판서 마지막 줄의 마지막 값이 곧 답
+    if (a.d !== 1) assert.ok(last && same(last, a), `${k} ${it.no}: 마지막 값 ≠ 답 ${it.ans}`);
+  }
+  assert.ok(eqs > 250, `등식 ${eqs}개`);
+  console.log(`   계산 줄 ${lines}개 · 등식 ${eqs}개`);
+});
+
+test("문항 목록: 세트마다 1~100번 · 단계 1~5가 15 · 20 · 25 · 22 · 18문항, 차례대로", () => {
+  for (const k of C100_KEYS) {
+    const its = C100_SETS[k].items;
+    assert.equal(its.length, 100);
+    its.forEach((it, i) => assert.equal(it.no, i + 1));
+    assert.deepEqual([1, 2, 3, 4, 5].map((s) => its.filter((it) => it.st === s).length), [15, 20, 25, 22, 18]);
+    for (let i = 1; i < 100; i++) assert.ok(its[i].st >= its[i - 1].st);
+    assert.ok(its.every((it) => it.q && it.plan && it.ans && it.lines.length >= 3 && it.lines[0].pre === "포지티브" && it.lines[1].pre === "네거티브"));
+  }
+});
+
+test("박자표: 문제 → 전략 → 줄 차례 → 답", () => {
+  for (const [k, it] of ALL) {
+    const P = l10Plan(it);
+    assert.ok(P.q[1] <= P.plan[0] && P.plan[1] <= P.lines[0].a);
+    P.lines.forEach((L, i) => { assert.ok(L.a < L.b); if (i) assert.ok(P.lines[i - 1].b <= L.a); });
+    assert.ok(P.lines.at(-1).b <= P.ans && P.ans < P.dur);
+    assert.equal(lineAt(P, P.plan[1] + 1), 0);
+  }
+});
+
+/* ══════════ 그리기 훑기(번들) ══════════ */
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(HERE, "..");
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "display-cnt100-"));
+try {
+  const { build } = await import(pathToFileURL(path.join(ROOT, "node_modules/esbuild/lib/main.js")).href);
+  const entry = path.join(tmp, "entry.jsx");
+  const F = (p) => JSON.stringify(path.join(ROOT, "src/features/display", p));
+  fs.writeFileSync(entry, `
+import { renderToStaticMarkup } from "react-dom/server";
+import { PALETTE } from ${F("draw.jsx")};
+import { FRAMES } from ${F("frames/index.js")};
+import { L10Art, layoutOf, L10_BOX } from ${F("frames/lin10.jsx")};
+import { Cnt100Thumb, c100Scenes } from ${F("frames/cnt100.jsx")};
+export { FRAMES, c100Scenes, layoutOf, L10_BOX };
+const svg = (el) => renderToStaticMarkup(<svg>{el}</svg>);
+export const art = (it, t, th) => svg(<L10Art it={it} t={t} C={PALETTE[th]} />);
+export const scene = (sc, t, th) => svg(sc.render("m", t, PALETTE[th]));
+export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
+`);
+  const out = path.join(tmp, "bundle.mjs");
+  await build({
+    entryPoints: [entry], bundle: true, platform: "node", format: "esm", jsx: "automatic", outfile: out,
+    nodePaths: [path.join(ROOT, "node_modules")], logLevel: "silent", define: { "process.env.NODE_ENV": '"production"' },
+    banner: { js: "import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);" },
+  });
+  const m = await import(pathToFileURL(out).href);
+  const BAD = /NaN|undefined|Infinity|\[object Object\]/;
+  const bad = (s) => (s.match(/.{50}(NaN|undefined|Infinity|\[object Object\]).{30}/) || [""])[0];
+
+  test("액자 목록: 「경우의 수와 확률 100제 해설」이 해설 액자로 · 그림 두 테마 오류 없음", () => {
+    const f = m.FRAMES.find((x) => x.key === "cnt100");
+    assert.ok(f && f.lesson && f.title && f.desc);
+    for (const th of ["dark", "light"]) { const s = m.thumb(th); assert.ok(s.length > 3000 && !BAD.test(s), `${th}: ${bad(s)}`); }
+  });
+
+  test("그리기 훑기: 200문항 × (문제 · 전략 · 줄마다 · 답 · 끝) × 두 테마 — 오류 · NaN 없음", () => {
+    let cnt = 0;
+    for (const [k, it] of ALL) {
+      const P = l10Plan(it);
+      const ts = [0, 300, P.plan[0] + 300, P.ans + 300, P.dur - 1];
+      for (const L of P.lines) ts.push(L.a + 100, (L.a + L.b) / 2);
+      for (const t of ts) {
+        const s = m.art(it, t, cnt++ % 2 ? "dark" : "light");
+        assert.ok(!BAD.test(s), `${k} ${it.no} t=${Math.round(t)}: ${bad(s)}`);
+      }
+    }
+    console.log(`   그림 ${cnt}장`);
+  });
+
+  test("글자 판: 발문 · 판서 · 답이 무대 안", () => {
+    const B = m.L10_BOX;
+    for (const [k, it] of ALL) {
+      const L = m.layoutOf(it), tag = `${k} ${it.no}`;
+      assert.ok(L.ansY + L.bs * 0.75 <= B.BOTTOM, `${tag} 아래로 넘침 (${Math.round(L.ansY)})`);
+      for (const r of L.rows) assert.ok(r.sx + r.sW <= L.right + 2, `${tag} 줄이 오른쪽으로 넘침: ${it.lines[r.i].s}`);
+    }
+  });
+
+  test("장면 목록: 세트 × 빠르기 × 단계 — 1.5× 는 길이 2/3 · 같은 순간", () => {
+    for (const k of C100_KEYS) {
+      const all = m.c100Scenes(k, 1, 0), fast = m.c100Scenes(k, 1.5, 0);
+      assert.equal(all.length, 100);
+      assert.equal(new Set(all.map((s) => s.key)).size, 100);
+      for (let st = 1; st <= 5; st++) {
+        const one = m.c100Scenes(k, 1, st);
+        assert.ok(one.length >= 15 && one.every((s) => s.st === st));
+        assert.ok(one[0].sub.m.startsWith(`${st}단계`));
+      }
+      all.forEach((s, i) => assert.ok(Math.abs(fast[i].dur - s.dur / 1.5) <= 1));
+      assert.equal(m.scene(all[30], 9000, "dark"), m.scene(fast[30], 6000, "dark"));
+    }
+    const lap = (k) => Math.round(m.c100Scenes(k, 1, 0).reduce((s, x) => s + x.dur, 0) / 60000);
+    console.log(`   한 바퀴: 선발 약 ${lap("sel")}분 · 공 약 ${lap("ball")}분`);
+  });
+} finally {
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
+
+console.log(`\n${n - failed}/${n} 통과`);
+if (failed) process.exit(1);
