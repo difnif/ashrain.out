@@ -1,6 +1,6 @@
 // 컨셉 문제(주제별 50제) — 데이터 · 답 판정 · OMR(grid.js) 노드 테스트
 //   node tests/conceptsets.test.mjs
-// 실제 세트 JSON 120개를 읽어 형식을 확인하고, 카드(v2 · 예전 v1)를 그려 원근 · 조명 · 잡음 · 그림자를 얹은 "사진"에서 답을 되읽는지 본다.
+// 실제 세트 JSON 130개를 읽어 형식을 확인하고, 카드(v2 · 예전 v1)를 그려 원근 · 조명 · 잡음 · 그림자를 얹은 "사진"에서 답을 되읽는지 본다.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -31,11 +31,14 @@ const CAT = INDEX.categories[0];
 const SETS = CAT.sets.map((s) => JSON.parse(fs.readFileSync(path.join(DIR, `${String(s.no).padStart(2, "0")}.json`), "utf8")));
 
 console.log("데이터");
-test("index: 범주 prob · 세트 120 · 묶음이 세트를 한 번씩 · 역사는 한국사 · 유럽사 · 중국사 · 일본사 · 과학 단원", () => {
+test("index: 범주 prob · 세트 130 · 묶음이 세트를 한 번씩 · 역사는 한국사 · 유럽사 · 중국사 · 일본사 · 과학 단원 · 게임 묶음", () => {
   assert.equal(CAT.id, "prob");
-  assert.equal(CAT.sets.length, 120);
+  assert.equal(CAT.sets.length, 130);
   const gt = CAT.groups.map((g) => g.title);
-  for (const t of ["한국사", "유럽사", "중국사", "일본사", "과학"]) assert.ok(gt.includes(t), t);
+  for (const t of ["한국사", "유럽사", "중국사", "일본사", "과학", "게임"]) assert.ok(gt.includes(t), t);
+  assert.deepEqual(CAT.groups.find((g) => g.title === "게임").sets, [124, 125, 126, 127, 128, 129, 130]);
+  assert.deepEqual(CAT.groups.find((g) => g.title === "애니메이션").sets.slice(-2), [121, 122]);
+  assert.deepEqual(CAT.groups.find((g) => g.title === "웹툰").sets.slice(-1), [123]);
   assert.deepEqual(CAT.groups.find((g) => g.title === "일본사").sets, [111, 112, 25, 26, 27, 28]);
   assert.deepEqual(CAT.groups.find((g) => g.title === "과학").sets, [31, 113, 114, 115, 116, 117, 118, 119, 120]);
   const inGroups = CAT.groups.flatMap((g) => g.sets).sort((a, b) => a - b);
@@ -179,12 +182,15 @@ test("ZIP(store): 파이썬 zipfile 로 열림 · UTF-8 이름 · CRC", () => {
 
 console.log("OMR 카드");
 const cardOf = (s, ver) => layoutCard({ cat: "prob", no: s.no, title: s.title, items: s.items }, ver ? { ver } : undefined);
-test("쪽 코드 띠: 세트 1~126 · 쪽 0~3 왕복 · 한 칸 뒤집히면 거부 · 1~63번은 예전 띠 그대로", () => {
-  // 예전(확장 전) 띠: 범주 코드 1 + 세트 6비트 — 이미 인쇄한 카드가 그대로 읽혀야 한다
-  const old = (set, page) => { const d = [0, 1, ...[5, 4, 3, 2, 1, 0].map((x) => (set >> x) & 1), ...[1, 0].map((x) => (page >> x) & 1)]; const o = d.reduce((a, c) => a + c, 0) % 4; return [1, ...d, (o >> 1) & 1, o & 1, 1]; };
-  for (let set = 1; set <= 63; set++) for (let page = 0; page < 4; page++) assert.deepEqual(bandBits("prob", set, page), old(set, page));
-  assert.throws(() => bandBits("prob", 127, 0));
-  for (let set = 1; set <= 126; set++) for (let page = 0; page < 4; page++) {
+test("쪽 코드 띠: 세트 1~189 · 쪽 0~3 왕복 · 한 칸 뒤집히면 거부 · 1~126번은 예전 띠 그대로", () => {
+  // 예전 띠: 1~63번은 범주 코드 1 + 세트 6비트, 64~126번은 범주 코드 2 + (세트 − 63) — 이미 인쇄한 카드가 그대로 읽혀야 한다
+  const enc = (c, s, page) => { const d = [(c >> 1) & 1, c & 1, ...[5, 4, 3, 2, 1, 0].map((x) => (s >> x) & 1), ...[1, 0].map((x) => (page >> x) & 1)]; const o = d.reduce((a, b) => a + b, 0) % 4; return [1, ...d, (o >> 1) & 1, o & 1, 1]; };
+  for (let set = 1; set <= 63; set++) for (let page = 0; page < 4; page++) assert.deepEqual(bandBits("prob", set, page), enc(1, set, page));
+  for (let set = 64; set <= 126; set++) for (let page = 0; page < 4; page++) assert.deepEqual(bandBits("prob", set, page), enc(2, set - 63, page));
+  for (let set = 127; set <= 189; set++) for (let page = 0; page < 4; page++) assert.deepEqual(bandBits("prob", set, page), enc(0, set - 126, page));
+  assert.throws(() => bandBits("prob", 190, 0));
+  assert.throws(() => bandBits("prob", 0, 0));
+  for (let set = 1; set <= 189; set++) for (let page = 0; page < 4; page++) {
     const b = bandBits("prob", set, page);
     assert.equal(b.length, BAND.n);
     assert.deepEqual(parseBand(b), { cat: "prob", set, page });
