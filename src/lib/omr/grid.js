@@ -102,14 +102,17 @@ export function markerRects() {
 }
 
 // ── 쪽 코드 띠: [1][범주 2비트][세트 6비트][쪽 2비트][검사 2비트][1] ──────────────────────────
-// 세트 칸은 6비트(1~63)다. 64번부터는 범주의 확장 코드(prob → 2)에 (세트 − 63)을 담는다 —
-// 이미 인쇄한 1~63번 카드의 띠는 그대로이고, 한 범주에 126세트까지 담는다. 판(v1 · v2)은 띠의 자리로 가린다(위 · 아래).
+// 세트 칸은 6비트(1~63)다. 64번부터는 범주의 확장 코드(prob → 2)에 (세트 − 63)을, 127번부터는 둘째 확장 코드(prob → 0)에
+// (세트 − 126)을 담는다 — 이미 인쇄한 1~126번 카드의 띠는 그대로이고, 한 범주에 189세트까지 담는다. 판(v1 · v2)은 띠의 자리로 가린다(위 · 아래).
+// 범주 코드 0 은 확장 전에는 쓰지 않던 값이다(인쇄한 카드는 prob 1 · 2, lin 3 뿐).
 export const CAT_CODES = { prob: 1, lin: 3 };
 export const CAT_EXT = { prob: 2 };
-export const SET_MAX = 126;
+export const CAT_EXT2 = { prob: 0 };
+export const SET_MAX = 189;
 export function bandBits(cat, set, page) {
   let c = CAT_CODES[cat] ?? 0, s = set;
-  if (set > 63 && CAT_EXT[cat] != null) { c = CAT_EXT[cat]; s = set - 63; }
+  if (set > 126 && CAT_EXT2[cat] != null) { c = CAT_EXT2[cat]; s = set - 126; }
+  else if (set > 63 && CAT_EXT[cat] != null) { c = CAT_EXT[cat]; s = set - 63; }
   if (!(s >= 1 && s <= 63) || !(page >= 0 && page <= 3)) throw new Error("쪽 코드 범위 밖");
   const data = [...[1, 0].map((b) => (c >> b) & 1), ...[5, 4, 3, 2, 1, 0].map((b) => (s >> b) & 1), ...[1, 0].map((b) => (page >> b) & 1)];
   const ones = data.reduce((a, b) => a + b, 0) % 4;
@@ -124,7 +127,9 @@ export function parseBand(bits) {
   let cat = Object.keys(CAT_CODES).find((k) => CAT_CODES[k] === catN) || null, set = s;
   if (!cat) {
     const ext = Object.keys(CAT_EXT).find((k) => CAT_EXT[k] === catN);
+    const ext2 = Object.keys(CAT_EXT2).find((k) => CAT_EXT2[k] === catN);
     if (ext) { cat = ext; set = s >= 1 ? s + 63 : 0; }
+    else if (ext2) { cat = ext2; set = s >= 1 ? s + 126 : 0; }
   }
   return { cat, set, page: v(data.slice(8, 10)) };
 }
