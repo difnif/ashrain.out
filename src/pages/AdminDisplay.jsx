@@ -18,6 +18,8 @@
 //         교육과정에 딱 맞기보다 융합·탐구에 가까워 수업 장면 순환에서 빼고, 직접 해 보는 것을 먼저 보여 준다.
 //         「풀이 보기」를 고르면 예전 설명 장면(몬티홀·찍기 · 갈림길·구슬 · 정규분포)을 그대로 돌린다.
 //       · 장면 묶음 — 숫자로 읽는 축구 · 서술형 이야기(stories.js · frames/story.jsx): 여러 단원을 섞는 융합 장면.
+//       · 수학 호기심 일곱(frames/curio.jsx) — 축구 · 농구 · 야구 실제 기록으로 그리는 직선, 주머니 공 꺼내기, 알파벳 카드 사전식 배열,
+//         일렬로 세우기, 북적북적 학년별 뽑기. 실험 액자와 같은 조작 막대(xkit)를 쓰고, 큰 자료는 열 때 늦게 들여온다.
 //         축구 여섯 장면은 「2D | 3D」 토글로 경기장 속 눈높이의 3D 시뮬레이션으로도 본다(frames/player.jsx · sim3d/ — three.js 는 3D 를 켤 때만).
 // 학생앱 「시청각 학습」(#/av/<key> — pages/AvPlayer.jsx · lib/av.js): 같은 Stage 를 av 모드로 연다 — 관리자 확인 없이,
 //       처음부터 그 액자(또는 그 묶음의 수업 장면)로. 액자 목록은 그 범주(수학 호기심 · 문제 풀이 해설)의 항목만, 나가기는 공부하기 목록으로.
@@ -41,6 +43,7 @@ import { Lin10Frame, Lin10Thumb } from "../features/display/frames/lin10.jsx";
 import { AreaFrame, AreaThumb } from "../features/display/frames/area.jsx";
 import { Cnt100Frame, Cnt100Thumb } from "../features/display/frames/cnt100.jsx";
 import { hanoiTimeline } from "../features/display/hanoi";
+import { CURIO_LABS, CurioThumb } from "../features/display/frames/curio.jsx";
 import { DSP_CSS, Btn, Ic, FrameIc } from "../features/display/stage-ui.jsx";
 import { avOfCat } from "../lib/av.js";
 
@@ -479,6 +482,7 @@ function FrameGallery({ C, mode, view, onPick, onClose, onScenes }) {
                 {f.key === "lin10" && <Lin10Thumb C={C} />}
                 {f.key === "area" && <AreaThumb C={C} />}
                 {f.key === "cnt100" && <Cnt100Thumb C={C} />}
+                {CURIO_LABS[f.key] && <CurioThumb fkey={f.key} C={C} mode={mode} />}
               </svg>
               <span className="k">{f.lab ? "실험" : f.story ? "장면 묶음" : f.lesson ? "해설" : "그림"}</span>
               <span className="t">{f.title}{view === f.key && <small>지금 켜 둔 액자</small>}</span>
@@ -528,6 +532,7 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
                   {it.key === "lin10" && <Lin10Thumb C={C} />}
                   {it.key === "area" && <AreaThumb C={C} />}
                   {it.key === "cnt100" && <Cnt100Thumb C={C} />}
+                  {CURIO_LABS[it.key] && <CurioThumb fkey={it.key} C={C} mode={mode} />}
                   {!f && <text x={W / 2} y={560} textAnchor="middle" fontSize="220">{it.icon}</text>}
                 </svg>
                 <span className="k">{it.kind}</span>
@@ -547,7 +552,7 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
 
 /* ══════════ 액자 무대 ══════════ */
 const UI = { Btn, Ic, FrameIc };
-const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame, lin10: Lin10Frame, area: AreaFrame, cnt100: Cnt100Frame };
+const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame, lin10: Lin10Frame, area: AreaFrame, cnt100: Cnt100Frame, ...CURIO_LABS };
 function FrameStage({ fkey, ...rest }) {
   if (fkey === "hanoi") return <HanoiFrame ui={UI} {...rest} />;
   if (LABS[fkey]) { const Lab = LABS[fkey]; return <Lab ui={UI} {...rest} />; }
