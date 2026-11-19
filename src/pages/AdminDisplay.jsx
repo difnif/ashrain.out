@@ -18,6 +18,8 @@
 //         「풀이 보기」를 고르면 예전 설명 장면(몬티홀·찍기 · 갈림길·구슬 · 정규분포)을 그대로 돌린다.
 //       · 장면 묶음 — 숫자로 읽는 축구 · 서술형 이야기(stories.js · frames/story.jsx): 여러 단원을 섞는 융합 장면.
 //         축구 여섯 장면은 「2D | 3D」 토글로 경기장 속 눈높이의 3D 시뮬레이션으로도 본다(frames/player.jsx · sim3d/ — three.js 는 3D 를 켤 때만).
+// 학생앱 「시청각 학습」(#/av/<key> — pages/AvPlayer.jsx · lib/av.js): 같은 Stage 를 av 모드로 연다 — 관리자 확인 없이,
+//       처음부터 그 액자(또는 그 묶음의 수업 장면)로. 액자 목록은 그 범주(수학 호기심 · 문제 풀이 해설)의 항목만, 나가기는 공부하기 목록으로.
 // 장면 설정: 장면이 controls(구슬 수·단계·문 개수 …)를 가지면 조작 막대 아래에 설정 칩이 뜬다. 바꾸면 그 장면을
 //       처음부터 다시 튼다. 장면마다 기기에 기억한다. 장면은 render(mode, t, C, P) 의 P 로 설정을 받는다.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -38,6 +40,7 @@ import { AreaFrame, AreaThumb } from "../features/display/frames/area.jsx";
 import { Cnt100Frame, Cnt100Thumb } from "../features/display/frames/cnt100.jsx";
 import { HANOI, hanoiTimeline, hanoiAt, remapElapsed, fmtDur, comma } from "../features/display/hanoi";
 import { DSP_CSS, Btn, Ic, FrameIc } from "../features/display/stage-ui.jsx";
+import { avOfCat } from "../lib/av.js";
 
 const LS = { mode: "ash.display.mode", theme: "ash.display.theme", idx: "ash.display.idx", rep: "ash.display.repeat", grp: "ash.display.group",
   view: "ash.display.view", hanoi: "ash.display.hanoi", prm: "ash.display.params" };
@@ -86,20 +89,27 @@ export default function AdminDisplay() {
   return <Stage />;
 }
 
-function Stage() {
+/** av: null(교실 모니터) | { key, cat, frame, grp, title } — 학생앱 시청각 학습(AvPlayer) */
+export function Stage({ av = null }) {
   const [mode, setMode] = useState(() => (lsGet(LS.mode, "e") === "m" ? "m" : "e"));
   const [idx, setIdx] = useState(() => {
     const n = Number(lsGet(LS.idx, 0));
-    return Number.isInteger(n) && n >= 0 && n < PAIRS.length ? n : 0;
+    const ok = Number.isInteger(n) && n >= 0 && n < PAIRS.length ? n : 0;
+    if (av?.grp && av.grp !== "all" && PAIRS[ok]?.group !== av.grp) return Math.max(0, PAIRS.findIndex((p) => p.group === av.grp));
+    return ok;
   });
   const [thm, setThm] = useState(() => (lsGet(LS.theme, "dark") === "light" ? "light" : "dark"));
-  const [grp, setGrp] = useState(() => { const g = lsGet(LS.grp, "all"); return GROUPS.some((x) => x.key === g) ? g : "all"; });
+  const [grp, setGrp] = useState(() => {
+    if (av) return av.grp && GROUPS.some((x) => x.key === av.grp) ? av.grp : "all";
+    const g = lsGet(LS.grp, "all"); return GROUPS.some((x) => x.key === g) ? g : "all";
+  });
   const [paused, setPaused] = useState(false);
   const [repeat, setRepeat] = useState(() => lsGet(LS.rep, "0") === "1");
   const [ctl, setCtl] = useState(true);
   const [list, setList] = useState(false);
   const [gal, setGal] = useState(false);       // 액자 목록
-  const [view, setView] = useState(() => (FRAMES.some((f) => f.key === lsGet(LS.view, "")) ? lsGet(LS.view, "") : null));   // null = 수업 장면
+  const [view, setView] = useState(() => (av ? (av.frame && FRAMES.some((f) => f.key === av.frame) ? av.frame : null)
+    : FRAMES.some((f) => f.key === lsGet(LS.view, "")) ? lsGet(LS.view, "") : null));   // null = 수업 장면
   const [isFs, setIsFs] = useState(false);
   const [prm, setPrm] = useState(loadPrm);     // { 장면 key: { 설정 key: 값 } }
   const [, setFrame] = useState(0);
@@ -119,8 +129,12 @@ function Stage() {
   useEffect(() => { lsSet(LS.idx, idx); }, [idx]);
   useEffect(() => { lsSet(LS.theme, thm); }, [thm]);
   useEffect(() => { lsSet(LS.rep, repeat ? 1 : 0); }, [repeat]);
-  useEffect(() => { lsSet(LS.grp, grp); }, [grp]);
-  useEffect(() => { lsSet(LS.view, view || ""); }, [view]);
+  useEffect(() => { if (!av) lsSet(LS.grp, grp); }, [grp, av]);
+  useEffect(() => { if (!av) lsSet(LS.view, view || ""); }, [view, av]);
+  const avExit = useCallback(() => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    location.hash = `#/study/av/${av?.cat || ""}`;
+  }, [av]);
   useEffect(() => { lsSet(LS.prm, JSON.stringify(prm)); }, [prm]);
 
   /* ── 액자 열기·닫기 — 수업 장면 시계는 액자 동안 멈춰 둔다 ── */
@@ -135,12 +149,13 @@ function Stage() {
   }, []);
   const closeFrame = useCallback(() => {
     setGal(false);
+    if (av) { avExit(); return; }
     if (S.current.view && sceneHold.current && !sceneHold.current.wasPaused && clk.current.held != null) {
       clk.current = { start: performance.now() - clk.current.held, held: null };
     }
     sceneHold.current = null;
     setView(null);
-  }, []);
+  }, [av, avExit]);
 
   /* ── 장면 이동 (다음 쌍은 겹치며 넘어간다) ── */
   const goTo = useCallback((i, fade = true) => {
@@ -228,7 +243,7 @@ function Stage() {
   /* ── 문서 제목 · 전체 화면 상태 ── */
   useEffect(() => {
     const prev = document.title;
-    document.title = "교실 모니터";
+    document.title = av ? `${av.title} — 시청각 학습` : "교실 모니터";
     const onFs = () => setIsFs(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", onFs);
     return () => { document.title = prev; document.removeEventListener("fullscreenchange", onFs); };
@@ -317,6 +332,8 @@ function Stage() {
     <div ref={rootRef} className={"dsp-root dsp-" + thm + (ctl ? "" : " dsp-idle")}
       onPointerMove={poke} onPointerDown={poke}>
       <style>{DSP_CSS}</style>
+      {av && <style>{AV_ROT_CSS}</style>}
+      {av && <div className="av-rot" aria-hidden="true">가로로 돌리면 크게 보여요</div>}
       <div className="dsp-frame">
         <div className="dsp-paper" />
         {view ? (
@@ -363,7 +380,7 @@ function Stage() {
           <Btn title={isFs ? "전체 화면 끝내기 (F)" : "전체 화면 (F)"} onClick={() => { toggleFs(); poke(); }}>
             {isFs ? <Ic d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <Ic d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
           </Btn>
-          <Btn title="나가기" onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); location.hash = ""; }}>
+          <Btn title="나가기" onClick={() => { if (av) { avExit(); return; } if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); location.hash = ""; }}>
             <Ic d="M6 6l12 12M18 6 6 18" />
           </Btn>
         </div>
@@ -428,7 +445,8 @@ function Stage() {
         )}
         </>)}
 
-        {gal && <FrameGallery C={C} mode={mode} view={view} onPick={openFrame} onClose={() => setGal(false)} onScenes={closeFrame} />}
+        {gal && !av && <FrameGallery C={C} mode={mode} view={view} onPick={openFrame} onClose={() => setGal(false)} onScenes={closeFrame} />}
+        {gal && av && <AvGallery C={C} mode={mode} av={av} onClose={() => setGal(false)} onExit={avExit} />}
       </div>
     </div>
   );
@@ -471,6 +489,55 @@ function FrameGallery({ C, mode, view, onPick, onClose, onScenes }) {
             <button type="button" className="dsp-chip" onClick={onScenes}>← 수업 장면으로 돌아가기</button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ 시청각 학습(av) — 같은 범주의 항목만 ══════════ */
+const AV_ROT_CSS = `.av-rot { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 4;
+  display: none; white-space: nowrap; font-size: 13px; font-weight: 700; color: var(--soft); background: var(--chip); border: 1px solid var(--chipbd);
+  border-radius: 999px; padding: 6px 14px; pointer-events: none; }
+@media (orientation: portrait) and (max-width: 900px) { .av-rot { display: block; } }`;
+function AvGallery({ C, mode, av, onClose, onExit }) {
+  if (!THUMB_TL.hanoi) THUMB_TL.hanoi = hanoiTimeline(5, "fast");
+  const items = avOfCat(av.cat);
+  return (
+    <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="dsp-list-in dsp-gal-in">
+        <div className="dsp-list-h">
+          <b>{av.catTitle || "시청각 학습"}</b>
+          <button type="button" onClick={onClose} aria-label="닫기">✕</button>
+        </div>
+        <p className="dsp-gal-sub">고르면 바로 돌기 시작해요.</p>
+        <div className="dsp-gal">
+          {items.map((it) => {
+            const f = it.frame ? FRAMES.find((x) => x.key === it.frame) : null;
+            return (
+              <button key={it.key} type="button" className={"dsp-fcard" + (av.key === it.key ? " on" : "")}
+                onClick={() => { if (it.key === av.key) onClose(); else location.hash = `#/av/${it.key}`; }}>
+                <svg viewBox={`0 150 ${W} 700`} aria-hidden="true">
+                  {it.key === "hanoi" && <HanoiThumb C={C} TL={THUMB_TL.hanoi} />}
+                  {f?.story && <StoryThumb fkey={f.key} C={C} mode={mode} />}
+                  {it.key === "monty" && <MontyThumb C={C} mode={mode} />}
+                  {it.key === "branch" && <BranchThumb C={C} mode={mode} />}
+                  {it.key === "galton" && <GaltonThumb C={C} mode={mode} />}
+                  {it.key === "graph" && <GraphThumb C={C} />}
+                  {it.key === "lin10" && <Lin10Thumb C={C} />}
+                  {it.key === "area" && <AreaThumb C={C} />}
+                  {it.key === "cnt100" && <Cnt100Thumb C={C} />}
+                  {!f && <text x={W / 2} y={560} textAnchor="middle" fontSize="220">{it.icon}</text>}
+                </svg>
+                <span className="k">{it.kind}</span>
+                <span className="t">{it.title}{av.key === it.key && <small>지금 보는 중</small>}</span>
+                <span className="d">{it.desc}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="dsp-gal-foot">
+          <button type="button" className="dsp-chip" onClick={onExit}>← 공부하기로 나가기</button>
+        </div>
       </div>
     </div>
   );
