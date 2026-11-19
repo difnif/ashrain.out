@@ -8,7 +8,8 @@
 //                 — 그래프 그리기(frames/graphdraw.jsx) · 10단계 계산(frames/lin10.jsx) · 그래프와 넓이(frames/area.jsx) · 경우의 수와 확률 100제(frames/cnt100.jsx).
 // 순서: 하노이의 탑 · 해설 액자 넷 · 실험 액자 셋 · 장면 묶음 둘
 export const FRAMES = [
-  { key: "hanoi", title: "하노이의 탑", desc: "원판을 하나씩 옮겨 탑을 통째로 옮겨요. 다 옮기면 거꾸로 — 쉬지 않고 돌아요." },
+  { key: "hanoi", title: "하노이의 탑",
+    desc: "원판 3 ~ 30개 · 기둥 3 ~ 5개 · 세트 1 ~ 5개를 입체로. 5세트면 로봇 다섯 대가 나르고, 4배속이면 파티가 열려요. 다 옮기면 거꾸로 — 쉬지 않고 돌아요." },
   { key: "graph", lesson: true, title: "일차함수 그래프 그리기 해설",
     desc: "프린트 기본 96제 · 심화 64제. 점을 찍고, 기울기만큼 칸을 세며 옮기고, 두 점을 이어 직선을 그어요. 번호를 골라 그 문항부터." },
   { key: "lin10", lesson: true, title: "일차함수 10단계 계산 해설",

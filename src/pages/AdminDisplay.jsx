@@ -5,7 +5,8 @@
 // 화면은 탭·마우스 움직임에 조작 막대가 잠깐 뜨고 스스로 숨는다. 전체 화면·화면 꺼짐 방지 포함.
 // 액자: 토글 왼쪽의 액자 단추 → 액자 목록 → 고르면 수업 장면 대신 그 액자가 계속 돈다. 액자는 벽시계로 흘러서 새로고침해도
 //       이어진다. 목록: src/features/display/frames/index.js
-//       · 하노이의 탑(frames/hanoi.jsx · hanoi.js)
+//       · 하노이의 탑(frames/hanoiframe.jsx · hanoi.jsx(2D) · hanoi3d/(3D, three.js 는 입체로 볼 때만) · hanoi.js) — 원판 3~30 · 기둥 3~5 ·
+//         세트 1~5(5세트는 로봇 다섯 대) · 자연스럽게 | 1~4배속(4배속은 파티)
 //       · 해설 액자 — 일차함수 그래프 그리기 해설(frames/graphdraw.jsx · graphdraw.js): 학원 프린트 기본 96제 · 심화 64제를
 //         한 문항씩 풀이 순서(네모 칸)대로 점 찍기 → 칸 세며 옮기기 → 직선으로 그린다. 기본 | 심화 · 1× | 1.5× · 번호 목록(L).
 //         · 일차함수 10단계 계산 해설(frames/lin10.jsx · lin10.js): 프린트 세트 1 · 2(200문항씩)의 계산 과정을 한 줄씩 판서로.
@@ -20,14 +21,15 @@
 //         축구 여섯 장면은 「2D | 3D」 토글로 경기장 속 눈높이의 3D 시뮬레이션으로도 본다(frames/player.jsx · sim3d/ — three.js 는 3D 를 켤 때만).
 // 장면 설정: 장면이 controls(구슬 수·단계·문 개수 …)를 가지면 조작 막대 아래에 설정 칩이 뜬다. 바꾸면 그 장면을
 //       처음부터 다시 튼다. 장면마다 기기에 기억한다. 장면은 render(mode, t, C, P) 의 P 로 설정을 받는다.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { PAIRS, GROUPS } from "../features/display/pairs";
 import { PALETTE, W, H, SceneTitle, clearMeasureCache } from "../features/display/draw";
 import { E, clamp } from "../features/display/core";
 import { FRAMES } from "../features/display/frames/index.js";
 import { paramsOf, durOf, optVal } from "../features/display/params.js";
-import { HanoiArt, HanoiThumb } from "../features/display/frames/hanoi.jsx";
+import { HanoiThumb } from "../features/display/frames/hanoi.jsx";
+import { HanoiFrame } from "../features/display/frames/hanoiframe.jsx";
 import { StoryFrame, StoryThumb } from "../features/display/frames/story.jsx";
 import { MontyFrame, MontyThumb } from "../features/display/frames/monty.jsx";
 import { BranchFrame, BranchThumb } from "../features/display/frames/branchlab.jsx";
@@ -36,7 +38,7 @@ import { GraphFrame, GraphThumb } from "../features/display/frames/graphdraw.jsx
 import { Lin10Frame, Lin10Thumb } from "../features/display/frames/lin10.jsx";
 import { AreaFrame, AreaThumb } from "../features/display/frames/area.jsx";
 import { Cnt100Frame, Cnt100Thumb } from "../features/display/frames/cnt100.jsx";
-import { HANOI, hanoiTimeline, hanoiAt, remapElapsed, fmtDur, comma } from "../features/display/hanoi";
+import { hanoiTimeline } from "../features/display/hanoi";
 import { DSP_CSS, Btn, Ic, FrameIc } from "../features/display/stage-ui.jsx";
 
 const LS = { mode: "ash.display.mode", theme: "ash.display.theme", idx: "ash.display.idx", rep: "ash.display.repeat", grp: "ash.display.group",
@@ -437,7 +439,7 @@ function Stage() {
 /* ══════════ 액자 목록 ══════════ */
 const THUMB_TL = { hanoi: null };
 function FrameGallery({ C, mode, view, onPick, onClose, onScenes }) {
-  if (!THUMB_TL.hanoi) THUMB_TL.hanoi = hanoiTimeline(5, "fast");
+  if (!THUMB_TL.hanoi) THUMB_TL.hanoi = hanoiTimeline(5, "x1");
   return (
     <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()}>
       <div className="dsp-list-in dsp-gal-in">
@@ -480,142 +482,10 @@ function FrameGallery({ C, mode, view, onPick, onClose, onScenes }) {
 const UI = { Btn, Ic, FrameIc };
 const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame, lin10: Lin10Frame, area: AreaFrame, cnt100: Cnt100Frame };
 function FrameStage({ fkey, ...rest }) {
-  if (fkey === "hanoi") return <HanoiFrame {...rest} />;
+  if (fkey === "hanoi") return <HanoiFrame ui={UI} {...rest} />;
   if (LABS[fkey]) { const Lab = LABS[fkey]; return <Lab ui={UI} {...rest} />; }
   if (FRAMES.some((f) => f.key === fkey && f.story)) return <StoryFrame fkey={fkey} ui={UI} {...rest} />;
   return null;
 }
 
-/** 저장된 하노이 상태: 원판 수 · 빠르기 · 시작 시각(벽시계 ms) · 멈춘 경과 */
-function loadHanoi() {
-  try {
-    const o = JSON.parse(localStorage.getItem(LS.hanoi) || "null");
-    if (o && Number.isInteger(o.n) && o.n >= HANOI.MIN && o.n <= HANOI.MAX && (o.sp === "fast" || o.sp === "natural")
-      && Number.isFinite(o.t0) && o.t0 <= Date.now()) {
-      return { n: o.n, sp: o.sp, t0: o.t0, held: Number.isFinite(o.held) && o.held >= 0 ? o.held : null };
-    }
-  } catch { /* 처음이거나 망가진 값 */ }
-  return { n: HANOI.DEF, sp: "fast", t0: Date.now(), held: null };
-}
-
-/**
- * 하노이의 탑 액자 — 끝없이 옮긴다(A → C, 쉬고, C → A …).
- * 시계는 벽시계(Date.now)라 새로고침·잠깐 나갔다 와도 그 자리에서 이어진다. 원판 수를 바꾸면 처음부터,
- * 빠르기를 바꾸면 지금 옮기던 그 이동의 같은 진행 비율에서 이어진다.
- */
-function HanoiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, onExit, inert }) {
-  const init = useRef(null);
-  if (!init.current) init.current = loadHanoi();
-  const [n, setN] = useState(init.current.n);
-  const [sp, setSp] = useState(init.current.sp);
-  const [paused, setPaused] = useState(init.current.held != null);
-  const clk = useRef({ t0: init.current.t0, held: init.current.held });
-  const [, setFrame] = useState(0);
-  const TLs = useMemo(() => ({ fast: hanoiTimeline(n, "fast"), natural: hanoiTimeline(n, "natural") }), [n]);
-  const TL = TLs[sp];
-  const R = useRef({});
-  R.current = { n, sp, TLs, inert };
-
-  const save = (nn, ss) => lsSet(LS.hanoi, JSON.stringify({ n: nn, sp: ss, t0: clk.current.t0, held: clk.current.held }));
-  useEffect(() => { save(n, sp); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
-  const elapsedNow = () => (clk.current.held != null ? clk.current.held : Date.now() - clk.current.t0);
-
-  const togglePause = useCallback(() => {
-    const now = Date.now(), c = clk.current;
-    if (c.held != null) { clk.current = { t0: now - c.held, held: null }; setPaused(false); }
-    else { clk.current = { t0: c.t0, held: now - c.t0 }; setPaused(true); }
-    save(R.current.n, R.current.sp);
-  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
-  const restart = useCallback(() => {
-    clk.current = { t0: Date.now(), held: clk.current.held != null ? 0 : null };
-    save(R.current.n, R.current.sp); setFrame((f) => f + 1);
-  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
-  const setDisks = useCallback((k) => {
-    const nn = clamp(k, HANOI.MIN, HANOI.MAX);
-    if (nn === R.current.n) return;
-    clk.current = { t0: Date.now(), held: clk.current.held != null ? 0 : null };
-    setN(nn); save(nn, R.current.sp);
-  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
-  const setSpeed = useCallback((s2) => {
-    const { sp: s1, TLs: T, n: nn } = R.current;
-    if (s2 === s1) return;
-    const now = Date.now(), c = clk.current;
-    const e2 = remapElapsed(T[s1], T[s2], c.held != null ? c.held : now - c.t0);
-    clk.current = c.held != null ? { t0: c.t0, held: e2 } : { t0: now - e2, held: null };
-    setSp(s2); save(nn, s2);
-  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── 그리기 루프 (최대 40fps, 멈추면 쉰다) ── */
-  useEffect(() => {
-    let raf = 0, last = 0;
-    const loop = (now) => {
-      raf = requestAnimationFrame(loop);
-      if (now - last < FRAME_MS || clk.current.held != null) return;
-      last = now;
-      setFrame((f) => (f + 1) % 1e9);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  /* ── 키보드 ── */
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || R.current.inert) return;
-      const k = e.key;
-      if (k === " ") { e.preventDefault(); togglePause(); poke(); }
-      else if (k === "ArrowUp" || k === "+" || k === "=") { e.preventDefault(); setDisks(R.current.n + 1); poke(); }
-      else if (k === "ArrowDown" || k === "-" || k === "_") { e.preventDefault(); setDisks(R.current.n - 1); poke(); }
-      else if (k === "s" || k === "S") { setSpeed(R.current.sp === "fast" ? "natural" : "fast"); poke(); }
-      else if (k === "r" || k === "R") { restart(); poke(); }
-      else if (k === "f" || k === "F") toggleFs();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [togglePause, setDisks, setSpeed, restart, toggleFs, poke]);
-
-  const st = hanoiAt(TL, elapsedNow());
-  const prog = st.hold != null ? 1 : st.tau / TL.total;
-  const total = { fast: TLs.fast.total, natural: TLs.natural.total };
-  const stop = (e) => e.stopPropagation();
-
-  return (
-    <>
-      <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
-        role="img" aria-label={`하노이의 탑 — 원판 ${n}개`}>
-        <HanoiArt L={TL.L} st={st} C={C} uid="hnf" info={{ total: TL.total, speed: sp }} />
-      </svg>
-
-      <div className={"dsp-ctl" + (ctl ? " show" : "")} onPointerDown={stop}>
-        <Btn title="처음부터 (R)" onClick={() => { restart(); poke(); }}><Ic d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4.6h4.6" /></Btn>
-        <Btn title={paused ? "재생 (스페이스)" : "멈춤 (스페이스)"} onClick={() => { togglePause(); poke(); }}>
-          {paused ? <Ic d="M8 5v14l11-7z" fill /> : <Ic d="M8 5v14M16 5v14" />}
-        </Btn>
-        <span className="dsp-sep" />
-        <Btn title="원판 하나 빼기 (↓)" disabled={n <= HANOI.MIN} onClick={() => { setDisks(n - 1); poke(); }}><Ic d="M6 12h12" /></Btn>
-        <span className="dsp-num" aria-live="polite"><b>{n}</b><small>원판</small></span>
-        <Btn title="원판 하나 더 (↑)" disabled={n >= HANOI.MAX} onClick={() => { setDisks(n + 1); poke(); }}><Ic d="M12 6v12M6 12h12" /></Btn>
-        <span className="dsp-sep" />
-        <div className="dsp-seg" role="radiogroup" aria-label="빠르기">
-          <button type="button" role="radio" aria-checked={sp === "natural"} onClick={() => { setSpeed("natural"); poke(); }}>자연스럽게</button>
-          <button type="button" role="radio" aria-checked={sp === "fast"} onClick={() => { setSpeed("fast"); poke(); }}>빠르게</button>
-        </div>
-        <span className="dsp-sep" />
-        <Btn title="밝기 바꾸기" onClick={onTheme}><Ic d="M12 3a9 9 0 1 0 0 18V3z" fill /></Btn>
-        <Btn title={isFs ? "전체 화면 끝내기 (F)" : "전체 화면 (F)"} onClick={() => { toggleFs(); poke(); }}>
-          {isFs ? <Ic d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <Ic d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
-        </Btn>
-        <Btn title="액자 목록" onClick={() => { onGallery(); poke(); }}><FrameIc /></Btn>
-        <Btn title="수업 장면으로" onClick={onExit}><Ic d="M6 6l12 12M18 6 6 18" /></Btn>
-      </div>
-      <div className={"dsp-hint" + (ctl ? " show" : "")} aria-hidden={!ctl}>
-        원판 {n}개 → {comma(TL.moves)}번 · 빠르게 <b className={sp === "fast" ? "on" : ""}>{fmtDur(total.fast)}</b>
-        {" · "}자연스럽게 <b className={sp === "natural" ? "on" : ""}>{fmtDur(total.natural)}</b>
-      </div>
-
-      <div className="dsp-prog" aria-hidden="true"><i style={{ transform: `scaleX(${prog})` }} /></div>
-      {paused && <div className="dsp-paused fr">멈춤</div>}
-    </>
-  );
-}
 

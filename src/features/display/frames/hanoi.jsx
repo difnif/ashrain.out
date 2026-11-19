@@ -1,9 +1,11 @@
-// ashrain.out — 교실 모니터 「액자」: 하노이의 탑 — 그리기 (frames/hanoi.jsx)
-// 살짝 내려다본 나무 받침·기둥 세 개·원판(원기둥). 계산은 ../hanoi.js(배치·순서·시간표)가 하고, 여기서는 모습만 그린다.
+// ashrain.out — 교실 모니터 「액자」: 하노이의 탑 — 2D 그리기 (frames/hanoi.jsx)
+// 살짝 내려다본 나무 받침·기둥(3 ~ 5개)·원판(원기둥). 계산은 ../hanoi.js(배치·순서·시간표)가 하고, 여기서는 모습만 그린다.
+// 3D 무대(../hanoi3d)를 못 쓰거나 「평면」으로 볼 때 · 3D 를 내려받는 동안 · 액자 목록의 작은 그림에 쓴다.
 // 그리는 순서: 받침 → 기둥마다 [기둥 → 쌓인 판(아래부터) → 꿰인 채 움직이는 판 → 맨 위 판의 구멍에서 솟은 기둥 끝] → 공중의 판.
+// 세트가 여럿이면 줄여서 나란히(HanoiSets2D) — 세트마다 조금씩 늦게 따라 옮긴다.
 import { along } from "../core";
 import { SANS, TITLE } from "../draw";
-import { HANOI, PEG_NAMES, levelY, movePath, moveEase, comma, fmtDur } from "../hanoi";
+import { HANOI, PEG_NAMES, SPEED_LABEL, MUL, normSpeed, levelY, movePath, moveEase, comma, fmtDur, setAt } from "../hanoi";
 
 /* ── 색 ── */
 const hex = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
@@ -142,7 +144,7 @@ export function HanoiArt({ L, st, C, uid = "hn", info }) {
     const onPeg = (i) => Math.abs(p[0] - L.X[i]) < 0.01 && p[1] > L.yTip;   // 기둥에 꿰여 있다
     mv = { x: p[0], yb: p[1], d: st.disk, peg: onPeg(st.from) ? st.from : onPeg(st.to) ? st.to : -1 };
   }
-  const stacks = [[], [], []];
+  const stacks = L.X.map(() => []);
   for (let d = 0; d < n; d++) if (st.pos[d] >= 0) stacks[st.pos[d]].push(d);
   for (const s of stacks) s.sort((a, b) => st.lv[a] - st.lv[b]);
 
@@ -178,35 +180,77 @@ export function HanoiArt({ L, st, C, uid = "hn", info }) {
   );
 }
 
-/** 아래 안내: 왼쪽 이름·판 수·방향, 오른쪽 몇 번째·남은 시간. 다 옮기면 가운데 위에 한 줄 */
-function Info({ L, st, C, info, glow }) {
-  const moves = 2 ** L.n - 1, y = 872;
+/** 빠르기 글자: 자연스럽게 · 1배속 · 1초에 1개 … */
+export function speedText(speed) {
+  const sp = normSpeed(speed);
+  return sp === "natural" ? SPEED_LABEL.natural : `${SPEED_LABEL[sp]} · 1초에 ${MUL[sp]}개`;
+}
+
+/**
+ * 아래 안내: 왼쪽 이름·판 수·기둥 수·방향·빠르기, 오른쪽 몇 번째·남은 시간. 다 옮기면 위 가운데에 한 줄.
+ *   info = { total, speed, moves, pegs, sets } · bannerY = 다 옮김 알림의 높이(무대 px)
+ */
+export function HanoiInfo({ L, st, C, info, bannerY }) {
+  const moves = info.moves ?? 2 ** L.n - 1, y = 872;
   const dir = `${PEG_NAMES[st.src]} → ${PEG_NAMES[st.dst]}`;
-  const sp = info.speed === "fast" ? "빠르게 · 1초에 1개" : "자연스럽게";
+  const pegs = info.pegs ?? L.X.length;
+  const sets = info.sets ?? 1;
   const done = st.hold != null;
+  const glow = done ? Math.min(1, st.hold / 600) * Math.min(1, (HANOI.HOLD_MS - st.hold) / 700) : 0;
   const right = done
     ? [[`${comma(moves)}번`, C.ink, 700], [` 다 옮김 · ${fmtDur(info.total)}`, C.soft, 600]]
     : [[`${comma(moves)}번 중 `, C.soft, 600], [`${comma(st.m)}번째`, C.ink, 700],
       [`  ·  남은 시간 ${fmtDur(info.total - st.tau)}`, C.soft, 600]];
+  const left = `원판 ${L.n}개 · 기둥 ${pegs}개${sets > 1 ? ` · 세트 ${sets}개` : ""} · ${dir} · ${speedText(info.speed)}`;
+  const by = bannerY ?? L.yTip - 150;
   return (
     <g>
       <text x={56} y={y} fontFamily={SANS} fontSize={21} fontWeight={600} fill={C.soft}>
         <tspan fontFamily={TITLE} fontSize={30} fontWeight={400} fill={C.ink}>하노이의 탑</tspan>
-        <tspan dx={18}>{`원판 ${L.n}개 · ${dir} · ${sp}`}</tspan>
+        <tspan dx={18}>{left}</tspan>
       </text>
       <text x={1544} y={y} textAnchor="end" fontFamily={SANS} fontSize={21}>
         {right.map(([s, f, w], i) => <tspan key={i} fill={f} fontWeight={w} xmlSpace="preserve">{s}</tspan>)}
       </text>
       {glow > 0.01 && (
         <g opacity={glow}>
-          <rect x={800 - 340} y={L.yTip - 150} width={680} height={58} rx={29} fill={C.capBg} />
-          <text x={800} y={L.yTip - 111} textAnchor="middle" fontFamily={SANS} fontSize={28} fontWeight={650} fill={C.capInk}>
+          <rect x={800 - 340} y={by} width={680} height={58} rx={29} fill={C.capBg} />
+          <text x={800} y={by + 39} textAnchor="middle" fontFamily={SANS} fontSize={28} fontWeight={650} fill={C.capInk}>
             {`다 옮겼어요 · ${comma(moves)}번 — 이번엔 ${PEG_NAMES[st.dst]} → ${PEG_NAMES[st.src]}`}
           </text>
         </g>
       )}
     </g>
   );
+}
+function Info({ L, st, C, info }) {
+  return <HanoiInfo L={L} st={st} C={C} info={info} />;
+}
+
+/** 세트 S 개를 줄여 나란히: 1 = 그대로 · 2 = 둘 · 3 = 위 2 + 아래 1 · 4 = 2×2 · 5 = 위 3 + 아래 2 */
+const GRID = {
+  1: { s: 1, rows: [[800]], ys: [479] },
+  2: { s: 0.5, rows: [[400, 1200]], ys: [470] },
+  3: { s: 0.46, rows: [[430, 1170], [800]], ys: [300, 650] },
+  4: { s: 0.46, rows: [[430, 1170], [430, 1170]], ys: [300, 650] },
+  5: { s: 0.34, rows: [[290, 800, 1310], [545, 1055]], ys: [330, 610] },
+};
+export function HanoiSets2D({ TL, elapsed, sets, C, speed }) {
+  const g = GRID[sets] || GRID[1];
+  const out = [];
+  let i = 0;
+  g.rows.forEach((row, r) => row.forEach((cx) => {
+    if (i >= sets) return;
+    const st = setAt(TL, elapsed, i, speed);
+    const tx = cx - 800 * g.s, ty = g.ys[r] - 479 * g.s;
+    out.push(
+      <g key={i} transform={sets > 1 ? `translate(${tx.toFixed(1)} ${ty.toFixed(1)}) scale(${g.s})` : undefined}>
+        <HanoiArt L={TL.L} st={st} C={C} uid={`hn${i}`} />
+      </g>,
+    );
+    i++;
+  }));
+  return <g>{out}</g>;
 }
 
 /** 액자 목록의 작은 그림(원판 5개, 옮기는 중) */
