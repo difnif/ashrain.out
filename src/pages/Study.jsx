@@ -1,5 +1,6 @@
-// 공부하기 탭 (#/study) — 서브탭: 개념 공부 · 연습문제 · 컨셉 문제 · 시험 보기 (셸이 상·하단을 그린다)
-// sub: '' | 'concept' | 'practice' | 'sets[/<범주>]' | 'exam'  (''=concept)
+// 공부하기 탭 (#/study) — 서브탭: 개념 공부 · 연습문제 · 컨셉 문제 · 시청각 학습 · 시험 보기 (셸이 상·하단을 그린다)
+// sub: '' | 'concept' | 'practice' | 'sets[/<범주>]' | 'av[/<범주>]' | 'exam'  (''=concept)
+//   시청각 학습 = 교실 모니터 콘텐츠(lib/av.js) — 수학 호기심 · 문제 풀이 해설 두 범주, 고르면 #/av/<key> 가로 무대로
 import { useEffect, useMemo, useState } from "react";
 import { UNIT_NAMES, UNIT_ORDER } from "../lib/items";
 import { readLastResult } from "../lib/setplay";
@@ -10,6 +11,7 @@ import { koFilter } from "../lib/koSearch";
 import ItemPicker from "./solve/ItemPicker";
 import { CATEGORIES, loadIndex, readProgress, setProgressUser, pad2 } from "../lib/conceptsets";
 import { supabase } from "../supabaseClient";
+import { AV_CATS, avOfCat } from "../lib/av";
 import "./solve/solve.css";
 
 const CSS = `
@@ -84,6 +86,9 @@ const CSS = `
 .st-ic .pg i { display: block; height: 100%; background: var(--accent); }
 .st-ic.done { border-color: var(--good); }
 .st-ic.done .pg i { background: var(--good); }
+.st-avic { flex: none; width: 44px; height: 44px; border-radius: 13px; background: var(--surface2); display: flex; align-items: center;
+  justify-content: center; font-size: 24px; }
+.st-item .nm small.wrap { white-space: normal; line-height: 1.5; }
 `;
 
 function readLastConcept() {
@@ -319,6 +324,46 @@ function SetsSub({ path }) {
   );
 }
 
+/* ── 시청각 학습: 범주 폴더 → 항목(교실 모니터 무대로 연다) ── */
+function AvSub({ path }) {
+  const catId = path[0] || "";
+  const cat = AV_CATS.find((c) => c.id === catId);
+  if (!cat) {
+    return (
+      <>
+        <p className="st-cdesc">교실 모니터에서 돌던 애니메이션 · 실험 · 해설을 내 화면으로 — 가로로 돌려 크게 보세요. 화면을 건드리면 조작 막대가 떠요.</p>
+        <div className="st-list">
+          {AV_CATS.map((c) => (
+            <button key={c.id} className="st-folder" onClick={() => (location.hash = `#/study/av/${c.id}`)}>
+              <span className="fi" aria-hidden="true">{c.icon}</span>
+              <span className="nm"><b>{c.title}</b><small>{c.sub} · {avOfCat(c.id).length}가지</small></span>
+              <span className="go" aria-hidden="true">›</span>
+            </button>
+          ))}
+        </div>
+      </>
+    );
+  }
+  return (
+    <>
+      <div className="st-crumb">
+        <button onClick={() => (location.hash = "#/study/av")}>시청각 학습</button><span aria-hidden="true">›</span><b>{cat.title}</b>
+      </div>
+      <p className="st-cdesc">{cat.sub}</p>
+      <div className="st-list">
+        {avOfCat(cat.id).map((it) => (
+          <button key={it.key} className="st-item" onClick={() => (location.hash = `#/av/${it.key}`)}>
+            <span className="st-avic" aria-hidden="true">{it.icon}</span>
+            <span className="nm"><b>{it.title}</b><small className="wrap">{it.desc}</small></span>
+            <span className="tag">{it.kind}</span>
+          </button>
+        ))}
+      </div>
+      {cat.id === "sol" && <p className="st-sec" style={{ fontWeight: 600 }}>컨셉 문제 세트마다 있는 「🎬 해설 영상」은 각 세트 화면에서 열어요.</p>}
+    </>
+  );
+}
+
 export default function Study({ sub = "", theme = "light" }) {
   const segs = (sub || "concept").split("?")[0].split("/").filter(Boolean);
   const s = segs[0] || "concept";
@@ -326,7 +371,7 @@ export default function Study({ sub = "", theme = "light" }) {
     <div className={`st-root st-${theme}`}>
       <style>{CSS}</style>
       <div className="st-wrap">
-        {s === "practice" ? <PracticeSub /> : s === "exam" ? <ExamSub /> : s === "sets" ? <SetsSub path={segs.slice(1)} /> : <ConceptSub />}
+        {s === "practice" ? <PracticeSub /> : s === "exam" ? <ExamSub /> : s === "sets" ? <SetsSub path={segs.slice(1)} /> : s === "av" ? <AvSub path={segs.slice(1)} /> : <ConceptSub />}
       </div>
     </div>
   );

@@ -26,6 +26,25 @@ export function useCsUser() {
   return uid;   // undefined 인 동안은 진도를 읽지 않는다
 }
 
+/** 관리자인가 — null 확인 중 | true | false (판서 모드처럼 관리자에게만 보이는 단추 · 화면) */
+let adminCache = null;
+export function useIsAdmin() {
+  const [a, setA] = useState(adminCache);
+  useEffect(() => {
+    if (adminCache !== null) return undefined;
+    let alive = true;
+    supabase.auth.getUser().then(async ({ data }) => {
+      const u = data?.user;
+      if (!u) { adminCache = false; if (alive) setA(false); return; }
+      const { data: p } = await supabase.from("profiles").select("role").eq("id", u.id).maybeSingle();
+      adminCache = p?.role === "admin";
+      if (alive) setA(adminCache);
+    }).catch(() => { if (alive) setA(false); });
+    return () => { alive = false; };
+  }, []);
+  return a;
+}
+
 /** 세트 + 범주 목록 + 파일 목록 */
 export function useSetData(cat, no) {
   const [st, setSt] = useState({ set: null, cat: null, files: null, err: null });

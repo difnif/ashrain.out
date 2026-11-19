@@ -4,6 +4,7 @@
 //   #/sets/<범주>/<NN>/omr         OMR 카드 사진 → 판독 → 확인 → 채점
 //   #/sets/<범주>/<NN>/paper       종이처럼 풀기 — 문제지를 그대로 펼쳐 손글씨 · 타자 · 체크 → 제출하면 자동 채점
 //   #/sets/<범주>/<NN>/video       해설 영상 — 50문항 해설을 교실 모니터처럼 끝없이 돈다(조작 막대 · 전체 화면)
+//   #/sets/<범주>/<NN>/board       판서 모드(관리자) — 문제지 한 쪽을 펼쳐 놓고 선생님(S펜) · 학생(터치 모니터)이 동시에 쓴다(BoardMode.jsx · palm.js)
 //   #/sets/<범주>/<NN>/sol         해설지 바로 보기 — 인쇄용 해설지를 화면 폭에 맞춰 펼침(빠른 정답 번호 → 그 해설, ?no=N)
 // 목록(범주 · 아이콘)은 공부하기 탭(#/study/sets[/<범주>])에 있다.
 import { lazy, Suspense, useMemo, useState } from "react";
@@ -11,7 +12,7 @@ import FeatureBar, { FbAct } from "../../components/FeatureBar";
 import { pad2, progressSummary, readPaper } from "../../lib/conceptsets";
 import { LEVELS } from "./labels";
 import { layoutCard } from "../../lib/omr/grid.js";
-import { DocsPanel, Toast, useCsUser, useProgress, useSay, useSetData } from "./common";
+import { DocsPanel, Toast, useCsUser, useIsAdmin, useProgress, useSay, useSetData } from "./common";
 import { LV_COLOR, safeHtml } from "./render";
 import "../solve/solve.css";
 import "../../components/item.css";
@@ -22,12 +23,13 @@ const OmrGrade = lazy(() => import("./OmrGrade"));
 const PaperSolve = lazy(() => import("./PaperSolve"));
 const SetVideo = lazy(() => import("./SetVideo"));
 const SolView = lazy(() => import("./SolView"));
+const BoardMode = lazy(() => import("./BoardMode"));
 
 export function parseSetsHash(hash) {
   const parts = String(hash || "").split("?")[0].replace(/^#\/sets\/?/, "").split("/").filter(Boolean);
   const cat = parts[0] || "prob";
   const no = parseInt(parts[1], 10);
-  const view = ["q", "omr", "paper", "video", "sol"].includes(parts[2]) ? parts[2] : "home";
+  const view = ["q", "omr", "paper", "video", "sol", "board"].includes(parts[2]) ? parts[2] : "home";
   const qno = view === "q" ? parseInt(parts[3], 10) || 1 : null;
   const at = Number((String(hash || "").split("?")[1] || "").match(/(?:^|&)no=(\d+)/)?.[1]) || null;   // ?no=7 — 영상 · 해설지를 그 문항부터
   return { cat, no: Number.isFinite(no) ? no : null, view, qno, at };
@@ -52,6 +54,7 @@ function SetScreen({ r, theme }) {
   else if (r.view === "q") body = <Suspense fallback={fall}><ItemSolve catId={r.cat} set={set} qno={r.qno} uid={uid} say={setSay} /></Suspense>;
   else if (r.view === "omr") body = <Suspense fallback={fall}><OmrGrade catId={r.cat} set={set} uid={uid} say={setSay} /></Suspense>;
   else if (r.view === "paper") body = uid === undefined ? fall : <Suspense fallback={fall}><PaperSolve catId={r.cat} set={set} say={setSay} /></Suspense>;
+  else if (r.view === "board") return set ? <Suspense fallback={fall}><BoardMode catId={r.cat} set={set} /></Suspense> : fall;
   else if (r.view === "video") return set ? <Suspense fallback={fall}><SetVideo catId={r.cat} set={set} at={r.at} /></Suspense> : fall;
   else if (r.view === "sol") body = <Suspense fallback={fall}><SolView catId={r.cat} set={set} at={r.at} say={setSay} /></Suspense>;
   else body = <SetHome catId={r.cat} set={set} cat={cat} files={files} uid={uid} say={setSay} />;
@@ -89,6 +92,7 @@ function SetHome({ catId, set, cat, files, uid, say }) {
   const paperN = Object.keys(paper.answers || {}).length;
   const pct = sum.n ? Math.round((sum.done / sum.n) * 100) : 0;
   const omrPages = useMemo(() => layoutCard({ cat: catId, no: set.no, items: set.items }).pages.length, [catId, set]);
+  const admin = useIsAdmin();
   return (
     <div className="cs-wrap">
       <div className="cs-hero">
@@ -100,9 +104,15 @@ function SetHome({ catId, set, cat, files, uid, say }) {
           <div className="cs-pt">푼 문항 <b>{sum.done}</b>/{sum.n} · 맞힘 <b>{sum.ok}</b>{lastOmr ? ` · 최근 채점 ${lastOmr.score}/${lastOmr.n}` : ""}</div>
         </div>
       </div>
-      <button className="sv-btn pri full cs-go" onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/paper`)}>
-        📝 {paper.graded ? `채점한 문제지 보기 · ${paper.graded.score}/${paper.graded.n}` : paperN ? `이어서 풀기 · 문제지 ${paperN}/${set.items.length}칸` : "바로 풀기 · 문제지 그대로"}
-      </button>
+      <div className={admin ? "cs-gorow" : undefined}>
+        <button className="sv-btn pri full cs-go" onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/paper`)}>
+          📝 {paper.graded ? `채점한 문제지 보기 · ${paper.graded.score}/${paper.graded.n}` : paperN ? `이어서 풀기 · 문제지 ${paperN}/${set.items.length}칸` : "바로 풀기 · 문제지 그대로"}
+        </button>
+        {admin && (
+          <button className="sv-btn cs-go cs-board" title="관리자 — 선생님 S펜과 학생 터치 모니터로 문제지 위에 함께 쓰기"
+            onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/board`)}>✍ 판서 모드</button>
+        )}
+      </div>
       <div className="cs-go2">
         <button className="sv-btn" onClick={() => go(nextNo)}>☝ 한 문제씩 풀기{sum.done ? ` · ${nextNo}번` : ""}</button>
         <button className="sv-btn" onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/sol`)}>📘 해설지 보기</button>
