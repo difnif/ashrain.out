@@ -132,6 +132,18 @@ export const DSP_CSS = `
   color: var(--ink); background: var(--chip); border: 1px solid var(--chipbd); border-radius: 999px; padding: .3cqw 1.1cqw; }
 .dsp-paused.fr { left: 3.4cqw; top: 3cqw; bottom: auto; transform: none; }   /* 액자: 받침 글자를 가리지 않게 왼쪽 위 */
 .dsp-paused.lab { left: auto; right: 2.8cqw; bottom: 2.6cqw; transform: none; }   /* 실험 액자: 기록·자막을 가리지 않게 오른쪽 아래 */
+/* 하노이 액자: 왼쪽 위 표(멈춤 · 로봇 · 파티) · 둘째 줄 조작 아래 안내 */
+.dsp-tags { position: absolute; left: 3.4cqw; top: 3cqw; display: flex; gap: .6cqw; z-index: 4; pointer-events: none; }
+.dsp-tag { font-size: 1.15cqw; font-weight: 800; color: var(--ink); background: var(--chip); border: 1px solid var(--chipbd);
+  border-radius: 999px; padding: .3cqw 1.05cqw; white-space: nowrap; }
+.dsp-tag.robot { color: #5fe6ff; border-color: rgba(95,230,255,.45); }
+.dsp-light .dsp-tag.robot { color: #0f7f8f; border-color: rgba(15,127,143,.4); }
+.dsp-tag.party { color: #10131c; border-color: transparent; background: linear-gradient(90deg,#ff3d6e,#ff9f1a,#d8ff3a,#2dffc4,#3db8ff,#b44dff,#ff3d6e);
+  background-size: 300% 100%; animation: dspParty 4s linear infinite; }
+@keyframes dspParty { to { background-position: 300% 0; } }
+@media (prefers-reduced-motion: reduce) { .dsp-tag.party { animation: none; } }
+.dsp-hint.low { top: 12.4cqw; }
+.dsp-seg button:disabled { opacity: .35; cursor: default; }
 
 /* 장면 목록 */
 .dsp-list { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: rgba(0,0,0,.35);
