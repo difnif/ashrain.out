@@ -2,6 +2,8 @@
 // 학원 프린트 「일차함수의 그래프 · 세트 1 · 2」(10단계 × 20문항)를 문항마다 한 장면으로 끝없이 돌린다.
 //   ① 문제 → ② 방침(한 줄) → ③ 판서: 계산 과정을 한 줄씩(지금 줄에 금빛 막대, 빨간 메모가 줄 뒤에 써지듯) → ④ 답
 //   9단계(색칠한 부분의 넓이)는 오른쪽에 그림 — 판서 줄에 맞춰 밑변 · 높이 · 나눈 삼각형이 빛난다.
+//   경우의 수와 확률 100제(frames/cnt100.jsx)도 이 그리기를 쓴다 — it.planTag 가 있으면 방침 칸 이름을 바꾸고(사전식 「숫자 분석」),
+//   it.fig.kind === "tree" 면 오른쪽 그림이 사전식 세로 나무(frames/lextree.jsx).
 // 재생기는 장면 묶음과 같은 StoryPlayer. 이 액자만의 것: 「세트 1 | 세트 2」 · 「1× | 1.5×」 · 번호 목록(L) — 목록 위
 //   단계 칩(전체 · 1~10)으로 고르면 그 단계 20문항만 돈다. 7 · 8단계(수직)는 고1 내용이라 표시를 붙인다.
 // 계산 · 박자표: ../lin10.js · 문항: ../lin10-items.js
@@ -10,6 +12,7 @@ import { MText, Arrow, Path, mathWidth, SANS, SERIF } from "../draw.jsx";
 import { seg, E, clamp } from "../core.js";
 import { L10_SETS, L10_SPEEDS, L10_STAGE, L10_HIGH, l10Plan, lineAt } from "../lin10.js";
 import { StoryPlayer } from "./player.jsx";
+import { LexTree } from "./lextree.jsx";
 import { Seg, useKeys, lsRead, lsWrite } from "./xkit.jsx";
 
 /* ══════════ 배치 (1600×900) ══════════ */
@@ -61,7 +64,12 @@ export function layoutOf(it) {
       rows.push(r);
     });
     const ansY = y + bs * 0.55;
-    const cand = { qs, bs, ps, ms, qLines, qY, planY, rows, ansY, right };
+    // 방침 칸: 이름(방침 · 숫자 분석)과 글자 크기 — 한 줄이 무대 오른쪽(그림 왼쪽)을 넘지 않게 줄인다
+    const tagW = it.planTag ? it.planTag.length * 1.05 + 0.8 : 2.9;
+    const pw = it.planTag ? 750 : 600, p0 = Math.round(ps * (it.planTag ? 1.3 : 1.12));
+    const planX = LEFT + ps * (tagW + 0.5);
+    const planS = Math.max(14, Math.min(p0, Math.floor(p0 * (right - planX) / Math.max(1, mathWidth(it.plan, p0, pw)))));
+    const cand = { qs, bs, ps, ms, qLines, qY, planY, rows, ansY, right, tagW, planX, planS, planW: pw };
     best = cand;
     if (ok && ansY + bs * 0.75 <= BOTTOM) break;
   }
@@ -229,9 +237,9 @@ export function L10Art({ it, t, C, uid = "" }) {
       </g>
       {po > 0 && (
         <g opacity={po}>
-          <rect x={LEFT - 4} y={Lo.planY - Lo.ps * 1.05} width={Lo.ps * 2.9} height={Lo.ps * 1.45} rx={Lo.ps * 0.72} fill={C.teal} opacity={0.2} />
-          <text x={LEFT + Lo.ps * 1.41} y={Lo.planY - Lo.ps * 0.02} fontFamily={SANS} fontSize={Lo.ps} fontWeight={800} fill={C.teal} textAnchor="middle">방침</text>
-          <MText x={LEFT + Lo.ps * 3.4} y={Lo.planY} s={it.plan} size={Math.round(Lo.ps * 1.12)} weight={600} fill={C.teal} C={C} />
+          <rect x={LEFT - 4} y={Lo.planY - Lo.ps * 1.05} width={Lo.ps * Lo.tagW} height={Lo.ps * 1.45} rx={Lo.ps * 0.72} fill={C.teal} opacity={0.2} />
+          <text x={LEFT - 4 + Lo.ps * Lo.tagW / 2} y={Lo.planY - Lo.ps * 0.02} fontFamily={SANS} fontSize={Lo.ps} fontWeight={800} fill={C.teal} textAnchor="middle">{it.planTag || "방침"}</text>
+          <MText x={Lo.planX} y={Lo.planY} s={it.plan} size={Lo.planS} weight={Lo.planW} fill={C.teal} C={C} />
         </g>
       )}
       {it.lines.map((ln, i) => {
@@ -270,7 +278,7 @@ export function L10Art({ it, t, C, uid = "" }) {
           </g>
         );
       })()}
-      {it.fig && <Figure it={it} t={t} cur={cur} C={C} />}
+      {it.fig && (it.fig.kind === "tree" ? <LexTree it={it} t={t} C={C} /> : <Figure it={it} t={t} cur={cur} C={C} />)}
     </g>
   );
 }

@@ -1,8 +1,9 @@
 // ashrain.out — 교실 모니터 「액자」: 경우의 수와 확률 100제 해설 (frames/cnt100.jsx)
-// 학원 프린트 「학년별 선발로 익히는 경우의 수와 확률 100제」 · 「주머니 속 공으로 익히는 경우의 수와 확률 100제」(중2-2)를
+// 학원 프린트 「학년별 선발」 · 「주머니 공 꺼내기」 · 「사전식 나열(영어 단어)」 · 「한 줄로 세우기(이웃 · 양 끝)」 100제(중2-2)를
 //   문항마다 한 장면으로 끝없이 돌린다 — ① 문제 → ② 전략 → ③ 판서(포지티브 · 네거티브 → 식 한 줄씩) → ④ 답.
 // 그리기 · 박자는 일차함수 10단계 액자(frames/lin10.jsx 의 L10Art · ../lin10.js 의 l10Plan)를 그대로 쓴다.
-// 이 액자만의 것: 「학년별 선발 | 주머니 공」 · 「1× | 1.5×」 · 번호 목록(L) — 목록 위 단계 칩(전체 · 1~5단계)으로 고르면 그 단계만 돈다.
+//   사전식은 「숫자 분석」 → 묶음 개수로 시작 글자 → 최종 묶음, 오른쪽에 세로 나무(frames/lextree.jsx — 칠판 판서 그대로).
+// 이 액자만의 것: 「선발 | 공 꺼내기 | 사전식 | 줄 세우기」(B로 차례로) · 「1× | 1.5×」 · 번호 목록(L) — 목록 위 단계 칩(전체 · 1~5단계)으로 고르면 그 단계만 돈다.
 // 문항: ../cnt100-items.js
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { l10Plan } from "../lin10.js";
@@ -50,14 +51,14 @@ export function Cnt100Frame(props) {
   const pickSt = useCallback((v) => setCfg((c) => ({ ...c, st: fixSt(v) })), []);
   useKeys({
     l: () => { setList((v) => !v); poke(); },
-    b: () => { pickSet(cfg.set === "sel" ? "ball" : "sel"); poke(); },
+    b: () => { pickSet(C100_KEYS[(C100_KEYS.indexOf(cfg.set) + 1) % C100_KEYS.length]); poke(); },
     s: () => { pickSp(cfg.sp === 1 ? 1.5 : 1); poke(); },
     Escape: () => setList(false),
   }, inert);
   const extra = (
     <>
       <span className="dsp-sep" />
-      <Seg label="세트" value={cfg.set} options={C100_KEYS.map((k) => [k, C100_SETS[k].name])} onChange={pickSet} poke={poke} />
+      <Seg label="세트" value={cfg.set} options={C100_KEYS.map((k) => [k, C100_SETS[k].short || C100_SETS[k].name])} onChange={pickSet} poke={poke} />
       <Seg label="빠르기" value={cfg.sp} options={[[1, "1×"], [1.5, "1.5×"]]} onChange={pickSp} poke={poke} />
       <Btn title="번호 · 단계 목록 (L)" on={list} onClick={() => { setList((v) => !v); poke(); }}>
         <Ic d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />
