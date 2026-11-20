@@ -14,6 +14,7 @@ import { W, H, SceneTitle } from "../draw.jsx";
 import { E, clamp } from "../core.js";
 import { paramsOf, durOf, optVal } from "../params.js";
 import { Title3D } from "../sim3d/overlay.jsx";
+import { Scrub } from "./scrub.jsx";
 
 const Stage3D = lazy(() => import("../sim3d/Stage3D.jsx"));
 /** 3D 를 켰고 그 장면에 3D 판이 있으면 3D 박자표 */
@@ -53,8 +54,9 @@ export function loadStory(list, now = Date.now(), o = null, prm = null, v3 = fal
 // 다른 화면이 같은 재생기를 쓸 때(컨셉 문제 해설 영상): noMode — 학년 토글 숨김 · noGallery — 액자 단추 숨김 ·
 //   exitTitle — 나가기 단추 이름 · startAt — 이 장면부터 새로 · apiRef — { goTo, idx } 를 밖으로(목록에서 고르기) ·
 //   onIdx — 장면이 바뀔 때 알림. 모두 생략하면 교실 모니터 액자와 똑같다.
+//   scrub — 해설 액자: 아래 긴 막대(문항 이동)와 옆 짧은 막대(풀이 이동 — 장면의 marks)를 띄운다(frames/scrub.jsx). 장면 점은 숨긴다.
 export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, isFs, toggleFs, onTheme, onGallery, onExit, inert, ui, extra, fresh,
-  noMode = false, noGallery = false, exitTitle = "수업 장면으로", startAt = null, apiRef = null, onIdx = null }) {
+  noMode = false, noGallery = false, exitTitle = "수업 장면으로", startAt = null, apiRef = null, onIdx = null, scrub = false }) {
   const { Btn, Ic, FrameIc } = ui;
   const n = list.length;
   const init = useRef(null);
@@ -105,6 +107,14 @@ export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, is
     setIdx(j); save(j, cur.repeat);
   }, [list, n, save]);
   if (apiRef) apiRef.current = { goTo, idx };
+  /** 지금 장면의 tt(ms) 자리로 — 멈춰 있었으면 멈춘 채(풀이 이동) */
+  const seek = useCallback((tt) => {
+    const now = Date.now(), c = clk.current;
+    clk.current = c.held != null ? { t0: now - tt, held: tt } : { t0: now - tt, held: null };
+    pf.current = null;
+    save(R.current.idx, R.current.repeat);
+    setFrame((f) => (f + 1) % 1e9);
+  }, [save]);
   const togglePause = useCallback(() => {
     const now = Date.now(), c = clk.current;
     clk.current = c.held != null ? { t0: now - c.held, held: null } : { t0: c.t0, held: now - c.t0 };
@@ -290,7 +300,9 @@ export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, is
       )}
 
       {/* 진행 — 묶음 안의 장면 점 + 지금 장면의 흐름 */}
-      {n > 1 && <div className="dsp-dots" aria-hidden="true">
+      {scrub && <Scrub variant="full" show={ctl} scenes={list} idx={idx} onPick={(i) => { goTo(i); poke(); }}
+        t={t} dur={dur} marks={pair.marks} onSeek={(tt) => { seek(tt); poke(); }} poke={poke} />}
+      {n > 1 && !scrub && <div className="dsp-dots" aria-hidden="true">
         {list.map((q, i) => <i key={q.key} className={i === idx ? "on" : ""} />)}
       </div>}
       <div className="dsp-prog" aria-hidden="true"><i style={{ transform: `scaleX(${t / dur})` }} /></div>

@@ -14,6 +14,7 @@ import { MText, Arrow, Path, mathWidth, SANS, SERIF } from "../draw.jsx";
 import { seg, E, clamp } from "../core.js";
 import { L10_SETS, L10_SPEEDS, L10_STAGE, L10_HIGH, l10Plan, lineAt } from "../lin10.js";
 import { StoryPlayer } from "./player.jsx";
+import { stepMarks } from "./scrub.jsx";
 import { LexTree } from "./lextree.jsx";
 import { SeatsFig, GradesFig, BagFig } from "./c100fig.jsx";
 
@@ -318,6 +319,7 @@ export function l10Scenes(setKey, sp = 1, stage = 0) {
     const sub = `${it.st}단계 ${L10_STAGE[it.st]}${L10_HIGH.has(it.st) ? " (고1)" : ""} · ${it.no}번`;
     return {
       key: `l10-${setKey}-${it.no}`, no: it.no, st: it.st, sub0: it.sub, dur: Math.round(l10Plan(it).dur / sp),
+      grp: `${it.st}단계`, marks: stepMarks(l10Plan(it), it.lines, sp),
       title: { e: title, m: title }, sub: { e: sub, m: sub },
       render: (mode, t, C) => <L10Art it={it} t={t * sp} C={C} />,
     };
@@ -366,7 +368,7 @@ export function Lin10Frame(props) {
   return (
     <>
       <StoryPlayer key={`${cfg.set}|${cfg.sp}|${cfg.st}`} list={scenes} lsKey={`${LSK}.${cfg.set}.${cfg.st}`} label={label}
-        {...props} inert={inert || list} noMode extra={extra} apiRef={api} onIdx={setCur} />
+        {...props} inert={inert || list} noMode extra={extra} apiRef={api} onIdx={setCur} scrub />
       {list && <NumList scenes={scenes} cfg={cfg} cur={cur} onPick={pick} onStage={(v) => { pickSt(v); poke(); }} onClose={() => setList(false)} />}
     </>
   );
