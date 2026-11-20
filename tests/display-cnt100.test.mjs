@@ -150,7 +150,21 @@ import { FRAMES } from ${F("frames/index.js")};
 import { L10Art, layoutOf, L10_BOX } from ${F("frames/lin10.jsx")};
 import { Cnt100Thumb, c100Scenes, PANE, PANE_BOX, DUAL_SPEEDS, paneLoad } from ${F("frames/cnt100.jsx")};
 import { seatsGeom } from ${F("frames/c100fig.jsx")};
+import { Scrub } from ${F("frames/scrub.jsx")};
+import { l10Scenes } from ${F("frames/lin10.jsx")};
+import { areaScenes } from ${F("frames/area.jsx")};
+import { graphScenes } from ${F("frames/graphdraw.jsx")};
+import { L10_SETS } from ${F("lin10.js")};
+import { AREA_SETS } from ${F("area.js")};
+import { GD_SETS } from ${F("graphdraw.js")};
 export { FRAMES, c100Scenes, layoutOf, L10_BOX, PANE, PANE_BOX, DUAL_SPEEDS, paneLoad, seatsGeom };
+export const lessonLists = () => [
+  ...Object.keys(L10_SETS).map((k) => ["lin10 " + k, l10Scenes(+k, 1, 0)]),
+  ...Object.keys(AREA_SETS).map((k) => ["area " + k, areaScenes(k, 1.5, 0)]),
+  ...Object.keys(GD_SETS).map((k) => ["graph " + k, graphScenes(k, 1)]),
+];
+export const scrub = (scenes, idx, t, v, show) => renderToStaticMarkup(<Scrub variant={v} show={show} scenes={scenes} idx={idx} onPick={() => {}}
+  t={t} dur={scenes[idx].dur} marks={scenes[idx].marks} onSeek={() => {}} />);
 export const paneArt = (it, t, th) => renderToStaticMarkup(<svg><L10Art it={it} t={t} C={PALETTE[th]} box={PANE_BOX} /></svg>);
 const svg = (el) => renderToStaticMarkup(<svg>{el}</svg>);
 export const art = (it, t, th) => svg(<L10Art it={it} t={t} C={PALETTE[th]} />);
@@ -255,6 +269,32 @@ export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
     assert.equal(pr.i, 2);
     assert.deepEqual(m.DUAL_SPEEDS, [0.75, 1, 1.5, 2]);
     console.log(`   반쪽 판 그림 ${cnt}장`);
+  });
+
+  test("두 막대: 해설 액자 넷의 장면마다 풀이 눈금(문제 → … → 답, 장면 안) · 단계 이름 · 막대 그리기(단일 · 듀얼 판)", () => {
+    const lists = [...C100_KEYS.flatMap((k) => [["c100 " + k, m.c100Scenes(k, 1, 0)], ["c100 " + k + " 2×", m.c100Scenes(k, 2, 3)]]), ...m.lessonLists()];
+    let nm = 0;
+    for (const [tag, L] of lists) {
+      assert.ok(L.length > 0, tag);
+      for (const sc of L) {
+        const ms = sc.marks;
+        assert.ok(Array.isArray(ms) && ms.length >= 3, `${tag} ${sc.no} 눈금`);
+        assert.equal(ms[0].t, 0);
+        assert.equal(ms[0].lab, "문제");
+        assert.equal(ms.at(-1).lab, "답");
+        for (let i = 1; i < ms.length; i++) assert.ok(ms[i].t >= ms[i - 1].t, `${tag} ${sc.no} 눈금 차례`);
+        assert.ok(ms.at(-1).t < sc.dur, `${tag} ${sc.no} 답이 장면 안`);
+        assert.ok(ms.every((x) => typeof x.lab === "string" && x.lab.length > 0 && x.lab.length <= 30), `${tag} ${sc.no} 눈금 이름`);
+        nm += ms.length;
+      }
+      const grpChanges = L.filter((s, i) => i && s.grp !== L[i - 1].grp).length;
+      assert.ok(grpChanges <= 40, `${tag} 단계 눈금이 너무 많음(${grpChanges})`);
+      for (const v of ["full", "L", "R"]) {
+        const h = m.scrub(L, Math.min(5, L.length - 1), 1200, v, true);
+        assert.ok(h.includes("scb-long") && h.includes("scb-short") && !BAD.test(h), `${tag} ${v} 막대`);
+      }
+    }
+    console.log(`   장면 묶음 ${lists.length}개 · 풀이 눈금 ${nm}개`);
   });
 
   test("장면 목록: 세트 × 빠르기 × 단계 — 1.5× 는 길이 2/3 · 같은 순간", () => {

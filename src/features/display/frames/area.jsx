@@ -10,6 +10,7 @@ import { MText, Arrow, Path, mathWidth, SANS, SERIF } from "../draw.jsx";
 import { seg, E, clamp } from "../core.js";
 import { AREA_SETS, AREA_SPEEDS, AREA_LEVEL, arPlan, lineAt, figPoints } from "../area.js";
 import { StoryPlayer } from "./player.jsx";
+import { stepMarks } from "./scrub.jsx";
 import { Seg, useKeys, lsRead, lsWrite } from "./xkit.jsx";
 
 /* ══════════ 배치 (1600×900) ══════════ */
@@ -483,6 +484,7 @@ export function areaScenes(setKey, sp = 1, lv = 0) {
     const sub = it.lv ? `${it.lv}단계 ${AREA_LEVEL[it.lv]} · ${it.no}번` : `${it.no}번 · ${it.sub}`;
     return {
       key: `area-${setKey}-${it.no}`, no: it.no, lv: it.lv || 0, sub0: it.sub, dur: Math.round(arPlan(it).dur / sp),
+      grp: it.lv ? `${it.lv}단계` : null, marks: stepMarks(arPlan(it), it.lines, sp),
       title: { e: title, m: title }, sub: { e: sub, m: sub },
       render: (mode, t, C) => <AreaArt it={it} t={t * sp} C={C} />,
     };
@@ -532,7 +534,7 @@ export function AreaFrame(props) {
   return (
     <>
       <StoryPlayer key={`${cfg.set}|${cfg.sp}|${lv}`} list={scenes} lsKey={`${LSK}.${cfg.set}.${lv}`} label={label}
-        {...props} inert={inert || list} noMode extra={extra} apiRef={api} onIdx={setCur} />
+        {...props} inert={inert || list} noMode extra={extra} apiRef={api} onIdx={setCur} scrub />
       {list && <NumList scenes={scenes} setKey={cfg.set} lv={lv} cur={cur} onPick={pick} onLevel={(v) => { pickLv(v); poke(); }} onClose={() => setList(false)} />}
     </>
   );

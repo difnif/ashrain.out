@@ -11,6 +11,7 @@ import { W, H, MText, Arrow, Path, mathWidth, SANS, SERIF } from "../draw.jsx";
 import { seg, E, clamp } from "../core.js";
 import { GD_SETS, GD_SPEEDS, GD_KIND, gdPlan, stepAt, stepAtoms, toM, linStr, qv, qstr, clipLine } from "../graphdraw.js";
 import { StoryPlayer } from "./player.jsx";
+import { stepMarks } from "./scrub.jsx";
 import { Seg, useKeys, lsRead, lsWrite } from "./xkit.jsx";
 
 /* ══════════ 무대 배치 (1600×900) ══════════ */
@@ -247,6 +248,7 @@ export function graphScenes(setKey, sp = 1) {
     const sub = `${S.name} ${it.no}번 · ${GD_KIND[it.kind]}`;
     return {
       key: `gd-${setKey}-${it.no}`, no: it.no, kind: it.kind, dur: Math.round(plan.dur / sp),
+      grp: GD_KIND[it.kind], marks: stepMarks({ lines: plan.steps, ans: plan.ans }, plan.steps.map((x) => ({ s: x.text })), sp),
       title: { e: title, m: title }, sub: { e: sub, m: sub },
       render: (mode, t, C) => <GraphArt it={it} t={t * sp} C={C} />,
     };
@@ -292,7 +294,7 @@ export function GraphFrame(props) {
   return (
     <>
       <StoryPlayer key={`${cfg.set}|${cfg.sp}`} list={scenes} lsKey={`${LSK}.${cfg.set}`} label={`일차함수 그래프 그리기 해설 · ${GD_SETS[cfg.set].name}`}
-        {...props} inert={inert || list} noMode extra={extra} apiRef={api} onIdx={setCur} />
+        {...props} inert={inert || list} noMode extra={extra} apiRef={api} onIdx={setCur} scrub />
       {list && <NumList scenes={scenes} setName={GD_SETS[cfg.set].name} cur={cur} onPick={pick} onClose={() => setList(false)} />}
     </>
   );

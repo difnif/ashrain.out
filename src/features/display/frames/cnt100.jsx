@@ -9,6 +9,9 @@
 //   「단일 | 듀얼」(D): 듀얼 모드는 화면을 좌우 둘로 나눠 두 판을 따로 돌린다 — 판마다 세트(같은 세트 둘도 됨) · 단계 · 번호 ·
 //   빠르기(0.75× ~ 2×) · 멈춤 · 반복을 따로. 예: 왼쪽은 앞쪽 문항을 빠르게, 오른쪽은 뒤쪽 문항을 느리게 — 교실 앞에 두고 여러 학생을 함께 본다.
 //   듀얼 판에는 그림 없이 판서만(반쪽이라 글자를 크게). 판마다 자리 · 고른 것은 기기에 기억한다(벽시계라 새로고침해도 이어 돈다).
+//   가운데 단추(⇄ · 키보드 X): 두 판의 자리를 맞바꾼다 — 세트 · 번호 · 빠르기 · 시계가 그대로 옮겨 간다.
+//   두 막대(frames/scrub.jsx): 아래 긴 막대 = 문항 이동(동그라미를 끌거나 누름), 옆 짧은 막대 = 풀이 이동(문제 · 방침 · 판서 줄 · 답).
+//   단일 모드는 StoryPlayer 의 scrub, 듀얼 모드는 판마다(왼쪽 판은 왼쪽 가장자리, 오른쪽 판은 오른쪽 가장자리에 짧은 막대).
 // 문항: ../cnt100-items.js
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { l10Plan } from "../lin10.js";
@@ -16,6 +19,7 @@ import { W, H, SANS } from "../draw.jsx";
 import { C100_SETS, C100_KEYS, C100_SPEEDS } from "../cnt100.js";
 import { L10Art } from "./lin10.jsx";
 import { StoryPlayer } from "./player.jsx";
+import { Scrub, stepMarks } from "./scrub.jsx";
 import { Seg, useKeys, lsRead, lsWrite } from "./xkit.jsx";
 
 /* ══════════ 장면 목록 (StoryPlayer 형식) ══════════ */
@@ -29,6 +33,7 @@ export function c100Scenes(setKey, sp = 1, stage = 0) {
     const sub = `${it.st}단계 ${S.stage[it.st]} · ${it.no}번`;
     return {
       key: `c100-${setKey}-${it.no}`, no: it.no, st: it.st, it, dur: Math.round(l10Plan(it).dur / sp),
+      grp: `${it.st}단계`, marks: stepMarks(l10Plan(it), it.lines, sp, it.planTag || "방침"),
       title: { e: title, m: title }, sub: { e: sub, m: sub },
       render: (mode, t, C) => <L10Art it={it} t={t * sp} C={C} uid={`c${setKey}`} />,
     };
@@ -89,7 +94,7 @@ function SingleStage(props) {
   return (
     <>
       <StoryPlayer key={`${cfg.set}|${cfg.sp}|${cfg.st}`} list={scenes} lsKey={`${LSK}.${cfg.set}.${cfg.st}`} label={label}
-        {...props} inert={inert || list} noMode extra={extra} apiRef={api} onIdx={setCur} />
+        {...props} inert={inert || list} noMode extra={extra} apiRef={api} onIdx={setCur} scrub />
       {list && <NumList scenes={scenes} cfg={cfg} cur={cur} onPick={pick} onStage={(v) => { pickSt(v); poke(); }} onClose={() => setList(false)} />}
     </>
   );
@@ -148,6 +153,16 @@ function DualStage(props) {
   }), [upd]);
   const setSet = useCallback((side, set) => upd(side, (p) => (p.set === set ? p : { ...p, set, st: 0, i: 0, t0: Date.now(), held: p.held != null ? 0 : null })), [upd]);
   const setStage = useCallback((side, st) => upd(side, (p) => ({ ...p, st, i: 0, t0: Date.now(), held: p.held != null ? 0 : null })), [upd]);
+  /** 가운데 단추 — 두 판의 자리를 맞바꾼다(세트 · 번호 · 빠르기 · 시계 모두 그대로 옮겨 간다) */
+  const swap = useCallback(() => {
+    const { L, R } = panes.current;
+    panes.current = { L: R, R: L };
+    save(); redraw();
+  }, [save, redraw]);
+  const seek = useCallback((side, tt) => upd(side, (p) => {           // 풀이 이동 — 멈춰 있으면 멈춘 채
+    const now = Date.now();
+    return { ...p, t0: now - tt, held: p.held != null ? tt : null };
+  }), [upd]);
   const setSpeed = useCallback((side, sp) => upd(side, (p) => {
     if (p.sp === sp) return p;
     const now = Date.now(), e = elapsed(p, now) * p.sp / sp;     // 그림 속 같은 순간에서 이어서
@@ -183,6 +198,7 @@ function DualStage(props) {
     " ": () => { const both = panes.current.L.held == null || panes.current.R.held == null;
       for (const s of SIDES) if ((panes.current[s].held == null) === both) togglePause(s); poke(); },
     f: () => toggleFs(),
+    x: () => { swap(); poke(); },
     Escape: () => setList(null),
   }, inert || !!list);
 
@@ -250,6 +266,16 @@ function DualStage(props) {
       {view.map(({ side, e, sc }) => (
         <div key={"pg" + side} className={"c100-pane-prog " + side} aria-hidden="true"><i style={{ transform: `scaleX(${e / sc.dur})` }} /></div>
       ))}
+      <button type="button" className={"c100-swap" + (ctl && !list ? " show" : "")} title="왼쪽 · 오른쪽 판 자리 바꾸기 (X)" aria-label="왼쪽 · 오른쪽 판 자리 바꾸기"
+        onPointerDown={stop} onClick={() => { swap(); poke(); }}>
+        <svg viewBox="0 0 24 24" width="55%" height="55%" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7" />
+        </svg>
+      </button>
+      {view.map(({ side, p, L, e, sc }) => (
+        <Scrub key={"sc" + side} variant={side} show={ctl && !list} scenes={L} idx={p.i} onPick={(i) => { goTo(side, i); poke(); }}
+          t={e} dur={sc.dur} marks={sc.marks} onSeek={(tt) => { seek(side, tt); poke(); }} poke={poke} />
+      ))}
       {list && (() => {
         const p = panes.current[list];
         const scenes = c100Scenes(p.set, p.sp, p.st);
@@ -266,8 +292,8 @@ function DualStage(props) {
 
 const L10ArtPane = ({ it, t, C, uid }) => <L10Art it={it} t={t} C={C} uid={uid} box={PANE_BOX} />;
 
-const DUAL_CSS = `
-.c100-pane-ctl { position: absolute; bottom: 2cqw; width: 48%; display: flex; flex-direction: column; align-items: center; gap: .5cqw;
+export const DUAL_CSS = `
+.c100-pane-ctl { position: absolute; bottom: 4.4cqw; width: 48%; display: flex; flex-direction: column; align-items: center; gap: .5cqw;
   opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 6; }
 .c100-pane-ctl.L { left: 1%; } .c100-pane-ctl.R { right: 1%; }
 .c100-pane-ctl.show { opacity: 1; pointer-events: auto; }
@@ -275,16 +301,27 @@ const DUAL_CSS = `
   background: var(--chip); border: 1px solid var(--chipbd); }
 .c100-pane-ctl .dsp-btn { width: 3cqw; height: 3cqw; font-size: 1.45cqw; }
 .c100-pane-ctl .dsp-seg button { font-size: 1.05cqw; padding: .45cqw .85cqw; }
+.c100-swap { position: absolute; left: 50%; top: 50%; width: 4.4cqw; height: 4.4cqw; margin: -2.2cqw 0 0 -2.2cqw; z-index: 7;
+  border-radius: 999px; border: 1px solid var(--chipbd); background: var(--chip); color: var(--ink); display: grid; place-items: center;
+  cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .3s, color .25s, border-color .25s; -webkit-tap-highlight-color: transparent; }
+.c100-swap.show { opacity: 1; pointer-events: auto; }
+.c100-swap:hover { color: var(--gold); border-color: var(--gold); }
 .c100-pane-prog { position: absolute; bottom: 0; height: .22cqw; width: 50%; opacity: .45; }
 .c100-pane-prog.L { left: 0; } .c100-pane-prog.R { right: 0; }
 .c100-pane-prog i { display: block; height: 100%; background: var(--gold); transform-origin: 0 50%; }
 .c100-pane-list { position: absolute; top: 0; bottom: 0; width: 50%; z-index: 8; }
 .c100-pane-list.L { left: 0; } .c100-pane-list.R { right: 0; }
-.c100-pane-list .c100-grid { grid-template-columns: repeat(4, 1fr) !important; }
+.c100-pane-list .dsp-list-in { width: 46.5cqw; max-height: 92%; padding: 1.2cqw 1.3cqw; }
+.c100-pane-list .dsp-list-h { font-size: 1.4cqw; }
+.c100-pane-list .c100-grid { grid-template-columns: repeat(3, 1fr) !important; gap: .6cqw; }
+.c100-pane-list .dsp-card { padding: .7cqw .8cqw; column-gap: .6cqw; }
+.c100-pane-list .dsp-card .e, .c100-pane-list .dsp-card .m { font-size: 1.02cqw; }
+.c100-pane-list .dsp-chip { font-size: 1.05cqw; padding: .4cqw .85cqw; }
+.c100-pane-list .dsp-gal-sub { font-size: .98cqw; }
 `;
 
 /** 번호 · 단계 목록 — 단계 칩을 고르면 그 단계만 돌고, 번호를 고르면 그 문항부터 */
-function NumList({ scenes, cfg, cur, onPick, onStage, onClose, side = "" }) {
+export function NumList({ scenes, cfg, cur, onPick, onStage, onClose, side = "" }) {
   const S = C100_SETS[cfg.set];
   const lap = scenes.reduce((s, x) => s + x.dur, 0);
   const cnt = (v) => S.items.filter((it) => it.st === v).length;
