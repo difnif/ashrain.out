@@ -10,15 +10,15 @@ import { memo, useEffect, useState } from "react";
 import { W, H, MText, SceneTitle, Path } from "../draw.jsx";
 import { seg, E, clamp, lerp } from "../core.js";
 import { UText, Chip, chipW, uWidth } from "../kit-story.jsx";
-import { lineOf, lineSteps, fs, pt, num, eqText, cycleAt, SPEEDS, spFmt, keepSpeed } from "../curio/kit.js";
-import { LabChrome, Stepper, Setting, useLabClock, useTicker, useKeys, useModeLayers, baseKeys } from "./xkit.jsx";
-import { FitText, Lines, Panel, Small, clipLine } from "./curio-kit.jsx";
+import { lineOf, lineSteps, fs, pt, num, eqText, cycleAt, SPEEDS, spFmt, keepSpeed, keepPlace, EXS, fixEx } from "../curio/kit.js";
+import { LabChrome, Stepper, Seg, Setting, useLabClock, useTicker, useKeys, useModeLayers, baseKeys } from "./xkit.jsx";
+import { FitText, Lines, Panel, Small, clipLine, BigChip, bigW, besideLine, pickSpot } from "./curio-kit.jsx";
 
 const LSK = "ash.display.curio.batfn";
 const GAMES = [-1, 0, 1, 2, 3];
 const GAME_SHORT = ["양키스–메츠", "레인저스–애스트로스", "D백스–다저스", "블루제이스–레드삭스"];
-const DEF = { game: -1, sp: 1 };
-const fixPrm = (p = {}) => ({ game: GAMES.includes(p.game) ? p.game : -1, sp: SPEEDS.includes(p.sp) ? p.sp : 1 });
+const DEF = { game: -1, sp: 1, ex: "full" };
+const fixPrm = (p = {}) => ({ game: GAMES.includes(p.game) ? p.game : -1, sp: SPEEDS.includes(p.sp) ? p.sp : 1, ex: fixEx(p.ex) });
 
 /* ── 무대: 구장(가운데 왼쪽, 홈이 아래) · 설명 판(오른쪽) ── */
 const S = 1.66, HX = 540, HY = 866;
@@ -29,9 +29,34 @@ export const bp = (q) => [HX + (q[0] - q[1]) * R2 * S, HY - (q[0] + q[1]) * R2 *
 const farOf = (U, V) => { const r = Math.hypot(U, V) || 1; return [(U * 425) / r, (V * 425) / r]; };
 const PANEL = { x: 1060, y: 150, w: 502, h: 720 };
 /** 그림 영역(설명 판 왼쪽) — 직선 · 이름표가 판 밑이나 무대 밖으로 나가지 않게(위쪽은 가운데 담장 너머까지 비어 있다) */
-const AREA = [8, 30, PANEL.x - 14, 896];
+const AREA_FULL = [8, 30, PANEL.x - 14, 896];
+/*
+ * 최소화: 설명 판 없이 그 타구 쪽으로 다가간 카메라(홈 · 떨어진 곳 · 송구 끝을 넉넉히). 지도 B = { p, s }.
+ * 공 길 · 직선은 그대로, 좌표는 판 아래 · 왼쪽 가장자리 자 대신 파울선(축) 눈금으로 읽는다.
+ */
+const MBOX = [36, 150, 1564, 872];
+const VFULL = { p: bp, s: S, area: AREA_FULL, mini: false };
+const ZB = new WeakMap();
+function zoomOf(b) {
+  if (ZB.has(b)) return ZB.get(b);
+  const pts = [[0, 0], [b.u, b.v], [b.U, b.V], ...(b.th ? [b.th] : [])];
+  const X = pts.map((q) => (q[0] - q[1]) * R2), Y = pts.map((q) => (q[0] + q[1]) * R2);
+  const mg = 40;
+  let x0 = Math.min(...X) - mg, x1 = Math.max(...X) + mg, y0 = Math.min(...Y) - mg, y1 = Math.max(...Y) + mg;
+  const w = Math.max(230, x1 - x0), h = Math.max(170, y1 - y0);
+  const aw = MBOX[2] - MBOX[0], ah = MBOX[3] - MBOX[1] - 70;
+  const s = clamp(Math.min(aw / w, ah / h), 1.62, 4.2);
+  const z = { s, cx: (x0 + x1) / 2, cy: clamp((y0 + y1) / 2, -20 + ah / s / 2 - 30, 440) };
+  ZB.set(b, z);
+  return z;
+}
+function viewOf(z) {
+  const mx = (MBOX[0] + MBOX[2]) / 2, my = (MBOX[1] + 70 + MBOX[3]) / 2;
+  const p = (q) => [mx + ((q[0] - q[1]) * R2 - z.cx) * z.s, my - ((q[0] + q[1]) * R2 - z.cy) * z.s];
+  return { p, s: z.s, area: [MBOX[0] + 4, MBOX[1] + 4, MBOX[2] - 4, MBOX[3] - 4], mini: true };
+}
 /** 홈(영역 안)에서 p 쪽으로 그은 선분을 영역 안까지만 */
-function inArea(a, p) {
+function inArea(a, p, AREA = AREA_FULL) {
   let k = 1;
   const dx = p[0] - a[0], dy = p[1] - a[1];
   if (dx > 0) k = Math.min(k, (AREA[2] - a[0]) / dx); else if (dx < 0) k = Math.min(k, (AREA[0] - a[0]) / dx);
@@ -95,9 +120,10 @@ function fieldColors(C) {
     ? { stands: "#d9cdb3", foul: "#bfd6a2", grass: "#a9cc85", grass2: "#a1c47d", dirt: "#d9b384", track: "#cfa877", line: "#ffffff", ink: "#2f3a22", halo: "#e6f0da" }
     : { stands: "#1a2238", foul: "#1f3a2c", grass: "#25503a", grass2: "#224a36", dirt: "#6a4a33", track: "#5a3f2c", line: "#efe7d6", ink: "#f1ead8", halo: "#183022" };
 }
-const polyD = (pts) => "M" + pts.map((q) => bp(q).map((v) => v.toFixed(1)).join(" ")).join("L") + "Z";
+const polyD = (pts, P = bp) => "M" + pts.map((q) => P(q).map((v) => v.toFixed(1)).join(" ")).join("L") + "Z";
 const arcOf = (fence) => fence.filter((p) => p[0] > 4 && p[1] > 4).sort((a, b) => Math.atan2(a[1], a[0]) - Math.atan2(b[1], b[0]));
-const Field = memo(function Field({ C, park, pk }) {
+const Field = memo(function Field({ C, park, pk, B = VFULL }) {
+  const bp = B.p, S = B.s;
   const K = fieldColors(C);
   const bases = [[90, 0], [90, 90], [0, 90]].map(bp);
   const home = bp([0, 0]), mound = bp([42.8, 42.8]);
@@ -109,22 +135,22 @@ const Field = memo(function Field({ C, park, pk }) {
   for (let a = 0; a < 90; a += 7.5) {
     if ((a / 7.5) % 2) continue;
     const r = 470, rad = (d) => (d * Math.PI) / 180;
-    stripes.push(<path key={a} d={polyD([[0, 0], [r * Math.cos(rad(a)), r * Math.sin(rad(a))], [r * Math.cos(rad(a + 7.5)), r * Math.sin(rad(a + 7.5))]])} fill={K.grass2} />);
+    stripes.push(<path key={a} d={polyD([[0, 0], [r * Math.cos(rad(a)), r * Math.sin(rad(a))], [r * Math.cos(rad(a + 7.5)), r * Math.sin(rad(a + 7.5))]], bp)} fill={K.grass2} />);
   }
   const fid = `curio-fence-${pk}-${C.name}`;
   const arcD = "M" + arc.map((q) => bp(q).map((v) => v.toFixed(1)).join(" ")).join("L");
   return (
     <g>
-      <path d={polyD(bowl)} fill={K.foul} />
-      <defs><clipPath id={fid}><path d={polyD(park.fence)} /></clipPath></defs>
-      <path d={polyD(park.fence)} fill={K.grass} />
+      <path d={polyD(bowl, bp)} fill={K.foul} />
+      <defs><clipPath id={fid}><path d={polyD(park.fence, bp)} /></clipPath></defs>
+      <path d={polyD(park.fence, bp)} fill={K.grass} />
       <g clipPath={`url(#${fid})`}>
         {stripes}
         <path d={arcD} fill="none" stroke={K.track} strokeWidth={15 * S * 2} strokeLinejoin="round" />
       </g>
       <path d={arcD} fill="none" stroke={K.ink} strokeOpacity={0.6} strokeWidth={3} strokeLinejoin="round" />
-      <path d={polyD(park.dirt)} fill={K.dirt} />
-      <path d={polyD(park.grass)} fill={K.grass} />
+      <path d={polyD(park.dirt, bp)} fill={K.dirt} />
+      <path d={polyD(park.grass, bp)} fill={K.grass} />
       <circle cx={mound[0]} cy={mound[1]} r={9 * S} fill={K.dirt} />
       <circle cx={home[0]} cy={home[1] - 2} r={13 * S} fill={K.dirt} />
       {[0, 1].map((i) => {
@@ -139,8 +165,9 @@ const Field = memo(function Field({ C, park, pk }) {
 });
 
 /** 비스듬한 좌표축(파울선) · 50피트 눈금 · 옅은 모눈 */
-function BatAxes({ C, o }) {
+function BatAxes({ C, o, B = VFULL }) {
   if (o <= 0.001) return null;
+  const bp = B.p;
   const K = fieldColors(C);
   const grid = [], lab = [];
   for (let c = 50; c <= 400; c += 50) {
@@ -173,7 +200,7 @@ function BatAxes({ C, o }) {
 
 /* ══════════ 장면 ══════════ */
 const isHit = (b) => /안타|루타|홈런/.test(b.res);
-export function BatArt({ C, mode, P, data, at }) {
+export function BatArt({ C, mode, P, data, at, ex = "full" }) {
   if (!data) return <MText x={560} y={520} s="경기 자료를 불러오는 중…" size={34} anchor="middle" fill={C.soft} C={C} />;
   const list = ballsOf(data, P);
   if (!list.length) return null;
@@ -181,7 +208,16 @@ export function BatArt({ C, mode, P, data, at }) {
   const { gi, b, n } = list[i];
   const game = data.games[gi], park = data.parks[game.park], teams = game.teams;
   const K = fieldColors(C);
-  const isM = mode === "m";
+  const isM = mode === "m", mini = ex === "mini";
+  // 최소화 카메라: 지난 타구 카메라에서 이번 타구 카메라로 0.9초
+  let Bv = VFULL;
+  if (mini) {
+    const z1 = zoomOf(b), pb = list.length > 1 && (i > 0 || at.k > 0) ? list[(i - 1 + list.length) % list.length].b : null;
+    const z0 = pb ? zoomOf(pb) : z1, kz = seg(t, 0, 900, E.io);
+    Bv = viewOf({ s: Math.exp(lerp(Math.log(z0.s), Math.log(z1.s), kz)), cx: lerp(z0.cx, z1.cx, kz), cy: lerp(z0.cy, z1.cy, kz) });
+  }
+  const bp = Bv.p, AREA = Bv.area;
+  const inA = (a2, p2) => inArea(a2, p2, AREA);
   const oOut = 1 - seg(t, BC.out[0], BC.out[1]);
   const home = bp([0, 0]), land = bp([b.u, b.v]), Q = bp([b.U, b.V]);
   const batTeam = teams[b.tb];
@@ -194,7 +230,7 @@ export function BatArt({ C, mode, P, data, at }) {
   });
   const ghost = prev.slice(-40).map((q, j, arr) => {
     if (q.U === 0 && q.V === 0) return null;
-    return <Path key={j} pts={[home, inArea(home, bp(farOf(q.U, q.V)))]} stroke={teams[q.tb].c} sw={1.4} o={0.05 + 0.1 * ((j + 1) / arr.length)} />;
+    return <Path key={j} pts={[home, inA(home, bp(farOf(q.U, q.V)))]} stroke={teams[q.tb].c} sw={1.4} o={0.05 + 0.1 * ((j + 1) / arr.length)} />;
   });
   // 투구 → 타구
   const kp = seg(t, BC.pitch[0], BC.pitch[1], E.lin);
@@ -218,7 +254,7 @@ export function BatArt({ C, mode, P, data, at }) {
   let lineEl = null;
   if (L.kind !== "pt" && kl > 0) {
     const r = Math.hypot(b.U, b.V) || 1, fr = Math.max(425, r + 25);   // 담장 너머 홈런은 떨어진 곳보다 조금 더
-    const far = inArea(home, bp([(b.U * fr) / r, (b.V * fr) / r]));
+    const far = inA(home, bp([(b.U * fr) / r, (b.V * fr) / r]));
     lineEl = <Path pts={[home, [lerp(Q[0], far[0], kl), lerp(Q[1], far[1], kl)]]} stroke={C.name === "light" ? "#0f766e" : "#7fe3d3"} sw={3} dash="12 9" o={0.95 * oOut} />;
   }
   const ktl = thr ? seg(t, BC.thl[0], BC.thl[1], E.out) : 0;
@@ -237,21 +273,33 @@ export function BatArt({ C, mode, P, data, at }) {
   const kland = seg(t, BC.land[0], BC.land[1]);
   const eq = isM && L.kind !== "pt" ? eqText(L) : "";
   const hr = b.ev === "home_run" && kh >= 1 ? seg(t, BC.hit[1], BC.hit[1] + 400) * (1 - seg(t, BC.hit[1] + 2600, BC.hit[1] + 3300)) : 0;
-  // 떨어진 곳 이름표 자리
+  // 떨어진 곳 이름표 자리(좌표 칩 — 그림에서 눈에 띄게)
+  const CS = mini ? 26 : 23;
   const lt = (() => {
-    const w = chipW(pt([b.U, b.V]), 18);
+    const w = chipW(pt([b.U, b.V]), CS);
     let sd = b.U >= b.V ? 1 : -1;
     if (sd > 0 && land[0] + 16 + w > AREA[2]) sd = -1;
     else if (sd < 0 && land[0] - 16 - w < AREA[0]) sd = 1;
-    const y = land[1] - 24 < AREA[1] + 14 ? land[1] + 28 : land[1] - 24;
-    return { x: land[0] + sd * 16, y, anchor: sd > 0 ? "start" : "end" };
+    const y = land[1] - 28 < AREA[1] + 14 ? land[1] + 32 : land[1] - 28;
+    return { x: land[0] + sd * 16, y, anchor: sd > 0 ? "start" : "end", w };
   })();
+  // 기울기 칩(금테 · 크게) — 홈에서 떨어진 곳까지의 직선 옆
+  const bs = mini ? 38 : 32;
+  const slopeTxt = L.kind === "pt" || L.kind === "v" ? "" : isM ? `기울기 ${fs(L.m[0], L.m[1])}` : b.U > 0 && b.V > 0 ? `3루 쪽 ÷ 1루 쪽 = ${fs(b.V, b.U)}` : "";
+  const sbw = slopeTxt ? bigW(slopeTxt, bs) : 0;
+  const slopeAt = slopeTxt ? pickSpot([0.55, 0.4, 0.7, 0.3, 0.8].flatMap((f) => [besideLine(home, Q, sbw, bs * 1.5, f, 1), besideLine(home, Q, sbw, bs * 1.5, f, -1)]), sbw, bs * 1.5,
+    [{ x: home[0], y: home[1], w: 60, h: 60 }, { x: land[0], y: land[1], w: 20, h: 20 }, { x: lt.x + (lt.anchor === "start" ? lt.w / 2 : -lt.w / 2), y: lt.y, w: lt.w, h: CS * 1.5 },
+      ...(thr ? [{ x: thr[0], y: thr[1], w: 30, h: 30 }] : []), ...(mini ? [{ x: MBOX[0] + 260, y: MBOX[1] + 56, w: 520, h: 90 }, { x: MBOX[2] - 200, y: MBOX[1] + 32, w: 400, h: 40 }] : [])],
+    AREA) : null;
   // 주자
   const runners = [[90, 0], [90, 90], [0, 90]].map((q, j) => b.on[j] ? bp(q) : null).filter(Boolean);
   return (
     <g>
-      <Field C={C} park={park} pk={game.park} />
-      <BatAxes C={C} o={1} />
+      {mini && <defs><clipPath id="bat-mini-clip"><rect x={MBOX[0]} y={MBOX[1]} width={MBOX[2] - MBOX[0]} height={MBOX[3] - MBOX[1]} rx={16} /></clipPath></defs>}
+      <g clipPath={mini ? "url(#bat-mini-clip)" : undefined}>
+      {mini && <rect x={MBOX[0]} y={MBOX[1]} width={MBOX[2] - MBOX[0]} height={MBOX[3] - MBOX[1]} fill={K.stands} />}
+      <Field C={C} park={park} pk={game.park} B={Bv} />
+      <BatAxes C={C} o={1} B={Bv} />
       {ghost}
       {dots}
       {lineEl}
@@ -266,7 +314,7 @@ export function BatArt({ C, mode, P, data, at }) {
       {pitchEl}
       <g opacity={kland * oOut}>
         <circle cx={land[0]} cy={land[1]} r={7} fill={C.gold} stroke="#fff" strokeWidth={2} />
-        <Chip x={lt.x} y={lt.y} s={pt([b.U, b.V])} size={18} C={C} anchor={lt.anchor} />
+        <Chip x={lt.x} y={lt.y} s={pt([b.U, b.V])} size={CS} C={C} anchor={lt.anchor} />
       </g>
       {ballAt && oOut > 0.01 && (
         <g>
@@ -274,13 +322,32 @@ export function BatArt({ C, mode, P, data, at }) {
           <circle cx={ballAt[0]} cy={ballAt[1] - ballH * 70} r={5 + 4 * ballH} fill="#fbfbf5" stroke="#b33" strokeWidth={1.4} />
         </g>
       )}
-      {eq && <Chip x={clamp(lerp(home[0], Q[0], 0.5) + (b.U >= b.V ? 70 : -70), 140, 990)} y={clamp(lerp(home[1], Q[1], 0.5), 200, 820)} s={eq} size={21} C={C} o={seg(t, BC.line[1] - 300, BC.line[1] + 300) * oOut} />}
+      {eq && !mini && (() => { const w = chipW(eq, 24); const q = pickSpot([0.3, 0.8, 0.2, 0.9].flatMap((f) => [besideLine(home, Q, w, 36, f, -1), besideLine(home, Q, w, 36, f, 1)]), w, 36, [...(slopeAt ? [{ x: slopeAt[0], y: slopeAt[1], w: sbw, h: bs * 1.5 }] : []), { x: home[0], y: home[1], w: 60, h: 60 }, { x: land[0], y: land[1], w: 20, h: 20 }, { x: lt.x + (lt.anchor === "start" ? lt.w / 2 : -lt.w / 2), y: lt.y, w: lt.w, h: CS * 1.5 }], [140, 200, 990, 820]); return <Chip x={q[0]} y={q[1]} s={eq} size={24} C={C} o={seg(t, BC.line[1] - 300, BC.line[1] + 300) * oOut} />; })()}
+      {slopeAt && <BigChip x={slopeAt[0]} y={slopeAt[1]} s={slopeTxt} size={bs} C={C} o={seg(t, BC.line[0] + 300, BC.line[1]) * oOut} />}
       {hr > 0 && <UText x={land[0]} y={land[1] - 40} s="홈런!" size={44 + 10 * hr} weight={900} anchor="middle" fill={C.gold} halo={C.halo} opacity={Math.min(1, hr * 1.5)} C={C} />}
-      <BatPanel C={C} mode={mode} game={game} park={park} b={b} t={t} idx={i} total={list.length} oOut={oOut} />
+      </g>
+      {mini && <rect x={MBOX[0]} y={MBOX[1]} width={MBOX[2] - MBOX[0]} height={MBOX[3] - MBOX[1]} rx={16} fill="none" stroke={C.cardEdge} strokeWidth={1.4} />}
+      {!mini && <BatPanel C={C} mode={mode} game={game} park={park} b={b} t={t} idx={i} total={list.length} oOut={oOut} />}
+      {mini && <BatMini C={C} mode={mode} game={game} b={b} t={t} oOut={oOut} />}
     </g>
   );
 }
 
+/** 최소화 — 위 왼쪽: 경기 · 회 · 점수, 위 오른쪽: 타자 → 결과, 둘째 줄: 식(중등) 또는 방향(초등) */
+function BatMini({ C, mode, game, b, t, oOut }) {
+  const teams = game.teams, done = t >= BC.land[0], sc = done ? b.post : b.pre;
+  const a = `${teams[0].n} ${sc[0]} : ${sc[1]} ${teams[1].n} · ${b.i}회${b.tb ? "말" : "초"} · ${b.outs}아웃`;
+  const r = `${b.bat}${done ? ` → ${b.res}` : ""}`;
+  const L = batSteps(b, mode), hi = [...L].reverse().find((q) => q.hi) || L[L.length - 1];
+  const kin = seg(t, 0, 500) * oOut;
+  return (
+    <g>
+      <Chip x={MBOX[0] + 16} y={MBOX[1] + 32} s={a} size={21} C={C} anchor="start" o={kin} />
+      <Chip x={MBOX[2] - 16} y={MBOX[1] + 32} s={r} size={21} C={C} anchor="end" color={done && /홈런|안타|루타/.test(b.res) ? C.gold : undefined} o={kin} />
+      {hi && <Chip x={MBOX[0] + 16} y={MBOX[1] + 80} s={hi.s} size={25} C={C} anchor="start" color={C.gold} o={seg(t, BC.line[1], BC.line[1] + 500) * oOut} />}
+    </g>
+  );
+}
 const outsDots = (k, C, x, y) => [0, 1, 2].map((j) => <circle key={j} cx={x + j * 18} cy={y} r={6} fill={j < k ? C.coral : "none"} stroke={C.soft} strokeWidth={1.6} />);
 function BatPanel({ C, mode, game, park, b, t, idx, total, oOut }) {
   const { x, y, w, h } = PANEL, x0 = x + 24, mw = w - 48;
@@ -352,10 +419,12 @@ export function BatFnFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
   useKeys({
     ...baseKeys({ togglePause: lab.togglePause, restart: lab.restart, toggleFs, onMode, poke }),
     ArrowRight: () => jump(1), ArrowLeft: () => jump(-1), ArrowUp: () => stepIn(1), ArrowDown: () => stepIn(-1),
+    d: () => { lab.setPrm({ ex: P.ex === "mini" ? "full" : "mini" }, keepPlace); poke(); },
   }, inert);
   const settings = (
     <>
       <Setting label="경기"><Stepper ui={ui} label="경기" value={P.game} options={GAMES} fmt={(v) => (v < 0 ? "전체" : GAME_SHORT[v])} onChange={(v) => lab.setPrm({ game: v })} poke={poke} keyHint={["↓", "↑"]} /></Setting>
+      <Setting label="풀이" sep><Seg label="풀이" value={P.ex} options={EXS} onChange={(v) => lab.setPrm({ ex: v }, keepPlace)} poke={poke} /></Setting>
       <Setting label="빠르기" sep><Stepper ui={ui} label="빠르기" value={P.sp} options={SPEEDS} fmt={spFmt} onChange={(v) => lab.setPrm({ sp: v }, keepSpeed)} poke={poke} /></Setting>
       <span className="dsp-sep" />
       <ui.Btn title="이전 타구 (←)" onClick={() => jump(-1)}><ui.Ic d="M15 5 8 12l7 7" /></ui.Btn>
@@ -370,7 +439,7 @@ export function BatFnFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
         {layers.map((Ly) => (
           <g key={Ly.mode} opacity={Ly.o} pointerEvents={Ly.top ? undefined : "none"}>
             <SceneTitle title={title[Ly.mode]} sub={Ly.mode === mode ? sub : ""} C={C} mode={Ly.mode} />
-            <BatArt C={C} mode={Ly.mode} P={P} data={data} at={at} />
+            <BatArt C={C} mode={Ly.mode} P={P} data={data} at={at} ex={P.ex} />
           </g>
         ))}
       </svg>

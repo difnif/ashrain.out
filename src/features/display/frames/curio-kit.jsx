@@ -4,21 +4,22 @@
 //   · Lines — 판서 줄을 시각에 맞춰 하나씩(마지막 식 줄은 금빛 · 크게)
 //   · Panel — 둥근 판(설명 칸) · clipLine — 무한 직선을 사각형 안 선분으로 · seq — 장면 박자
 import { MText, mathWidth, SANS } from "../draw.jsx";
+import { UText, uWidth, Chip, chipW } from "../kit-story.jsx";
 import { seg } from "../core.js";
 
-/** 너비 maxW 안에 들도록 size 를 줄인 MText(최소 minSize) */
-export function FitText({ s, size = 28, maxW, minSize = 16, ...rest }) {
+/** 너비 maxW 안에 들도록 size 를 줄인 MText(최소 minSize). unit 이면 홀로 선 m 을 단위(미터)로 바로 세운다(UText) */
+export function FitText({ s, size = 28, maxW, minSize = 16, unit, ...rest }) {
   if (!s) return null;
   let k = size;
-  if (maxW) { const w = mathWidth(s, size, rest.weight || 500); if (w > maxW) k = Math.max(minSize, (size * maxW) / w); }
-  return <MText s={s} size={k} {...rest} />;
+  if (maxW) { const w = (unit ? uWidth : mathWidth)(s, size, rest.weight || 500); if (w > maxW) k = Math.max(minSize, (size * maxW) / w); }
+  return unit ? <UText s={s} size={k} {...rest} /> : <MText s={s} size={k} {...rest} />;
 }
 
 /**
  * 판서 줄: lines = [{ s, at(나타나는 시각), hi?, small?, col? }] — t 가 at 을 지나면 0.4초에 걸쳐 나타난다.
  * hi 줄은 금빛으로 크게, small 줄은 옅게 작게. 반환 높이만큼 아래로 쌓는다.
  */
-export function Lines({ x, y, lines, t, C, size = 26, lh = 52, maxW, o = 1, hiSize }) {
+export function Lines({ x, y, lines, t, C, size = 26, lh = 52, maxW, o = 1, hiSize, unit }) {
   let yy = y;
   const out = [];
   lines.forEach((L, i) => {
@@ -29,7 +30,7 @@ export function Lines({ x, y, lines, t, C, size = 26, lh = 52, maxW, o = 1, hiSi
     if (k > 0.001) {
       out.push(
         <g key={i} opacity={k * o} transform={`translate(${(1 - k) * 14},0)`}>
-          <FitText x={x} y={yy} s={L.s} size={sz} maxW={maxW} weight={L.hi ? 800 : L.small ? 600 : 650}
+          <FitText x={x} y={yy} s={L.s} size={sz} maxW={maxW} unit={unit} weight={L.hi ? 800 : L.small ? 600 : 650}
             fill={L.col || (L.hi ? C.gold : L.small ? C.soft : C.ink)} C={C} />
         </g>,
       );
@@ -86,3 +87,46 @@ export function Head({ p, q, size = 14, fill, o = 1 }) {
   const b = [q[0] - ux * size + uy * size * 0.55, q[1] - uy * size - ux * size * 0.55];
   return <path d={`M${q[0]} ${q[1]}L${a[0]} ${a[1]}L${b[0]} ${b[1]}Z`} fill={fill} opacity={o} />;
 }
+
+/* ══════════ 기울기 · 절편 강조 ══════════ */
+/** 금테 두른 큰 칩 — 그래프 위에서 기울기 · 절편이 눈에 확 들어오게 */
+export function BigChip({ x, y, s, size = 34, C, o = 1, color, edge, anchor = "middle" }) {
+  if (!s || o <= 0.001) return null;
+  return <Chip x={x} y={y} s={s} size={size} C={C} color={color || C.gold} stroke={edge || C.gold} o={o} anchor={anchor} weight={800} />;
+}
+export const bigW = (s, size = 34) => chipW(s, size, 800);
+/**
+ * 직선 P→Q(화면 좌표) 위 f 지점에서, 기울기 삼각형 모서리 (Q.x, P.y) 반대쪽으로 직선에 수직하게 비켜 선 자리 — w × h 칩의 가운데.
+ * 가로선이면 위, 세로선이면 오른쪽. side = -1 이면 삼각형 쪽으로.
+ */
+export function besideLine(P, Q, w, h, f = 0.5, side = 1, gap = 14) {
+  const mx = P[0] + (Q[0] - P[0]) * f, my = P[1] + (Q[1] - P[1]) * f;
+  const len = Math.hypot(Q[0] - P[0], Q[1] - P[1]) || 1;
+  let nx = -(Q[1] - P[1]) / len, ny = (Q[0] - P[0]) / len;
+  if (Math.abs(Q[1] - P[1]) < 1) { nx = 0; ny = -1; }
+  else if (Math.abs(Q[0] - P[0]) < 1) { nx = 1; ny = 0; }
+  else if (nx * (mx - Q[0]) + ny * (my - P[1]) < 0) { nx = -nx; ny = -ny; }
+  nx *= side; ny *= side;
+  const off = Math.abs(nx) * (w / 2) + Math.abs(ny) * (h / 2) + gap;
+  return [mx + nx * off, my + ny * off];
+}
+/**
+ * 칩 자리 고르기: 후보 가운데 피할 것(사각형 {x, y, w, h} — 점은 w = h = 0)과 가장 먼 곳. box 안으로 맞춘다.
+ */
+export function pickSpot(cands, w, h, avoid, box) {
+  let best = null, bs = -Infinity;
+  for (const c of cands) {
+    let [x, y] = c;
+    if (box) { x = Math.min(Math.max(x, box[0] + w / 2 + 6), box[2] - w / 2 - 6); y = Math.min(Math.max(y, box[1] + h / 2 + 6), box[3] - h / 2 - 6); }
+    let m = Infinity;
+    for (const r of avoid) {
+      const dx = Math.max(0, Math.abs(r.x - x) - (r.w + w) / 2), dy = Math.max(0, Math.abs(r.y - y) - (r.h + h) / 2);
+      m = Math.min(m, Math.hypot(dx, dy));
+    }
+    if (m > bs + 0.5) { bs = m; best = [x, y]; }
+    if (m >= 40) break;   // 넉넉하면 앞 후보(더 좋은 자리)로
+  }
+  return best;
+}
+/** 칩 사각형(가운데 x, y · 앵커) */
+export const chipRect = (x, y, s, size, anchor = "middle") => { const w = chipW(s, size); return { x: anchor === "middle" ? x : anchor === "end" ? x - w / 2 : x + w / 2, y, w, h: size * 1.5 }; };

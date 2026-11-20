@@ -9,35 +9,61 @@ import { W, H, MText, SceneTitle, Path } from "../draw.jsx";
 import { seg, E, clamp, lerp } from "../core.js";
 import { mapper, Grass, PLines, arcW, Ball, GoalFlash } from "../kit-soccer.jsx";
 import { UText, Chip, chipW, uWidth } from "../kit-story.jsx";
-import { lineOf, lineSteps, runRiseSteps, pt, num, eqText, cycleAt, SPEEDS, spFmt, keepSpeed } from "../curio/kit.js";
+import { lineOf, lineSteps, runRiseSteps, pt, num, eqText, cycleAt, SPEEDS, spFmt, keepSpeed, keepPlace, EXS, fixEx, fs } from "../curio/kit.js";
 import { LabChrome, Stepper, Seg, Setting, useLabClock, useTicker, useKeys, useModeLayers, baseKeys } from "./xkit.jsx";
-import { FitText, Lines, Panel, Small, clipLine } from "./curio-kit.jsx";
+import { FitText, Lines, Panel, Small, clipLine, BigChip, bigW, besideLine, pickSpot, chipRect } from "./curio-kit.jsx";
 
 const LSK = "ash.display.curio.soccerfn";
 const MATCH_SHORT = ["우루과이전", "가나전", "포르투갈전", "브라질전", "네덜·아르", "결승"];
 const MATCHES = [-1, 0, 1, 2, 3, 4, 5];
-const DEF = { match: -1, kind: "all", sp: 1 };
+const DEF = { match: -1, kind: "all", sp: 1, ex: "full" };
 const fixPrm = (p = {}) => ({
   match: MATCHES.includes(p.match) ? p.match : -1,
   kind: ["all", "s", "p"].includes(p.kind) ? p.kind : "all",
   sp: SPEEDS.includes(p.sp) ? p.sp : 1,
+  ex: fixEx(p.ex),
 });
 
-/* ── 무대 자리: 경기장(왼쪽) · 설명 판(오른쪽) ── */
+/* ── 무대 자리: 상세 = 경기장 전체(왼쪽) · 설명 판(오른쪽) / 최소화 = 장면 쪽으로 다가간 카메라(판 없음) ── */
 const S = 9, PX0 = 52, PY0 = 150;                  // 1야드 = 9px, 경기장 1080 × 720
 const M = mapper({ ox: PX0 + 60 * S, oy: PY0 + 40 * S, s: S, flipY: true });
-/** 이름표가 경기장 밖(오른쪽 판 · 아래 눈금)으로 나가지 않게 */
-const XL = PX0 + 6, XR = PX0 + 120 * S - 6, YT = PY0 + 16, YB = PY0 + 80 * S - 16;
-const fitC = (x, w) => clamp(x, XL + w / 2, XR - w / 2);
-/** 좌표 이름표 자리: 상대 점의 반대쪽 옆 · 위아래, 경기장 밖으로 나가면 뒤집는다 */
-function ptSpot(q, other, s, first) {
-  const w = chipW(s, 19);
+/** 그림 자리(V): 지도 M · 이름표가 나가면 안 되는 테두리 XL XR YT YB · 최소화면 판 box */
+const VFULL = { M, XL: PX0 + 6, XR: PX0 + 120 * S - 6, YT: PY0 + 16, YB: PY0 + 80 * S - 16, mini: false };
+const MBOX = [36, 150, 1564, 872];
+/** 최소화 카메라: 출발점 · 도착점을 넉넉히(가로 40야드 · 세로 26야드 이상) 담는 확대 — 경기장 밖으로 너무 나가지 않게 */
+const ZC = new WeakMap();
+function zoomOf(sc) {
+  if (ZC.has(sc)) return ZC.get(sc);
+  const [bx0, by0, bx1, by1] = MBOX, aw = bx1 - bx0, ah = by1 - by0 - 100;   // 위 칩 두 줄 자리 100px
+  const mg = 9;
+  let x0 = Math.min(sc.a[0], sc.b[0]) - mg, x1 = Math.max(sc.a[0], sc.b[0]) + mg;
+  let y0 = Math.min(sc.a[1], sc.b[1]) - mg, y1 = Math.max(sc.a[1], sc.b[1]) + mg;
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  const w = Math.max(40, x1 - x0), h = Math.max(26, y1 - y0);
+  const s = clamp(Math.min(aw / w, ah / h), 8.4, 21);
+  const vw = aw / s, vh = ah / s;
+  const kx = vw >= 128 ? 0 : clamp(cx, -64 + vw / 2, 64 - vw / 2), ky = vh >= 88 ? 0 : clamp(cy, -44 + vh / 2, 44 - vh / 2);
+  const z = { s, cx: kx, cy: ky };
+  ZC.set(sc, z);
+  return z;
+}
+function viewOf(z) {
+  const [bx0, by0, bx1, by1] = MBOX, mx = (bx0 + bx1) / 2, my = (by0 + 100 + by1) / 2;
+  const Mz = mapper({ ox: mx - z.cx * z.s, oy: my + z.cy * z.s, s: z.s, flipY: true });
+  return { M: Mz, XL: bx0 + 8, XR: bx1 - 8, YT: by0 + 112, YB: by1 - 40, mini: true, box: MBOX };
+}
+const fitV = (V, x, w) => clamp(x, V.XL + w / 2, V.XR - w / 2);
+const fitC = (x, w) => fitV(VFULL, x, w);
+/** 좌표 이름표 자리: 상대 점의 반대쪽 옆 · 위아래, 판 밖으로 나가면 뒤집는다 */
+function ptSpot(V, q, other, s, first, size = 19) {
+  const w = chipW(s, size);
   let side = q[0] < other[0] ? -1 : q[0] > other[0] ? 1 : first ? -1 : 1;
-  if (side > 0 && q[0] + 12 + w > XR) side = -1;
-  else if (side < 0 && q[0] - 12 - w < XL) side = 1;
-  let y = q[1] + (q[1] <= other[1] ? -26 : 30);
-  if (y < YT) y = q[1] + 30;
-  else if (y > YB) y = q[1] - 26;
+  if (side > 0 && q[0] + 12 + w > V.XR) side = -1;
+  else if (side < 0 && q[0] - 12 - w < V.XL) side = 1;
+  const dy = size * 1.4;
+  let y = q[1] + (q[1] <= other[1] ? -dy : dy + 4);
+  if (y < V.YT) y = q[1] + dy + 4;
+  else if (y > V.YB) y = q[1] - dy;
   return { x: q[0] + side * 12, y, anchor: side < 0 ? "end" : "start" };
 }
 const RECT = [-60, -40, 60, 40];
@@ -97,7 +123,7 @@ const PITCH_LINES = (() => {
   return L;
 })();
 
-const Pitch = memo(function Pitch({ C }) {
+const Pitch = memo(function Pitch({ C, M }) {
   const spots = [[0, 0], [-48, 0], [48, 0]].map((q) => M.p(q));
   return (
     <g>
@@ -115,8 +141,9 @@ const Pitch = memo(function Pitch({ C }) {
 
 const light0 = (C) => (C.name === "light" ? "#2c3a22" : "#fff");
 /** 좌표축 · 눈금 — 중등: 가운데 원점 · 초등: 왼쪽 아래 원점 */
-function Axes({ C, mode, o }) {
+function Axes({ C, mode, o, V }) {
   if (o <= 0.001) return null;
+  if (V.mini) return <ZoomAxes C={C} mode={mode} o={o} V={V} />;
   const isM = mode === "m";
   const ox = isM ? 0 : -60, oy = isM ? 0 : -40;
   const xs = [], ys = [];
@@ -156,6 +183,41 @@ function Axes({ C, mode, o }) {
   );
 }
 
+/** 최소화(확대) 눈금: 보이는 칸에 격자, 판 아래 · 왼쪽 가장자리에 자(눈금 숫자) — 축이 화면 밖이어도 좌표를 읽을 수 있게 */
+function ZoomAxes({ C, mode, o, V }) {
+  const isM = mode === "m", { M: Mz, box } = V;
+  const [bx0, by0, bx1, by1] = box;
+  const light = C.name === "light";
+  const ink = light ? "#2c3a22" : "#fff", hal = light ? "#e4efd8" : "#173126";
+  const ox = isM ? 0 : -60, oy = isM ? 0 : -40;
+  const wx0 = (bx0 - Mz.ox) / Mz.s, wx1 = (bx1 - Mz.ox) / Mz.s, wy1 = (Mz.oy - by0) / Mz.s, wy0 = (Mz.oy - by1) / Mz.s;
+  const st = Mz.s >= 15 ? 5 : 10;
+  const grid = [], lab = [];
+  for (let v = Math.ceil(wx0 / st) * st; v <= wx1; v += st) {
+    const q = Mz.p([v, 0]);
+    grid.push(<line key={"gx" + v} x1={q[0]} x2={q[0]} y1={by0} y2={by1} stroke={ink} strokeOpacity={v === ox ? 0.85 : 0.1} strokeWidth={v === ox ? 2.6 : 1.2} />);
+    if (q[0] > bx0 + 40 && q[0] < bx1 - 20) lab.push(<MText key={"nx" + v} x={q[0]} y={by1 - 12} s={num(v - ox)} size={18} weight={750} anchor="middle" fill={ink} halo={hal} C={C} />);
+  }
+  for (let v = Math.ceil(wy0 / st) * st; v <= wy1; v += st) {
+    const q = Mz.p([0, v]);
+    grid.push(<line key={"gy" + v} x1={bx0} x2={bx1} y1={q[1]} y2={q[1]} stroke={ink} strokeOpacity={v === oy ? 0.85 : 0.1} strokeWidth={v === oy ? 2.6 : 1.2} />);
+    if (q[1] > by0 + 116 && q[1] < by1 - 34) lab.push(<MText key={"ny" + v} x={bx0 + 12} y={q[1] + 6} s={num(v - oy)} size={18} weight={750} anchor="start" fill={ink} halo={hal} C={C} />);
+  }
+  const O = Mz.p([ox, oy]);
+  const inBox = (q) => q[0] > bx0 + 20 && q[0] < bx1 - 20 && q[1] > by0 + 20 && q[1] < by1 - 20;
+  return (
+    <g opacity={o}>
+      {grid}
+      <rect x={bx0} y={by1 - 34} width={bx1 - bx0} height={34} fill={light ? "#f3f7ee" : "#0d1d16"} opacity={0.55} />
+      <rect x={bx0} y={by0} width={50} height={by1 - by0 - 34} fill={light ? "#f3f7ee" : "#0d1d16"} opacity={0.55} />
+      {lab}
+      {inBox(O) && <MText x={O[0] - 8} y={O[1] + 24} s="O" size={20} weight={750} anchor="end" fill={ink} halo={hal} C={C} />}
+      <MText x={bx1 - 14} y={by1 - 40} s="x" size={22} anchor="end" fill={ink} halo={hal} C={C} />
+      <MText x={bx0 + 60} y={by0 + 128} s="y" size={22} fill={ink} halo={hal} C={C} />
+    </g>
+  );
+}
+
 /** 무한 직선을 경기장 안 선분으로 */
 function pitchSeg(L, a) {
   if (L.kind === "pt") return null;
@@ -166,7 +228,7 @@ function pitchSeg(L, a) {
 /* ══════════ 장면 ══════════ */
 const lum = (hex) => { const n = parseInt(hex.slice(1), 16); return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
 const ink = (hex) => (lum(hex) < 0.4 ? "#e9edf6" : "#14171f");
-function Players({ sc, teams, o, k }) {
+function Players({ sc, teams, o, k, M, r0 = 8.5 }) {
   if (o <= 0.001 || !sc.ff) return null;
   const mine = teams[sc.t].c, theirs = teams[1 - sc.t].c;
   return (
@@ -177,9 +239,9 @@ function Players({ sc, teams, o, k }) {
         const kk = clamp(k * 1.6 - (i % 7) * 0.08);
         return (
           <g key={i} opacity={kk}>
-            <ellipse cx={q[0] + 2} cy={q[1] + 8} rx={8} ry={3} fill="#000" opacity={0.25} />
-            <circle cx={q[0]} cy={q[1]} r={gk ? 9.5 : 8.5} fill={col} stroke={ink(col)} strokeWidth={2} />
-            {gk ? <circle cx={q[0]} cy={q[1]} r={13} fill="none" stroke={col} strokeWidth={2} opacity={0.8} /> : null}
+            <ellipse cx={q[0] + 2} cy={q[1] + r0} rx={r0} ry={r0 * 0.36} fill="#000" opacity={0.25} />
+            <circle cx={q[0]} cy={q[1]} r={gk ? r0 * 1.12 : r0} fill={col} stroke={ink(col)} strokeWidth={2} />
+            {gk ? <circle cx={q[0]} cy={q[1]} r={r0 * 1.53} fill="none" stroke={col} strokeWidth={2} opacity={0.8} /> : null}
           </g>
         );
       })}
@@ -187,16 +249,25 @@ function Players({ sc, teams, o, k }) {
   );
 }
 
-export function SoccerArt({ C, mode, P, data, at }) {
+export function SoccerArt({ C, mode, P, data, at, ex = "full" }) {
   if (!data) return <MText x={600} y={480} s="경기 자료를 불러오는 중…" size={34} anchor="middle" fill={C.soft} C={C} />;
   const list = scenesOf(data, P);
   if (!list.length) return null;
   const { i, t } = at;
   const { mi, sc } = list[i];
   const match = data.matches[mi], teams = match.teams;
-  const isM = mode === "m";
+  const isM = mode === "m", mini = ex === "mini";
+  // 최소화: 지난 장면 카메라에서 이번 장면 카메라로 0.9초에 걸쳐 옮겨 간다
+  let V = VFULL;
+  if (mini) {
+    const z1 = zoomOf(sc), prev = list.length > 1 && (i > 0 || at.k > 0) ? list[(i - 1 + list.length) % list.length].sc : null;
+    const z0 = prev ? zoomOf(prev) : z1, kz = seg(t, 0, 900, E.io);
+    V = viewOf({ s: Math.exp(lerp(Math.log(z0.s), Math.log(z1.s), kz)), cx: lerp(z0.cx, z1.cx, kz), cy: lerp(z0.cy, z1.cy, kz) });
+  }
+  const Mv = V.M, fit = (x, w) => fitV(V, x, w);
+  const cs = mini ? 28 : 24, ts = mini ? 26 : 23;   // 이름표 글자 크기(좌표 · 기울기 삼각형) — 그림에서 눈에 띄게
   const oOut = 1 - seg(t, SC.out[0], SC.out[1]);
-  const a = M.p(sc.a), b = M.p(sc.b);
+  const a = Mv.p(sc.a), b = Mv.p(sc.b);
   const { L, lines } = soccerSteps(sc, mode);
   const mine = teams[sc.t].c;
   // 공: 출발 → 도착(크로스 · 롱패스는 높이 뜬다)
@@ -213,17 +284,17 @@ export function SoccerArt({ C, mode, P, data, at }) {
     const Lg = lineOf(it.sc.a, it.sc.b), sg = pitchSeg(Lg, it.sc.a);
     if (!sg) continue;
     const col = data.matches[it.mi].teams[it.sc.t].c;
-    ghosts.push(<Path key={g} pts={[M.p(sg[0]), M.p(sg[1])]} stroke={col} sw={2.4} o={(0.34 - g * 0.055) * (g === 1 ? 1 - 0.6 * seg(t, 0, 2000) : 1)} />);
+    ghosts.push(<Path key={g} pts={[Mv.p(sg[0]), Mv.p(sg[1])]} stroke={col} sw={2.4} o={(0.34 - g * 0.055) * (g === 1 ? 1 - 0.6 * seg(t, 0, 2000) : 1)} />);
   }
   // 이번 직선(그래프)
   const full = pitchSeg(L, sc.a);
   const kl = seg(t, SC.line[0], SC.line[1], E.out);
   let lineEl = null;
   if (full && kl > 0) {
-    const A = M.p(full[0]), B = M.p(full[1]);
+    const A = Mv.p(full[0]), B = Mv.p(full[1]);
     const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
     const ext = (q) => [lerp(mid[0], q[0], kl), lerp(mid[1], q[1], kl)];
-    lineEl = <Path pts={[ext(A), ext(B)]} stroke={C.name === "light" ? "#0f766e" : "#7fe3d3"} sw={3.2} dash="12 9" o={0.95 * oOut} />;
+    lineEl = <Path pts={[ext(A), ext(B)]} stroke={C.name === "light" ? "#0f766e" : "#7fe3d3"} sw={mini ? 3.8 : 3.2} dash="12 9" o={0.95 * oOut} />;
   }
   // 기울기 삼각형: 출발 → (도착 x, 출발 y) → 도착
   const kt = seg(t, SC.tri[0], SC.tri[1]);
@@ -234,56 +305,132 @@ export function SoccerArt({ C, mode, P, data, at }) {
   const triEl = kt > 0 && dxs && dys ? (
     <g opacity={kt * oOut}>
       <Path pts={[a, corner3, b]} stroke="#fff" sw={2.4} dash="7 6" o={0.9} />
-      <Chip x={fitC((a[0] + b[0]) / 2, chipW(sx, 18))} y={clamp(a[1] + (dys > 0 ? 24 : -24), YT, YB)} s={sx} size={18} C={C} />
-      <Chip x={fitC(b[0] + (dxs > 0 ? 44 : -44), chipW(sy, 18))} y={clamp((a[1] + b[1]) / 2, YT, YB)} s={sy} size={18} C={C} />
+      <Chip x={fit((a[0] + b[0]) / 2, chipW(sx, ts))} y={clamp(a[1] + (dys > 0 ? 1 : -1) * ts * 1.35, V.YT, V.YB)} s={sx} size={ts} C={C} />
+      <Chip x={fit(b[0] + (dxs > 0 ? 1 : -1) * (chipW(sy, ts) / 2 + 12), chipW(sy, ts))} y={clamp((a[1] + b[1]) / 2, V.YT, V.YB)} s={sy} size={ts} C={C} />
     </g>
   ) : null;
   // 점 · 좌표 이름표
   const A0 = isM ? sc.a : corner(sc.a), B0 = isM ? sc.b : corner(sc.b);
   const ka = seg(t, SC.a[0], SC.a[1]), kbb = seg(t, SC.b[0], SC.b[1]);
-  const la = ptSpot(a, b, pt(A0), true), lb = ptSpot(b, a, pt(B0), false);
+  const la = ptSpot(V, a, b, pt(A0), true, cs), lb = ptSpot(V, b, a, pt(B0), false, cs);
   // 식 이름표(중등): 직선 위, 도착점에서 조금 떨어진 곳
   const eq = eqText(L);
-  let eqEl = null;
-  if (isM && full && eq) {
-    const ke = seg(t, SC.line[1] - 300, SC.line[1] + 300);
-    const A = M.p(full[0]), B = M.p(full[1]);
-    const u = 0.22, q = [lerp(A[0], B[0], u), lerp(A[1], B[1], u)];
-    const qq = [fitC(q[0], chipW(eq, 22)), clamp(q[1] + 30, PY0 + 30, PY0 + 700)];
-    eqEl = <Chip x={qq[0]} y={qq[1]} s={eq} size={22} C={C} o={ke * oOut} />;
-  }
+  const eqSpot = (avoid) => {
+    if (!(isM && full && eq && !mini)) return null;
+    const A = Mv.p(full[0]), B = Mv.p(full[1]), es = 26, w = chipW(eq, es);
+    const cands = [0.12, 0.88, 0.2, 0.8, 0.3, 0.7].flatMap((u) => [besideLine(A, B, w, es * 1.5, u, -1), besideLine(A, B, w, es * 1.5, u, 1)]);
+    return pickSpot(cands, w, es * 1.5, avoid, [V.XL, V.YT, V.XR, V.YB]);
+  };
   // 선수 이름
   const kin = seg(t, SC.in[0], SC.in[1]);
-  const actorLbl = <UText x={fitC(a[0], uWidth(sc.pl, 20, 800))} y={clamp(a[1] + (la.y < a[1] ? 34 : -22), YT + 6, YB + 10)} s={sc.pl} size={20} weight={800} anchor="middle" fill="#fff" halo="#0c1a14" opacity={kin * oOut} C={C} />;
+  const ns = mini ? 24 : 20;
+  const actorLbl = <UText x={fit(a[0], uWidth(sc.pl, ns, 800))} y={clamp(a[1] + (la.y < a[1] ? ns * 1.7 : -ns * 1.1), V.YT + 6, V.YB + 10)} s={sc.pl} size={ns} weight={800} anchor="middle" fill="#fff" halo="#0c1a14" opacity={kin * oOut} C={C} />;
   const rec = sc.k === "p" && /→ (.+)$/.exec(sc.rs);
-  const recLbl = rec ? <UText x={fitC(b[0], uWidth(rec[1], 18, 700))} y={clamp(b[1] + (lb.y < b[1] ? 34 : -20), YT + 6, YB + 10)} s={rec[1]} size={18} weight={700} anchor="middle" fill="#fff" halo="#0c1a14" opacity={kbb * oOut} C={C} /> : null;
+  const recLbl = rec ? <UText x={fit(b[0], uWidth(rec[1], ns - 2, 700))} y={clamp(b[1] + (lb.y < b[1] ? ns * 1.7 : -ns), V.YT + 6, V.YB + 10)} s={rec[1]} size={ns - 2} weight={700} anchor="middle" fill="#fff" halo="#0c1a14" opacity={kbb * oOut} C={C} /> : null;
   // 골 반짝
   const flash = scored ? seg(t, SC.ball[1], SC.ball[1] + 500) * (1 - seg(t, SC.ball[1] + 2600, SC.ball[1] + 3400)) : 0;
-  const gp = M.p([sc.b[0] > 0 ? 50 : -50, 30]);
-  return (
+  const gp = mini ? [clamp(b[0] + (sc.b[0] > 0 ? -90 : 90), V.XL + 90, V.XR - 90), clamp(b[1] - 90, V.YT + 60, V.YB - 60)] : Mv.p([sc.b[0] > 0 ? 50 : -50, 30]);
+  const rr = mini ? clamp(Mv.s * 0.95, 9, 15) : 8.5;
+  // ── 기울기 · y절편 강조(금테 큰 칩): 피할 것 = 두 점 · 좌표 칩 · 선수 이름 · 기울기 삼각형 칩 ──
+  const box = [V.XL, V.YT, V.XR, V.YB];
+  const avoid = [{ x: a[0], y: a[1], w: rr * 4, h: rr * 4 }, { x: b[0], y: b[1], w: 16, h: 16 },
+    chipRect(la.x, la.y, pt(A0), cs, la.anchor), chipRect(lb.x, lb.y, pt(B0), cs, lb.anchor),
+    { x: a[0], y: clamp(a[1] + (la.y < a[1] ? ns * 1.7 : -ns * 1.1), V.YT + 6, V.YB + 10) - ns * 0.35, w: uWidth(sc.pl, ns, 800), h: ns * 1.2 }];
+  if (dxs && dys) {
+    avoid.push(chipRect(fit((a[0] + b[0]) / 2, chipW(sx, ts)), clamp(a[1] + (dys > 0 ? 1 : -1) * ts * 1.35, V.YT, V.YB), sx, ts));
+    avoid.push(chipRect(fit(b[0] + (dxs > 0 ? 1 : -1) * (chipW(sy, ts) / 2 + 12), chipW(sy, ts)), clamp((a[1] + b[1]) / 2, V.YT, V.YB), sy, ts));
+  }
+  const tc = C.name === "light" ? "#0f766e" : "#7fe3d3";
+  // 기울기(가장 먼저 자리를 잡는다): 직선 옆(삼각형 바깥) 여러 자리 가운데
+  const bs = mini ? 40 : 34;
+  const slopeTxt = isM ? (L.kind === "f" ? `기울기 ${fs(L.m[0], L.m[1])}` : L.kind === "h" ? "기울기 0" : "") : dxs && dys ? `세로 ÷ 가로 = ${fs(Math.abs(dys), Math.abs(dxs))}` : "";
+  const sw0 = slopeTxt ? bigW(slopeTxt, bs) : 0;
+  const slopeAt = slopeTxt ? pickSpot([0.5, 0.36, 0.64, 0.24, 0.76].map((f) => besideLine(a, b, sw0, bs * 1.5, f, 1)).concat([0.5, 0.3, 0.7].map((f) => besideLine(a, b, sw0, bs * 1.5, f, -1))), sw0, bs * 1.5, avoid, box) : null;
+  if (slopeAt) avoid.push({ x: slopeAt[0], y: slopeAt[1], w: sw0, h: bs * 1.5 });
+  // y절편(중등): 직선이 y축(하프라인)과 만나는 점 — 자리가 좁으면 작게
+  let icpt = null;
+  const yb = isM && (L.kind === "f" || L.kind === "h") ? L.b[0] / L.b[1] : null;
+  if (yb != null && Math.abs(yb) <= 40) {
+    const q = Mv.p([0, yb]);
+    if (q[0] > V.XL + 20 && q[0] < V.XR - 20 && q[1] > V.YT - 10 && q[1] < V.YB + 10) {
+      const txt = `y절편 ${fs(L.b[0], L.b[1])}`;
+      let is = mini ? 30 : 26, w = bigW(txt, is), h = is * 1.5;
+      const cands = (w2, h2) => [-1, 1].flatMap((sx) => [1, -1, 2, -2].map((k) => [q[0] + sx * (w2 / 2 + 16), q[1] + k * h2 * 0.75]));
+      const room = (spot, w2, h2) => Math.min(...avoid.map((r) => Math.hypot(Math.max(0, Math.abs(r.x - spot[0]) - (r.w + w2) / 2), Math.max(0, Math.abs(r.y - spot[1]) - (r.h + h2) / 2))));
+      let at2 = pickSpot(cands(w, h), w, h, avoid, box);
+      if (room(at2, w, h) < 4) { is = mini ? 22 : 19; w = bigW(txt, is); h = is * 1.5; at2 = pickSpot(cands(w, h), w, h, avoid, box); }
+      icpt = { q, txt, is, at: at2, w, h };
+      avoid.push({ x: at2[0], y: at2[1], w, h }, { x: q[0], y: q[1], w: 14, h: 14 });
+    }
+  }
+  const icptEl = icpt ? (
+    <g opacity={seg(t, SC.line[1] - 200, SC.line[1] + 400) * oOut}>
+      <circle cx={icpt.q[0]} cy={icpt.q[1]} r={mini ? 9 : 7.5} fill={tc} stroke="#fff" strokeWidth={2.4} />
+      <BigChip x={icpt.at[0]} y={icpt.at[1]} s={icpt.txt} size={icpt.is} C={C} color={tc} edge={tc} />
+    </g>
+  ) : null;
+  const body = (
     <g>
-      <Pitch C={C} />
-      {sc.va && <path d={"M" + sc.va.map((q) => M.p(q).map((v) => v.toFixed(1)).join(" ")).join("L") + "Z"} fill="#fff" opacity={0.05 * kin * oOut} />}
-      <Axes C={C} mode={mode} o={1} />
+      {mini && <rect x={MBOX[0]} y={MBOX[1]} width={MBOX[2] - MBOX[0]} height={MBOX[3] - MBOX[1]} fill={C.name === "light" ? "#bcd3a3" : "#14291f"} />}
+      <Pitch C={C} M={Mv} />
+      {sc.va && <path d={"M" + sc.va.map((q) => Mv.p(q).map((v) => v.toFixed(1)).join(" ")).join("L") + "Z"} fill="#fff" opacity={0.05 * kin * oOut} />}
+      <Axes C={C} mode={mode} o={1} V={V} />
       {ghosts}
       {lineEl}
-      <Players sc={sc} teams={teams} o={oOut} k={kin} />
+      <Players sc={sc} teams={teams} o={oOut} k={kin} M={Mv} r0={rr} />
       {/* 공을 가진 선수 */}
       <g opacity={kin * oOut}>
-        <circle cx={a[0]} cy={a[1]} r={17} fill="none" stroke={C.gold} strokeWidth={3} opacity={0.9} />
-        <circle cx={a[0]} cy={a[1]} r={11} fill={mine} stroke={ink(mine)} strokeWidth={2.4} />
+        <circle cx={a[0]} cy={a[1]} r={rr * 2} fill="none" stroke={C.gold} strokeWidth={3} opacity={0.9} />
+        <circle cx={a[0]} cy={a[1]} r={rr * 1.3} fill={mine} stroke={ink(mine)} strokeWidth={2.4} />
       </g>
       {actorLbl}
       {/* 지나간 길 */}
-      {kb > 0 && <Path pts={[a, bp]} stroke={C.gold} sw={4} o={0.95 * oOut} />}
+      {kb > 0 && <Path pts={[a, bp]} stroke={C.gold} sw={mini ? 5 : 4} o={0.95 * oOut} />}
       {triEl}
-      <g opacity={ka * oOut}><circle cx={a[0]} cy={a[1]} r={5} fill={C.gold} /><Chip x={la.x} y={la.y} s={pt(A0)} size={19} C={C} anchor={la.anchor} /></g>
-      <g opacity={kbb * oOut}><circle cx={b[0]} cy={b[1]} r={6} fill={C.gold} stroke="#fff" strokeWidth={2} /><Chip x={lb.x} y={lb.y} s={pt(B0)} size={19} C={C} anchor={lb.anchor} /></g>
+      <g opacity={ka * oOut}><circle cx={a[0]} cy={a[1]} r={mini ? 6.5 : 5} fill={C.gold} /><Chip x={la.x} y={la.y} s={pt(A0)} size={cs} C={C} anchor={la.anchor} /></g>
+      <g opacity={kbb * oOut}><circle cx={b[0]} cy={b[1]} r={mini ? 7.5 : 6} fill={C.gold} stroke="#fff" strokeWidth={2} /><Chip x={lb.x} y={lb.y} s={pt(B0)} size={cs} C={C} anchor={lb.anchor} /></g>
       {recLbl}
-      {eqEl}
-      {kb > 0 && oOut > 0.01 && <Ball x={bp[0]} y={bp[1]} r={7} h={lofty * 4 * kb * (1 - kb)} C={C} o={oOut} />}
+      {(() => { const q = eqSpot(avoid); return q ? <Chip x={q[0]} y={q[1]} s={eq} size={26} C={C} o={seg(t, SC.line[1] - 300, SC.line[1] + 300) * oOut} /> : null; })()}
+      {icptEl}
+      {slopeAt && <BigChip x={slopeAt[0]} y={slopeAt[1]} s={slopeTxt} size={bs} C={C} o={kt * oOut} />}
+      {kb > 0 && oOut > 0.01 && <Ball x={bp[0]} y={bp[1]} r={mini ? rr * 0.85 : 7} h={lofty * 4 * kb * (1 - kb)} C={C} o={oOut} />}
       {flash > 0 && <GoalFlash x={gp[0]} y={gp[1]} k={flash} C={C} />}
-      <SoccerPanel C={C} mode={mode} sc={sc} match={match} lines={lines} t={t} scored={scored} idx={i} n={list.length} oOut={oOut} />
+    </g>
+  );
+  if (!mini) {
+    return (
+      <g>
+        {body}
+        <SoccerPanel C={C} mode={mode} sc={sc} match={match} lines={lines} t={t} scored={scored} idx={i} n={list.length} oOut={oOut} />
+      </g>
+    );
+  }
+  const [bx0, by0, bx1, by1] = MBOX;
+  return (
+    <g>
+      <defs><clipPath id="soccer-mini-clip"><rect x={bx0} y={by0} width={bx1 - bx0} height={by1 - by0} rx={16} /></clipPath></defs>
+      <g clipPath="url(#soccer-mini-clip)">{body}</g>
+      <rect x={bx0} y={by0} width={bx1 - bx0} height={by1 - by0} rx={16} fill="none" stroke={C.cardEdge} strokeWidth={1.4} />
+      <SoccerMini C={C} mode={mode} sc={sc} match={match} lines={lines} t={t} scored={scored} oOut={oOut} />
+    </g>
+  );
+}
+
+/** 최소화 — 위 왼쪽: 경기 · 시계 · 점수, 위 오른쪽: 누가 무엇을 → 결과, 아래: 식(중등) 또는 가파른 정도(초등) 한 줄 */
+function SoccerMini({ C, mode, sc, match, lines, t, scored, oOut }) {
+  const [bx0, by0, bx1, by1] = MBOX;
+  const teams = match.teams, score = scored && sc.sa ? sc.sa : sc.sc;
+  const per = sc.p === 5 ? "승부차기" : `${PERIOD[sc.p]} ${clock(sc.m, sc.s)}`;
+  const a = `${match.title} · ${per} · ${teams[0].n} ${score[0]} : ${score[1]} ${teams[1].n}`;
+  const done = t >= SC.ball[1];
+  const bTxt = `${sc.pl} — ${sc.ty}${done ? ` → ${sc.rs}` : ""}`;
+  const hi = [...lines].reverse().find((L) => L.hi);
+  const kin = seg(t, 0, 500) * oOut;
+  return (
+    <g>
+      <Chip x={bx0 + 16} y={by0 + 32} s={a} size={21} C={C} anchor="start" o={kin} />
+      <Chip x={bx1 - 16} y={by0 + 32} s={bTxt} size={21} C={C} anchor="end" color={sc.g && done ? C.gold : undefined} o={kin} />
+      {hi && <Chip x={bx0 + 16} y={by0 + 80} s={hi.s} size={26} C={C} color={C.gold} anchor="start" o={seg(t, SC.line[1], SC.line[1] + 500) * oOut} />}
     </g>
   );
 }
@@ -362,11 +509,13 @@ export function SoccerFnFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery
     ...baseKeys({ togglePause: lab.togglePause, restart: lab.restart, toggleFs, onMode, poke }),
     ArrowRight: () => jumpScene(1), ArrowLeft: () => jumpScene(-1),
     ArrowUp: () => stepIn("match", MATCHES, 1), ArrowDown: () => stepIn("match", MATCHES, -1),
+    d: () => { lab.setPrm({ ex: P.ex === "mini" ? "full" : "mini" }, keepPlace); poke(); },
   }, inert);
   const settings = (
     <>
       <Setting label="경기"><Stepper ui={ui} label="경기" value={P.match} options={MATCHES} fmt={(v) => (v < 0 ? "전체" : MATCH_SHORT[v])} onChange={(v) => lab.setPrm({ match: v })} poke={poke} keyHint={["↓", "↑"]} /></Setting>
       <Setting label="장면" sep><Seg label="장면" value={P.kind} options={[["all", "모두"], ["s", "슈팅"], ["p", "패스"]]} onChange={(v) => lab.setPrm({ kind: v })} poke={poke} /></Setting>
+      <Setting label="풀이" sep><Seg label="풀이" value={P.ex} options={EXS} onChange={(v) => lab.setPrm({ ex: v }, keepPlace)} poke={poke} /></Setting>
       <Setting label="빠르기" sep><Stepper ui={ui} label="빠르기" value={P.sp} options={SPEEDS} fmt={spFmt} onChange={(v) => lab.setPrm({ sp: v }, keepSpeed)} poke={poke} /></Setting>
       <span className="dsp-sep" />
       <ui.Btn title="이전 장면 (←)" onClick={() => jumpScene(-1)}><ui.Ic d="M15 5 8 12l7 7" /></ui.Btn>
@@ -381,7 +530,7 @@ export function SoccerFnFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery
         {layers.map((Ly) => (
           <g key={Ly.mode} opacity={Ly.o} pointerEvents={Ly.top ? undefined : "none"}>
             <SceneTitle title={title[Ly.mode]} sub={sub} C={C} mode={Ly.mode} />
-            <SoccerArt C={C} mode={Ly.mode} P={P} data={data} at={at} />
+            <SoccerArt C={C} mode={Ly.mode} P={P} data={data} at={at} ex={P.ex} />
           </g>
         ))}
       </svg>

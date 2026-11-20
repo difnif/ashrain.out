@@ -9,7 +9,7 @@ import { memo, useEffect, useState } from "react";
 import { W, H, MText, SceneTitle, SANS, SERIF } from "../draw.jsx";
 import { seg, E, clamp, lerp } from "../core.js";
 import { UText, Chip } from "../kit-story.jsx";
-import { comma } from "../curio/kit.js";
+import { comma, keepPlace, EXS, fixEx } from "../curio/kit.js";
 import { LEXI, LEXI_DEF, fixLexi, lexiAt, setOf, countText } from "../curio/lexi.js";
 import { LabChrome, Stepper, Seg, Setting, useLabClock, useTicker, useKeys, useModeLayers, baseKeys } from "./xkit.jsx";
 import { Panel, Small } from "./curio-kit.jsx";
@@ -84,7 +84,8 @@ function DictCard({ w, entry, C, o, y = 520 }) {
 }
 
 /* ══════════ 그리기 ══════════ */
-export function LexiArt({ C, mode, P, at, D }) {
+export function LexiArt({ C, mode, P, at, D, ex = "full" }) {
+  const mini = ex === "mini";
   if (!D) return <MText x={600} y={460} s="사전을 불러오는 중…" size={34} anchor="middle" fill={C.soft} C={C} />;
   const { set, i, t, sum } = at;
   const L = layout(set);
@@ -110,6 +111,7 @@ export function LexiArt({ C, mode, P, at, D }) {
   const nFound = upto.length;
   return (
     <g>
+      <g transform={mini ? "translate(200 0)" : undefined}>
       {/* 카드 */}
       {ids.map((id) => {
         const a = pA[id] || pB[id], b = pB[id];
@@ -132,7 +134,9 @@ export function LexiArt({ C, mode, P, at, D }) {
           <UText x={600} y={630} s={set.nh ? `그중 영어 낱말 ${set.nh}개: ${set.words.slice(0, 6).join(" · ").toLowerCase()}${set.nh > 6 ? " …" : ""}` : "이번 카드로는 낱말이 없었어요"} size={22} weight={650} anchor="middle" fill={C.soft} C={C} />
         </g>
       )}
-      <LexiList C={C} mode={mode} set={set} i={i} />
+      </g>
+      {!mini && <LexiList C={C} mode={mode} set={set} i={i} />}
+      {mini && <Chip x={1552} y={851} s={countText(set.cards, set.r, mode)} size={20} C={C} anchor="end" color={mode === "m" ? C.teal : C.coral} />}
     </g>
   );
 }
@@ -181,8 +185,10 @@ function useDict() {
   return d;
 }
 
+const LEXI_DEF_EX = { ...LEXI_DEF, ex: "full" };
+const fixLexiEx = (p = {}) => ({ ...fixLexi(p), ex: fixEx(p.ex) });
 export function LexiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, onExit, inert, mode, onMode, ui }) {
-  const lab = useLabClock(LSK, LEXI_DEF, fixLexi);
+  const lab = useLabClock(LSK, LEXI_DEF_EX, fixLexiEx);
   const P = lab.prm;
   const D = useDict();
   const layers = useModeLayers(mode);
@@ -205,6 +211,7 @@ export function LexiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, on
     ArrowUp: () => { const j = LEXI.RATES.indexOf(P.rate) + 1; if (j < LEXI.RATES.length) lab.setPrm({ rate: LEXI.RATES[j] }, keepRate); poke(); },
     ArrowDown: () => { const j = LEXI.RATES.indexOf(P.rate) - 1; if (j >= 0) lab.setPrm({ rate: LEXI.RATES[j] }, keepRate); poke(); },
     ArrowRight: () => stepIn("n", LEXI.NS, 1), ArrowLeft: () => stepIn("n", LEXI.NS, -1),
+    d: () => { lab.setPrm({ ex: P.ex === "mini" ? "full" : "mini" }, keepPlace); poke(); },
   }, inert);
   const settings = (
     <>
@@ -222,6 +229,7 @@ export function LexiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, on
       <Setting label="순서" sep><Seg label="순서" value={P.ord} options={[["asc", "오름차순"], ["desc", "내림차순"]]} onChange={(v) => lab.setPrm({ ord: v })} poke={poke} /></Setting>
       <Setting label="빠르기" sep><Stepper ui={ui} label="빠르기" value={P.rate} options={LEXI.RATES} fmt={(v) => `${v}`} unit="장/초" onChange={(v) => lab.setPrm({ rate: v }, keepRate)} poke={poke} keyHint={["↓", "↑"]} /></Setting>
       <Setting label="숨은 낱말" sep><Seg label="숨은 낱말" value={P.hid} options={[[true, "보기"], [false, "끄기"]]} onChange={(v) => lab.setPrm({ hid: v }, (o, n, el) => el)} poke={poke} /></Setting>
+      <Setting label="풀이" sep><Seg label="풀이" value={P.ex} options={EXS} onChange={(v) => lab.setPrm({ ex: v }, keepPlace)} poke={poke} /></Setting>
     </>
   );
   const title = { e: "알파벳 카드 늘어놓기", m: "알파벳 카드 사전식 배열" };
@@ -233,7 +241,7 @@ export function LexiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, on
         {layers.map((Ly) => (
           <g key={Ly.mode} opacity={Ly.o} pointerEvents={Ly.top ? undefined : "none"}>
             <SceneTitle title={title[Ly.mode]} sub={sub} C={C} mode={Ly.mode} />
-            <LexiArt C={C} mode={Ly.mode} P={P} at={at} D={D} />
+            <LexiArt C={C} mode={Ly.mode} P={P} at={at} D={D} ex={P.ex} />
           </g>
         ))}
       </svg>

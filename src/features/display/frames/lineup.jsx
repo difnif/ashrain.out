@@ -7,14 +7,15 @@
 import { memo } from "react";
 import { W, H, MText, SceneTitle, SANS } from "../draw.jsx";
 import { seg, E, clamp } from "../core.js";
-import { UText } from "../kit-story.jsx";
-import { hashSeed, comma } from "../curio/kit.js";
+import { UText, Chip } from "../kit-story.jsx";
+import { hashSeed, comma, keepPlace, EXS, fixEx } from "../curio/kit.js";
 import { LINE, LINE_DEF, fixLine, lineAt, casesOf, strategyLines } from "../curio/lineup.js";
-import { LabChrome, Stepper, Setting, useLabClock, useTicker, useKeys, useModeLayers, baseKeys } from "./xkit.jsx";
+import { LabChrome, Stepper, Seg, Setting, useLabClock, useTicker, useKeys, useModeLayers, baseKeys } from "./xkit.jsx";
 import { Lines, Panel, Small, FitText } from "./curio-kit.jsx";
 
 const LSK = "ash.display.curio.lineup";
-const GRID = { x: 56, y: 136, w: 1100, h: 728 };
+const GRID_FULL = { x: 56, y: 136, w: 1100, h: 728 };
+const GRID_MINI = { x: 56, y: 136, w: 1496, h: 684 };   // 최소화: 판 없이 너비 전체, 아래 한 줄은 상태 칩
 const PANEL = { x: 1176, y: 150, w: 386, h: 720 };
 
 /* ── 사람 모습: 이름에서 정해진다 ── */
@@ -48,11 +49,12 @@ export function Kid({ x, y, s, look, C, o = 1 }) {
 }
 
 /** 한 쪽의 칸 나누기 */
-export function gridOf(n) {
+export function gridOf(n, GRID = GRID_FULL) {
+  const minW = GRID === GRID_MINI ? 84 : 58;   // 최소화는 사람을 더 크게
   for (const cols of [4, 3, 2, 1]) {
     const colW = GRID.w / cols;
     const cw = Math.min(100, (colW - 62) / n);
-    if (cw >= 58 || cols === 1) {
+    if (cw >= minW || cols === 1) {
       const rh = cw * 1.06 + 30;
       const rows = Math.max(1, Math.floor(GRID.h / rh));
       return { cols, colW, cw, rh, rows, cap: rows * cols };
@@ -96,9 +98,10 @@ function CaseRow({ x, y, G, perm, who, num, C, k = 1, looks }) {
 }
 
 /* ══════════ 그리기 ══════════ */
-export function LineupArt({ C, mode, P, at }) {
+export function LineupArt({ C, mode, P, at, ex = "full" }) {
   const { who, cases, j, t, sum, d } = at;
-  const G = gridOf(P.n);
+  const mini = ex === "mini", GRID = mini ? GRID_MINI : GRID_FULL, CX = mini ? 800 : 600;
+  const G = gridOf(P.n, GRID);
   const looks = who.names.map(lookOf);
   const page = Math.floor(j / G.cap), first = page * G.cap;
   const pages = Math.ceil(cases.length / G.cap);
@@ -129,12 +132,29 @@ export function LineupArt({ C, mode, P, at }) {
       <g opacity={prevPage ? seg(t, 200, Math.min(700, d * 0.8)) : 1}>{rows}</g>
       {sum >= 0 && (
         <g opacity={seg(sum, 0, 500) * (1 - seg(sum, LINE.SUM - 500, LINE.SUM))}>
-          <rect x={280} y={380} width={640} height={150} rx={24} fill={C.card} stroke={C.gold} strokeWidth={2.4} />
-          <UText x={600} y={446} s={`모두 ${comma(cases.length)}가지를 늘어놓았어요!`} size={34} weight={800} anchor="middle" C={C} />
-          <UText x={600} y={494} s={`식으로 센 ${comma(total)}가지와 같아요 — 다음은 새 이름으로`} size={22} weight={650} anchor="middle" fill={C.soft} C={C} />
+          <rect x={CX - 320} y={380} width={640} height={150} rx={24} fill={C.card} stroke={C.gold} strokeWidth={2.4} />
+          <UText x={CX} y={446} s={`모두 ${comma(cases.length)}가지를 늘어놓았어요!`} size={34} weight={800} anchor="middle" C={C} />
+          <UText x={CX} y={494} s={`식으로 센 ${comma(total)}가지와 같아요 — 다음은 새 이름으로`} size={22} weight={650} anchor="middle" fill={C.soft} C={C} />
         </g>
       )}
-      <LinePanel C={C} mode={mode} P={P} who={who} lines={lines} n={cases.length} j={j} page={page} pages={pages} />
+      {!mini && <LinePanel C={C} mode={mode} P={P} who={who} lines={lines} n={cases.length} j={j} page={page} pages={pages} />}
+      {mini && <LineMini C={C} mode={mode} P={P} who={who} lines={lines} n={cases.length} j={j} page={page} pages={pages} />}
+    </g>
+  );
+}
+/** 최소화 — 아래 한 줄: 조건 · 식(금빛) · 지금 몇 번째 */
+function LineMini({ C, mode, P, who, lines, n, j, page, pages }) {
+  const RC = ROLE_COL(C);
+  const cond = [];
+  if (who.block.length) cond.push(`${who.block.map((i) => who.names[i].slice(1)).join("·")} 이웃`);
+  if (who.ends.length) cond.push(`${who.ends.map((i) => who.names[i].slice(1)).join("·")} ${who.ends.length === 2 ? "양 끝" : "한쪽 끝"}`);
+  if (who.apart.length) cond.push(`${who.apart.map((i) => who.names[i].slice(1)).join("·")} 떨어져`);
+  const hi = [...lines].reverse().find((L) => L.hi);
+  return (
+    <g>
+      <Chip x={56} y={846} s={`${P.n}명 한 줄로${cond.length ? ` · ${cond.join(" · ")}` : " · 조건 없음"}`} size={20} C={C} anchor="start" color={mode === "m" ? C.teal : C.coral} />
+      {hi && <Chip x={800} y={846} s={hi.s} size={24} C={C} color={C.gold} />}
+      <Chip x={1552} y={846} s={`${comma(j + 1)} / ${comma(n)}가지 · ${page + 1}/${pages}쪽`} size={20} C={C} anchor="end" />
     </g>
   );
 }
@@ -169,8 +189,10 @@ function LinePanel({ C, mode, P, who, lines, n, j, page, pages }) {
 }
 
 /* ══════════ 액자 ══════════ */
+const LINE_DEF_EX = { ...LINE_DEF, ex: "full" };
+const fixLineEx = (p = {}) => ({ ...fixLine(p), ex: fixEx(p.ex) });
 export function LineupFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, onExit, inert, mode, onMode, ui }) {
-  const lab = useLabClock(LSK, LINE_DEF, fixLine);
+  const lab = useLabClock(LSK, LINE_DEF_EX, fixLineEx);
   const P = lab.prm;
   const layers = useModeLayers(mode);
   useTicker(() => !(lab.clk.current.held != null && layers.length < 2));
@@ -186,6 +208,7 @@ export function LineupFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, 
   useKeys({
     ...baseKeys({ togglePause: lab.togglePause, restart: newNames, toggleFs, onMode, poke }),
     ArrowUp: () => stepIn("n", LINE.NS, 1), ArrowDown: () => stepIn("n", LINE.NS, -1),
+    d: () => { lab.setPrm({ ex: P.ex === "mini" ? "full" : "mini" }, keepPlace); poke(); },
   }, inert);
   const settings = (
     <>
@@ -193,6 +216,7 @@ export function LineupFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, 
       <Setting label="이웃" sep><Stepper ui={ui} label="이웃" value={P.k} options={LINE.KS} fmt={(v) => (v ? v : "없음")} unit={P.k ? "명" : ""} onChange={(v) => lab.setPrm({ k: v })} poke={poke} /></Setting>
       <Setting label="양 끝" sep><Stepper ui={ui} label="양 끝" value={P.e} options={LINE.ES} fmt={(v) => (v ? v : "없음")} unit={P.e ? "명" : ""} onChange={(v) => lab.setPrm({ e: v })} poke={poke} /></Setting>
       <Setting label="이웃 안 함" sep><Stepper ui={ui} label="이웃하지 않는 사람" value={P.m} options={LINE.MS} fmt={(v) => (v ? v : "없음")} unit={P.m ? "명" : ""} onChange={(v) => lab.setPrm({ m: v })} poke={poke} /></Setting>
+      <Setting label="풀이" sep><Seg label="풀이" value={P.ex} options={EXS} onChange={(v) => lab.setPrm({ ex: v }, keepPlace)} poke={poke} /></Setting>
       <Setting label="빠르기" sep><Stepper ui={ui} label="빠르기" value={P.rate} options={LINE.RATES} fmt={(v) => `${v}`} unit="줄/초" onChange={(v) => lab.setPrm({ rate: v }, keepRate)} poke={poke} /></Setting>
     </>
   );
@@ -204,7 +228,7 @@ export function LineupFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, 
         {layers.map((Ly) => (
           <g key={Ly.mode} opacity={Ly.o} pointerEvents={Ly.top ? undefined : "none"}>
             <SceneTitle title={title[Ly.mode]} sub={sub} C={C} mode={Ly.mode} />
-            <LineupArt C={C} mode={Ly.mode} P={P} at={at} />
+            <LineupArt C={C} mode={Ly.mode} P={P} at={at} ex={P.ex} />
           </g>
         ))}
       </svg>

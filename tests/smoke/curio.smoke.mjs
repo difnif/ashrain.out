@@ -63,13 +63,14 @@ async function open(browser, role, port, viewport = { width: 1280, height: 800 }
 }
 let n = 0;
 const step = (s) => console.log(`✓ ${++n}. ${s}`);
-const KEYS = ["soccerfn", "hoopfn", "batfn", "pouch", "lexi", "lineup", "crowd"];
+const KEYS = ["soccerfn", "hoopfn", "batfn", "badminton", "tennis", "tabletennis", "volleyball", "jokgu", "sepak", "golf", "cue", "bowl",
+  "pouch", "lexi", "lineup", "crowd"];
 
 const { srv, port } = await serve();
 const browser = await chromium.launch({ headless: !process.argv.includes("--headed") });
 try {
   const { page, errs, go } = await open(browser, "student", port, { width: 1280, height: 800 });
-  // ── 목록: 수학 호기심에 일곱이 다 있다 ──
+  // ── 목록: 수학 호기심에 열여섯이 다 있다 ──
   await go("#/study/av/fun");
   await page.locator(".st-item").first().waitFor();
   const fun = avOfCat("fun");
@@ -80,7 +81,7 @@ try {
     await page.getByText(it.title, { exact: true }).first().waitFor();
   }
   await page.screenshot({ path: path.join(SHOTS, "curio-list.png"), fullPage: true });
-  step(`수학 호기심 목록 ${fun.length}가지 — 일곱 모두 있음`);
+  step(`수학 호기심 목록 ${fun.length}가지 — 열여섯 모두 있음`);
   // ── 하나씩 열기 ──
   for (const key of KEYS) {
     await go(`#/av/${key}`);

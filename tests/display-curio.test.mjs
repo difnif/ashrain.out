@@ -339,7 +339,8 @@ export function sweep(mode, th) {
   const m = await import(pathToFileURL(out).href);
   const BAD = /NaN|undefined|Infinity|\[object Object\]/;
   const bad = (s) => (s.match(/.{60}(NaN|undefined|Infinity|\[object Object\]).{30}/) || [""])[0];
-  assert.deepEqual(m.keys, ["soccerfn", "hoopfn", "batfn", "pouch", "lexi", "lineup", "crowd"]);
+  assert.deepEqual(m.keys, ["soccerfn", "hoopfn", "batfn", "badminton", "tennis", "tabletennis", "volleyball", "jokgu", "sepak",
+    "golf", "cue", "bowl", "pouch", "lexi", "lineup", "crowd"]);
   // 농구: 하프라인 너머에서 던진 슛은 반코트 그림 밖이라 목록에서만 빠진다(야투 기록에는 남는다)
   const hl = m.hoopList({ game: -1, who: "all" });
   assert.ok(hl.every(([X, Y]) => X >= -5.25 && X <= 41.25 && Math.abs(Y) <= 25), "반코트 밖 슛이 목록에 있음");
