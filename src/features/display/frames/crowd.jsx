@@ -7,10 +7,10 @@
 import { memo } from "react";
 import { W, H, SceneTitle, SANS, MText } from "../draw.jsx";
 import { seg, E, clamp, lerp } from "../core.js";
-import { UText, uWidth } from "../kit-story.jsx";
-import { hashSeed, rng, SPEEDS, spFmt, keepSpeed } from "../curio/kit.js";
+import { UText, uWidth, Chip } from "../kit-story.jsx";
+import { hashSeed, rng, SPEEDS, spFmt, keepSpeed, keepPlace, EXS, fixEx } from "../curio/kit.js";
 import { CROWD, CROWD_DEF, fixCrowd, crowdOf, posOf, pickOf, crowdLines, BOX, GRADE } from "../curio/crowd.js";
-import { LabChrome, Stepper, Setting, useLabClock, useTicker, useKeys, useModeLayers, baseKeys } from "./xkit.jsx";
+import { LabChrome, Stepper, Seg, Setting, useLabClock, useTicker, useKeys, useModeLayers, baseKeys } from "./xkit.jsx";
 
 const LSK = "ash.display.curio.crowd";
 const OL = "#3a2a1e";                       // 그림 테두리 선
@@ -208,7 +208,7 @@ function labelSpots(chosen, posMap) {
     return { g, s, q, lx: pick[0], ly: pick[1] };
   });
 }
-export function CrowdArt({ C, mode, P, at }) {
+export function CrowdArt({ C, mode, P, at, ex = "full" }) {
   const crowd = crowdOf(P);
   const { k, t, wall } = at;            // k 번째 차례, 그 차례 안 시각, 벽시계(거닐기)
   const picks = pickOf(P, k, crowd);
@@ -286,8 +286,9 @@ export function CrowdArt({ C, mode, P, at }) {
         )}
         <CrowdLegend P={P} C={C} o={legO} />
       </g>
-      <CrowdCard C={C} mode={mode} P={P} picks={picks} crowd={crowd} t={t} k={k} kOut={kOut}
-        top={top} />
+      {ex !== "mini" && <CrowdCard C={C} mode={mode} P={P} picks={picks} crowd={crowd} t={t} k={k} kOut={kOut}
+        top={top} />}
+      {ex === "mini" && <CrowdChip C={C} mode={mode} P={P} picks={picks} crowd={crowd} t={t} k={k} kOut={kOut} top={top} />}
     </g>
   );
 }
@@ -343,20 +344,37 @@ function CrowdCard({ C, mode, P, picks, crowd, t, k, kOut, top }) {
   );
 }
 
+/** 최소화: 큰 결과 카드 대신 뽑힌 학생과 확률 한 줄만 — 북적이는 운동장을 가리지 않게 */
+function CrowdChip({ C, mode, P, picks, crowd, t, k, kOut, top }) {
+  const ko = cardVis(t);
+  if (ko <= 0.001) return null;
+  const { last } = crowdLines(P, picks, crowd, mode);
+  const who = picks.filter((q) => q.list.length).map(({ g, list }) => `${g}학년 ${list.map((i) => crowd.byGrade[g - 1][i].name).join("·")}`);
+  const y = top ? 176 : 838;
+  return (
+    <g opacity={ko * kOut}>
+      <Chip x={800} y={y - (top ? 0 : 44)} s={`${k + 1}번째 뽑기 — ${who.join(" / ")}`} size={21} C={C} />
+      <Chip x={800} y={y + (top ? 44 : 0)} s={last} size={27} C={C} color={C.gold} />
+    </g>
+  );
+}
+
 /* ══════════ 액자 ══════════ */
 export function crowdAt(P, el) {
   const e = el * P.sp;
   const k = Math.floor(e / CROWD.TURN);
   return { k, t: e - k * CROWD.TURN, wall: el };
 }
+const CROWD_DEF_EX = { ...CROWD_DEF, ex: "full" };
+const fixCrowdEx = (p = {}) => ({ ...fixCrowd(p), ex: fixEx(p.ex) });
 export function CrowdFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, onExit, inert, mode, onMode, ui }) {
-  const lab = useLabClock(LSK, CROWD_DEF, fixCrowd);
+  const lab = useLabClock(LSK, CROWD_DEF_EX, fixCrowdEx);
   const P = lab.prm;
   const layers = useModeLayers(mode);
   useTicker(() => !(lab.clk.current.held != null && layers.length < 2));
   const at = crowdAt(P, lab.elapsed());
   const regather = () => lab.setPrm({ seed: (P.seed % 999983) + 1 });
-  useKeys({ ...baseKeys({ togglePause: lab.togglePause, restart: regather, toggleFs, onMode, poke }) }, inert);
+  useKeys({ ...baseKeys({ togglePause: lab.togglePause, restart: regather, toggleFs, onMode, poke }), d: () => { lab.setPrm({ ex: P.ex === "mini" ? "full" : "mini" }, keepPlace); poke(); } }, inert);
   const grade = (g) => (
     <>
       <Setting label={`${g}학년`} sep={g > 1}><Stepper ui={ui} label={`${g}학년 인원`} value={P[`a${g}`]} options={CROWD.AS} unit="명" onChange={(v) => lab.setPrm({ [`a${g}`]: v })} poke={poke} /></Setting>
@@ -366,6 +384,7 @@ export function CrowdFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
   const settings = (
     <>
       {grade(1)}{grade(2)}{grade(3)}
+      <Setting label="풀이" sep><Seg label="풀이" value={P.ex} options={EXS} onChange={(v) => lab.setPrm({ ex: v }, keepPlace)} poke={poke} /></Setting>
       <Setting label="빠르기" sep><Stepper ui={ui} label="빠르기" value={P.sp} options={SPEEDS} fmt={spFmt} onChange={(v) => lab.setPrm({ sp: v }, keepSpeed)} poke={poke} /></Setting>
     </>
   );
@@ -377,7 +396,7 @@ export function CrowdFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
         {layers.map((Ly) => (
           <g key={Ly.mode} opacity={Ly.o} pointerEvents={Ly.top ? undefined : "none"}>
             <SceneTitle title={title[Ly.mode]} sub={sub} C={C} mode={Ly.mode} />
-            <CrowdArt C={C} mode={Ly.mode} P={P} at={at} />
+            <CrowdArt C={C} mode={Ly.mode} P={P} at={at} ex={P.ex} />
           </g>
         ))}
       </svg>

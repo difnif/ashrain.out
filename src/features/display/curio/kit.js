@@ -192,6 +192,13 @@ export const SPEEDS = [0.5, 1, 1.5, 2];
 export const spFmt = (v) => `${v}×`;
 /** 빠르기를 바꿔도 그 자리에서 이어지게(경과 × 옛 빠르기 = 새 경과 × 새 빠르기) */
 export const keepSpeed = (o, n, el) => (el * (o.sp || 1)) / (n.sp || 1);
+/** 보기만 바꾸는 설정(풀이 상세 · 최소화 등) — 시계는 그대로 */
+export const keepPlace = (o, n, el) => el;
+
+/* ══════════ 풀이 상세 · 최소화 ══════════ */
+// 상세: 오른쪽 설명 판에 판서 줄까지 · 최소화: 설명 판 없이 그림을 크게(식 칩 하나 정도만)
+export const EXS = [["full", "상세"], ["mini", "최소화"]];
+export const fixEx = (v) => (v === "mini" ? "mini" : "full");
 
 /* ══════════ 조합 · 큰 분수 ══════════ */
 export function comb(n, k) {

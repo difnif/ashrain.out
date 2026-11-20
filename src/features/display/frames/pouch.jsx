@@ -8,8 +8,8 @@
 import { memo, useMemo } from "react";
 import { W, H, MText, SceneTitle } from "../draw.jsx";
 import { seg, E, clamp, lerp } from "../core.js";
-import { UText } from "../kit-story.jsx";
-import { fs, hashSeed, rng, rint, shuffle, bigFracText, pctText, SPEEDS, spFmt, keepSpeed, comb } from "../curio/kit.js";
+import { UText, Chip } from "../kit-story.jsx";
+import { fs, hashSeed, rng, rint, shuffle, bigFracText, pctText, SPEEDS, spFmt, keepSpeed, keepPlace, EXS, fixEx, comb } from "../curio/kit.js";
 import { POUCH, POUCH_DEF, fixPouch, roundOf, pouchAt, PT, combExpr } from "../curio/pouch.js";
 import { LabChrome, Stepper, Seg, Setting, useLabClock, useTicker, useKeys, useModeLayers, baseKeys } from "./xkit.jsx";
 import { Lines, Panel, Small } from "./curio-kit.jsx";
@@ -20,7 +20,8 @@ const colOf = (C, c) => C[POUCH.COLORS[c][1]];
 const nameOf = (c) => POUCH.COLORS[c][0];
 /* 한 차례 박자(1× ms) */
 export const TT = { hop: [0, 1300], lift: [1300, 2500], calc: [2500, 5200], fall: [5200, 6300] };
-const AREA = { x0: 60, x1: 1060, top: 170, bagH: 270 };
+const AREA_FULL = { x0: 60, x1: 1060, top: 170, bagH: 270 };
+const AREA_MINI = { x0: 70, x1: 1530, top: 170, bagH: 270 };   // 최소화: 설명 판 없이 화면 너비 전체
 const PANEL = { x: 1090, y: 150, w: 472, h: 720 };
 
 /* ── 주머니 안 공 자리: 처음 담긴 공을 섞어 아래부터 쌓고, 꺼낼 때마다 그 색의 맨 위 공을 뺀다 ── */
@@ -43,9 +44,9 @@ function slotsOf(RD, P, round) {
   return { slots, removed };
 }
 /** 주머니 그림 자리 */
-function bagGeom(P) {
+function bagGeom(P, AREA) {
   const B = P.b, span = AREA.x1 - AREA.x0;
-  const w = Math.min(230, (span - (B - 1) * 26) / B);
+  const w = Math.min(AREA === AREA_MINI ? 260 : 230, (span - (B - 1) * 26) / B);
   const gap = B > 1 ? (span - B * w) / (B - 1) : 0;
   const maxIn = Math.max(...Array.from({ length: B }, () => P.n));
   return Array.from({ length: B }, (_, i) => {
@@ -89,10 +90,11 @@ function Ball({ x, y, r, col, o = 1 }) {
 }
 
 /* ══════════ 그리기 ══════════ */
-export function PouchArt({ C, mode, P, at }) {
-  const isM = mode === "m";
+export function PouchArt({ C, mode, P, at, ex = "full" }) {
+  const isM = mode === "m", mini = ex === "mini", AREA = mini ? AREA_MINI : AREA_FULL;
   const { RD, round, stage, ti, t } = at;
-  const G = useMemo(() => bagGeom(P), [P]);
+  const G = useMemo(() => bagGeom(P, AREA), [P, AREA]);
+  const TX = (AREA.x0 + AREA.x1) / 2;   // 쟁반 가운데
   const S = useMemo(() => slotsOf(RD, P, round), [RD, P, round]);
   const r = clamp(Math.min(19, Math.sqrt((G[0].w * 0.62 * (AREA.bagH - 70)) / Math.max(4, Math.max(...RD.start.map((b) => b.reduce((a, v) => a + v, 0))))) * 0.5), 7, 19);
   const per = Math.max(2, Math.floor((G[0].w * 0.66) / (2 * r)));
@@ -117,7 +119,7 @@ export function PouchArt({ C, mode, P, at }) {
   const setupK = stage === "setup" ? seg(t, 200, PT.SETUP - 400) : 1;
   // 꺼낸 공: 주머니 입구 → 쟁반 → 통
   const tubes = (stage === "turn" && T) ? (ti > 0 ? RD.turns[ti - 1].tubes : new Array(P.c).fill(0)) : stage === "sum" ? (RD.turns.at(-1)?.tubes || new Array(P.c).fill(0)) : new Array(P.c).fill(0);
-  const tray = T ? T.draw.map((c, j) => [560 + (j - (T.draw.length - 1) / 2) * 64, 548]) : [];
+  const tray = T ? T.draw.map((c, j) => [TX + (j - (T.draw.length - 1) / 2) * 64, 548]) : [];
   const tubeG = Array.from({ length: P.c }, (_, c) => ({ cx: AREA.x0 + 60 + ((AREA.x1 - AREA.x0 - 120) * (P.c === 1 ? 0.5 : c / (P.c - 1))), bot: 862, top: 640 }));
   const tr = 12, cap = Math.floor((862 - 640 - 16) / (tr * 1.9));
   const tubeBall = (c, j, total) => { const k = total > cap * 2 ? (cap * 2) / total : 1; const row = Math.floor(j / 2), col = j % 2; return [tubeG[c].cx - tr + col * tr * 2, tubeG[c].bot - 10 - tr - row * tr * 1.9 * k]; };
@@ -158,7 +160,8 @@ export function PouchArt({ C, mode, P, at }) {
         else p = [lerp(from[0], to[0], lifting), lerp(from[1], to[1], lifting) - Math.sin(Math.PI * lifting) * 90];
         return lifting > 0 ? <Ball key={j} x={p[0]} y={p[1]} r={falling > 0 ? lerp(22, tr, falling) : lerp(r, 22, lifting)} col={colOf(C, c)} /> : null;
       })}
-      {T && lifting >= 1 && falling < 0.05 && <UText x={560} y={604} s={T.draw.map((c) => nameOf(c)).join(" · ")} size={20} weight={700} anchor="middle" fill={C.soft} C={C} />}
+      {T && lifting >= 1 && falling < 0.05 && !(mini && t >= TT.calc[0] + 1600) && <UText x={TX} y={604} s={T.draw.map((c) => nameOf(c)).join(" · ")} size={20} weight={700} anchor="middle" fill={C.soft} C={C} />}
+      {mini && T && t >= TT.calc[0] + 1600 && (() => { const L = turnLines(T, P, mode); const hi = L[L.length - 1]; return <Chip x={TX} y={600} s={hi.s} size={28} C={C} color={C.gold} o={seg(t, TT.calc[0] + 1600, TT.calc[0] + 2100) * (1 - seg(t, TT.fall[1] - 300, TT.fall[1]))} />; })()}
       {/* 색깔 통 */}
       {tubeG.map((g, c) => {
         const n = tubes[c];
@@ -170,7 +173,21 @@ export function PouchArt({ C, mode, P, at }) {
           </g>
         );
       })}
-      <PouchPanel C={C} mode={mode} P={P} at={at} isM={isM} />
+      {!mini && <PouchPanel C={C} mode={mode} P={P} at={at} isM={isM} />}
+      {mini && <PouchMini C={C} P={P} at={at} isM={isM} />}
+    </g>
+  );
+}
+/** 최소화 — 위 오른쪽에 판 · 꺼내기 차례와 「이 순서 그대로」 확률만 */
+function PouchMini({ C, P, at, isM }) {
+  const { RD, round, stage, ti, t } = at;
+  const done = stage === "turn" ? ti + (t >= TT.fall[1] ? 1 : 0) : stage === "sum" ? RD.turns.length : 0;
+  const cum = done ? RD.turns[done - 1].cum : null;
+  const a = `${round + 1}번째 판 · ${stage === "turn" ? `${ti + 1}번째 꺼내기` : stage === "sum" ? "판 끝" : "공 담기"} · ${P.rep ? "다시 넣기" : "빼 두기"}`;
+  return (
+    <g>
+      <Chip x={1552} y={522} s={a} size={19} C={C} anchor="end" color={isM ? C.teal : C.coral} />
+      {cum && <Chip x={1552} y={562} s={`이 순서 그대로: ${bigFracText(cum[0], cum[1], 8)}${pctText(cum[0], cum[1]) ? ` (${pctText(cum[0], cum[1])})` : ""}`} size={19} C={C} anchor="end" color={C.gold} />}
     </g>
   );
 }
@@ -259,8 +276,10 @@ function PouchPanel({ C, mode, P, at, isM }) {
 }
 
 /* ══════════ 액자 ══════════ */
+const DEF_EX = { ...POUCH_DEF, ex: "full" };
+const fixEx2 = (p = {}) => ({ ...fixPouch(p), ex: fixEx(p.ex) });
 export function PouchFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, onExit, inert, mode, onMode, ui }) {
-  const lab = useLabClock(LSK, POUCH_DEF, fixPouch);
+  const lab = useLabClock(LSK, DEF_EX, fixEx2);
   const P = lab.prm;
   const layers = useModeLayers(mode);
   useTicker(() => !(lab.clk.current.held != null && layers.length < 2));
@@ -271,6 +290,7 @@ export function PouchFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
     ...baseKeys({ togglePause: lab.togglePause, restart: reshuffle, toggleFs, onMode, poke }),
     ArrowUp: () => stepIn("n", POUCH.NS, 1), ArrowDown: () => stepIn("n", POUCH.NS, -1),
     ArrowRight: () => stepIn("k", POUCH.KS, 1), ArrowLeft: () => stepIn("k", POUCH.KS, -1),
+    d: () => { lab.setPrm({ ex: P.ex === "mini" ? "full" : "mini" }, keepPlace); poke(); },
   }, inert);
   const settings = (
     <>
@@ -279,6 +299,7 @@ export function PouchFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
       <Setting label="주머니" sep><Stepper ui={ui} label="주머니" value={P.b} options={POUCH.BS} unit="개" onChange={(v) => lab.setPrm({ b: v })} poke={poke} /></Setting>
       <Setting label="색" sep><Stepper ui={ui} label="색" value={P.c} options={POUCH.CS} unit="가지" onChange={(v) => lab.setPrm({ c: v })} poke={poke} /></Setting>
       <Setting label="꺼낸 공" sep><Seg label="꺼낸 공" value={P.rep} options={[[false, "빼 두기"], [true, "다시 넣기"]]} onChange={(v) => lab.setPrm({ rep: v })} poke={poke} /></Setting>
+      <Setting label="풀이" sep><Seg label="풀이" value={P.ex} options={EXS} onChange={(v) => lab.setPrm({ ex: v }, keepPlace)} poke={poke} /></Setting>
       <Setting label="빠르기" sep><Stepper ui={ui} label="빠르기" value={P.sp} options={SPEEDS} fmt={spFmt} onChange={(v) => lab.setPrm({ sp: v }, keepSpeed)} poke={poke} /></Setting>
     </>
   );
@@ -290,7 +311,7 @@ export function PouchFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
         {layers.map((Ly) => (
           <g key={Ly.mode} opacity={Ly.o} pointerEvents={Ly.top ? undefined : "none"}>
             <SceneTitle title={title[Ly.mode]} sub={sub} C={C} mode={Ly.mode} />
-            <PouchArt C={C} mode={Ly.mode} P={P} at={at} />
+            <PouchArt C={C} mode={Ly.mode} P={P} at={at} ex={P.ex} />
           </g>
         ))}
       </svg>
