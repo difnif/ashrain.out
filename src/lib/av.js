@@ -4,9 +4,11 @@
 //                  그림 액자 열여섯(축구 · 농구 · 야구 직선, 배드민턴 · 테니스 · 탁구 · 배구 · 족구 · 세팍타크로 · 골프 · 당구 · 볼링,
 //                  주머니 공 꺼내기, 알파벳 카드, 일렬로 세우기, 학년별 뽑기 — frames/curio.jsx)
 //   · 문제 풀이 해설 — 해설 액자(일차함수 그래프 그리기 · 10단계 계산 · 그래프와 넓이 · 경우의 수와 확률 100제 — 선발 · 공 꺼내기 · 사전식 · 줄 세우기)
+//                  + 학년별 기본기 해설(초1 ~ 고3, frames/grade.jsx). 학년(grade) 순으로 늘어놓고 초등 · 중등 · 고등으로 묶는다(AV_LEVELS).
 // 여는 주소: #/av/<key> — key 는 액자 key(frames/index.js) 또는 scenes-<묶음>(pairs.js 의 GROUPS).
 // 교실 모니터에 액자가 새로 들어오면: frames/index.js 의 lesson 표시를 따라 저절로 갈린다(lesson → 문제 풀이 해설, 나머지 → 수학 호기심).
 import { FRAMES } from "../features/display/frames/index.js";
+import { GRADES } from "../features/display/grades/index.js";
 
 export const AV_CATS = [
   { id: "fun", title: "수학 호기심", icon: "🔭", sub: "도형이 움직이고, 구슬이 떨어지고, 문이 열려요 — 보고 직접 해 보는 수학" },
@@ -20,15 +22,28 @@ const SCENES = [
 ];
 const ICON = { hanoi: "🗼", monty: "🚪", branch: "🔀", galton: "⚪", soccer: "⚽", essay: "📖", graph: "📈", lin10: "🔢", area: "📐", cnt100: "🎯",
   soccerfn: "🥅", hoopfn: "🏀", batfn: "⚾", badminton: "🏸", tennis: "🎾", tabletennis: "🏓", volleyball: "🏐", jokgu: "🦶", sepak: "🦵",
-  golf: "⛳", cue: "🎱", bowl: "🎳", pouch: "👝", lexi: "🔤", lineup: "🧍", crowd: "🔍" };
+  golf: "⛳", cue: "🎱", bowl: "🎳", pouch: "👝", lexi: "🔤", lineup: "🧍", crowd: "🔍",
+  ...Object.fromEntries(GRADES.map((g) => [g.key, g.icon])) };
+
+// 학년 순서 — 문제 풀이 해설을 초1 → 고3 으로 늘어놓는다(같은 학년이면 frames/index.js 순서 그대로)
+export const AV_GRADES = ["초1", "초2", "초3", "초4", "초5", "초6", "중1", "중2", "중3", "고1", "고2", "고3"];
+export const AV_LEVELS = ["초등", "중등", "고등"];
+const gradeRank = (g) => { const i = AV_GRADES.indexOf(g); return i < 0 ? 99 : i; };
 
 export const AV_ITEMS = [
   ...SCENES.map((s) => ({ ...s, cat: "fun", kind: "scene", frame: null })),
   ...FRAMES.map((f) => ({
     key: f.key, frame: f.key, grp: null, cat: f.lesson ? "sol" : "fun", icon: ICON[f.key] || "🖼",
     kind: f.lesson ? "해설" : f.lab ? "실험" : f.story ? "이야기" : "그림", title: f.title, desc: f.desc,
+    grade: f.grade || null, level: f.level || null,
   })),
 ];
+// 문제 풀이 해설만 학년 순으로(정렬은 안정 — 같은 학년이면 원래 순서)
+{
+  const sol = AV_ITEMS.filter((x) => x.cat === "sol").sort((a, b) => gradeRank(a.grade) - gradeRank(b.grade));
+  let i = 0;
+  for (let k = 0; k < AV_ITEMS.length; k++) if (AV_ITEMS[k].cat === "sol") AV_ITEMS[k] = sol[i++];
+}
 for (const s of AV_ITEMS) if (s.kind === "scene") s.kind = "애니메이션";
 
 export const avItem = (key) => AV_ITEMS.find((x) => x.key === key) || null;

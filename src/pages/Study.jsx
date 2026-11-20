@@ -11,7 +11,7 @@ import { koFilter } from "../lib/koSearch";
 import ItemPicker from "./solve/ItemPicker";
 import { CATEGORIES, loadIndex, readProgress, setProgressUser, pad2 } from "../lib/conceptsets";
 import { supabase } from "../supabaseClient";
-import { AV_CATS, avOfCat } from "../lib/av";
+import { AV_CATS, AV_LEVELS, avOfCat } from "../lib/av";
 import "./solve/solve.css";
 
 const CSS = `
@@ -350,15 +350,21 @@ function AvSub({ path }) {
         <button onClick={() => (location.hash = "#/study/av")}>시청각 학습</button><span aria-hidden="true">›</span><b>{cat.title}</b>
       </div>
       <p className="st-cdesc">{cat.sub}</p>
-      <div className="st-list">
-        {avOfCat(cat.id).map((it) => (
-          <button key={it.key} className="st-item" onClick={() => (location.hash = `#/av/${it.key}`)}>
-            <span className="st-avic" aria-hidden="true">{it.icon}</span>
-            <span className="nm"><b>{it.title}</b><small className="wrap">{it.desc}</small></span>
-            <span className="tag">{it.kind}</span>
-          </button>
-        ))}
-      </div>
+      {(cat.id === "sol" ? AV_LEVELS.map((lv) => [lv, avOfCat(cat.id).filter((it) => it.level === lv)]).concat([["", avOfCat(cat.id).filter((it) => !AV_LEVELS.includes(it.level))]])
+        : [["", avOfCat(cat.id)]]).filter(([, list]) => list.length).map(([lv, list]) => (
+        <div key={lv || "all"}>
+          {lv && <p className="st-sec">{lv}</p>}
+          <div className="st-list">
+            {list.map((it) => (
+              <button key={it.key} className="st-item" onClick={() => (location.hash = `#/av/${it.key}`)}>
+                <span className="st-avic" aria-hidden="true">{it.icon}</span>
+                <span className="nm"><b>{it.title}</b><small className="wrap">{it.desc}</small></span>
+                <span className="tag">{it.grade || it.kind}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
       {cat.id === "sol" && <p className="st-sec" style={{ fontWeight: 600 }}>컨셉 문제 세트마다 있는 「🎬 해설 영상」은 각 세트 화면에서 열어요.</p>}
     </>
   );

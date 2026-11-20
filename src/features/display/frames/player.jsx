@@ -53,10 +53,10 @@ export function loadStory(list, now = Date.now(), o = null, prm = null, v3 = fal
  */
 // 다른 화면이 같은 재생기를 쓸 때(컨셉 문제 해설 영상): noMode — 학년 토글 숨김 · noGallery — 액자 단추 숨김 ·
 //   exitTitle — 나가기 단추 이름 · startAt — 이 장면부터 새로 · apiRef — { goTo, idx } 를 밖으로(목록에서 고르기) ·
-//   onIdx — 장면이 바뀔 때 알림. 모두 생략하면 교실 모니터 액자와 똑같다.
+//   onIdx — 장면이 바뀔 때 알림 · topExtra — 오른쪽 위(액자 단추 앞)에 더할 것(학년별 해설의 📄 문서). 모두 생략하면 교실 모니터 액자와 똑같다.
 //   scrub — 해설 액자: 아래 긴 막대(문항 이동)와 옆 짧은 막대(풀이 이동 — 장면의 marks)를 띄운다(frames/scrub.jsx). 장면 점은 숨긴다.
 export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, isFs, toggleFs, onTheme, onGallery, onExit, inert, ui, extra, fresh,
-  noMode = false, noGallery = false, exitTitle = "수업 장면으로", startAt = null, apiRef = null, onIdx = null, scrub = false }) {
+  noMode = false, noGallery = false, exitTitle = "수업 장면으로", startAt = null, apiRef = null, onIdx = null, scrub = false, topExtra = null }) {
   const { Btn, Ic, FrameIc } = ui;
   const n = list.length;
   const init = useRef(null);
@@ -239,7 +239,8 @@ export function StoryPlayer({ list, lsKey, label, C, mode, onMode, ctl, poke, is
       </svg>
 
       {/* 오른쪽 위 — 액자 단추 · 학년 토글 (수업 장면과 같은 자리) */}
-      {!(noMode && noGallery && !has3d) && <div className="dsp-tr">
+      {(topExtra || !(noMode && noGallery && !has3d)) && <div className="dsp-tr">
+        {topExtra}
         {!noGallery && <button type="button" className="dsp-fbtn" title="액자 목록" aria-label="액자 목록" onClick={() => { onGallery(); poke(); }}>
           <FrameIc />
         </button>}

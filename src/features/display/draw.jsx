@@ -86,7 +86,7 @@ export function textW(s, size, weight = 500, italic = false, serif = false) {
 }
 
 /* ══════════ 수식 글자 ══════════ */
-// 표기: ‹강조› · {분자/분모} · *S*(대문자 이탤릭) · 홀로 선 소문자 라틴 글자와 π 는 자동 이탤릭(세리프).
+// 표기: ‹강조› · {분자/분모} · ^{위 첨자} · _{아래 첨자} · √{근호} · *S*(대문자 이탤릭) · 홀로 선 소문자 라틴 글자와 π 는 자동 이탤릭(세리프).
 //       cm, cm² 처럼 붙은 글자는 바로 선다. ² ³ 은 유니코드 위 첨자를 그대로 쓴다.
 //       ⟪아이콘⟫ — 글꼴에 없을 수 있는 기호는 그림으로: ⟪○⟫ ⟪△⟫ ⟪□⟫ ⟪●⟫ ⟪✓⟫ ⟪×⟫, 주사위 눈 ⟪d1⟫~⟪d6⟫.
 //       뒤에 색 글자를 붙이면 칠한다(r 빨강 · b 파랑 · y 노랑 · g 초록 · p 보라 · t 청록 · k 글자색): ⟪○r⟫ ⟪●b⟫
@@ -115,9 +115,30 @@ function runs(s, accent) {
   flush();
   return out;
 }
-export function parseMath(str) {
+/** str[i] 가 '{' 일 때 짝이 되는 '}' 자리(안쪽 중괄호를 센다) — 없으면 −1 */
+function braceEnd(str, i) {
+  let d = 0;
+  for (let j = i; j < str.length; j++) {
+    if (str[j] === "{") d++;
+    else if (str[j] === "}") { d--; if (d === 0) return j; }
+  }
+  return -1;
+}
+/** 중괄호 밖의 첫 '/' 자리 */
+function topSlash(s) {
+  let d = 0;
+  for (let j = 0; j < s.length; j++) {
+    if (s[j] === "{") d++;
+    else if (s[j] === "}") d--;
+    else if (s[j] === "/" && d === 0) return j;
+  }
+  return -1;
+}
+// 덧붙인 표기(학년별 해설 액자): ^{위 첨자} · _{아래 첨자} · √{근호 속} — 안에 또 써도 된다.
+//   분수 {분자/분모} 의 분자 · 분모 안에도 위 첨자 · 아래 첨자 · 근호를 쓸 수 있다(중괄호 짝으로 끊는다).
+export function parseMath(str, accent0 = false) {
   const toks = [];
-  let accent = false, buf = "";
+  let accent = accent0, buf = "";
   const flush = () => { if (buf) { toks.push(...runs(buf, accent)); buf = ""; } };
   for (let i = 0; i < str.length; i++) {
     const ch = str[i];
@@ -127,11 +148,20 @@ export function parseMath(str) {
       const j = str.indexOf("⟫", i + 1);
       if (j > i) { flush(); toks.push({ icon: parseIcon(str.slice(i + 1, j)), ac: accent }); i = j; continue; }
     }
+    if ((ch === "^" || ch === "_" || ch === "√") && str[i + 1] === "{") {
+      const j = braceEnd(str, i + 1);
+      if (j > i) {
+        flush();
+        const inner = parseMath(str.slice(i + 2, j), accent);
+        toks.push(ch === "^" ? { sup: inner, ac: accent } : ch === "_" ? { sub: inner, ac: accent } : { root: inner, ac: accent });
+        i = j; continue;
+      }
+    }
     if (ch === "{") {
-      const j = str.indexOf("}", i + 1), inner = str.slice(i + 1, j), k = inner.indexOf("/");
+      const j = braceEnd(str, i), inner = j > i ? str.slice(i + 1, j) : "", k = topSlash(inner);
       if (j > i && k >= 0) {
         flush();
-        toks.push({ frac: true, ac: accent, num: runs(inner.slice(0, k), accent), den: runs(inner.slice(k + 1), accent) });
+        toks.push({ frac: true, ac: accent, num: parseMath(inner.slice(0, k), accent), den: parseMath(inner.slice(k + 1), accent) });
         i = j; continue;
       }
     }
@@ -142,38 +172,61 @@ export function parseMath(str) {
 }
 const layoutCache = new Map();
 const runW = (r, size, weight) => textW(r.s, size, r.it ? 500 : weight, r.it, r.it);
+/** 토큰들을 x 부터 늘어놓고 끝 x 를 돌려준다 (items 에 쌓는다) */
+function layToks(toks, size, weight, x, dy, items, igap = true) {
+  const fs = size * 0.72, axis = -size * 0.31, ss = size * 0.62;
+  let script = null;          // 바로 앞이 위·아래 첨자면 { kind, x, end } — 둘이 이어지면 같은 자리에 쌓는다
+  for (const t of toks) {
+    if (t.sup || t.sub) {
+      const kind = t.sup ? "sup" : "sub";
+      const sdy = dy + (t.sup ? -size * 0.4 : size * 0.2);
+      const x0 = script && script.kind !== kind ? script.x : x;
+      const end = layToks(t.sup || t.sub, ss, weight, x0, sdy, items);
+      x = Math.max(end, script && script.kind !== kind ? script.end : end) + size * 0.03;
+      script = script && script.kind !== kind ? null : { kind, x: x0, end };
+      continue;
+    }
+    script = null;
+    if (t.icon) {
+      items.push({ icon: t.icon, x: x + size * 0.06, w: size * 0.82, size, ac: t.ac, dy });
+      x += size * 0.94;
+      continue;
+    }
+    if (t.root) {
+      const gw = textW("√", size, weight);
+      items.push({ s: "√", x, dy, size, it: false, ac: t.ac, w: gw });
+      const x1 = layToks(t.root, size, weight, x + gw * 0.92, dy, items);
+      items.push({ bar: [x + gw * 0.86, x1 + size * 0.04], dy: dy - size * 0.82, ac: t.ac, thin: true });
+      x = x1 + size * 0.08;
+      continue;
+    }
+    if (!t.frac) {
+      const w = runW(t, size, weight);
+      items.push({ s: t.s, x, dy, size, it: t.it, ac: t.ac, w });
+      x += w + (t.it && igap ? size * 0.04 : 0);
+      continue;
+    }
+    const nw = layToks(t.num, fs, weight, 0, 0, [], false);
+    const dw = layToks(t.den, fs, weight, 0, 0, [], false);
+    const fw = Math.max(nw, dw) + size * 0.16, x0 = x + size * 0.08;
+    const numItems = [], denItems = [];
+    layToks(t.num, fs, weight, x0 + (fw - nw) / 2, dy + axis - size * 0.13, numItems, false);
+    layToks(t.den, fs, weight, x0 + (fw - dw) / 2, dy + axis + size * 0.13 + fs * 0.72, denItems, false);
+    for (const it of numItems) items.push(t.ac && it.s != null ? { ...it, ac: true } : it);
+    for (const it of denItems) items.push(t.ac && it.s != null ? { ...it, ac: true } : it);
+    items.push({ bar: [x0, x0 + fw], dy: dy + axis, ac: t.ac });
+    x = x0 + fw + size * 0.08;
+  }
+  return x;
+}
 /** 수식 한 줄의 배치 — [{s, x, dy, size, it, ac} | {bar:[x1,x2], dy}] 와 전체 폭 */
 export function layoutMath(str, size, weight = 500) {
   const key = `${str}\u0001${size}\u0001${weight}`;
   const hit = layoutCache.get(key);
   if (hit) return hit;
-  const toks = parseMath(String(str ?? ""));
   const items = [];
-  let x = 0;
-  const fs = size * 0.72, axis = -size * 0.31;
-  for (const t of toks) {
-    if (t.icon) {
-      items.push({ icon: t.icon, x: x + size * 0.06, w: size * 0.82, size, ac: t.ac });
-      x += size * 0.94;
-      continue;
-    }
-    if (!t.frac) {
-      const w = runW(t, size, weight);
-      items.push({ s: t.s, x, dy: 0, size, it: t.it, ac: t.ac, w });
-      x += w + (t.it ? size * 0.04 : 0);
-      continue;
-    }
-    const nw = t.num.reduce((a, r) => a + runW(r, fs, weight), 0);
-    const dw = t.den.reduce((a, r) => a + runW(r, fs, weight), 0);
-    const fw = Math.max(nw, dw) + size * 0.16, x0 = x + size * 0.08;
-    let nx = x0 + (fw - nw) / 2;
-    for (const r of t.num) { const w = runW(r, fs, weight); items.push({ s: r.s, x: nx, dy: axis - size * 0.13, size: fs, it: r.it, ac: t.ac || r.ac, w }); nx += w; }
-    let dx = x0 + (fw - dw) / 2;
-    for (const r of t.den) { const w = runW(r, fs, weight); items.push({ s: r.s, x: dx, dy: axis + size * 0.13 + fs * 0.72, size: fs, it: r.it, ac: t.ac || r.ac, w }); dx += w; }
-    items.push({ bar: [x0, x0 + fw], dy: axis, ac: t.ac });
-    x = x0 + fw + size * 0.08;
-  }
-  const out = { items, w: x };
+  const w = layToks(parseMath(String(str ?? "")), size, weight, 0, 0, items);
+  const out = { items, w };
   layoutCache.set(key, out);
   return out;
 }
@@ -190,11 +243,11 @@ export function MText({ x, y, s, size = 40, weight = 500, anchor = "start", fill
   return (
     <g opacity={opacity}>
       {L.items.map((it, i) => it.icon
-        ? <ShapeIcon key={i} kind={it.icon.kind} n={it.icon.n} cx={x0 + it.x + it.w / 2} cy={y - it.size * 0.34} r={it.size * 0.34}
+        ? <ShapeIcon key={i} kind={it.icon.kind} n={it.icon.n} cx={x0 + it.x + it.w / 2} cy={y + (it.dy || 0) - it.size * 0.34} r={it.size * 0.34}
             fill={it.icon.color && C ? C[ICON_COLOR[it.icon.color]] : null} stroke={it.ac ? acc : col} C={C} />
         : it.bar
         ? <line key={i} x1={x0 + it.bar[0]} x2={x0 + it.bar[1]} y1={y + it.dy} y2={y + it.dy}
-            stroke={it.ac ? acc : col} strokeWidth={Math.max(2, size * 0.055)} strokeLinecap="round" />
+            stroke={it.ac ? acc : col} strokeWidth={Math.max(it.thin ? 1.6 : 2, size * (it.thin ? 0.045 : 0.055))} strokeLinecap="round" />
         : <text key={i} x={x0 + it.x} y={y + it.dy} fontSize={it.size}
             fontFamily={it.it ? SERIF : SANS} fontStyle={it.it ? "italic" : undefined}
             fontWeight={it.it ? 500 : weight} fill={it.ac ? acc : col} xmlSpace="preserve"

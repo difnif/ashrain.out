@@ -6,6 +6,7 @@
 //   it.fig.kind 가 tree(사전식 세로 나무 — frames/lextree.jsx) · seats · grades · bag(줄 세우기 · 학년별 선발 · 주머니 공 — frames/c100fig.jsx)면
 //   그 그림을 오른쪽에. 글자가 그림 옆에 다 들어가지 않는 문항은 그림을 빼고 무대 너비를 다 쓴다(layoutOf 의 noFig).
 //   box 를 주면(듀얼 모드의 반쪽 판) 그 판 안에 그림 없이 배치한다.
+//   학년별 기본기 해설(frames/grade.jsx)도 이 그리기를 쓴다 — it.fig.kind === "dsl" 이면 그림 DSL(frames/figdsl.jsx).
 // 재생기는 장면 묶음과 같은 StoryPlayer. 이 액자만의 것: 「세트 1 | 세트 2」 · 「1× | 1.5×」 · 번호 목록(L) — 목록 위
 //   단계 칩(전체 · 1~10)으로 고르면 그 단계 20문항만 돈다. 7 · 8단계(수직)는 고1 내용이라 표시를 붙인다.
 // 계산 · 박자표: ../lin10.js · 문항: ../lin10-items.js
@@ -17,10 +18,12 @@ import { StoryPlayer } from "./player.jsx";
 import { stepMarks } from "./scrub.jsx";
 import { LexTree } from "./lextree.jsx";
 import { SeatsFig, GradesFig, BagFig } from "./c100fig.jsx";
+import { FigDsl } from "./figdsl.jsx";
 
 /** 오른쪽 그림 — 9단계 넓이(Figure, kind 없음) 말고 경우의 수와 확률 100제의 그림들 */
 const FIGS = {
   tree: (p) => <LexTree {...p} />, seats: (p) => <SeatsFig {...p} />, grades: (p) => <GradesFig {...p} />, bag: (p) => <BagFig {...p} />,
+  dsl: (p) => <FigDsl {...p} />,          // 학년별 기본기 해설(frames/grade.jsx)
 };
 import { Seg, useKeys, lsRead, lsWrite } from "./xkit.jsx";
 

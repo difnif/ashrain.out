@@ -44,6 +44,7 @@ import { AreaFrame, AreaThumb } from "../features/display/frames/area.jsx";
 import { Cnt100Frame, Cnt100Thumb } from "../features/display/frames/cnt100.jsx";
 import { hanoiTimeline } from "../features/display/hanoi";
 import { CURIO_LABS, CurioThumb } from "../features/display/frames/curio.jsx";
+import { GRADE_LABS, GradeThumb } from "../features/display/frames/grade.jsx";
 import { DSP_CSS, Btn, Ic, FrameIc } from "../features/display/stage-ui.jsx";
 import { avOfCat } from "../lib/av.js";
 
@@ -482,6 +483,7 @@ function FrameGallery({ C, mode, view, onPick, onClose, onScenes }) {
                 {f.key === "lin10" && <Lin10Thumb C={C} />}
                 {f.key === "area" && <AreaThumb C={C} />}
                 {f.key === "cnt100" && <Cnt100Thumb C={C} />}
+                {GRADE_LABS[f.key] && <GradeThumb gkey={f.key} C={C} />}
                 {CURIO_LABS[f.key] && <CurioThumb fkey={f.key} C={C} mode={mode} />}
               </svg>
               <span className="k">{f.lab ? "실험" : f.story ? "장면 묶음" : f.lesson ? "해설" : "그림"}</span>
@@ -532,6 +534,7 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
                   {it.key === "lin10" && <Lin10Thumb C={C} />}
                   {it.key === "area" && <AreaThumb C={C} />}
                   {it.key === "cnt100" && <Cnt100Thumb C={C} />}
+                  {GRADE_LABS[it.key] && <GradeThumb gkey={it.key} C={C} />}
                   {CURIO_LABS[it.key] && <CurioThumb fkey={it.key} C={C} mode={mode} />}
                   {!f && <text x={W / 2} y={560} textAnchor="middle" fontSize="220">{it.icon}</text>}
                 </svg>
@@ -552,7 +555,7 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
 
 /* ══════════ 액자 무대 ══════════ */
 const UI = { Btn, Ic, FrameIc };
-const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame, lin10: Lin10Frame, area: AreaFrame, cnt100: Cnt100Frame, ...CURIO_LABS };
+const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame, lin10: Lin10Frame, area: AreaFrame, cnt100: Cnt100Frame, ...GRADE_LABS, ...CURIO_LABS };
 function FrameStage({ fkey, ...rest }) {
   if (fkey === "hanoi") return <HanoiFrame ui={UI} {...rest} />;
   if (LABS[fkey]) { const Lab = LABS[fkey]; return <Lab ui={UI} {...rest} />; }
