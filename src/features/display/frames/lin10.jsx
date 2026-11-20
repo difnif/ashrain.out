@@ -3,7 +3,9 @@
 //   ① 문제 → ② 방침(한 줄) → ③ 판서: 계산 과정을 한 줄씩(지금 줄에 금빛 막대, 빨간 메모가 줄 뒤에 써지듯) → ④ 답
 //   9단계(색칠한 부분의 넓이)는 오른쪽에 그림 — 판서 줄에 맞춰 밑변 · 높이 · 나눈 삼각형이 빛난다.
 //   경우의 수와 확률 100제(frames/cnt100.jsx)도 이 그리기를 쓴다 — it.planTag 가 있으면 방침 칸 이름을 바꾸고(사전식 「숫자 분석」),
-//   it.fig.kind === "tree" 면 오른쪽 그림이 사전식 세로 나무(frames/lextree.jsx).
+//   it.fig.kind 가 tree(사전식 세로 나무 — frames/lextree.jsx) · seats · grades · bag(줄 세우기 · 학년별 선발 · 주머니 공 — frames/c100fig.jsx)면
+//   그 그림을 오른쪽에. 글자가 그림 옆에 다 들어가지 않는 문항은 그림을 빼고 무대 너비를 다 쓴다(layoutOf 의 noFig).
+//   box 를 주면(듀얼 모드의 반쪽 판) 그 판 안에 그림 없이 배치한다.
 // 재생기는 장면 묶음과 같은 StoryPlayer. 이 액자만의 것: 「세트 1 | 세트 2」 · 「1× | 1.5×」 · 번호 목록(L) — 목록 위
 //   단계 칩(전체 · 1~10)으로 고르면 그 단계 20문항만 돈다. 7 · 8단계(수직)는 고1 내용이라 표시를 붙인다.
 // 계산 · 박자표: ../lin10.js · 문항: ../lin10-items.js
@@ -13,6 +15,12 @@ import { seg, E, clamp } from "../core.js";
 import { L10_SETS, L10_SPEEDS, L10_STAGE, L10_HIGH, l10Plan, lineAt } from "../lin10.js";
 import { StoryPlayer } from "./player.jsx";
 import { LexTree } from "./lextree.jsx";
+import { SeatsFig, GradesFig, BagFig } from "./c100fig.jsx";
+
+/** 오른쪽 그림 — 9단계 넓이(Figure, kind 없음) 말고 경우의 수와 확률 100제의 그림들 */
+const FIGS = {
+  tree: (p) => <LexTree {...p} />, seats: (p) => <SeatsFig {...p} />, grades: (p) => <GradesFig {...p} />, bag: (p) => <BagFig {...p} />,
+};
 import { Seg, useKeys, lsRead, lsWrite } from "./xkit.jsx";
 
 /* ══════════ 배치 (1600×900) ══════════ */
@@ -30,14 +38,32 @@ function wrap(s, size, maxW, weight = 560) {
 
 const LAYOUT = new WeakMap();
 export const L10_BOX = { LEFT, TOP, BOTTOM, FIG };
-export function layoutOf(it) {
-  if (LAYOUT.has(it)) return LAYOUT.get(it);
-  const right = it.fig ? FIG.x0 - 50 : 1540;
+/**
+ * 글자 판 배치. box 를 주면 그 판(듀얼 모드의 반쪽 — { key, right, top, bottom })에 그림 없이,
+ * 안 주면 무대 전체 — it.fig 가 있으면 오른쪽에 그림 자리를 비우되, 그림 옆으로 글자가 다 들어가지 않으면
+ * 그림을 빼고(noFig) 무대 너비를 다 쓴다.
+ */
+export function layoutOf(it, box = null) {
+  let m = LAYOUT.get(it);
+  if (!m) { m = new Map(); LAYOUT.set(it, m); }
+  const key = box ? box.key : "full";
+  if (m.has(key)) return m.get(key);
+  let out;
+  if (box) out = { ...layOnce(it, box.right, box.top, box.bottom).best, noFig: true, top: box.top, bottom: box.bottom };
+  else if (it.fig) {
+    const a = layOnce(it, FIG.x0 - 50, TOP, BOTTOM);
+    out = a.fits ? { ...a.best, noFig: false } : { ...layOnce(it, 1540, TOP, BOTTOM).best, noFig: true };
+  } else out = { ...layOnce(it, 1540, TOP, BOTTOM).best, noFig: true };
+  m.set(key, out);
+  return out;
+}
+
+function layOnce(it, right, top, bottom) {
   const W0 = right - LEFT;
-  let best = null;
+  let best = null, fits = false;
   for (const [qs, bs] of [[38, 44], [36, 40], [34, 37], [32, 34], [30, 31], [28, 28]]) {
     const qLines = wrap(`${it.no}. ${it.q}`, qs, W0);
-    let y = TOP + qs;
+    let y = top + qs;
     const qY = qLines.map((_, i) => y + i * qs * 1.48);
     y = qY[qY.length - 1] + qs * 1.55;
     const planY = y;
@@ -64,17 +90,15 @@ export function layoutOf(it) {
       rows.push(r);
     });
     const ansY = y + bs * 0.55;
-    // 방침 칸: 이름(방침 · 숫자 분석)과 글자 크기 — 한 줄이 무대 오른쪽(그림 왼쪽)을 넘지 않게 줄인다
+    // 방침 칸: 이름(방침 · 숫자 분석)과 글자 크기 — 한 줄이 판 오른쪽(그림 왼쪽)을 넘지 않게 줄인다
     const tagW = it.planTag ? it.planTag.length * 1.05 + 0.8 : 2.9;
     const pw = it.planTag ? 750 : 600, p0 = Math.round(ps * (it.planTag ? 1.3 : 1.12));
     const planX = LEFT + ps * (tagW + 0.5);
     const planS = Math.max(14, Math.min(p0, Math.floor(p0 * (right - planX) / Math.max(1, mathWidth(it.plan, p0, pw)))));
-    const cand = { qs, bs, ps, ms, qLines, qY, planY, rows, ansY, right, tagW, planX, planS, planW: pw };
-    best = cand;
-    if (ok && ansY + bs * 0.75 <= BOTTOM) break;
+    best = { qs, bs, ps, ms, qLines, qY, planY, rows, ansY, right, tagW, planX, planS, planW: pw };
+    if (ok && ansY + bs * 0.75 <= bottom) { fits = true; break; }
   }
-  LAYOUT.set(it, best);
-  return best;
+  return { best, fits: fits && best.planS >= 18 };
 }
 
 /* ══════════ 9단계 그림 ══════════ */
@@ -223,8 +247,8 @@ function Figure({ it, t, cur, C }) {
 }
 
 /* ══════════ 한 문항 한 순간 ══════════ */
-export function L10Art({ it, t, C, uid = "" }) {
-  const P = l10Plan(it), Lo = layoutOf(it);
+export function L10Art({ it, t, C, uid = "", box = null }) {
+  const P = l10Plan(it), Lo = layoutOf(it, box);
   const cur = lineAt(P, t);
   const qo = seg(t, 0, 600, E.sine);
   const po = seg(t, P.plan[0], P.plan[0] + 600, E.sine);
@@ -278,7 +302,7 @@ export function L10Art({ it, t, C, uid = "" }) {
           </g>
         );
       })()}
-      {it.fig && (it.fig.kind === "tree" ? <LexTree it={it} t={t} C={C} /> : <Figure it={it} t={t} cur={cur} C={C} />)}
+      {it.fig && !Lo.noFig && (FIGS[it.fig.kind] ? FIGS[it.fig.kind]({ it, t, C, cur }) : <Figure it={it} t={t} cur={cur} C={C} />)}
     </g>
   );
 }
