@@ -1,8 +1,8 @@
-// node tests/display-cnt100.test.mjs — 교실 모니터 「경우의 수와 확률 100제 해설」 액자 검산. 실패 시 exit 1.
+// node tests/display-cnt100.test.mjs — 교실 모니터 「경우의 수와 확률 100제 해설」 액자 검산(선발 · 공 꺼내기 · 사전식 · 줄 세우기). 실패 시 exit 1.
 // 판서: 줄마다 「=」로 이은 쪽 가운데 계산식(수 · {a/b} · 괄호 · + − × ÷)인 것을 분수로 직접 계산해 모두 같은지 본다.
 //       확률(분수) 답은 판서 마지막 줄의 마지막 값과 같은지.
 // 박자표: 문제 → 전략 → 줄 차례 → 답. 목록: 세트마다 1~100번 · 단계 1~5(15 · 20 · 25 · 22 · 18).
-// 그리기: 200문항을 여러 순간 × 두 테마로 그려 오류 · NaN 이 없는지, 글자 판이 무대 안인지 훑는다.
+// 그리기: 400문항을 여러 순간 × 두 테마로 그려 오류 · NaN 이 없는지, 글자 판이 무대 안인지 훑는다.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -48,7 +48,8 @@ function calc(s) {
 }
 /** 「=」 한 쪽에서 계산식 꼬리(앞의 말머리는 뗀다) */
 const tail = (piece) => (piece.match(/[\d{}/()+−×÷ ]*$/) || [""])[0].replace(/^[\s)]*/, "");
-const ansQ = (s) => calc(s.replace(/개$/, ""));
+const ansQ = (s) => calc(s.replace(/(개|번째)$/, ""));
+const isWord = (s) => /^[A-Z]+( \(.+\))?$/.test(s);
 
 test("판서 계산: 「=」로 이은 계산식이 모두 같은 값 · 답이 판서와 맞음", () => {
   let lines = 0, eqs = 0;
@@ -59,6 +60,7 @@ test("판서 계산: 「=」로 이은 계산식이 모두 같은 값 · 답이 
       for (let i = 1; i < vals.length; i++) { assert.ok(same(vals[0], vals[i]), `${k} ${it.no}: ${ln.s}`); eqs++; }
       if (vals.length) { last = vals[vals.length - 1]; lines++; }
     }
+    if (isWord(it.ans)) continue;          // 사전식 「○번째 문자열」 — 아래 사전식 검산에서 본다
     const a = ansQ(it.ans);
     assert.ok(a, `${k} ${it.no} 답 ${it.ans}`);
     // 확률 답(분수)은 판서 마지막 줄의 마지막 값이 곧 답
@@ -68,12 +70,54 @@ test("판서 계산: 「=」로 이은 계산식이 모두 같은 값 · 답이 
   console.log(`   계산 줄 ${lines}개 · 등식 ${eqs}개`);
 });
 
-test("문항 목록: 세트마다 1~100번 · 단계 1~5가 15 · 20 · 25 · 22 · 18문항, 차례대로", () => {
+/* ══════════ 사전식: 문자열을 모두 늘어놓아 다시 센다 ══════════ */
+function strings(cards, k) {
+  const out = [];
+  const go = (pre, rest) => { if (pre.length === k) { out.push(pre); return; } rest.forEach((c, i) => go(pre + c, rest.filter((_, j) => j !== i))); };
+  go("", [...cards].sort());
+  return out.sort();
+}
+test("사전식: 숫자 분석 합 = 번호 · 나무로 찾은 글자 = 답 · 늘어놓아 센 순번과 같음 · 나무 줄 번호가 판서 안", () => {
+  let n = 0;
+  for (const it of C100_SETS.lex.items) {
+    const f = it.fig;
+    const kth = it.planTag === "숫자 분석";
+    if (!f) {                                   // 두 단어 사이
+      const [w1, w2] = it.lines.slice(2, 4).map((l) => l.pre);
+      const S = strings(w1.split(""), w1.length);
+      const d = Math.abs(S.indexOf(w1) - S.indexOf(w2)) - 1;
+      assert.equal(`${d}개`, it.ans, `lex ${it.no}`);
+      continue;
+    }
+    const word = f.cols.map((c) => c.items.find((x) => x[2])[0]).join("") + f.tail;
+    const S = strings(f.cards, word.length);
+    if (kth) {
+      const [lhs, rhs] = it.plan.split(" = ");
+      const kk = +lhs, sum = rhs.split(" + ").reduce((a, b) => a + +b, 0);
+      assert.equal(sum, kk, `lex ${it.no} 숫자 분석`);
+      assert.ok(it.q.includes(`${kk}번째`), `lex ${it.no} 발문의 번호`);
+      assert.equal(S[kk - 1], word, `lex ${it.no} ${kk}번째`);
+      assert.equal(it.ans.split(" ")[0], word, `lex ${it.no} 답`);
+    } else {
+      assert.ok(it.q.includes(word), `lex ${it.no} 발문의 단어 ${word}`);
+      const r = S.indexOf(word) + 1;
+      const fromEnd = it.q.includes("뒤에서");
+      assert.equal(it.ans, `${fromEnd ? S.length - r + 1 : r}번째`, `lex ${it.no} 순번`);
+    }
+    for (const [a, b] of f.at) assert.ok(a >= 0 && b >= a && b < it.lines.length, `lex ${it.no} 나무 줄`);
+    assert.ok(f.tailAt < it.lines.length);
+    n++;
+  }
+  console.log(`   나무 ${n}개`);
+});
+
+const STAGES = { sel: [15, 20, 25, 22, 18], ball: [15, 20, 25, 22, 18], lex: [10, 16, 24, 25, 25], line: [15, 20, 25, 22, 18] };
+test("문항 목록: 세트마다 1~100번 · 단계 1~5 문항 수, 차례대로", () => {
   for (const k of C100_KEYS) {
     const its = C100_SETS[k].items;
     assert.equal(its.length, 100);
     its.forEach((it, i) => assert.equal(it.no, i + 1));
-    assert.deepEqual([1, 2, 3, 4, 5].map((s) => its.filter((it) => it.st === s).length), [15, 20, 25, 22, 18]);
+    assert.deepEqual([1, 2, 3, 4, 5].map((s) => its.filter((it) => it.st === s).length), STAGES[k]);
     for (let i = 1; i < 100; i++) assert.ok(its[i].st >= its[i - 1].st);
     assert.ok(its.every((it) => it.q && it.plan && it.ans && it.lines.length >= 3 && it.lines[0].pre === "포지티브" && it.lines[1].pre === "네거티브"));
   }
@@ -125,7 +169,7 @@ export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
     for (const th of ["dark", "light"]) { const s = m.thumb(th); assert.ok(s.length > 3000 && !BAD.test(s), `${th}: ${bad(s)}`); }
   });
 
-  test("그리기 훑기: 200문항 × (문제 · 전략 · 줄마다 · 답 · 끝) × 두 테마 — 오류 · NaN 없음", () => {
+  test("그리기 훑기: 400문항 × (문제 · 전략 · 줄마다 · 답 · 끝) × 두 테마 — 오류 · NaN 없음", () => {
     let cnt = 0;
     for (const [k, it] of ALL) {
       const P = l10Plan(it);
@@ -145,6 +189,7 @@ export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
       const L = m.layoutOf(it), tag = `${k} ${it.no}`;
       assert.ok(L.ansY + L.bs * 0.75 <= B.BOTTOM, `${tag} 아래로 넘침 (${Math.round(L.ansY)})`);
       for (const r of L.rows) assert.ok(r.sx + r.sW <= L.right + 2, `${tag} 줄이 오른쪽으로 넘침: ${it.lines[r.i].s}`);
+      assert.ok(L.planS >= 18, `${tag} 방침 칸 글자가 너무 작음(${L.planS}): ${it.plan}`);
     }
   });
 
@@ -155,14 +200,14 @@ export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
       assert.equal(new Set(all.map((s) => s.key)).size, 100);
       for (let st = 1; st <= 5; st++) {
         const one = m.c100Scenes(k, 1, st);
-        assert.ok(one.length >= 15 && one.every((s) => s.st === st));
+        assert.ok(one.length >= 10 && one.every((s) => s.st === st));
         assert.ok(one[0].sub.m.startsWith(`${st}단계`));
       }
       all.forEach((s, i) => assert.ok(Math.abs(fast[i].dur - s.dur / 1.5) <= 1));
       assert.equal(m.scene(all[30], 9000, "dark"), m.scene(fast[30], 6000, "dark"));
     }
     const lap = (k) => Math.round(m.c100Scenes(k, 1, 0).reduce((s, x) => s + x.dur, 0) / 60000);
-    console.log(`   한 바퀴: 선발 약 ${lap("sel")}분 · 공 약 ${lap("ball")}분`);
+    console.log(`   한 바퀴: ${C100_KEYS.map((k) => `${C100_SETS[k].short} 약 ${lap(k)}분`).join(" · ")}`);
   });
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
