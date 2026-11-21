@@ -22,6 +22,12 @@ export function treeGeom(f) {
   return { n, cw, rows, top, rh, colW, ls, deckY: BOX.y0 + 40, x0: BOX.x0 + 30, szX: BOX.x1 - 24 };
 }
 
+/** 그림이 실제로 차지하는 네모(무대 좌표) — 해설 판이 빈자리에 맞춰 줄여 넣을 때(../board.js) */
+export function treeBox(f) {
+  const G = treeGeom(f);
+  return { x0: BOX.x0 + 14, y0: BOX.y0 + 14, x1: BOX.x1 + 4, y1: Math.min(BOX.y1, Math.max(G.top + G.rows * G.rh + 14, G.top + 30 + f.sizes.length * 40)) };
+}
+
 export function LexTree({ it, t, C }) {
   const f = it.fig, P = l10Plan(it), G = treeGeom(f);
   const lt = (i) => (P.lines[Math.min(i, P.lines.length - 1)] || P.lines[P.lines.length - 1]).a;
@@ -45,7 +51,7 @@ export function LexTree({ it, t, C }) {
     );
   });
   // 덩어리 크기(오른쪽 세로)
-  els.push(<text key="szh" x={G.szX} y={G.top - 12} fontFamily={SANS} fontSize={20} fontWeight={700} fill={C.soft} textAnchor="end">덩어리</text>);
+  els.push(<text key="szh" x={G.szX} y={G.top - 12} fontFamily={SANS} fontSize={25} fontWeight={700} fill={C.soft} textAnchor="end">덩어리</text>);
   (f.sizes.length ? f.sizes : [1]).forEach((s, i) => {
     els.push(<text key={`sz${i}`} x={G.szX} y={G.top + 30 + i * 40} fontFamily={SANS} fontSize={30} fontWeight={600} fill={C.soft} textAnchor="end">{s}</text>);
   });

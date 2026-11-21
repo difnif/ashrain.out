@@ -7,7 +7,7 @@
 //   bag    (주머니 공) — 주머니(하나 또는 A · B) 속 공(색 또는 번호). 판서 줄이 가리키는 공이 빛나고 나머지는 흐려진다(hl[줄]).
 // at · cntAt … 은 판서 줄 번호 — 그 줄이 써지기 시작하는 시각(l10Plan)에 나타난다.
 import { seg, E, clamp } from "../core.js";
-import { SANS } from "../draw.jsx";
+import { SANS, mathWidth } from "../draw.jsx";
 import { l10Plan, lineAt } from "../lin10.js";
 
 const BOX = { x0: 880, y0: 170, x1: 1540, y1: 850 };
@@ -31,6 +31,23 @@ export function seatsGeom(f) {
   return { S, rows: out };
 }
 
+/** 그림이 실제로 차지하는 네모(무대 좌표) — 해설 판이 빈자리에 맞춰 줄여 넣을 때(../board.js) */
+export function seatsBox(f) {
+  const G = seatsGeom(f), S = G.S;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  f.rows.forEach((r, ri) => {
+    const g = G.rows[ri], y = g.y;
+    const capY = y - S * 1.25 - (r.swaps.length ? 92 : 0);
+    const capW = mathWidth(r.cap || "", 30, 700);
+    x0 = Math.min(x0, g.x0 - 10); x1 = Math.max(x1, g.x0 + g.W + 10, g.x0 + capW + 6);
+    y0 = Math.min(y0, capY - 30);
+    const below = r.note ? 76 + 8 : r.units.some((u) => u.inner) ? 34 + 8 : 8;
+    y1 = Math.max(y1, y + S * 0.5 + below);
+    if (r.note) { const nw = mathWidth(r.note, 32, 800); x0 = Math.min(x0, g.x0 + g.W / 2 - nw / 2 - 6); x1 = Math.max(x1, g.x0 + g.W / 2 + nw / 2 + 6); }
+  });
+  return { x0, y0, x1, y1 };
+}
+
 export function SeatsFig({ it, t, C }) {
   const f = it.fig, P = l10Plan(it), G = seatsGeom(f), S = G.S;
   const els = [];
@@ -41,7 +58,7 @@ export function SeatsFig({ it, t, C }) {
     const y = g.y;
     const parts = [];
     const capY = y - S * 1.25 - (r.swaps.length ? 92 : 0);      // 바꾸는 화살표가 있으면 그 위로
-    parts.push(<text key="cap" x={g.x0} y={capY} fontFamily={SANS} fontSize={26} fontWeight={700} fill={C.soft}>{r.cap}</text>);
+    parts.push(<text key="cap" x={g.x0} y={capY} fontFamily={SANS} fontSize={30} fontWeight={700} fill={C.soft}>{r.cap}</text>);
     let order = 0;
     r.units.forEach((u, ui) => {
       const ux = g.us[ui].x, uw = g.us[ui].w;
@@ -77,7 +94,7 @@ export function SeatsFig({ it, t, C }) {
       if (u.inner) {
         const ta = lineT(P, r.innerAt) + 600 + order * 330;
         const o = seg(t, ta, ta + 400, E.out);
-        if (o > 0) parts.push(<text key={`i${ui}`} x={ux + uw / 2} y={y + S * 0.5 + 34} fontFamily={SANS} fontSize={26} fontWeight={700} fill={C.red} textAnchor="middle" opacity={o}>{u.inner}</text>);
+        if (o > 0) parts.push(<text key={`i${ui}`} x={ux + uw / 2} y={y + S * 0.5 + 34} fontFamily={SANS} fontSize={30} fontWeight={700} fill={C.red} textAnchor="middle" opacity={o}>{u.inner}</text>);
       }
     });
     r.swaps.forEach((sw, si) => {
@@ -93,14 +110,14 @@ export function SeatsFig({ it, t, C }) {
           <path d={`M${xa} ${top} Q ${mx} ${top - lift * 2} ${xb} ${top}`} fill="none" stroke={C.red} strokeWidth={3} strokeDasharray="8 7" />
           <path d={`M${xa - 9} ${top - 12} L${xa} ${top} L${xa + 11} ${top - 9}`} fill="none" stroke={C.red} strokeWidth={3} />
           <path d={`M${xb - 11} ${top - 9} L${xb} ${top} L${xb + 9} ${top - 12}`} fill="none" stroke={C.red} strokeWidth={3} />
-          <text x={mx} y={top - lift - 6} fontFamily={SANS} fontSize={26} fontWeight={800} fill={C.red} textAnchor="middle">× {sw.lab}</text>
+          <text x={mx} y={top - lift - 6} fontFamily={SANS} fontSize={30} fontWeight={800} fill={C.red} textAnchor="middle">× {sw.lab}</text>
         </g>,
       );
     });
     if (r.note) {
       const ta = lineT(P, r.noteAt) + 900;
       const o = seg(t, ta, ta + 500, E.out);
-      if (o > 0) parts.push(<text key="note" x={(g.x0 + g.x0 + g.W) / 2} y={y + S * 0.5 + 76} fontFamily={SANS} fontSize={28} fontWeight={800} fill={C.red} textAnchor="middle" opacity={o}>{r.note}</text>);
+      if (o > 0) parts.push(<text key="note" x={(g.x0 + g.x0 + g.W) / 2} y={y + S * 0.5 + 76} fontFamily={SANS} fontSize={32} fontWeight={800} fill={C.red} textAnchor="middle" opacity={o}>{r.note}</text>);
     }
     els.push(<g key={`r${ri}`} opacity={ro}>{parts}</g>);
   });
@@ -116,15 +133,27 @@ function hlNow(f, P, t) {
 }
 
 /* ══════════ 학년별 선발 ══════════ */
-export function GradesFig({ it, t, C }) {
-  const f = it.fig, P = l10Plan(it);
-  const base = seg(t, 0, 700, E.sine);
-  const { st, k } = hlNow(f, P, t);
+function gradesGeom(f) {
   const ng = f.groups.length;
   const colW = (BOX.x1 - BOX.x0) / ng;
   const maxN = Math.max(...f.groups.map((gp) => (gp.n != null ? gp.n : gp.m + gp.f)));
   const per = maxN > 8 ? 3 : 2;
   const r = Math.min(30, (colW - 40) / (per * 2.4));
+  return { ng, colW, maxN, per, r };
+}
+export function gradesBox(f) {
+  const { ng, colW, maxN, per, r } = gradesGeom(f);
+  const rowsN = Math.ceil(maxN / per);
+  const half = Math.max((per - 1) * r * 1.25 + r + 4, ...f.groups.map((gp) => mathWidth(gp.lab, 38, 800) / 2 + 4));
+  const x0 = BOX.x0 + colW / 2 - half, x1 = BOX.x0 + colW * (ng - 0.5) + half;
+  const y1 = BOX.y0 + 170 + (rowsN - 1) * r * 2.9 + r + (f.named.length ? 34 : 8);
+  return { x0, y0: BOX.y0 + 38, x1, y1 };
+}
+export function GradesFig({ it, t, C }) {
+  const f = it.fig, P = l10Plan(it);
+  const base = seg(t, 0, 700, E.sine);
+  const { st, k } = hlNow(f, P, t);
+  const { colW, per, r } = gradesGeom(f);
   const els = [];
   f.groups.forEach((gp, gi) => {
     const cx = BOX.x0 + colW * (gi + 0.5);
@@ -132,7 +161,7 @@ export function GradesFig({ it, t, C }) {
     const glow = on ? k : 0;
     els.push(
       <text key={`h${gi}`} x={cx} y={BOX.y0 + 70} fontFamily={SANS} fontSize={38} fontWeight={800} fill={glow > 0.5 ? C.gold : C.ink} textAnchor="middle">{gp.lab}</text>,
-      <text key={`n${gi}`} x={cx} y={BOX.y0 + 108} fontFamily={SANS} fontSize={24} fontWeight={600} fill={C.soft} textAnchor="middle">
+      <text key={`n${gi}`} x={cx} y={BOX.y0 + 108} fontFamily={SANS} fontSize={27} fontWeight={600} fill={C.soft} textAnchor="middle">
         {gp.n != null ? `${gp.n}명` : `남 ${gp.m} · 여 ${gp.f}`}
       </text>,
     );
@@ -147,7 +176,7 @@ export function GradesFig({ it, t, C }) {
         <g key={`k${gi}-${j}`}>
           <circle cx={x} cy={y} r={r} fill={C.gold} fillOpacity={0.12 + 0.6 * g2} stroke={g2 > 0.3 ? C.gold : C.soft} strokeWidth={nOn > 0.3 ? 5 : 2.2} />
           {sx && <text x={x} y={y + r * 0.36} fontFamily={SANS} fontSize={r * 0.95} fontWeight={800} fill={C.ink} textAnchor="middle">{sx}</text>}
-          {nm && <text x={x} y={y + r + 26} fontFamily={SANS} fontSize={22} fontWeight={nOn > 0.3 ? 800 : 600} fill={nOn > 0.3 ? C.gold : C.soft} textAnchor="middle">{nm.name}</text>}
+          {nm && <text x={x} y={y + r + 28} fontFamily={SANS} fontSize={26} fontWeight={nOn > 0.3 ? 800 : 600} fill={nOn > 0.3 ? C.gold : C.soft} textAnchor="middle">{nm.name}</text>}
         </g>,
       );
     });
@@ -157,6 +186,10 @@ export function GradesFig({ it, t, C }) {
 
 /* ══════════ 주머니 공 ══════════ */
 const BALL = { 빨간: "#E5534B", 파란: "#4C8DF6", 노란: "#F2C230", 흰: "#F7F3E8", 검은: "#2B2B2B", 초록: "#3DBB6B" };
+
+export function bagBox(f) {
+  return { x0: BOX.x0 - 4, y0: BOX.y0 + (f.bags.some((b) => b.lab) ? 44 : 90), x1: BOX.x1 + 4, y1: BOX.y1 - 34 };
+}
 
 export function BagFig({ it, t, C }) {
   const f = it.fig, P = l10Plan(it);

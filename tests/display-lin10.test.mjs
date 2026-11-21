@@ -196,8 +196,9 @@ try {
 import { renderToStaticMarkup } from "react-dom/server";
 import { PALETTE } from ${F("draw.jsx")};
 import { FRAMES } from ${F("frames/index.js")};
-import { L10Art, Lin10Thumb, l10Scenes, layoutOf, L10_BOX } from ${F("frames/lin10.jsx")};
-export { FRAMES, l10Scenes, layoutOf, L10_BOX };
+import { L10Art, Lin10Thumb, l10Scenes, layoutOf } from ${F("frames/lin10.jsx")};
+import { STAGE_REGION } from ${F("board.js")};
+export { FRAMES, l10Scenes, layoutOf, STAGE_REGION };
 const svg = (el) => renderToStaticMarkup(<svg>{el}</svg>);
 export const art = (it, t, th) => svg(<L10Art it={it} t={t} C={PALETTE[th]} />);
 export const scene = (sc, t, th) => svg(sc.render("m", t, PALETTE[th]));
@@ -233,17 +234,26 @@ export const thumb = (th) => svg(<Lin10Thumb C={PALETTE[th]} />);
     console.log(`   그림 ${cnt}장`);
   });
 
-  test("글자 판: 발문 · 판서 · 메모 · 답이 무대 안(9단계는 그림 왼쪽) · 그림은 칸 안", () => {
-    const B = m.L10_BOX;
+  test("글자 판: 발문 · 판서 · 메모 · 답이 무대 안(넘치면 두 단) · 9단계 그림은 글자와 겹치지 않는 빈자리에", () => {
+    const R = m.STAGE_REGION;
+    let figs = 0;
     for (const [S, it] of ALL) {
       const L = m.layoutOf(it), tag = `세트${S} ${it.no}`;
-      assert.ok(L.ansY + L.bs * 0.75 <= B.BOTTOM, `${tag} 아래로 넘침 (${Math.round(L.ansY)})`);
+      assert.ok(!L.scroll && L.bottom <= R.bottom + 1, `${tag} 아래로 넘침 (${Math.round(L.bottom)})`);
       for (const r of L.rows) {
-        assert.ok(r.sx + r.sW <= L.right + 2, `${tag} 줄이 오른쪽으로 넘침`);
-        if (r.mx != null) assert.ok(r.my < B.BOTTOM, tag);
+        for (const q of r.parts) assert.ok(q.x + q.w <= R.right + 2, `${tag} 줄이 오른쪽으로 넘침`);
+        if (r.memo) for (const q of r.memo.lines) assert.ok(q.y < R.bottom && q.x + q.w <= R.right + 2, `${tag} 메모`);
       }
-      if (it.fig) for (const v of [...it.fig.poly, it.fig.P]) assert.ok(Number.isFinite(v[0]) && Number.isFinite(v[1]));
+      if (it.fig) {
+        for (const v of [...it.fig.poly, it.fig.P]) assert.ok(Number.isFinite(v[0]) && Number.isFinite(v[1]));
+        assert.ok(L.fig, `${tag} 9단계 그림이 빠짐`);
+        figs++;
+        const f = L.fig, fb = [f.x, f.y, f.x + f.w, f.y + f.h];
+        for (const b of L.boxes) assert.ok(fb[0] >= b[2] - 1 || fb[2] <= b[0] + 1 || fb[1] >= b[3] - 1 || fb[3] <= b[1] + 1, `${tag} 그림이 글자와 겹침`);
+        assert.ok(f.w * f.h <= 0.25 * 1600 * 900 + 1, `${tag} 그림이 화면의 25%를 넘음`);
+      }
     }
+    assert.equal(figs, 40);
   });
 
   test("장면 목록: 세트 × 빠르기 × 단계 — 단계를 고르면 20문항 · 1.5× 는 길이 2/3 · 같은 순간", () => {
