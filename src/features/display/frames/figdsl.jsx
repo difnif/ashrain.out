@@ -40,58 +40,130 @@ function arcPath(x, y, r, a0, a1, sector) {
   return sector ? `M${x},${y} L${sx.toFixed(1)},${sy.toFixed(1)} A${r},${r} 0 ${large} 0 ${ex.toFixed(1)},${ey.toFixed(1)} Z` : arc;
 }
 
-/** 한 요소 그리기 (k: 나타남 0~1 · draw: 그려진 정도 0~1 · glow: 지금 줄) */
-function drawEl(el, C, k, draw, glow, key) {
+/* ══════════ 나타나는 모양 — 칠판에 그리듯(선은 그어지고, 각은 쓸리고, 칠은 칠해지고, 점은 톡, 글자는 써진다) ══════════ */
+const hyp = (x, y) => Math.hypot(x, y);
+/** 꺾은선을 앞에서부터 k 만큼(0 ~ 1) */
+function partial(pts, k) {
+  if (k >= 1 || pts.length < 2) return pts;
+  const L = [];
+  let tot = 0;
+  for (let i = 1; i < pts.length; i++) { const d = hyp(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); L.push(d); tot += d; }
+  let rem = tot * Math.max(0, k);
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    if (rem >= L[i - 1]) { out.push(pts[i]); rem -= L[i - 1]; continue; }
+    const u = L[i - 1] ? rem / L[i - 1] : 0;
+    out.push([pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * u, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * u]);
+    break;
+  }
+  return out;
+}
+const polyLen = (pts) => { let s = 0; for (let i = 1; i < pts.length; i++) s += hyp(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return s; };
+const clampMs = (v, a, b) => Math.max(a, Math.min(b, v));
+/** 요소마다 나타나는 데 걸리는 시간(ms) — 길이 · 폭에 맞춰 */
+function enterMs(el) {
+  switch (el.k) {
+    case "L": { const d = hyp(el.x2 - el.x, el.y2 - el.y); return el.dr ? clampMs(420 + d * 1.1, 520, 1100) : clampMs(160 + d * 0.65, 220, 560); }
+    case "P": { const closed = !(el.z === false || el.z === 0); const d = polyLen(closed ? [...el.pts, el.pts[0]] : el.pts);
+      return el.dr ? clampMs(420 + d * 0.9, 560, 1200) : clampMs(200 + d * 0.5, 260, 700); }
+    case "C": return clampMs(260 + el.r * 2.2, 320, 760);
+    case "A": return clampMs(300 + Math.abs(el.a1 - el.a0) * 1.6, 340, 760);
+    case "R": return clampMs(220 + (el.w + el.h) * 0.35, 260, 560);
+    case "G": return clampMs(260 + (el.cw * el.nx + el.ch * el.ny) * 0.3, 320, 620);
+    case "B": return 420;
+    case "D": return 360;
+    case "X": return 380;
+    case "T": return clampMs(150 + mathWidth(el.s, el.z || 30, el.b || 600) * 0.9, 200, 620);
+    default: return 450;
+  }
+}
+
+/** 한 요소 그리기 (p: 나타난 정도 0 ~ 1 · glow: 지금 줄이면 0 ~ 1 숨 쉬는 빛 · id: 잘라 보이기 이름) */
+function drawEl(el, C, p, glow, id) {
   const col = (n, d) => (n ? C[n] || n : d);
   const sc = col(el.c, C.ink), sw = el.sw ?? 3;
   const dash = el.d ? "12 9" : undefined;
-  const dr = el.dr && !el.d && draw < 1 ? { pathLength: 1, strokeDasharray: 1, strokeDashoffset: 1 - draw } : null;
   const fill = el.f ? col(el.f, C.ink) : "none";
   const fo = el.f ? el.fo ?? 1 : undefined;
-  const halo = glow ? 1 : 0;
+  const halo = glow > 0;
+  const ho = 0.18 + 0.22 * glow;
+  const wipe = (x0, y0, w, h, node, dir = "x") => (p >= 1 ? node : (
+    <g>
+      <clipPath id={id}><rect x={x0 - 6} y={y0 - 6} width={dir === "x" ? (w + 12) * p : w + 12} height={dir === "y" ? (h + 12) * p : h + 12} /></clipPath>
+      <g clipPath={`url(#${id})`}>{node}</g>
+    </g>
+  ));
   switch (el.k) {
     case "L": {
+      const x2 = el.x + (el.x2 - el.x) * p, y2 = el.y + (el.y2 - el.y) * p;
       const out = [];
-      if (halo) out.push(<line key="g" x1={el.x} y1={el.y} x2={el.x2} y2={el.y2} stroke={C.gold} strokeWidth={sw + 12} strokeOpacity={0.32} strokeLinecap="round" />);
-      out.push(<line key="l" x1={el.x} y1={el.y} x2={el.x2} y2={el.y2} stroke={sc} strokeWidth={sw} strokeDasharray={dash} strokeLinecap="round" {...dr} />);
-      if (el.ar && draw >= 0.98) {
+      if (halo) out.push(<line key="g" x1={el.x} y1={el.y} x2={x2} y2={y2} stroke={C.gold} strokeWidth={sw + 12} strokeOpacity={ho} strokeLinecap="round" />);
+      out.push(<line key="l" x1={el.x} y1={el.y} x2={x2} y2={y2} stroke={sc} strokeWidth={sw} strokeDasharray={dash} strokeLinecap="round" />);
+      if (el.ar && p >= 0.98) {
         out.push(arrowHead(el.x, el.y, el.x2, el.y2, 9 + sw * 2.2, sc, "h1"));
         if (el.ar === 2) out.push(arrowHead(el.x2, el.y2, el.x, el.y, 9 + sw * 2.2, sc, "h2"));
       }
-      return <g key={key}>{out}</g>;
+      return <g>{out}</g>;
     }
     case "P": {
-      const pts = el.pts.map((q) => q.join(",")).join(" ");
-      const Tag = el.z === false || el.z === 0 ? "polyline" : "polygon";
+      const closed = !(el.z === false || el.z === 0);
+      const Tag = closed ? "polygon" : "polyline";
+      const all = el.pts.map((q) => q.join(",")).join(" ");
+      const part = p >= 1 ? null : partial(closed ? [...el.pts, el.pts[0]] : el.pts, p).map((q) => q.map((v) => v.toFixed(1)).join(",")).join(" ");
       const out = [];
-      if (halo) out.push(<Tag key="g" points={pts} fill="none" stroke={C.gold} strokeWidth={sw + 12} strokeOpacity={0.32} strokeLinejoin="round" strokeLinecap="round" />);
-      if (el.f) out.push(<Tag key="f" points={pts} fill={fill} fillOpacity={fo * Math.min(1, draw * 1.4)} stroke="none" />);
-      if (el.c !== "none") out.push(<Tag key="l" points={pts} fill="none" stroke={sc} strokeWidth={sw} strokeDasharray={dash} strokeLinejoin="round" strokeLinecap="round" {...dr} />);
-      if (el.ar && draw >= 0.98 && el.pts.length > 1) {
+      if (halo) out.push(<Tag key="g" points={all} fill="none" stroke={C.gold} strokeWidth={sw + 12} strokeOpacity={ho} strokeLinejoin="round" strokeLinecap="round" />);
+      if (el.f) out.push(<Tag key="f" points={all} fill={fill} fillOpacity={fo * seg(p, 0.55, 1)} stroke="none" />);
+      if (el.c !== "none") {
+        out.push(part != null
+          ? <polyline key="l" points={part} fill="none" stroke={sc} strokeWidth={sw} strokeDasharray={dash} strokeLinejoin="round" strokeLinecap="round" />
+          : <Tag key="l" points={all} fill="none" stroke={sc} strokeWidth={sw} strokeDasharray={dash} strokeLinejoin="round" strokeLinecap="round" />);
+      }
+      if (el.ar && p >= 0.98 && el.pts.length > 1) {
         const n = el.pts.length, [x1, y1] = el.pts[n - 2], [x2, y2] = el.pts[n - 1];
         out.push(arrowHead(x1, y1, x2, y2, 9 + sw * 2.2, sc, "h"));
       }
-      return <g key={key}>{out}</g>;
+      return <g>{out}</g>;
     }
-    case "R":
-      return (
-        <g key={key}>
-          {halo ? <rect x={el.x - 5} y={el.y - 5} width={el.w + 10} height={el.h + 10} rx={(el.rx || 0) + 5} fill="none" stroke={C.gold} strokeWidth={10} strokeOpacity={0.32} /> : null}
+    case "R": {
+      const node = (
+        <g>
+          {halo ? <rect x={el.x - 5} y={el.y - 5} width={el.w + 10} height={el.h + 10} rx={(el.rx || 0) + 5} fill="none" stroke={C.gold} strokeWidth={10} strokeOpacity={ho} /> : null}
           <rect x={el.x} y={el.y} width={el.w} height={el.h} rx={el.rx || 0} fill={fill} fillOpacity={fo} stroke={el.c === "none" ? "none" : sc} strokeWidth={sw} strokeDasharray={dash} />
         </g>
       );
-    case "C":
+      // 칠만 있는 칸은 칠하듯(왼쪽 → 오른쪽), 테두리가 있는 칸은 한 바퀴 그은 뒤 칠이 든다
+      if (el.c === "none" || el.d || p >= 1) return wipe(el.x, el.y, el.w, el.h, node, el.h > el.w * 2.4 ? "y" : "x");
       return (
-        <g key={key}>
-          {halo ? <circle cx={el.x} cy={el.y} r={el.r + 6} fill="none" stroke={C.gold} strokeWidth={10} strokeOpacity={0.32} /> : null}
-          <circle cx={el.x} cy={el.y} r={el.r} fill={fill} fillOpacity={fo} stroke={el.c === "none" ? "none" : sc} strokeWidth={sw} strokeDasharray={dash} {...dr} />
+        <g>
+          {el.f ? <rect x={el.x} y={el.y} width={el.w} height={el.h} rx={el.rx || 0} fill={fill} fillOpacity={fo * seg(p, 0.5, 1)} stroke="none" /> : null}
+          <rect x={el.x} y={el.y} width={el.w} height={el.h} rx={el.rx || 0} fill="none" stroke={sc} strokeWidth={sw} pathLength={1} strokeDasharray={`${p} 1`} />
         </g>
       );
-    case "D": {
-      const r = (el.r ?? 8) * (0.55 + 0.45 * k);
+    }
+    case "C": {
+      if (p < 1 && !el.d) {
+        return (
+          <g>
+            {el.f ? <circle cx={el.x} cy={el.y} r={el.r} fill={fill} fillOpacity={fo * seg(p, 0.5, 1)} stroke="none" /> : null}
+            {el.c !== "none" && <circle cx={el.x} cy={el.y} r={el.r} fill="none" stroke={sc} strokeWidth={sw} pathLength={1} strokeDasharray={`${p} 1`}
+              transform={`rotate(-90 ${el.x} ${el.y})`} />}
+          </g>
+        );
+      }
+      const r = el.r * (p >= 1 ? 1 : 0.7 + 0.3 * p);
       return (
-        <g key={key}>
-          {halo ? <circle cx={el.x} cy={el.y} r={r + 9} fill={C.gold} fillOpacity={0.3} /> : null}
+        <g opacity={p >= 1 ? 1 : p}>
+          {halo ? <circle cx={el.x} cy={el.y} r={el.r + 6} fill="none" stroke={C.gold} strokeWidth={10} strokeOpacity={ho} /> : null}
+          <circle cx={el.x} cy={el.y} r={r} fill={fill} fillOpacity={fo} stroke={el.c === "none" ? "none" : sc} strokeWidth={sw} strokeDasharray={dash} />
+        </g>
+      );
+    }
+    case "D": {
+      const k = p >= 1 ? 1 : Math.max(0, E.back(p));
+      const r = (el.r ?? 8) * (0.15 + 0.85 * k);
+      return (
+        <g>
+          {halo ? <circle cx={el.x} cy={el.y} r={r + 7 + 4 * glow} fill={C.gold} fillOpacity={0.2 + 0.2 * glow} /> : null}
           <circle cx={el.x} cy={el.y} r={r} fill={col(el.f, C.ink)} stroke={el.c ? col(el.c, C.ink) : "none"} strokeWidth={el.sw ?? 2} />
         </g>
       );
@@ -100,49 +172,60 @@ function drawEl(el, C, k, draw, glow, key) {
       const w = el.cw * el.nx, h = el.ch * el.ny, ls = [];
       for (let i = 1; i < el.nx; i++) ls.push(<line key={"v" + i} x1={el.x + el.cw * i} y1={el.y} x2={el.x + el.cw * i} y2={el.y + h} stroke={sc} strokeWidth={Math.max(1, sw * 0.67)} />);
       for (let j = 1; j < el.ny; j++) ls.push(<line key={"h" + j} x1={el.x} y1={el.y + el.ch * j} x2={el.x + w} y2={el.y + el.ch * j} stroke={sc} strokeWidth={Math.max(1, sw * 0.67)} />);
-      return (
-        <g key={key}>
-          {halo ? <rect x={el.x - 5} y={el.y - 5} width={w + 10} height={h + 10} rx={(el.rx || 0) + 5} fill="none" stroke={C.gold} strokeWidth={10} strokeOpacity={0.32} /> : null}
+      return wipe(el.x, el.y, w, h, (
+        <g>
+          {halo ? <rect x={el.x - 5} y={el.y - 5} width={w + 10} height={h + 10} rx={(el.rx || 0) + 5} fill="none" stroke={C.gold} strokeWidth={10} strokeOpacity={ho} /> : null}
           <rect x={el.x} y={el.y} width={w} height={h} rx={el.rx || 0} fill={fill} fillOpacity={fo} stroke={sc} strokeWidth={sw} />
           {ls}
         </g>
-      );
+      ), h > w * 2.4 ? "y" : "x");
     }
     case "B": {
       const n = el.n || 10, w = el.w ?? 26, h = el.h ?? 230, ls = [];
       for (let i = 1; i < n; i++) ls.push(<line key={i} x1={el.x} y1={el.y + (h * i) / n} x2={el.x + w} y2={el.y + (h * i) / n} stroke={sc} strokeWidth={1.2} />);
+      const drop = p >= 1 ? 0 : (1 - E.back(p)) * -34;
       return (
-        <g key={key}>
-          {halo ? <rect x={el.x - 5} y={el.y - 5} width={w + 10} height={h + 10} rx={5} fill="none" stroke={C.gold} strokeWidth={10} strokeOpacity={0.32} /> : null}
+        <g transform={drop ? `translate(0 ${drop.toFixed(1)})` : undefined}>
+          {halo ? <rect x={el.x - 5} y={el.y - 5} width={w + 10} height={h + 10} rx={5} fill="none" stroke={C.gold} strokeWidth={10} strokeOpacity={ho} /> : null}
           <rect x={el.x} y={el.y} width={w} height={h} fill={el.f ? col(el.f, C.gold) : "none"} fillOpacity={el.fo ?? 0.35} stroke={sc} strokeWidth={el.sw ?? 2.5} />
           {ls}
         </g>
       );
     }
     case "X": {
-      const s = el.s ?? 12, c = col(el.c, C.red), w2 = el.sw ?? 4, p = Math.min(1, draw * 2), q = Math.max(0, draw * 2 - 1);
+      const s = el.s ?? 12, c = col(el.c, C.red), w2 = el.sw ?? 4, a = Math.min(1, p * 2), b = Math.max(0, p * 2 - 1);
       return (
-        <g key={key}>
-          <line x1={el.x - s} y1={el.y - s} x2={el.x - s + 2 * s * p} y2={el.y - s + 2 * s * p} stroke={c} strokeWidth={w2} strokeLinecap="round" />
-          {q > 0 && <line x1={el.x - s} y1={el.y + s} x2={el.x - s + 2 * s * q} y2={el.y + s - 2 * s * q} stroke={c} strokeWidth={w2} strokeLinecap="round" />}
+        <g>
+          <line x1={el.x - s} y1={el.y - s} x2={el.x - s + 2 * s * a} y2={el.y - s + 2 * s * a} stroke={c} strokeWidth={w2} strokeLinecap="round" />
+          {b > 0 && <line x1={el.x - s} y1={el.y + s} x2={el.x - s + 2 * s * b} y2={el.y + s - 2 * s * b} stroke={c} strokeWidth={w2} strokeLinecap="round" />}
         </g>
       );
     }
-    case "T":
-      return (
-        <g key={key}>
-          {halo ? <circle cx={el.x} cy={el.y - (el.z || 30) * 0.34} r={(el.z || 30) * 0.95} fill={C.gold} fillOpacity={0.18} /> : null}
-          <MText x={el.x} y={el.y} s={el.s} size={el.z || 30} weight={el.b || 600} anchor={ANCHOR[el.a] || "middle"} fill={col(el.c, C.ink)}
+    case "T": {
+      const z = el.z || 30;
+      const node = (
+        <g>
+          {halo ? <circle cx={el.x} cy={el.y - z * 0.34} r={z * 0.95} fill={C.gold} fillOpacity={0.1 + 0.14 * glow} /> : null}
+          <MText x={el.x} y={el.y} s={el.s} size={z} weight={el.b || 600} anchor={ANCHOR[el.a] || "middle"} fill={col(el.c, C.ink)}
             halo={el.ho === 0 ? undefined : C.halo} C={C} />
         </g>
       );
-    case "A":
+      if (p >= 1) return node;
+      // 왼쪽부터 써진다
+      const w = mathWidth(el.s, z, el.b || 600), a = ANCHOR[el.a] || "middle";
+      const lx = a === "start" ? el.x : a === "end" ? el.x - w : el.x - w / 2;
+      const fr = String(el.s).includes("{");
+      return wipe(lx - z * 0.1, el.y - z * (fr ? 1.2 : 1), w + z * 0.2, z * (fr ? 1.9 : 1.4), node);
+    }
+    case "A": {
+      const a1 = el.a0 + (el.a1 - el.a0 + (el.a1 < el.a0 ? 360 : 0)) * p;
       return (
-        <g key={key}>
-          {el.f ? <path d={arcPath(el.x, el.y, el.r, el.a0, el.a1, true)} fill={fill} fillOpacity={(el.fo ?? 0.25) * (glow ? 1.6 : 1)} stroke="none" /> : null}
-          <path d={arcPath(el.x, el.y, el.r, el.a0, el.a1, false)} fill="none" stroke={glow ? C.gold : sc} strokeWidth={glow ? sw + 1.5 : sw} strokeLinecap="round" {...dr} />
+        <g>
+          {el.f ? <path d={arcPath(el.x, el.y, el.r, el.a0, a1, true)} fill={fill} fillOpacity={(el.fo ?? 0.25) * (1 + 0.6 * glow)} stroke="none" /> : null}
+          <path d={arcPath(el.x, el.y, el.r, el.a0, a1, false)} fill="none" stroke={glow > 0 ? C.gold : sc} strokeWidth={glow > 0 ? sw + 1.5 : sw} strokeLinecap="round" />
         </g>
       );
+    }
     default:
       return null;
   }
@@ -196,29 +279,61 @@ export function dslBox(f) {
   return out;
 }
 
-export function FigDsl({ it, t, C }) {
+/**
+ * 같은 때(at) 나타나는 요소 가운데 늦춤(dl)이 없는 것들은 적힌 차례대로 조금씩 늦춰 — 한꺼번에 뜨지 않고 그려 나가듯.
+ * 문제와 함께 나오는 그림(q)은 문제를 읽는 동안(1.9초 안에) 다 그려진다 — 인쇄(문제지)는 그 뒤 모습을 찍는다.
+ */
+const ORDER = new WeakMap();
+function orderOf(f) {
+  if (ORDER.has(f)) return ORDER.get(f);
+  const groups = new Map();
+  f.els.forEach((el, i) => {
+    if (el.dl) return;
+    const key = String(el.at ?? "q");
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(i);
+  });
+  const extra = new Array(f.els.length).fill(0);
+  for (const [key, idx] of groups) {
+    if (idx.length < 2) continue;
+    const step = Math.min(110, (key === "q" ? 800 : 650) / (idx.length - 1));
+    idx.forEach((i, j) => { extra[i] = Math.round(j * step); });
+  }
+  ORDER.set(f, extra);
+  return extra;
+}
+export const Q_DONE = 1900;
+
+export function FigDsl({ it, t, C, uid = "" }) {
   const f = it.fig, P = l10Plan(it), cur = lineAt(P, t);
+  const extra = orderOf(f);
   const out = [];
   f.els.forEach((el, i) => {
-    const ta = atTime(P, el.at) + (el.dl || 0);
-    let k = seg(t, ta, ta + 450, E.out);
-    if (k <= 0) return;
+    const isQ = el.at == null || el.at === "q";
+    const ta = atTime(P, el.at) + (el.dl || 0) + extra[i];
+    let dur = enterMs(el);
+    if (isQ) dur = Math.max(120, Math.min(dur, Q_DONE - ta));
+    if (t < ta) return;
+    const p = seg(t, ta, ta + dur, el.k === "D" || el.k === "B" ? E.lin : E.io);
+    let o = Math.min(1, (t - ta) / 140);
     if (el.un != null) {
       const tu = atTime(P, el.un);
-      k *= 1 - seg(t, tu, tu + 420, E.sine);
-      if (k <= 0.001) return;
+      o *= 1 - seg(t, tu, tu + 420, E.sine);
+      if (o <= 0.001) return;
     }
-    const draw = el.dr ? seg(t, ta, ta + 750, E.sine) : el.k === "X" ? seg(t, ta, ta + 380, E.sine) : 1;
-    const glow = el.hl && Number.isInteger(el.at) && cur === el.at;
-    let g = drawEl(el, C, k, draw, glow, "e");
+    const glow = el.hl && Number.isInteger(el.at) && cur === el.at ? 0.5 + 0.5 * Math.sin(((t - ta) / 1200) * Math.PI * 2 - Math.PI / 2) : 0;
+    let g = drawEl(el, C, p, glow, `fd${uid}-${it.no}-${i}`);
     if (el.mv) {
-      const tm = atTime(P, el.mv.at), m = seg(t, tm, tm + 900, E.sine);
+      // 들어 올려 옮기듯 — 위로 살짝 휘어 가서 내려놓는다(돌리기는 그 자리에서)
+      const tm = atTime(P, el.mv.at), m = seg(t, tm, tm + 900, E.io);
       if (m > 0) {
-        const tr = `translate(${(el.mv.dx || 0) * m} ${(el.mv.dy || 0) * m})` + (el.mv.r ? ` rotate(${el.mv.r * m} ${el.mv.cx || 0} ${el.mv.cy || 0})` : "");
+        const dx = el.mv.dx || 0, dy = el.mv.dy || 0;
+        const lift = el.mv.r ? 0 : Math.min(70, hyp(dx, dy) * 0.28) * 4 * m * (1 - m);
+        const tr = `translate(${(dx * m).toFixed(1)} ${(dy * m - lift).toFixed(1)})` + (el.mv.r ? ` rotate(${(el.mv.r * m).toFixed(2)} ${el.mv.cx || 0} ${el.mv.cy || 0})` : "");
         g = <g transform={tr}>{g}</g>;
       }
     }
-    out.push(<g key={i} opacity={k * (el.o ?? 1)}>{g}</g>);
+    out.push(<g key={i} opacity={o * (el.o ?? 1)}>{g}</g>);
   });
   return <g transform={`translate(${FIG_BOX.x0} ${FIG_BOX.y0})`}>{out}</g>;
 }

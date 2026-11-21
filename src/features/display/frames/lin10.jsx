@@ -221,8 +221,8 @@ export function L10Art({ it, t, C, uid = "", region = STAGE_REGION }) {
   return (
     <g>
       <Board it={it} Lo={Lo} P={P} t={t} cur={cur} C={C} uid={uid} />
-      {F && F.flex && <FigSlot spot={Lo.fig} flex draw={(box) => F.draw({ it, t, C, cur, box })} />}
-      {F && !F.flex && <FigSlot spot={Lo.fig} box={figNatural(it)} draw={() => F.draw({ it, t, C, cur, ts: F.ts ? Math.min(1.3, Math.max(1, 0.95 / Lo.fig.s)) : 1 })} />}
+      {F && F.flex && <FigSlot spot={Lo.fig} flex draw={(box) => F.draw({ it, t, C, cur, box, uid: `${uid}${region.key}` })} />}
+      {F && !F.flex && <FigSlot spot={Lo.fig} box={figNatural(it)} draw={() => F.draw({ it, t, C, cur, uid: `${uid}${region.key}`, ts: F.ts ? Math.min(1.3, Math.max(1, 0.95 / Lo.fig.s)) : 1 })} />}
     </g>
   );
 }
