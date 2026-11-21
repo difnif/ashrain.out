@@ -1,6 +1,8 @@
-// 기본기 해설(초등 · 중등 · 고등 단원) 스모크 — 학생앱 › 시청각 학습 › 문제 풀이 해설 · 꾹 누르기 우물 · 📄 문서 받기
-//   목록: 위 「초등 | 중등 | 고등」 단추 · 단원마다 한 줄(주요 단원 · 학년 범위)
-//   꾹 누르기: 우물이 떠서 이어지는 단원 콘텐츠가 둘레에 → 카드 위에서 떼면 그 단원이 열림 · 우물에서 떼면 그대로 · 빈 곳에서 떼도 그대로
+// 기본기 해설(초등 · 중등 · 고등 단원 · 주차별 회차) 스모크 — 학생앱 › 시청각 학습 › 문제 풀이 해설 · 꾹 누르기 우물 · 📄 문서 받기
+//   목록: 위 「초등 | 중등 | 고등」 단추 → 학년 칩 → 「🗓 주차별 기초 다지기(104회차) | 📚 단원 100제」
+//     · 주차별: 학기 · 방학으로 접고 펴기 → 펼치면 104회차, 회차를 꾹 누르면 우물 추천 6가지 → 카드 위에서 떼면 그 회차가 열림
+//     · 단원 100제: 단원마다 한 줄(주요 단원 · 학년 범위)
+//   꾹 누르기: 우물이 떠서 추천 6가지(기록이 없으면 단원 지도 기본 추천)가 둘레에 → 카드 위에서 떼면 그 콘텐츠가 열림 · 우물에서 떼면 그대로 · 빈 곳에서 떼도 그대로
 //   단원 재생 → 단원 목록(U) → 번호 · 단계 목록
 //   📄 문서: 문제지 · 해설지 · 빠른 정답 · OMR 고르기 → 확인 → 개별 다운 | 압축 다운
 //     · PDF 가 아직 없으면(Storage 404) → 「인쇄 창으로 열기」 → 새 창에 같은 문서(코드 · 100문항 · 흑백 그림)
@@ -13,7 +15,7 @@ import path from "node:path";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { avOfCat, avOfLevel, avRelated, avItem } from "../../src/lib/av.js";
+import { avOfCat, avOfLevel, avItem } from "../../src/lib/av.js";
 import { FRAMES } from "../../src/features/display/frames/index.js";
 
 const require = createRequire(import.meta.url);
@@ -87,6 +89,40 @@ try {
   await go("#/study/av/sol");
   await page.locator(".st-lv button").first().waitFor();
   assert.equal(await page.locator(".st-lv button").count(), 3);
+  // 주차별 기초 다지기(처음 보기) — 학년 칩 · 학기 · 방학을 모두 펴면 104회차
+  assert.ok((await page.locator(".st-view button.on").textContent()).includes("주차별"));
+  assert.equal(await page.locator(".st-gk button").count(), 6);
+  await page.locator(".st-gk button", { hasText: "초3" }).click();
+  await page.locator(".st-per").first().waitFor();
+  assert.equal(await page.locator(".st-per").count(), 4);
+  for (let k = 0; k < 4; k++) {
+    const shut = page.locator('.st-per-h[aria-expanded="false"]');
+    if (!(await shut.count())) break;
+    await shut.first().click();
+  }
+  assert.equal(await page.locator(".st-sess").count(), 104);
+  await page.screenshot({ path: path.join(SHOTS, "bs-0-weeks.png") });
+  step("주차별 기초 다지기 — 초3 학기 · 방학 넷을 펴면 104회차");
+  const sess = page.locator(".st-sess").nth(12);
+  await sess.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(200);
+  const s0 = await center(sess);
+  await page.mouse.move(s0.x, s0.y);
+  await page.mouse.down();
+  await page.locator(".wpk").waitFor({ timeout: 2000 });
+  await page.waitForTimeout(450);
+  assert.equal(await page.locator(".wpk-card").count(), 6, "회차 추천 6가지");
+  const wk = await page.locator(".wpk-c").nth(0).getAttribute("data-key");
+  const s1 = await center(page.locator(".wpk-c").nth(0));
+  await page.mouse.move(s1.x, s1.y, { steps: 8 });
+  await page.waitForTimeout(120);
+  await page.screenshot({ path: path.join(SHOTS, "bs-0-weeks-well.png") });
+  await page.mouse.up();
+  await page.waitForFunction((k) => location.hash === `#/av/${k}`, wk);
+  step(`회차를 꾹 눌러 우물(추천 6가지) → 카드 위에서 떼면 「${wk}」이 열린다`);
+  await go("#/study/av/sol");
+  await page.locator(".st-view button").first().waitFor();
+  await page.locator(".st-view button", { hasText: "단원 100제" }).click();
   for (const lv of ["초등", "중등", "고등"]) {
     await page.locator(".st-lv button", { hasText: lv }).click();
     await page.waitForTimeout(150);
@@ -98,17 +134,17 @@ try {
   step(`문제 풀이 해설 — 초등 ${avOfLevel("초등").length} · 중등 ${avOfLevel("중등").length} · 고등 ${avOfLevel("고등").length}가지, 학교급 단추로`);
 
   // 꾹 누르기 → 우물 → 카드 위에서 떼면 열림
-  const first = avOfLevel("초등").find((x) => avRelated(x, 6).length >= 3) || avOfLevel("초등")[0];
-  const rel = avRelated(first, 6);
-  assert.ok(rel.length >= 2, `추천 ${rel.length}`);
+  const first = avOfLevel("초등").find((x) => x.unit) || avOfLevel("초등")[0];
   const row = page.locator(".st-item", { hasText: first.title });
   const p0 = await center(row);
   await page.mouse.move(p0.x, p0.y);
   await page.mouse.down();
   await page.locator(".wpk").waitFor({ timeout: 2000 });
   await page.waitForTimeout(450);
-  assert.equal(await page.locator(".wpk-card").count(), rel.length);
+  assert.equal(await page.locator(".wpk-card").count(), 6);
   await page.screenshot({ path: path.join(SHOTS, "bs-2-well.png") });
+  const rel = [];
+  for (let k = 0; k < 6; k++) rel.push({ key: await page.locator(".wpk-c").nth(k).getAttribute("data-key") });
   const tgt = page.locator(".wpk-c").nth(0);
   const p1 = await center(tgt);
   await page.mouse.move(p1.x, p1.y, { steps: 8 });
@@ -117,7 +153,7 @@ try {
   await page.screenshot({ path: path.join(SHOTS, "bs-3-hover.png") });
   await page.mouse.up();
   await page.waitForFunction((k) => location.hash === `#/av/${k}`, rel[0].key);
-  step(`꾹 눌러 우물(추천 ${rel.length}가지: ${rel.map((r) => r.rel).join(" · ")}) → 카드 위에서 떼면 「${rel[0].short || rel[0].title}」 단원이 열린다`);
+  step(`단원을 꾹 눌러 우물(추천 6가지: ${rel.map((r) => r.key).join(" · ")}) → 카드 위에서 떼면 「${rel[0].key}」이 열린다`);
 
   // 우물에서 떼기 · 빈 곳에서 떼기 → 그대로
   await go("#/study/av/sol");

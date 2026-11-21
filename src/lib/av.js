@@ -12,6 +12,7 @@
 import { FRAMES } from "../features/display/frames/index.js";
 import { BASICS, LEVELS } from "../features/display/basics/index.js";
 import { relatedOf } from "./units.js";
+import { parseWeekId, gradeOf, frameOfGrade, weekMetaCached, KIND_ICON, WGRADES } from "../features/display/weeks/index.js";
 
 export const AV_CATS = [
   { id: "fun", title: "수학 호기심", icon: "🔭", sub: "도형이 움직이고, 구슬이 떨어지고, 문이 열려요 — 보고 직접 해 보는 수학" },
@@ -58,7 +59,28 @@ export const AV_ITEMS = [
 // 예전 주소(학년별 해설 #/av/e1 … h3 — PR #62) → 그 학년 첫 단원
 const OLD = { e1: "e-ten", e2: "e-col", e3: "e-area3", e4: "e-frac4", e5: "e-red", e6: "e-fdiv", m1: "m-int", m2: "m-exp", m3: "m-fact", h1: "h-rem", h2: "h-explog", h3: "h-count" };
 
-export const avItem = (key) => AV_ITEMS.find((x) => x.key === key) || AV_ITEMS.find((x) => x.key === OLD[key]) || null;
+/** 주차별 기초 다지기 회차(#/av/w-e3-07a) — 머리 정보가 아직 없으면 id 로 만든다(제목은 액자가 읽은 뒤 채운다) */
+export function weekItem(id) {
+  const p = parseWeekId(id);
+  if (!p) return null;
+  const g = gradeOf(p.gk), m = weekMetaCached(id);
+  return {
+    key: id, frame: frameOfGrade(p.gk), set: id, grp: null, cat: "sol", icon: m ? KIND_ICON[m.kind] || "🗓" : "🗓", kind: "해설",
+    title: m ? m.title : `${g.grade} ${p.week}주 ${p.slot}`, short: m ? m.title : `${p.week}주 ${p.slot}`, desc: m ? m.desc : "",
+    grade: g.grade, level: g.level, unit: m ? m.unit : null, week: p.week, slot: p.slot,
+  };
+}
+export const avItem = (key) => weekItem(key) || AV_ITEMS.find((x) => x.key === key) || AV_ITEMS.find((x) => x.key === OLD[key]) || null;
+
+/* ══════════ 우물 추천용 카드(lib/recommend.js 의 pool) ══════════ */
+const GIDX = Object.fromEntries(WGRADES.map((g, i) => [g.grade, i]));
+/** 회차 머리 정보 → 카드 */
+export const weekCard = (m) => ({
+  key: m.id, unit: m.unit, gidx: GIDX[m.grade], week: m.week, kind: m.kind, seq: m.seq || 0, level: m.level,
+  title: m.title, short: m.title, icon: KIND_ICON[m.kind] || "🗓", grade: `${m.grade} ${m.week}주${m.slot}`,
+});
+/** 단원 100제 · 해설 액자 → 카드(학년 범위의 첫 학년 · 주는 없음) */
+export const unitCard = (it) => ({ ...it, gidx: GIDX[String(it.grade || "").split("~")[0]] ?? null, week: 60, kind: "단원" });
 export const avOfCat = (cat) => AV_ITEMS.filter((x) => x.cat === cat);
 export const avOfLevel = (lv) => SOL.filter((x) => x.level === lv);
 /** 꾹 눌렀을 때 우물에 띄울 추천 — 앞 단원 · 같은 단원 · 다음 단원 콘텐츠(학교급을 넘어서도) */
