@@ -1,7 +1,7 @@
 // 공부하기 탭 (#/study) — 서브탭: 개념 공부 · 연습문제 · 컨셉 문제 · 시청각 학습 · 시험 보기 (셸이 상·하단을 그린다)
 // sub: '' | 'concept' | 'practice' | 'sets[/<범주>]' | 'av[/<범주>]' | 'exam'  (''=concept)
 //   시청각 학습 = 교실 모니터 콘텐츠(lib/av.js) — 수학 호기심 · 문제 풀이 해설 두 범주, 고르면 #/av/<key> 가로 무대로
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { UNIT_NAMES, UNIT_ORDER } from "../lib/items";
 import { readLastResult } from "../lib/setplay";
 import { getRecentConcepts } from "../lib/review";
@@ -11,7 +11,11 @@ import { koFilter } from "../lib/koSearch";
 import ItemPicker from "./solve/ItemPicker";
 import { CATEGORIES, loadIndex, readProgress, setProgressUser, pad2 } from "../lib/conceptsets";
 import { supabase } from "../supabaseClient";
-import { AV_CATS, AV_LEVELS, avOfCat, avOfLevel, avRelated } from "../lib/av";
+import { AV_CATS, AV_LEVELS, avOfCat, avOfLevel, weekCard, unitCard } from "../lib/av";
+import { WGRADES, gradesOfLevel, loadWeekIndex, weekIndexCached, PERIODS, KIND_ICON, weekOfDate, weekLabel, periodOf } from "../features/display/weeks/index.js";
+import { recommend } from "../lib/recommend";
+import { loadProfile } from "../lib/recommendLoad";
+import { readHist, histDone, lastSeen } from "../lib/avHistory";
 import { unitLabel } from "../lib/units";
 import { useWellPick } from "../components/WellPick";
 import "./solve/solve.css";
@@ -97,6 +101,48 @@ const CSS = `
   background: transparent; cursor: pointer; }
 .st-lv button small { font-size: 11px; font-weight: 700; margin-left: 4px; opacity: .8; }
 .st-lv button.on { background: var(--surface); color: var(--ink, inherit); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.st-gk { display: flex; gap: 6px; overflow-x: auto; margin: 0 0 8px; padding-bottom: 2px; }
+.st-gk button { flex: none; border: 1px solid var(--border); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 6px 13px;
+  font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.st-gk button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.st-view { display: flex; gap: 6px; margin: 0 0 6px; }
+.st-view button { flex: 1; border: 1px solid var(--border); background: var(--surface); color: var(--muted); border-radius: 12px; padding: 8px 6px;
+  font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.st-view button small { font-weight: 700; opacity: .7; margin-left: 3px; }
+.st-view button.on { color: var(--text); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.st-cont { display: flex; gap: 8px; margin: 2px 0 8px; }
+.st-cont-b { flex: 1; min-width: 0; text-align: left; border: 1px solid var(--border); background: var(--surface); color: inherit; border-radius: 14px;
+  padding: 9px 11px; font: inherit; cursor: pointer; }
+.st-cont-b small { display: block; font-size: 11px; font-weight: 800; color: var(--accent); }
+.st-cont-b b { display: block; font-size: 13.5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.st-cont-b.now { background: var(--surface2); }
+.st-find input { width: 100%; border: 1px solid var(--border); background: var(--surface); color: inherit; border-radius: 12px; padding: 9px 12px;
+  font: inherit; font-size: 13.5px; }
+.st-uchips { display: flex; gap: 6px; overflow-x: auto; margin: 8px 0 4px; padding-bottom: 2px; }
+.st-uchips button { flex: none; border: 1px solid var(--border); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 5px 11px;
+  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.st-uchips button.on { color: var(--text); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.st-gap { font-size: 11.5px; color: var(--muted); margin: 4px 2px; }
+.st-per { margin-top: 8px; }
+.st-per-h { display: flex; align-items: baseline; gap: 8px; width: 100%; border: 0; background: none; color: inherit; font: inherit; padding: 8px 2px; cursor: pointer; }
+.st-per-h b { font-size: 15px; font-weight: 800; }
+.st-per-h small { flex: 1; text-align: left; font-size: 12px; color: var(--muted); }
+.st-wk { display: grid; grid-template-columns: 3.6em 1fr; gap: 8px; align-items: stretch; padding: 6px 0; border-top: 1px solid var(--border); }
+.st-wk .wl { display: flex; flex-direction: column; justify-content: center; }
+.st-wk .wl b { font-size: 14px; font-weight: 800; }
+.st-wk .wl small { font-size: 10.5px; color: var(--muted); }
+.st-wk .wl em { font-style: normal; font-size: 10px; font-weight: 800; color: var(--accent); }
+.st-wk.now { background: var(--surface2); border-radius: 12px; padding: 6px; }
+.st-wk .ws { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; min-width: 0; }
+.st-sess { position: relative; display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; border: 1px solid var(--border);
+  background: var(--surface); color: inherit; border-radius: 12px; padding: 8px 9px; font: inherit; cursor: pointer; }
+.st-sess .k { font-size: 10.5px; font-weight: 800; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.st-sess .k em { font-style: normal; color: var(--accent); margin-left: auto; }
+.st-sess b { font-size: 13px; font-weight: 800; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.st-sess small { font-size: 10.5px; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.st-sess.done { opacity: .72; }
+.st-sess .pg { height: 3px; border-radius: 2px; background: var(--surface3); overflow: hidden; margin-top: 3px; }
+.st-sess .pg i { display: block; height: 100%; background: var(--accent); }
 .st-hold { font-size: 11.5px; color: var(--muted); margin: -2px 2px 10px; line-height: 1.5; }
 `;
 
@@ -334,33 +380,153 @@ function SetsSub({ path }) {
 }
 
 /* ── 시청각 학습: 범주 폴더 → 항목(교실 모니터 무대로 연다) ── */
-/** 문제 풀이 해설 — 위 「초등 | 중등 | 고등」 단추로 학교급을 고르고, 단원마다 한 줄. 꾹 누르면 우물이 떠서 이어지는 단원을 추천 */
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* 무시 */ } };
+const SOL_UNITS = () => avOfCat("sol").map(unitCard);
+
+/** 우물 추천에 쓸 카드 더미 — 읽어 둔 학년의 회차 전부 + 단원 100제 · 해설 액자 */
+function usePool(gk) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const i = WGRADES.findIndex((g) => g.gk === gk);
+    let live = true;
+    for (const g of [WGRADES[i - 1], WGRADES[i + 1]].filter(Boolean)) {
+      if (!weekIndexCached(g.gk)) loadWeekIndex(g.gk).then(() => { if (live) setTick((t) => t + 1); }).catch(() => {});
+    }
+    return () => { live = false; };
+  }, [gk]);
+  return useMemo(() => {
+    const out = SOL_UNITS();
+    for (const g of WGRADES) { const h = weekIndexCached(g.gk); if (h) for (const m of h.sessions) out.push(weekCard(m)); }
+    return out;
+  }, [gk, tick]);   // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+/**
+ * 문제 풀이 해설 — 위 「초등 | 중등 | 고등」 → 학년 → 「주차별 기초 다지기(104회차) | 단원 100제」.
+ * 주차별: 1학기 · 여름방학 · 2학기 · 겨울방학으로 접고 펴며, 지금 주를 펼쳐 그 자리로. 이어 보기 · 찾기 · 단원 칩.
+ * 꾹 누르면 우물이 떠서 6가지를 추천한다 — 기록이 넉넉하면 수준 맞춤(lib/recommend.js), 아니면 단원 지도 기본.
+ */
 function SolList() {
-  const [lv, setLv] = useState(() => { try { const v = localStorage.getItem("ash.study.av.lv"); return AV_LEVELS.includes(v) ? v : "초등"; } catch { return "초등"; } });
-  const pickLv = (v) => { setLv(v); try { localStorage.setItem("ash.study.av.lv", v); } catch { /* 무시 */ } };
+  const [lv, setLv] = useState(() => { const v = lsGet("ash.study.av.lv", "초등"); return AV_LEVELS.includes(v) ? v : "초등"; });
+  const pickLv = (v) => { setLv(v); lsSet("ash.study.av.lv", v); };
+  const grades = gradesOfLevel(lv);
+  const [gkBy, setGkBy] = useState(() => Object.fromEntries(AV_LEVELS.map((l) => [l, lsGet(`ash.study.av.gk.${l}`, gradesOfLevel(l)[0].gk)])));
+  const gk = grades.some((g) => g.gk === gkBy[lv]) ? gkBy[lv] : grades[0].gk;
+  const pickGk = (v) => { setGkBy((o) => ({ ...o, [lv]: v })); lsSet(`ash.study.av.gk.${lv}`, v); };
+  const [view, setView] = useState(() => (lsGet("ash.study.av.view", "week") === "unit" ? "unit" : "week"));
+  const pickView = (v) => { setView(v); lsSet("ash.study.av.view", v); };
+  const [profile, setProfile] = useState(() => ({ mastery: {}, watched: readHist() }));
+  useEffect(() => { let live = true; loadProfile().then((p) => { if (live) setProfile(p); }).catch(() => {}); return () => { live = false; }; }, []);
+  const pool = usePool(gk);
   const go = (it) => { location.hash = `#/av/${it.key}`; };
-  const wp = useWellPick({ related: (it) => avRelated(it, 6), onGo: go });
-  const list = avOfLevel(lv);
+  const wp = useWellPick({ related: (it) => recommend(it, pool, profile).cards, onGo: go });
   return (
     <>
       <div className="st-lv" role="tablist" aria-label="학교급">
         {AV_LEVELS.map((l) => (
           <button key={l} type="button" role="tab" aria-selected={l === lv} className={l === lv ? "on" : ""} onClick={() => pickLv(l)}>
-            {l}<small>{avOfLevel(l).length}</small>
+            {l}<small>{gradesOfLevel(l).length * 104}</small>
           </button>
         ))}
       </div>
-      <p className="st-hold">꾹 누르면 우물이 떠서 앞 · 뒤 학년의 이어지는 단원을 골라 줘요 — 누른 채 손가락을 옮겨 놓으면 바로 열려요.</p>
-      <div className="st-list" role="tabpanel">
-        {list.map((it) => (
-          <button key={it.key} type="button" className={"st-item wpk-able" + (wp.pressing === it.key ? " wpk-press" : "")} {...wp.bind(it, () => go(it))}>
-            <span className="st-avic" aria-hidden="true">{it.icon}</span>
-            <span className="nm"><b>{it.title}</b>{it.unit && <small className="unit">{unitLabel(it.unit)}</small>}<small className="wrap">{it.desc}</small></span>
-            <span className="tag">{it.grade || it.kind}</span>
-          </button>
+      <div className="st-gk" role="tablist" aria-label="학년">
+        {grades.map((g) => (
+          <button key={g.gk} type="button" role="tab" aria-selected={g.gk === gk} className={g.gk === gk ? "on" : ""} onClick={() => pickGk(g.gk)}>{g.grade}</button>
         ))}
       </div>
+      <div className="st-view">
+        <button type="button" className={view === "week" ? "on" : ""} onClick={() => pickView("week")}>🗓 주차별 기초 다지기 <small>104회차</small></button>
+        <button type="button" className={view === "unit" ? "on" : ""} onClick={() => pickView("unit")}>📚 단원 100제 <small>{avOfLevel(lv).length}</small></button>
+      </div>
+      <p className="st-hold">꾹 누르면 우물이 떠서 6가지를 골라 줘요 — 본 기록 · 푼 기록이 쌓이면 내 수준에 맞춰서. 누른 채 손가락을 옮겨 놓으면 바로 열려요.</p>
+      {view === "week" ? <WeekList key={gk} gk={gk} wp={wp} profile={profile} /> : (
+        <div className="st-list" role="tabpanel">
+          {avOfLevel(lv).map((it) => (
+            <button key={it.key} type="button" className={"st-item wpk-able" + (wp.pressing === it.key ? " wpk-press" : "")} {...wp.bind(unitCard(it), () => go(it))}>
+              <span className="st-avic" aria-hidden="true">{it.icon}</span>
+              <span className="nm"><b>{it.title}</b>{it.unit && <small className="unit">{unitLabel(it.unit)}</small>}<small className="wrap">{it.desc}</small></span>
+              <span className="tag">{it.grade || it.kind}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {wp.overlay}
+    </>
+  );
+}
+
+/** 한 학년 104회차 — 학기 · 방학으로 접고, 주마다 A · B 두 칸 */
+function WeekList({ gk, wp, profile }) {
+  const [h, setH] = useState(() => weekIndexCached(gk));
+  const [err, setErr] = useState(null);
+  useEffect(() => { let live = true; loadWeekIndex(gk).then((v) => { if (live) setH(v); }).catch(() => { if (live) setErr("회차 목록을 불러오지 못했어요 — 연결을 확인해 주세요"); }); return () => { live = false; }; }, [gk]);
+  const now = weekOfDate();
+  const [open, setOpen] = useState(() => ({ [periodOf(now.week)]: true }));
+  const [q, setQ] = useState("");
+  const [unit, setUnit] = useState("");
+  const nowRef = useRef(null);
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (h && !scrolled.current && nowRef.current && !q && !unit) { scrolled.current = true; nowRef.current.scrollIntoView({ block: "center" }); }
+  }, [h, q, unit]);
+  if (err) return <p className="st-cdesc">{err}</p>;
+  if (!h) return <p className="st-cdesc">회차 목록을 불러오는 중…</p>;
+  const W = profile.watched || {};
+  const units = [...new Set(h.sessions.map((m) => m.unit))];
+  const qq = q.trim();
+  const hit = (m) => (!unit || m.unit === unit || (m.units || []).includes(unit)) && (!qq || `${m.title} ${m.unit} ${m.kind} ${m.week}주`.includes(qq));
+  const last = lastSeen(W, `w-${gk}-`);
+  const lastM = last && h.sessions.find((m) => m.id === last.key);
+  const nextM = lastM && (histDone(last.r) ? h.sessions[h.sessions.indexOf(lastM) + 1] : lastM);
+  const nowM = h.sessions.find((m) => m.week === now.week && m.slot === "A");
+  const go = (m) => { location.hash = `#/av/${m.id}`; };
+  const filtering = !!(qq || unit);
+  const cardOf = (m) => {
+    const r = W[m.id], done = histDone(r), part = r && !done && r.max > 0;
+    const c = weekCard(m);
+    return (
+      <button key={m.id} type="button" className={"st-sess wpk-able" + (wp.pressing === m.id ? " wpk-press" : "") + (done ? " done" : "")} {...wp.bind(c, () => go(m))}>
+        <span className="k"><i aria-hidden="true">{KIND_ICON[m.kind]}</i>{m.slot} · {m.kind}{done && <em aria-label="다 봤어요">✓</em>}</span>
+        <b>{m.title}</b>
+        <small>{unitLabel(m.unit)}</small>
+        {part && <span className="pg" aria-label={`${r.max}/${r.n}`}><i style={{ width: `${Math.round((r.max / r.n) * 100)}%` }} /></span>}
+      </button>
+    );
+  };
+  return (
+    <>
+      <div className="st-cont">
+        {nextM && <button type="button" className="st-cont-b" onClick={() => go(nextM)}><small>{lastM === nextM ? "이어 보기" : "다음 회차"}</small><b>{nextM.week}주 {nextM.slot} · {nextM.title}</b></button>}
+        {nowM && <button type="button" className="st-cont-b now" onClick={() => go(nowM)}><small>이번 주 · {weekLabel(now.year, now.week)}</small><b>{nowM.week}주 A · {nowM.title}</b></button>}
+      </div>
+      <div className="st-find">
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="찾기 — 받아올림, 분수, 12주 …" aria-label="회차 찾기" />
+      </div>
+      <div className="st-uchips" role="toolbar" aria-label="단원">
+        <button type="button" className={!unit ? "on" : ""} onClick={() => setUnit("")}>전체</button>
+        {units.map((u) => <button key={u} type="button" className={unit === u ? "on" : ""} onClick={() => setUnit(unit === u ? "" : u)}>{u.split(":")[1]}</button>)}
+      </div>
+      {h.gaps?.length > 0 && !filtering && <p className="st-gap">아직 회차가 없는 단원: {h.gaps.map((u) => u.split(":")[1]).join(" · ")} — 채우는 중이에요</p>}
+      {PERIODS.map((p) => {
+        const ms = h.sessions.filter((m) => m.week >= p.from && m.week <= p.to && hit(m));
+        if (!ms.length) return null;
+        const isOpen = filtering || !!open[p.key];
+        const seen = ms.filter((m) => histDone(W[m.id])).length;
+        return (
+          <section key={p.key} className={"st-per" + (isOpen ? " open" : "")}>
+            <button type="button" className="st-per-h" aria-expanded={isOpen} onClick={() => setOpen((o) => ({ ...o, [p.key]: !isOpen }))}>
+              <b>{p.key}</b><small>{p.from} ~ {p.to}주 · {ms.length}회차{seen ? ` · ${seen} 봤어요` : ""}</small><span aria-hidden="true">{isOpen ? "▾" : "▸"}</span>
+            </button>
+            {isOpen && [...new Set(ms.map((m) => m.week))].map((w) => (
+              <div key={w} className={"st-wk" + (w === now.week ? " now" : "")} ref={w === now.week ? nowRef : null}>
+                <div className="wl"><b>{w}주</b><small>{weekLabel(now.year, w)}</small>{w === now.week && <em>이번 주</em>}</div>
+                <div className="ws">{ms.filter((m) => m.week === w).map(cardOf)}</div>
+              </div>
+            ))}
+          </section>
+        );
+      })}
     </>
   );
 }

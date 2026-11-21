@@ -1,6 +1,7 @@
-// 우물 추천 — 콘텐츠를 꾹 누르면 화면 가운데에 우물이 떠오르고, 둘레에 이어지는 단원 콘텐츠(앞 단원 · 같은 단원 · 다음 단원)가 뜬다.
+// 우물 추천 — 콘텐츠를 꾹 누르면 화면 가운데에 우물이 떠오르고, 둘레에 이어지는 콘텐츠 6가지가 뜬다.
 // 누른 채로 손가락을 옮겨 한 콘텐츠 위에서 떼면 그 콘텐츠가 열리고, 우물이나 빈 곳에서 떼면 원래 화면 그대로.
-//   쓰는 곳: pages/Study.jsx(시청각 학습 › 문제 풀이 해설). 추천은 lib/av.js 의 avRelated(단원 지도 lib/units.js).
+//   쓰는 곳: pages/Study.jsx(시청각 학습 › 문제 풀이 해설). 추천은 lib/recommend.js — 학습 기록이 넉넉하면 숙달도 맞춤,
+//   없거나 모자라면 교육과정 단원 지도(lib/units.js)로 고르는 기본 추천. 카드의 rel 이 추천 이유(약한 앞 단원 · 이어서 · 다음 단원 도전 …).
 //   우물 그림은 탭바 우물과 같은 1장(components/Well.jsx — 관리자가 바꾼 그림이 있으면 그것).
 // 손 다루기: 누르고 0.42초 동안 거의 움직이지 않으면 뜬다(그 전에 움직이면 보통 스크롤). 뜬 동안은 화면이 밀리지 않게 touchmove 를 막고,
 //   손을 뗀 뒤 따라오는 click 은 삼킨다(그냥 누른 것으로 열리지 않게). 마우스로 길게 눌러도 같다.
@@ -134,7 +135,7 @@ function WellOverlay({ st, img }) {
         <img src={img} alt="" draggable="false" />
       </div>
       {cards.map((c, i) => (
-        <div key={c.it.key} className="wpk-c" style={{ left: c.x, top: c.y, width: cw, height: ch, "--dx": `${cx - c.x}px`, "--dy": `${cy - c.y}px`, "--i": i }}>
+        <div key={c.it.key} className="wpk-c" data-key={c.it.key} style={{ left: c.x, top: c.y, width: cw, height: ch, "--dx": `${cx - c.x}px`, "--dy": `${cy - c.y}px`, "--i": i }}>
           <div className={"wpk-card" + (hover === i ? " on" : "")}>
             <span className="i" aria-hidden="true">{c.it.icon}</span>
             <span className="t"><b>{c.it.short || c.it.title}</b><small><em>{c.it.rel}</em> · {c.it.grade}</small></span>

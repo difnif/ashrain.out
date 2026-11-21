@@ -12,6 +12,8 @@
 //     setMenu { word, title, hint } — 세트가 많으면(기본기 해설의 단원) 「세트」 칸 대신 단추 → 목록(U),
 //     ready(set) · load(set) → Promise — 세트 문항을 고를 때 들여오면(기본기 해설) 들여오는 동안 「불러오는 중」 }
 //   pick — 처음 열 때 이 세트로(학생앱에서 고른 단원 — 단일 모드로 연다).
+//   menuExtra({ close }) — 세트 목록 머리에 더 놓을 것(기본기 해설: 「단원 100제 | 주차별 학년」 바꾸기) · 세트에 grp 가 있으면 목록을 그 이름으로 나눈다.
+//   onSeen(set, no) — 단일 모드에서 장면이 바뀔 때마다(학생앱이 본 기록을 남긴다).
 //   장면 = StoryPlayer 형식(key · no · st · dur · grp · marks · title · sub · render) + pane(t, C, uid) 반쪽 판 그리기 · card 목록 칸 글자 · head 판 머리 글자.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { W, H, SANS, mathWidth } from "../draw.jsx";
@@ -38,15 +40,15 @@ function fixers(spec) {
 const posKeyOf = (spec, set, st) => (spec.posKey ? spec.posKey(spec.lsk, set, st) : `${spec.lsk}.${set}.${st}`);
 
 /** 해설 액자 — 단일 | 듀얼. pick(세트 key)을 주면 그 세트로 단일 모드부터 */
-export function LessonFrame({ spec, pick = null, ...props }) {
+export function LessonFrame({ spec, pick = null, menuExtra = null, onSeen = null, ...props }) {
   const pk = useRef(pick != null && spec.sets.some((s) => s.key === pick) ? pick : null);
   const [dual, setDual] = useState(() => !pk.current && (lsRead(spec.lsk + ".mode") || "") === "dual");
   useEffect(() => { lsWrite(spec.lsk + ".mode", dual ? "dual" : "single"); }, [dual, spec.lsk]);
   const pick0 = pk.current;
   useEffect(() => { pk.current = null; }, []);                   // 처음 한 번만 — 듀얼로 갔다 오면 기억한 자리로
   return dual
-    ? <DualStage spec={spec} {...props} onSingle={() => setDual(false)} />
-    : <SingleStage spec={spec} pick={pick0} {...props} onDual={() => setDual(true)} />;
+    ? <DualStage spec={spec} menuExtra={menuExtra} {...props} onSingle={() => setDual(false)} />
+    : <SingleStage spec={spec} pick={pick0} menuExtra={menuExtra} onSeen={onSeen} {...props} onDual={() => setDual(true)} />;
 }
 
 /** 세트 문항이 아직 없으면 들여온다 — [다 왔나, 오류] */
@@ -65,7 +67,7 @@ function useSetsReady(spec, keys) {
   return [!need.length, err];
 }
 /** 들여오는 동안의 무대 */
-function Loading({ C, ui, onExit, title, err }) {
+export function Loading({ C, ui, onExit, title, err }) {
   const { Btn, Ic } = ui;
   return (
     <>
@@ -91,7 +93,7 @@ function SetPick({ spec, value, onChange, onMenu, menuOn, poke, label = "세트"
   return <Seg label={label} value={value} options={spec.sets.map((s) => [s.key, s.short || s.name])} onChange={onChange} poke={poke} />;
 }
 /** 세트(단원) 목록 — 고르면 그 세트 1번부터 */
-export function SetMenu({ spec, cur, onPick, onClose, side = "" }) {
+export function SetMenu({ spec, cur, onPick, onClose, side = "", extra = null }) {
   const M = spec.setMenu;
   return (
     <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
@@ -100,15 +102,18 @@ export function SetMenu({ spec, cur, onPick, onClose, side = "" }) {
           <b>{side ? `${side} 판 · ` : ""}{M.title}</b>
           <button type="button" onClick={onClose} aria-label="닫기">✕</button>
         </div>
+        {extra && extra({ close: onClose })}
         {M.hint && <p className="dsp-gal-sub">{M.hint}</p>}
         <div className="lsn-sets">
-          {spec.sets.map((b) => (
-            <button key={b.key} type="button" className={"lsn-set" + (b.key === cur ? " on" : "")} onClick={() => onPick(b.key)}>
+          {spec.sets.map((b, i) => [
+            b.grp && b.grp !== spec.sets[i - 1]?.grp ? <div key={"g" + b.key} className="lsn-grp">{b.grp}</div> : null,
+            <button key={b.key} type="button" className={"lsn-set" + (b.key === cur ? " on" : "") + (b.hot ? " hot" : "")} onClick={() => onPick(b.key)}
+              ref={b.key === cur ? (el) => el?.scrollIntoView?.({ block: "center" }) : undefined}>
               <span className="i" aria-hidden="true">{b.icon || "•"}</span>
               <span className="t">{b.short || b.name}{b.note && <small>{b.note}</small>}</span>
               <span className="u">{b.sub || b.name}</span>
-            </button>
-          ))}
+            </button>,
+          ])}
         </div>
       </div>
     </div>
@@ -123,7 +128,7 @@ const SpeedSeg = ({ value, onChange, poke, label = "빠르기" }) => (
 );
 
 /* ══════════ 단일 모드 ══════════ */
-function SingleStage(props) {
+function SingleStage({ menuExtra, onSeen, ...props }) {
   const { spec, ui, poke, inert, onDual, pick, C, onExit } = props;
   const { Btn, Ic } = ui;
   const F = useMemo(() => fixers(spec), [spec]);
@@ -141,6 +146,8 @@ function SingleStage(props) {
   const api = useRef(null);
   const [ready, err] = useSetsReady(spec, [cfg.set]);
   const scenes = useMemo(() => (ready ? spec.scenes(cfg.set, cfg.sp, cfg.st) : null), [spec, cfg, ready]);
+  const seenNo = scenes?.[cur]?.no;
+  useEffect(() => { if (onSeen && seenNo != null) onSeen(cfg.set, seenNo); }, [onSeen, cfg.set, seenNo]);
   const pickSet = useCallback((v) => setCfg((c) => { const set = F.fixSet(v); return set === c.set ? c : { ...c, set, st: F.fixSt(set, c.st) }; }), [F]);
   const pickSt = useCallback((v) => setCfg((c) => ({ ...c, st: F.fixSt(c.set, v) })), [F]);
   /** 빠르기 — 그림 속 같은 순간에서 이어지게 기억한 자리를 옮겨 둔다(재생기는 새 빠르기로 다시 뜬다) */
@@ -191,7 +198,7 @@ function SingleStage(props) {
         {...props} inert={inert || list || docs || menu} noMode extra={extra} extraRow={row} topExtra={top} apiRef={api} onIdx={setCur} scrub />
       {list && <NumList spec={spec} set={cfg.set} st={cfg.st} scenes={scenes} cur={cur} onPick={goTo}
         onStage={(v) => { pickSt(v); poke(); }} onClose={() => setList(false)} />}
-      {menu && <SetMenu spec={spec} cur={cfg.set} onPick={(v) => { pickSet(v); setMenu(false); poke(); }} onClose={() => setMenu(false)} />}
+      {menu && <SetMenu spec={spec} cur={cfg.set} extra={menuExtra} onPick={(v) => { pickSet(v); setMenu(false); poke(); }} onClose={() => setMenu(false)} />}
     </>
   );
 }
@@ -229,7 +236,7 @@ function DualStage(props) {
 }
 
 function DualInner(props) {
-  const { spec, ui, C, ctl, poke, inert, isFs, toggleFs, onTheme, onGallery, onExit, onSingle } = props;
+  const { spec, ui, C, ctl, poke, inert, isFs, toggleFs, onTheme, onGallery, onExit, onSingle, menuExtra } = props;
   const { Btn, Ic, FrameIc } = ui;
   const F = useMemo(() => fixers(spec), [spec]);
   const DLSK = spec.lsk + ".dual";
@@ -392,7 +399,7 @@ function DualInner(props) {
       ))}
       {menu && (
         <div className={"lsn-pane-list " + menu}>
-          <SetMenu spec={spec} cur={panes.current[menu].set} side={menu === "L" ? "왼쪽" : "오른쪽"}
+          <SetMenu spec={spec} cur={panes.current[menu].set} side={menu === "L" ? "왼쪽" : "오른쪽"} extra={menuExtra}
             onPick={(v) => { setSet(menu, v); setMenu(null); poke(); }} onClose={() => setMenu(null)} />
         </div>
       )}
@@ -431,6 +438,9 @@ const SET_CSS = `
 .lsn-set .u { font-size: .76em; opacity: .66; }
 .lsn-set.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
 .lsn-pane-list .lsn-sets { grid-template-columns: repeat(2, 1fr); }
+.lsn-grp { grid-column: 1 / -1; font-weight: 800; font-size: .86em; opacity: .75; margin: .5cqw 0 -.1cqw; padding-left: .3cqw; }
+.lsn-set.hot { border-color: var(--teal, #2a9d8f); }
+.lsn-set.hot .t::after { content: "이번 주"; font-size: .7em; font-weight: 800; color: var(--teal, #2a9d8f); margin-left: .3cqw; }
 `;
 
 export const DUAL_CSS = `
