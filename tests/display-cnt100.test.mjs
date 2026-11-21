@@ -3,7 +3,9 @@
 //       확률(분수) 답은 판서 마지막 줄의 마지막 값과 같은지.
 // 박자표: 문제 → 전략 → 줄 차례 → 답. 목록: 세트마다 1~100번 · 단계 1~5(15 · 20 · 25 · 22 · 18).
 // 그리기: 400문항을 여러 순간 × 두 테마로 그려 오류 · NaN 이 없는지, 글자 판이 무대 안인지 훑는다.
-// 단일 모드 그림(줄 세우기 자리 칸 · 학년 · 주머니 공 · 사전식 나무): 줄 번호 · 빛남이 판서와 맞고 그림 자리 안인지.
+// 단일 모드 그림(줄 세우기 자리 칸 · 학년 · 주머니 공): 줄 번호 · 빛남이 판서와 맞고 그림 자리 안인지.
+// 사전식 카드로 순번 찾기(lexwalk.js · frames/lexcards.jsx): 지나가는 묶음 · 최종 묶음의 문자열이 늘어놓아 센 것과 같고,
+//   셈이 번호(순번)와 같으며, 움직임이 판서 줄 시간 안에 차례대로 돌고(hold), 여러 순간 · 단일 · 반쪽에서 그리기 오류가 없는지.
 // 듀얼 모드: 반쪽 판(PANE_REGION)에 400문항이 들어가는지(넘치면 판서가 흐른다), 판 기억(벽시계로 이어 돌기)과 기본값.
 // 글자 판 배치 규칙(글자 크기 두 벌 · 그림은 남은 빈자리)은 tests/display-board.test.mjs 가 해설 액자 모두를 함께 본다.
 import assert from "node:assert/strict";
@@ -13,6 +15,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { C100_SETS, C100_KEYS } from "../src/features/display/cnt100.js";
 import { l10Plan, lineAt } from "../src/features/display/lin10.js";
+import { lexWalk, lexTimes, nthArr, nP } from "../src/features/display/lexwalk.js";
 
 let n = 0, failed = 0;
 function test(name, fn) {
@@ -136,6 +139,50 @@ test("박자표: 문제 → 전략 → 줄 차례 → 답", () => {
   }
 });
 
+test("사전식 카드로 순번 찾기: 묶음 · 최종 묶음의 문자열 = 늘어놓아 센 것 · 셈 = 번호 · 테이프 = 숫자 분석 · 움직임이 줄 안에 차례로", () => {
+  let n = 0, strs = 0;
+  for (const it of C100_SETS.lex.items) {
+    const W = lexWalk(it);
+    if (!it.fig) { assert.equal(W, null); continue; }
+    const tag = `lex ${it.no}`;
+    const S = strings(W.cards, W.r);
+    assert.equal(S[W.total - 1], W.target, `${tag} 셈 ${W.total} 번째 ≠ ${W.target}`);
+    const terms = [];
+    for (const lv of W.levels) for (const sk of lv.skips) {
+      assert.equal(nP(sk.letters.length, sk.len), sk.m, `${tag} ${sk.prefix} 묶음 크기`);
+      for (let k = 0; k < sk.m; k++) { assert.equal(sk.prefix + nthArr(sk.letters, sk.len, k), S[sk.c0 + k], `${tag} ${sk.prefix} 묶음 ${k}`); strs++; }
+      terms.push(sk.m);
+    }
+    const F = W.final;
+    for (let i = 0; i < F.j; i++) { assert.equal(F.prefix + nthArr(F.letters, F.len, i), S[F.c0 + i], `${tag} 최종 묶음 ${i}`); strs++; }
+    terms.push(F.j);
+    // 테이프(지나간 묶음 + 최종 묶음 안 순번) = 판서의 숫자 분석 · 숫자 정리
+    if (it.planTag === "숫자 분석") assert.equal(`${W.total} = ${terms.join(" + ")}`, it.plan, `${tag} 테이프 ≠ 숫자 분석`);
+    else {
+      const sum = it.lines.find((l) => l.pre === "숫자 정리").s;
+      assert.equal(sum, `${terms.join(" + ")} = ${W.total}`, `${tag} 테이프 ≠ 숫자 정리`);
+    }
+    // 박자: 카드 늘어놓기 → (지나가기 · 고르기)… → 최종 묶음 세기, 겹치지 않고 각자 제 줄 안에서
+    const P = l10Plan(it), T = lexTimes(it, P);
+    assert.ok(T.deal[0] >= P.lines[0].a && T.slots >= P.lines[1].a, `${tag} 늘어놓기`);
+    let prev = T.deal[0];
+    for (const e of T.ev) { assert.ok(e.t0 >= prev - 1 && e.t1 > e.t0, `${tag} 차례 ${e.type}`); prev = e.t1; }
+    const within = (t0, t1, li) => t0 >= P.lines[li].a - 1 && t1 <= P.lines[li].b + 1;
+    let ei = 0;
+    for (const lv of W.levels) {
+      for (const sk of lv.skips) { const e = T.ev[ei++]; assert.equal(e.type, "skip"); assert.ok(within(e.t0, e.t1, lv.at[0]), `${tag} ${sk.prefix} 묶음이 줄 밖`); assert.ok(e.t1 - e.t0 <= 1101, `${tag} 휘리릭이 느림`); }
+      const e = T.ev[ei++]; assert.equal(e.type, "pick"); assert.ok(within(e.t0, e.t1, lv.at[1]), `${tag} ${lv.pick} 고르기가 줄 밖`);
+    }
+    const c = T.ev[ei];
+    assert.equal(c.type, "count");
+    assert.ok(within(c.t0, c.t1, F.at), `${tag} 최종 묶음 세기가 줄 밖`);
+    assert.ok(c.t1 <= P.ans, `${tag} 답보다 늦게 끝남`);
+    if (F.j > 6) assert.equal(c.fastN, F.j - 3, `${tag} 큰 최종 묶음은 휘리릭 + 마지막 셋 점멸`);
+    n++;
+  }
+  console.log(`   카드 그림 ${n}개 · 늘어놓아 맞춘 문자열 ${strs}개`);
+});
+
 /* ══════════ 그리기 훑기(번들) ══════════ */
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -207,7 +254,8 @@ export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
     const R = m.STAGE_REGION, kinds = {};
     for (const [k, it] of ALL) {
       const L = m.layoutOf(it), tag = `${k} ${it.no}`;
-      kinds[L.scroll ? "흐름" : L.two ? "두 단" : L.type] = (kinds[L.scroll ? "흐름" : L.two ? "두 단" : L.type] || 0) + 1;
+      const kind = L.scroll ? (L.fig ? "카드 옆 흐름" : "흐름") : L.two ? "두 단" : L.type;
+      kinds[kind] = (kinds[kind] || 0) + 1;
       assert.ok(["base", "tight"].includes(L.type), tag);
       if (!L.scroll) assert.ok(L.bottom <= R.bottom + 1, `${tag} 아래로 넘침 (${Math.round(L.bottom)})`);
       for (const r of L.rows) for (const q of r.parts) assert.ok(q.x + q.w <= R.right + 2, `${tag} 줄이 오른쪽으로 넘침: ${q.s}`);
@@ -238,12 +286,31 @@ export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
         assert.ok(prod === 1 || it.lines.some((l) => l.s.includes(String(prod)) || l.s.includes(seq)), `${tag} 칸 위 수(${seq} = ${prod})가 판서에 없음`);
       } else if (f.kind === "grades" || f.kind === "bag") {
         assert.equal(f.hl.length, nl, `${tag} 빛남 줄 수`);
-      } else if (f.kind === "tree") { /* 사전식 — 위에서 따로 */ }
+      } else if (f.kind === "tree") { /* 사전식 — 아래 카드 순번 찾기 시험에서 */ }
       else assert.fail(`${tag} 모르는 그림 ${f.kind}`);
       if (!m.layoutOf(it).noFig) n[k]++;
     }
     console.log(`   그림이 붙는 문항: ${Object.entries(n).map(([k, v]) => `${C100_SETS[k].short} ${v}`).join(" · ")}`);
     for (const k of C100_KEYS) assert.ok(n[k] >= 70, `${k} 그림 문항이 너무 적음(${n[k]})`);
+  });
+
+  test("사전식 카드 그리기: 여러 순간(늘어놓기 · 휘리릭 · 고정 · 점멸 · 다 셈) × 단일 · 반쪽 × 두 테마 — 오류 없음 · 그림이 늘 붙음", () => {
+    let cnt = 0;
+    for (const it of C100_SETS.lex.items) {
+      if (!it.fig) continue;
+      assert.ok(m.layoutOf(it).fig && m.layoutOf(it, m.PANE_REGION).fig, `lex ${it.no} 카드 그림 자리`);
+      const P = l10Plan(it), T = lexTimes(it, P);
+      const ts = [T.deal[0] + 300, T.slots + 400, ...T.ev.flatMap((e) => [e.t0 + 5, (e.t0 + e.t1) / 2, e.t1 + 5]), P.ans + 300, P.dur - 1];
+      ts.forEach((t, i) => {
+        const th = (cnt + i) % 2 ? "dark" : "light";
+        const s1 = i % 3 ? m.art(it, t, th) : m.paneArt(it, t, th);
+        assert.ok(!BAD.test(s1), `lex ${it.no} t=${Math.round(t)}: ${bad(s1)}`);
+      });
+      cnt += ts.length;
+      const end = m.art(it, P.ans + 300, "dark");
+      assert.ok(end.includes(`= ${lexWalk(it).total}`), `lex ${it.no} 다 센 테이프`);
+    }
+    console.log(`   카드 그림 ${cnt}장`);
   });
 
   test("듀얼 모드: 반쪽 판에 400문항(넘치면 판서가 흐름) · 그리기 오류 없음 · 판 기억(벽시계로 이어 돌기 · 기본 왼쪽 앞 빠르게 · 오른쪽 뒤 느리게)", () => {

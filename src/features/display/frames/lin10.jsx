@@ -3,7 +3,7 @@
 //   ① 문제 → ② 방침(한 줄) → ③ 판서: 계산 과정을 한 줄씩(지금 줄에 금빛 막대, 빨간 메모가 줄 뒤에 써지듯) → ④ 답
 //   9단계(색칠한 부분의 넓이)는 그림 — 판서 줄에 맞춰 밑변 · 높이 · 나눈 삼각형이 빛난다.
 //   경우의 수와 확률 100제(frames/cnt100.jsx)도 이 그리기를 쓴다 — it.planTag 가 있으면 방침 칸 이름을 바꾸고(사전식 「숫자 분석」),
-//   it.fig.kind 가 tree(사전식 세로 나무 — frames/lextree.jsx) · seats · grades · bag(줄 세우기 · 학년별 선발 · 주머니 공 — frames/c100fig.jsx)면 그 그림.
+//   it.fig.kind 가 tree(사전식 — 카드로 순번 찾기, frames/lexcards.jsx · 받은 칸에 맞춰 그린다) · seats · grades · bag(줄 세우기 · 학년별 선발 · 주머니 공 — frames/c100fig.jsx)면 그 그림.
 //   기본기 해설(frames/basics.jsx — 초등 · 중등 · 고등 단원)도 이 그리기를 쓴다 — it.fig.kind === "dsl" 이면 그림 DSL(frames/figdsl.jsx).
 // 글자 판은 ../board.js(배치) · frames/board.jsx(그리기): 글자 크기 두 벌로 고르게, 문제는 판 너비를 다 쓰고,
 //   그림은 글자를 다 놓고 남은 빈자리에 줄여 넣는다(화면의 25%까지 · 배율 0.6 아래면 뺀다). region 을 주면(듀얼 반쪽 판) 그 판 안에 같은 규칙으로.
@@ -16,14 +16,13 @@ import { seg, E, clamp } from "../core.js";
 import { L10_SETS, L10_STAGE, L10_HIGH, l10Plan, lineAt } from "../lin10.js";
 import { stepMarks } from "./scrub.jsx";
 import { LessonFrame } from "./lesson.jsx";
-import { LexTree } from "./lextree.jsx";
+import { LexCards, LEX_FIG } from "./lexcards.jsx";
 import { SeatsFig, GradesFig, BagFig } from "./c100fig.jsx";
 import { FigDsl } from "./figdsl.jsx";
 
 import { boardLayout, STAGE_REGION, PANE_REGION } from "../board.js";
 import { Board, FigSlot } from "./board.jsx";
 import { seatsBox, gradesBox, bagBox } from "./c100fig.jsx";
-import { treeBox } from "./lextree.jsx";
 import { dslBox } from "./figdsl.jsx";
 
 /* ══════════ 배치 (1600×900) — 글자 판은 ../board.js 가 놓는다 ══════════ */
@@ -32,7 +31,7 @@ const FIG = { x0: 880, y0: 170, x1: 1540, y1: 850 };
 
 /** 오른쪽 그림 — 9단계 넓이(kind 없음 · 아래 Figure)와 경우의 수와 확률 100제 · 기본기 해설의 그림들. box = 실제로 차지하는 네모 */
 const FIGS = {
-  tree: { draw: (p) => <LexTree {...p} />, box: (f) => treeBox(f) },
+  tree: { draw: (p) => <LexCards {...p} />, flex: LEX_FIG },   // 사전식 — 카드로 순번 찾기(받은 칸에 맞춰 그린다)
   seats: { draw: (p) => <SeatsFig {...p} />, box: (f) => seatsBox(f) },
   grades: { draw: (p) => <GradesFig {...p} />, box: (f) => gradesBox(f) },
   bag: { draw: (p) => <BagFig {...p} />, box: (f) => bagBox(f) },
@@ -43,7 +42,7 @@ const figOf = (it) => (it.fig ? FIGS[it.fig.kind] || AREA9 : null);
 const NAT = new WeakMap();
 /** 그림의 제 크기 네모(무대 좌표) — 없으면 null */
 export function figNatural(it) {
-  if (!it.fig) return null;
+  if (!it.fig || figOf(it).flex) return null;
   if (NAT.has(it)) return NAT.get(it);
   const b = figOf(it).box(it.fig);
   const out = b && b.x1 - b.x0 > 20 && b.y1 - b.y0 > 20 ? b : null;
@@ -56,8 +55,8 @@ export const L10_REGION = { stage: STAGE_REGION, pane: PANE_REGION };
  * Lo.fig 가 있으면 그 네모에 그림을, 없으면(noFig) 그림 없이 — 글자가 먼저다.
  */
 export function layoutOf(it, region = STAGE_REGION) {
-  const nb = figNatural(it);
-  const Lo = boardLayout(it, region, nb ? { w: nb.x1 - nb.x0, h: nb.y1 - nb.y0 } : null);
+  const F = figOf(it), nb = figNatural(it);
+  const Lo = boardLayout(it, region, F?.flex ? F.flex : nb ? { w: nb.x1 - nb.x0, h: nb.y1 - nb.y0 } : null);
   return Lo.noFig != null ? Lo : Object.assign(Lo, { noFig: !Lo.fig });
 }
 
@@ -222,7 +221,8 @@ export function L10Art({ it, t, C, uid = "", region = STAGE_REGION }) {
   return (
     <g>
       <Board it={it} Lo={Lo} P={P} t={t} cur={cur} C={C} uid={uid} />
-      {F && <FigSlot spot={Lo.fig} box={figNatural(it)} draw={() => F.draw({ it, t, C, cur, ts: F.ts ? Math.min(1.3, Math.max(1, 0.95 / Lo.fig.s)) : 1 })} />}
+      {F && F.flex && <FigSlot spot={Lo.fig} flex draw={(box) => F.draw({ it, t, C, cur, box })} />}
+      {F && !F.flex && <FigSlot spot={Lo.fig} box={figNatural(it)} draw={() => F.draw({ it, t, C, cur, ts: F.ts ? Math.min(1.3, Math.max(1, 0.95 / Lo.fig.s)) : 1 })} />}
     </g>
   );
 }

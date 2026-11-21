@@ -27,6 +27,14 @@ export const L10 = {
 /** 읽는 글자 수 — 분수 {a/b} 는 두 글자쯤, 띄어쓰기 · 괄호는 덜 */
 export const readLen = (s) => String(s ?? "").replace(/\{[^}]*\}/g, "00").replace(/[\s(),]/g, "").length;
 
+const lineBody = (ln) => L10.L0 + L10.LC * Math.min(readLen((ln.pre || "") + ln.s), 40);
+/**
+ * 판서 한 줄의 길이(ms) — 글자 수 + 빨간 메모 + hold(그림 애니메이션이 더 필요한 만큼 — 사전식 카드 순번 찾기, ./lexwalk.js 가 정한다)
+ */
+export function lineLen(ln) {
+  const body = lineBody(ln);
+  return Math.max(body + (ln.hold || 0), ln.memo ? body * 0.55 + L10.MEMO + 300 : 0);
+}
 /**
  * 문항 하나의 박자표
  *   q:[a,b] 문제 · plan:[a,b] 방침 · lines[i] = { a(나타남), m:[a,b](메모 · 없으면 null), b(끝) } · ans 답이 뜨는 시각 · dur
@@ -41,9 +49,9 @@ export function l10Plan(it) {
   t = plan[1] + L10.GAP;
   const lines = it.lines.map((ln) => {
     const a = t;
-    const body = L10.L0 + L10.LC * Math.min(readLen((ln.pre || "") + ln.s), 40);
+    const body = lineBody(ln);
     const m = ln.memo ? [a + body * 0.55, a + body * 0.55 + L10.MEMO] : null;
-    const b = Math.max(a + body, m ? m[1] + 300 : 0);
+    const b = a + lineLen(ln);
     t = b + L10.GAP;
     return { a, m, b };
   });

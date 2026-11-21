@@ -254,6 +254,52 @@ function figSpot(lay, fig, R) {
     room: [best.x0, best.y0, best.x0 + best.w0, best.y0 + best.h0] };
 }
 
+/**
+ * 꼭 보여야 하는 그림(fig.must — 사전식 카드로 순번 찾기처럼 그림이 풀이의 몸통인 것) — 남은 빈자리가 모자라면 자리를 먼저 떼어 둔다.
+ *   넓은 판(무대): 글자 칸 오른쪽에 그림 칸(글자 칸은 넘치면 흐른다).
+ *   좁은 판(듀얼 반쪽): 아래에 그림 칸, 위 글자 칸이 흐른다.
+ */
+function mustLayout(it, R, fig) {
+  const W0 = R.right - R.left;
+  const capA = FIG_AREA * screenOf(R);
+  const last = BOARD_TYPE[BOARD_TYPE.length - 1];
+  const fit = (w, h) => {                      // 칸 넓이 상한(화면의 25%) — 높이부터 줄인다
+    let bw = Math.min(w, fig.maxW), bh = Math.min(h, fig.maxH);
+    if (bw * bh > capA) bh = Math.max(fig.minH, capA / bw);
+    if (bw * bh > capA) bw = Math.max(fig.minW, capA / bh);
+    return [bw, bh];
+  };
+  const sideW = Math.min(fig.maxW, Math.max(fig.minW, W0 * 0.42));
+  const colR = R.right - sideW - GAP_FIG;
+  if (colR - R.left >= 520) {
+    const pick = (lay, T, scroll) => {
+      const x0 = colR + GAP_FIG, y0 = lay.qBottom + 18;
+      const [w, h] = fit(R.right - x0, R.bottom - y0);
+      const spot = { x: x0 + (R.right - x0 - w) / 2, y: y0 + (R.bottom - y0 - h) / 2, w, h, s: 1, room: [x0, y0, R.right, R.bottom] };
+      return { ...lay, type: T.key, fig: spot, scroll };
+    };
+    for (const T of BOARD_TYPE) {
+      const lay = layOnce(it, T, R, colR);
+      if (lay.over <= 2 && lay.bottom <= R.bottom) return pick(lay, T, null);
+    }
+    const lay = layOnce(it, last, R, colR);
+    if (lay.over <= 2) return pick(lay, last, { top: lay.qBottom + last.q * 0.3, bottom: R.bottom + 2, pinQ: true });
+    return null;
+  }
+  // 좁은 판 — 그림은 아래, 글자는 위에서 흐른다
+  for (const T of [...BOARD_TYPE].reverse()) {
+    const lay = layOnce(it, T, R, R.right);
+    if (lay.over > 2) continue;
+    const [w, h] = fit(W0, fig.minH);
+    const figTop = R.bottom - h;
+    if (figTop - lay.qBottom < 110) return null;               // 글자 칸이 두 줄도 못 되면 그림을 접는다
+    const spot = { x: R.left + (W0 - w) / 2, y: figTop, w, h, s: 1, room: [R.left, figTop, R.right, R.bottom] };
+    const scroll = lay.bottom > figTop - 16 ? { top: lay.qBottom + T.q * 0.3, bottom: figTop - 16, pinQ: true } : null;
+    return { ...lay, type: T.key, fig: spot, scroll };
+  }
+  return null;
+}
+
 /* ══════════ 배치 ══════════ */
 const CACHE = new WeakMap();
 /**
@@ -264,7 +310,7 @@ const CACHE = new WeakMap();
 export function boardLayout(it, region = STAGE_REGION, fig = null) {
   let m = CACHE.get(it);
   if (!m) { m = new Map(); CACHE.set(it, m); }
-  const key = `${region.key}|${fig ? (fig.flex ? `flex${fig.minW}` : `${Math.round(fig.w)}x${Math.round(fig.h)}`) : "-"}`;
+  const key = `${region.key}|${fig ? (fig.flex ? `flex${fig.minW}x${fig.minH}${fig.must ? "!" : ""}` : `${Math.round(fig.w)}x${Math.round(fig.h)}`) : "-"}`;
   if (m.has(key)) return m.get(key);
   const R = region, W0 = R.right - R.left;
   const fitsH = (lay) => lay.bottom <= R.bottom && lay.over <= 2;
@@ -290,6 +336,11 @@ export function boardLayout(it, region = STAGE_REGION, fig = null) {
     }
     out = { ...pick.lay, type: T.key, fig: pick.spot, scroll: null };
     break;
+  }
+  // 꼭 보여야 하는 그림인데 자리를 못 찾았으면 — 그림 칸을 먼저 떼어 둔다
+  if (fig?.must && !(out && out.fig)) {
+    const m2 = mustLayout(it, R, fig);
+    if (m2) out = m2;
   }
   // 한 단으로 넘치면 — 무대(넓은 판)는 두 단으로(칠판처럼 왼쪽 단을 채울 만큼 채우고 나머지 줄 · 답은 오른쪽 단 위에서)
   if (!out && R.key === "stage" && it.lines.length >= 2) {

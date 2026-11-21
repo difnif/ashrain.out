@@ -1,8 +1,13 @@
 // ashrain.out — 교실 모니터 「경우의 수와 확률 100제 해설」 계산 (cnt100.js) — JSX 없음
 // 프린트 네 세트(cnt100-items.js)를 일차함수 10단계 액자와 같은 판서 재생기로 돌린다:
 //   ① 문제 → ② 전략(방침 칸) → ③ 판서: 포지티브 · 네거티브 → 식을 한 줄씩 → ④ 답. 박자표는 lin10.js 의 l10Plan 을 그대로 쓴다.
-//   사전식은 강사 판서 방식: ② 칸이 「숫자 분석」(번호를 덩어리 합으로 쪼갬) → ③ 묶음 개수로 시작 글자 → 최종 묶음 · 오른쪽에 세로 나무.
+//   사전식은 강사 판서 방식: ② 칸이 「숫자 분석」(번호를 덩어리 합으로 쪼갬) → ③ 묶음 개수로 시작 글자 → 최종 묶음.
+//   그림은 카드로 순번 찾기(frames/lexcards.jsx · ./lexwalk.js) — 묶음이 휘리릭 지나가고, 글자를 고정하고, 최종 묶음에서 점멸하며 센다.
+//   그 움직임이 판서 줄 안에 다 돌도록 줄마다 hold 를 더해 둔다(lexPrep — 박자표를 처음 만들기 전에 한 번).
 import { CNT100_SEL, CNT100_BALL, CNT100_LEX, CNT100_LINE } from "./cnt100-items.js";
+import { lexPrep } from "./lexwalk.js";
+
+for (const it of CNT100_LEX) lexPrep(it);
 
 export const C100_SETS = {
   sel: {
