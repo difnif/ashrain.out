@@ -1,108 +1,64 @@
 // ashrain.out — 교실 모니터 「액자」: 일차함수 10단계 계산 해설 (frames/lin10.jsx)
 // 학원 프린트 「일차함수의 그래프 · 세트 1 · 2」(10단계 × 20문항)를 문항마다 한 장면으로 끝없이 돌린다.
 //   ① 문제 → ② 방침(한 줄) → ③ 판서: 계산 과정을 한 줄씩(지금 줄에 금빛 막대, 빨간 메모가 줄 뒤에 써지듯) → ④ 답
-//   9단계(색칠한 부분의 넓이)는 오른쪽에 그림 — 판서 줄에 맞춰 밑변 · 높이 · 나눈 삼각형이 빛난다.
+//   9단계(색칠한 부분의 넓이)는 그림 — 판서 줄에 맞춰 밑변 · 높이 · 나눈 삼각형이 빛난다.
 //   경우의 수와 확률 100제(frames/cnt100.jsx)도 이 그리기를 쓴다 — it.planTag 가 있으면 방침 칸 이름을 바꾸고(사전식 「숫자 분석」),
-//   it.fig.kind 가 tree(사전식 세로 나무 — frames/lextree.jsx) · seats · grades · bag(줄 세우기 · 학년별 선발 · 주머니 공 — frames/c100fig.jsx)면
-//   그 그림을 오른쪽에. 글자가 그림 옆에 다 들어가지 않는 문항은 그림을 빼고 무대 너비를 다 쓴다(layoutOf 의 noFig).
-//   box 를 주면(듀얼 모드의 반쪽 판) 그 판 안에 그림 없이 배치한다.
+//   it.fig.kind 가 tree(사전식 세로 나무 — frames/lextree.jsx) · seats · grades · bag(줄 세우기 · 학년별 선발 · 주머니 공 — frames/c100fig.jsx)면 그 그림.
 //   학년별 기본기 해설(frames/grade.jsx)도 이 그리기를 쓴다 — it.fig.kind === "dsl" 이면 그림 DSL(frames/figdsl.jsx).
-// 재생기는 장면 묶음과 같은 StoryPlayer. 이 액자만의 것: 「세트 1 | 세트 2」 · 「1× | 1.5×」 · 번호 목록(L) — 목록 위
-//   단계 칩(전체 · 1~10)으로 고르면 그 단계 20문항만 돈다. 7 · 8단계(수직)는 고1 내용이라 표시를 붙인다.
+// 글자 판은 ../board.js(배치) · frames/board.jsx(그리기): 글자 크기 두 벌로 고르게, 문제는 판 너비를 다 쓰고,
+//   그림은 글자를 다 놓고 남은 빈자리에 줄여 넣는다(화면의 25%까지 · 배율 0.6 아래면 뺀다). region 을 주면(듀얼 반쪽 판) 그 판 안에 같은 규칙으로.
+// 조작은 해설 액자 공통 틀(frames/lesson.jsx) — 「세트 1 | 세트 2」 · 빠르기 0.75× ~ 2× · 번호 · 단계 목록(전체 · 1~10단계) · 단일 | 듀얼.
+//   7 · 8단계(수직)는 고1 내용이라 표시를 붙인다.
 // 계산 · 박자표: ../lin10.js · 문항: ../lin10-items.js
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo } from "react";
 import { MText, Arrow, Path, mathWidth, SANS, SERIF } from "../draw.jsx";
 import { seg, E, clamp } from "../core.js";
-import { L10_SETS, L10_SPEEDS, L10_STAGE, L10_HIGH, l10Plan, lineAt } from "../lin10.js";
-import { StoryPlayer } from "./player.jsx";
+import { L10_SETS, L10_STAGE, L10_HIGH, l10Plan, lineAt } from "../lin10.js";
 import { stepMarks } from "./scrub.jsx";
+import { LessonFrame } from "./lesson.jsx";
 import { LexTree } from "./lextree.jsx";
 import { SeatsFig, GradesFig, BagFig } from "./c100fig.jsx";
 import { FigDsl } from "./figdsl.jsx";
 
-/** 오른쪽 그림 — 9단계 넓이(Figure, kind 없음) 말고 경우의 수와 확률 100제의 그림들 */
-const FIGS = {
-  tree: (p) => <LexTree {...p} />, seats: (p) => <SeatsFig {...p} />, grades: (p) => <GradesFig {...p} />, bag: (p) => <BagFig {...p} />,
-  dsl: (p) => <FigDsl {...p} />,          // 학년별 기본기 해설(frames/grade.jsx)
-};
-import { Seg, useKeys, lsRead, lsWrite } from "./xkit.jsx";
+import { boardLayout, STAGE_REGION, PANE_REGION } from "../board.js";
+import { Board, FigSlot } from "./board.jsx";
+import { seatsBox, gradesBox, bagBox } from "./c100fig.jsx";
+import { treeBox } from "./lextree.jsx";
+import { dslBox } from "./figdsl.jsx";
 
-/* ══════════ 배치 (1600×900) ══════════ */
-const LEFT = 60, TOP = 168, BOTTOM = 866;
+/* ══════════ 배치 (1600×900) — 글자 판은 ../board.js 가 놓는다 ══════════ */
+// 그림은 제 크기(FIG 칸 660 × 680 안에서 실제로 차지하는 네모)로 그린 뒤, 글자를 다 놓고 남은 빈자리에 맞춰 줄여 넣는다.
 const FIG = { x0: 880, y0: 170, x1: 1540, y1: 850 };
 
-function wrap(s, size, maxW, weight = 560) {
-  const words = String(s).split(/(?<= )/), lines = [""];
-  for (const w of words) {
-    const cur = lines[lines.length - 1];
-    if (cur && mathWidth(cur + w, size, weight) > maxW) lines.push(w); else lines[lines.length - 1] = cur + w;
-  }
-  return lines.map((l) => l.trimEnd());
-}
-
-const LAYOUT = new WeakMap();
-export const L10_BOX = { LEFT, TOP, BOTTOM, FIG };
-/**
- * 글자 판 배치. box 를 주면 그 판(듀얼 모드의 반쪽 — { key, right, top, bottom })에 그림 없이,
- * 안 주면 무대 전체 — it.fig 가 있으면 오른쪽에 그림 자리를 비우되, 그림 옆으로 글자가 다 들어가지 않으면
- * 그림을 빼고(noFig) 무대 너비를 다 쓴다.
- */
-export function layoutOf(it, box = null) {
-  let m = LAYOUT.get(it);
-  if (!m) { m = new Map(); LAYOUT.set(it, m); }
-  const key = box ? box.key : "full";
-  if (m.has(key)) return m.get(key);
-  let out;
-  if (box) out = { ...layOnce(it, box.right, box.top, box.bottom).best, noFig: true, top: box.top, bottom: box.bottom };
-  else if (it.fig) {
-    const a = layOnce(it, FIG.x0 - 50, TOP, BOTTOM);
-    out = a.fits ? { ...a.best, noFig: false } : { ...layOnce(it, 1540, TOP, BOTTOM).best, noFig: true };
-  } else out = { ...layOnce(it, 1540, TOP, BOTTOM).best, noFig: true };
-  m.set(key, out);
+/** 오른쪽 그림 — 9단계 넓이(kind 없음 · 아래 Figure)와 경우의 수와 확률 100제 · 학년별 해설의 그림들. box = 실제로 차지하는 네모 */
+const FIGS = {
+  tree: { draw: (p) => <LexTree {...p} />, box: (f) => treeBox(f) },
+  seats: { draw: (p) => <SeatsFig {...p} />, box: (f) => seatsBox(f) },
+  grades: { draw: (p) => <GradesFig {...p} />, box: (f) => gradesBox(f) },
+  bag: { draw: (p) => <BagFig {...p} />, box: (f) => bagBox(f) },
+  dsl: { draw: (p) => <FigDsl {...p} />, box: (f) => dslBox(f) },          // 학년별 기본기 해설(frames/grade.jsx)
+};
+const AREA9 = { draw: (p) => <Figure {...p} />, box: (f) => area9Box(f), ts: true };
+const figOf = (it) => (it.fig ? FIGS[it.fig.kind] || AREA9 : null);
+const NAT = new WeakMap();
+/** 그림의 제 크기 네모(무대 좌표) — 없으면 null */
+export function figNatural(it) {
+  if (!it.fig) return null;
+  if (NAT.has(it)) return NAT.get(it);
+  const b = figOf(it).box(it.fig);
+  const out = b && b.x1 - b.x0 > 20 && b.y1 - b.y0 > 20 ? b : null;
+  NAT.set(it, out);
   return out;
 }
-
-function layOnce(it, right, top, bottom) {
-  const W0 = right - LEFT;
-  let best = null, fits = false;
-  for (const [qs, bs] of [[38, 44], [36, 40], [34, 37], [32, 34], [30, 31], [28, 28]]) {
-    const qLines = wrap(`${it.no}. ${it.q}`, qs, W0);
-    let y = top + qs;
-    const qY = qLines.map((_, i) => y + i * qs * 1.48);
-    y = qY[qY.length - 1] + qs * 1.55;
-    const planY = y;
-    y += bs * 1.55;
-    const ps = Math.round(bs * 0.66), ms = Math.round(bs * 0.62), lh = bs * 1.5;
-    const rows = [];
-    let ok = true;
-    it.lines.forEach((ln, i) => {
-      const preW = ln.pre ? mathWidth(ln.pre, ps, 600) + ps * 0.9 : 0;
-      const sW = mathWidth(ln.s, bs, 560);
-      const memoW = ln.memo ? mathWidth(ln.memo, ms, 600) + ms * 1.2 : 0;
-      const r = { i, preRow: false, memoRow: false };
-      if (preW + sW > W0) { r.preRow = true; r.preY = y + ps * 0.2; y += ps * 1.35; }
-      r.y = y + bs * 0.35;
-      r.sx = LEFT + (r.preRow ? 0 : preW);
-      r.sW = sW;
-      if (sW + (r.preRow ? 0 : preW) > W0) ok = false;
-      if (ln.memo) {
-        if (r.sx + sW + memoW <= right) { r.mx = r.sx + sW + ms * 1.2; r.my = r.y; }
-        else { r.memoRow = true; r.mx = r.sx + bs * 0.4; r.my = r.y + ms * 1.5; y += ms * 1.4; }
-      }
-      y += lh;
-      r.bottom = y;
-      rows.push(r);
-    });
-    const ansY = y + bs * 0.55;
-    // 방침 칸: 이름(방침 · 숫자 분석)과 글자 크기 — 한 줄이 판 오른쪽(그림 왼쪽)을 넘지 않게 줄인다
-    const tagW = it.planTag ? it.planTag.length * 1.05 + 0.8 : 2.9;
-    const pw = it.planTag ? 750 : 600, p0 = Math.round(ps * (it.planTag ? 1.3 : 1.12));
-    const planX = LEFT + ps * (tagW + 0.5);
-    const planS = Math.max(14, Math.min(p0, Math.floor(p0 * (right - planX) / Math.max(1, mathWidth(it.plan, p0, pw)))));
-    best = { qs, bs, ps, ms, qLines, qY, planY, rows, ansY, right, tagW, planX, planS, planW: pw };
-    if (ok && ansY + bs * 0.75 <= bottom) { fits = true; break; }
-  }
-  return { best, fits: fits && best.planS >= 18 };
+export const L10_REGION = { stage: STAGE_REGION, pane: PANE_REGION };
+/**
+ * 글자 판 배치(../board.js). region — 무대 전체(기본) · 듀얼 반쪽 판(PANE_REGION).
+ * Lo.fig 가 있으면 그 네모에 그림을, 없으면(noFig) 그림 없이 — 글자가 먼저다.
+ */
+export function layoutOf(it, region = STAGE_REGION) {
+  const nb = figNatural(it);
+  const Lo = boardLayout(it, region, nb ? { w: nb.x1 - nb.x0, h: nb.y1 - nb.y0 } : null);
+  return Lo.noFig != null ? Lo : Object.assign(Lo, { noFig: !Lo.fig });
 }
 
 /* ══════════ 9단계 그림 ══════════ */
@@ -112,6 +68,12 @@ function figFrame(f) {
   const s = Math.min((FIG.x1 - FIG.x0) / (xr[1] - xr[0]), (FIG.y1 - FIG.y0) / (yr[1] - yr[0]));
   const cx = (FIG.x0 + FIG.x1) / 2 - s * (xr[0] + xr[1]) / 2, cy = (FIG.y0 + FIG.y1) / 2 + s * (yr[0] + yr[1]) / 2;
   return { s, xr, yr, X: (v) => cx + s * v, Y: (v) => cy - s * v };
+}
+/** 9단계 그림이 실제로 차지하는 네모 — 축 끝 · 이름 자리까지 */
+function area9Box(f) {
+  const F = figFrame(f);
+  const x0 = F.X(F.xr[0]) - 46, x1 = F.X(F.xr[1]) + 26, y0 = F.Y(F.yr[1]) - 12, y1 = F.Y(F.yr[0]) + 14;
+  return { x0: Math.max(FIG.x0 - 20, x0), y0: Math.max(FIG.y0 - 10, y0), x1: Math.min(FIG.x1 + 20, x1), y1: Math.min(FIG.y1 + 10, y1) };
 }
 /** 두 점을 지나는 직선을 그림 칸으로 자른 두 끝 */
 function clipThrough(p, q, xr, yr) {
@@ -126,7 +88,8 @@ function clipThrough(p, q, xr, yr) {
 }
 const fnum = (v) => (v < 0 ? "−" + -v : String(v));
 
-function Figure({ it, t, cur, C }) {
+/** ts — 글자 크기 배수(그림을 줄여 넣을 때 글자는 덜 줄도록) */
+function Figure({ it, t, cur, C, ts = 1 }) {
   const f = it.fig, F = figFrame(f), { X, Y } = F;
   const P = l10Plan(it);
   const o = seg(t, 400, 1200, E.sine);
@@ -139,9 +102,9 @@ function Figure({ it, t, cur, C }) {
   // P 이름: 색칠한 부분의 반대쪽으로
   const gx = f.poly.reduce((a, v) => a + v[0], 0) / f.poly.length, gy = f.poly.reduce((a, v) => a + v[1], 0) / f.poly.length;
   const rt = f.P[0] >= gx, up = f.P[1] >= gy;
-  const pTxt = `P(${fnum(f.P[0])}, ${fnum(f.P[1])})`, pW = mathWidth(pTxt, 32, 700) + 8;
-  const pBox = [rt ? X(f.P[0]) + 16 : X(f.P[0]) - 16 - pW, Y(f.P[1]) + (up ? -46 : 14), 0, 0];
-  pBox[2] = pBox[0] + pW; pBox[3] = pBox[1] + 36;
+  const pTxt = `P(${fnum(f.P[0])}, ${fnum(f.P[1])})`, pZ = 32 * ts, pW = mathWidth(pTxt, pZ, 700) + 8;
+  const pBox = [rt ? X(f.P[0]) + 16 : X(f.P[0]) - 16 - pW, Y(f.P[1]) + (up ? -14 - pZ : 14), 0, 0];
+  pBox[2] = pBox[0] + pW; pBox[3] = pBox[1] + pZ * 1.12;
   // 높이 글자(X · Y 꼴): 발이 밑변 안이면 색칠한 쪽으로, 밑변 밖이면 바깥쪽으로(삼각형 변과 겹치지 않게)
   const hTag = (() => {
     if (f.kind === "X") {
@@ -204,7 +167,7 @@ function Figure({ it, t, cur, C }) {
     }
     return out;
   })();
-  const name = (q, s) => <MText x={q[0]} y={q[1] + 12} s={s} size={36} weight={600} anchor="middle" fill={C.sky} halo={C.halo} C={C} />;
+  const name = (q, s) => <MText x={q[0]} y={q[1] + 12 * ts} s={s} size={36 * ts} weight={600} anchor="middle" fill={C.sky} halo={C.halo} C={C} />;
   const O = [0, 0];
   let hi = null;
   if (f.kind === "X" || f.kind === "Y") {
@@ -214,7 +177,7 @@ function Figure({ it, t, cur, C }) {
         <Path pts={pts([f.A, f.B])} stroke={C.gold} sw={12} o={0.75 * Math.max(glow(0), done ? 0.5 : 0)} />
         {(cur >= 1 || done) && <Path pts={pts([f.P, foot])} stroke={C.red} sw={4} dash="10 8" o={Math.max(k(1), done ? 1 : 0)} />}
         {(cur >= 1 || done) && (
-          <MText x={hTag.x} y={hTag.y} s="높이" size={28} weight={700} fill={C.red} halo={C.halo} anchor={hTag.anchor} opacity={Math.max(k(1), done ? 1 : 0)} C={C} />
+          <MText x={hTag.x} y={hTag.y} s="높이" size={28 * ts} weight={700} fill={C.red} halo={C.halo} anchor={hTag.anchor} opacity={Math.max(k(1), done ? 1 : 0)} C={C} />
         )}
       </g>
     );
@@ -228,8 +191,8 @@ function Figure({ it, t, cur, C }) {
     );
   }
   const lbl = (v, axis) => axis === "x"
-    ? <MText key={"x" + v} x={X(v)} y={Y(0) + 38} s={fnum(v)} size={30} weight={600} anchor="middle" fill={C.ink} halo={C.halo} C={C} />
-    : <MText key={"y" + v} x={X(0) - 14} y={Y(v) + 10} s={fnum(v)} size={30} weight={600} anchor="end" fill={C.ink} halo={C.halo} C={C} />;
+    ? <MText key={"x" + v} x={X(v)} y={Y(0) + 8 + 30 * ts} s={fnum(v)} size={30 * ts} weight={600} anchor="middle" fill={C.ink} halo={C.halo} C={C} />
+    : <MText key={"y" + v} x={X(0) - 14} y={Y(v) + 10 * ts} s={fnum(v)} size={30 * ts} weight={600} anchor="end" fill={C.ink} halo={C.halo} C={C} />;
   const ax = f.kind === "X" ? [lbl(f.A[0], "x"), lbl(f.B[0], "x")] : f.kind === "Y" ? [lbl(f.A[1], "y"), lbl(f.B[1], "y")] : [lbl(f.A[1], "y"), lbl(f.B[0], "x")];
   return (
     <g opacity={o}>
@@ -245,68 +208,21 @@ function Figure({ it, t, cur, C }) {
       {name(names[0], "ℓ")}{name(names[1], "m")}
       {[f.A, f.B, f.P].map((v, i) => <circle key={i} cx={X(v[0])} cy={Y(v[1])} r={7} fill={C.ink} />)}
       {ax}
-      <MText x={rt ? pBox[0] : pBox[2] - 8} y={pBox[1] + 28} s={pTxt} size={32} weight={700} anchor={rt ? "start" : "end"} fill={C.ink} halo={C.halo} C={C} />
+      <MText x={rt ? pBox[0] : pBox[2] - 8} y={pBox[1] + pZ * 0.88} s={pTxt} size={pZ} weight={700} anchor={rt ? "start" : "end"} fill={C.ink} halo={C.halo} C={C} />
     </g>
   );
 }
 
 /* ══════════ 한 문항 한 순간 ══════════ */
-export function L10Art({ it, t, C, uid = "", box = null }) {
-  const P = l10Plan(it), Lo = layoutOf(it, box);
+/** region — 무대 전체(기본) · 듀얼 반쪽 판(PANE_REGION). 글자 판은 Board(frames/board.jsx), 그림은 남은 빈자리에(FigSlot) */
+export function L10Art({ it, t, C, uid = "", region = STAGE_REGION }) {
+  const P = l10Plan(it), Lo = layoutOf(it, region);
   const cur = lineAt(P, t);
-  const qo = seg(t, 0, 600, E.sine);
-  const po = seg(t, P.plan[0], P.plan[0] + 600, E.sine);
-  const ans = seg(t, P.ans, P.ans + 700, E.sine);
-  const id = `l10${uid}-${it.no}`;
+  const F = Lo.fig ? figOf(it) : null;
   return (
     <g>
-      <g opacity={qo}>
-        {Lo.qLines.map((s, i) => <MText key={i} x={LEFT} y={Lo.qY[i]} s={s} size={Lo.qs} weight={i === 0 ? 620 : 560} fill={C.ink} C={C} />)}
-      </g>
-      {po > 0 && (
-        <g opacity={po}>
-          <rect x={LEFT - 4} y={Lo.planY - Lo.ps * 1.05} width={Lo.ps * Lo.tagW} height={Lo.ps * 1.45} rx={Lo.ps * 0.72} fill={C.teal} opacity={0.2} />
-          <text x={LEFT - 4 + Lo.ps * Lo.tagW / 2} y={Lo.planY - Lo.ps * 0.02} fontFamily={SANS} fontSize={Lo.ps} fontWeight={800} fill={C.teal} textAnchor="middle">{it.planTag || "방침"}</text>
-          <MText x={Lo.planX} y={Lo.planY} s={it.plan} size={Lo.planS} weight={Lo.planW} fill={C.teal} C={C} />
-        </g>
-      )}
-      {it.lines.map((ln, i) => {
-        const T = P.lines[i], R = Lo.rows[i];
-        if (t < T.a) return null;
-        const a = seg(t, T.a, T.a + 420, E.out);
-        const isCur = i === cur;
-        const dim = i < cur ? 0.78 : 1;
-        const dy = (1 - a) * 12;
-        const mk = T.m ? seg(t, T.m[0], T.m[1], E.lin) : 0;
-        const top = (R.preRow ? R.preY - Lo.ps * 1.05 : R.y - Lo.bs * 0.95) + dy;
-        const bot = (R.memoRow ? R.my + Lo.ms * 0.35 : R.y + Lo.bs * 0.3) + dy;
-        return (
-          <g key={i} opacity={a * dim}>
-            {isCur && <rect x={LEFT - 24} y={top} width={6} height={bot - top} rx={3} fill={C.bar} />}
-            {ln.pre && <MText x={LEFT} y={(R.preRow ? R.preY : R.y) + dy} s={ln.pre + (R.preRow ? "" : ":")} size={Lo.ps} weight={600} fill={C.soft} C={C} />}
-            <MText x={R.sx} y={R.y + dy} s={ln.s} size={Lo.bs} weight={560} fill={C.ink} C={C} />
-            {ln.memo && mk > 0 && (
-              <g>
-                <clipPath id={`${id}-m${i}`}><rect x={R.mx - 4} y={R.my - Lo.ms * 1.3 + dy} width={(mathWidth(ln.memo, Lo.ms, 600) + 12) * mk} height={Lo.ms * 1.8} /></clipPath>
-                <g clipPath={`url(#${id}-m${i})`}>
-                  <MText x={R.mx} y={R.my + dy} s={ln.memo} size={Lo.ms} weight={600} fill={C.red} C={C} />
-                </g>
-              </g>
-            )}
-          </g>
-        );
-      })}
-      {ans > 0 && (() => {
-        const w = mathWidth(it.ans, Lo.bs, 700) + Lo.bs * 2.6;
-        return (
-          <g opacity={ans}>
-            <rect x={LEFT - 8} y={Lo.ansY - Lo.bs * 1.05} width={w} height={Lo.bs * 1.5} rx={Lo.bs * 0.3} fill="none" stroke={C.gold} strokeWidth={3.5} />
-            <text x={LEFT + Lo.bs * 0.3} y={Lo.ansY - Lo.bs * 0.02} fontFamily={SANS} fontSize={Lo.bs * 0.7} fontWeight={800} fill={C.gold}>답</text>
-            <MText x={LEFT + Lo.bs * 1.7} y={Lo.ansY} s={it.ans} size={Lo.bs} weight={700} fill={C.ink} C={C} />
-          </g>
-        );
-      })()}
-      {it.fig && !Lo.noFig && (FIGS[it.fig.kind] ? FIGS[it.fig.kind]({ it, t, C, cur }) : <Figure it={it} t={t} cur={cur} C={C} />)}
+      <Board it={it} Lo={Lo} P={P} t={t} cur={cur} C={C} uid={uid} />
+      {F && <FigSlot spot={Lo.fig} box={figNatural(it)} draw={() => F.draw({ it, t, C, cur, ts: F.ts ? Math.min(1.3, Math.max(1, 0.95 / Lo.fig.s)) : 1 })} />}
     </g>
   );
 }
@@ -322,94 +238,26 @@ export function l10Scenes(setKey, sp = 1, stage = 0) {
     const sub = `${it.st}단계 ${L10_STAGE[it.st]}${L10_HIGH.has(it.st) ? " (고1)" : ""} · ${it.no}번`;
     return {
       key: `l10-${setKey}-${it.no}`, no: it.no, st: it.st, sub0: it.sub, dur: Math.round(l10Plan(it).dur / sp),
-      grp: `${it.st}단계`, marks: stepMarks(l10Plan(it), it.lines, sp),
-      title: { e: title, m: title }, sub: { e: sub, m: sub },
+      grp: `${it.st}단계`, marks: stepMarks(l10Plan(it), it.lines, sp), card: `${it.st}단계 · ${it.sub}`,
+      title: { e: title, m: title }, sub: { e: sub, m: sub }, tsz: "lesson",
       render: (mode, t, C) => <L10Art it={it} t={t * sp} C={C} />,
+      pane: (t, C, uid) => <L10Art it={it} t={t * sp} C={C} uid={uid} region={PANE_REGION} />,
     };
   });
   SCENES.set(k, list);
   return list;
 }
 
-/* ══════════ 액자 ══════════ */
-const LSK = "ash.display.lin10";
-const fixSet = (v) => (L10_SETS[v] ? +v : 1);
-const fixSp = (v) => (L10_SPEEDS.includes(v) ? v : 1);
-const fixSt = (v) => (Number.isInteger(v) && v >= 0 && v <= 10 ? v : 0);
-
+/* ══════════ 액자 — 조작은 해설 액자 공통 틀(frames/lesson.jsx) ══════════ */
+export const L10_SPEC = {
+  lsk: "ash.display.lin10", title: "일차함수 10단계 계산 해설", defSet: 1, cols: 5,
+  sets: [1, 2].map((k) => ({ key: k, name: L10_SETS[k].name, short: L10_SETS[k].name })),
+  stages: () => Array.from({ length: 10 }, (_, i) => i + 1).map((v) => ({
+    v, lab: `${v}단계 ${L10_STAGE[v]}${L10_HIGH.has(v) ? " (고1)" : ""}`, chip: `${v}단계${L10_HIGH.has(v) ? "(고1)" : ""}` })),
+  scenes: l10Scenes,
+};
 export function Lin10Frame(props) {
-  const { ui, poke, inert } = props;
-  const { Btn, Ic } = ui;
-  const [cfg, setCfg] = useState(() => { const o = lsRead(LSK) || {}; return { set: fixSet(o.set), sp: fixSp(o.sp), st: fixSt(o.st) }; });
-  useEffect(() => { lsWrite(LSK, cfg); }, [cfg]);
-  const [list, setList] = useState(false);
-  const [cur, setCur] = useState(0);
-  const api = useRef(null);
-  const scenes = useMemo(() => l10Scenes(cfg.set, cfg.sp, cfg.st), [cfg]);
-  const pickSet = useCallback((v) => setCfg((c) => ({ ...c, set: fixSet(v) })), []);
-  const pickSp = useCallback((v) => setCfg((c) => ({ ...c, sp: fixSp(v) })), []);
-  const pickSt = useCallback((v) => setCfg((c) => ({ ...c, st: fixSt(v) })), []);
-  useKeys({
-    l: () => { setList((v) => !v); poke(); },
-    b: () => { pickSet(cfg.set === 1 ? 2 : 1); poke(); },
-    s: () => { pickSp(cfg.sp === 1 ? 1.5 : 1); poke(); },
-    Escape: () => setList(false),
-  }, inert);
-  const extra = (
-    <>
-      <span className="dsp-sep" />
-      <Seg label="세트" value={cfg.set} options={[[1, "세트 1"], [2, "세트 2"]]} onChange={pickSet} poke={poke} />
-      <Seg label="빠르기" value={cfg.sp} options={[[1, "1×"], [1.5, "1.5×"]]} onChange={pickSp} poke={poke} />
-      <Btn title="번호 · 단계 목록 (L)" on={list} onClick={() => { setList((v) => !v); poke(); }}>
-        <Ic d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />
-      </Btn>
-      <span className="dsp-sep" />
-    </>
-  );
-  const pick = (i) => { api.current?.goTo(i); setList(false); poke(); };
-  const label = `일차함수 10단계 계산 해설 · ${L10_SETS[cfg.set].name}${cfg.st ? ` · ${cfg.st}단계` : ""}`;
-  return (
-    <>
-      <StoryPlayer key={`${cfg.set}|${cfg.sp}|${cfg.st}`} list={scenes} lsKey={`${LSK}.${cfg.set}.${cfg.st}`} label={label}
-        {...props} inert={inert || list} noMode extra={extra} apiRef={api} onIdx={setCur} scrub />
-      {list && <NumList scenes={scenes} cfg={cfg} cur={cur} onPick={pick} onStage={(v) => { pickSt(v); poke(); }} onClose={() => setList(false)} />}
-    </>
-  );
-}
-
-/** 번호 · 단계 목록 — 단계 칩을 고르면 그 단계만 돌고, 번호를 고르면 그 문항부터 */
-function NumList({ scenes, cfg, cur, onPick, onStage, onClose }) {
-  const lap = scenes.reduce((s, x) => s + x.dur, 0);
-  return (
-    <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
-      <div className="dsp-list-in" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="번호 · 단계 목록">
-        <style>{".l10-grid { grid-template-columns: repeat(5, 1fr); }"}</style>
-        <div className="dsp-list-h">
-          <b>일차함수 10단계 · {L10_SETS[cfg.set].name}</b>
-          <button type="button" onClick={onClose} aria-label="닫기">✕</button>
-        </div>
-        <div className="dsp-chips">
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
-            <button key={v} type="button" className={"dsp-chip" + (cfg.st === v ? " on" : "")} aria-pressed={cfg.st === v} onClick={() => onStage(v)}>
-              {v ? `${v}단계${L10_HIGH.has(v) ? "(고1)" : ""}` : "전체 200"}
-            </button>
-          ))}
-        </div>
-        <p className="dsp-gal-sub">
-          {cfg.st ? `${cfg.st}단계 ${L10_STAGE[cfg.st]} 20문항만 돌아요` : "1단계부터 10단계까지 차례로 돌아요"} · 한 바퀴 약 {Math.round(lap / 60000)}분 · 지금 {scenes[cur]?.no}번 · 번호를 고르면 그 문항부터
-        </p>
-        <div className="dsp-grid l10-grid">
-          {scenes.map((s, i) => (
-            <button key={s.key} type="button" className={"dsp-card" + (i === cur ? " on" : "")} onClick={() => onPick(i)}>
-              <span className="n">{s.no}</span>
-              <span className="e">{s.st}단계 · {s.sub0}</span>
-              <span className="m">{Math.round(s.dur / 1000)}초</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <LessonFrame spec={L10_SPEC} {...props} />;
 }
 
 /** 액자 목록의 작은 그림 — 세트 1 · 170번(9단계 넓이) 다 푼 순간 */

@@ -215,8 +215,9 @@ try {
 import { renderToStaticMarkup } from "react-dom/server";
 import { PALETTE } from ${F("draw.jsx")};
 import { FRAMES } from ${F("frames/index.js")};
-import { GraphArt, GraphThumb, graphScenes, layoutOf, GD_BOX } from ${F("frames/graphdraw.jsx")};
-export { FRAMES, graphScenes, layoutOf, GD_BOX };
+import { GraphArt, GraphThumb, graphScenes, layoutOf, paneLayoutOf, GD_BOX, GD_PANE } from ${F("frames/graphdraw.jsx")};
+export { FRAMES, graphScenes, layoutOf, paneLayoutOf, GD_BOX, GD_PANE };
+export const paneArt = (it, t, th) => renderToStaticMarkup(<svg><GraphArt it={it} t={t} C={PALETTE[th]} pane /></svg>);
 const svg = (el) => renderToStaticMarkup(<svg>{el}</svg>);
 export const art = (it, t, th) => svg(<GraphArt it={it} t={t} C={PALETTE[th]} />);
 export const scene = (sc, t, th) => svg(sc.render("m", t, PALETTE[th]));
@@ -261,6 +262,25 @@ export const thumb = (th) => svg(<GraphThumb C={PALETTE[th]} />);
       assert.ok(L.ansY + L.ss * 0.6 <= B.BOTTOM, `${tag} 아래로 넘침 ${Math.round(L.ansY)}`);
       for (const st of L.steps) for (const line of st.lines) for (const p of line) assert.ok(p.x + p.w <= B.RIGHT + 4, `${tag} 오른쪽으로 넘침`);
     }
+  });
+
+  test("듀얼 반쪽 판: 문제 · 지금 순서 칸 · 좌표평면이 판 안(한 칸 ≥ 32) · 그리기 오류 없음 · 정답 식", () => {
+    const B = m.GD_PANE;
+    let cnt = 0, umin = 99;
+    for (const [S, it] of ALL) {
+      const L = m.paneLayoutOf(it), tag = `${S} ${it.no}`, g = L.geo;
+      umin = Math.min(umin, g.u);
+      assert.ok(g.u >= 32, `${tag} 좌표평면이 너무 작음(한 칸 ${g.u.toFixed(1)})`);
+      assert.ok(g.y0 >= L.capTop + L.capH - 2 && g.y1 <= B.bottom + 2 && g.x0 >= B.left - 30 && g.x1 <= B.right + 30, `${tag} 좌표평면이 판 밖`);
+      for (const st of L.steps) for (const line of st.lines) for (const p of line) assert.ok(p.x + p.w <= B.right + 4, `${tag} 순서 칸 오른쪽으로 넘침`);
+      for (const L2 of L.qLines) assert.ok(L2.length > 0);
+      const P = gdPlan(it);
+      for (const t of [P.steps[0].a + 200, P.steps.at(-1).a + 200, P.dur - 1]) {
+        const s2 = m.paneArt(it, t, cnt++ % 2 ? "dark" : "light");
+        assert.ok(!BAD.test(s2), `${tag} 반쪽 t=${Math.round(t)}: ${bad(s2)}`);
+      }
+    }
+    console.log(`   반쪽 판 그림 ${cnt}장 · 가장 작은 한 칸 ${umin.toFixed(1)}`);
   });
 
   test("장면 목록(재생기 형식): 세트 × 빠르기 — 1.5× 는 길이가 2/3, 같은 순간을 그린다", () => {

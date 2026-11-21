@@ -8,7 +8,7 @@
 //   c 선 색 · f 칠 색(팔레트 이름) · fo 칠 진하기 · sw 선 굵기 · d 점선 · ar 화살촉(1 끝 · 2 양쪽) · dr 그리듯이 · hl 그 줄일 때 빛남
 //   mv { at, dx, dy, r, cx, cy } — 그때 옮긴다(잘라 붙이기 · 돌리기). o 진하기.
 // 같은 그림을 인쇄 문서(흑백)로도 찍는다 — frames/avfig.jsx(흑백 팔레트) → frames/avprint.js.
-import { MText } from "../draw.jsx";
+import { MText, mathWidth } from "../draw.jsx";
 import { seg, E } from "../core.js";
 import { l10Plan, lineAt } from "../lin10.js";
 
@@ -146,6 +146,54 @@ function drawEl(el, C, k, draw, glow, key) {
     default:
       return null;
   }
+}
+
+/**
+ * 그림이 실제로 차지하는 네모(무대 좌표) — 해설 판이 글자 옆 빈자리에 맞춰 줄여 넣을 때 쓴다(../board.js).
+ * 요소마다 끝 · 굵기 · 글자 폭을 재고, 옮기는(mv) 것은 옮기기 전 · 중간 · 뒤 자리를 모두 넣는다.
+ */
+const BOXES = new WeakMap();
+export function dslBox(f) {
+  if (BOXES.has(f)) return BOXES.get(f);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const put = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+  for (const el of f.els) {
+    const p = (el.sw ?? 3) / 2 + 2;
+    let r = null;
+    switch (el.k) {
+      case "L": { const h = el.ar ? 9 + (el.sw ?? 3) * 2.2 : 0; r = [Math.min(el.x, el.x2) - p - h, Math.min(el.y, el.y2) - p - h, Math.max(el.x, el.x2) + p + h, Math.max(el.y, el.y2) + p + h]; break; }
+      case "P": { const xs = el.pts.map((q) => q[0]), ys = el.pts.map((q) => q[1]), h = el.ar ? 9 + (el.sw ?? 3) * 2.2 : 0;
+        r = [Math.min(...xs) - p - h, Math.min(...ys) - p - h, Math.max(...xs) + p + h, Math.max(...ys) + p + h]; break; }
+      case "R": r = [el.x - p, el.y - p, el.x + el.w + p, el.y + el.h + p]; break;
+      case "C": case "A": r = [el.x - el.r - p, el.y - el.r - p, el.x + el.r + p, el.y + el.r + p]; break;
+      case "D": { const q = (el.r ?? 8) + 4; r = [el.x - q, el.y - q, el.x + q, el.y + q]; break; }
+      case "G": r = [el.x - p, el.y - p, el.x + el.cw * el.nx + p, el.y + el.ch * el.ny + p]; break;
+      case "B": r = [el.x - 2, el.y - 2, el.x + (el.w ?? 26) + 2, el.y + (el.h ?? 230) + 2]; break;
+      case "X": { const q = (el.s ?? 12) + 3; r = [el.x - q, el.y - q, el.x + q, el.y + q]; break; }
+      case "T": {
+        const z = el.z || 30, w = mathWidth(el.s, z, el.b || 600), a = ANCHOR[el.a] || "middle";
+        const lx = a === "start" ? el.x : a === "end" ? el.x - w : el.x - w / 2;
+        const fr = String(el.s).includes("{"), up = z * (fr ? 1.04 : 0.84), dn = z * (fr ? 0.52 : 0.26);
+        r = [lx - z * 0.12, el.y - up, lx + w + z * 0.12, el.y + dn]; break;
+      }
+      default: r = null;
+    }
+    if (!r) continue;
+    const corners = [[r[0], r[1]], [r[2], r[1]], [r[0], r[3]], [r[2], r[3]]];
+    for (const [x, y] of corners) put(x, y);
+    if (el.mv) {
+      for (const m of [0.5, 1]) {
+        const th = ((el.mv.r || 0) * m * Math.PI) / 180, cx = el.mv.cx || 0, cy = el.mv.cy || 0;
+        for (const [x, y] of corners) {
+          const rx = cx + (x - cx) * Math.cos(th) - (y - cy) * Math.sin(th), ry = cy + (x - cx) * Math.sin(th) + (y - cy) * Math.cos(th);
+          put(rx + (el.mv.dx || 0) * m, ry + (el.mv.dy || 0) * m);
+        }
+      }
+    }
+  }
+  const out = Number.isFinite(x0) ? { x0: x0 + FIG_BOX.x0 - 6, y0: y0 + FIG_BOX.y0 - 6, x1: x1 + FIG_BOX.x0 + 6, y1: y1 + FIG_BOX.y0 + 6 } : null;
+  BOXES.set(f, out);
+  return out;
 }
 
 export function FigDsl({ it, t, C }) {

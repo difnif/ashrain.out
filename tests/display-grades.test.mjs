@@ -171,7 +171,8 @@ try {
 import { renderToStaticMarkup } from "react-dom/server";
 import { PALETTE } from ${F("draw.jsx")};
 import { l10Plan } from ${F("lin10.js")};
-import { L10Art, layoutOf, L10_BOX } from ${F("frames/lin10.jsx")};
+import { L10Art, layoutOf } from ${F("frames/lin10.jsx")};
+import { STAGE_REGION as L10_BOX } from ${F("board.js")};
 import { FigDsl } from ${F("frames/figdsl.jsx")};
 import { gradeScenes, GradeThumb, GRADE_LABS } from ${F("frames/grade.jsx")};
 import { DocsMenu, AV_DOCS, avDownloadName, avFileBase } from ${F("frames/docsmenu.jsx")};
@@ -217,9 +218,9 @@ export const docsMenu = (g, meta, set) => renderToStaticMarkup(<DocsMenu g={g} m
     const B = m.L10_BOX;
     for (const { g, meta, set } of ALL) for (const it of set.items) {
       const L = m.layoutOf(it), tag = `${g.key}/${meta.key} ${it.no}`;
-      if (it.fig) assert.equal(L.noFig, false, `${tag} 글자가 그림 옆에 다 들어가지 않아 그림이 빠진다`);
-      assert.ok(L.ansY + L.bs * 0.75 <= B.BOTTOM, `${tag} 아래로 넘침 (${Math.round(L.ansY)})`);
-      for (const r of L.rows) assert.ok(r.sx + r.sW <= L.right + 2, `${tag} 줄이 오른쪽으로 넘침`);
+      if (it.fig) assert.equal(L.noFig, false, `${tag} 글자를 다 놓고 남은 자리에 그림이 들어가지 않는다`);
+      assert.ok(!L.scroll && L.bottom <= B.bottom + 1, `${tag} 아래로 넘침 (${Math.round(L.bottom)})`);
+      for (const r of L.rows) for (const q of r.parts) assert.ok(q.x + q.w <= B.right + 2, `${tag} 줄이 오른쪽으로 넘침`);
     }
   });
 
