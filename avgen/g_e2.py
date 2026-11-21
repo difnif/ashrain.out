@@ -1,6 +1,6 @@
 # 초2 — ① 받아올림 · 받아내림 세로셈 · ② 곱셈구구 — 묶어 세기에서 곱셈으로
 from core import *
-from fig import Fig, mv, Col
+from fig import Fig, mv, Col, fly
 
 def digits(n):
     return [int(c) for c in reversed(str(n))]
@@ -24,12 +24,13 @@ def add_lines(a, b, C=None, base=0):
             k = base + len(lines) - 1
             C.digit("r", p, s % 10, at=k)
             if s >= 10:
-                C.digit("carry", p + 1, 1, at=k, c="red", z=36, dl=300)
+                # 받아올린 1 — 일의 자리 합(14의 1)에서 윗자리 위로 날아오른다
+                fly(C.digit("carry", p + 1, 1, at=k, c="red", z=36, dl=300), C.x(p) - C.dx * 0.42 - C.x(p + 1), C.rows["r"] - C.rows["carry"], dl=420)
         carry = 1 if s >= 10 else 0
     if carry:
         lines.append(L("백의 자리 1", memo="받아올린 1을 그대로"))
         if C:
-            C.digit("r", n, 1, at=base + len(lines) - 1)
+            fly(C.digit("r", n, 1, at=base + len(lines) - 1), 0, C.rows["carry"] - C.rows["r"], dl=200)
     return lines
 
 def sub_lines(a, b, C=None, base=0):
@@ -44,7 +45,7 @@ def sub_lines(a, b, C=None, base=0):
                 k = base + len(lines) - 1
                 C.f.cross(C.x(p + 1), C.rows["a"] - 22, s=22, at=k)
                 C.digit("carry", p + 1, da[p + 1] - 1, at=k, c="red", z=36, dl=250)
-                C.digit("carry", p, x + 10, at=k, c="red", z=36, dl=450, dx=8)
+                fly(C.digit("carry", p, x + 10, at=k, c="red", z=36, dl=450, dx=8), C.x(p + 1) - (C.x(p) + 8), -40, dl=220)   # 빌려 온 10이 옆 자리 위에서 건너온다
             lines.append(L(f"{x + 10} − {y} = {x + 10 - y}"))
             if C:
                 C.digit("r", p, x + 10 - y, at=base + len(lines) - 1)
@@ -197,7 +198,8 @@ def set_b():
     def g1():
         a = R.randint(2, 9); b = R.randint(2, 6)
         f = Fig()
-        array(f, b, a, at="q")
+        # 「a + a + … 」 줄에서 묶음(줄)마다 더한 값이 차례로 붙는다 — a, 2a, 3a …
+        array(f, b, a, at="q", labels=[a * (i + 1) for i in range(b)], lab_at=1)
         f.text(330, 650, f"{a} × {b} = {a * b}", z=44, at=2)
         S.add(1, f"{a}씩 {b}묶음은 모두 몇 개인가요?", f"{a * b}개", f"{a}씩 {b}묶음 = {a}의 {b}배",
               [L(f"{a}씩 {b}묶음 = {a}의 {b}배"), L(" + ".join([str(a)] * b) + f" = {a * b}", memo=f"{b}번 더하기"), L(f"{a} × {b} = {a * b}")], f.out(), ap=str(a * b), key=f"{a}x{b}")

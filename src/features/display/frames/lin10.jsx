@@ -1,7 +1,7 @@
 // ashrain.out — 교실 모니터 「액자」: 일차함수 10단계 계산 해설 (frames/lin10.jsx)
 // 학원 프린트 「일차함수의 그래프 · 세트 1 · 2」(10단계 × 20문항)를 문항마다 한 장면으로 끝없이 돌린다.
 //   ① 문제 → ② 방침(한 줄) → ③ 판서: 계산 과정을 한 줄씩(지금 줄에 금빛 막대, 빨간 메모가 줄 뒤에 써지듯) → ④ 답
-//   9단계(색칠한 부분의 넓이)는 그림 — 판서 줄에 맞춰 밑변 · 높이 · 나눈 삼각형이 빛난다.
+//   9단계(색칠한 부분의 넓이)는 그림 — 축 → 두 직선이 그어져 P 에서 만나고, 판서 줄에 맞춰 밑변이 자라고 높이가 내려오고 나눈 삼각형이 칠해진다.
 //   경우의 수와 확률 100제(frames/cnt100.jsx)도 이 그리기를 쓴다 — it.planTag 가 있으면 방침 칸 이름을 바꾸고(사전식 「숫자 분석」),
 //   it.fig.kind 가 tree(사전식 — 카드로 순번 찾기, frames/lexcards.jsx · 받은 칸에 맞춰 그린다) · seats · grades · bag(줄 세우기 · 학년별 선발 · 주머니 공 — frames/c100fig.jsx)면 그 그림.
 //   기본기 해설(frames/basics.jsx — 초등 · 중등 · 고등 단원)도 이 그리기를 쓴다 — it.fig.kind === "dsl" 이면 그림 DSL(frames/figdsl.jsx).
@@ -11,7 +11,7 @@
 //   7 · 8단계(수직)는 고1 내용이라 표시를 붙인다.
 // 계산 · 박자표: ../lin10.js · 문항: ../lin10-items.js
 import { memo } from "react";
-import { MText, Arrow, Path, mathWidth, SANS, SERIF } from "../draw.jsx";
+import { MText, Arrow, Path, Draw, mathWidth, SANS, SERIF } from "../draw.jsx";
 import { seg, E, clamp } from "../core.js";
 import { L10_SETS, L10_STAGE, L10_HIGH, l10Plan, lineAt } from "../lin10.js";
 import { stepMarks } from "./scrub.jsx";
@@ -33,8 +33,8 @@ const FIG = { x0: 880, y0: 170, x1: 1540, y1: 850 };
 const FIGS = {
   tree: { draw: (p) => <LexCards {...p} />, flex: LEX_FIG },   // 사전식 — 카드로 순번 찾기(받은 칸에 맞춰 그린다)
   seats: { draw: (p) => <SeatsFig {...p} />, box: (f) => seatsBox(f) },
-  grades: { draw: (p) => <GradesFig {...p} />, box: (f) => gradesBox(f) },
-  bag: { draw: (p) => <BagFig {...p} />, box: (f) => bagBox(f) },
+  grades: { draw: (p) => <GradesFig {...p} />, box: (f, it) => gradesBox(f, it) },
+  bag: { draw: (p) => <BagFig {...p} />, box: (f, it) => bagBox(f, it) },
   dsl: { draw: (p) => <FigDsl {...p} />, box: (f) => dslBox(f) },          // 기본기 해설(frames/basics.jsx)
 };
 const AREA9 = { draw: (p) => <Figure {...p} />, box: (f) => area9Box(f), ts: true };
@@ -44,7 +44,7 @@ const NAT = new WeakMap();
 export function figNatural(it) {
   if (!it.fig || figOf(it).flex) return null;
   if (NAT.has(it)) return NAT.get(it);
-  const b = figOf(it).box(it.fig);
+  const b = figOf(it).box(it.fig, it);
   const out = b && b.x1 - b.x0 > 20 && b.y1 - b.y0 > 20 ? b : null;
   NAT.set(it, out);
   return out;
@@ -86,6 +86,8 @@ function clipThrough(p, q, xr, yr) {
   return [[p[0] + lo * dx, p[1] + lo * dy], [p[0] + hi * dx, p[1] + hi * dy]];
 }
 const fnum = (v) => (v < 0 ? "−" + -v : String(v));
+/** 선분을 앞에서부터 k 만큼 */
+const grow = (pq, k) => [pq[0], [pq[0][0] + (pq[1][0] - pq[0][0]) * k, pq[0][1] + (pq[1][1] - pq[0][1]) * k]];
 
 /** ts — 글자 크기 배수(그림을 줄여 넣을 때 글자는 덜 줄도록) */
 function Figure({ it, t, cur, C, ts = 1 }) {
@@ -173,8 +175,9 @@ function Figure({ it, t, cur, C, ts = 1 }) {
     const foot = f.kind === "X" ? [f.P[0], 0] : [0, f.P[1]];
     hi = (
       <g>
-        <Path pts={pts([f.A, f.B])} stroke={C.gold} sw={12} o={0.75 * Math.max(glow(0), done ? 0.5 : 0)} />
-        {(cur >= 1 || done) && <Path pts={pts([f.P, foot])} stroke={C.red} sw={4} dash="10 8" o={Math.max(k(1), done ? 1 : 0)} />}
+        {/* 밑변은 A 에서 B 로 자라고, 높이는 P 에서 발까지 내려온다 */}
+        <Path pts={grow(pts([f.A, f.B]), k(0) || (cur > 0 || done ? 1 : 0))} stroke={C.gold} sw={12} o={0.75 * Math.max(glow(0) ? 1 : 0, done || cur > 0 ? 0.5 : 0)} />
+        {(cur >= 1 || done) && <Path pts={grow(pts([f.P, foot]), Math.max(k(1), done ? 1 : 0))} stroke={C.red} sw={4} dash="10 8" />}
         {(cur >= 1 || done) && (
           <MText x={hTag.x} y={hTag.y} s="높이" size={28 * ts} weight={700} fill={C.red} halo={C.halo} anchor={hTag.anchor} opacity={Math.max(k(1), done ? 1 : 0)} C={C} />
         )}
@@ -183,9 +186,12 @@ function Figure({ it, t, cur, C, ts = 1 }) {
   } else {
     hi = (
       <g>
-        <Path pts={pts([O, f.B, f.P])} closed fill={C.coral} fo={0.32} o={Math.max(glow(1), 0)} />
-        <Path pts={pts([O, f.A, f.P])} closed fill={C.teal} fo={0.32} o={Math.max(glow(2), 0)} />
-        {(cur >= 0 || done) && <Path pts={pts([O, f.P])} stroke={C.red} sw={4} dash="10 8" o={Math.max(cur >= 0 ? k(0) : 0, done ? 1 : 0)} />}
+        {/* 선분 OP 로 둘로 나누고(그어짐), 조각마다 칠이 번진다 */}
+        <Path pts={pts([O, f.B, f.P])} closed fill={C.coral} fo={0.32 * Math.max(glow(1), 0)} stroke="none" />
+        <Draw pts={pts([O, f.B, f.P])} p={glow(1)} closed stroke={C.coral} sw={3} />
+        <Path pts={pts([O, f.A, f.P])} closed fill={C.teal} fo={0.32 * Math.max(glow(2), 0)} stroke="none" />
+        <Draw pts={pts([O, f.A, f.P])} p={glow(2)} closed stroke={C.teal} sw={3} />
+        {(cur >= 0 || done) && <Path pts={grow(pts([O, f.P]), Math.max(cur >= 0 ? k(0) : 0, done ? 1 : 0))} stroke={C.red} sw={4} dash="10 8" />}
       </g>
     );
   }
@@ -193,19 +199,23 @@ function Figure({ it, t, cur, C, ts = 1 }) {
     ? <MText key={"x" + v} x={X(v)} y={Y(0) + 8 + 30 * ts} s={fnum(v)} size={30 * ts} weight={600} anchor="middle" fill={C.ink} halo={C.halo} C={C} />
     : <MText key={"y" + v} x={X(0) - 14} y={Y(v) + 10 * ts} s={fnum(v)} size={30 * ts} weight={600} anchor="end" fill={C.ink} halo={C.halo} C={C} />;
   const ax = f.kind === "X" ? [lbl(f.A[0], "x"), lbl(f.B[0], "x")] : f.kind === "Y" ? [lbl(f.A[1], "y"), lbl(f.B[1], "y")] : [lbl(f.A[1], "y"), lbl(f.B[0], "x")];
+  // 처음 그리기: 축이 뻗고 → 두 직선이 A · B 에서 P 쪽으로 그어지고 → 색칠한 곳이 든다
+  const axK = seg(t, 150, 750, E.io), lnK = seg(t, 600, 1400, E.io), regK = seg(t, 1300, 1900, E.sine);
+  const axP = (a, b) => [a, [a[0] + (b[0] - a[0]) * axK, a[1] + (b[1] - a[1]) * axK]];
+  const toward = (L, A) => (Math.hypot(L[0][0] - A[0], L[0][1] - A[1]) < Math.hypot(L[1][0] - A[0], L[1][1] - A[1]) ? L : [L[1], L[0]]);
   return (
     <g opacity={o}>
-      <Path pts={pts(f.poly)} closed fill={C.gold} fo={0.3} stroke="none" />
+      <Path pts={pts(f.poly)} closed fill={C.gold} fo={0.3 * regK} stroke="none" />
       {hi}
-      <Arrow p={[X(F.xr[0]), Y(0)]} q={[X(F.xr[1]), Y(0)]} stroke={C.ink} sw={3} h={18} />
-      <Arrow p={[X(0), Y(F.yr[0])]} q={[X(0), Y(F.yr[1])]} stroke={C.ink} sw={3} h={18} />
+      {axK > 0.05 && <Arrow p={axP([X(F.xr[0]), Y(0)], [X(F.xr[1]), Y(0)])[0]} q={axP([X(F.xr[0]), Y(0)], [X(F.xr[1]), Y(0)])[1]} stroke={C.ink} sw={3} h={18} />}
+      {axK > 0.05 && <Arrow p={axP([X(0), Y(F.yr[0])], [X(0), Y(F.yr[1])])[0]} q={axP([X(0), Y(F.yr[0])], [X(0), Y(F.yr[1])])[1]} stroke={C.ink} sw={3} h={18} />}
       <text x={X(F.xr[1]) - 6} y={Y(0) + 40} fontFamily={SERIF} fontStyle="italic" fontSize={34} fill={C.ink}>x</text>
       <text x={X(0) + 16} y={Y(F.yr[1]) + 22} fontFamily={SERIF} fontStyle="italic" fontSize={34} fill={C.ink}>y</text>
       <text x={X(0) - 12} y={Y(0) + 32} fontFamily={SERIF} fontStyle="italic" fontSize={28} fill={C.soft} textAnchor="end">O</text>
-      <Path pts={pts(lA)} stroke={C.sky} sw={4.5} />
-      <Path pts={pts(lB)} stroke={C.sky} sw={4.5} />
+      <Draw pts={toward(pts(lA), [X(f.A[0]), Y(f.A[1])])} p={lnK} stroke={C.sky} sw={4.5} />
+      <Draw pts={toward(pts(lB), [X(f.B[0]), Y(f.B[1])])} p={lnK} stroke={C.sky} sw={4.5} />
       {name(names[0], "ℓ")}{name(names[1], "m")}
-      {[f.A, f.B, f.P].map((v, i) => <circle key={i} cx={X(v[0])} cy={Y(v[1])} r={7} fill={C.ink} />)}
+      {[f.A, f.B, f.P].map((v, i) => <circle key={i} cx={X(v[0])} cy={Y(v[1])} r={7 * Math.max(0, E.back(i < 2 ? seg(t, 500, 860, E.lin) : regK))} fill={C.ink} />)}
       {ax}
       <MText x={rt ? pBox[0] : pBox[2] - 8} y={pBox[1] + pZ * 0.88} s={pTxt} size={pZ} weight={700} anchor={rt ? "start" : "end"} fill={C.ink} halo={C.halo} C={C} />
     </g>
@@ -221,8 +231,8 @@ export function L10Art({ it, t, C, uid = "", region = STAGE_REGION }) {
   return (
     <g>
       <Board it={it} Lo={Lo} P={P} t={t} cur={cur} C={C} uid={uid} />
-      {F && F.flex && <FigSlot spot={Lo.fig} flex draw={(box) => F.draw({ it, t, C, cur, box })} />}
-      {F && !F.flex && <FigSlot spot={Lo.fig} box={figNatural(it)} draw={() => F.draw({ it, t, C, cur, ts: F.ts ? Math.min(1.3, Math.max(1, 0.95 / Lo.fig.s)) : 1 })} />}
+      {F && F.flex && <FigSlot spot={Lo.fig} flex draw={(box) => F.draw({ it, t, C, cur, box, uid: `${uid}${region.key}` })} />}
+      {F && !F.flex && <FigSlot spot={Lo.fig} box={figNatural(it)} draw={() => F.draw({ it, t, C, cur, uid: `${uid}${region.key}`, ts: F.ts ? Math.min(1.3, Math.max(1, 0.95 / Lo.fig.s)) : 1 })} />}
     </g>
   );
 }
