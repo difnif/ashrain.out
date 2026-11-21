@@ -197,14 +197,24 @@ export const framePick = (spec, pick, th) => renderToStaticMarkup(<LessonFrame s
         has++;
         const fb = [f.x, f.y, f.x + f.w, f.y + f.h];
         assert.ok(fb[0] >= R.left - 50 && fb[2] <= R.right + 1 && fb[1] >= L.qBottom && fb[3] <= R.bottom + 1, `${tag} 그림이 판 밖 ${fb.map(Math.round)}`);
-        for (const b of L.boxes) assert.ok(fb[0] >= b[2] - 1 || fb[2] <= b[0] + 1 || fb[1] >= b[3] - 1 || fb[3] <= b[1] + 1, `${tag} 그림이 글자와 겹침`);
+        // 흐르는 판(꼭 보여야 하는 그림 — 사전식 카드)은 글자가 흐르는 칸(잘라 보이는 곳)과 그림이 겹치지 않으면 된다
+        const S = L.scroll;
+        const boxes = S ? L.boxes.filter((b) => b[1] < S.bottom && b[3] > S.top).map((b) => [b[0], Math.max(b[1], S.top), b[2], Math.min(b[3], S.bottom)]) : L.boxes;
+        const textR = Math.max(...L.boxes.filter((b) => b[1] >= L.qBottom - 2).map((b) => b[2]));     // 문제 아래 글자(방침 · 판서 · 답)의 오른쪽 끝
+        if (S) assert.ok(fb[1] >= S.bottom - 1 || fb[0] >= textR - 1, `${tag} 흐르는 글자 칸과 그림이 겹침`);
+        else for (const b of boxes) assert.ok(fb[0] >= b[2] - 1 || fb[2] <= b[0] + 1 || fb[1] >= b[3] - 1 || fb[3] <= b[1] + 1, `${tag} 그림이 글자와 겹침`);
         assert.ok(f.w * f.h <= m.FIG_AREA * screen + 1, `${tag} 그림이 화면의 25%를 넘음 (${Math.round((100 * f.w * f.h) / screen)}%)`);
         assert.ok(f.s >= m.FIG_MIN - 1e-9 && f.s <= 1 + 1e-9, `${tag} 배율 ${f.s}`);
-        assert.ok(!L.scroll && !L.two, `${tag} 흐르거나 두 단인 판에 그림`);
+        assert.ok(!L.two, `${tag} 두 단인 판에 그림`);
+        if (L.scroll) assert.ok(fam === "cnt100" && it.fig.kind === "tree", `${tag} 흐르는 판에 그림(꼭 보여야 하는 사전식 카드만)`);
         areaSum += (f.w * f.h) / screen;
       }
       if (want) rep.push(`${fam} ${R.key} ${has}/${want}(평균 ${Math.round((100 * areaSum) / Math.max(1, has))}%)`);
       if (R.key === "stage" && want) assert.ok(has >= want * 0.9, `${fam} 단일 모드에서 그림이 빠진 문항이 많다 ${want - has}`);
+      if (fam === "cnt100") {                        // 사전식 카드는 꼭 — 단일 · 반쪽 모두
+        const lex = items.filter((it) => it.fig?.kind === "tree");
+        assert.ok(lex.every((it) => lay(it, R).fig), `사전식 카드 그림이 빠진 문항 (${R.key})`);
+      }
     }
     console.log(`   ${rep.join(" · ")}`);
   });
@@ -230,7 +240,7 @@ export const framePick = (spec, pick, th) => renderToStaticMarkup(<LessonFrame s
       assert.ok(L.bottom - offEnd <= S.bottom + 1, `${tag} 답 칸이 보이지 않음`);
     }
     console.log(`   두 단 ${two} · 흐르는 판 ${flow} · 줄 확인 ${checks}`);
-    const stageFlow = FAMS.reduce((a, [, items, lay]) => a + items.filter((it) => lay(it, m.STAGE_REGION).scroll).length, 0);
+    const stageFlow = FAMS.reduce((a, [, items, lay]) => a + items.filter((it) => { const L = lay(it, m.STAGE_REGION); return L.scroll && !L.fig; }).length, 0);
     assert.ok(stageFlow <= 8, `무대에서 흐르는 판이 많다(${stageFlow})`);
   });
 
