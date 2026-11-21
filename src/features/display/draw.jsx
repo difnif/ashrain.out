@@ -86,7 +86,7 @@ export function textW(s, size, weight = 500, italic = false, serif = false) {
 }
 
 /* ══════════ 수식 글자 ══════════ */
-// 표기: ‹강조› · {분자/분모} · ^{위 첨자} · _{아래 첨자} · √{근호} · *S*(대문자 이탤릭) · 홀로 선 소문자 라틴 글자와 π 는 자동 이탤릭(세리프).
+// 표기: ‹강조› · {분자/분모} · ^{위 첨자} · _{아래 첨자} · √{근호} · *S*(대문자 이탤릭) · `m`(바로 선 글자 — 단위) · 홀로 선 소문자 라틴 글자와 π 는 자동 이탤릭(세리프).
 //       cm, cm² 처럼 붙은 글자는 바로 선다. ² ³ 은 유니코드 위 첨자를 그대로 쓴다.
 //       ⟪아이콘⟫ — 글꼴에 없을 수 있는 기호는 그림으로: ⟪○⟫ ⟪△⟫ ⟪□⟫ ⟪●⟫ ⟪✓⟫ ⟪×⟫, 주사위 눈 ⟪d1⟫~⟪d6⟫.
 //       뒤에 색 글자를 붙이면 칠한다(r 빨강 · b 파랑 · y 노랑 · g 초록 · p 보라 · t 청록 · k 글자색): ⟪○r⟫ ⟪●b⟫
@@ -106,6 +106,10 @@ function runs(s, accent) {
     if (ch === "*") {
       const j = s.indexOf("*", i + 1);
       if (j > i) { flush(); out.push({ s: s.slice(i + 1, j), it: true, ac: accent }); i = j; continue; }
+    }
+    if (ch === "`") {        // `m` · `g` — 홀로 선 소문자라도 바로 세운다(단위)
+      const j = s.indexOf("`", i + 1);
+      if (j > i) { buf += s.slice(i + 1, j); i = j; continue; }
     }
     if (ch === "π" || (/[a-z]/.test(ch) && !isLat(s[i - 1]) && !isLat(s[i + 1]))) {
       flush(); out.push({ s: ch, it: true, ac: accent }); continue;
