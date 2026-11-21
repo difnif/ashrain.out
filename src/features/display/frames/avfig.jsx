@@ -1,4 +1,4 @@
-// ashrain.out — 학년별 해설 인쇄용 그림: 화면 그림(그림 DSL)을 흑백 SVG 글자로 (frames/avfig.jsx)
+// ashrain.out — 기본기 해설 인쇄용 그림: 화면 그림(그림 DSL)을 흑백 SVG 글자로 (frames/avfig.jsx)
 // 브라우저에서만 쓴다(앱의 인쇄 창 · scripts/av-files.mjs 가 띄운 Chromium) — 글자 폭을 캔버스로 재야 화면과 같은 자리에 놓인다.
 //   figSvg(it, "q")   문제 때 모습(문제지 — 그림을 보고 푸는 문항 qf)
 //   figSvg(it, "end") 다 푼 모습(해설지)

@@ -44,7 +44,7 @@ import { AreaFrame, AreaThumb } from "../features/display/frames/area.jsx";
 import { Cnt100Frame, Cnt100Thumb } from "../features/display/frames/cnt100.jsx";
 import { hanoiTimeline } from "../features/display/hanoi";
 import { CURIO_LABS, CurioThumb } from "../features/display/frames/curio.jsx";
-import { GRADE_LABS, GradeThumb } from "../features/display/frames/grade.jsx";
+import { BASIC_LABS, BasicsThumb } from "../features/display/frames/basics.jsx";
 import { DSP_CSS, Btn, Ic, FrameIc } from "../features/display/stage-ui.jsx";
 import { avOfCat } from "../lib/av.js";
 
@@ -343,7 +343,7 @@ export function Stage({ av = null }) {
       <div className="dsp-frame">
         <div className="dsp-paper" />
         {view ? (
-          <FrameStage key={view} fkey={view} C={C} ctl={ctl} poke={poke} isFs={isFs} toggleFs={toggleFs}
+          <FrameStage key={view} fkey={view} pick={av?.frame === view ? av.set : null} C={C} ctl={ctl} poke={poke} isFs={isFs} toggleFs={toggleFs}
             onTheme={toggleThm} onGallery={() => setGal(true)} onExit={closeFrame} inert={gal} mode={mode} onMode={flipMode} />
         ) : (<>
         <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
@@ -483,7 +483,7 @@ function FrameGallery({ C, mode, view, onPick, onClose, onScenes }) {
                 {f.key === "lin10" && <Lin10Thumb C={C} />}
                 {f.key === "area" && <AreaThumb C={C} />}
                 {f.key === "cnt100" && <Cnt100Thumb C={C} />}
-                {GRADE_LABS[f.key] && <GradeThumb gkey={f.key} C={C} />}
+                {BASIC_LABS[f.key] && <BasicsThumb fkey={f.key} C={C} />}
                 {CURIO_LABS[f.key] && <CurioThumb fkey={f.key} C={C} mode={mode} />}
               </svg>
               <span className="k">{f.lab ? "실험" : f.story ? "장면 묶음" : f.lesson ? "해설" : "그림"}</span>
@@ -509,7 +509,7 @@ const AV_ROT_CSS = `.av-rot { position: absolute; left: 50%; bottom: max(18px, e
 @media (orientation: portrait) and (max-width: 900px) { .av-rot { display: block; } }`;
 function AvGallery({ C, mode, av, onClose, onExit }) {
   if (!THUMB_TL.hanoi) THUMB_TL.hanoi = hanoiTimeline(5, "fast");
-  const items = avOfCat(av.cat);
+  const items = av.level && av.cat === "sol" ? avOfCat(av.cat).filter((x) => x.level === av.level) : avOfCat(av.cat);
   return (
     <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()}>
       <div className="dsp-list-in dsp-gal-in">
@@ -520,7 +520,7 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
         <p className="dsp-gal-sub">고르면 바로 돌기 시작해요.</p>
         <div className="dsp-gal">
           {items.map((it) => {
-            const f = it.frame ? FRAMES.find((x) => x.key === it.frame) : null;
+            const f = it.frame && !it.set ? FRAMES.find((x) => x.key === it.frame) : null;      // 기본기 단원(it.set)은 아이콘만
             return (
               <button key={it.key} type="button" className={"dsp-fcard" + (av.key === it.key ? " on" : "")}
                 onClick={() => { if (it.key === av.key) onClose(); else location.hash = `#/av/${it.key}`; }}>
@@ -534,9 +534,8 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
                   {it.key === "lin10" && <Lin10Thumb C={C} />}
                   {it.key === "area" && <AreaThumb C={C} />}
                   {it.key === "cnt100" && <Cnt100Thumb C={C} />}
-                  {GRADE_LABS[it.key] && <GradeThumb gkey={it.key} C={C} />}
                   {CURIO_LABS[it.key] && <CurioThumb fkey={it.key} C={C} mode={mode} />}
-                  {!f && <text x={W / 2} y={560} textAnchor="middle" fontSize="220">{it.icon}</text>}
+                  {(!f || it.set) && <text x={W / 2} y={560} textAnchor="middle" fontSize="220">{it.icon}</text>}
                 </svg>
                 <span className="k">{it.kind}</span>
                 <span className="t">{it.title}{av.key === it.key && <small>지금 보는 중</small>}</span>
@@ -555,7 +554,7 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
 
 /* ══════════ 액자 무대 ══════════ */
 const UI = { Btn, Ic, FrameIc };
-const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame, lin10: Lin10Frame, area: AreaFrame, cnt100: Cnt100Frame, ...GRADE_LABS, ...CURIO_LABS };
+const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame, lin10: Lin10Frame, area: AreaFrame, cnt100: Cnt100Frame, ...BASIC_LABS, ...CURIO_LABS };
 function FrameStage({ fkey, ...rest }) {
   if (fkey === "hanoi") return <HanoiFrame ui={UI} {...rest} />;
   if (LABS[fkey]) { const Lab = LABS[fkey]; return <Lab ui={UI} {...rest} />; }

@@ -9,5 +9,5 @@ export default function AvPlayer({ hash }) {
   const it = avItem(key);
   if (!it) { location.replace("#/study/av"); return null; }
   const cat = AV_CATS.find((c) => c.id === it.cat);
-  return <Stage key={it.key} av={{ key: it.key, cat: it.cat, catTitle: cat?.title, frame: it.frame, grp: it.grp, title: it.title }} />;
+  return <Stage key={it.key} av={{ key: it.key, cat: it.cat, catTitle: cat?.title, frame: it.frame, grp: it.grp, title: it.title, set: it.set || null, level: it.level || null }} />;
 }

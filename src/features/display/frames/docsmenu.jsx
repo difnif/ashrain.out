@@ -1,6 +1,6 @@
-// ashrain.out — 학년별 기본기 해설의 오른쪽 위 📄 문서 (frames/docsmenu.jsx)
+// ashrain.out — 기본기 해설의 오른쪽 위 📄 문서 (frames/docsmenu.jsx)
 // 누르면 아래로 펼쳐진다: ☐ 문제지 · ☐ 해설지 · ☐ 빠른 정답 · ☐ OMR → [확인] → [개별 다운] | [압축 다운]
-//   PDF 는 Storage 공개 버킷 concept-sets 의 av/<학년>/<세트>/<문서>.pdf (main 머지 때 워크플로 push-av-files 가
+//   PDF 는 Storage 공개 버킷 concept-sets 의 av/<단원>/<문서>.pdf (main 머지 때 워크플로 push-av-files 가
 //   scripts/av-files.mjs 로 찍어 올린다 — 저장소에는 PDF 를 넣지 않는다). 쪽 수 · 크기는 public/av-sets/files.json.
 //   받은 파일 이름은 앱이 붙인다(blob + a.download): 「초1-10만들기-문제지.pdf」 · ZIP 「초1-10만들기.zip」(압축 없는 ZIP, 한글 이름 UTF-8).
 //   PDF 가 아직 없으면(머지 전 · 미리보기) 같은 문서를 그 자리에서 만들어 인쇄 창으로 연다 — 문제지 · 해설지 · 빠른 정답은
@@ -20,9 +20,9 @@ export const AV_DOCS = [
   { id: "omr", label: "OMR", suf: "OMR" },
 ];
 const PICK_KEY = "ash.av.docs";
-export const avPdfUrl = (gk, sk, doc) => `${FILES_BASE}/av/${gk}/${sk}/${doc}.pdf`;
-export const avFileBase = (g, meta) => `${g.grade}-${String(meta.short).replace(/[\s·/\\:*?"<>|]+/g, "")}`;
-export const avDownloadName = (g, meta, doc) => `${avFileBase(g, meta)}-${(AV_DOCS.find((d) => d.id === doc) || AV_DOCS[0]).suf}.pdf`;
+export const avPdfUrl = (id, doc) => `${FILES_BASE}/av/${id}/${doc}.pdf`;
+export const avFileBase = (meta) => `${meta.level}-${String(meta.short).replace(/[\s·/\\:*?"<>|()]+/g, "")}`;
+export const avDownloadName = (meta, doc) => `${avFileBase(meta)}-${(AV_DOCS.find((d) => d.id === doc) || AV_DOCS[0]).suf}.pdf`;
 
 export { avCard, fmtCode };
 
@@ -59,18 +59,18 @@ async function fetchPdf(url) {
 const fmtBytes = (n) => (!n ? "" : n >= 1e6 ? `${(n / 1e6).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1e3))}KB`);
 
 /** 고른 문서를 한 인쇄 창으로 (PDF 가 아직 없을 때) — set: 세트 자료({ items, pp, note, tips }) */
-export async function avPrint(g, meta, set, picks, win) {
+export async function avPrint(meta, set, picks, win) {
   const parts = [];
   for (const d of AV_DOCS) {
     if (!picks.includes(d.id)) continue;
-    if (d.id === "omr") { parts.push({ kind: "omr", html: cardHtml(avCard(g, meta, set.items)) }); continue; }
+    if (d.id === "omr") { parts.push({ kind: "omr", html: cardHtml(avCard(meta, set.items)) }); continue; }
     await wait(0);                                       // 그림 100장 — 화면이 멈춘 듯 보이지 않게 한 문서씩 숨 돌리기
-    parts.push({ kind: "doc", cls: "cs-p", html: avDocHtml(g, meta, set, d.id, figSvg) });
+    parts.push({ kind: "doc", cls: "cs-p", html: avDocHtml(meta, set, d.id, figSvg) });
   }
-  fillPrintWindow(win, composePrint(parts, `${avFileBase(g, meta)} ${AV_DOCS.filter((d) => picks.includes(d.id)).map((d) => d.label).join(" · ")}`));
+  fillPrintWindow(win, composePrint(parts, `${avFileBase(meta)} ${AV_DOCS.filter((d) => picks.includes(d.id)).map((d) => d.label).join(" · ")}`));
 }
 
-export function DocsMenu({ g, meta, set, open, onOpen, poke }) {
+export function DocsMenu({ meta, set, open, onOpen, poke }) {
   const items = set.items;
   const [picks, setPicks] = useState(readPick);
   const [step, setStep] = useState("pick");          // pick → how → busy → done | nofile
@@ -82,7 +82,7 @@ export function DocsMenu({ g, meta, set, open, onOpen, poke }) {
     try { localStorage.setItem(PICK_KEY, JSON.stringify(n)); } catch { /* 무시 */ }
     return n;
   });
-  const info = (id) => files?.sets?.[`${g.key}/${meta.key}`]?.[id] || null;
+  const info = (id) => files?.sets?.[meta.id]?.[id] || null;
   const order = AV_DOCS.map((d) => d.id).filter((id) => picks.includes(id));
 
   const down = async (how) => {
@@ -91,10 +91,10 @@ export function DocsMenu({ g, meta, set, open, onOpen, poke }) {
       const out = [];
       for (let i = 0; i < order.length; i++) {
         setMsg(`받는 중… ${i + 1}/${order.length}`);
-        out.push({ name: avDownloadName(g, meta, order[i]), data: await fetchPdf(avPdfUrl(g.key, meta.key, order[i])) });
+        out.push({ name: avDownloadName(meta, order[i]), data: await fetchPdf(avPdfUrl(meta.id, order[i])) });
       }
       if (how === "zip") {
-        saveBlob(new Blob([zipStore(out)], { type: "application/zip" }), `${avFileBase(g, meta)}.zip`);
+        saveBlob(new Blob([zipStore(out)], { type: "application/zip" }), `${avFileBase(meta)}.zip`);
         setMsg(`${out.length}개 문서를 압축 파일 하나로 받았어요`);
       } else {
         for (let i = 0; i < out.length; i++) {
@@ -107,7 +107,7 @@ export function DocsMenu({ g, meta, set, open, onOpen, poke }) {
     } catch (e) {
       if (e.message === "NET") {
         for (let i = 0; i < order.length; i++) {          // 받아 오기가 막히면 서버가 이름을 붙이는 링크로 하나씩
-          clickLink(`${avPdfUrl(g.key, meta.key, order[i])}?download=${encodeURIComponent(avDownloadName(g, meta, order[i]))}`);
+          clickLink(`${avPdfUrl(meta.id, order[i])}?download=${encodeURIComponent(avDownloadName(meta, order[i]))}`);
           await wait(900);
         }
         setMsg(`${order.length}개 파일을 하나씩 받아요`);
@@ -118,7 +118,7 @@ export function DocsMenu({ g, meta, set, open, onOpen, poke }) {
   const printNow = () => {
     const win = openPrintWindow();                       // 누르는 순간 창부터(팝업 차단 회피)
     if (!win) { setMsg("새 창이 막혔어요 — 이 사이트의 팝업을 허용해 주세요"); return; }
-    avPrint(g, meta, set, order, win).catch((e) => failPrintWindow(win, e?.message || "인쇄를 준비하지 못했어요"));
+    avPrint(meta, set, order, win).catch((e) => failPrintWindow(win, e?.message || "인쇄를 준비하지 못했어요"));
   };
   const stop = (e) => e.stopPropagation();
   return (
@@ -132,7 +132,7 @@ export function DocsMenu({ g, meta, set, open, onOpen, poke }) {
       </button>
       {open && (
         <div className="gdoc-pop" role="dialog" aria-label="문서 받기">
-          <div className="gdoc-h"><b>문서</b><small>{g.grade} · {meta.title} · {items.length}제{meta.code ? ` · 코드 ${fmtCode(meta.code)}` : ""}</small></div>
+          <div className="gdoc-h"><b>문서</b><small>{meta.span} · {meta.title} · {items.length}제{meta.code ? ` · 코드 ${fmtCode(meta.code)}` : ""}</small></div>
           {step === "pick" && (<>
             <div className="gdoc-list" role="group" aria-label="받을 문서 고르기">
               {AV_DOCS.map((d) => {

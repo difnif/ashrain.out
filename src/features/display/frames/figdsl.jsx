@@ -1,4 +1,4 @@
-// ashrain.out — 해설 액자 오른쪽 그림: 그림 DSL (frames/figdsl.jsx) — 학년별 기본기 해설(frames/grade.jsx)이 쓴다
+// ashrain.out — 해설 액자 오른쪽 그림: 그림 DSL (frames/figdsl.jsx) — 기본기 해설(frames/basics.jsx)이 쓴다
 // 생성기(프로젝트 SRC-학년별해설-*.py 의 fig.py)가 좌표를 다 계산해 넘기고, 여기서는 판서 박자(../lin10.js 의 l10Plan)에 맞춰 그리기만 한다.
 //   it.fig = { kind: "dsl", els: [요소] } — 그림 칸 660 × 680(무대 x 880 ~ 1540 · y 170 ~ 850, 아래로 갈수록 y 가 커짐)
 //   요소 k: L 선 · P 꺾은선/다각형 · R 직사각형 · C 원 · D 점 · T 글자(무대 수식 문법) · A 각 표시(a0 → a1 도, 동쪽 0 · 시계 반대 +)

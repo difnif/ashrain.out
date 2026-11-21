@@ -1,5 +1,6 @@
-// node tests/display-board.test.mjs — 해설 액자 열여섯의 공통 틀(frames/lesson.jsx)과 글자 판 배치(board.js) 검산. 실패 시 exit 1.
-// ① 조작이 모두 같다: 해설 액자(lesson) 열여섯이 같은 틀로 단일 · 듀얼을 그리고, 같은 단추(보기 · 빠르기 0.75× ~ 2× · 목록 · 두 막대 · ⇄)를 가진다.
+// node tests/display-board.test.mjs — 해설 액자의 공통 틀(frames/lesson.jsx)과 글자 판 배치(board.js) 검산. 실패 시 exit 1.
+// ① 조작이 모두 같다: 해설 액자(lesson — 일차함수 셋 · 경우의 수 100제 · 기본기 해설 초등 · 중등 · 고등)가 같은 틀로 단일 · 듀얼을 그리고,
+//    같은 단추(보기 · 세트(기본기는 단원 목록) · 빠르기 0.75× ~ 2× · 목록 · 두 막대 · ⇄)를 가진다.
 // ② 글자 크기: 두 벌(기본 · 촘촘)뿐 — 판서 37 이상 · 문제 36 이상(약 1 m 에서 읽히게), 방침 칸 글자도 같은 벌.
 // ③ 그림: 글자를 다 놓고 남은 빈자리에 — 글자 칸과 겹치지 않고, 화면(단일 무대 · 듀얼 반쪽)의 25% 이하, 배율 0.6 이상, 판 안.
 // ④ 넘치는 판: 무대는 두 단, 그래도 넘치면(또 반쪽 판) 판서가 흐른다 — 흐르는 동안 지금 줄이 늘 보이는 칸 안에 있다.
@@ -23,7 +24,6 @@ try {
   const { build } = await import(pathToFileURL(path.join(ROOT, "node_modules/esbuild/lib/main.js")).href);
   const entry = path.join(tmp, "entry.jsx");
   const F = (p) => JSON.stringify(path.join(ROOT, "src/features/display", p));
-  const GK = ["e1", "e2", "e3", "e4", "e5", "e6", "m1", "m2", "m3", "h1", "h2", "h3"];
   fs.writeFileSync(entry, `
 import { renderToStaticMarkup } from "react-dom/server";
 import { PALETTE } from ${F("draw.jsx")};
@@ -37,27 +37,29 @@ import { L10_SPEC } from ${F("frames/lin10.jsx")};
 import { C100_SPEC } from ${F("frames/cnt100.jsx")};
 import { AREA_SPEC } from ${F("frames/area.jsx")};
 import { GD_SPEC } from ${F("frames/graphdraw.jsx")};
-import { gradeSpec } from ${F("frames/grade.jsx")};
-import { GRADES } from ${F("grades/index.js")};
+import { basicsSpec } from ${F("frames/basics.jsx")};
+import { LEVELS, BASICS, loadBasic, basicCached } from ${F("basics/index.js")};
 import { l10Plan } from ${F("lin10.js")};
 import { arPlan, AREA_SETS } from ${F("area.js")};
 import { L10_SETS } from ${F("lin10.js")};
 import { C100_SETS } from ${F("cnt100.js")};
-${GK.map((k) => `import { SETS as G_${k} } from ${F(`grades/${k}.js`)};`).join("\n")}
-const GD = { ${GK.map((k) => `${k}: G_${k}`).join(", ")} };
 export { FRAMES, boardLayout, boardScroll, STAGE_REGION, PANE_REGION, BOARD_TYPE, FIG_AREA, FIG_MIN, wrapMath, LESSON_SPEEDS, paneLoad, l10Plan, arPlan };
 export const SPECS = { lin10: L10_SPEC, cnt100: C100_SPEC, area: AREA_SPEC, graph: GD_SPEC,
-  ...Object.fromEntries(GRADES.map((g) => [g.key, gradeSpec(g, GD[g.key])])) };
-/** 글자 판 가족 — [이름, 문항들, 배치(문항, 판), 박자표] */
-export const FAMS = [
+  ...Object.fromEntries(LEVELS.map((L) => [L.frame, basicsSpec(L.key)])) };
+export const loadAll = () => Promise.all(BASICS.map((b) => loadBasic(b.id)));
+export const loadOne = (id) => loadBasic(id);
+export const basicReady = (id) => !!basicCached(id);
+/** 글자 판 가족 — [이름, 문항들, 배치(문항, 판), 박자표] (기본기 단원은 들여온 뒤에) */
+export const fams = () => [
   ["lin10", Object.values(L10_SETS).flatMap((s) => s.items), l10Layout, l10Plan],
   ["cnt100", Object.values(C100_SETS).flatMap((s) => s.items), l10Layout, l10Plan],
   ["area", Object.values(AREA_SETS).flatMap((s) => s.items), areaLayout, arPlan],
-  ["grades", Object.values(GD).flatMap((g) => Object.values(g).flatMap((s) => s.items)), l10Layout, l10Plan],
+  ["basics", BASICS.flatMap((b) => basicCached(b.id).items), l10Layout, l10Plan],
 ];
 const props = (th) => ({ C: PALETTE[th], ui: { Btn, Ic, FrameIc }, ctl: true, poke: () => {}, inert: false, isFs: false, toggleFs: () => {},
   onTheme: () => {}, onGallery: () => {}, onExit: () => {}, mode: "m", onMode: () => {} });
 export const frame = (spec, th) => renderToStaticMarkup(<LessonFrame spec={spec} {...props(th)} />);
+export const framePick = (spec, pick, th) => renderToStaticMarkup(<LessonFrame spec={spec} pick={pick} {...props(th)} />);
 `);
   const out = path.join(tmp, "bundle.mjs");
   await build({
@@ -72,9 +74,25 @@ export const frame = (spec, th) => renderToStaticMarkup(<LessonFrame spec={spec}
   const BAD = /NaN|undefined|Infinity|\[object Object\]/;
   const bad = (s) => (s.match(/.{50}(NaN|undefined|Infinity|\[object Object\]).{30}/) || [""])[0];
   const LESSONS = m.FRAMES.filter((f) => f.lesson).map((f) => f.key);
+  const FAMS0 = { v: null };
 
-  test("해설 액자 열여섯이 모두 공통 틀 — 세트 · 단계 · 장면(반쪽 판 그리기 · 풀이 눈금 · 목록 글자 · 큰 제목)", () => {
-    assert.equal(LESSONS.length, 16);
+  // 기본기 단원: 단일 · 듀얼 첫 그림이 「불러오는 중」인지 먼저 보고, 그다음 다 들여온다
+  for (const L of ["basic-e", "basic-m", "basic-h"]) {
+    const S = m.SPECS[L];
+    test(`${S.title}: 단원 문항을 들여오기 전에는 「불러오는 중」(단일 · 듀얼)`, () => {
+      for (const mode of ["single", "dual"]) {
+        store[S.lsk + ".mode"] = JSON.stringify(mode);
+        const h = m.frame(S, "dark");
+        assert.ok(h.includes("불러오는 중") && !BAD.test(h), `${L} ${mode}`);
+      }
+      delete store[S.lsk + ".mode"];
+    });
+  }
+  await m.loadAll();
+  const FAMS = m.fams();
+
+  test("해설 액자 일곱이 모두 공통 틀 — 세트 · 단계 · 장면(반쪽 판 그리기 · 풀이 눈금 · 목록 글자 · 큰 제목)", () => {
+    assert.equal(LESSONS.length, 7);
     assert.deepEqual(m.LESSON_SPEEDS, [0.75, 1, 1.5, 2]);
     const lsks = new Set();
     for (const k of LESSONS) {
@@ -88,20 +106,20 @@ export const frame = (spec, th) => renderToStaticMarkup(<LessonFrame spec={spec}
         for (const sp of m.LESSON_SPEEDS) {
           const L = S.scenes(set.key, sp, 0);
           assert.ok(L.length >= 60, `${k}/${set.key} 장면 수 ${L.length}`);
-          if (sp !== 1) continue;
+          if (sp !== 1 || (S.setMenu && set.key !== S.sets[0].key && set.key !== S.sets.at(-1).key)) continue;
           assert.equal(new Set(L.map((x) => x.key)).size, L.length, `${k} 장면 key`);
           for (const sc of L) {
             assert.equal(typeof sc.pane, "function", `${k} ${sc.no} 반쪽 판 그리기`);
             assert.equal(sc.tsz, "lesson", `${k} ${sc.no} 큰 제목`);
             assert.ok(sc.marks?.length >= 3 && sc.card, `${k} ${sc.no} 눈금 · 목록 글자`);
           }
-          for (const x of st) assert.ok(S.scenes(set.key, 1, x.v).every((sc) => sc.st === x.v), `${k} ${x.lab} 만`);
+          if (sp === 1) for (const x of st) assert.ok(S.scenes(set.key, 1, x.v).every((sc) => sc.st === x.v), `${k} ${x.lab} 만`);
         }
       }
     }
   });
 
-  test("단일 · 듀얼 그리기: 열여섯 액자 모두 같은 단추(보기 · 세트 · 빠르기 넷 · 목록 · 두 막대 · 듀얼은 판마다 · ⇄) — 두 테마 오류 없음", () => {
+  test("단일 · 듀얼 그리기: 일곱 액자 모두 같은 단추(보기 · 세트/단원 · 빠르기 넷 · 목록 · 두 막대 · 듀얼은 판마다 · ⇄) — 두 테마 오류 없음", () => {
     let cnt = 0;
     for (const k of LESSONS) {
       const S = m.SPECS[k];
@@ -112,19 +130,29 @@ export const frame = (spec, th) => renderToStaticMarkup(<LessonFrame spec={spec}
           cnt++;
           assert.ok(!BAD.test(h), `${k} ${mode} ${th}: ${bad(h)}`);
           for (const w of ["단일", "듀얼", "0.75×", "1×", "1.5×", "2×", "번호 · 단계 목록", "scb-long", "scb-short"]) assert.ok(h.includes(w), `${k} ${mode} — ${w} 없음`);
-          if (S.sets.length > 1) for (const set of S.sets) assert.ok(h.includes(`>${set.short}<`), `${k} ${mode} 세트 ${set.short}`);
+          if (S.setMenu) assert.ok(h.includes("lsn-unit") && h.includes(`${S.setMenu.word} 목록 (U)`), `${k} ${mode} 단원 단추`);
+          else if (S.sets.length > 1) for (const set of S.sets) assert.ok(h.includes(`>${set.short}<`), `${k} ${mode} 세트 ${set.short}`);
           if (mode === "dual") {
             assert.equal((h.match(/class="lsn-pane-ctl /g) || []).length, 2, `${k} 판 조작 둘`);
             assert.ok(h.includes("lsn-swap") && h.includes("자리 바꾸기"), `${k} ⇄`);
             assert.equal((h.match(/class="scb-long /g) || []).length, 2, `${k} 판마다 긴 막대`);
             assert.ok(h.includes("왼쪽 빠르기") && h.includes("오른쪽 빠르기"), `${k} 판마다 빠르기`);
           } else assert.ok(h.includes("이 장면 반복") && h.includes("dsp-ctl"), `${k} 단일 조작`);
-          if (k.length === 2) assert.ok(h.includes('aria-label="문서"'), `${k} ${mode} 📄 문서`);
+          if (S.topExtra) assert.ok(h.includes('aria-label="문서"'), `${k} ${mode} 📄 문서`);
         }
       }
       delete store[S.lsk + ".mode"];
     }
     console.log(`   액자 그림 ${cnt}장`);
+  });
+
+  test("학생앱에서 고른 단원(pick)으로 단일 모드부터 · 단원 목록 단추 · 판 기억은 그대로", () => {
+    const S = m.SPECS["basic-m"], id = S.sets[5].key;
+    store[S.lsk + ".mode"] = JSON.stringify("dual");
+    const h = m.framePick(S, id, "light");
+    assert.ok(h.includes("이 장면 반복") && !h.includes('class="lsn-pane-ctl'), "고른 단원은 단일 모드로");
+    assert.ok(h.includes(S.sets[5].short), "고른 단원 이름");
+    delete store[S.lsk + ".mode"];
   });
 
   test("판 기억: 듀얼 판은 기본 왼쪽 앞에서 1.5× · 오른쪽 가운데부터 0.75× · 저장한 자리에서 벽시계로 이어 돈다(모든 액자)", () => {
@@ -147,7 +175,7 @@ export const frame = (spec, th) => renderToStaticMarkup(<LessonFrame spec={spec}
     assert.equal(m.BOARD_TYPE.length, 2);
     for (const T of m.BOARD_TYPE) assert.ok(T.b >= 37 && T.q >= 36 && T.s >= 28 && T.plan >= 29, T.key);
     const cnt = {};
-    for (const [fam, items, lay] of m.FAMS) for (const R of [m.STAGE_REGION, m.PANE_REGION]) for (const it of items) {
+    for (const [fam, items, lay] of FAMS) for (const R of [m.STAGE_REGION, m.PANE_REGION]) for (const it of items) {
       const L = lay(it, R);
       assert.ok(m.BOARD_TYPE.includes(L.T), `${fam} ${it.no} 정해진 글자 크기가 아님`);
       const key = `${R.key} ${L.type}`;
@@ -158,7 +186,7 @@ export const frame = (spec, th) => renderToStaticMarkup(<LessonFrame spec={spec}
 
   test("그림 자리: 글자 칸과 겹치지 않음 · 판 안 · 화면의 25% 이하 · 배율 0.6 이상(단일 무대 · 듀얼 반쪽)", () => {
     const rep = [];
-    for (const [fam, items, lay] of m.FAMS) for (const R of [m.STAGE_REGION, m.PANE_REGION]) {
+    for (const [fam, items, lay] of FAMS) for (const R of [m.STAGE_REGION, m.PANE_REGION]) {
       let has = 0, want = 0, areaSum = 0;
       const screen = R.key === "pane" ? 800 * 900 : 1600 * 900;
       for (const it of items) {
@@ -183,7 +211,7 @@ export const frame = (spec, th) => renderToStaticMarkup(<LessonFrame spec={spec}
 
   test("넘치는 판: 무대는 두 단 먼저(흐름은 드물게) · 흐르는 판은 줄이 나타날 때마다 그 줄이 보이는 칸 안에", () => {
     let two = 0, flow = 0, checks = 0;
-    for (const [fam, items, lay, plan] of m.FAMS) for (const R of [m.STAGE_REGION, m.PANE_REGION]) for (const it of items) {
+    for (const [fam, items, lay, plan] of FAMS) for (const R of [m.STAGE_REGION, m.PANE_REGION]) for (const it of items) {
       const L = lay(it, R), tag = `${fam} ${R.key} ${it.no}`;
       if (L.two) { two++; assert.equal(R.key, "stage", `${tag} 두 단은 무대에서만`); assert.ok(L.bottom <= R.bottom + 1, `${tag} 두 단도 넘침`); }
       if (!L.scroll) continue;
@@ -202,7 +230,7 @@ export const frame = (spec, th) => renderToStaticMarkup(<LessonFrame spec={spec}
       assert.ok(L.bottom - offEnd <= S.bottom + 1, `${tag} 답 칸이 보이지 않음`);
     }
     console.log(`   두 단 ${two} · 흐르는 판 ${flow} · 줄 확인 ${checks}`);
-    const stageFlow = m.FAMS.reduce((a, [, items, lay]) => a + items.filter((it) => lay(it, m.STAGE_REGION).scroll).length, 0);
+    const stageFlow = FAMS.reduce((a, [, items, lay]) => a + items.filter((it) => lay(it, m.STAGE_REGION).scroll).length, 0);
     assert.ok(stageFlow <= 8, `무대에서 흐르는 판이 많다(${stageFlow})`);
   });
 

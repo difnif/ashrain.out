@@ -4,7 +4,7 @@
 //   9단계(색칠한 부분의 넓이)는 그림 — 판서 줄에 맞춰 밑변 · 높이 · 나눈 삼각형이 빛난다.
 //   경우의 수와 확률 100제(frames/cnt100.jsx)도 이 그리기를 쓴다 — it.planTag 가 있으면 방침 칸 이름을 바꾸고(사전식 「숫자 분석」),
 //   it.fig.kind 가 tree(사전식 세로 나무 — frames/lextree.jsx) · seats · grades · bag(줄 세우기 · 학년별 선발 · 주머니 공 — frames/c100fig.jsx)면 그 그림.
-//   학년별 기본기 해설(frames/grade.jsx)도 이 그리기를 쓴다 — it.fig.kind === "dsl" 이면 그림 DSL(frames/figdsl.jsx).
+//   기본기 해설(frames/basics.jsx — 초등 · 중등 · 고등 단원)도 이 그리기를 쓴다 — it.fig.kind === "dsl" 이면 그림 DSL(frames/figdsl.jsx).
 // 글자 판은 ../board.js(배치) · frames/board.jsx(그리기): 글자 크기 두 벌로 고르게, 문제는 판 너비를 다 쓰고,
 //   그림은 글자를 다 놓고 남은 빈자리에 줄여 넣는다(화면의 25%까지 · 배율 0.6 아래면 뺀다). region 을 주면(듀얼 반쪽 판) 그 판 안에 같은 규칙으로.
 // 조작은 해설 액자 공통 틀(frames/lesson.jsx) — 「세트 1 | 세트 2」 · 빠르기 0.75× ~ 2× · 번호 · 단계 목록(전체 · 1~10단계) · 단일 | 듀얼.
@@ -30,13 +30,13 @@ import { dslBox } from "./figdsl.jsx";
 // 그림은 제 크기(FIG 칸 660 × 680 안에서 실제로 차지하는 네모)로 그린 뒤, 글자를 다 놓고 남은 빈자리에 맞춰 줄여 넣는다.
 const FIG = { x0: 880, y0: 170, x1: 1540, y1: 850 };
 
-/** 오른쪽 그림 — 9단계 넓이(kind 없음 · 아래 Figure)와 경우의 수와 확률 100제 · 학년별 해설의 그림들. box = 실제로 차지하는 네모 */
+/** 오른쪽 그림 — 9단계 넓이(kind 없음 · 아래 Figure)와 경우의 수와 확률 100제 · 기본기 해설의 그림들. box = 실제로 차지하는 네모 */
 const FIGS = {
   tree: { draw: (p) => <LexTree {...p} />, box: (f) => treeBox(f) },
   seats: { draw: (p) => <SeatsFig {...p} />, box: (f) => seatsBox(f) },
   grades: { draw: (p) => <GradesFig {...p} />, box: (f) => gradesBox(f) },
   bag: { draw: (p) => <BagFig {...p} />, box: (f) => bagBox(f) },
-  dsl: { draw: (p) => <FigDsl {...p} />, box: (f) => dslBox(f) },          // 학년별 기본기 해설(frames/grade.jsx)
+  dsl: { draw: (p) => <FigDsl {...p} />, box: (f) => dslBox(f) },          // 기본기 해설(frames/basics.jsx)
 };
 const AREA9 = { draw: (p) => <Figure {...p} />, box: (f) => area9Box(f), ts: true };
 const figOf = (it) => (it.fig ? FIGS[it.fig.kind] || AREA9 : null);

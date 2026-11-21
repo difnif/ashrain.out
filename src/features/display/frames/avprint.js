@@ -1,5 +1,5 @@
-// ashrain.out — 학년별 기본기 해설의 인쇄 문서: 문제지 · 해설지 · 빠른 정답 · OMR (frames/avprint.js)
-// 문항 자료(../grades/<학년>.js)에서 바로 HTML 을 만든다 — 저장소에 인쇄 HTML 을 따로 두지 않는다.
+// ashrain.out — 기본기 해설(단원 100가지)의 인쇄 문서: 문제지 · 해설지 · 빠른 정답 · OMR (frames/avprint.js)
+// 문항 자료(../basics/<단원>.js)에서 바로 HTML 을 만든다 — 저장소에 인쇄 HTML 을 따로 두지 않는다.
 //   · 앱: 📄 문서 → PDF 가 아직 없으면 이 HTML 을 인쇄 창으로(frames/docsmenu.jsx)
 //   · 워크플로: scripts/av-files.mjs 가 Chromium 안에서 같은 함수로 HTML 을 만들어 PDF 로 찍는다(Storage concept-sets/av/…)
 // 그림은 화면과 같은 그림 DSL(frames/figdsl.jsx)을 흑백 팔레트로 찍은 SVG — figOf(it, "q" | "end") 로 받는다(frames/avfig.jsx).
@@ -9,6 +9,7 @@
 // 문구는 @ashrain.out 만 쓴다(쪽 아래 가운데).
 import { parseMath } from "../draw.jsx";
 import { layoutCard } from "../../../lib/omr/grid.js";
+import { unitLabel } from "../../../lib/units.js";
 
 export const AV_PRINT_FONTS = [
   "https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-kr@5.3.1/400.css",
@@ -30,9 +31,11 @@ function toksHtml(toks) {
     else if (t.sup) h = `<sup>${toksHtml(t.sup)}</sup>`;
     else if (t.sub) h = `<sub>${toksHtml(t.sub)}</sub>`;
     else if (t.root) h = `<span class="rt">√<span class="rb">${toksHtml(t.root)}</span></span>`;
+    else if (t.mat) h = `<span class="mat"><table>${t.mat.map((r) => `<tr>${r.map((c) => `<td>${toksHtml(c)}</td>`).join("")}</tr>`).join("")}</table></span>`;
+    else if (t.vec) h = `<span class="vec">${toksHtml(t.vec)}</span>`;
     else if (t.icon) h = t.icon.kind === "die" ? DIE[t.icon.n - 1] || "□" : ICON_CH[t.icon.kind] || "○";
     else h = t.it ? `<i class="mi">${esc(t.s)}</i>` : esc(t.s);
-    out += t.ac && !t.frac && !t.sup && !t.sub && !t.root ? `<b>${h}</b>` : h;
+    out += t.ac && !t.frac && !t.sup && !t.sub && !t.root && !t.mat && !t.vec ? `<b>${h}</b>` : h;
   }
   return out;
 }
@@ -52,22 +55,22 @@ export function problemPages(set) {
 }
 
 /* ══════════ 등록 정보(ashrain-print.json) ══════════ */
-export function avManifest(g, meta, set) {
+export function avManifest(meta, set) {
   const pageOf = new Map();
   problemPages(set).forEach((p, i) => p.items.forEach((it) => pageOf.set(it.no, i + 1)));
   return {
     kind: "ashrain.print", version: 1, code: meta.code,
-    title: `${g.grade} · ${meta.title}`, sub: `학년별 기본기 해설 · ${set.items.length}문항 · 1 ~ 5단계`, label: "서답형",
+    title: meta.title, sub: `기본기 해설 · ${meta.span} · ${set.items.length}문항 · 1 ~ 5단계`, label: "서답형",
     items: set.items.map((it) => ({
       no: String(it.no), answer: String(it.ap).replace(/−/g, "-"), choice: false, points: 1, topic: `${it.st}단계 ${meta.stages[it.st] || ""}`.trim(),
-      key: `av/${g.key}/${meta.key}/${it.no}`, page: pageOf.get(it.no),
+      key: `av/${meta.id}/${it.no}`, page: pageOf.get(it.no),
     })),
   };
 }
 
 /** OMR 카드(grid.js 손글씨 한 줄 칸) */
-export function avCard(g, meta, items) {
-  return layoutCard({ cat: "av", no: 1, title: `${g.grade} · ${meta.title}`, short: meta.short, sub: `${g.grade} · ${items.length}제 · 코드 ${fmtCode(meta.code)}`,
+export function avCard(meta, items) {
+  return layoutCard({ cat: "av", no: 1, title: meta.title, short: meta.short, sub: `${meta.span} · ${items.length}제 · 코드 ${fmtCode(meta.code)}`,
     items: items.map((it) => ({ no: it.no, a: { k: it.omr === "ex" ? "ex" : it.omr === "pt" ? "pt" : "num" } })) });
 }
 
@@ -85,6 +88,9 @@ body{font-family:'Noto Sans KR',sans-serif;color:#111;font-size:10pt;line-height
 .mi{font-family:'Noto Serif','Times New Roman',serif;font-style:italic;font-weight:400;padding:0 .04em}
 b .mi{font-weight:400}
 .fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.08;font-size:.84em;margin:0 .35mm}
+.mat{display:inline-block;vertical-align:middle;margin:0 .5mm;border-left:.25mm solid #111;border-right:.25mm solid #111;border-radius:.8mm;padding:0 .6mm}
+.vec{position:relative;display:inline-block;padding-top:.18em}.vec::before{content:"";position:absolute;left:.06em;right:.12em;top:.08em;border-top:.06em solid currentColor}.vec::after{content:"";position:absolute;right:0;top:-.02em;border-left:.26em solid currentColor;border-top:.13em solid transparent;border-bottom:.13em solid transparent}
+.mat table{border-collapse:collapse;font-size:.86em;line-height:1.15}.mat td{padding:0 1.1mm;text-align:center}
 .fr>.n{border-bottom:.22mm solid currentColor;padding:0 .6mm .15mm}
 .fr>.d{padding:.15mm .6mm 0}
 sup,sub{font-size:.68em;line-height:0}
@@ -107,9 +113,9 @@ function head(title, extra) {
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)}</title>`
     + AV_PRINT_FONTS.map((u) => `<link rel="stylesheet" href="${u}">`).join("") + `<style>${extra}</style></head>`;
 }
-function header(g, meta, kind, n, who) {
-  return `<header class="hd"><div class="hl"><div class="t1">${esc(g.grade)} · ${esc(meta.title)}</div>`
-    + `<div class="t2">학년별 기본기 해설 · ${kind} · ${n}문항 · 1 ~ 5단계</div></div>`
+function header(meta, kind, n, who) {
+  return `<header class="hd"><div class="hl"><div class="t1">${esc(meta.title)}</div>`
+    + `<div class="t2">기본기 해설 · ${esc(meta.span)} · ${esc(unitLabel(meta.unit))} · ${kind} · ${n}문항 · 1 ~ 5단계</div></div>`
     + `<div class="hr"><div class="code">코드 ${fmtCode(meta.code)}</div>${who ? '<div class="who">이름<u></u>날짜<u></u></div>' : ""}</div></header>`;
 }
 const stageHead = (meta, set, st, cont) => `<div class="stg${cont ? " cont" : ""}"><span class="sn">${st}단계 · ${esc(meta.stages[st] || "")}${cont ? " (이어서)" : ""}</span>`
@@ -126,7 +132,7 @@ const P_CSS = `.pg{height:${PAGE_H}mm;display:flex;flex-direction:column;break-a
 .qf svg{width:100%;height:auto}
 .ab{margin-top:auto;align-self:flex-end;font-size:8.4pt;color:#444;border:.25mm solid #777;border-radius:1.4mm;padding:.5mm 2mm;min-width:32mm}
 `;
-export function problemsHtml(g, meta, set, figOf) {
+export function problemsHtml(meta, set, figOf) {
   const pages = problemPages(set);
   const rows = Math.ceil(Math.max(2, set.pp || 10) / 2);
   const body = pages.map((p, i) => {
@@ -135,10 +141,10 @@ export function problemsHtml(g, meta, set, figOf) {
       return `<div class="q"><div class="qt"><span class="no">${it.no}.</span>${mathHtml(it.q)}</div>`
         + (fig ? `<div class="qf">${fig}</div>` : "") + `<div class="ab">답</div></div>`;
     }).join("");
-    return `<section class="pg">${i === 0 ? header(g, meta, "문제지", set.items.length, true) : ""}${stageHead(meta, set, p.st, !p.first)}`
+    return `<section class="pg">${i === 0 ? header(meta, "문제지", set.items.length, true) : ""}${stageHead(meta, set, p.st, !p.first)}`
       + `<div class="grid" style="grid-template-rows:repeat(${rows},minmax(0,1fr))">${cells}</div></section>`;
   }).join("");
-  return head(`${g.grade} ${meta.short} 문제지`, css(meta.code) + P_CSS) + `<body><div class="av av-p">${body}</div></body></html>`;
+  return head(`${meta.short} 문제지`, css(meta.code) + P_CSS) + `<body><div class="av av-p">${body}</div></body></html>`;
 }
 
 /* ══════════ 해설지 ══════════ */
@@ -158,8 +164,8 @@ const S_CSS = `.note{border:.3mm solid #444;border-radius:1.6mm;padding:2mm 3mm;
 .sa{margin-top:.8mm;font-size:9.8pt;font-weight:700}
 .sf svg{width:34mm;height:auto}
 `;
-export function solutionsHtml(g, meta, set, figOf) {
-  let body = header(g, meta, "해설지", set.items.length, false);
+export function solutionsHtml(meta, set, figOf) {
+  let body = header(meta, "해설지", set.items.length, false);
   if (set.note) body += `<div class="note"><span class="nh">지도 도움말</span>${mathHtml(set.note)}</div>`;
   for (let st = 1; st <= 5; st++) {
     const list = set.items.filter((it) => it.st === st);
@@ -174,7 +180,7 @@ export function solutionsHtml(g, meta, set, figOf) {
         + `<div class="sa"><span class="lb">답</span>${mathHtml(it.ans)}</div></div>${fig ? `<div class="sf">${fig}</div>` : ""}</div>`;
     }
   }
-  return head(`${g.grade} ${meta.short} 해설지`, css(meta.code) + S_CSS) + `<body><div class="av av-s">${body}</div></body></html>`;
+  return head(`${meta.short} 해설지`, css(meta.code) + S_CSS) + `<body><div class="av av-s">${body}</div></body></html>`;
 }
 
 /* ══════════ 빠른 정답 ══════════ */
@@ -184,21 +190,21 @@ const A_CSS = `.ak{display:grid;grid-template-columns:repeat(4,1fr);border-top:.
 .ak .an{min-width:0}
 .ks{break-inside:avoid}
 `;
-export function answersHtml(g, meta, set) {
-  let body = header(g, meta, "빠른 정답", set.items.length, false);
+export function answersHtml(meta, set) {
+  let body = header(meta, "빠른 정답", set.items.length, false);
   for (let st = 1; st <= 5; st++) {
     const list = set.items.filter((it) => it.st === st);
     if (!list.length) continue;
     body += `<div class="ks"><div class="stg"><span class="sn">${st}단계 · ${esc(meta.stages[st] || "")}</span></div><div class="ak">`
       + list.map((it) => `<div><span class="no">${it.no}</span><span class="an">${mathHtml(it.ans)}</span></div>`).join("") + "</div></div>";
   }
-  return head(`${g.grade} ${meta.short} 빠른 정답`, css(meta.code) + A_CSS) + `<body><div class="av av-a">${body}</div></body></html>`;
+  return head(`${meta.short} 빠른 정답`, css(meta.code) + A_CSS) + `<body><div class="av av-a">${body}</div></body></html>`;
 }
 
 /** 문서 하나 — doc: problems · solutions · answers */
-export function avDocHtml(g, meta, set, doc, figOf) {
-  if (doc === "problems") return problemsHtml(g, meta, set, figOf);
-  if (doc === "solutions") return solutionsHtml(g, meta, set, figOf);
-  if (doc === "answers") return answersHtml(g, meta, set);
+export function avDocHtml(meta, set, doc, figOf) {
+  if (doc === "problems") return problemsHtml(meta, set, figOf);
+  if (doc === "solutions") return solutionsHtml(meta, set, figOf);
+  if (doc === "answers") return answersHtml(meta, set);
   throw new Error(`알 수 없는 문서: ${doc}`);
 }
