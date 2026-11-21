@@ -27,7 +27,7 @@ const NEXT = {
   "e1-1:9까지의 수": ["e1-1:덧셈과 뺄셈", "e1-1:50까지의 수"],
   "e1-1:50까지의 수": ["e1-2:100까지의 수"],
   "e1-1:덧셈과 뺄셈": ["e1-2:덧셈과 뺄셈"],
-  "e1-2:100까지의 수": ["e1-2:덧셈과 뺄셈", "e2-1:세 자리 수"],
+  "e1-2:100까지의 수": ["e1-2:덧셈과 뺄셈", "e2-1:세 자리 수", "e2-1:덧셈과 뺄셈"],
   "e1-2:덧셈과 뺄셈": ["e2-1:덧셈과 뺄셈"],
   "e2-1:세 자리 수": ["e2-2:네 자리 수", "e2-1:덧셈과 뺄셈"],
   "e2-2:네 자리 수": ["e4-1:큰 수"],
@@ -66,7 +66,7 @@ const NEXT = {
   "e5-2:평균과 가능성": ["m1-2:자료의 정리와 해석", "m2-2:확률"],
   // 측정
   "e1-2:모양과 시각": ["e2-2:시각과 시간"],
-  "e2-2:시각과 시간": ["e3-1:길이와 시간"],
+  "e2-2:시각과 시간": ["e3-1:길이와 시간", "e4-1:각도"],
   "e2-1:길이 재기": ["e2-2:길이 재기"],
   "e2-2:길이 재기": ["e3-1:길이와 시간"],
   "e3-1:길이와 시간": ["e3-2:들이와 무게"],
@@ -92,7 +92,7 @@ const NEXT = {
   "m1-1:좌표평면과 그래프": ["m2-1:일차함수", "h1-2:도형의 방정식"],
   "m1-2:기본 도형과 작도": ["m1-2:평면도형", "m2-2:도형의 성질"],
   "m1-2:평면도형": ["m1-2:입체도형", "m2-2:도형의 성질", "m3-2:원의 성질"],
-  "m1-2:자료의 정리와 해석": ["m3-2:통계"],
+  "m1-2:자료의 정리와 해석": ["m3-2:통계", "m2-2:확률"],
   "m2-1:수와 식의 계산": ["m3-1:다항식의 곱셈과 인수분해", "m3-1:제곱근과 실수"],
   "m2-1:부등식과 연립방정식": ["m2-1:일차함수", "m3-1:이차방정식"],
   "m2-1:일차함수": ["m3-1:이차함수", "h1-2:도형의 방정식"],
@@ -130,18 +130,18 @@ for (const [a, bs] of Object.entries(NEXT)) for (const b of bs) (PREV[b] ||= [])
 export const nextUnits = (u) => NEXT[u] || [];
 export const prevUnits = (u) => PREV[u] || [];
 
-/** 한 방향으로 가장 가까운 「콘텐츠가 있는」 단원들 (빈 단원은 건너 3단계까지) */
+/** 한 방향으로 「콘텐츠가 있는」 단원들 — 3단계까지 가까운 것부터([{ u, d }], d = 몇 단계 건너) */
 function nearest(u, step, has) {
   const seen = new Set([u]);
   let front = [u];
+  const out = [];
   for (let d = 1; d <= 3; d++) {
     const nx = [];
     for (const x of front) for (const y of step(x)) if (!seen.has(y)) { seen.add(y); nx.push(y); }
-    const hit = nx.filter(has);
-    if (hit.length) return { units: hit, d };
+    for (const y of nx) if (has(y)) out.push({ u: y, d });
     front = nx;
   }
-  return { units: [], d: 0 };
+  return out;
 }
 
 /**
@@ -155,9 +155,9 @@ export function relatedOf(item, pool, max = 6) {
   const has = (u) => by.has(u);
   const same = (by.get(item.unit) || []).map((p) => ({ ...p, rel: "같은 단원" }));
   const pick = (dir) => {
-    const { units } = nearest(item.unit, dir === "앞 단원" ? prevUnits : nextUnits, has);
-    return units.sort((a, b) => (dir === "앞 단원" ? termRank(b) - termRank(a) : termRank(a) - termRank(b)))
-      .flatMap((u) => by.get(u).map((p) => ({ ...p, rel: dir })));
+    const hits = nearest(item.unit, dir === "앞 단원" ? prevUnits : nextUnits, has);
+    return hits.sort((a, b) => a.d - b.d || (dir === "앞 단원" ? termRank(b.u) - termRank(a.u) : termRank(a.u) - termRank(b.u)))
+      .flatMap(({ u }) => by.get(u).map((p) => ({ ...p, rel: dir })));
   };
   const prev = pick("앞 단원"), next = pick("다음 단원");
   // 고르게: 앞 · 같은 · 다음을 하나씩 돌아가며

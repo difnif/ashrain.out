@@ -31,9 +31,11 @@ function toksHtml(toks) {
     else if (t.sup) h = `<sup>${toksHtml(t.sup)}</sup>`;
     else if (t.sub) h = `<sub>${toksHtml(t.sub)}</sub>`;
     else if (t.root) h = `<span class="rt">√<span class="rb">${toksHtml(t.root)}</span></span>`;
+    else if (t.mat) h = `<span class="mat"><table>${t.mat.map((r) => `<tr>${r.map((c) => `<td>${toksHtml(c)}</td>`).join("")}</tr>`).join("")}</table></span>`;
+    else if (t.vec) h = `<span class="vec">${toksHtml(t.vec)}</span>`;
     else if (t.icon) h = t.icon.kind === "die" ? DIE[t.icon.n - 1] || "□" : ICON_CH[t.icon.kind] || "○";
     else h = t.it ? `<i class="mi">${esc(t.s)}</i>` : esc(t.s);
-    out += t.ac && !t.frac && !t.sup && !t.sub && !t.root ? `<b>${h}</b>` : h;
+    out += t.ac && !t.frac && !t.sup && !t.sub && !t.root && !t.mat && !t.vec ? `<b>${h}</b>` : h;
   }
   return out;
 }
@@ -86,6 +88,9 @@ body{font-family:'Noto Sans KR',sans-serif;color:#111;font-size:10pt;line-height
 .mi{font-family:'Noto Serif','Times New Roman',serif;font-style:italic;font-weight:400;padding:0 .04em}
 b .mi{font-weight:400}
 .fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.08;font-size:.84em;margin:0 .35mm}
+.mat{display:inline-block;vertical-align:middle;margin:0 .5mm;border-left:.25mm solid #111;border-right:.25mm solid #111;border-radius:.8mm;padding:0 .6mm}
+.vec{position:relative;display:inline-block;padding-top:.18em}.vec::before{content:"";position:absolute;left:.06em;right:.12em;top:.08em;border-top:.06em solid currentColor}.vec::after{content:"";position:absolute;right:0;top:-.02em;border-left:.26em solid currentColor;border-top:.13em solid transparent;border-bottom:.13em solid transparent}
+.mat table{border-collapse:collapse;font-size:.86em;line-height:1.15}.mat td{padding:0 1.1mm;text-align:center}
 .fr>.n{border-bottom:.22mm solid currentColor;padding:0 .6mm .15mm}
 .fr>.d{padding:.15mm .6mm 0}
 sup,sub{font-size:.68em;line-height:0}

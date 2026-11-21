@@ -86,7 +86,7 @@ export function textW(s, size, weight = 500, italic = false, serif = false) {
 }
 
 /* ══════════ 수식 글자 ══════════ */
-// 표기: ‹강조› · {분자/분모} · ^{위 첨자} · _{아래 첨자} · √{근호} · *S*(대문자 이탤릭) · `m`(바로 선 글자 — 단위) · 홀로 선 소문자 라틴 글자와 π 는 자동 이탤릭(세리프).
+// 표기: ‹강조› · {분자/분모} · ^{위 첨자} · _{아래 첨자} · √{근호} · ⟦1, 2; 3, 4⟧(행렬) · *S*(대문자 이탤릭) · `m`(바로 선 글자 — 단위) · 홀로 선 소문자 라틴 글자와 π 는 자동 이탤릭(세리프).
 //       cm, cm² 처럼 붙은 글자는 바로 선다. ² ³ 은 유니코드 위 첨자를 그대로 쓴다.
 //       ⟪아이콘⟫ — 글꼴에 없을 수 있는 기호는 그림으로: ⟪○⟫ ⟪△⟫ ⟪□⟫ ⟪●⟫ ⟪✓⟫ ⟪×⟫, 주사위 눈 ⟪d1⟫~⟪d6⟫.
 //       뒤에 색 글자를 붙이면 칠한다(r 빨강 · b 파랑 · y 노랑 · g 초록 · p 보라 · t 청록 · k 글자색): ⟪○r⟫ ⟪●b⟫
@@ -152,6 +152,19 @@ export function parseMath(str, accent0 = false) {
       const j = str.indexOf("⟫", i + 1);
       if (j > i) { flush(); toks.push({ icon: parseIcon(str.slice(i + 1, j)), ac: accent }); i = j; continue; }
     }
+    if (ch === "⟦") {          // 행렬 ⟦1, 2; 3, 4⟧ — 줄은 ; · 칸은 ,
+      const j = str.indexOf("⟧", i + 1);
+      if (j > i) {
+        flush();
+        const rows = str.slice(i + 1, j).split(";").map((r) => r.split(",").map((c) => parseMath(c.trim(), accent)));
+        toks.push({ mat: rows, ac: accent });
+        i = j; continue;
+      }
+    }
+    if (ch === "\u20D7" && str[i + 1] === "{") {    // 벡터 ⃗{a} — 글자 위 화살
+      const j = braceEnd(str, i + 1);
+      if (j > i) { flush(); toks.push({ vec: parseMath(str.slice(i + 2, j), accent), ac: accent }); i = j; continue; }
+    }
     if ((ch === "^" || ch === "_" || ch === "√") && str[i + 1] === "{") {
       const j = braceEnd(str, i + 1);
       if (j > i) {
@@ -204,6 +217,40 @@ function layToks(toks, size, weight, x, dy, items, igap = true) {
       x = x1 + size * 0.08;
       continue;
     }
+    if (t.vec) {
+      const x1 = layToks(t.vec, size, weight, x + size * 0.02, dy, items);
+      const top = dy - size * 0.86, hx = x1 + size * 0.02, hw = size * 0.13;
+      items.push({ bar: [x + size * 0.05, hx], dy: top, ac: t.ac, thin: true });
+      items.push({ seg: [hx, top, hx - hw, top - hw * 0.62], ac: t.ac });
+      items.push({ seg: [hx, top, hx - hw, top + hw * 0.62], ac: t.ac });
+      x = x1 + size * 0.06;
+      continue;
+    }
+    if (t.mat) {
+      const es = size * 0.82, rh = es * 1.22, nr = t.mat.length, nc = Math.max(...t.mat.map((r) => r.length));
+      const cw = Array.from({ length: nc }, (_, c) => Math.max(...t.mat.map((r) => (r[c] ? layToks(r[c], es, weight, 0, 0, [], false) : 0))));
+      const gap = es * 0.7, pad = size * 0.22, H = nr * rh;
+      const top = dy + axis - H / 2, x0 = x + size * 0.06;
+      let cx = x0 + pad;
+      for (let c = 0; c < nc; c++) {
+        t.mat.forEach((r, ri) => {
+          if (!r[c]) return;
+          const w = layToks(r[c], es, weight, 0, 0, [], false);
+          const its = [];
+          layToks(r[c], es, weight, cx + (cw[c] - w) / 2, top + rh * ri + es * 0.92, its, false);
+          for (const it of its) items.push(t.ac && it.s != null ? { ...it, ac: true } : it);
+        });
+        cx += cw[c] + (c < nc - 1 ? gap : 0);
+      }
+      const x1 = cx + pad;
+      for (const [bx, d] of [[x0, 1], [x1, -1]]) {
+        items.push({ vbar: [top - es * 0.12, top + H + es * 0.12], x: bx, ac: t.ac });
+        items.push({ bar: [Math.min(bx, bx + d * size * 0.14), Math.max(bx, bx + d * size * 0.14)], dy: top - es * 0.12, ac: t.ac, thin: true });
+        items.push({ bar: [Math.min(bx, bx + d * size * 0.14), Math.max(bx, bx + d * size * 0.14)], dy: top + H + es * 0.12, ac: t.ac, thin: true });
+      }
+      x = x1 + size * 0.1;
+      continue;
+    }
     if (!t.frac) {
       const w = runW(t, size, weight);
       items.push({ s: t.s, x, dy, size, it: t.it, ac: t.ac, w });
@@ -252,6 +299,12 @@ export function MText({ x, y, s, size = 40, weight = 500, anchor = "start", fill
         : it.bar
         ? <line key={i} x1={x0 + it.bar[0]} x2={x0 + it.bar[1]} y1={y + it.dy} y2={y + it.dy}
             stroke={it.ac ? acc : col} strokeWidth={Math.max(it.thin ? 1.6 : 2, size * (it.thin ? 0.045 : 0.055))} strokeLinecap="round" />
+        : it.vbar
+        ? <line key={i} x1={x0 + it.x} x2={x0 + it.x} y1={y + it.vbar[0]} y2={y + it.vbar[1]}
+            stroke={it.ac ? acc : col} strokeWidth={Math.max(1.6, size * 0.045)} strokeLinecap="round" />
+        : it.seg
+        ? <line key={i} x1={x0 + it.seg[0]} y1={y + it.seg[1]} x2={x0 + it.seg[2]} y2={y + it.seg[3]}
+            stroke={it.ac ? acc : col} strokeWidth={Math.max(1.6, size * 0.045)} strokeLinecap="round" />
         : <text key={i} x={x0 + it.x} y={y + it.dy} fontSize={it.size}
             fontFamily={it.it ? SERIF : SANS} fontStyle={it.it ? "italic" : undefined}
             fontWeight={it.it ? 500 : weight} fill={it.ac ? acc : col} xmlSpace="preserve"

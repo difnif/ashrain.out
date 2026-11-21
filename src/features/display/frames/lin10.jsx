@@ -68,8 +68,15 @@ function layOnce(it, right, top, bottom) {
   for (const [qs, bs] of [[38, 44], [36, 40], [34, 37], [32, 34], [30, 31], [28, 28]]) {
     const qLines = wrap(`${it.no}. ${it.q}`, qs, W0);
     let y = top + qs;
-    const qY = qLines.map((_, i) => y + i * qs * 1.48);
-    y = qY[qY.length - 1] + qs * 1.55;
+    const qY = [];
+    qLines.forEach((l, i) => {                                   // 행렬(⟦⟧)이 든 줄은 위아래로 조금 더
+      const tall = l.includes("⟦") ? qs * 0.55 : 0;
+      if (i) y += qs * 1.48;
+      y += tall;
+      qY.push(y);
+      y += tall;
+    });
+    y = qY[qY.length - 1] + qs * 1.55 + (qLines[qLines.length - 1].includes("⟦") ? qs * 0.55 : 0);
     const planY = y;
     y += bs * 1.55;
     const ps = Math.round(bs * 0.66), ms = Math.round(bs * 0.62), lh = bs * 1.5;
@@ -80,7 +87,9 @@ function layOnce(it, right, top, bottom) {
       const sW = mathWidth(ln.s, bs, 560);
       const memoW = ln.memo ? mathWidth(ln.memo, ms, 600) + ms * 1.2 : 0;
       const r = { i, preRow: false, memoRow: false };
+      const tall = ln.s.includes("⟦") ? bs * 0.5 : 0;           // 행렬이 든 줄은 위아래로 조금 더
       if (preW + sW > W0) { r.preRow = true; r.preY = y + ps * 0.2; y += ps * 1.35; }
+      y += tall;
       r.y = y + bs * 0.35;
       r.sx = LEFT + (r.preRow ? 0 : preW);
       r.sW = sW;
@@ -89,18 +98,19 @@ function layOnce(it, right, top, bottom) {
         if (r.sx + sW + memoW <= right) { r.mx = r.sx + sW + ms * 1.2; r.my = r.y; }
         else { r.memoRow = true; r.mx = r.sx + bs * 0.4; r.my = r.y + ms * 1.5; y += ms * 1.4; }
       }
-      y += lh;
+      y += lh + tall;
       r.bottom = y;
       rows.push(r);
     });
-    const ansY = y + bs * 0.55;
+    const ansTall = String(it.ans).includes("⟦") ? bs * 0.55 : 0;
+    const ansY = y + bs * 0.55 + ansTall;
     // 방침 칸: 이름(방침 · 숫자 분석)과 글자 크기 — 한 줄이 판 오른쪽(그림 왼쪽)을 넘지 않게 줄인다
     const tagW = it.planTag ? it.planTag.length * 1.05 + 0.8 : 2.9;
     const pw = it.planTag ? 750 : 600, p0 = Math.round(ps * (it.planTag ? 1.3 : 1.12));
     const planX = LEFT + ps * (tagW + 0.5);
     const planS = Math.max(14, Math.min(p0, Math.floor(p0 * (right - planX) / Math.max(1, mathWidth(it.plan, p0, pw)))));
     best = { qs, bs, ps, ms, qLines, qY, planY, rows, ansY, right, tagW, planX, planS, planW: pw };
-    if (ok && ansY + bs * 0.75 <= bottom) { fits = true; break; }
+    if (ok && ansY + bs * 0.75 + ansTall <= bottom) { fits = true; break; }
   }
   return { best, fits: fits && best.planS >= 18 };
 }
@@ -300,7 +310,7 @@ export function L10Art({ it, t, C, uid = "", box = null }) {
         const w = mathWidth(it.ans, Lo.bs, 700) + Lo.bs * 2.6;
         return (
           <g opacity={ans}>
-            <rect x={LEFT - 8} y={Lo.ansY - Lo.bs * 1.05} width={w} height={Lo.bs * 1.5} rx={Lo.bs * 0.3} fill="none" stroke={C.gold} strokeWidth={3.5} />
+            <rect x={LEFT - 8} y={Lo.ansY - Lo.bs * (String(it.ans).includes("⟦") ? 1.6 : 1.05)} width={w} height={Lo.bs * (String(it.ans).includes("⟦") ? 2.6 : 1.5)} rx={Lo.bs * 0.3} fill="none" stroke={C.gold} strokeWidth={3.5} />
             <text x={LEFT + Lo.bs * 0.3} y={Lo.ansY - Lo.bs * 0.02} fontFamily={SANS} fontSize={Lo.bs * 0.7} fontWeight={800} fill={C.gold}>답</text>
             <MText x={LEFT + Lo.bs * 1.7} y={Lo.ansY} s={it.ans} size={Lo.bs} weight={700} fill={C.ink} C={C} />
           </g>

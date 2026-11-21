@@ -238,15 +238,15 @@ export const thumbs = (mode, th) => [MontyThumb, BranchThumb, GaltonThumb].map((
   const BAD = /NaN|undefined|Infinity|\[object Object\]/;
   const bad = (s) => (s.match(/.{50}(NaN|undefined|Infinity|\[object Object\]).{30}/) || [""])[0];
 
-  test("액자 목록: 하노이 · 해설 넷(그래프 그리기 · 10단계 계산 · 그래프와 넓이 · 경우의 수와 확률 100제) · 학년별 해설 열둘(초1 ~ 고3) · 실험 셋(풀이 보기 장면 있음) · 장면 묶음 둘 — 키 중복 없음", () => {
+  test("액자 목록: 하노이 · 해설 넷(그래프 그리기 · 10단계 계산 · 그래프와 넓이 · 경우의 수와 확률 100제) · 기본기 해설 셋(초등 · 중등 · 고등) · 실험 셋(풀이 보기 장면 있음) · 장면 묶음 둘 — 키 중복 없음", () => {
     assert.deepEqual(m.FRAMES.map((f) => f.key), ["hanoi", "graph", "lin10", "area", "cnt100",
-      "e1", "e2", "e3", "e4", "e5", "e6", "m1", "m2", "m3", "h1", "h2", "h3",
+      "basic-e", "basic-m", "basic-h",
       "monty", "branch", "galton", "soccer", "essay",
       "soccerfn", "hoopfn", "batfn", "badminton", "tennis", "tabletennis", "volleyball", "jokgu", "sepak", "golf", "cue", "bowl",
       "pouch", "lexi", "lineup", "crowd"]);
     for (const f of m.FRAMES.filter((x) => x.lab)) { assert.ok(m.EXPLAIN[f.key]?.length >= 1, f.key); assert.ok(f.title && f.desc); }
-    for (const f of m.FRAMES.filter((x) => x.lesson)) assert.ok(f.grade && f.level && f.title && f.desc, f.key);
-    assert.equal(new Set(m.FRAMES.map((f) => f.key)).size, 38);
+    for (const f of m.FRAMES.filter((x) => x.lesson)) assert.ok((f.grade || f.basics) && f.level && f.title && f.desc, f.key);
+    assert.equal(new Set(m.FRAMES.map((f) => f.key)).size, 29);
   });
   test("액자 목록 그림(실험 셋): 두 판 × 두 테마 — 오류 · NaN 없음", () => {
     for (const mode of ["e", "m"]) for (const th of ["dark", "light"]) for (const s of m.thumbs(mode, th)) {
