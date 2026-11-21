@@ -11,7 +11,9 @@ import { koFilter } from "../lib/koSearch";
 import ItemPicker from "./solve/ItemPicker";
 import { CATEGORIES, loadIndex, readProgress, setProgressUser, pad2 } from "../lib/conceptsets";
 import { supabase } from "../supabaseClient";
-import { AV_CATS, AV_LEVELS, avOfCat } from "../lib/av";
+import { AV_CATS, AV_LEVELS, avOfCat, avOfLevel, avRelated } from "../lib/av";
+import { unitLabel } from "../lib/units";
+import { useWellPick } from "../components/WellPick";
 import "./solve/solve.css";
 
 const CSS = `
@@ -89,6 +91,13 @@ const CSS = `
 .st-avic { flex: none; width: 44px; height: 44px; border-radius: 13px; background: var(--surface2); display: flex; align-items: center;
   justify-content: center; font-size: 24px; }
 .st-item .nm small.wrap { white-space: normal; line-height: 1.5; }
+.st-item .nm small.unit { color: var(--accent); font-weight: 700; margin-top: 2px; }
+.st-lv { display: flex; gap: 6px; margin: 4px 0 10px; padding: 4px; border-radius: 14px; background: var(--surface2); }
+.st-lv button { flex: 1; border: 0; border-radius: 11px; padding: 9px 4px; font: inherit; font-size: 14px; font-weight: 800; color: var(--muted);
+  background: transparent; cursor: pointer; }
+.st-lv button small { font-size: 11px; font-weight: 700; margin-left: 4px; opacity: .8; }
+.st-lv button.on { background: var(--surface); color: var(--ink, inherit); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.st-hold { font-size: 11.5px; color: var(--muted); margin: -2px 2px 10px; line-height: 1.5; }
 `;
 
 function readLastConcept() {
@@ -325,6 +334,37 @@ function SetsSub({ path }) {
 }
 
 /* ── 시청각 학습: 범주 폴더 → 항목(교실 모니터 무대로 연다) ── */
+/** 문제 풀이 해설 — 위 「초등 | 중등 | 고등」 단추로 학교급을 고르고, 단원마다 한 줄. 꾹 누르면 우물이 떠서 이어지는 단원을 추천 */
+function SolList() {
+  const [lv, setLv] = useState(() => { try { const v = localStorage.getItem("ash.study.av.lv"); return AV_LEVELS.includes(v) ? v : "초등"; } catch { return "초등"; } });
+  const pickLv = (v) => { setLv(v); try { localStorage.setItem("ash.study.av.lv", v); } catch { /* 무시 */ } };
+  const go = (it) => { location.hash = `#/av/${it.key}`; };
+  const wp = useWellPick({ related: (it) => avRelated(it, 6), onGo: go });
+  const list = avOfLevel(lv);
+  return (
+    <>
+      <div className="st-lv" role="tablist" aria-label="학교급">
+        {AV_LEVELS.map((l) => (
+          <button key={l} type="button" role="tab" aria-selected={l === lv} className={l === lv ? "on" : ""} onClick={() => pickLv(l)}>
+            {l}<small>{avOfLevel(l).length}</small>
+          </button>
+        ))}
+      </div>
+      <p className="st-hold">꾹 누르면 우물이 떠서 앞 · 뒤 학년의 이어지는 단원을 골라 줘요 — 누른 채 손가락을 옮겨 놓으면 바로 열려요.</p>
+      <div className="st-list" role="tabpanel">
+        {list.map((it) => (
+          <button key={it.key} type="button" className={"st-item wpk-able" + (wp.pressing === it.key ? " wpk-press" : "")} {...wp.bind(it, () => go(it))}>
+            <span className="st-avic" aria-hidden="true">{it.icon}</span>
+            <span className="nm"><b>{it.title}</b>{it.unit && <small className="unit">{unitLabel(it.unit)}</small>}<small className="wrap">{it.desc}</small></span>
+            <span className="tag">{it.grade || it.kind}</span>
+          </button>
+        ))}
+      </div>
+      {wp.overlay}
+    </>
+  );
+}
+
 function AvSub({ path }) {
   const catId = path[0] || "";
   const cat = AV_CATS.find((c) => c.id === catId);
@@ -350,21 +390,17 @@ function AvSub({ path }) {
         <button onClick={() => (location.hash = "#/study/av")}>시청각 학습</button><span aria-hidden="true">›</span><b>{cat.title}</b>
       </div>
       <p className="st-cdesc">{cat.sub}</p>
-      {(cat.id === "sol" ? AV_LEVELS.map((lv) => [lv, avOfCat(cat.id).filter((it) => it.level === lv)]).concat([["", avOfCat(cat.id).filter((it) => !AV_LEVELS.includes(it.level))]])
-        : [["", avOfCat(cat.id)]]).filter(([, list]) => list.length).map(([lv, list]) => (
-        <div key={lv || "all"}>
-          {lv && <p className="st-sec">{lv}</p>}
-          <div className="st-list">
-            {list.map((it) => (
-              <button key={it.key} className="st-item" onClick={() => (location.hash = `#/av/${it.key}`)}>
-                <span className="st-avic" aria-hidden="true">{it.icon}</span>
-                <span className="nm"><b>{it.title}</b><small className="wrap">{it.desc}</small></span>
-                <span className="tag">{it.grade || it.kind}</span>
-              </button>
-            ))}
-          </div>
+      {cat.id === "sol" ? <SolList /> : (
+        <div className="st-list">
+          {avOfCat(cat.id).map((it) => (
+            <button key={it.key} className="st-item" onClick={() => (location.hash = `#/av/${it.key}`)}>
+              <span className="st-avic" aria-hidden="true">{it.icon}</span>
+              <span className="nm"><b>{it.title}</b><small className="wrap">{it.desc}</small></span>
+              <span className="tag">{it.kind}</span>
+            </button>
+          ))}
         </div>
-      ))}
+      )}
       {cat.id === "sol" && <p className="st-sec" style={{ fontWeight: 600 }}>컨셉 문제 세트마다 있는 「🎬 해설 영상」은 각 세트 화면에서 열어요.</p>}
     </>
   );

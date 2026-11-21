@@ -1,14 +1,17 @@
-// ashrain.out — 해설 액자 공통 틀 (frames/lesson.jsx) — 문제 풀이 해설 열여섯이 모두 이 틀로 돈다
-//   일차함수 그래프 그리기(graphdraw) · 10단계 계산(lin10) · 그래프와 넓이(area) · 경우의 수와 확률 100제(cnt100) · 학년별 기본기 해설 열둘(grade)
+// ashrain.out — 해설 액자 공통 틀 (frames/lesson.jsx) — 문제 풀이 해설 액자가 모두 이 틀로 돈다
+//   일차함수 그래프 그리기(graphdraw) · 10단계 계산(lin10) · 그래프와 넓이(area) · 경우의 수와 확률 100제(cnt100) · 기본기 해설 초등 · 중등 · 고등(basics — 세트 = 단원, 목록으로 고름)
 // 어느 액자든 조작이 같다 — 단일 모드든 듀얼 모드든:
 //   「보기 단일 | 듀얼」(D) · 「세트」(B — 세트가 둘 이상일 때) · 「빠르기 0.75× · 1× · 1.5× · 2×」(S) · 번호 · 단계 목록(L — 단계 칩을 고르면 그 단계만)
 //   · 이전 · 멈춤 · 다음(←/→ · 스페이스) · 이 문항 반복(R) · 밝기 · 전체 화면(F) · 액자 목록 · 나가기
-//   · 두 막대(frames/scrub.jsx — 아래 긴 막대 = 문항 이동, 옆 짧은 막대 = 풀이 이동) · 오른쪽 위 더할 것(학년별 해설의 📄 문서).
+//   · 두 막대(frames/scrub.jsx — 아래 긴 막대 = 문항 이동, 옆 짧은 막대 = 풀이 이동) · 오른쪽 위 더할 것(기본기 해설의 📄 문서).
 //   듀얼 모드는 화면을 좌우 둘로 나눠 두 판을 따로 돌린다 — 판마다 세트(같은 세트 둘도 됨) · 단계 · 번호 · 빠르기 · 멈춤 · 반복 · 두 막대.
 //   가운데 ⇄(X)는 두 판의 자리를 맞바꾼다. 판마다 자리 · 고른 것은 기기에 기억한다(벽시계라 새로고침해도 이어 돈다).
 // 액자마다 다른 것은 spec 하나로 넘긴다:
-//   { lsk 기억 이름, title 액자 이름, sets [{ key, name, short }], stages(set) → [{ v, lab }], scenes(set, sp, st) → 장면 목록,
-//     posKey(lsk, set, st) 단일 모드 자리 기억 이름, cols 목록 칸 수, topExtra({ set, open, onOpen, poke }) 오른쪽 위 }
+//   { lsk 기억 이름, title 액자 이름, sets [{ key, name, short, icon?, note?, sub? }], stages(set) → [{ v, lab, chip? }], scenes(set, sp, st) → 장면 목록,
+//     posKey(lsk, set, st) 단일 모드 자리 기억 이름, cols 목록 칸 수, topExtra({ set, open, onOpen, poke }) 오른쪽 위,
+//     setMenu { word, title, hint } — 세트가 많으면(기본기 해설의 단원) 「세트」 칸 대신 단추 → 목록(U),
+//     ready(set) · load(set) → Promise — 세트 문항을 고를 때 들여오면(기본기 해설) 들여오는 동안 「불러오는 중」 }
+//   pick — 처음 열 때 이 세트로(학생앱에서 고른 단원 — 단일 모드로 연다).
 //   장면 = StoryPlayer 형식(key · no · st · dur · grp · marks · title · sub · render) + pane(t, C, uid) 반쪽 판 그리기 · card 목록 칸 글자 · head 판 머리 글자.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { W, H, SANS, mathWidth } from "../draw.jsx";
@@ -34,13 +37,82 @@ function fixers(spec) {
 }
 const posKeyOf = (spec, set, st) => (spec.posKey ? spec.posKey(spec.lsk, set, st) : `${spec.lsk}.${set}.${st}`);
 
-/** 해설 액자 — 단일 | 듀얼 */
-export function LessonFrame({ spec, ...props }) {
-  const [dual, setDual] = useState(() => (lsRead(spec.lsk + ".mode") || "") === "dual");
+/** 해설 액자 — 단일 | 듀얼. pick(세트 key)을 주면 그 세트로 단일 모드부터 */
+export function LessonFrame({ spec, pick = null, ...props }) {
+  const pk = useRef(pick != null && spec.sets.some((s) => s.key === pick) ? pick : null);
+  const [dual, setDual] = useState(() => !pk.current && (lsRead(spec.lsk + ".mode") || "") === "dual");
   useEffect(() => { lsWrite(spec.lsk + ".mode", dual ? "dual" : "single"); }, [dual, spec.lsk]);
+  const pick0 = pk.current;
+  useEffect(() => { pk.current = null; }, []);                   // 처음 한 번만 — 듀얼로 갔다 오면 기억한 자리로
   return dual
     ? <DualStage spec={spec} {...props} onSingle={() => setDual(false)} />
-    : <SingleStage spec={spec} {...props} onDual={() => setDual(true)} />;
+    : <SingleStage spec={spec} pick={pick0} {...props} onDual={() => setDual(true)} />;
+}
+
+/** 세트 문항이 아직 없으면 들여온다 — [다 왔나, 오류] */
+function useSetsReady(spec, keys) {
+  const need = spec.ready ? keys.filter((k) => !spec.ready(k)) : [];
+  const [, bump] = useState(0);
+  const [err, setErr] = useState(null);
+  const sig = need.join("|");
+  useEffect(() => {
+    if (!sig) return undefined;
+    let live = true;
+    Promise.all(sig.split("|").map((k) => spec.load(k))).then(() => { if (live) bump((x) => x + 1); })
+      .catch((e) => { if (live) setErr(e?.message || "불러오지 못했어요"); });
+    return () => { live = false; };
+  }, [sig, spec]);
+  return [!need.length, err];
+}
+/** 들여오는 동안의 무대 */
+function Loading({ C, ui, onExit, title, err }) {
+  const { Btn, Ic } = ui;
+  return (
+    <>
+      <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label={title}>
+        <text x={W / 2} y={H / 2} textAnchor="middle" fontSize="40" fontWeight="700" fill={C.soft}>{err ? `해설을 불러오지 못했어요 — ${err}` : `「${title}」 불러오는 중…`}</text>
+      </svg>
+      <div className="dsp-ctl show"><Btn title="나가기" onClick={onExit}><Ic d="M6 6l12 12M18 6 6 18" /></Btn></div>
+    </>
+  );
+}
+/** 세트 고르는 단추 — 세트가 많으면(setMenu) 목록을 여는 칩, 아니면 칸 고르기 */
+function SetPick({ spec, value, onChange, onMenu, menuOn, poke, label = "세트" }) {
+  if (spec.setMenu) {
+    const S = spec.sets.find((x) => x.key === value) || spec.sets[0];
+    return (
+      <button type="button" className={"dsp-chip lsn-unit" + (menuOn ? " on" : "")} title={`${spec.setMenu.word} 목록 (U)`} aria-pressed={!!menuOn}
+        onClick={() => { onMenu(); poke(); }}>
+        {S.icon && <span aria-hidden="true">{S.icon}</span>} {S.short || S.name}{S.note && <small>{S.note}</small>}
+      </button>
+    );
+  }
+  if (spec.sets.length < 2) return null;
+  return <Seg label={label} value={value} options={spec.sets.map((s) => [s.key, s.short || s.name])} onChange={onChange} poke={poke} />;
+}
+/** 세트(단원) 목록 — 고르면 그 세트 1번부터 */
+export function SetMenu({ spec, cur, onPick, onClose, side = "" }) {
+  const M = spec.setMenu;
+  return (
+    <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
+      <div className="dsp-list-in" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`${M.word} 목록`}>
+        <div className="dsp-list-h">
+          <b>{side ? `${side} 판 · ` : ""}{M.title}</b>
+          <button type="button" onClick={onClose} aria-label="닫기">✕</button>
+        </div>
+        {M.hint && <p className="dsp-gal-sub">{M.hint}</p>}
+        <div className="lsn-sets">
+          {spec.sets.map((b) => (
+            <button key={b.key} type="button" className={"lsn-set" + (b.key === cur ? " on" : "")} onClick={() => onPick(b.key)}>
+              <span className="i" aria-hidden="true">{b.icon || "•"}</span>
+              <span className="t">{b.short || b.name}{b.note && <small>{b.note}</small>}</span>
+              <span className="u">{b.sub || b.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const ModeSeg = ({ dual, onChange, poke }) => (
@@ -52,20 +124,23 @@ const SpeedSeg = ({ value, onChange, poke, label = "빠르기" }) => (
 
 /* ══════════ 단일 모드 ══════════ */
 function SingleStage(props) {
-  const { spec, ui, poke, inert, onDual } = props;
+  const { spec, ui, poke, inert, onDual, pick, C, onExit } = props;
   const { Btn, Ic } = ui;
   const F = useMemo(() => fixers(spec), [spec]);
   const [cfg, setCfg] = useState(() => {
     const o = lsRead(spec.lsk) || {};
-    const set = F.fixSet(o.set);
-    return { set, sp: fixSp(o.sp), st: F.fixSt(set, o.st ?? o.lv) };
+    const saved = o.set ?? o.id;
+    const set = F.fixSet(pick ?? saved);
+    return { set, sp: fixSp(o.sp), st: pick != null && pick !== saved ? 0 : F.fixSt(set, o.st ?? o.lv) };
   });
   useEffect(() => { lsWrite(spec.lsk, cfg); }, [cfg, spec.lsk]);
   const [list, setList] = useState(false);
+  const [menu, setMenu] = useState(false);
   const [docs, setDocs] = useState(false);
   const [cur, setCur] = useState(0);
   const api = useRef(null);
-  const scenes = useMemo(() => spec.scenes(cfg.set, cfg.sp, cfg.st), [spec, cfg]);
+  const [ready, err] = useSetsReady(spec, [cfg.set]);
+  const scenes = useMemo(() => (ready ? spec.scenes(cfg.set, cfg.sp, cfg.st) : null), [spec, cfg, ready]);
   const pickSet = useCallback((v) => setCfg((c) => { const set = F.fixSet(v); return set === c.set ? c : { ...c, set, st: F.fixSt(set, c.st) }; }), [F]);
   const pickSt = useCallback((v) => setCfg((c) => ({ ...c, st: F.fixSt(c.set, v) })), [F]);
   /** 빠르기 — 그림 속 같은 순간에서 이어지게 기억한 자리를 옮겨 둔다(재생기는 새 빠르기로 다시 뜬다) */
@@ -80,16 +155,18 @@ function SingleStage(props) {
     return { ...c, sp };
   }), [spec]);
   useKeys({
-    l: () => { setList((v) => !v); poke(); },
+    l: () => { setMenu(false); setList((v) => !v); poke(); },
+    u: () => { if (spec.setMenu) { setList(false); setMenu((v) => !v); poke(); } },
     b: () => { if (F.keys.length > 1) { pickSet(F.keys[(F.keys.indexOf(cfg.set) + 1) % F.keys.length]); poke(); } },
     s: () => { pickSp(nextSp(cfg.sp)); poke(); },
     d: () => { onDual(); poke(); },
-    Escape: () => { setList(false); setDocs(false); },
+    Escape: () => { setList(false); setMenu(false); setDocs(false); },
   }, inert || docs);
   const meta = spec.sets.find((s) => s.key === cfg.set);
+  if (!scenes) return <Loading C={C} ui={ui} onExit={onExit} title={meta.name} err={err} />;
   const extra = (
     <>
-      <Btn title="번호 · 단계 목록 (L)" on={list} onClick={() => { setList((v) => !v); poke(); }}><Ic d={LIST_IC} /></Btn>
+      <Btn title="번호 · 단계 목록 (L)" on={list} onClick={() => { setMenu(false); setList((v) => !v); poke(); }}><Ic d={LIST_IC} /></Btn>
       <span className="dsp-sep" />
     </>
   );
@@ -97,20 +174,24 @@ function SingleStage(props) {
   const row = (
     <>
       <Setting label="보기"><ModeSeg dual={false} onChange={(v) => { if (v === "dual") onDual(); }} poke={poke} /></Setting>
-      {spec.sets.length > 1 && <Setting label="세트" sep><Seg label="세트" value={cfg.set} options={spec.sets.map((s) => [s.key, s.short || s.name])} onChange={pickSet} poke={poke} /></Setting>}
+      {(spec.setMenu || spec.sets.length > 1) && <Setting label={spec.setMenu ? spec.setMenu.word : "세트"} sep>
+        <SetPick spec={spec} value={cfg.set} onChange={pickSet} menuOn={menu} onMenu={() => { setList(false); setMenu((v) => !v); }} poke={poke} />
+      </Setting>}
       <Setting label="빠르기" sep><SpeedSeg value={cfg.sp} onChange={pickSp} poke={poke} /></Setting>
     </>
   );
-  const pick = (i) => { api.current?.goTo(i); setList(false); poke(); };
+  const goTo = (i) => { api.current?.goTo(i); setList(false); poke(); };
   const stLab = cfg.st ? spec.stages(cfg.set).find((x) => x.v === cfg.st)?.lab : null;
   const label = `${spec.title} · ${meta.name}${stLab ? ` · ${stLab}` : ""}`;
   const top = spec.topExtra ? spec.topExtra({ set: cfg.set, open: docs, onOpen: (v) => { setDocs(v); poke(); }, poke }) : null;
   return (
     <>
+      <style>{SET_CSS}</style>
       <StoryPlayer key={`${cfg.set}|${cfg.sp}|${cfg.st}`} list={scenes} lsKey={posKeyOf(spec, cfg.set, cfg.st)} label={label}
-        {...props} inert={inert || list || docs} noMode extra={extra} extraRow={row} topExtra={top} apiRef={api} onIdx={setCur} scrub />
-      {list && <NumList spec={spec} set={cfg.set} st={cfg.st} scenes={scenes} cur={cur} onPick={pick}
+        {...props} inert={inert || list || docs || menu} noMode extra={extra} extraRow={row} topExtra={top} apiRef={api} onIdx={setCur} scrub />
+      {list && <NumList spec={spec} set={cfg.set} st={cfg.st} scenes={scenes} cur={cur} onPick={goTo}
         onStage={(v) => { pickSt(v); poke(); }} onClose={() => setList(false)} />}
+      {menu && <SetMenu spec={spec} cur={cfg.set} onPick={(v) => { pickSet(v); setMenu(false); poke(); }} onClose={() => setMenu(false)} />}
     </>
   );
 }
@@ -137,6 +218,17 @@ export function paneLoad(spec, o, side, setDefault, now = Date.now()) {
 const elapsed = (p, now) => (p.held != null ? p.held : now - p.t0);
 
 function DualStage(props) {
+  const { spec } = props;
+  const need = useMemo(() => {
+    const F = fixers(spec), o = lsRead(spec.lsk + ".dual") || {}, s0 = F.fixSet((lsRead(spec.lsk) || {}).set ?? (lsRead(spec.lsk) || {}).id);
+    return [...new Set([F.fixSet(o.L?.set || s0), F.fixSet(o.R?.set || s0)])];
+  }, [spec]);
+  const [ready, err] = useSetsReady(spec, need);
+  if (!ready) return <Loading C={props.C} ui={props.ui} onExit={props.onExit} title={spec.title} err={err} />;
+  return <DualInner {...props} />;
+}
+
+function DualInner(props) {
   const { spec, ui, C, ctl, poke, inert, isFs, toggleFs, onTheme, onGallery, onExit, onSingle } = props;
   const { Btn, Ic, FrameIc } = ui;
   const F = useMemo(() => fixers(spec), [spec]);
@@ -144,11 +236,12 @@ function DualStage(props) {
   const panes = useRef(null);
   if (!panes.current) {
     const o = lsRead(DLSK) || {};
-    const single0 = F.fixSet((lsRead(spec.lsk) || {}).set);
+    const single0 = F.fixSet((lsRead(spec.lsk) || {}).set ?? (lsRead(spec.lsk) || {}).id);
     panes.current = { L: paneLoad(spec, o.L, "L", single0), R: paneLoad(spec, o.R, "R", single0) };
   }
   const [, setFrame] = useState(0);
   const [list, setList] = useState(null);           // "L" | "R" | null
+  const [menu, setMenu] = useState(null);           // 세트(단원) 목록을 연 판 "L" | "R" | null
   const [docs, setDocs] = useState(null);           // 문서를 펼친 세트 | null
   const sc = (p) => spec.scenes(p.set, p.sp, p.st);
   const save = useCallback(() => lsWrite(DLSK, panes.current), [DLSK]);
@@ -164,10 +257,12 @@ function DualStage(props) {
     const now = Date.now();
     return p.held != null ? { ...p, t0: now - p.held, held: null } : { ...p, held: now - p.t0 };
   }), [upd]);
-  const setSet = useCallback((side, v) => upd(side, (p) => {
+  const setSet = useCallback((side, v) => {
     const set = F.fixSet(v);
-    return p.set === set ? p : { ...p, set, st: F.fixSt(set, p.st), i: 0, t0: Date.now(), held: p.held != null ? 0 : null };
-  }), [upd, F]);
+    const apply = () => upd(side, (p) => (p.set === set ? p : { ...p, set, st: F.fixSt(set, p.st), i: 0, t0: Date.now(), held: p.held != null ? 0 : null }));
+    if (spec.ready && !spec.ready(set)) spec.load(set).then(apply).catch(() => {});        // 단원 문항을 들여온 뒤에
+    else apply();
+  }, [upd, F, spec]);
   const setStage = useCallback((side, st) => upd(side, (p) => ({ ...p, st: F.fixSt(p.set, st), i: 0, t0: Date.now(), held: p.held != null ? 0 : null })), [upd, F]);
   /** 가운데 단추 — 두 판의 자리를 맞바꾼다(세트 · 번호 · 빠르기 · 시계 모두 그대로 옮겨 간다) */
   const swap = useCallback(() => {
@@ -216,8 +311,8 @@ function DualStage(props) {
       for (const s of SIDES) if ((panes.current[s].held == null) === both) togglePause(s); poke(); },
     f: () => toggleFs(),
     x: () => { swap(); poke(); },
-    Escape: () => { setList(null); setDocs(null); },
-  }, inert || !!list || !!docs);
+    Escape: () => { setList(null); setMenu(null); setDocs(null); },
+  }, inert || !!list || !!docs || !!menu);
 
   const now = Date.now();
   const stop = (e) => e.stopPropagation();
@@ -229,7 +324,7 @@ function DualStage(props) {
   const sets = [...new Set(view.map((v) => v.p.set))];
   return (
     <>
-      <style>{DUAL_CSS}</style>
+      <style>{DUAL_CSS + SET_CSS}</style>
       <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img"
         aria-label={`${spec.title} — 듀얼: 왼쪽 ${view[0].S.name} ${view[0].s.no}번, 오른쪽 ${view[1].S.name} ${view[1].s.no}번`}>
         <line x1={W / 2} y1={36} x2={W / 2} y2={H - 36} stroke={C.soft} strokeWidth={2} opacity={0.35} />
@@ -264,9 +359,9 @@ function DualStage(props) {
       {view.map(({ side, k, p }) => (
         <div key={side} className={"lsn-pane-ctl " + side + (ctl ? " show" : "")} onPointerDown={stop}>
           <div className="row">
-            {spec.sets.length > 1 && <Seg label={`${k ? "오른쪽" : "왼쪽"} 세트`} value={p.set} options={spec.sets.map((x) => [x.key, x.short || x.name])}
-              onChange={(v) => setSet(side, v)} poke={poke} />}
-            <Btn title="번호 · 단계 목록" on={list === side} onClick={() => { setList(list === side ? null : side); poke(); }}><Ic d={LIST_IC} /></Btn>
+            <SetPick spec={spec} label={`${k ? "오른쪽" : "왼쪽"} 세트`} value={p.set} onChange={(v) => setSet(side, v)} poke={poke}
+              menuOn={menu === side} onMenu={() => { setList(null); setMenu(menu === side ? null : side); }} />
+            <Btn title="번호 · 단계 목록" on={list === side} onClick={() => { setMenu(null); setList(list === side ? null : side); poke(); }}><Ic d={LIST_IC} /></Btn>
           </div>
           <div className="row">
             <Btn title="이전 문항" onClick={() => { goTo(side, p.i - 1); poke(); }}><Ic d="M15 5 8 12l7 7M6 5v14" /></Btn>
@@ -285,16 +380,22 @@ function DualStage(props) {
       {view.map(({ side, e, s }) => (
         <div key={"pg" + side} className={"lsn-pane-prog " + side} aria-hidden="true"><i style={{ transform: `scaleX(${e / s.dur})` }} /></div>
       ))}
-      <button type="button" className={"lsn-swap" + (ctl && !list ? " show" : "")} title="왼쪽 · 오른쪽 판 자리 바꾸기 (X)" aria-label="왼쪽 · 오른쪽 판 자리 바꾸기"
+      <button type="button" className={"lsn-swap" + (ctl && !list && !menu ? " show" : "")} title="왼쪽 · 오른쪽 판 자리 바꾸기 (X)" aria-label="왼쪽 · 오른쪽 판 자리 바꾸기"
         onPointerDown={stop} onClick={() => { swap(); poke(); }}>
         <svg viewBox="0 0 24 24" width="55%" height="55%" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7" />
         </svg>
       </button>
       {view.map(({ side, p, L, e, s }) => (
-        <Scrub key={"sc" + side} variant={side} show={ctl && !list} scenes={L} idx={p.i} onPick={(i) => { goTo(side, i); poke(); }}
+        <Scrub key={"sc" + side} variant={side} show={ctl && !list && !menu} scenes={L} idx={p.i} onPick={(i) => { goTo(side, i); poke(); }}
           t={e} dur={s.dur} marks={s.marks} onSeek={(tt) => { seek(side, tt); poke(); }} poke={poke} />
       ))}
+      {menu && (
+        <div className={"lsn-pane-list " + menu}>
+          <SetMenu spec={spec} cur={panes.current[menu].set} side={menu === "L" ? "왼쪽" : "오른쪽"}
+            onPick={(v) => { setSet(menu, v); setMenu(null); poke(); }} onClose={() => setMenu(null)} />
+        </div>
+      )}
       {list && (() => {
         const p = panes.current[list];
         return (
@@ -315,6 +416,22 @@ export function paneHead(spec, S, s) {
     `${nm} · ${s.grp ? `${s.grp} · ` : ""}${s.no}번`, `${s.grp ? `${s.grp} · ` : ""}${s.no}번`];
   return cands.find((c) => mathWidth(c, 30, 800) <= 540) || cands[cands.length - 1];
 }
+
+const SET_CSS = `
+.dsp-chip.lsn-unit { display: inline-flex; align-items: center; gap: .45cqw; max-width: 26cqw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font-size: 1.15cqw; font-weight: 800; padding: .45cqw .9cqw; }
+.dsp-chip.lsn-unit small { opacity: .65; font-weight: 600; font-size: .9cqw; margin-left: .2cqw; }
+.lsn-pane-ctl .dsp-chip.lsn-unit { max-width: 22cqw; font-size: 1.05cqw; }
+.lsn-sets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5em), 1fr)); gap: .6cqw; }
+.lsn-set { display: grid; grid-template-columns: 2.1em 1fr; grid-template-rows: auto auto; column-gap: .6cqw; align-items: center; text-align: left;
+  padding: .6cqw .8cqw; border-radius: .9cqw; border: 1px solid var(--chipbd); background: var(--chip); color: inherit; font: inherit; cursor: pointer; }
+.lsn-set .i { grid-row: 1 / span 2; font-size: 1.45em; text-align: center; }
+.lsn-set .t { font-weight: 800; font-size: .95em; display: flex; gap: .4cqw; align-items: baseline; flex-wrap: wrap; }
+.lsn-set .t small { font-weight: 700; font-size: .78em; opacity: .6; }
+.lsn-set .u { font-size: .76em; opacity: .66; }
+.lsn-set.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.lsn-pane-list .lsn-sets { grid-template-columns: repeat(2, 1fr); }
+`;
 
 export const DUAL_CSS = `
 .lsn-pane-ctl { position: absolute; bottom: 4.4cqw; width: 48%; display: flex; flex-direction: column; align-items: center; gap: .5cqw;

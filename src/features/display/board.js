@@ -1,5 +1,5 @@
 // ashrain.out — 해설 액자의 글자 판 배치 (board.js) — 그리기는 frames/board.jsx
-// 일차함수 10단계 · 그래프와 넓이 · 경우의 수와 확률 100제 · 학년별 기본기 해설(초1 ~ 고3)이 같은 규칙으로 글자 판을 놓는다.
+// 일차함수 10단계 · 그래프와 넓이 · 경우의 수와 확률 100제 · 기본기 해설(초등 · 중등 · 고등 단원)이 같은 규칙으로 글자 판을 놓는다.
 //   ① 글자 크기는 정해진 두 벌(BOARD_TYPE) — 기본으로 다 들어가면 기본, 아니면 촘촘. 문항마다 들쭉날쭉하지 않게.
 //      기본은 교실 모니터(15.6형)를 약 1 m 떨어져 봐도 읽히는 크기 — 판서 42 · 문제 40 · 머리말 · 메모 30.
 //   ② 문제(발문)는 판 너비를 다 쓴다 — 줄바꿈을 줄인다. 그 아래 방침 · 판서 줄 · 답.
@@ -28,9 +28,11 @@ const GAP_FIG = 44;                // 글자와 그림 사이
 
 /* ══════════ 글자 높이 ══════════ */
 const hasFrac = (s) => /\{[^{}]*\/[^{}]*\}/.test(String(s)) || /\{[^}]*\{/.test(String(s));
-const hasSup = (s) => String(s).includes("^{");
-export const upOf = (s, z) => z * (hasFrac(s) ? 1.04 : hasSup(s) ? 0.92 : 0.8);
-export const dnOf = (s, z) => z * (hasFrac(s) ? 0.52 : String(s).includes("_{") ? 0.36 : 0.24);
+const hasSup = (s) => String(s).includes("^{") || String(s).includes("\u20D7");     // 위 첨자 · 벡터 화살
+/** 행렬 ⟦1, 2; 3, 4⟧ 의 가장 많은 줄 수 — 없으면 0 (행렬은 가운데 축 위아래로 줄 수만큼 높다, draw.jsx) */
+const matRows = (s) => Math.max(0, ...[...String(s).matchAll(/⟦([^⟧]*)⟧/g)].map((m) => m[1].split(";").length));
+export const upOf = (s, z) => { const r = matRows(s); return z * Math.max(r ? 0.46 + r * 0.5 : 0, hasFrac(s) ? 1.04 : hasSup(s) ? 0.92 : 0.8); };
+export const dnOf = (s, z) => { const r = matRows(s); return z * Math.max(r ? r * 0.5 - 0.16 : 0, hasFrac(s) ? 0.52 : String(s).includes("_{") ? 0.36 : 0.24); };
 
 /* ══════════ 줄 바꾸기 ══════════ */
 const HANGUL = /[가-힣]/;
@@ -194,10 +196,11 @@ function layOnce(it, T, R, colR, split = 0) {
     return got.r;
   });
   // ④ 답
-  const ansFrac = hasFrac(it.ans);
-  const ansH = T.b * (ansFrac ? 1.95 : 1.5);
+  const ansFrac = hasFrac(it.ans) || matRows(it.ans) > 0;
+  const ansUp = Math.max(T.b * 1.05, upOf(it.ans ?? "", T.b) + T.b * 0.22), ansDn = Math.max(T.b * 0.45, dnOf(it.ans ?? "", T.b) + T.b * 0.22);
+  const ansH = ansFrac ? ansUp + ansDn : T.b * 1.5;
   const ansTop = y + T.b * 0.12;
-  const ansY = ansTop + T.b * (ansFrac ? 1.25 : 1.05);
+  const ansY = ansTop + (ansFrac ? ansUp : T.b * 1.05);
   const ansW = wOf(it.ans ?? "", T.b, 700) + T.b * 2.6;
   boxes.push([L - 8, ansTop, L - 8 + ansW, ansTop + ansH]);
   over = Math.max(over, L - 8 + ansW - (two ? colR : R.right));
