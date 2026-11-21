@@ -5,12 +5,15 @@
 //   그림은 카드로 순번 찾기(frames/lexcards.jsx · ./lexwalk.js) — 묶음이 휘리릭 지나가고, 글자를 고정하고, 최종 묶음에서 점멸하며 센다.
 //   그 움직임이 판서 줄 안에 다 돌도록 줄마다 hold 를 더해 둔다(lexPrep — 박자표를 처음 만들기 전에 한 번).
 //   한 줄로 세우기도 자리마다 후보가 돌며 가짓수를 세는 움직임(./seatwalk.js)이 있어 같은 식으로 hold(seatsPrep).
+//   학년별 선발 · 주머니 공은 판서 식의 수를 그림에 맞춰 짚어 세고 자리로 뽑는 움직임(./pickwalk.js — pickPrep).
 import { CNT100_SEL, CNT100_BALL, CNT100_LEX, CNT100_LINE } from "./cnt100-items.js";
 import { lexPrep } from "./lexwalk.js";
 import { seatsPrep } from "./seatwalk.js";
+import { pickPrep } from "./pickwalk.js";
 
 for (const it of CNT100_LEX) lexPrep(it);
 for (const it of CNT100_LINE) seatsPrep(it);
+for (const it of [...CNT100_SEL, ...CNT100_BALL]) pickPrep(it);
 
 export const C100_SETS = {
   sel: {

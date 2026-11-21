@@ -33,8 +33,8 @@ const FIG = { x0: 880, y0: 170, x1: 1540, y1: 850 };
 const FIGS = {
   tree: { draw: (p) => <LexCards {...p} />, flex: LEX_FIG },   // 사전식 — 카드로 순번 찾기(받은 칸에 맞춰 그린다)
   seats: { draw: (p) => <SeatsFig {...p} />, box: (f) => seatsBox(f) },
-  grades: { draw: (p) => <GradesFig {...p} />, box: (f) => gradesBox(f) },
-  bag: { draw: (p) => <BagFig {...p} />, box: (f) => bagBox(f) },
+  grades: { draw: (p) => <GradesFig {...p} />, box: (f, it) => gradesBox(f, it) },
+  bag: { draw: (p) => <BagFig {...p} />, box: (f, it) => bagBox(f, it) },
   dsl: { draw: (p) => <FigDsl {...p} />, box: (f) => dslBox(f) },          // 기본기 해설(frames/basics.jsx)
 };
 const AREA9 = { draw: (p) => <Figure {...p} />, box: (f) => area9Box(f), ts: true };
@@ -44,7 +44,7 @@ const NAT = new WeakMap();
 export function figNatural(it) {
   if (!it.fig || figOf(it).flex) return null;
   if (NAT.has(it)) return NAT.get(it);
-  const b = figOf(it).box(it.fig);
+  const b = figOf(it).box(it.fig, it);
   const out = b && b.x1 - b.x0 > 20 && b.y1 - b.y0 > 20 ? b : null;
   NAT.set(it, out);
   return out;

@@ -16,6 +16,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { C100_SETS, C100_KEYS } from "../src/features/display/cnt100.js";
 import { l10Plan, lineAt } from "../src/features/display/lin10.js";
 import { lexWalk, lexTimes, nthArr, nP } from "../src/features/display/lexwalk.js";
+import { seatsPlan, seatsTimes, tokLabel } from "../src/features/display/seatwalk.js";
+import { pickPlan, pickTimes } from "../src/features/display/pickwalk.js";
 
 let n = 0, failed = 0;
 function test(name, fn) {
@@ -184,6 +186,70 @@ test("사전식 카드로 순번 찾기: 묶음 · 최종 묶음의 문자열 = 
 });
 
 /* ══════════ 그리기 훑기(번들) ══════════ */
+test("한 줄로 세우기 자리 룰렛: 자리마다 후보 수 = 가짓수 · 한 사람은 한 자리 · 움직임이 판서 줄 안에", () => {
+  let reels = 0, gaps = 0;
+  for (const it of C100_SETS.line.items) {
+    const { rows } = seatsPlan(it), P = l10Plan(it), T = seatsTimes(it, P);
+    rows.forEach((R, ri) => {
+      for (const a of R.acts) {
+        if (a.type === "reel") { reels++; assert.ok(a.ok, `${it.no}번 ${ri}줄 ${a.ui}칸: 후보 ${a.cands.length} ≠ ${a.cnt}`); }
+        if (a.type === "gap") { gaps++; assert.ok(a.ok, `${it.no}번 빈자리: ${a.avail.length} ≠ ${a.cnt}`); }
+      }
+      const who = R.units.flatMap((u) => (u.members ? u.members : u.tok ? [u.tok] : [])).map(tokLabel).filter((x) => x && !/^\d+$/.test(x));
+      assert.equal(new Set(who).size, who.length, `${it.no}번 ${ri}줄: 같은 사람이 두 자리 ${who.join(",")}`);
+    });
+    for (const a of T.acts) {
+      const L = P.lines[a.line];
+      assert.ok(a.t0 >= L.a && a.t1 <= L.b + 1, `${it.no}번 ${a.type}: ${Math.round(a.t0)}~${Math.round(a.t1)} 이 ${a.line}줄(${Math.round(L.a)}~${Math.round(L.b)}) 밖`);
+    }
+  }
+  console.log(`   자리 룰렛 ${reels} · 빈자리 고르기 ${gaps}`);
+});
+
+test("학년별 선발 · 주머니 공: 식의 수를 그림에 맞춤 · 움직임으로 센 값 = 식 · 줄 안에", () => {
+  const fall = (n, k) => { let v = 1; for (let q = 0; q < k; q++) v *= n - q; return v; };
+  const tally = {};
+  for (const key of ["sel", "ball"]) {
+    let lines = 0, done = 0;
+    for (const it of C100_SETS[key].items) {
+      const { lines: Ls, objs } = pickPlan(it), P = l10Plan(it), T = pickTimes(it, P);
+      Ls.forEach((L, i) => {
+        if (i < 2) return;
+        lines++;
+        if (!L.acts.length) return;
+        done++;
+        for (const a of L.acts) {
+          if (a.type === "count") assert.equal(a.ids.length, a.val, `${key} ${it.no}번 ${i}줄 센 수`);
+          if (a.type === "list") assert.deepEqual(a.ids.map((j) => objs[j].n), a.nums, `${key} ${it.no}번 나열`);
+          if (a.type === "pick") {
+            assert.equal(a.got.length, a.k, `${key} ${it.no}번 뽑은 수`);
+            assert.ok(a.got.every((j) => a.pool.ids.includes(j)), `${key} ${it.no}번 뽑은 것이 무리 밖`);
+          }
+        }
+        // 뽑기로 센 값 = 식의 값(경우마다 곱 · 순서 없음 ÷ · 자리 정하기 × k! · 더하고 빼기)
+        if (L.expect != null && L.acts.some((a) => a.type === "pick")) {
+          let tot = 0, term = 1, sign = 1;
+          for (const a of L.acts) {
+            if (a.type === "clear") { tot += sign * term; term = 1; sign = a.sign; continue; }
+            if (a.type === "pick") term *= fall(a.pool.ids.length, a.k) / (a.div || 1) * (a.back ? 1 : 1);
+            if (a.type === "arrange") term *= [1, 1, 2, 6, 24, 120][a.k];
+          }
+          tot += sign * term;
+          assert.equal(tot, L.expect, `${key} ${it.no}번 ${i}줄: 움직임 ${tot} ≠ 식 ${L.expect} (${it.lines[i].s})`);
+        }
+      });
+      for (const a of T.acts) {
+        const L = P.lines[a.line];
+        assert.ok(a.t0 >= L.a && a.t1 <= L.b + 1, `${key} ${it.no}번 ${a.type}: 줄 밖`);
+      }
+    }
+    tally[key] = `${done}/${lines}`;
+  }
+  const [s1] = tally.sel.split("/").map(Number), [b1] = tally.ball.split("/").map(Number);
+  assert.ok(s1 >= 108 && b1 >= 125, `맞춘 줄이 줄었다: 선발 ${tally.sel} · 공 ${tally.ball}`);
+  console.log(`   그림에 맞춘 식 줄: 선발 ${tally.sel} · 공 꺼내기 ${tally.ball}(나머지는 확률 · 조합 수 · 글 줄)`);
+});
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "display-cnt100-"));

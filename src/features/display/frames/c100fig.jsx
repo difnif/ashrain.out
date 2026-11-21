@@ -1,15 +1,17 @@
 // ashrain.out — 교실 모니터 「경우의 수와 확률 100제 해설」 단일 모드의 오른쪽 그림 (frames/c100fig.jsx)
-// 판서 줄과 맞물려 움직이는 간단한 그림 셋 — 데이터는 ../cnt100-items.js 의 it.fig (만든 곳: 프로젝트 SRC-…-모니터해설 · figs.py)
-//   seats  (한 줄로 세우기) — 자리 칸을 늘어놓고, 고정된 사람(금빛) · 묶음(테두리, 묶음 안 순서는 빨간 글씨) · 빈자리 ∨ ·
-//          양 끝을 바꾸는 화살표를 판서 줄에 맞춰 보이며, 식을 쓰는 줄에서 칸마다 가짓수(5 · 4 · 3 …)가 차례로 뜬다.
+// 판서 줄과 맞물려 「세는 방법」이 움직임으로 보이는 그림 셋 — 데이터는 ../cnt100-items.js 의 it.fig (만든 곳: 프로젝트 SRC-…-모니터해설 · figs.py)
+//   seats  (한 줄로 세우기 · ../seatwalk.js) — 자리마다 후보가 돌며 1, 2, 3 … 세고 한 사람이 앉아 가짓수가 찍힌다(앉은 사람은 다음 자리에서 빠짐).
+//          고정된 사람은 내려앉고, 묶음은 모여 띠로 묶인 뒤 안 순서를 섞어 보이고, 빈자리 ∨ 는 짚어 세고 내려앉고, 양 끝은 자리를 바꿨다 돌아온다.
 //          rows[]: { cap, at, units[{ w, lab[], hi?, cnt?, ca?, inner?, gap?, mid? }], cntAt, innerAt, swaps[{ a, b, lab, at }], note?, noteAt }
-//   grades (학년별 선발) — 학년마다 학생 점(이름 붙은 학생은 이름까지). 판서 줄이 가리키는 학년 · 학생이 빛난다(hl[줄]).
-//   bag    (주머니 공) — 주머니(하나 또는 A · B) 속 공(색 또는 번호). 판서 줄이 가리키는 공이 빛나고 나머지는 흐려진다(hl[줄]).
-// at · cntAt … 은 판서 줄 번호 — 그 줄이 써지기 시작하는 시각(l10Plan)에 나타난다.
+//   grades (학년별 선발) · bag (주머니 공) — ../pickwalk.js 가 판서 식의 수를 그림의 무리(학년 · 성별 · 색 · 홀짝 · 배수 …)에 맞춰,
+//          무리를 짚어 세고(합) · 아래 「뽑은 자리」로 하나씩 뽑아 보내고(곱 — n, n − 1 …) · 순서가 없으면 자리끼리 바꿔 「÷ 2」,
+//          적힌 수의 공을 꺼내 늘어놓고(나열) · A · B 공을 잇는다(순서쌍). 맞추지 못한 줄은 그대로 둔다.
+// at · cntAt … 은 판서 줄 번호 — 그 줄이 써지기 시작하는 시각(l10Plan)부터 움직인다(줄마다 hold 로 시간을 늘려 둠).
 import { seg, E, clamp } from "../core.js";
 import { SANS, mathWidth } from "../draw.jsx";
 import { l10Plan, lineAt } from "../lin10.js";
 import { seatsPlan, seatsTimes, reelTick, gapTick, SEAT_T } from "../seatwalk.js";
+import { objectsOf, slotsOf, pickPlan, pickTimes, touchTick, PICK_T } from "../pickwalk.js";
 
 const BOX = { x0: 880, y0: 170, x1: 1540, y1: 850 };
 const lineT = (P, i) => (P.lines[clamp(i, 0, P.lines.length - 1)] || { a: 0 }).a;
@@ -245,15 +247,10 @@ export function SeatsFig({ it, t, C, uid = "" }) {
   return <g>{els}</g>;
 }
 
-/* ══════════ 빛남(학년 · 공) — 지금 판서 줄의 상태 ══════════ */
-function hlNow(f, P, t) {
-  const cur = lineAt(P, t);
-  if (cur < 0) return { st: null, k: 0 };
-  const i = Math.min(cur, f.hl.length - 1);
-  return { st: f.hl[i], k: seg(t, lineT(P, i), lineT(P, i) + 380, E.sine) };
-}
+/* ══════════ 학년별 선발 · 주머니 공 — 짚어 세고 · 자리로 뽑고 · 꺼내 늘어놓기(../pickwalk.js) ══════════ */
+const BALL = { 빨간: "#E5534B", 파란: "#4C8DF6", 노란: "#F2C230", 흰: "#F7F3E8", 검은: "#2B2B2B", 초록: "#3DBB6B" };
+const TRAY_H = 132;
 
-/* ══════════ 학년별 선발 ══════════ */
 function gradesGeom(f) {
   const ng = f.groups.length;
   const colW = (BOX.x1 - BOX.x0) / ng;
@@ -262,92 +259,274 @@ function gradesGeom(f) {
   const r = Math.min(30, (colW - 40) / (per * 2.4));
   return { ng, colW, maxN, per, r };
 }
-export function gradesBox(f) {
-  const { ng, colW, maxN, per, r } = gradesGeom(f);
-  const rowsN = Math.ceil(maxN / per);
+/** 그림 자리 — 학생 · 공 하나하나의 자리(objs[j]), 무리 머리, 뽑은 자리 칸(tray) */
+const GEO = new WeakMap();
+function pickGeom(it) {
+  if (GEO.has(it)) return GEO.get(it);
+  const f = it.fig, objs = objectsOf(it), nSlot = slotsOf(it);
+  const pos = [];
+  let heads = [], bags = [], bottom = 0, r0 = 30;
+  if (f.kind === "grades") {
+    const { colW, per, r } = gradesGeom(f);
+    r0 = r;
+    let j = 0;
+    f.groups.forEach((gp, gi) => {
+      const cx = BOX.x0 + colW * (gi + 0.5);
+      heads.push({ x: cx, lab: gp.lab, sub: gp.n != null ? `${gp.n}명` : `남 ${gp.m} · 여 ${gp.f}`, key: gp.key });
+      const n = gp.n != null ? gp.n : gp.m + gp.f;
+      for (let q = 0; q < n; q++, j++) {
+        const row = Math.floor(q / per), col = q % per;
+        pos[j] = { x: cx + (col - (per - 1) / 2) * r * 2.5, y: BOX.y0 + 170 + row * r * 2.9, r };
+        bottom = Math.max(bottom, pos[j].y + r + (objs[j].name ? 34 : 8));
+      }
+    });
+    bottom += 56;                      // 센 수 도장 줄
+  } else {
+    const nb = f.bags.length, bw = (BOX.x1 - BOX.x0 - (nb - 1) * 40) / nb;
+    const yb1 = BOX.y1 - 40 - (nSlot ? TRAY_H : 0);
+    let j = 0;
+    f.bags.forEach((bg, bi) => {
+      const x0 = BOX.x0 + bi * (bw + 40), x1 = x0 + bw, y0 = BOX.y0 + 120, y1 = yb1;
+      const n = bg.balls.length;
+      const cols = Math.max(2, Math.ceil(Math.sqrt(n * (bw / (y1 - y0 - 60)))));
+      const rowsN = Math.ceil(n / cols);
+      const r = Math.min(40, (bw - 120) / cols / 2.25, (y1 - y0 - 150) / rowsN / 2.25);
+      r0 = Math.min(r0 === 30 ? r : r0, r);
+      const gw = cols * r * 2.25, gh = rowsN * r * 2.25;
+      const gx = (x0 + x1) / 2 - gw / 2 + r * 1.125, gy = Math.max(y0 + 50 + r, (y0 + y1) / 2 - gh / 2 + r * 1.125);
+      for (let q = 0; q < n; q++, j++) pos[j] = { x: gx + (q % cols) * r * 2.25, y: gy + Math.floor(q / cols) * r * 2.25, r };
+      bags.push({ x0, x1, y0, y1, lab: bg.lab });
+    });
+    bottom = yb1;
+  }
+  let tray = null;
+  if (nSlot) {
+    const s = Math.min(f.kind === "grades" ? r0 * 2.3 : 76, (BOX.x1 - BOX.x0 - 80) / nSlot - 14);
+    const y = (f.kind === "grades" ? bottom + 40 : bottom + 22) + s / 2 + 26;
+    const gap = s * 0.28, W = nSlot * s + (nSlot - 1) * gap, x0 = (BOX.x0 + BOX.x1) / 2 - W / 2;
+    tray = { y, s, xs: Array.from({ length: nSlot }, (_, i) => x0 + i * (s + gap) + s / 2), x0, W };
+    const marks = pickPlan(it).lines.some((L) => L.acts.some((a) => a.div || a.type === "arrange"));
+    bottom = y + s / 2 + (marks ? 72 : 14);           // ÷ 2 · × 6 괄호와 글자 자리까지
+  }
+  const badgeY = f.kind === "grades" ? (tray ? tray.y - tray.s / 2 - 70 : bottom - 30) : bags[0].y0 + 30;
+  const out = { objs, pos, heads, bags, tray, bottom, r0, badgeY };
+  GEO.set(it, out);
+  return out;
+}
+export function gradesBox(f, it) {
+  const { ng, colW, per, r } = gradesGeom(f);
   const half = Math.max((per - 1) * r * 1.25 + r + 4, ...f.groups.map((gp) => mathWidth(gp.lab, 38, 800) / 2 + 4));
   const x0 = BOX.x0 + colW / 2 - half, x1 = BOX.x0 + colW * (ng - 0.5) + half;
-  const y1 = BOX.y0 + 170 + (rowsN - 1) * r * 2.9 + r + (f.named.length ? 34 : 8);
-  return { x0, y0: BOX.y0 + 38, x1, y1 };
+  const G = it ? pickGeom(it) : null;
+  let y1 = G ? G.bottom : BOX.y0 + 300;
+  let X0 = x0, X1 = x1;
+  if (G?.tray) { X0 = Math.min(X0, G.tray.x0 - 10); X1 = Math.max(X1, G.tray.x0 + G.tray.W + 10); }
+  return { x0: X0, y0: BOX.y0 + 38, x1: X1, y1 };
 }
-export function GradesFig({ it, t, C }) {
-  const f = it.fig, P = l10Plan(it);
-  const base = seg(t, 0, 700, E.sine);
-  const { st, k } = hlNow(f, P, t);
-  const { colW, per, r } = gradesGeom(f);
-  const els = [];
-  f.groups.forEach((gp, gi) => {
-    const cx = BOX.x0 + colW * (gi + 0.5);
-    const on = st === "all" || (st && st.g && st.g.includes(gp.key));
-    const glow = on ? k : 0;
-    els.push(
-      <text key={`h${gi}`} x={cx} y={BOX.y0 + 70} fontFamily={SANS} fontSize={38} fontWeight={800} fill={glow > 0.5 ? C.gold : C.ink} textAnchor="middle">{gp.lab}</text>,
-      <text key={`n${gi}`} x={cx} y={BOX.y0 + 108} fontFamily={SANS} fontSize={27} fontWeight={600} fill={C.soft} textAnchor="middle">
-        {gp.n != null ? `${gp.n}명` : `남 ${gp.m} · 여 ${gp.f}`}
-      </text>,
+export function bagBox(f, it) {
+  const G = it ? pickGeom(it) : null;
+  return { x0: BOX.x0 - 4, y0: BOX.y0 + (f.bags.some((b) => b.lab) ? 44 : 90), x1: BOX.x1 + 4, y1: G ? Math.max(G.bottom, BOX.y1 - 34 - (G.tray ? TRAY_H : 0)) : BOX.y1 - 34 };
+}
+
+/** 지금 순간의 모습 — 움직임을 처음부터 차례로 되짚어 만든다(시각만으로 정해짐) */
+function pickState(it, P, t) {
+  const T = pickTimes(it, P), G = pickGeom(it);
+  const S = { lit: new Map(), dim: null, spot: null, slots: [], fly: [], ghost: new Set(), badges: [], marks: [], lift: new Map(), pairs: [], back: new Set() };
+  let line = -1;
+  const reset = () => { S.lit.clear(); S.slots = []; S.ghost.clear(); S.badges = []; S.marks = []; S.lift.clear(); S.pairs = []; S.back.clear(); };
+  for (const a of T.acts) {
+    if (t < a.t0) break;
+    if (a.line !== line) { reset(); line = a.line; }
+    const tt = Math.min(t, a.t1), on = t < a.t1;
+    if (a.type === "count") {
+      const tick = touchTick(a.ids.length), u0 = a.t0 + PICK_T.POOL;
+      const n = tt < u0 ? 0 : Math.min(a.ids.length, Math.floor((tt - u0) / tick) + 1);
+      for (let q = 0; q < n; q++) S.lit.set(a.ids[q], 1);
+      if (on && n > 0 && tt < u0 + a.ids.length * tick) S.spot = { j: a.ids[n - 1], n, k: ((tt - u0) % tick) / tick };
+      if (on) S.dim = new Set(a.ids);
+      const done = u0 + a.ids.length * tick;
+      if (tt >= done) {
+        const ps = a.ids.map((j) => G.pos[j]);
+        const top = Math.min(...ps.map((p) => p.y - p.r)), cx = ps.reduce((s2, p) => s2 + p.x, 0) / ps.length;
+        S.badges.push({ x: cx, y: it.fig.kind === "grades" ? G.badgeY : top - 24, val: a.val, k: seg(t, done, done + PICK_T.STAMP, E.lin) });
+      }
+    } else if (a.type === "all") {
+      const N = G.objs.length, u = (tt - a.t0) / PICK_T.ALL;
+      if (on) G.objs.forEach((o) => { const d = u * 1.4 - (o.j / N) * 0.9; if (d > 0 && d < 0.5) S.lit.set(o.j, Math.sin((d / 0.5) * Math.PI)); });
+      S.badges.push({ x: (BOX.x0 + BOX.x1) / 2, y: G.badgeY, val: a.val, k: seg(t, a.t0 + 300, a.t0 + 560, E.lin), all: true });
+    } else if (a.type === "pick") {
+      if (on) S.dim = new Set(a.pool.ids);
+      for (const st of a.steps) {
+        if (tt < st.c0) break;
+        const avail = a.back ? a.pool.ids : a.pool.ids.filter((j) => !a.got.slice(0, st.q).includes(j));
+        const n = Math.min(avail.length, Math.floor((tt - st.c0) / st.tick) + 1);
+        const j = a.got[st.q], slot = a.slot0 + st.q;
+        if (tt < st.fly) {
+          // 남은 후보를 짚어 센다
+          const order = [...avail.filter((x) => x !== j), j];
+          S.spot = { j: order[n - 1], n, k: ((tt - st.c0) % st.tick) / st.tick };
+          for (let q = 0; q < n; q++) S.lit.set(order[q], 0.55);
+        } else if (tt < st.fly + PICK_T.FLY) {
+          S.fly.push({ j, slot, k: seg(tt, st.fly, st.fly + PICK_T.FLY, E.io), n: st.n });
+          if (!a.back) S.ghost.add(j);
+        } else {
+          S.slots[slot] = { j, n: st.n, k: seg(t, st.fly + PICK_T.FLY, st.end, E.lin) };
+          if (!a.back) S.ghost.add(j); else S.back.add(j);
+        }
+      }
+      if (a.un && t >= a.un[0]) {
+        const u = seg(t, a.un[0], a.un[1], E.lin);
+        S.marks.push({ type: "div", from: a.slot0, to: a.slot0 + a.k - 1, d: a.div, u, k: seg(t, a.un[1] - 380, a.un[1], E.out) });
+      }
+    } else if (a.type === "arrange") {
+      const u = seg(t, a.t0, a.t1, E.lin);
+      const k = S.slots.filter(Boolean).length;
+      S.marks.push({ type: "arr", from: 0, to: k - 1, d: [1, 1, 2, 6, 24, 120][k] || k, u, k: seg(t, a.t1 - 380, a.t1, E.out) });
+    } else if (a.type === "clear") {
+      const u = seg(t, a.t0, a.t1, E.io);
+      if (u >= 1) { S.slots = []; S.ghost.clear(); S.marks = []; S.lit.clear(); S.back.clear(); }
+      else S.fade = 1 - u;
+      S.sign = { s: a.sign > 0 ? "+" : "−", k: on ? Math.sin(Math.PI * u) : 0 };
+    } else if (a.type === "list") {
+      a.ids.forEach((j, q) => { const t0 = a.t0 + q * PICK_T.LIST; if (tt >= t0) { S.lift.set(j, seg(t, t0, t0 + 260, E.back)); S.lit.set(j, 1); } });
+      const n = Math.min(a.ids.length, Math.floor((tt - a.t0) / PICK_T.LIST) + 1);
+      const last = G.pos[a.ids[n - 1]];
+      if (on && n > 0) S.spot = { j: a.ids[n - 1], n, k: ((tt - a.t0) % PICK_T.LIST) / PICK_T.LIST, lift: true };
+      const done = a.t0 + a.ids.length * PICK_T.LIST;
+      if (tt >= done && last) S.badges.push({ x: (G.bags[0].x0 + G.bags[G.bags.length - 1].x1) / 2, y: G.badgeY, val: `${a.ids.length}개`, k: seg(t, done, done + PICK_T.STAMP, E.lin), all: true });
+    } else if (a.type === "pairs") {
+      a.pairs.forEach((pr, q) => { const t0 = a.t0 + q * PICK_T.PAIR; if (tt >= t0) { S.pairs.push({ pr, k: seg(t, t0, t0 + 300, E.io) }); S.lit.set(pr[0], 1); S.lit.set(pr[1], 1); } });
+      const done = a.t0 + a.pairs.length * PICK_T.PAIR;
+      if (tt >= done) S.badges.push({ x: (BOX.x0 + BOX.x1) / 2, y: G.badgeY, val: `${a.pairs.length}가지`, k: seg(t, done, done + PICK_T.STAMP, E.lin), all: true });
+    }
+  }
+  return S;
+}
+
+/** 학생 · 공 하나 */
+function Obj({ it, o, x, y, r, C, lit = 0, dim = 1, ghost = false, sc = 1 }) {
+  if (ghost) return <circle cx={x} cy={y} r={r} fill="none" stroke={C.soft} strokeWidth={2} strokeDasharray="5 6" opacity={0.55} />;
+  if (it.fig.kind === "grades") {
+    return (
+      <g opacity={dim}>
+        <circle cx={x} cy={y} r={r * sc} fill={C.gold} fillOpacity={0.12 + 0.6 * lit} stroke={lit > 0.3 ? C.gold : C.soft} strokeWidth={lit > 0.3 ? 4 : 2.2} />
+        {o.sx && <text x={x} y={y + r * 0.36 * sc} fontFamily={SANS} fontSize={r * 0.95 * sc} fontWeight={800} fill={C.ink} textAnchor="middle">{o.sx}</text>}
+        {o.name && <text x={x} y={y + r + 28} fontFamily={SANS} fontSize={26} fontWeight={lit > 0.3 ? 800 : 600} fill={lit > 0.3 ? C.gold : C.soft} textAnchor="middle">{o.name}</text>}
+      </g>
     );
-    const kids = gp.n != null ? Array.from({ length: gp.n }, () => (gp.key === "남" ? "남" : gp.key === "여" ? "여" : "")) : [...Array(gp.m).fill("남"), ...Array(gp.f).fill("여")];
-    kids.forEach((sx, j) => {
-      const row = Math.floor(j / per), col = j % per;
-      const x = cx + (col - (per - 1) / 2) * r * 2.5, y = BOX.y0 + 170 + row * r * 2.9;
-      const nm = f.named.find((q) => q.g === gp.key && q.i === j);
-      const nOn = nm && st && st !== "all" && st.w && st.w.includes(nm.name) ? k : 0;
-      const g2 = Math.max(glow * (st === "all" ? 0.55 : 1), nOn);
-      els.push(
-        <g key={`k${gi}-${j}`}>
-          <circle cx={x} cy={y} r={r} fill={C.gold} fillOpacity={0.12 + 0.6 * g2} stroke={g2 > 0.3 ? C.gold : C.soft} strokeWidth={nOn > 0.3 ? 5 : 2.2} />
-          {sx && <text x={x} y={y + r * 0.36} fontFamily={SANS} fontSize={r * 0.95} fontWeight={800} fill={C.ink} textAnchor="middle">{sx}</text>}
-          {nm && <text x={x} y={y + r + 28} fontFamily={SANS} fontSize={26} fontWeight={nOn > 0.3 ? 800 : 600} fill={nOn > 0.3 ? C.gold : C.soft} textAnchor="middle">{nm.name}</text>}
-        </g>,
-      );
+  }
+  const fill = o.c ? BALL[o.c] : "#F4EEDC";
+  return (
+    <g opacity={dim}>
+      <circle cx={x} cy={y} r={r * sc} fill={fill} stroke={lit > 0.3 ? C.gold : "rgba(0,0,0,.35)"} strokeWidth={lit > 0.3 ? 5 : 1.5} />
+      {o.n != null && <text x={x} y={y + r * 0.34 * sc} fontFamily={SANS} fontSize={r * (o.n >= 10 ? 0.8 : 0.95) * sc} fontWeight={800} fill="#2b2418" textAnchor="middle">{o.n}</text>}
+    </g>
+  );
+}
+
+function PickFig({ it, t, C }) {
+  const f = it.fig, P = l10Plan(it), G = pickGeom(it);
+  const base = seg(t, 0, 700, E.sine);
+  const S = pickState(it, P, t);
+  const els = [];
+  // 무리 머리 · 주머니
+  if (f.kind === "grades") {
+    G.heads.forEach((h, gi) => {
+      const on = [...S.lit.keys()].some((j) => G.objs[j].g === h.key && S.lit.get(j) > 0.3);
+      els.push(<text key={`h${gi}`} x={h.x} y={BOX.y0 + 70} fontFamily={SANS} fontSize={38} fontWeight={800} fill={on ? C.gold : C.ink} textAnchor="middle">{h.lab}</text>,
+        <text key={`n${gi}`} x={h.x} y={BOX.y0 + 108} fontFamily={SANS} fontSize={27} fontWeight={600} fill={C.soft} textAnchor="middle">{h.sub}</text>);
     });
+  } else {
+    G.bags.forEach((b, bi) => {
+      const { x0, x1, y0, y1 } = b;
+      els.push(
+        <path key={`bag${bi}`} d={`M${x0 + 40} ${y0} Q ${x0 + 6} ${y0 + 40} ${x0 + 8} ${(y0 + y1) / 2} Q ${x0 + 4} ${y1} ${(x0 + x1) / 2} ${y1}
+          Q ${x1 - 4} ${y1} ${x1 - 8} ${(y0 + y1) / 2} Q ${x1 - 6} ${y0 + 40} ${x1 - 40} ${y0} Z`} fill={C.soft} fillOpacity={0.08} stroke={C.soft} strokeWidth={3} />,
+        <path key={`tie${bi}`} d={`M${x0 + 40} ${y0} Q ${(x0 + x1) / 2} ${y0 - 26} ${x1 - 40} ${y0}`} fill="none" stroke={C.soft} strokeWidth={3} />,
+      );
+      if (b.lab) els.push(<text key={`bl${bi}`} x={(x0 + x1) / 2} y={y0 - 44} fontFamily={SANS} fontSize={32} fontWeight={800} fill={C.ink} textAnchor="middle">주머니 {b.lab}</text>);
+    });
+  }
+  // 뽑은 자리 칸
+  const T2 = G.tray;
+  if (T2) {
+    const used = S.slots.some(Boolean) || S.fly.length;
+    T2.xs.forEach((x, i) => els.push(<rect key={`sl${i}`} x={x - T2.s / 2} y={T2.y - T2.s / 2} width={T2.s} height={T2.s} rx={12} fill="none"
+      stroke={C.soft} strokeWidth={2.2} strokeDasharray="7 7" opacity={used ? 0.9 : 0.4} />));
+  }
+  // 순서쌍 선
+  S.pairs.forEach(({ pr, k }, q) => {
+    const a = G.pos[pr[0]], b = G.pos[pr[1]];
+    const ay = a.y - (S.lift.get(pr[0]) || 0) * a.r * 0.6, by = b.y - (S.lift.get(pr[1]) || 0) * b.r * 0.6;
+    els.push(<line key={`pr${q}`} x1={a.x} y1={ay} x2={a.x + (b.x - a.x) * k} y2={ay + (by - ay) * k} stroke={C.gold} strokeWidth={3.5} opacity={0.85} />);
+  });
+  // 학생 · 공
+  G.objs.forEach((o) => {
+    const p = G.pos[o.j];
+    const lit = S.lit.get(o.j) || 0;
+    const dim = S.dim && !S.dim.has(o.j) ? 0.3 : 1;
+    const lift = (S.lift.get(o.j) || 0) * p.r * 0.6;
+    if (S.ghost.has(o.j)) { els.push(<g key={`o${o.j}`}><Obj it={it} o={o} x={p.x} y={p.y} r={p.r} C={C} ghost /></g>); return; }
+    els.push(<g key={`o${o.j}`}><Obj it={it} o={o} x={p.x} y={p.y - lift} r={p.r} C={C} lit={lit} dim={dim * (S.fade != null && S.back.has(o.j) ? 1 : 1)} /></g>);
+  });
+  // 짚는 손(금빛 고리) — 세는 수가 옆에
+  if (S.spot) {
+    const p = G.pos[S.spot.j], lift = S.spot.lift ? (S.lift.get(S.spot.j) || 0) * p.r * 0.6 : 0;
+    const rr = p.r * (1.32 + 0.12 * Math.sin(Math.PI * S.spot.k));
+    els.push(<circle key="spot" cx={p.x} cy={p.y - lift} r={rr} fill="none" stroke={C.gold} strokeWidth={4} />,
+      <text key="spotn" x={p.x + p.r * 0.95} y={p.y - lift - p.r * 0.95} fontFamily={SANS} fontSize={Math.max(36, p.r * 1.15)} fontWeight={800} fill={C.gold} textAnchor="middle" stroke={C.halo} strokeWidth={5} paintOrder="stroke">{S.spot.n}</text>);
+  }
+  // 자리로 날아가는 것 · 자리에 앉은 것
+  const slotObj = (j, x, y, sc, key, o2 = 1) => {
+    const o = G.objs[j], r = Math.min(G.pos[j].r, T2.s * 0.4);
+    return <g key={key} opacity={o2}><Obj it={it} o={o} x={x} y={y} r={r} C={C} lit={0.35} sc={sc} /></g>;
+  };
+  const slotX = (i) => {
+    // 순서 없음(÷) · 자리 정하기(×): 자리끼리 바꿔 보이기
+    for (const m of S.marks) {
+      if (i < m.from || i > m.to || m.u <= 0 || m.u >= 1) continue;
+      const n = m.to - m.from + 1, ph = m.u * (n === 2 ? 2 : 3);
+      const step = Math.floor(ph), fr = E.io(ph - step);
+      const cyc = (q) => m.from + ((i - m.from + q) % n);
+      const a = T2.xs[cyc(step)], b = T2.xs[cyc(step + 1)];
+      return { x: a + (b - a) * fr, dy: -Math.sin(Math.PI * fr) * T2.s * 0.35 * (((i - m.from) % 2) ? 1 : -1) };
+    }
+    return { x: T2.xs[i], dy: 0 };
+  };
+  if (T2) {
+    S.slots.forEach((s2, i) => {
+      if (!s2) return;
+      const { x, dy } = slotX(i);
+      els.push(slotObj(s2.j, x, T2.y + dy, 1 + 0.12 * Math.sin(Math.PI * s2.k), `ss${i}`, S.fade != null ? S.fade : 1));
+      els.push(<text key={`sn${i}`} x={T2.xs[i]} y={T2.y - T2.s / 2 - 10} fontFamily={SANS} fontSize={34 * (1 + 0.3 * Math.sin(Math.PI * s2.k))} fontWeight={800}
+        fill={C.gold} textAnchor="middle" opacity={S.fade != null ? S.fade : 1}>{s2.n}</text>);
+    });
+    S.fly.forEach((fl, q) => {
+      const p = G.pos[fl.j], x1 = T2.xs[fl.slot], y1 = T2.y;
+      const x = p.x + (x1 - p.x) * fl.k, y = p.y + (y1 - p.y) * fl.k - Math.sin(Math.PI * fl.k) * 70;
+      els.push(slotObj(fl.j, x, y, 1.08, `fl${q}`));
+    });
+    for (const m of S.marks) {
+      if (m.k <= 0) continue;
+      const xa = T2.xs[m.from] - T2.s / 2, xb = T2.xs[m.to] + T2.s / 2, yb = T2.y + T2.s / 2 + 10;
+      const col = m.type === "div" ? C.red : C.gold;
+      els.push(<g key={`mk${m.from}${m.type}`} opacity={(S.fade != null ? S.fade : 1) * Math.min(1, m.k * 2)}>
+        <path d={`M${xa} ${yb} q 0 14 14 14 L ${xb - 14} ${yb + 14} q 14 0 14 -14`} fill="none" stroke={col} strokeWidth={3} />
+        <text x={(xa + xb) / 2} y={yb + 52} fontFamily={SANS} fontSize={34 * (0.75 + 0.25 * Math.max(0, E.back(m.k)))} fontWeight={800} fill={col} textAnchor="middle">{m.type === "div" ? `÷ ${m.d}` : `× ${m.d}`}</text>
+      </g>);
+    }
+    if (S.sign && S.sign.k > 0) els.push(<text key="sign" x={T2.x0 - 34} y={T2.y + 14} fontFamily={SANS} fontSize={54} fontWeight={800} fill={S.sign.s === "−" ? C.red : C.gold} textAnchor="middle" opacity={S.sign.k}>{S.sign.s}</text>);
+  }
+  // 센 수 도장
+  S.badges.forEach((b, q) => {
+    if (b.k <= 0) return;
+    const sc = 0.7 + 0.3 * Math.max(0, E.back(b.k));
+    els.push(<g key={`bd${q}`} transform={`translate(${b.x} ${b.y}) scale(${sc.toFixed(3)})`} opacity={Math.min(1, b.k * 2)}>
+      <rect x={-34 - String(b.val).length * 8} y={-30} width={68 + String(b.val).length * 16} height={46} rx={23} fill={C.gold} fillOpacity={0.18} stroke={C.gold} strokeWidth={2.5} />
+      <text x={0} y={4} fontFamily={SANS} fontSize={32} fontWeight={800} fill={C.gold} textAnchor="middle">{b.all ? b.val : b.val}</text>
+    </g>);
   });
   return <g opacity={base}>{els}</g>;
 }
-
-/* ══════════ 주머니 공 ══════════ */
-const BALL = { 빨간: "#E5534B", 파란: "#4C8DF6", 노란: "#F2C230", 흰: "#F7F3E8", 검은: "#2B2B2B", 초록: "#3DBB6B" };
-
-export function bagBox(f) {
-  return { x0: BOX.x0 - 4, y0: BOX.y0 + (f.bags.some((b) => b.lab) ? 44 : 90), x1: BOX.x1 + 4, y1: BOX.y1 - 34 };
-}
-
-export function BagFig({ it, t, C }) {
-  const f = it.fig, P = l10Plan(it);
-  const base = seg(t, 0, 700, E.sine);
-  const { st, k } = hlNow(f, P, t);
-  const nb = f.bags.length;
-  const bw = (BOX.x1 - BOX.x0 - (nb - 1) * 40) / nb;
-  const els = [];
-  f.bags.forEach((bg, bi) => {
-    const x0 = BOX.x0 + bi * (bw + 40), x1 = x0 + bw;
-    const y0 = BOX.y0 + 120, y1 = BOX.y1 - 40;
-    const n = bg.balls.length;
-    const cols = Math.max(2, Math.ceil(Math.sqrt(n * (bw / (y1 - y0 - 60)))));
-    const rowsN = Math.ceil(n / cols);
-    const r = Math.min(40, (bw - 120) / cols / 2.25, (y1 - y0 - 150) / rowsN / 2.25);   // 주머니 둥근 옆 · 밑에 걸리지 않게
-    const lit = st === "all" ? null : st ? new Set(st[bi] || []) : null;
-    els.push(
-      <path key={`bag${bi}`} d={`M${x0 + 40} ${y0} Q ${x0 + 6} ${y0 + 40} ${x0 + 8} ${(y0 + y1) / 2} Q ${x0 + 4} ${y1} ${(x0 + x1) / 2} ${y1}
-        Q ${x1 - 4} ${y1} ${x1 - 8} ${(y0 + y1) / 2} Q ${x1 - 6} ${y0 + 40} ${x1 - 40} ${y0} Z`} fill={C.soft} fillOpacity={0.08} stroke={C.soft} strokeWidth={3} />,
-      <path key={`tie${bi}`} d={`M${x0 + 40} ${y0} Q ${(x0 + x1) / 2} ${y0 - 26} ${x1 - 40} ${y0}`} fill="none" stroke={C.soft} strokeWidth={3} />,
-    );
-    if (bg.lab) els.push(<text key={`bl${bi}`} x={(x0 + x1) / 2} y={y0 - 44} fontFamily={SANS} fontSize={32} fontWeight={800} fill={C.ink} textAnchor="middle">주머니 {bg.lab}</text>);
-    const gw = cols * r * 2.25, gh = rowsN * r * 2.25;
-    const gx = (x0 + x1) / 2 - gw / 2 + r * 1.125, gy = Math.max(y0 + 50 + r, (y0 + y1) / 2 - gh / 2 + r * 1.125);   // 주머니 가운데쯤
-    bg.balls.forEach((b, j) => {
-      const x = gx + (j % cols) * r * 2.25, y = gy + Math.floor(j / cols) * r * 2.25;
-      const on = lit && lit.has(j);
-      const dim = lit && lit.size && !on ? 1 - 0.6 * k : 1;
-      const big = on ? 1 + 0.14 * k : 1;
-      const fill = b.c ? BALL[b.c] : "#F4EEDC";          // 번호 공은 밝기와 상관없이 상아색(숫자가 잘 보이게)
-      els.push(
-        <g key={`b${bi}-${j}`} opacity={dim}>
-          <circle cx={x} cy={y} r={r * big} fill={fill} stroke={on ? C.gold : st === "all" ? C.gold : "rgba(0,0,0,.35)"} strokeWidth={on ? 5 : st === "all" ? 2.5 * k : 1.5} />
-          {b.n != null && <text x={x} y={y + r * 0.34} fontFamily={SANS} fontSize={r * (b.n >= 10 ? 0.8 : 0.95)} fontWeight={800} fill="#2b2418" textAnchor="middle">{b.n}</text>}
-        </g>,
-      );
-    });
-  });
-  return <g opacity={base}>{els}</g>;
-}
+export const GradesFig = PickFig;
+export const BagFig = PickFig;
