@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기울기 샷</title>
+<!--
+  기울기 샷 — 일차함수 그래프 학습 게임(포켓볼 · 사구 · 컬링). 한 장짜리 HTML, 바깥 의존은 구글 폰트뿐.
+  앱에서는 관리자 화면 #/admin/games(src/pages/AdminGames.jsx)가 샌드박스 iframe(allow-scripts)으로 띄운다.
+  · 테마: <html data-theme="light|dark"> — AdminGames 가 처음에 심고, 바뀌면 postMessage({ type: "ash-theme", theme })로 넘긴다.
+  · 저장소(localStorage 등)는 쓰지 않는다 — 샌드박스에서는 막혀 있다.
+  · window.__slopeShot() — 스모크 테스트(tests/smoke/games.smoke.mjs)가 읽는 상태 요약(읽기 전용).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* layout: a lobby of three games, then one playfield (the coordinate plane) with the shot console beside it on wide screens and below it on narrow ones.
+   palette: the student app's Renaissance skin (src/shared/theme/tokens.css) — parchment light, night-studio dark, gold accent. */
+:root{
+  --bg:#F1E8D5; --surface:#FBF5E7; --ink:#33291A; --muted:#7E6F54; --line:#DACAA6;
+  --accent:#8A6717; --accent-ink:#FFF7E4; --accent-soft:#F1E2BC;
+  --good:#2E7D53; --bad:#B3402C; --scrim:rgba(40,30,15,.5);
+  --f-display:"Do Hyeon","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-body:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1A140D; --surface:#241B10; --ink:#F1E7D2; --muted:#A79A80; --line:#3B2F1D;
+  --accent:#E1B54B; --accent-ink:#221807; --accent-soft:#2E2414; --good:#58B37E; --bad:#E0604A; --scrim:rgba(8,6,3,.62); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1A140D; --surface:#241B10; --ink:#F1E7D2; --muted:#A79A80; --line:#3B2F1D;
+  --accent:#E1B54B; --accent-ink:#221807; --accent-soft:#2E2414; --good:#58B37E; --bad:#E0604A; --scrim:rgba(8,6,3,.62); color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+[hidden]{display:none!important}
+img{max-width:100%}
+.wrap{max-width:1280px;margin:0 auto;padding-block:16px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.screen{display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0;letter-spacing:.5px;text-wrap:balance}
+.lede{margin:2px 0 0;color:var(--muted);max-width:62ch}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:600}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-size:16px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.label{font-size:12px;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.err{color:var(--bad);font-size:13px;font-weight:500}
+.err:empty{display:none}
+.ok{color:var(--good)} .no{color:var(--bad)}
+
+/* lobby */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.card canvas{display:block;width:100%;height:auto}
+.card-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.card h2{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0}
+.card p{margin:0;color:var(--muted);font-size:14px}
+.chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.chips li{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:4px}
+
+/* game */
+.game-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.back{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:transparent;font-weight:600}
+.modetag{font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;padding:6px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.table-wrap{position:relative;min-width:0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px -12px rgba(0,0,0,.45)}
+#cv{display:block;width:100%;touch-action:manipulation}
+.console{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.turn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-soft)}
+.turn i{width:20px;height:20px;border-radius:50%;background:var(--pc,#999);border:1px solid rgba(0,0,0,.35);flex:none}
+.turn span{font-family:var(--f-display);font-size:22px;line-height:1}
+.turn small{color:var(--muted);font-size:13px}
+.turnline{font-weight:600;color:var(--accent)}
+.modes{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.mode{min-height:40px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:14px;font-weight:500}
+.mode[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.mode .n{font-family:var(--f-mono);margin-left:4px;color:var(--accent);font-weight:600}
+.mode:disabled{opacity:.4;cursor:not-allowed}
+.steppers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0}
+.stepper{display:flex;flex-direction:column;gap:4px}
+.stepper .row{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.stepper button{width:44px;height:44px;border:0;background:transparent;font-size:20px}
+.stepper output{flex:1;text-align:center;font-family:var(--f-mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.field{display:flex;flex-direction:column;gap:4px}
+.field input{width:100%;height:44px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);font-family:var(--f-mono);font-size:18px;padding:0 12px}
+.readout{border-radius:10px;background:var(--accent-soft);padding:12px;display:flex;flex-direction:column;gap:6px}
+.eq{font-family:var(--f-mono);font-size:20px;font-weight:600;overflow-wrap:anywhere}
+.power{display:flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.bar{flex:1 1 80px;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.check{display:flex;align-items:center;gap:8px;font-size:14px}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+.toast:empty{display:none}
+.report{border-top:1px solid var(--line);padding-top:12px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.report .mono{font-family:var(--f-mono);font-size:13px;overflow-wrap:anywhere}
+details{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+summary{cursor:pointer;font-weight:600}
+details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px;max-width:78ch}
+.bubble{position:absolute;left:-30%;z-index:3;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid #fff;background:#ffb547;color:#2a1600;font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.4);animation:drift 8s linear forwards}
+.bubble span{display:block;animation:bob 1.2s ease-in-out infinite alternate}
+@keyframes drift{from{left:-30%}to{left:105%}}
+@keyframes bob{from{transform:translateY(-6px)}to{transform:translateY(6px)}}
+@keyframes fade{0%,85%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.bubble{left:40%;animation:fade 8s linear forwards}.bubble span{animation:none}}
+.overlay{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;z-index:20;padding:16px}
+.dialog{background:var(--surface);color:var(--ink);border-radius:16px;padding:20px;width:min(420px,100%);display:flex;flex-direction:column;gap:12px;border:1px solid var(--line)}
+.dialog h2{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0}
+.dialog input{height:44px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);font-family:var(--f-mono);font-size:18px;padding:0 12px}
+.q{font-family:var(--f-mono);font-size:19px;font-weight:600}
+.dialog .actions{display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="screen" id="lobby">
+    <div>
+      <h1>기울기 샷</h1>
+      <p class="lede">일차함수의 기울기와 절편을 입력해서 공과 스톤을 보내는 게임 세 가지. 둘이 할 때는 한 기기로 차례를 넘겨 가며 해요.</p>
+    </div>
+
+    <div class="cards">
+      <article class="card" data-game="pool">
+        <canvas aria-hidden="true"></canvas>
+        <div class="card-body">
+          <h2>포켓볼</h2>
+          <p>구멍 6개짜리 테이블에서 목표 공을 넣어요.</p>
+          <ul class="chips"><li>원점 = 아래 중간 구멍</li><li>혼자: 공 3개 · 12샷</li><li>둘이: 공 5개</li></ul>
+          <div class="card-actions">
+            <button class="btn primary open" type="button" data-game="pool" data-players="1">혼자 하기</button>
+            <button class="btn open" type="button" data-game="pool" data-players="2">둘이 번갈아</button>
+          </div>
+        </div>
+      </article>
+      <article class="card" data-game="carom">
+        <canvas aria-hidden="true"></canvas>
+        <div class="card-body">
+          <h2>사구</h2>
+          <p>구멍 없는 테이블에서 내 공으로 빨간 공 2개를 한 번에 맞혀요.</p>
+          <ul class="chips"><li>원점 = 아래 쿠션 가운데</li><li>상대 공 닿으면 파울</li><li>둘이: 흰 공 대 노란 공</li></ul>
+          <div class="card-actions">
+            <button class="btn primary open" type="button" data-game="carom" data-players="1">혼자 하기</button>
+            <button class="btn open" type="button" data-game="carom" data-players="2">둘이 번갈아</button>
+          </div>
+        </div>
+      </article>
+      <article class="card" data-game="curling">
+        <canvas aria-hidden="true"></canvas>
+        <div class="card-body">
+          <h2>컬링</h2>
+          <p>스톤을 던져 상대 스톤보다 버튼 (5, 5)에 가깝게 붙여요.</p>
+          <ul class="chips"><li>원점 = 아래 사이드 라인 가운데</li><li>회전하면 휨</li><li>둘이: 4개씩</li></ul>
+          <div class="card-actions">
+            <button class="btn primary open" type="button" data-game="curling" data-players="1">혼자 하기</button>
+            <button class="btn open" type="button" data-game="curling" data-players="2">둘이 번갈아</button>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="screen" id="game" hidden>
+    <header class="game-head">
+      <button class="back" id="back" type="button">← 게임 목록</button>
+      <h1 id="gameName">포켓볼</h1>
+      <span class="modetag" id="modeTag">혼자</span>
+      <div class="stats">
+        <div class="pills" id="pills"></div>
+        <button class="btn" id="newGame" type="button">새 게임</button>
+      </div>
+    </header>
+
+    <div class="main">
+      <div class="table-wrap" id="tableWrap">
+        <canvas id="cv" aria-label="좌표평면 위의 경기장"></canvas>
+      </div>
+
+      <section class="console" aria-label="샷 입력">
+        <div class="turn" id="turn" hidden aria-live="polite"><i aria-hidden="true"></i><span id="turnName">1P 차례</span><small id="turnTag"></small></div>
+
+        <div>
+          <div class="label">입력 방식</div>
+          <div class="modes">
+            <button class="mode" type="button" data-mode="base" aria-pressed="true">기본 (y절편)</button>
+            <button class="mode" type="button" data-mode="xint" aria-pressed="false">x절편 찬스<span class="n" id="nX">0</span></button>
+            <button class="mode" type="button" data-mode="coord" aria-pressed="false">좌표 찬스<span class="n" id="nC">0</span></button>
+          </div>
+        </div>
+
+        <div>
+          <div class="label">기울기 = y 증가량 ÷ x 증가량 (세기도 결정)</div>
+          <div class="steppers">
+            <div class="stepper">
+              <span class="hint">x 증가량</span>
+              <div class="row"><button type="button" data-step="dx" data-d="-1" aria-label="x 증가량 줄이기">−</button><output id="dxOut">3</output><button type="button" data-step="dx" data-d="1" aria-label="x 증가량 늘리기">+</button></div>
+            </div>
+            <div class="stepper">
+              <span class="hint">y 증가량</span>
+              <div class="row"><button type="button" data-step="dy" data-d="-1" aria-label="y 증가량 줄이기">−</button><output id="dyOut">2</output><button type="button" data-step="dy" data-d="1" aria-label="y 증가량 늘리기">+</button></div>
+            </div>
+          </div>
+          <p class="hint" id="dirHint"></p>
+        </div>
+
+        <div class="field" id="icptField">
+          <label class="label" for="icpt" id="icptLabel">y절편 b</label>
+          <input id="icpt" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="예: 3, −1.5, 7/3">
+        </div>
+        <p class="hint" id="coordInfo" hidden></p>
+
+        <div class="readout">
+          <div class="eq" id="eq">—</div>
+          <p class="hint" id="eqSub"></p>
+          <div class="power"><span id="powerTxt"></span><span class="bar"><i id="powerBar"></i></span></div>
+          <div class="err" id="err" role="alert"></div>
+        </div>
+
+        <label class="check"><input type="checkbox" id="preview"> 그래프 미리보기 (연습용)</label>
+        <button class="btn primary" id="shoot" type="button">치기</button>
+        <div class="toast" id="toast" aria-live="polite"></div>
+        <div class="report" id="report" aria-live="polite"></div>
+      </section>
+    </div>
+
+    <details>
+      <summary>규칙</summary>
+      <ul id="rules"></ul>
+    </details>
+  </section>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="qTitle">
+    <h2 id="qTitle">찬스 문제</h2>
+    <div class="q" id="qText"></div>
+    <input id="qAns" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="답">
+    <p class="hint" id="qMsg" aria-live="polite"></p>
+    <div class="actions">
+      <button class="btn" id="qClose" type="button">닫기</button>
+      <button class="btn primary" id="qSubmit" type="button">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const W = 10, H = 10, DIST_K = 0.8, SUB_HZ = 240, LIM = 6, MAX_POWER = 72;
+  const $ = id => document.getElementById(id);
+
+  /* ---------- helpers ---------- */
+  const gcd = (a, b) => b ? gcd(b, a % b) : a;
+  const fmt = v => { const r = Math.round(v * 100) / 100; return (Object.is(r, -0) ? 0 : r).toString().replace('-', '−'); };
+  // 입력 수 — 정수 · 소수 · 분수(7/3, −7/3). 돌려주는 text 는 식에 그대로 쓰는 꼴(부호 없는 크기)
+  function parseIn(s){
+    s = String(s).trim().replace(/[−–]/g, '-').replace(/\s+/g, '').replace(',', '.');
+    let m = s.match(/^([+-]?)(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);
+    if (m){
+      const den = Number(m[3]); if (!den) return null;
+      const v = (m[1] === '-' ? -1 : 1) * Number(m[2]) / den;
+      return { v, text: `${m[2]}/${m[3]}` };
+    }
+    m = s.match(/^([+-]?)(\d+(?:\.\d*)?|\.\d+)$/);
+    if (!m) return null;
+    const v = (m[1] === '-' ? -1 : 1) * Number(m[2]);
+    return Number.isFinite(v) ? { v, text: fmt(Math.abs(v)) } : null;
+  }
+  const signed = n => (n.v < 0 && Math.round(n.v * 100) ? '−' : '') + n.text;
+  const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const half = (a, b) => ri(Math.round(a * 2), Math.round(b * 2)) / 2;
+  const norm = (x, y) => { const l = Math.hypot(x, y); return { x: x / l, y: y / l }; };
+  const sq = v => v < 0 ? `(${fmt(v)})²` : `${fmt(v)}²`;
+  const toPx = (u, x, y) => [(11 + x) * u, (11 - y) * u];
+  const PNAME = i => `${i + 1}P`;
+  const ARROWS = { '1,1':'↗', '1,0':'→', '1,-1':'↘', '0,-1':'↓', '-1,-1':'↙', '-1,0':'←', '-1,1':'↖', '0,1':'↑' };
+
+  function slopeStr(dx, dy){
+    const g = gcd(Math.abs(dx), Math.abs(dy)); let n = dy / g, d = dx / g;
+    if (d < 0){ n = -n; d = -d; }
+    const neg = n < 0; n = Math.abs(n);
+    return (neg ? '−' : '') + (d === 1 ? (n === 1 ? '' : String(n)) : `${n}/${d}`) + 'x';
+  }
+  // y = (dy/dx)x + b — bText 가 있으면 그 꼴(분수 그대로)로 적는다
+  function eqY(dx, dy, b, bText){
+    let t = 'y = ' + slopeStr(dx, dy);
+    const br = Math.round(b * 100) / 100;
+    const mag = bText || fmt(Math.abs(br));
+    if (br > 0) t += ` + ${mag}`; else if (br < 0) t += ` − ${mag}`;
+    return t;
+  }
+
+  /* ---------- state ---------- */
+  const st = { bodies:[], shooter:null, shooters:[], players:1, turn:0, pts:[0, 0],
+    invs:[{ xint:0, coord:0 }, { xint:0, coord:0 }], inv:null, thrown:[0, 0], shots:0, mode:'base', dx:3, dy:2,
+    moving:false, over:false, last:null, theory:null, ev:{ pocketed:[], contacts:new Set(), removed:[] }, runId:0, quiz:null };
+  st.inv = st.invs[0];
+  let G = null;
+
+  const mk = (id, kind, x, y, color, extra) => Object.assign({ id, kind, x, y, vx:0, vy:0, spin:0, gone:false, color }, extra || {});
+  function scatter(bodies, items, box, avoid){
+    for (const it of items){
+      for (let t = 0; t < 500; t++){
+        const x = half(box.x0, box.x1), y = half(box.y0, box.y1);
+        if (avoid && avoid(x, y)) continue;
+        if (bodies.some(b => Math.hypot(b.x - x, b.y - y) < box.gap)) continue;
+        bodies.push(mk(it.id, it.kind, x, y, it.color, it.extra)); break;
+      }
+    }
+    return bodies;
+  }
+  function freeSpot(b, spots){
+    for (const [x, y] of spots){
+      if (st.bodies.every(o => o === b || o.gone || Math.hypot(o.x - x, o.y - y) > 2 * G.R + 0.1)) return [x, y];
+    }
+    return spots[0];
+  }
+  const whoName = () => G.key === 'curling' ? '스톤' : (st.shooter && st.shooter.id === 'y' ? '노란 공' : '흰 공');
+  function verdict2(){
+    const [a, b] = st.pts;
+    if (a === b) return `<b>무승부</b> · 1P ${fmt(a)} : ${fmt(b)} 2P`;
+    return `<b class="ok">${PNAME(a > b ? 0 : 1)} 승리!</b> · 1P ${fmt(a)} : ${fmt(b)} 2P`;
+  }
+
+  /* ---------- drawing ---------- */
+  function roundRect(ctx, x, y, w, h, r){
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function drawBall(ctx, u, b, R){
+    const [x, y] = toPx(u, b.x, b.y), r = R * u;
+    ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.arc(x + r * 0.18, y + r * 0.22, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+    if (b.label){
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, r * 0.52, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#111'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `700 ${Math.max(7, r * 0.78)}px "IBM Plex Mono", monospace`; ctx.fillText(b.label, x, y + 0.5);
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(x - r * 0.35, y - r * 0.35, r * 0.22, 0, Math.PI * 2); ctx.fill();
+  }
+  function drawStone(ctx, u, b, R){
+    const [x, y] = toPx(u, b.x, b.y), r = R * u;
+    ctx.fillStyle = 'rgba(10,30,50,0.22)'; ctx.beginPath(); ctx.arc(x + r * 0.12, y + r * 0.16, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8b939a'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#59616a'; ctx.lineWidth = Math.max(1, r * 0.12); ctx.stroke();
+    ctx.fillStyle = '#a7aeb4'; ctx.beginPath(); ctx.arc(x, y, r * 0.7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = b.color; roundRect(ctx, x - r * 0.6, y - r * 0.2, r * 1.2, r * 0.4, r * 0.2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, r * 0.38, 0, Math.PI * 2); ctx.fill();
+    if (b.label){
+      ctx.fillStyle = b.color === YELLOW ? '#2a1d00' : '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `700 ${Math.max(7, r * 0.62)}px "IBM Plex Mono", monospace`; ctx.fillText(b.label, x, y + 0.5);
+    }
+    if (b.waiting){
+      ctx.save(); ctx.setLineDash([r * 0.35, r * 0.25]); ctx.strokeStyle = '#d9480f'; ctx.lineWidth = Math.max(1.5, r * 0.12);
+      ctx.beginPath(); ctx.arc(x, y, r * 1.5, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    }
+  }
+  const billiardSurface = (felt, rail, cushion) => (ctx, u) => {
+    const Wp = u * 22, Hp = u * 12;
+    ctx.fillStyle = rail; ctx.fillRect(0, 0, Wp, Hp);
+    ctx.fillStyle = cushion; ctx.fillRect(u * 0.62, u * 0.62, Wp - u * 1.24, Hp - u * 1.24);
+    const [fx, fy] = toPx(u, -W, H);
+    ctx.fillStyle = felt; ctx.fillRect(fx, fy, 20 * u, 10 * u);
+  };
+  const POCKETS = [[-10, 0], [0, 0], [10, 0], [-10, 10], [0, 10], [10, 10]];
+  const BUTTON = { x:5, y:5 }, RINGS = [3.6, 2.4, 1.2, 0.3], HOG = -1, TEE = 5, BACK = 8.6, DELIVERY = -8;
+  function iceSurface(ctx, u){
+    const Wp = u * 22, Hp = u * 12;
+    ctx.fillStyle = '#21303a'; ctx.fillRect(0, 0, Wp, Hp);
+    const [fx, fy] = toPx(u, -W, H);
+    ctx.fillStyle = '#e8f1f5'; ctx.fillRect(fx, fy, 20 * u, 10 * u);
+    const [bx, by] = toPx(u, BUTTON.x, BUTTON.y);
+    ['#2f6fb3', '#f7fafc', '#c8323a', '#f7fafc'].forEach((c, i) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(bx, by, RINGS[i] * u, 0, Math.PI * 2); ctx.fill(); });
+    const thin = Math.max(1, u * 0.04);
+    const vline = (x, color, w, dash) => { const [a] = toPx(u, x, 0); ctx.save(); ctx.setLineDash(dash || []); ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a, fy); ctx.lineTo(a, fy + 10 * u); ctx.stroke(); ctx.restore(); };
+    const [, cy] = toPx(u, 0, 5);
+    ctx.strokeStyle = '#4a6375'; ctx.lineWidth = thin; ctx.beginPath(); ctx.moveTo(fx, cy); ctx.lineTo(fx + 20 * u, cy); ctx.stroke();
+    vline(TEE, '#4a6375', thin);
+    vline(BACK, '#4a6375', thin);
+    vline(HOG, '#b0282f', Math.max(2, u * 0.14));
+    vline(DELIVERY, '#4a6375', thin, [u * 0.25, u * 0.2]);
+  }
+  function drawGrid(ctx, u, pal){
+    const [fx, fy] = toPx(u, -W, H);
+    ctx.lineWidth = 1;
+    for (let x = -W; x <= W; x++){ ctx.strokeStyle = x === 0 ? pal.axis : pal.grid; const [a] = toPx(u, x, 0); ctx.beginPath(); ctx.moveTo(a, fy); ctx.lineTo(a, fy + 10 * u); ctx.stroke(); }
+    for (let y = 0; y <= H; y++){ ctx.strokeStyle = pal.grid; const [, b] = toPx(u, 0, y); ctx.beginPath(); ctx.moveTo(fx, b); ctx.lineTo(fx + 20 * u, b); ctx.stroke(); }
+  }
+  function drawLabels(ctx, u, pal){
+    const Wp = u * 22, Hp = u * 12;
+    ctx.fillStyle = pal.label; ctx.font = `600 ${Math.max(9, u * 0.36)}px "IBM Plex Mono", monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let x = -8; x <= 8; x += 2){ const [a] = toPx(u, x, 0); ctx.fillText(x === 0 ? 'O' : String(x).replace('-', '−'), a, Hp - u * 0.45); }
+    ctx.textAlign = 'right';
+    for (let y = 2; y <= 8; y += 2){ const [, b] = toPx(u, 0, y); ctx.fillText(String(y), u * 0.85, b); }
+    ctx.textAlign = 'left'; ctx.fillText('x', Wp - u * 0.7, Hp - u * 0.45);
+    ctx.textAlign = 'center'; ctx.fillText('y', toPx(u, 0.9, 0)[0], u * 0.45);
+  }
+  function strokeLine(ctx, u, p, d, color, dash, width){
+    const [x1, y1] = toPx(u, p.x - d.x * 60, p.y - d.y * 60), [x2, y2] = toPx(u, p.x + d.x * 60, p.y + d.y * 60);
+    ctx.save(); ctx.setLineDash(dash); ctx.strokeStyle = color; ctx.lineWidth = width;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+  }
+  function drawScene(ctx, u, game, bodies, ov){
+    game.surface(ctx, u);
+    const [fx, fy] = toPx(u, -W, H);
+    ctx.save(); ctx.beginPath(); ctx.rect(fx, fy, 20 * u, 10 * u); ctx.clip();
+    drawGrid(ctx, u, game.pal);
+    if (ov.line) strokeLine(ctx, u, ov.line.P, ov.line.d, game.pal.line, [], Math.max(2, u * 0.07));
+    if (ov.theory){
+      ctx.save(); ctx.setLineDash([u * 0.25, u * 0.2]); ctx.strokeStyle = game.pal.theory; ctx.lineWidth = Math.max(1.5, u * 0.045);
+      ctx.beginPath(); ov.theory.forEach((p, i) => { const [a, b] = toPx(u, p.x, p.y); if (i) ctx.lineTo(a, b); else ctx.moveTo(a, b); }); ctx.stroke(); ctx.restore();
+    }
+    if (ov.preview) strokeLine(ctx, u, ov.preview.P, ov.preview.d, game.pal.preview, [u * 0.4, u * 0.25], Math.max(2, u * 0.06));
+    ctx.restore();
+    if (game.overGrid) game.overGrid(ctx, u);
+    drawLabels(ctx, u, game.pal);
+    for (const b of bodies) if (!b.gone) game.drawBody(ctx, u, b, game.R);
+  }
+
+  /* ---------- games ---------- */
+  const FELT_PAL = { grid:'rgba(255,255,255,0.11)', axis:'rgba(255,255,255,0.4)', label:'#f2e3c8', line:'#ffb547', theory:'rgba(255,255,255,0.82)', preview:'rgba(255,181,71,0.8)' };
+  const ICE_PAL = { grid:'rgba(22,52,82,0.15)', axis:'rgba(22,52,82,0.45)', label:'#dfe8ee', line:'#d9480f', theory:'rgba(18,40,62,0.75)', preview:'rgba(217,72,15,0.75)' };
+  const WHITE = '#fbfaf3', YELLOW = '#f2c230', RED = '#d23b3b', BLUE = '#2f5fd0', PURPLE = '#7b3fb0', ORANGE = '#e8761c';
+  const SPIN_RULE = '직선이 공 중심에서 비껴가면 좌우 스핀이 걸려 쿠션에서 튕기는 각도가 달라집니다. 점선은 스핀이 없을 때의 경로입니다.';
+  const SHARED_RULES = [
+    'x 증가량과 y 증가량으로 기울기와 방향을 정하고, y절편으로 직선의 위치를 정합니다. 증가량의 부호 방향으로 나아갑니다.',
+    '세기 = (x 증가량)² + (y 증가량)². 막히는 것이 없으면 0.8 × 세기만큼 미끄러집니다. 증가량은 각각 −6부터 6까지입니다.',
+    'x = a 꼴은 x 증가량 0, y 증가량에 세기를 넣고 a 값을 입력합니다. y = b 꼴은 y 증가량 0, x 증가량에 세기를 넣고 b 값을 입력합니다.',
+    '절편은 정수 · 소수 · 분수(7/3, −7/3)로 입력할 수 있습니다.',
+    '직선이 중심을 지나면 정타, 반지름 0.3 안에서 비껴가면 회전이 걸리고, 그보다 멀면 헛스윙입니다. 실제로는 입력한 직선과 평행한 직선 위에서 출발합니다.',
+    '가끔 찬스 풍선이 떠다닙니다. 눌러서 문제를 맞히면 찬스가 쌓입니다. x절편 찬스는 y절편 대신 x절편을 입력하고, 좌표 찬스는 좌표를 알려 주어 기울기만 입력하면 됩니다.'
+  ];
+  const TWO_RULE = '둘이 할 때 찬스는 각자 따로 모읍니다. 풍선을 잡은 사람의 찬스로 쌓입니다.';
+
+  const GAMES = {
+    pool: {
+      key:'pool', name:'포켓볼', noun:'공', R:0.3, PR:0.62, decel:3.2, rest:0.88, ballRest:0.95, contactSpin:0.3,
+      wall:'bounce', pockets:POCKETS, spinCushion:0.32, curl:0, defaults:{ dx:3, dy:2 }, pal:FELT_PAL,
+      surface:billiardSurface('#1f6a4c', '#4b2f1d', '#6a4329'), drawBody:drawBall,
+      cap(){ return st.players === 2 ? 30 : 12; },
+      tag(){ return ''; },
+      color(i){ return i ? '#2f6fd0' : '#e05a2b'; },
+      rulesBase:['아래쪽 중간 구멍이 원점 O입니다. 테이블은 x가 −10부터 10, y가 0부터 10까지이고 격자 한 칸이 1입니다.', '흰 공이 구멍에 빠지면 (0, 2.5) 근처에 다시 놓습니다.', SPIN_RULE],
+      rules1:['목표 공(1, 2, 3번) 3개를 12번 안에 모두 넣으면 승리입니다.'],
+      rules2:['목표 공은 5개입니다. 공을 넣으면 한 번 더 치고, 못 넣거나 흰 공이 빠지면 차례가 넘어갑니다.', '넣은 공 1개가 1점입니다. 공을 모두 넣거나 합계 30샷이 되면 끝나고, 점수가 높은 사람이 이깁니다.'],
+      setup(){
+        const cols = [YELLOW, BLUE, RED, PURPLE, ORANGE], n = st.players === 2 ? 5 : 3;
+        const b = [mk('cue', 'cue', -6, 3, WHITE)];
+        scatter(b, cols.slice(0, n).map((c, i) => ({ id:'t' + (i + 1), kind:'target', color:c, extra:{ label:String(i + 1) } })),
+          { x0:-8, x1:8, y0:1.5, y1:8.5, gap:1.6 }, (x, y) => POCKETS.some(p => Math.hypot(p[0] - x, p[1] - y) < 2));
+        st.bodies = b; st.shooter = b[0]; st.shooters = [b[0]];
+      },
+      overGrid(ctx, u){ ctx.fillStyle = '#070a0b'; for (const [x, y] of POCKETS){ const [a, c] = toPx(u, x, y); ctx.beginPath(); ctx.arc(a, c, 0.62 * u, 0, Math.PI * 2); ctx.fill(); } },
+      left(){ return st.bodies.filter(b => b.kind === 'target' && !b.gone).length; },
+      afterShot(lines){
+        const cue = st.shooter; let scratch = false;
+        if (cue.gone){
+          const [x, y] = freeSpot(cue, [[0, 2.5], [2, 2.5], [-2, 2.5], [0, 5], [4, 5], [-4, 5]]);
+          Object.assign(cue, { gone:false, x, y, vx:0, vy:0, spin:0 });
+          scratch = true;
+          lines.push('<span class="no">흰 공이 빠져서 다시 놓았어요.</span>');
+        }
+        const pots = st.ev.pocketed.filter(id => id !== 'cue').length;
+        if (pots){
+          st.pts[st.last.player] += pots;
+          lines.push(`<span class="ok">목표 공 ${pots}개 성공${st.players === 2 ? ` · ${PNAME(st.last.player)} +${pots}점` : ''}</span>`);
+        }
+        return scratch || !pots;
+      },
+      stats(){
+        const left = G.left();
+        return st.players === 2 ? [`1P ${st.pts[0]} : ${st.pts[1]} 2P`, `남은 공 ${left}`, `샷 ${st.shots} / ${G.cap()}`] : [`샷 ${st.shots} / ${G.cap()}`, `남은 공 ${left}`];
+      },
+      end(){
+        const left = G.left();
+        if (st.players === 2) return (!left || st.shots >= G.cap()) ? verdict2() : null;
+        if (!left) return `<b class="ok">승리! ${st.shots}번 만에 모두 넣었어요.</b>`;
+        if (st.shots >= G.cap()) return `<b class="no">샷을 모두 썼어요. 남은 공 ${left}개.</b> 새 게임으로 다시 도전하세요.`;
+        return null;
+      },
+      intro(){ return st.players === 2 ? '1P부터 쳐요. 흰 공은 (−6, 3)에 있어요.' : '흰 공은 (−6, 3)에 있어요.'; },
+      sample(){ return { bodies:[mk('c', 'cue', -6, 3, WHITE), mk('a', 't', 3, 6, YELLOW, { label:'1' }), mk('b', 't', 6, 2, BLUE, { label:'2' }), mk('d', 't', -3, 7.5, RED, { label:'3' })], ov:{ line:{ P:{ x:0, y:5 }, d:norm(3, 1) } } }; }
+    },
+
+    carom: {
+      key:'carom', name:'사구', noun:'공', R:0.3, decel:3.2, rest:0.88, ballRest:0.95, contactSpin:0.3,
+      wall:'bounce', pockets:null, spinCushion:0.32, curl:0, goal:3, defaults:{ dx:3, dy:1 }, pal:FELT_PAL,
+      surface:billiardSurface('#1d5a8c', '#3d2618', '#5b3a24'), drawBody:drawBall,
+      cap(){ return st.players === 2 ? 40 : 15; },
+      tag(i){ return i ? '노란 공' : '흰 공'; },
+      color(i){ return i ? YELLOW : WHITE; },
+      rulesBase:['구멍이 없는 사구 테이블입니다. 아래쪽 쿠션의 가운데가 원점 O이고, 격자 한 칸이 1입니다.', '빨간 공 2개가 목표입니다. 한 번의 샷에서 내 공이 빨간 공 2개를 모두 맞히면 1점, 상대 공에 닿으면 파울로 1점을 잃습니다.', SPIN_RULE],
+      rules1:['흰 공이 내 공, 노란 공이 상대 공입니다. 15번 안에 3점을 내면 승리입니다.'],
+      rules2:['1P는 흰 공, 2P는 노란 공을 칩니다. 득점하면 한 번 더 치고, 그렇지 않으면 차례가 넘어갑니다.', '먼저 3점을 내면 이깁니다. 합계 40샷이 되면 점수로 정합니다.'],
+      setup(){
+        const b = scatter([], [{ id:'cue', kind:'cue', color:WHITE }, { id:'y', kind:'yellow', color:YELLOW }, { id:'r1', kind:'red', color:RED }, { id:'r2', kind:'red', color:RED }],
+          { x0:-8.5, x1:8.5, y0:1, y1:9, gap:1.8 });
+        const white = b.find(o => o.id === 'cue'), yellow = b.find(o => o.id === 'y');
+        st.bodies = b; st.shooter = white; st.shooters = st.players === 2 ? [white, yellow] : [white];
+      },
+      overGrid(ctx, u){
+        ctx.fillStyle = '#f4ead6';
+        const dia = (x, y) => { const [a, b] = toPx(u, x, y), s = Math.max(2, u * 0.1); ctx.beginPath(); ctx.moveTo(a, b - s); ctx.lineTo(a + s, b); ctx.lineTo(a, b + s); ctx.lineTo(a - s, b); ctx.closePath(); ctx.fill(); };
+        for (let x = -8; x <= 8; x += 2){ dia(x, 10.45); dia(x, -0.2); }
+        for (let y = 2; y <= 8; y += 2) dia(10.45, y);
+      },
+      afterShot(lines){
+        const me = st.last.player;
+        if (st.last.miss){ lines.push('<span>헛스윙이라 점수 변화가 없어요.</span>'); return true; }
+        const c = st.ev.contacts, reds = ['r1', 'r2'].filter(id => c.has(id)).length;
+        const oppId = st.last.body.id === 'cue' ? 'y' : 'cue', oppName = oppId === 'y' ? '노란 공' : '흰 공';
+        if (c.has(oppId)){ st.pts[me]--; lines.push(`<span class="no">${oppName}(상대 공)에 닿아 파울: −1점</span>`); return true; }
+        if (reds === 2){ st.pts[me]++; lines.push('<span class="ok">빨간 공 2개를 모두 맞혀 득점: +1점</span>'); return false; }
+        lines.push(reds === 1 ? '<span>빨간 공을 1개만 맞혔어요.</span>' : '<span>아무 공도 맞히지 못했어요.</span>');
+        return true;
+      },
+      stats(){
+        return st.players === 2 ? [`1P ${fmt(st.pts[0])} : ${fmt(st.pts[1])} 2P`, `먼저 ${G.goal}점`, `샷 ${st.shots} / ${G.cap()}`] : [`샷 ${st.shots} / ${G.cap()}`, `점수 ${fmt(st.pts[0])} / ${G.goal}`];
+      },
+      end(){
+        if (st.players === 2){
+          for (const i of [0, 1]) if (st.pts[i] >= G.goal) return `<b class="ok">${PNAME(i)} 승리!</b> · 1P ${fmt(st.pts[0])} : ${fmt(st.pts[1])} 2P`;
+          return st.shots >= G.cap() ? verdict2() : null;
+        }
+        if (st.pts[0] >= G.goal) return `<b class="ok">승리! ${st.shots}번 만에 ${G.goal}점을 냈어요.</b>`;
+        if (st.shots >= G.cap()) return `<b class="no">샷을 모두 썼어요. 최종 ${fmt(st.pts[0])}점.</b> 새 게임으로 다시 도전하세요.`;
+        return null;
+      },
+      intro(){ const c = st.shooter; return st.players === 2 ? `1P(흰 공)부터 쳐요. 흰 공은 (${fmt(c.x)}, ${fmt(c.y)})에 있어요.` : `흰 공은 (${fmt(c.x)}, ${fmt(c.y)})에 있어요.`; },
+      sample(){ return { bodies:[mk('c', 'cue', -6, 2, WHITE), mk('a', 'red', -1, 4.5, RED), mk('b', 'red', 5, 7, RED), mk('d', 'yellow', 3, 2, YELLOW)], ov:{ line:{ P:{ x:0, y:5 }, d:norm(2, 1) } } }; }
+    },
+
+    curling: {
+      key:'curling', name:'컬링', noun:'스톤', R:0.3, decel:1.6, rest:0, ballRest:0.85, contactSpin:0.5,
+      wall:'remove', pockets:null, spinCushion:0, curl:1.2, defaults:{ dx:4, dy:0 }, pal:ICE_PAL,
+      surface:iceSurface, drawBody:drawStone,
+      cap(){ return st.players === 2 ? 8 : 6; },
+      tag(i){ return i ? '노란 스톤' : '빨간 스톤'; },
+      color(i){ return i ? YELLOW : RED; },
+      rulesBase:[
+        '아래쪽 사이드 라인의 가운데가 원점 O입니다. 하우스 중심(버튼)은 (5, 5)이고, 격자 한 칸이 1입니다.',
+        '매 투구마다 스톤이 투구선(x = −8) 위 어딘가에 놓입니다.',
+        '직선이 스톤 중심을 지나면 똑바로 갑니다. 진행 방향 기준으로 중심의 오른쪽을 지나면 시계 방향으로 회전해 오른쪽으로, 왼쪽을 지나면 반시계 방향으로 회전해 왼쪽으로 휩니다. 느려질수록 더 많이 휩니다. 점선은 회전이 없을 때의 경로입니다.',
+        '호그 라인(x = −1)을 완전히 넘지 못한 스톤(다른 스톤을 맞히지 않은 경우), 사이드 라인에 닿은 스톤, 백 라인을 완전히 넘은 스톤은 제거됩니다.',
+        '모두 던진 뒤 버튼에 가장 가까운 스톤의 주인이, 상대의 가장 가까운 스톤보다 안쪽에 있는 자기 스톤 수만큼 득점합니다. 하우스에 닿아 있는 스톤만 셉니다.'
+      ],
+      rules1:['상대 스톤 2개가 미리 놓여 있고, 내 스톤 6개를 던집니다.'],
+      rules2:['1P는 빨간 스톤, 2P는 노란 스톤을 4개씩 번갈아 던집니다. 마지막 스톤은 2P가 던집니다.'],
+      setup(){
+        const b = [];
+        if (st.players === 1){
+          b.push(mk('o1', 'stone', pick([-0.5, 0, 0.5]), pick([4, 4.5, 5, 5.5, 6]), YELLOW, { team:1 }));
+          for (let t = 0; t < 300; t++){
+            const x = half(3, 7.5), y = half(3, 7), d = Math.hypot(x - BUTTON.x, y - BUTTON.y);
+            if (d < 0.8 || d > 2.4) continue;
+            b.push(mk('o2', 'stone', x, y, YELLOW, { team:1 })); break;
+          }
+        }
+        st.bodies = b; st.shooters = []; spawnStone(0);
+      },
+      overGrid(ctx, u){
+        ctx.fillStyle = ICE_PAL.label; ctx.font = `500 ${Math.max(9, u * 0.3)}px ${getComputedStyle(document.body).fontFamily}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        [[DELIVERY, '투구선'], [HOG, '호그 라인'], [TEE, '티 라인'], [BACK, '백 라인']].forEach(([x, t]) => ctx.fillText(t, toPx(u, x, 0)[0], u * 0.5));
+      },
+      house(){
+        const lim = RINGS[0] + G.R;
+        const list = st.bodies.filter(b => !b.gone && !b.waiting)
+          .map(b => ({ b, d:Math.hypot(b.x - BUTTON.x, b.y - BUTTON.y) })).filter(o => o.d <= lim).sort((p, q) => p.d - q.d);
+        if (!list.length) return { lead:null, pts:0 };
+        const lead = list[0].b.team, cut = list.find(o => o.b.team !== lead);
+        return { lead, pts:list.filter(o => o.b.team === lead && (!cut || o.d < cut.d)).length };
+      },
+      afterShot(lines){
+        const s = st.last.body;
+        if (st.last.miss){ s.gone = true; lines.push('<span class="no">스톤을 놓쳐서 이 투구는 무효예요.</span>'); }
+        else if (!s.gone && s.x - G.R <= HOG && !st.ev.contacts.size){ s.gone = true; lines.push('<span class="no">호그 라인을 완전히 넘지 못해 제거됐어요.</span>'); }
+        for (const r of st.ev.removed) lines.push(`<span class="no">${stoneName(r.b)}: ${r.why}</span>`);
+        const h = G.house();
+        lines.push(`<span>${h.lead === null ? '하우스에 스톤이 없어요.' : `지금 버튼에 가장 가까운 스톤: ${teamName(h.lead)} (${h.pts}개 앞섬)`}</span>`);
+        return true;
+      },
+      prepareNext(){ if (st.shots < G.cap()) spawnStone(st.players === 2 ? st.turn : 0); },
+      stats(){ return [`${st.players === 2 ? '투구' : '스톤'} ${st.shots} / ${G.cap()}`, houseText(G.house())]; },
+      end(){
+        if (st.shots < G.cap()) return null;
+        const h = G.house();
+        if (h.lead === null) return '<b>블랭크 엔드</b> · 하우스에 스톤이 없어 0점이에요.';
+        if (st.players === 2) return `<b class="ok">${PNAME(h.lead)} 승리!</b> · ${h.pts}점 득점`;
+        return h.lead === 0 ? `<b class="ok">승리! ${h.pts}점을 땄어요.</b>` : `<b class="no">상대가 ${h.pts}점을 가져갔어요.</b> 새 게임으로 다시 도전하세요.`;
+      },
+      intro(){ return `${st.players === 2 ? '1P(빨간 스톤)부터 던져요. ' : ''}첫 스톤은 (−8, ${fmt(st.shooter.y)})에 있어요.`; },
+      sample(){ return { bodies:[mk('a', 'stone', 0, 4.5, YELLOW, { team:1 }), mk('b', 'stone', 5.7, 5.8, YELLOW, { team:1 }), mk('c', 'stone', 4.6, 4.6, RED, { team:0, label:'1' }), mk('d', 'stone', -8, 6, RED, { team:0, label:'2', waiting:true })], ov:{ line:{ P:{ x:0, y:6 }, d:{ x:1, y:0 } } } }; }
+    }
+  };
+
+  const teamName = t => st.players === 2 ? PNAME(t) : (t === 0 ? '내 스톤' : '상대 스톤');
+  const stoneName = b => st.players === 2 ? `${PNAME(b.team)} 스톤 ${b.label}` : (b.team === 0 ? `내 스톤 ${b.label}` : '상대 스톤');
+  function houseText(h){
+    if (h.lead === null) return '하우스 비어 있음';
+    if (st.players === 2) return `${PNAME(h.lead)}가 앞섬 +${h.pts}`;
+    return h.lead === 0 ? `내가 앞섬 +${h.pts}` : `상대가 앞섬 −${h.pts}`;
+  }
+  function spawnStone(team){
+    const n = st.thrown[team] + 1, R = G.R;
+    const ys = [2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5].sort(() => Math.random() - 0.5);
+    const y = ys.find(v => st.bodies.every(o => o.gone || Math.hypot(o.x - DELIVERY, o.y - v) > 2 * R + 0.1));
+    const s = mk(`s${team}-${n}`, 'stone', DELIVERY, y === undefined ? 5 : y, team ? YELLOW : RED, { team, label:String(n), waiting:true });
+    st.bodies.push(s); st.shooter = s;
+  }
+
+  /* ---------- line from inputs ---------- */
+  function computeLine(){
+    const { dx, dy, mode } = st;
+    if (!dx && !dy) return { err:'x 증가량과 y 증가량이 모두 0이면 방향이 없어요.', power:0 };
+    const d = norm(dx, dy), power = dx * dx + dy * dy, s = st.shooter, who = whoName();
+    if (mode === 'coord'){
+      let eq;
+      if (dx === 0) eq = `x = ${fmt(s.x)}`; else if (dy === 0) eq = `y = ${fmt(s.y)}`; else eq = eqY(dx, dy, s.y - dy / dx * s.x);
+      return { d, P:{ x:s.x, y:s.y }, eq, sub:`${who} 중심을 지나는 직선 · 중심 (${fmt(s.x)}, ${fmt(s.y)})`, power };
+    }
+    const raw = $('icpt').value, n = parseIn(raw);
+    const bad = raw.trim() ? '수로 읽을 수 없어요. 3, −1.5, 7/3 처럼 입력하세요.' : null;
+    if (mode === 'xint'){
+      if (dy === 0) return { err:'기울기가 0인 직선(y = b 꼴)은 x절편이 없어요. y 증가량을 0이 아닌 값으로 바꾸세요.', power };
+      if (!n) return { err:bad || 'x절편을 입력하세요.', power };
+      if (dx === 0) return { d, P:{ x:n.v, y:0 }, eq:`x = ${signed(n)}`, sub:`x절편 ${signed(n)}`, power };
+      const b = -dy / dx * n.v;
+      return { d, P:{ x:n.v, y:0 }, eq:eqY(dx, dy, b), sub:`x절편 ${signed(n)} → y절편 ${fmt(b)}`, power };
+    }
+    if (!n) return { err:bad || (dx === 0 ? 'x = a 의 a 값을 입력하세요.' : 'y절편을 입력하세요.'), power };
+    if (dx === 0) return { d, P:{ x:n.v, y:0 }, eq:`x = ${signed(n)}`, sub:'y축에 평행한 직선 · y 증가량이 세기', power };
+    if (dy === 0) return { d, P:{ x:0, y:n.v }, eq:`y = ${signed(n)}`, sub:'x축에 평행한 직선 · x 증가량이 세기', power };
+    return { d, P:{ x:0, y:n.v }, eq:eqY(dx, dy, n.v, n.text), sub:'', power };
+  }
+
+  /* ---------- UI ---------- */
+  const cv = $('cv'), ctx = cv.getContext('2d');
+  let unit = 40, dpr = 1;
+
+  function updateUI(){
+    if (!G) return;
+    $('dxOut').textContent = fmt(st.dx); $('dyOut').textContent = fmt(st.dy);
+    const arrow = ARROWS[`${Math.sign(st.dx)},${Math.sign(st.dy)}`];
+    $('dirHint').textContent = arrow ? `x가 ${fmt(st.dx)} 증가할 때 y가 ${fmt(st.dy)} 증가 · 방향 ${arrow}` : '증가량 중 하나는 0이 아니어야 방향이 생겨요.';
+    const two = st.players === 2 && !st.over, tb = $('turn');
+    tb.hidden = !two;
+    if (two){ tb.style.setProperty('--pc', G.color(st.turn)); $('turnName').textContent = `${PNAME(st.turn)} 차례`; $('turnTag').textContent = G.tag(st.turn); }
+    document.querySelectorAll('.mode').forEach(b => {
+      const m = b.dataset.mode;
+      b.setAttribute('aria-pressed', String(m === st.mode));
+      if (m !== 'base') b.disabled = st.inv[m] <= 0 && st.mode !== m;
+    });
+    $('nX').textContent = st.inv.xint; $('nC').textContent = st.inv.coord;
+    const coord = st.mode === 'coord', who = whoName();
+    $('icptField').hidden = coord; $('coordInfo').hidden = !coord;
+    if (coord) $('coordInfo').textContent = `${who} 좌표 (${fmt(st.shooter.x)}, ${fmt(st.shooter.y)}) · 기울기만 정하면 ${who} 중심을 지나요.`;
+    $('icptLabel').textContent = st.mode === 'xint' ? 'x절편 (y = 0일 때 x 값)' : (st.dx === 0 ? 'x = a 의 a' : 'y절편 b');
+    const L = computeLine();
+    $('eq').textContent = L.eq || '—';
+    $('eqSub').textContent = L.sub || '';
+    $('err').textContent = L.err || '';
+    const p = st.dx * st.dx + st.dy * st.dy;
+    $('powerTxt').textContent = `세기 ${sq(st.dx)} + ${sq(st.dy)} = ${p} · 거리 ${fmt(DIST_K * p)}`;
+    $('powerBar').style.width = Math.min(100, p / MAX_POWER * 100) + '%';
+    $('pills').innerHTML = G.stats().map(t => `<span class="pill">${t}</span>`).join('');
+    $('shoot').textContent = G.key === 'curling' ? '던지기' : '치기';
+    $('shoot').disabled = st.moving || st.over || !!L.err;
+    draw();
+  }
+
+  function resize(){
+    const w = $('tableWrap').clientWidth; if (!w) return;
+    dpr = window.devicePixelRatio || 1; unit = w / 22;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(unit * 12 * dpr); cv.style.height = unit * 12 + 'px';
+    draw();
+  }
+  function draw(){
+    if (!G || $('game').hidden) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const ov = { line:st.last ? { P:st.last.P, d:st.last.d } : null, theory:st.theory };
+    if ($('preview').checked && !st.moving && !st.over){ const L = computeLine(); if (!L.err) ov.preview = L; }
+    drawScene(ctx, unit, G, st.bodies, ov);
+  }
+  function drawPreviews(){
+    document.querySelectorAll('.card').forEach(card => {
+      const game = GAMES[card.dataset.game], c = card.querySelector('canvas'), w = 440, u = w / 22, k = 2;
+      c.width = w * k; c.height = Math.round(u * 12 * k);
+      const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, 0, 0);
+      const s = game.sample(); drawScene(g, u, game, s.bodies, s.ov);
+    });
+  }
+
+  document.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.step; st[k] = Math.max(-LIM, Math.min(LIM, st[k] + Number(b.dataset.d))); updateUI();
+  }));
+  document.querySelectorAll('.mode').forEach(b => b.addEventListener('click', () => {
+    const m = b.dataset.mode; if (m !== 'base' && st.inv[m] <= 0) return; st.mode = m; updateUI();
+  }));
+  $('icpt').addEventListener('input', updateUI);
+  $('preview').addEventListener('change', draw);
+  $('newGame').addEventListener('click', () => newGame());
+  $('shoot').addEventListener('click', () => shoot());
+  $('back').addEventListener('click', backToLobby);
+
+  /* ---------- game flow ---------- */
+  function newGame(){
+    st.runId++;
+    Object.assign(st, { shots:0, turn:0, pts:[0, 0], invs:[{ xint:1, coord:0 }, { xint:1, coord:0 }], thrown:[0, 0], mode:'base',
+      moving:false, over:false, last:null, theory:null, quiz:null, dx:G.defaults.dx, dy:G.defaults.dy, ev:{ pocketed:[], contacts:new Set(), removed:[] } });
+    st.inv = st.invs[0];
+    $('overlay').hidden = true;
+    G.setup();
+    const s = st.shooter, { dx, dy } = st;
+    const v = dx === 0 ? s.x : dy === 0 ? s.y : s.y - dy / dx * s.x;
+    $('icpt').value = String(Math.round(v * 100) / 100).replace('-', '−');
+    const gift = st.players === 2 ? '두 사람 모두 연습용 x절편 찬스를 1개씩 받았어요.' : '연습용 x절편 찬스 1개를 드렸어요.';
+    $('report').innerHTML = `<span class="hint">새 게임입니다. ${G.intro()} 예시 식이 채워져 있고, ${gift}</span>`;
+    $('toast').innerHTML = '';
+    updateUI(); scheduleBubble();
+  }
+
+  function passTurn(lines){
+    st.turn = 1 - st.turn; st.inv = st.invs[st.turn]; st.mode = 'base';
+    if (st.shooters.length > 1) st.shooter = st.shooters[st.turn];
+    const tag = G.tag(st.turn);
+    lines.push(`<span class="turnline">→ ${PNAME(st.turn)} 차례${tag ? ' · ' + tag : ''}</span>`);
+  }
+
+  function theoryPath(s, d, len){
+    if (G.wall !== 'bounce') return [{ x:s.x, y:s.y }, { x:s.x + d.x * len, y:s.y + d.y * len }];
+    const R = G.R, pts = [{ x:s.x, y:s.y }];
+    let x = s.x, y = s.y, vx = d.x, vy = d.y, left = len;
+    for (let i = 0; i < 5 && left > 1e-6; i++){
+      const tx = vx > 1e-9 ? (W - R - x) / vx : vx < -1e-9 ? (-W + R - x) / vx : Infinity;
+      const ty = vy > 1e-9 ? (H - R - y) / vy : vy < -1e-9 ? (R - y) / vy : Infinity;
+      const t = Math.max(0, Math.min(tx, ty, left));
+      x += vx * t; y += vy * t; left -= t; pts.push({ x, y });
+      if (t === tx) vx = -vx; else if (t === ty) vy = -vy;
+    }
+    return pts;
+  }
+
+  let lastT = 0;
+  function shoot(){
+    if (!G || st.moving || st.over) return;
+    const L = computeLine(); if (L.err) return;
+    const s = st.shooter, R = G.R, n = { x:-L.d.y, y:L.d.x };
+    const off = (s.x - L.P.x) * n.x + (s.y - L.P.y) * n.y;   // > 0: the line passes on the right of the centre
+    const usedMode = st.mode;
+    if (usedMode !== 'base'){ st.inv[usedMode]--; st.mode = 'base'; }
+    st.shots++;
+    if (s.kind === 'stone') st.thrown[s.team]++;
+    st.ev = { pocketed:[], contacts:new Set(), removed:[] };
+    st.last = { P:L.P, d:L.d, eq:L.eq, off, miss:Math.abs(off) > R, usedMode, dx:st.dx, dy:st.dy, power:L.power,
+      dist:DIST_K * L.power, start:{ x:s.x, y:s.y }, body:s, player:st.turn };
+    s.waiting = false;
+    if (st.last.miss){ st.theory = null; settle(); return; }
+    const v0 = Math.sqrt(2 * G.decel * st.last.dist);
+    s.vx = L.d.x * v0; s.vy = L.d.y * v0; s.spin = off / R;
+    st.theory = theoryPath(s, L.d, st.last.dist);
+    st.moving = true; updateUI();
+    const id = st.runId; lastT = performance.now();
+    requestAnimationFrame(t => loop(t, id));
+  }
+
+  function loop(now, id){
+    if (id !== st.runId) return;
+    const dt = Math.min(0.05, Math.max(0, (now - lastT) / 1000)); lastT = now;
+    const n = Math.max(1, Math.ceil(dt * SUB_HZ));
+    for (let i = 0; i < n; i++) step(dt / n);
+    draw();
+    if (st.bodies.some(b => !b.gone && (b.vx || b.vy))) requestAnimationFrame(t => loop(t, id));
+    else settle();
+  }
+
+  function cushion(b, axis, wallSign){
+    if (axis === 'x') b.vx = -b.vx * G.rest; else b.vy = -b.vy * G.rest;
+    if (b === st.shooter && G.spinCushion && Math.abs(b.spin) > 0.05){
+      // right-hand spin (counter-clockwise seen from above) turns the rebound counter-clockwise, i.e. to the shooter's right
+      const a = b.spin * G.spinCushion, c = Math.cos(a), s = Math.sin(a);
+      const rx = b.vx * c - b.vy * s, ry = b.vx * s + b.vy * c;
+      const into = axis === 'x' ? rx * wallSign : ry * wallSign;
+      if (into < -0.05){ b.vx = rx; b.vy = ry; }
+      b.spin *= 0.4;
+    }
+  }
+  function outReason(b, R){
+    if (b.y - R <= 0 || b.y + R >= H) return '사이드 라인에 닿아 제거됐어요.';
+    if (b.x - R > BACK) return '백 라인을 완전히 넘어 제거됐어요.';
+    if (b.x + R < -W) return '시트 밖으로 나가 제거됐어요.';
+    return null;
+  }
+  function step(dt){
+    const R = G.R;
+    for (const b of st.bodies){
+      if (b.gone) continue;
+      let sp = Math.hypot(b.vx, b.vy); if (!sp) continue;
+      if (G.curl && b.spin){
+        const a = G.curl * b.spin / (sp + 1), nx = b.vy / sp, ny = -b.vx / sp;   // clockwise turn pushes toward the right of travel
+        b.vx += a * nx * dt; b.vy += a * ny * dt; sp = Math.hypot(b.vx, b.vy);
+      }
+      const ns = sp - G.decel * dt;
+      if (ns < 0.03){ b.vx = b.vy = 0; continue; }
+      b.vx *= ns / sp; b.vy *= ns / sp;
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (G.pockets && G.pockets.some(p => Math.hypot(p[0] - b.x, p[1] - b.y) < G.PR)){ b.gone = true; b.vx = b.vy = 0; st.ev.pocketed.push(b.id); continue; }
+      if (G.wall === 'bounce'){
+        if (b.x < -W + R){ b.x = -W + R; cushion(b, 'x', -1); }
+        if (b.x > W - R){ b.x = W - R; cushion(b, 'x', 1); }
+        if (b.y < R){ b.y = R; cushion(b, 'y', -1); }
+        if (b.y > H - R){ b.y = H - R; cushion(b, 'y', 1); }
+      } else {
+        const why = outReason(b, R);
+        if (why){ b.gone = true; b.vx = b.vy = 0; st.ev.removed.push({ b, why }); }
+      }
+    }
+    const live = st.bodies.filter(b => !b.gone);
+    for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++){
+      const a = live[i], c = live[j];
+      const dx = c.x - a.x, dy = c.y - a.y, d2 = dx * dx + dy * dy;
+      if (d2 >= 4 * R * R || d2 === 0) continue;
+      const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (2 * R - d) / 2;
+      a.x -= nx * ov; a.y -= ny * ov; c.x += nx * ov; c.y += ny * ov;
+      const rel = (a.vx - c.vx) * nx + (a.vy - c.vy) * ny;
+      if (rel > 0){ const k = rel * (1 + G.ballRest) / 2; a.vx -= k * nx; a.vy -= k * ny; c.vx += k * nx; c.vy += k * ny; }
+      if (a === st.shooter){ st.ev.contacts.add(c.id); a.spin *= G.contactSpin; }
+      if (c === st.shooter){ st.ev.contacts.add(a.id); c.spin *= G.contactSpin; }
+    }
+    if (G.wall === 'bounce') for (const b of live){ b.x = Math.min(W - R, Math.max(-W + R, b.x)); b.y = Math.min(H - R, Math.max(R, b.y)); }
+  }
+
+  function settle(){
+    st.moving = false;
+    const lines = [];
+    const pass = G.afterShot(lines);          // true: the turn goes to the other player
+    const msg = G.end();
+    if (!msg && st.players === 2){
+      if (pass) passTurn(lines);
+      else lines.push('<span class="turnline">득점해서 한 번 더 칩니다.</span>');
+    }
+    if (!msg && G.prepareNext) G.prepareNext();
+    report(lines);
+    if (msg){ st.over = true; $('toast').innerHTML = msg; clearTimeout(bubbleTimer); removeBubble(); }
+    updateUI();
+  }
+
+  function report(lines){
+    const L = st.last, R = G.R, curling = G.key === 'curling', noun = G.noun;
+    const dist = Math.abs(L.off), pct = Math.round(dist / R * 100);
+    let verdict;
+    if (L.miss){
+      verdict = curling ? `<b class="no">스톤을 놓쳤어요</b> · 직선이 스톤 중심에서 ${fmt(dist)} 떨어져 있어요(반지름 0.3).`
+        : `<b class="no">헛스윙</b> · 직선이 공 중심에서 ${fmt(dist)} 떨어져 공(반지름 0.3)을 못 맞혔어요.`;
+    } else {
+      const right = L.off > 0;
+      const tag = pct < 15 ? (curling ? '<b class="ok">회전 없이 똑바로</b>' : '<b class="ok">정타</b>')
+        : curling ? `<b>${right ? '시계 방향' : '반시계 방향'} 회전 ${pct}%</b> (${right ? '오른쪽' : '왼쪽'}으로 휨)`
+        : `<b>${right ? '오른쪽' : '왼쪽'} 스핀 ${pct}%</b>`;
+      verdict = `${tag} · 직선과 ${noun} 중심 거리 ${fmt(dist)}`;
+    }
+    let parallel = '';
+    if (!L.miss && dist > 0.005){
+      const s = L.start;
+      const eq = L.dx === 0 ? `x = ${fmt(s.x)}` : L.dy === 0 ? `y = ${fmt(s.y)}` : eqY(L.dx, L.dy, s.y - L.dy / L.dx * s.x);
+      parallel = `<span>${noun}은 입력한 직선과 <b>평행한 직선</b> 위에서 출발했어요.</span><span class="mono">${eq}</span>`;
+    }
+    const used = { base:'', xint:' · x절편 찬스 사용', coord:' · 좌표 찬스 사용' }[L.usedMode];
+    const who = st.players === 2 ? ` · ${PNAME(L.player)}` : '';
+    $('report').innerHTML = `<span class="label">${st.shots}번째 ${curling ? '투구' : '샷'}${who}${used}</span>`
+      + `<span class="mono">입력: ${L.eq} · 세기 ${L.power} → 거리 ${fmt(L.dist)}</span><span>${verdict}</span>${parallel}${lines.join('')}`;
+  }
+
+  /* ---------- chance bubbles & quiz ---------- */
+  let bubbleTimer = null, bubble = null;
+  function scheduleBubble(){ clearTimeout(bubbleTimer); bubbleTimer = setTimeout(spawnBubble, 9000 + Math.random() * 9000); }
+  function removeBubble(){ if (bubble){ bubble.remove(); bubble = null; } }
+  function spawnBubble(){
+    if (!G || st.over || $('game').hidden) return;
+    if (bubble || !$('overlay').hidden){ scheduleBubble(); return; }
+    const type = Math.random() < 0.5 ? 'xint' : 'coord';
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'bubble'; b.style.top = (10 + Math.random() * 60) + '%';
+    b.dataset.type = type;
+    b.innerHTML = `<span>${type === 'xint' ? 'x절편 찬스' : '좌표 찬스'} 잡기</span>`;
+    b.addEventListener('click', () => { removeBubble(); openQuiz(type); });
+    b.addEventListener('animationend', e => { if (e.target === b){ removeBubble(); scheduleBubble(); } });
+    $('tableWrap').appendChild(b); bubble = b;
+  }
+  const paren = v => v < 0 ? `(${String(v).replace('-', '−')})` : String(v);
+  function makeQuestion(){
+    const kind = ri(0, 3);
+    if (kind === 0){ const a = ri(-9, 9), b = ri(-6, 6) || 2, c = ri(-6, 6) || -3; return { text:`${paren(a)} + ${paren(b)} × ${paren(c)} = ?`, ans:a + b * c }; }
+    if (kind === 1){ const q = ri(-6, 6) || 4, d = ri(2, 5) * (Math.random() < 0.5 ? -1 : 1), e = ri(-8, 8); return { text:`${paren(q * d)} ÷ ${paren(d)} − ${paren(e)} = ?`, ans:q - e }; }
+    if (kind === 2){ const m = ri(-3, 3) || 2, x1 = ri(-4, 3), y1 = ri(-4, 4), k = ri(1, 4); return { text:`두 점 (${x1}, ${y1}), (${x1 + k}, ${y1 + m * k})을 지나는 직선의 기울기는?`.replace(/-/g, '−'), ans:m }; }
+    const m = ri(-3, 3) || 3, c = ri(-4, 4) || 1;
+    return { text:`${eqY(1, m, -m * c)} 의 x절편은?`, ans:c };
+  }
+  function openQuiz(type){
+    const q = makeQuestion(); st.quiz = { ...q, type, player:st.turn, done:false };
+    const whose = st.players === 2 ? `${PNAME(st.turn)} · ` : '';
+    $('qTitle').textContent = `${whose}${type === 'xint' ? 'x절편 찬스 문제' : '좌표 찬스 문제'}`;
+    $('qText').textContent = q.text; $('qAns').value = ''; $('qMsg').textContent = '한 번만 답할 수 있어요.';
+    $('qSubmit').disabled = false; $('overlay').hidden = false; $('qAns').focus();
+  }
+  function submitQuiz(){
+    const q = st.quiz; if (!q || q.done) return;
+    const n = parseIn($('qAns').value); if (!n){ $('qMsg').textContent = '수로 답을 입력하세요.'; return; }
+    q.done = true; $('qSubmit').disabled = true;
+    if (Math.abs(n.v - q.ans) < 1e-9){
+      st.invs[q.player][q.type]++;                 // 풍선을 잡은 사람의 찬스로(그사이 차례가 넘어가도)
+      const whose = st.players === 2 ? `${PNAME(q.player)}의 ` : '';
+      $('qMsg').innerHTML = `<b class="ok">정답!</b> ${whose}${q.type === 'xint' ? 'x절편' : '좌표'} 찬스가 쌓였어요.`;
+      updateUI();
+    } else $('qMsg').innerHTML = `<b class="no">아쉬워요.</b> 정답은 ${fmt(q.ans)}입니다.`;
+  }
+  function closeQuiz(){ $('overlay').hidden = true; st.quiz = null; if (G && !st.over) scheduleBubble(); }
+  $('qSubmit').addEventListener('click', submitQuiz);
+  $('qAns').addEventListener('keydown', e => { if (e.key === 'Enter') submitQuiz(); });
+  $('qClose').addEventListener('click', closeQuiz);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('overlay').hidden) closeQuiz(); });
+
+  /* ---------- navigation ---------- */
+  function openGame(key, players){
+    G = GAMES[key]; st.players = players;
+    $('lobby').hidden = true; $('game').hidden = false;
+    $('gameName').textContent = G.name;
+    $('modeTag').textContent = players === 2 ? '둘이 번갈아' : '혼자';
+    $('rules').innerHTML = [...G.rulesBase, ...(players === 2 ? G.rules2 : G.rules1), ...SHARED_RULES, ...(players === 2 ? [TWO_RULE] : [])]
+      .map(t => `<li>${t}</li>`).join('');
+    newGame(); resize(); window.scrollTo(0, 0);
+  }
+  function backToLobby(){
+    st.runId++; st.moving = false; clearTimeout(bubbleTimer); removeBubble();
+    $('overlay').hidden = true; st.quiz = null;
+    $('game').hidden = true; $('lobby').hidden = false; G = null;
+  }
+  document.querySelectorAll('.open').forEach(b => b.addEventListener('click', () => openGame(b.dataset.game, Number(b.dataset.players))));
+
+  /* ---------- host (AdminGames) · test hook ---------- */
+  window.addEventListener('message', e => {
+    const d = e.data;
+    if (d && d.type === 'ash-theme' && (d.theme === 'light' || d.theme === 'dark')) document.documentElement.dataset.theme = d.theme;
+  });
+  window.__slopeShot = () => ({
+    game:G && G.key, players:st.players, turn:st.turn, shots:st.shots, pts:st.pts.slice(), moving:st.moving, over:st.over,
+    inv:st.invs.map(i => ({ ...i })), mode:st.mode, dx:st.dx, dy:st.dy,
+    shooter:st.shooter && { id:st.shooter.id, x:st.shooter.x, y:st.shooter.y },
+    bodies:st.bodies.filter(b => !b.gone).map(b => ({ id:b.id, x:b.x, y:b.y, team:b.team, waiting:!!b.waiting })),
+    quiz:st.quiz && { text:st.quiz.text, ans:st.quiz.ans, type:st.quiz.type, player:st.quiz.player }
+  });
+
+  drawPreviews();
+  new ResizeObserver(resize).observe($('tableWrap'));
+  // 캔버스 글자(좌표 눈금 · 공 번호)는 폰트가 다 온 뒤 한 번 더 그린다 — 숨은 화면의 폰트는 저절로 받지 않으므로 직접 부른다
+  if (document.fonts && document.fonts.load){
+    Promise.all(['600 16px "IBM Plex Mono"', '700 16px "IBM Plex Mono"', '16px "Do Hyeon"'].map(f => document.fonts.load(f)))
+      .then(() => { drawPreviews(); draw(); }).catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
