@@ -601,11 +601,12 @@ export function Table({ x, y, cols, rh, rows, C, t = 1e12, size = 30, o = 1, lin
 }
 
 /* ══════════ 무대 머리글 ══════════ */
-export function SceneTitle({ title, sub, C, mode }) {
+/** 장면 제목. big — 해설 액자(약 1 m 에서도 단계 · 번호가 읽히게 둘째 줄을 크게) */
+export function SceneTitle({ title, sub, C, mode, big = false }) {
   return (
     <g>
-      <text x={56} y={68} fontFamily={TITLE} fontSize={40} fill={C.ink}>{title}</text>
-      {sub && <text x={58} y={108} fontFamily={SANS} fontSize={24} fontWeight={600} fill={mode === "m" ? C.teal : C.coral}
+      <text x={56} y={big ? 64 : 68} fontFamily={TITLE} fontSize={big ? 38 : 40} fill={C.ink}>{title}</text>
+      {sub && <text x={58} y={big ? 112 : 108} fontFamily={SANS} fontSize={big ? 31 : 24} fontWeight={big ? 700 : 600} fill={mode === "m" ? C.teal : C.coral}
         opacity={0.95} letterSpacing="0.02em">{sub}</text>}
     </g>
   );

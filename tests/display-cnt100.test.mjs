@@ -4,7 +4,8 @@
 // 박자표: 문제 → 전략 → 줄 차례 → 답. 목록: 세트마다 1~100번 · 단계 1~5(15 · 20 · 25 · 22 · 18).
 // 그리기: 400문항을 여러 순간 × 두 테마로 그려 오류 · NaN 이 없는지, 글자 판이 무대 안인지 훑는다.
 // 단일 모드 그림(줄 세우기 자리 칸 · 학년 · 주머니 공 · 사전식 나무): 줄 번호 · 빛남이 판서와 맞고 그림 자리 안인지.
-// 듀얼 모드: 반쪽 판(PANE_BOX)에 400문항이 다 들어가는지, 판 기억(벽시계로 이어 돌기)과 기본값.
+// 듀얼 모드: 반쪽 판(PANE_REGION)에 400문항이 들어가는지(넘치면 판서가 흐른다), 판 기억(벽시계로 이어 돌기)과 기본값.
+// 글자 판 배치 규칙(글자 크기 두 벌 · 그림은 남은 빈자리)은 tests/display-board.test.mjs 가 해설 액자 모두를 함께 본다.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -147,8 +148,9 @@ try {
 import { renderToStaticMarkup } from "react-dom/server";
 import { PALETTE } from ${F("draw.jsx")};
 import { FRAMES } from ${F("frames/index.js")};
-import { L10Art, layoutOf, L10_BOX } from ${F("frames/lin10.jsx")};
-import { Cnt100Thumb, c100Scenes, PANE, PANE_BOX, DUAL_SPEEDS, paneLoad } from ${F("frames/cnt100.jsx")};
+import { L10Art, layoutOf } from ${F("frames/lin10.jsx")};
+import { STAGE_REGION, PANE_REGION } from ${F("board.js")};
+import { Cnt100Thumb, c100Scenes, DUAL_SPEEDS, paneLoad } from ${F("frames/cnt100.jsx")};
 import { seatsGeom } from ${F("frames/c100fig.jsx")};
 import { Scrub } from ${F("frames/scrub.jsx")};
 import { l10Scenes } from ${F("frames/lin10.jsx")};
@@ -157,7 +159,7 @@ import { graphScenes } from ${F("frames/graphdraw.jsx")};
 import { L10_SETS } from ${F("lin10.js")};
 import { AREA_SETS } from ${F("area.js")};
 import { GD_SETS } from ${F("graphdraw.js")};
-export { FRAMES, c100Scenes, layoutOf, L10_BOX, PANE, PANE_BOX, DUAL_SPEEDS, paneLoad, seatsGeom };
+export { FRAMES, c100Scenes, layoutOf, STAGE_REGION, PANE_REGION, DUAL_SPEEDS, paneLoad, seatsGeom };
 export const lessonLists = () => [
   ...Object.keys(L10_SETS).map((k) => ["lin10 " + k, l10Scenes(+k, 1, 0)]),
   ...Object.keys(AREA_SETS).map((k) => ["area " + k, areaScenes(k, 1.5, 0)]),
@@ -165,7 +167,7 @@ export const lessonLists = () => [
 ];
 export const scrub = (scenes, idx, t, v, show) => renderToStaticMarkup(<Scrub variant={v} show={show} scenes={scenes} idx={idx} onPick={() => {}}
   t={t} dur={scenes[idx].dur} marks={scenes[idx].marks} onSeek={() => {}} />);
-export const paneArt = (it, t, th) => renderToStaticMarkup(<svg><L10Art it={it} t={t} C={PALETTE[th]} box={PANE_BOX} /></svg>);
+export const paneArt = (it, t, th) => renderToStaticMarkup(<svg><L10Art it={it} t={t} C={PALETTE[th]} region={PANE_REGION} /></svg>);
 const svg = (el) => renderToStaticMarkup(<svg>{el}</svg>);
 export const art = (it, t, th) => svg(<L10Art it={it} t={t} C={PALETTE[th]} />);
 export const scene = (sc, t, th) => svg(sc.render("m", t, PALETTE[th]));
@@ -201,14 +203,18 @@ export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
     console.log(`   그림 ${cnt}장`);
   });
 
-  test("글자 판: 발문 · 판서 · 답이 무대 안", () => {
-    const B = m.L10_BOX;
+  test("글자 판: 발문 · 방침 · 판서 · 답이 무대 안(넘치면 두 단 · 흐름) · 글자 크기는 두 벌뿐", () => {
+    const R = m.STAGE_REGION, kinds = {};
     for (const [k, it] of ALL) {
       const L = m.layoutOf(it), tag = `${k} ${it.no}`;
-      assert.ok(L.ansY + L.bs * 0.75 <= B.BOTTOM, `${tag} 아래로 넘침 (${Math.round(L.ansY)})`);
-      for (const r of L.rows) assert.ok(r.sx + r.sW <= L.right + 2, `${tag} 줄이 오른쪽으로 넘침: ${it.lines[r.i].s}`);
-      assert.ok(L.planS >= 18, `${tag} 방침 칸 글자가 너무 작음(${L.planS}): ${it.plan}`);
+      kinds[L.scroll ? "흐름" : L.two ? "두 단" : L.type] = (kinds[L.scroll ? "흐름" : L.two ? "두 단" : L.type] || 0) + 1;
+      assert.ok(["base", "tight"].includes(L.type), tag);
+      if (!L.scroll) assert.ok(L.bottom <= R.bottom + 1, `${tag} 아래로 넘침 (${Math.round(L.bottom)})`);
+      for (const r of L.rows) for (const q of r.parts) assert.ok(q.x + q.w <= R.right + 2, `${tag} 줄이 오른쪽으로 넘침: ${q.s}`);
+      assert.ok(L.T.plan >= 29 && L.T.b >= 36, `${tag} 글자가 너무 작음`);
     }
+    console.log(`   ${Object.entries(kinds).map(([a, b]) => `${a} ${b}`).join(" · ")}`);
+    assert.ok((kinds["흐름"] || 0) <= 8, "무대에서 흐르는 판이 너무 많음");
   });
 
   test("단일 모드 그림: 데이터가 판서 줄과 맞고(줄 번호 · 빛남 줄 수) 그림이 그림 자리 안 · 그림이 붙는 문항 수", () => {
@@ -224,7 +230,7 @@ export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
             assert.ok(Number.isInteger(a) && a >= 0 && a < nl, `${tag} 줄 번호 ${a}`);
           for (const sw of r.swaps) assert.ok(sw.a >= 0 && sw.b < r.units.length);
           const g = G.rows[ri];
-          assert.ok(g.x0 >= m.L10_BOX.FIG.x0 - 1 && g.x0 + g.W <= m.L10_BOX.FIG.x1 + 1, `${tag} 자리 칸이 그림 자리 밖`);
+          assert.ok(g.x0 >= 880 - 1 && g.x0 + g.W <= 1540 + 1, `${tag} 자리 칸이 그림 제 칸 밖`);
         }
         // 가짓수(칸 위 숫자)를 곱하면 식의 한 덩어리 — 적어도 한 줄에 그 곱이 나온다(빈자리 · 묶음 안 순서는 따로)
         const cs = f.rows[0].mixed ? [] : f.rows[0].units.filter((u) => u.cnt != null && !u.ca).map((u) => +u.cnt);
@@ -237,24 +243,26 @@ export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
       if (!m.layoutOf(it).noFig) n[k]++;
     }
     console.log(`   그림이 붙는 문항: ${Object.entries(n).map(([k, v]) => `${C100_SETS[k].short} ${v}`).join(" · ")}`);
-    for (const k of C100_KEYS) assert.ok(n[k] >= 60, `${k} 그림 문항이 너무 적음(${n[k]})`);
+    for (const k of C100_KEYS) assert.ok(n[k] >= 70, `${k} 그림 문항이 너무 적음(${n[k]})`);
   });
 
-  test("듀얼 모드: 반쪽 판에 400문항 모두 들어감 · 그리기 오류 없음 · 판 기억(벽시계로 이어 돌기 · 기본 왼쪽 앞 빠르게 · 오른쪽 뒤 느리게)", () => {
-    const B = m.PANE_BOX;
-    let cnt = 0;
+  test("듀얼 모드: 반쪽 판에 400문항(넘치면 판서가 흐름) · 그리기 오류 없음 · 판 기억(벽시계로 이어 돌기 · 기본 왼쪽 앞 빠르게 · 오른쪽 뒤 느리게)", () => {
+    const B = m.PANE_REGION;
+    let cnt = 0, flow = 0, fig = 0;
     for (const [k, it] of ALL) {
       const L = m.layoutOf(it, B), tag = `${k} ${it.no}`;
-      assert.ok(L.noFig, `${tag} 반쪽 판에 그림`);
-      assert.ok(L.ansY + L.bs * 0.75 <= B.bottom, `${tag} 반쪽 판 아래로 넘침 (${Math.round(L.ansY)})`);
-      for (const r of L.rows) assert.ok(r.sx + r.sW <= B.right + 2, `${tag} 반쪽 판 오른쪽으로 넘침: ${it.lines[r.i].s}`);
-      assert.ok(L.qs >= 28 && L.bs >= 28);
+      if (L.scroll) flow++; else assert.ok(L.bottom <= B.bottom + 1, `${tag} 반쪽 판 아래로 넘침 (${Math.round(L.bottom)})`);
+      if (L.fig) fig++;
+      assert.ok(!L.two, `${tag} 반쪽 판은 한 단`);
+      for (const r of L.rows) for (const q of r.parts) assert.ok(q.x + q.w <= B.right + 2, `${tag} 반쪽 판 오른쪽으로 넘침: ${q.s}`);
+      assert.ok(L.T.q >= 36 && L.T.b >= 37);
       const P = l10Plan(it);
       for (const t of [P.plan[1] + 100, P.ans + 400]) {
         const s = m.paneArt(it, t, cnt++ % 2 ? "dark" : "light");
         assert.ok(!BAD.test(s), `${tag} 반쪽 t=${Math.round(t)}: ${bad(s)}`);
       }
     }
+    console.log(`   반쪽 판 그림 ${cnt}장 · 흐르는 판 ${flow} · 그림이 들어간 판 ${fig}`);
     const now = 1_700_000_000_000;
     const dl = m.paneLoad(null, "L", "lex", now), dr = m.paneLoad(null, "R", "lex", now);
     assert.deepEqual([dl.set, dl.sp, dl.i, dl.held], ["lex", 1.5, 0, null]);
@@ -268,7 +276,6 @@ export const thumb = (th) => svg(<Cnt100Thumb C={PALETTE[th]} />);
     const pr = m.paneLoad({ ...o, rep: true }, "L", "sel", now);
     assert.equal(pr.i, 2);
     assert.deepEqual(m.DUAL_SPEEDS, [0.75, 1, 1.5, 2]);
-    console.log(`   반쪽 판 그림 ${cnt}장`);
   });
 
   test("두 막대: 해설 액자 넷의 장면마다 풀이 눈금(문제 → … → 답, 장면 안) · 단계 이름 · 막대 그리기(단일 · 듀얼 판)", () => {

@@ -184,16 +184,53 @@ try {
   await page.screenshot({ path: path.join(SHOTS, "bs-4-e-ten.png") });
   step("「10 만들기」 단원 — 문항을 늦게 들여와 첫 장면이 돈다");
   await wake(page);
-  await page.locator(".bs-unit").click();
-  await page.locator(".bs-card").first().waitFor();
-  assert.equal(await page.locator(".bs-card").count(), avOfLevel("초등").filter((x) => x.set).length);
+  await page.locator(".dsp-chip.lsn-unit").click();
+  await page.locator(".lsn-set").first().waitFor();
+  assert.equal(await page.locator(".lsn-set").count(), avOfLevel("초등").filter((x) => x.set).length);
+  assert.equal(await page.locator(".bs-views .dsp-chip").count(), 7, "단원 100제 + 초1 ~ 초6");
   await page.screenshot({ path: path.join(SHOTS, "bs-5-units.png") });
   await page.keyboard.press("Escape");
   await wake(page);
   await page.locator('button[title^="번호 · 단계 목록"]').click();
   await page.locator(".dsp-list").first().waitFor();
   await page.keyboard.press("Escape");
-  step("단원 목록(같은 학교급 단원 모두) · 번호 · 단계 목록이 열린다");
+  step("단원 목록(같은 학교급 단원 모두 · 머리에 「단원 100제 | 주차별 초1 ~ 초6」) · 번호 · 단계 목록이 열린다");
+
+  // 교실 모니터에서 주차별로 — 목록 머리의 학년 칩 → 그 학년 104회차(학기 · 방학으로 나눔 · 이번 주 표시)
+  await wake(page);
+  await page.locator(".dsp-chip.lsn-unit").click();
+  await page.locator(".bs-views .dsp-chip", { hasText: "초3" }).click();
+  await page.locator(".dsp-chip.lsn-unit").waitFor();
+  await page.waitForTimeout(1500);
+  await wake(page);
+  await page.locator(".dsp-chip.lsn-unit").click();
+  await page.locator(".lsn-set").first().waitFor();
+  assert.equal(await page.locator(".lsn-set").count(), 104);
+  assert.equal(await page.locator(".lsn-grp").count(), 4);
+  assert.equal(await page.locator(".lsn-set.hot").count(), 2, "이번 주 A · B");
+  await page.screenshot({ path: path.join(SHOTS, "bs-5-weeks.png") });
+  await page.locator(".lsn-set").nth(13).click();
+  await page.waitForTimeout(1500);
+  assert.ok((await page.locator(".dsp-chip.lsn-unit").textContent()).includes("7주 B"));
+  await page.screenshot({ path: path.join(SHOTS, "bs-5-week-play.png") });
+  await wake(page);
+  await page.locator(".dsp-chip.lsn-unit").click();
+  await page.locator(".bs-views .dsp-chip", { hasText: "단원 100제" }).click();
+  await page.waitForTimeout(800);
+  step("교실 모니터: 목록 머리 「초3」 → 104회차(학기 · 방학 넷 · 이번 주 둘) → 「7주 B」가 돈다 → 「단원 100제」로 돌아옴");
+
+  // 학생앱에서 회차를 열면 본 기록이 기기에 남는다(우물 추천 · ✓ · 진행 막대)
+  await go("#/av/w-e3-07a");
+  await page.locator(".dsp-svg").first().waitFor();
+  await page.waitForTimeout(2500);
+  const hist = await page.evaluate(() => JSON.parse(localStorage.getItem("ash.av.hist") || "{}")["w-e3-07a"] || null);
+  assert.ok(hist && hist.v >= 1 && hist.n === 20 && hist.max >= 1, JSON.stringify(hist));
+  await wake(page);
+  assert.ok((await page.locator(".dsp-chip.lsn-unit").textContent()).includes("7주 A"));
+  step("회차 주소 #/av/w-e3-07a — 그 회차가 단일 모드로 돌고, 본 기록(연 횟수 · 본 번호 · 20문항)이 남는다");
+  await go("#/av/e-ten");
+  await page.locator(".dsp-svg").first().waitFor();
+  await page.waitForTimeout(1200);
 
   // 📄 문서 — PDF 가 아직 없을 때
   await wake(page);

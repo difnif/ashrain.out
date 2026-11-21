@@ -122,7 +122,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { PALETTE } from ${F("draw.jsx")};
 import { FRAMES } from ${F("frames/index.js")};
 import { AreaArt, AreaThumb, areaScenes, layoutOf, figGeom, wrapMath, AREA_BOX } from ${F("frames/area.jsx")};
-export { FRAMES, areaScenes, layoutOf, figGeom, wrapMath, AREA_BOX };
+import { STAGE_REGION } from ${F("board.js")};
+export { FRAMES, areaScenes, layoutOf, figGeom, wrapMath, AREA_BOX, STAGE_REGION };
 const svg = (el) => renderToStaticMarkup(<svg>{el}</svg>);
 export const art = (it, t, th) => svg(<AreaArt it={it} t={t} C={PALETTE[th]} />);
 export const scene = (sc, t, th) => svg(sc.render("m", t, PALETTE[th]));
@@ -166,12 +167,21 @@ export const thumb = (th) => svg(<AreaThumb C={PALETTE[th]} />);
     console.log(`   그림 ${cnt}장`);
   });
 
-  test("글자 판: 발문 · 방침 · 풀이 · 답이 무대 안(그림 왼쪽) · 그림 글자는 그림 칸 안", () => {
-    const X = m.AREA_BOX;
-    let tight = 0, labels = 0;
+  test("글자 판: 발문 · 방침 · 풀이 · 답이 무대 안 · 좌표평면은 글자 옆 빈자리(받은 칸에 맞춰) · 그림 글자는 그림 칸 안", () => {
+    const X = m.AREA_BOX, R = m.STAGE_REGION;
+    let tight = 0, labels = 0, figs = 0;
     for (const [S, it] of ALL) {
       const L = m.layoutOf(it), tag = `${S}${it.no}`;
-      assert.ok(L.ansY + L.bs * 0.8 <= X.BOTTOM, `${tag} 아래로 넘침 (${Math.round(L.ansY)})`);
+      assert.ok(!L.scroll && L.bottom <= R.bottom + 1, `${tag} 아래로 넘침 (${Math.round(L.bottom)})`);
+      if (L.fig) {
+        figs++;
+        const f = L.fig, fb = [f.x, f.y, f.x + f.w, f.y + f.h];
+        for (const b of L.boxes) assert.ok(fb[0] >= b[2] - 1 || fb[2] <= b[0] + 1 || fb[1] >= b[3] - 1 || fb[3] <= b[1] + 1, `${tag} 좌표평면이 글자와 겹침`);
+        assert.ok(f.w * f.h <= 0.25 * 1600 * 900 + 1, `${tag} 좌표평면이 화면의 25%를 넘음`);
+        const G2 = m.figGeom(it, { x0: f.x, y0: f.y, x1: f.x + f.w, y1: f.y + f.h });
+        for (const b of [...G2.base.filter((q) => q.box).map((q) => q.box), ...G2.ops.filter((q) => q.box).map((q) => q.box), ...G2.names.filter(Boolean).map((q) => q.box)])
+          assert.ok(b[0] >= f.x && b[2] <= f.x + f.w && b[1] >= f.y && b[3] <= f.y + f.h, `${tag} 줄인 칸에서 그림 글자가 칸 밖`);
+      }
       const G = m.figGeom(it);
       const boxes = [...G.base.filter((b) => b.box).map((b) => b.box), ...G.ops.filter((g) => g.box).map((g) => g.box), ...G.names.filter(Boolean).map((g) => g.box)];
       for (const b of boxes) {
@@ -180,8 +190,9 @@ export const thumb = (th) => svg(<AreaThumb C={PALETTE[th]} />);
       }
       tight += [...G.base, ...G.ops, ...G.names.filter(Boolean)].filter((g) => g.sc != null && g.sc < -8).length;
     }
-    console.log(`   그림 글자 ${labels}개 · 다른 것과 붙은 글자 ${tight}개`);
+    console.log(`   그림 글자 ${labels}개 · 다른 것과 붙은 글자 ${tight}개 · 좌표평면이 들어간 문항 ${figs}/${ALL.length}`);
     assert.ok(tight <= labels * 0.04, `붙은 글자가 많다 ${tight}/${labels}`);
+    assert.ok(figs >= ALL.length * 0.95, `좌표평면이 빠진 문항이 많다 ${ALL.length - figs}`);
   });
 
   test("장면 목록: 세트 × 빠르기 × 단계 — 240제 단계를 고르면 24문항 · 1.5× 는 길이 2/3 · 같은 순간", () => {

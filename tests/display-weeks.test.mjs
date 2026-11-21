@@ -293,7 +293,8 @@ try {
 import { renderToStaticMarkup } from "react-dom/server";
 import { PALETTE } from ${F("draw.jsx")};
 import { l10Plan } from ${F("lin10.js")};
-import { L10Art, layoutOf, L10_BOX } from ${F("frames/lin10.jsx")};
+import { L10Art, layoutOf } from ${F("frames/lin10.jsx")};
+import { STAGE_REGION as L10_BOX } from ${F("board.js")};
 import { FigDsl } from ${F("frames/figdsl.jsx")};
 import { avDocHtml, avManifest, avCard, problemPages } from ${F("frames/avprint.js")};
 import { avDownloadName, avFileBase } from ${F("frames/docsmenu.jsx")};
@@ -317,13 +318,13 @@ export const figPrint = (it, when) => { const P = l10Plan(it); const t = when ==
   const BAD = /NaN|undefined|Infinity|\[object Object\]/;
   const bad = (s) => (s.match(/.{50}(NaN|undefined|Infinity|\[object Object\]).{30}/) || [""])[0];
 
-  test("판 짜기: 24960문항 모두 글자 판이 무대 안 · 그림이 있는 문항은 그림이 빠지지 않는다 · 그림 좌표가 그림 칸 안", () => {
+  test("판 짜기(공통 글자 판 board.js): 24960문항 모두 글자가 무대 안 · 그림이 있는 문항은 남은 자리에 그림이 들어간다 · 그림 좌표가 그림 칸 안", () => {
     const B = m.L10_BOX, NUM = ["x", "y", "x2", "y2", "w", "h", "r"];
     for (const { meta, set } of ALL) for (const it of set.items) {
       const L = m.layoutOf(it), tag = `${meta.id} ${it.no}`;
-      if (it.fig) assert.equal(L.noFig, false, `${tag} 글자가 그림 옆에 다 들어가지 않아 그림이 빠진다`);
-      assert.ok(L.ansY + L.bs * 0.75 <= B.BOTTOM, `${tag} 아래로 넘침 (${Math.round(L.ansY)})`);
-      for (const r of L.rows) assert.ok(r.sx + r.sW <= L.right + 2, `${tag} 줄이 오른쪽으로 넘침`);
+      if (it.fig) assert.equal(L.noFig, false, `${tag} 글자를 다 놓고 남은 자리에 그림이 들어가지 않는다`);
+      assert.ok(!L.scroll && L.bottom <= B.bottom + 1, `${tag} 아래로 넘침 (${Math.round(L.bottom)})`);
+      for (const r of L.rows) for (const q of r.parts) assert.ok(q.x + q.w <= B.right + 2, `${tag} 줄이 오른쪽으로 넘침`);
       if (!it.fig) continue;
       for (const el of it.fig.els) {
         for (const k of NUM) if (el[k] != null) assert.ok(Number.isFinite(el[k]), `${tag} ${el.k}.${k}`);

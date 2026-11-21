@@ -2,97 +2,31 @@
 // 학원 프린트 「일차함수 그래프와 넓이 · 직선 1개 100제 · 직선 2개 이상 240제」를 문항마다 한 장면으로 끝없이 돌린다.
 //   ① 문제 → ② 방침(한 줄) → ③ 풀이를 한 줄씩(지금 줄에 금빛 막대) — 오른쪽 그림에 그 줄의 것이 같이 나타난다:
 //      절편 · 교점 · 꼭짓점 좌표, 밑변(금빛) · 높이(빨강), 나눈 조각 · 둘러싼 직사각형, 이등분하는 직선 → ④ 답
-// 재생기는 장면 묶음과 같은 StoryPlayer. 이 액자만의 것: 「100제 | 240제」 · 「1× | 1.5×」 · 번호 목록(L) — 240제는 목록 위
-//   단계 칩(전체 · 1~10)으로 고르면 그 단계 24문항만 돈다.
+// 글자 판은 ../board.js · frames/board.jsx(해설 액자 공통 — 글자 크기 두 벌, 문제는 판 너비를 다 쓴다), 좌표평면은 글자를 다 놓고
+//   남은 빈자리에 맞춰 스스로 그린다(AREA_FIG — 글자 크기는 그대로, 화면의 25%까지). 남은 자리가 모자라면 판서만.
+// 조작은 해설 액자 공통 틀(frames/lesson.jsx) — 「100제 | 240제」 · 빠르기 0.75× ~ 2× · 번호 · 단계 목록(240제는 1~10단계) · 단일 | 듀얼.
 // 계산 · 박자표: ../area.js · 문항: ../area-items.js
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo } from "react";
 import { MText, Arrow, Path, mathWidth, SANS, SERIF } from "../draw.jsx";
 import { seg, E, clamp } from "../core.js";
-import { AREA_SETS, AREA_SPEEDS, AREA_LEVEL, arPlan, lineAt, figPoints } from "../area.js";
-import { StoryPlayer } from "./player.jsx";
+import { AREA_SETS, AREA_LEVEL, arPlan, lineAt, figPoints } from "../area.js";
 import { stepMarks } from "./scrub.jsx";
-import { Seg, useKeys, lsRead, lsWrite } from "./xkit.jsx";
+import { LessonFrame } from "./lesson.jsx";
+import { boardLayout, wrapMath as wrapMath0, STAGE_REGION, PANE_REGION } from "../board.js";
+import { Board, FigSlot } from "./board.jsx";
 
-/* ══════════ 배치 (1600×900) ══════════ */
-const LEFT = 60, TOP = 168, BOTTOM = 866, RIGHT = 836;
-const FIG = { x0: 884, y0: 166, x1: 1544, y1: 858 };
-export const AREA_BOX = { LEFT, TOP, BOTTOM, RIGHT, FIG };
+/* ══════════ 배치 (1600×900) — 글자 판은 ../board.js 가 놓는다(문제는 판 너비를 다 쓰고, 좌표평면은 남은 빈자리에) ══════════ */
+const FIG = { x0: 884, y0: 166, x1: 1544, y1: 858 };          // 그림의 제 칸(예전 오른쪽 칸) — 시험이 글자 자리를 이 칸으로 본다
+export const AREA_BOX = { FIG };
+/** 좌표평면은 받은 칸에 맞춰 스스로 그린다(글자 크기는 그대로) — 가장 작게 · 가장 크게 */
+export const AREA_FIG = { flex: true, minW: 430, minH: 400, maxW: 700, maxH: 700 };
 
-const HANGUL = /[\uac00-\ud7a3]/;
-const openParen = (a) => (a.match(/\(/g) || []).length > (a.match(/\)/g) || []).length;
-/** 줄을 크게 나눌 자리 — 「→」 앞 · 괄호 밖 쉼표 뒤 */
-const strongBreak = (a, b) => b.startsWith("→") || (a.endsWith(",") && !openParen(a));
-/** 띄어쓰기 자리 중 줄을 바꿔도 되는 곳 — 식 가운데(= + − × 옆) · 좌표 가운데는 안 되고, 큰 자리 · 한글 낱말 사이만 */
-function canBreak(a, b) {
-  if (strongBreak(a, b)) return true;
-  if (a.endsWith(":") && HANGUL.test(a)) return true;
-  return HANGUL.test(a) && HANGUL.test(b) && !/[=+−×]$/.test(a) && !/^[=+−×]/.test(b) && !openParen(a);
-}
-function chunksOf(words, test) {
-  const out = [];
-  let cur = [];
-  words.forEach((w, i) => { cur.push(w); if (i === words.length - 1 || test(w, words[i + 1])) { out.push(cur.join(" ")); cur = []; } });
-  return out;
-}
-/** 수식 글자 줄 바꾸기. strong — 풀이 줄: 「→」 앞 · 쉼표 뒤에서 먼저 나눠 본다 */
-export function wrapMath(s, size, maxW, weight = 560, strong = false) {
-  const fits = (x) => mathWidth(x, size, weight) <= maxW;
-  const lines = [];
-  const add = (ch) => {
-    const n = lines.length;
-    if (n && fits(lines[n - 1] + " " + ch)) { lines[n - 1] += " " + ch; return; }
-    if (fits(ch)) { lines.push(ch); return; }
-    for (const w of ch.split(" ")) {
-      const m = lines.length;
-      if (m && fits(lines[m - 1] + " " + w)) lines[m - 1] += " " + w; else lines.push(w);
-    }
-  };
-  const words = String(s).split(" ");
-  for (const B of strong ? chunksOf(words, strongBreak) : [String(s)]) {
-    const n = lines.length;
-    if (strong && n && fits(lines[n - 1] + " " + B)) { lines[n - 1] += " " + B; continue; }
-    if (strong && fits(B)) { lines.push(B); continue; }
-    for (const ch of chunksOf(B.split(" "), canBreak)) add(ch);
-  }
-  return lines.length ? lines : [""];
-}
-
-const LAYOUT = new WeakMap();
 const fracH = (s) => String(s).includes("{");
-export function layoutOf(it) {
-  if (LAYOUT.has(it)) return LAYOUT.get(it);
-  const W0 = RIGHT - LEFT;
-  let best = null;
-  for (const [qs, bs] of [[36, 40], [34, 38], [32, 35], [30, 32], [28, 30], [26, 28]]) {
-    const qLines = wrapMath(`${it.no}. ${it.q}`, qs, W0, 560);
-    let y = TOP + qs;
-    const qY = [];
-    qLines.forEach((s, i) => { if (i) y += qs * (fracH(s) || fracH(qLines[i - 1]) ? 1.66 : 1.42); qY.push(y); });
-    y += qs * 1.55;
-    const ps = Math.round(bs * 0.66);
-    const planY = y;
-    let ok = ps * 3.4 + mathWidth(it.plan, Math.round(ps * 1.12), 600) <= W0;
-    y += bs * 1.45;
-    const rows = [];
-    it.lines.forEach((ln) => {
-      const parts = wrapMath(ln.s, bs, W0 - 10, 560, true);
-      if (parts.some((p) => mathWidth(p, bs, 560) > W0 - 4)) ok = false;
-      const ys = [];
-      parts.forEach((p, i) => {
-        y += i === 0 ? (fracH(p) ? bs * 0.34 : 0) : bs * (fracH(p) || fracH(parts[i - 1]) ? 1.6 : 1.32);
-        ys.push(y + bs * 0.35);
-      });
-      const top = ys[0] - bs * (fracH(parts[0]) ? 1.12 : 0.92);
-      const bot = ys[ys.length - 1] + bs * (fracH(parts[parts.length - 1]) ? 0.56 : 0.3);
-      rows.push({ parts, ys, top, bot });
-      y = bot + bs * 0.62;
-    });
-    const ansY = y + bs * 0.62;
-    best = { qs, bs, ps, qLines, qY, planY, rows, ansY };
-    if (ok && ansY + bs * 0.8 <= BOTTOM) break;
-  }
-  LAYOUT.set(it, best);
-  return best;
+/** 수식 글자 줄 바꾸기(../board.js 의 것 — 예전 이름 그대로 내보낸다) */
+export const wrapMath = wrapMath0;
+/** 글자 판 배치 — region 무대(기본) · 듀얼 반쪽 판. Lo.fig 가 그림(좌표평면) 칸 */
+export function layoutOf(it, region = STAGE_REGION) {
+  return boardLayout(it, region, AREA_FIG);
 }
 
 /* ══════════ 그림: 자리 잡기(문항마다 한 번 — 나중에 나올 글자까지 미리 피해 자리를 잡아 두면 글자가 튀지 않는다) ══════════ */
@@ -136,15 +70,20 @@ const lineEnds = (L, xr, yr) => (L.t === "lin" ? clipThrough([0, L.b], [1, L.m +
   : L.t === "vx" ? clipThrough([L.k, 0], [L.k, 1], xr, yr) : clipThrough([0, L.k], [1, L.k], xr, yr));
 const same = (p, q) => Math.abs(p[0] - q[0]) < 1e-6 && Math.abs(p[1] - q[1]) < 1e-6;
 
-const LS = { pt: 28, tag: 27, name: 34, ax: 28 };   // 글자 크기
+const LS = { pt: 30, tag: 29, name: 36, ax: 30 };   // 글자 크기(약 1 m 에서 읽히게)
 function metrics(s, size, weight) {
   const fr = fracH(s);
   return { w: mathWidth(s, size, weight), up: size * (fr ? 1.02 : 0.8), dn: size * (fr ? 0.52 : 0.24) };
 }
 
 const GEO = new WeakMap();
-export function figGeom(it) {
-  if (GEO.has(it)) return GEO.get(it);
+const boxKey = (B) => `${Math.round(B.x0)},${Math.round(B.y0)},${Math.round(B.x1)},${Math.round(B.y1)}`;
+export function figGeom(it, box = FIG) {
+  let cache = GEO.get(it);
+  if (!cache) { cache = new Map(); GEO.set(it, cache); }
+  const bk = boxKey(box);
+  if (cache.has(bk)) return cache.get(bk);
+  const FIG = box;           // 이 칸 안에 — 받은 칸에 맞춰 배율을 정한다
   const f = it.fig;
   const ops = it.lines.flatMap((ln, i) => ln.ops.map((o, j) => ({ ...o, i, j })));
   // 범위: 그림에 나오는 모든 점 + 여백(치수선 · 글자 자리)
@@ -315,15 +254,15 @@ export function figGeom(it) {
     }
     G.names[k] = { m, ...pick(cands, null, 20) };
   });
-  Object.assign(G, { s, X, Y, S, xr, yr, lines, ghost, axX, axY, polyS, cen });
-  GEO.set(it, G);
+  Object.assign(G, { s, X, Y, S, xr, yr, lines, ghost, axX, axY, polyS, cen, box });
+  cache.set(bk, G);
   return G;
 }
 
 /* ══════════ 그림 ══════════ */
 const COL = { gold: "gold", red: "red", coral: "coral", teal: "teal" };
-function Figure({ it, t, cur, C }) {
-  const G = figGeom(it), P = arPlan(it);
+function Figure({ it, t, cur, C, box = FIG }) {
+  const G = figGeom(it, box), P = arPlan(it);
   const o0 = seg(t, 300, 1100, E.sine);
   const vis = (i) => (t < P.lines[i].a + 150 ? 0 : seg(t, P.lines[i].a + 150, P.lines[i].a + 700, E.sine));
   const isCur = (i) => cur === i;
@@ -426,49 +365,14 @@ function Figure({ it, t, cur, C }) {
 }
 
 /* ══════════ 한 문항 한 순간 ══════════ */
-export function AreaArt({ it, t, C }) {
-  const P = arPlan(it), Lo = layoutOf(it);
+/** region — 무대 전체(기본) · 듀얼 반쪽 판. 글자 판은 Board(frames/board.jsx), 좌표평면은 글자를 다 놓고 남은 칸에 */
+export function AreaArt({ it, t, C, region = STAGE_REGION, uid = "" }) {
+  const P = arPlan(it), Lo = layoutOf(it, region);
   const cur = lineAt(P, t);
-  const qo = seg(t, 0, 600, E.sine);
-  const po = seg(t, P.plan[0], P.plan[0] + 600, E.sine);
-  const ans = seg(t, P.ans, P.ans + 700, E.sine);
   return (
     <g>
-      <g opacity={qo}>
-        {Lo.qLines.map((s, i) => <MText key={i} x={LEFT} y={Lo.qY[i]} s={s} size={Lo.qs} weight={i === 0 ? 620 : 560} fill={C.ink} C={C} />)}
-      </g>
-      {po > 0 && (
-        <g opacity={po}>
-          <rect x={LEFT - 4} y={Lo.planY - Lo.ps * 1.05} width={Lo.ps * 2.9} height={Lo.ps * 1.45} rx={Lo.ps * 0.72} fill={C.teal} opacity={0.2} />
-          <text x={LEFT + Lo.ps * 1.41} y={Lo.planY - Lo.ps * 0.02} fontFamily={SANS} fontSize={Lo.ps} fontWeight={800} fill={C.teal} textAnchor="middle">방침</text>
-          <MText x={LEFT + Lo.ps * 3.4} y={Lo.planY} s={it.plan} size={Math.round(Lo.ps * 1.12)} weight={600} fill={C.teal} C={C} />
-        </g>
-      )}
-      {it.lines.map((ln, i) => {
-        const T = P.lines[i], R = Lo.rows[i];
-        if (t < T.a) return null;
-        const a = seg(t, T.a, T.a + 420, E.out);
-        const dim = i < cur ? 0.78 : 1;
-        const dy = (1 - a) * 12;
-        return (
-          <g key={i} opacity={a * dim}>
-            {i === cur && <rect x={LEFT - 24} y={R.top + dy} width={6} height={R.bot - R.top} rx={3} fill={C.bar} />}
-            {R.parts.map((p, k) => <MText key={k} x={LEFT + (k ? Lo.bs * 0.6 : 0)} y={R.ys[k] + dy} s={p} size={Lo.bs} weight={560} fill={C.ink} C={C} />)}
-          </g>
-        );
-      })}
-      {ans > 0 && (() => {
-        const w = mathWidth(it.ans, Lo.bs, 700) + Lo.bs * 2.6;
-        const fr = fracH(it.ans);
-        return (
-          <g opacity={ans}>
-            <rect x={LEFT - 8} y={Lo.ansY - Lo.bs * (fr ? 1.25 : 1.05)} width={w} height={Lo.bs * (fr ? 1.95 : 1.5)} rx={Lo.bs * 0.3} fill="none" stroke={C.gold} strokeWidth={3.5} />
-            <text x={LEFT + Lo.bs * 0.3} y={Lo.ansY - Lo.bs * 0.02} fontFamily={SANS} fontSize={Lo.bs * 0.7} fontWeight={800} fill={C.gold}>답</text>
-            <MText x={LEFT + Lo.bs * 1.7} y={Lo.ansY} s={it.ans} size={Lo.bs} weight={700} fill={C.ink} C={C} />
-          </g>
-        );
-      })()}
-      <Figure it={it} t={t} cur={cur} C={C} />
+      <Board it={it} Lo={Lo} P={P} t={t} cur={cur} C={C} uid={`ar${uid}`} />
+      <FigSlot spot={Lo.fig} flex draw={(box) => <Figure it={it} t={t} cur={cur} C={C} box={box} />} />
     </g>
   );
 }
@@ -483,100 +387,26 @@ export function areaScenes(setKey, sp = 1, lv = 0) {
     const title = `일차함수 그래프와 넓이 · ${S.name}`;
     const sub = it.lv ? `${it.lv}단계 ${AREA_LEVEL[it.lv]} · ${it.no}번` : `${it.no}번 · ${it.sub}`;
     return {
-      key: `area-${setKey}-${it.no}`, no: it.no, lv: it.lv || 0, sub0: it.sub, dur: Math.round(arPlan(it).dur / sp),
-      grp: it.lv ? `${it.lv}단계` : null, marks: stepMarks(arPlan(it), it.lines, sp),
-      title: { e: title, m: title }, sub: { e: sub, m: sub },
+      key: `area-${setKey}-${it.no}`, no: it.no, lv: it.lv || 0, st: it.lv || 0, sub0: it.sub, dur: Math.round(arPlan(it).dur / sp),
+      grp: it.lv ? `${it.lv}단계` : null, marks: stepMarks(arPlan(it), it.lines, sp), card: `${it.lv ? `${it.lv}단계 · ` : ""}${it.sub}`,
+      title: { e: title, m: title }, sub: { e: sub, m: sub }, tsz: "lesson",
       render: (mode, t, C) => <AreaArt it={it} t={t * sp} C={C} />,
+      pane: (t, C, uid) => <AreaArt it={it} t={t * sp} C={C} uid={uid} region={PANE_REGION} />,
     };
   });
   SCENES.set(k, list);
   return list;
 }
 
-/* ══════════ 액자 ══════════ */
-const LSK = "ash.display.area";
-const fixSet = (v) => (AREA_SETS[v] ? v : "A");
-const fixSp = (v) => (AREA_SPEEDS.includes(v) ? v : 1);
-const fixLv = (v) => (Number.isInteger(v) && v >= 0 && v <= 10 ? v : 0);
-
+/* ══════════ 액자 — 조작은 해설 액자 공통 틀(frames/lesson.jsx) ══════════ */
+export const AREA_SPEC = {
+  lsk: "ash.display.area", title: "일차함수 그래프와 넓이 해설", defSet: "A", cols: 5,
+  sets: [{ key: "A", name: AREA_SETS.A.name, short: "100제" }, { key: "B", name: AREA_SETS.B.name, short: "240제" }],
+  stages: (set) => (set === "B" ? Array.from({ length: 10 }, (_, i) => i + 1).map((v) => ({ v, lab: `${v}단계 ${AREA_LEVEL[v]}`, chip: `${v}단계` })) : []),
+  scenes: (set, sp, st) => areaScenes(set, sp, set === "B" ? st : 0),
+};
 export function AreaFrame(props) {
-  const { ui, poke, inert } = props;
-  const { Btn, Ic } = ui;
-  const [cfg, setCfg] = useState(() => { const o = lsRead(LSK) || {}; return { set: fixSet(o.set), sp: fixSp(o.sp), lv: fixLv(o.lv) }; });
-  useEffect(() => { lsWrite(LSK, cfg); }, [cfg]);
-  const [list, setList] = useState(false);
-  const [cur, setCur] = useState(0);
-  const api = useRef(null);
-  const lv = cfg.set === "B" ? cfg.lv : 0;
-  const scenes = useMemo(() => areaScenes(cfg.set, cfg.sp, lv), [cfg.set, cfg.sp, lv]);
-  const pickSet = useCallback((v) => setCfg((c) => ({ ...c, set: fixSet(v) })), []);
-  const pickSp = useCallback((v) => setCfg((c) => ({ ...c, sp: fixSp(v) })), []);
-  const pickLv = useCallback((v) => setCfg((c) => ({ ...c, lv: fixLv(v) })), []);
-  useKeys({
-    l: () => { setList((v) => !v); poke(); },
-    b: () => { pickSet(cfg.set === "A" ? "B" : "A"); poke(); },
-    s: () => { pickSp(cfg.sp === 1 ? 1.5 : 1); poke(); },
-    Escape: () => setList(false),
-  }, inert);
-  const extra = (
-    <>
-      <span className="dsp-sep" />
-      <Seg label="세트" value={cfg.set} options={[["A", "100제"], ["B", "240제"]]} onChange={pickSet} poke={poke} />
-      <Seg label="빠르기" value={cfg.sp} options={[[1, "1×"], [1.5, "1.5×"]]} onChange={pickSp} poke={poke} />
-      <Btn title="번호 · 단계 목록 (L)" on={list} onClick={() => { setList((v) => !v); poke(); }}>
-        <Ic d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />
-      </Btn>
-      <span className="dsp-sep" />
-    </>
-  );
-  const pick = (i) => { api.current?.goTo(i); setList(false); poke(); };
-  const label = `일차함수 그래프와 넓이 해설 · ${AREA_SETS[cfg.set].name}${lv ? ` · ${lv}단계` : ""}`;
-  return (
-    <>
-      <StoryPlayer key={`${cfg.set}|${cfg.sp}|${lv}`} list={scenes} lsKey={`${LSK}.${cfg.set}.${lv}`} label={label}
-        {...props} inert={inert || list} noMode extra={extra} apiRef={api} onIdx={setCur} scrub />
-      {list && <NumList scenes={scenes} setKey={cfg.set} lv={lv} cur={cur} onPick={pick} onLevel={(v) => { pickLv(v); poke(); }} onClose={() => setList(false)} />}
-    </>
-  );
-}
-
-/** 번호 · 단계 목록 — 240제는 단계 칩을 고르면 그 단계만 돌고, 번호를 고르면 그 문항부터 */
-function NumList({ scenes, setKey, lv, cur, onPick, onLevel, onClose }) {
-  const lap = scenes.reduce((s, x) => s + x.dur, 0);
-  const S = AREA_SETS[setKey];
-  return (
-    <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
-      <div className="dsp-list-in" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="번호 · 단계 목록">
-        <style>{".ar-grid { grid-template-columns: repeat(5, 1fr); }"}</style>
-        <div className="dsp-list-h">
-          <b>일차함수 그래프와 넓이 · {S.name}</b>
-          <button type="button" onClick={onClose} aria-label="닫기">✕</button>
-        </div>
-        {setKey === "B" && (
-          <div className="dsp-chips">
-            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
-              <button key={v} type="button" className={"dsp-chip" + (lv === v ? " on" : "")} aria-pressed={lv === v} onClick={() => onLevel(v)}>
-                {v ? `${v}단계` : "전체 240"}
-              </button>
-            ))}
-          </div>
-        )}
-        <p className="dsp-gal-sub">
-          {setKey === "B" ? (lv ? `${lv}단계 ${AREA_LEVEL[lv]} 24문항만 돌아요` : "1단계부터 10단계까지 차례로 돌아요") : "쉬운 문항부터 100번까지 차례로 돌아요"}
-          {" "}· 한 바퀴 약 {Math.round(lap / 60000)}분 · 지금 {scenes[cur]?.no}번 · 번호를 고르면 그 문항부터
-        </p>
-        <div className="dsp-grid ar-grid">
-          {scenes.map((s, i) => (
-            <button key={s.key} type="button" className={"dsp-card" + (i === cur ? " on" : "")} onClick={() => onPick(i)}>
-              <span className="n">{s.no}</span>
-              <span className="e">{s.lv ? `${s.lv}단계 · ` : ""}{s.sub0}</span>
-              <span className="m">{Math.round(s.dur / 1000)}초</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <LessonFrame spec={AREA_SPEC} {...props} />;
 }
 
 /** 액자 목록의 작은 그림 — 240제 7단계(사각형 OAPB) 첫 문항을 다 푼 순간 */
