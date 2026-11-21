@@ -53,6 +53,7 @@ const AdminGuardians = lazy(() => import("./components/AdminGuardians"));
 const AdminCalendar = lazy(() => import("./components/AdminCalendar"));
 const AdminWell = lazy(() => import("./pages/AdminWell"));
 const AdminDisplay = lazy(() => import("./pages/AdminDisplay"));   // 교실 모니터(가로 화면 도형 애니메이션)
+const AdminGames = lazy(() => import("./pages/AdminGames"));       // 게임 — 기울기 샷(일차함수 · 관리자 전용)
 const AvPlayer = lazy(() => import("./pages/AvPlayer"));   // 공부하기 › 시청각 학습 — 교실 모니터 콘텐츠를 학생이 직접(#/av/<key>)
 const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
 const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
@@ -347,6 +348,7 @@ function AppRoutes() {
   if (hash === "#/admin/calendar") return <Rx theme={theme}><AdminCalendar theme={theme} /></Rx>;
   if (hash === "#/admin/well") return <Rx theme={theme}><AdminWell theme={theme} /></Rx>;
   if (hash === "#/admin/display") return <AdminDisplay />;
+  if (hash === "#/admin/games") return <AdminGames theme={theme} />;
   if (hash.startsWith("#/av/")) return <AvPlayer hash={hash} />;
   const c = hash.match(/^#\/c\/(.+)$/);
   if (c) return <ConceptViewer conceptId={decodeURIComponent(c[1])} theme={theme} />;

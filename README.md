@@ -338,6 +338,24 @@ iOS 는 첫 탭에서 권한 1회, 안 되면 화면 위=북 고정) · 흐리�
 - 데이터: `public/concept-sets/<범주>/index.json · NN.json`(문항 · 답 · OMR 칸 · 해설 · 애니메이션 큐) — 생성기(guard-daily `tk_export.py`)가 만든다. PDF 는 저장소에 넣지 않고, main 머지 때 워크플로 `push-concept-files` 가 같은 HTML 로 찍어(쪽 수 검사) Supabase Storage 공개 버킷 `concept-sets` 에 올린다(`scripts/concept-files.mjs` · `scripts/push-concept-files.mjs`).
 - 검산: `node tests/conceptsets.test.mjs`(데이터 · 판정 · 해설 큐 · 인쇄 합치기 · ZIP · 합성 사진 OMR 판독 — v2 · 예전 v1 · 그림자 · 손글씨 칸) · `node tests/conceptsets-lin.test.mjs`(일차함수: 수 · 식 · 점 판정 · 손글씨 한 줄 카드 배치 · 합성 사진 판독 · 세트 데이터) · `node tests/conceptsets-paper.test.mjs`(손글씨 꼴 · 보기 체크 · 빈칸 제출 채점) · `node tests/conceptsets-video.test.mjs`(두 범주 모든 장면을 박자 지점마다 두 테마로 그려 보기 · 배치가 무대 안 · 도식 큐 키 · 방침 이름표) · `node tests/smoke/conceptsets.smoke.mjs`(빌드 후 목록 → 풀기 → 해설 움직임 → 해설지 바로 보기 → 인쇄 → 다운로드(ZIP · 각각) → 카드 사진 채점(분수 손글씨는 AI 모의) → 종이처럼 풀기 → 해설 영상 → 일차함수 범주 흐름). 합성 사진 도구는 `tests/fixtures/omrsynth.mjs`.
 
+### 게임 — 기울기 샷(포켓볼 · 사구 · 컬링) (`#/admin/games`, 2026-11-21)
+일차함수 그래프 학습 게임. 학생 공개 전까지 **관리자 전용**(상단 관리자 줄 「🎱 게임」 — 비관리자는 안내만 보이고 게임 파일도 받지 않는다).
+- 입력: x 증가량 · y 증가량(각 −6 ~ 6)이 기울기와 방향, y절편이 직선의 위치. **세기 = (x 증가량)² + (y 증가량)²**, 막히지 않으면 0.8 × 세기만큼 미끄러진다.
+  x = a 꼴은 x 증가량 0 · y 증가량에 세기 + a, y = b 꼴은 y 증가량 0 · x 증가량에 세기 + b. 절편은 정수 · 소수 · 분수(7/3)로.
+- 타점: 직선과 공(스톤) 중심 사이 거리 — 0이면 정타, 반지름 0.3 안이면 그 비율만큼 좌우 스핀(컬링은 회전 → 휨), 밖이면 헛스윙.
+  공은 입력한 직선과 **평행한** 직선(공 중심을 지나는) 위에서 출발하고, 결과 보고에 그 식을 적는다. 점선 = 스핀이 없을 때의 경로.
+- 찬스: 경기장 위를 떠다니는 풍선을 눌러 연산 문제(혼합 계산 · 나눗셈 · 두 점의 기울기 · x절편)를 맞히면 **x절편 찬스**(y절편 대신 x절편 입력) ·
+  **좌표 찬스**(공 중심 좌표를 알려 줘 기울기만)가 쌓인다. 새 게임마다 연습용 x절편 찬스 1개.
+- 포켓볼(원점 = 아래 가운데 구멍, 혼자: 공 3개 · 12샷) · 사구(구멍 없음, 원점 = 아래 쿠션 가운데, 빨간 공 2개를 한 번에 = 1점, 상대 공 = 파울 −1점) ·
+  컬링(원점 = 아래 사이드 라인 가운데, 버튼 (5, 5), 투구선 x = −8 · 호그 라인 x = −1, 호그 · 백 · 사이드 라인 제거 규칙, 실제 컬링 득점식).
+- **둘이 번갈아** — 한 기기로 차례를 넘긴다(PVP 아님). 포켓볼: 공 5개 · 넣으면 한 번 더. 사구: 1P 흰 공 · 2P 노란 공(서로의 공이 피해야 할 공), 먼저 3점.
+  컬링: 4개씩 번갈아 · 2P 후공. 찬스는 사람마다 따로(풍선을 잡은 사람 것으로).
+
+코드: `src/features/games/slope-shot.html`(게임 한 장 — 바깥 의존은 구글 폰트뿐, 학생앱 르네상스 팔레트) · `src/pages/AdminGames.jsx`(관리자 확인 뒤에만 게임을 `?raw` 로
+따로 받아 `sandbox="allow-scripts"` iframe 에 띄운다 — 앱 저장소 · 세션에 닿지 않는다. 앱 테마는 처음엔 문서에 심고, 바뀌면 postMessage 로 넘겨 판을 유지).
+검산: `node tests/smoke/games.smoke.mjs`(빌드 후 — 비관리자 차단 · 관리자 줄 · iframe · 테마 전달 + 게임 검사) · `node tests/smoke/games.smoke.mjs --game-only`(빌드 없이 게임만 —
+세 게임 × 두 방식 · 예시 식 정타 · 분수 절편 · x = a / y = b · 스핀 · 헛스윙 · 찬스 두 종 · 2인 차례 · 블랭크 엔드 · 컬링 휨 방향 · 콘솔 오류).
+
 ## 구조
 ```
 supabase/schema.sql        프로필·권한·개념·QnA·아바타 버킷 (RLS 포함)
@@ -349,6 +367,7 @@ src/components/Well.jsx    우물 — 탭바 중앙 버튼·런처 시트·자�
 src/pages/solve/           학생앱 문제풀이 화면들 (Solve 허브 · ItemPlay · Exam · Omr · Read · Mark · Essay · AskItem)
 src/pages/sets/            컨셉 문제 (세트 · 종이처럼 풀기 · 한 문제씩 · 3단 해설 · 해설 영상 · 인쇄 합치기 · OMR 채점) + lib/conceptsets.js · lib/omr/grid.js
 src/features/portrait/     ribbedGlass(필터) · facePipeline(MediaPipe) · PortraitStudio
+src/features/games/        게임 HTML(기울기 샷) — pages/AdminGames.jsx 가 샌드박스 iframe 으로 (관리자 #/admin/games)
 api/                       Vercel 서버리스 — ai(힌트·OMR·질문) · points(지갑) · review(복습 보상) · transcribeJob …
 supabase/2026-09_*.sql     학생앱 베타 선택 마이그레이션 (student_beta · wallet_review)
 public/brand/              손글씨 로고 레이어 (스플래시 애니메이션용)
