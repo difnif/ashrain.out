@@ -1,6 +1,6 @@
 # 기본기 해설 새 단원들이 함께 쓰는 도우미 — 세로셈(여러 자리 · 0이 있는 받아내림) · 띠 그림 · 시계 · 이름과 조사
 from core import *
-from fig import Fig, Col, mv, NL, ang_pt
+from fig import Fig, Col, mv, NL, ang_pt, fly
 
 NAME = ["일", "십", "백", "천", "만", "십만"]
 HEADS = ("일", "십", "백", "천", "만", "십만")
@@ -21,6 +21,16 @@ def col(ncol, top=200, heads=HEADS):
     dx = 118 if ncol <= 4 else 106
     C = Col(f, ncol=ncol, cx=cx, dx=dx, top=top, heads=heads)
     return f, C
+
+def carry_fly(C, p, el):
+    """받아올린 수가 일의 자리 합(예: 14의 1)에서 윗자리 위로 날아오른다 — 결과 숫자 왼쪽 옆에서 출발"""
+    fly(el, C.x(p) - C.dx * 0.42 - C.x(p + 1), C.rows["r"] - C.rows["carry"], dl=420)
+    return el
+
+def carry_down(C, p, el):
+    """맨 앞으로 받아올린 수를 답 줄로 그대로 내려 쓴다"""
+    fly(el, 0, C.rows["carry"] - C.rows["r"], dl=200)
+    return el
 
 def nm0(p):
     return f"{NAME[p]}의 자리"
@@ -48,13 +58,13 @@ def col_add(a, b, with_fig=True, nm=nm0, ncol=None, show=None, heads=HEADS):
             k = len(lines) - 1
             C.digit("r", p, s % 10, at=k)
             if s >= 10:
-                C.digit("carry", p + 1, 1, at=k, c="red", z=34, dl=300)
+                carry_fly(C, p, C.digit("carry", p + 1, 1, at=k, c="red", z=34, dl=300))
         carry = 1 if s >= 10 else 0
     if carry:
         p = max(len(da), len(db))
         lines.append(L(f"{nm(p)} 1", memo="받아올린 1을 그대로 내려 써요"))
         if C:
-            C.digit("r", p, 1, at=len(lines) - 1)
+            carry_down(C, p, C.digit("r", p, 1, at=len(lines) - 1))
     sa, sb, sr = show or (a, b, res)
     lines.append(L(f"{sa} + {sb} = {sr}"))
     return (f.out() if f else None), lines, res
@@ -99,12 +109,14 @@ def col_sub(a, b, with_fig=True, nm=nm0, ncol=None, show=None, heads=HEADS):
         C.num("a", a); C.num("b", b); C.op("−")
     top = {}
 
-    def put_top(p, v, k, dl, dx=0):
+    def put_top(p, v, k, dl, dx=0, src=None):
         if not C:
             return
         if p in top:
             top[p]["un"] = k
         top[p] = C.digit("carry", p, v, at=k, c="red", z=30 if v >= 10 else 34, dl=dl, dx=dx)
+        if src is not None:          # 빌려 온 10 — 빌려 준 자리 위에서 출발해 옆으로 건너온다
+            fly(top[p], C.x(src) - (C.x(p) + dx), -40, dl=220)     # 줄인 숫자와 겹치지 않게 조금 위에서
 
     def strike(p, k, dl):
         if C and p not in top:
@@ -134,7 +146,7 @@ def col_sub(a, b, with_fig=True, nm=nm0, ncol=None, show=None, heads=HEADS):
                 lines.append(L(f"{nm(q)} {cur[q] + 1} → {cur[q]}, 사이의 0은 10 → 9", memo="빌려 준 10에서 다시 1을 빌려 주고 9"))
             x += 10
             cur[p] = x
-            put_top(p, x, k, 600, dx=10)
+            put_top(p, x, k, 600, dx=10, src=q)
             lines.append(L(f"{x} − {y} = {x - y}"))
         elif p < len(db):
             lines.append(L(f"{nm(p)} {x} − {y} = {x - y}", memo=(f"빌려 준 뒤 {x}" if x != da[p] else None)))
@@ -201,6 +213,27 @@ def clock(f, h, m, cx=330, cy=330, rr=250, at="q", hand_at=None, minor=True):
     f.line(cx, cy, *ang_pt(cx, cy, rr * 0.52, ha), c="ink", w=10 * max(k, 0.65), at=ha_at)
     f.line(cx, cy, *ang_pt(cx, cy, rr * 0.8, ma), c="coral", w=6 * max(k, 0.7), at=ha_at)
     f.dot(cx, cy, r=11 * max(k, 0.7), f="ink", at=at)
+
+def clock_read(f, h, m, at_h, at_m, at_r=None, cx=330, cy=330, rr=250):
+    """시계 읽기 움직임 — 짧은바늘이 지난 숫자 사이가 금빛으로 쓸리고(at_h),
+    긴바늘 자리까지 12에서 시계 방향으로 쓸며 숫자마다 5, 10, 15 … 를 세고(at_m), 남은 작은 눈금은 한 칸씩 점(at_r)"""
+    a_h = 90 - 30 * (h % 12)
+    f.arc(cx, cy, rr * 0.62, a_h - 30, a_h, at=at_h, c="gold", sw=5, f="gold", fo=0.22, rv=True)
+    n = m // 5
+    if n:
+        span = 30 * n
+        sweep = max(340, min(760, 300 + span * 1.6))
+        f.arc(cx, cy, rr * 0.86, 90 - span, 90, at=at_m, c="coral", sw=6, f="coral", fo=0.1, rv=True)
+        for i in range(1, n + 1):
+            x, y = ang_pt(cx, cy, rr + 38, 90 - 30 * i)
+            f.text(x, y + 11, str(5 * i), z=30, c="coral", b=800, at=at_m, dl=int(sweep * i / n))
+    r = m % 5
+    if r and at_r is not None:
+        a0 = 90 - 6 * m
+        f.arc(cx, cy, rr * 0.86, a0, 90 - 30 * n, at=at_r, c="coral", sw=6, f="coral", fo=0.1, rv=True)
+        for j in range(1, r + 1):
+            x, y = ang_pt(cx, cy, rr - 10, 90 - 6 * (5 * n + j))
+            f.dot(x, y, r=7, f="coral", at=at_r, dl=260 + j * 200)
 
 def hm(t):
     """분(0시부터) → '3시 15분' """
@@ -381,12 +414,12 @@ def col_add3(a, b, c):
         k = len(lines) - 1
         C.digit("r", p, s % 10, at=k)
         if s >= 10:
-            C.digit("carry", p + 1, s // 10, at=k, c="red", z=34, dl=300)
+            carry_fly(C, p, C.digit("carry", p + 1, s // 10, at=k, c="red", z=34, dl=300))
         carry = s // 10
     if carry:
         p = max(len(d) for d in ds)
         lines.append(L(f"{NAME[p]}의 자리 {carry}", memo="받아올린 수를 그대로 내려 써요"))
-        C.digit("r", p, carry, at=len(lines) - 1)
+        carry_down(C, p, C.digit("r", p, carry, at=len(lines) - 1))
     lines.append(L(f"{a} + {b} + {c} = {res}"))
     return f, lines, res
 
@@ -414,7 +447,7 @@ def col_mul(a, b):
             else:
                 C.digit("r", p, s % 10, at=k)
                 if s >= 10:
-                    C.digit("carry", p + 1, s // 10, at=k, c="red", z=34, dl=300)
+                    carry_fly(C, p, C.digit("carry", p + 1, s // 10, at=k, c="red", z=34, dl=300))
             carry = s // 10
         lines.append(L(f"{a} × {b} = {res}"))
         return f, lines, res

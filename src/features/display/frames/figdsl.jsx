@@ -6,7 +6,9 @@
 //   적지 않은 값은 기본값: c ink · sw 3 · z 30 · a m(가운데) · b 600 · at q · 글자 바탕 테두리 있음(ho 0 이면 없음)
 //   at: "q"(문제와 함께) · "p"(방침) · 정수 i(판서 i번째 줄) · "a"(답) — 그때 나타난다. dl 늦춤(ms) · un 사라지는 때
 //   c 선 색 · f 칠 색(팔레트 이름) · fo 칠 진하기 · sw 선 굵기 · d 점선 · ar 화살촉(1 끝 · 2 양쪽) · dr 그리듯이 · hl 그 줄일 때 빛남
-//   mv { at, dx, dy, r, cx, cy } — 그때 옮긴다(잘라 붙이기 · 돌리기). o 진하기.
+//   mv { at, dx, dy, r, cx, cy, dl } — 그때 옮긴다(잘라 붙이기 · 돌리기). o 진하기.
+//   fr { dx, dy, dl, ms } — 나타날 때 (dx, dy) 떨어진 곳에서 출발해 제자리로 날아온다(받아올린 1이 일의 자리 합에서 윗자리로 · 빌려 온 10이 옆 자리에서).
+//   rv — 각(A)을 a1 쪽에서 a0 쪽으로 쓸기(시계 방향 — 긴바늘이 12에서 돌아가듯).
 // 같은 그림을 인쇄 문서(흑백)로도 찍는다 — frames/avfig.jsx(흑백 팔레트) → frames/avprint.js.
 import { MText, mathWidth } from "../draw.jsx";
 import { seg, E } from "../core.js";
@@ -218,11 +220,12 @@ function drawEl(el, C, p, glow, id) {
       return wipe(lx - z * 0.1, el.y - z * (fr ? 1.2 : 1), w + z * 0.2, z * (fr ? 1.9 : 1.4), node);
     }
     case "A": {
-      const a1 = el.a0 + (el.a1 - el.a0 + (el.a1 < el.a0 ? 360 : 0)) * p;
+      const span = el.a1 - el.a0 + (el.a1 < el.a0 ? 360 : 0);
+      const b0 = el.rv ? el.a1 - span * p : el.a0, b1 = el.rv ? el.a1 : el.a0 + span * p;
       return (
         <g>
-          {el.f ? <path d={arcPath(el.x, el.y, el.r, el.a0, a1, true)} fill={fill} fillOpacity={(el.fo ?? 0.25) * (1 + 0.6 * glow)} stroke="none" /> : null}
-          <path d={arcPath(el.x, el.y, el.r, el.a0, a1, false)} fill="none" stroke={glow > 0 ? C.gold : sc} strokeWidth={glow > 0 ? sw + 1.5 : sw} strokeLinecap="round" />
+          {el.f ? <path d={arcPath(el.x, el.y, el.r, b0, b1, true)} fill={fill} fillOpacity={(el.fo ?? 0.25) * (1 + 0.6 * glow)} stroke="none" /> : null}
+          <path d={arcPath(el.x, el.y, el.r, b0, b1, false)} fill="none" stroke={glow > 0 ? C.gold : sc} strokeWidth={glow > 0 ? sw + 1.5 : sw} strokeLinecap="round" />
         </g>
       );
     }
@@ -264,6 +267,7 @@ export function dslBox(f) {
     if (!r) continue;
     const corners = [[r[0], r[1]], [r[2], r[1]], [r[0], r[3]], [r[2], r[3]]];
     for (const [x, y] of corners) put(x, y);
+    if (el.fr) for (const m of [0.5, 1]) for (const [x, y] of corners) put(x + (el.fr.dx || 0) * m, y + (el.fr.dy || 0) * m);
     if (el.mv) {
       for (const m of [0.5, 1]) {
         const th = ((el.mv.r || 0) * m * Math.PI) / 180, cx = el.mv.cx || 0, cy = el.mv.cy || 0;
@@ -323,9 +327,17 @@ export function FigDsl({ it, t, C, uid = "" }) {
     }
     const glow = el.hl && Number.isInteger(el.at) && cur === el.at ? 0.5 + 0.5 * Math.sin(((t - ta) / 1200) * Math.PI * 2 - Math.PI / 2) : 0;
     let g = drawEl(el, C, p, glow, `fd${uid}-${it.no}-${i}`);
+    if (el.fr) {
+      // 날아오기 — 떨어진 곳에서 잠깐 머문 뒤 휘어 날아와 제자리에(끝 모습은 제자리 — 인쇄도 같다)
+      const t0 = ta + (el.fr.dl ?? 260), m = seg(t, t0, t0 + (el.fr.ms || 620), E.io);
+      if (m < 1) {
+        const dx = el.fr.dx || 0, dy = el.fr.dy || 0, lift = Math.min(60, hyp(dx, dy) * 0.3) * 4 * m * (1 - m);
+        g = <g transform={`translate(${(dx * (1 - m)).toFixed(1)} ${(dy * (1 - m) - lift).toFixed(1)})`}>{g}</g>;
+      }
+    }
     if (el.mv) {
       // 들어 올려 옮기듯 — 위로 살짝 휘어 가서 내려놓는다(돌리기는 그 자리에서)
-      const tm = atTime(P, el.mv.at), m = seg(t, tm, tm + 900, E.io);
+      const tm = atTime(P, el.mv.at) + (el.mv.dl || 0), m = seg(t, tm, tm + 900, E.io);
       if (m > 0) {
         const dx = el.mv.dx || 0, dy = el.mv.dy || 0;
         const lift = el.mv.r ? 0 : Math.min(70, hyp(dx, dy) * 0.28) * 4 * m * (1 - m);
