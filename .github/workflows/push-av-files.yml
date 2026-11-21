@@ -1,21 +1,22 @@
-# 학년별 기본기 해설(초1 ~ 고3) PDF(문제지 · 해설지 · 빠른 정답 · OMR) → Supabase Storage 공개 버킷 concept-sets 의 av/…
+# 기본기 해설(초등 · 중등 · 고등 단원) PDF(문제지 · 해설지 · 빠른 정답 · OMR) → Supabase Storage 공개 버킷 concept-sets 의 av/…
 # (교실 모니터 · 학생앱 시청각 학습의 📄 문서 → 「개별 다운 | 압축 다운」이 받는 곳)
 #
 # 언제 도나
-#   ① 자동 — main 에 학년별 문항(src/features/display/grades) · 인쇄 문서 코드 · OMR 카드 배치가 바뀐 push 가 오면. PR 을 머지하는 순간이 곧 승인이다.
+#   ① 자동 — main 에 기본기 해설 문항(src/features/display/basics) · 인쇄 문서 코드 · OMR 카드 배치가 바뀐 push 가 오면. PR 을 머지하는 순간이 곧 승인이다.
 #   ② 수동 — Actions 탭 → "push-av-files" → Run workflow.
 # 무엇을 하나
 #   scripts/av-files.mjs — 앱과 같은 함수(frames/avprint.js · 그림은 frames/avfig.jsx)로 Chromium 안에서 문서를 만들어 PDF 로 찍는다
-#     (24세트 × 4 = 96개). 문제지에는 등록 정보 ashrain-print.json 을 붙이고, 문제지 · OMR 쪽 수가 계산과 다르면 멈춘다(올리지 않는다).
+#     (단원마다 4개). 문제지에는 등록 정보 ashrain-print.json 을 붙이고, 문제지 · OMR 쪽 수가 계산과 다르면 멈춘다(올리지 않는다).
 #   scripts/push-concept-files.mjs — 컨셉 문제와 같은 올리기(덮어쓰기 → 공개 주소로 다시 받아 sha256 확인).
-#   PDF 는 저장소에 넣지 않는다(약 24 MB). PDF 가 올라가기 전에도 앱의 「인쇄 창으로 열기」로 같은 문서를 바로 쓸 수 있다.
+#   PDF 는 저장소에 넣지 않는다(단원 100가지면 약 100 MB). PDF 가 올라가기 전에도 앱의 「인쇄 창으로 열기」로 같은 문서를 바로 쓸 수 있다.
 # 비밀: Settings → Secrets and variables → Actions → SUPABASE_URL, SUPABASE_SERVICE_KEY (push-concept-files 와 같은 것)
 name: push-av-files
 on:
   push:
     branches: [main]
     paths:
-      - "src/features/display/grades/**"
+      - "src/features/display/basics/**"
+      - "src/lib/units.js"
       - "src/features/display/frames/avprint.js"
       - "src/features/display/frames/avfig.jsx"
       - "src/features/display/frames/figdsl.jsx"

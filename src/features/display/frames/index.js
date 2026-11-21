@@ -9,23 +9,24 @@
 //   수학 호기심 열여섯(frames/curio.jsx) — 하노이의 탑처럼 계속 도는 그림 액자: 실제 경기 자료로 그리는 직선 셋(축구 · 농구 · 야구),
 //                 공 운동 아홉(배드민턴(실제 경기) · 테니스 · 탁구 · 배구 · 족구 · 세팍타크로 · 골프 · 당구 · 볼링 — 가상 경기)과
 //                 주머니 공 꺼내기 · 알파벳 카드 사전식 배열 · 일렬로 세우기 · 학년별 뽑기. 학생앱 시청각 학습 › 수학 호기심에 저절로 들어간다.
-//   학년별 기본기 해설(frames/grade.jsx) — 초1 ~ 고3 학년마다 액자 하나, 세트 둘(100문항씩 1 ~ 5단계). 문항은 생성기가 만든 ../grades/*.js.
-//                 grade · level 표시로 학생앱 문제 풀이 해설이 초등 · 중등 · 고등으로 묶인다(lib/av.js). 오른쪽 위 「문서」로 문제지 · 해설지 · 빠른 정답 · OMR 받기.
-// 순서: 하노이의 탑 · 해설 액자 넷 · 학년별 해설 열둘 · 실험 액자 셋 · 장면 묶음 둘 · 수학 호기심 열여섯
-import { GRADES } from "../grades/index.js";
+//   기본기 해설(frames/basics.jsx) — 초등 · 중등 · 고등 학교급마다 액자 하나(basics: true), 단원 100가지(100문항씩 1 ~ 5단계 · 학년을 넘나듦).
+//                 문항은 생성기가 만든 ../basics/*.js. 학생앱에서는 단원마다 한 항목(lib/av.js) · 오른쪽 위 「문서」로 문제지 · 해설지 · 빠른 정답 · OMR 받기.
+//   unit — 주요 단원("<학기>:<단원 이름>", lib/units.js) · after — 학생앱 목록에서 이 기본기 단원 뒤에 놓는다.
+// 순서: 하노이의 탑 · 해설 액자 넷 · 기본기 해설 셋(초등 · 중등 · 고등) · 실험 액자 셋 · 장면 묶음 둘 · 수학 호기심 열여섯
+import { LEVELS } from "../basics/index.js";
 
 export const FRAMES = [
   { key: "hanoi", title: "하노이의 탑",
     desc: "원판 3 ~ 30개 · 기둥 3 ~ 5개 · 세트 1 ~ 5개를 입체로. 5세트면 로봇 다섯 대가 나르고, 4배속이면 파티가 열려요. 다 옮기면 거꾸로 — 쉬지 않고 돌아요." },
-  { key: "graph", lesson: true, grade: "중2", level: "중등", title: "일차함수 그래프 그리기 해설",
+  { key: "graph", lesson: true, grade: "중2", level: "중등", unit: "m2-1:일차함수", after: "m-lin", title: "일차함수 그래프 그리기 해설",
     desc: "프린트 기본 96제 · 심화 64제. 점을 찍고, 기울기만큼 칸을 세며 옮기고, 두 점을 이어 직선을 그어요. 번호를 골라 그 문항부터." },
-  { key: "lin10", lesson: true, grade: "중2", level: "중등", title: "일차함수 10단계 계산 해설",
+  { key: "lin10", lesson: true, grade: "중2", level: "중등", unit: "m2-1:일차함수", after: "m-lin", title: "일차함수 10단계 계산 해설",
     desc: "프린트 세트 1 · 2(10단계 × 20문항). 문제 → 방침 → 계산을 한 줄씩 → 답. 단계를 고르면 그 단계만 돌아요." },
-  { key: "area", lesson: true, grade: "중2", level: "중등", title: "일차함수 그래프와 넓이 해설",
+  { key: "area", lesson: true, grade: "중2", level: "중등", unit: "m2-1:일차함수", after: "m-lin", title: "일차함수 그래프와 넓이 해설",
     desc: "프린트 직선 1개 100제 · 직선 2개 이상 240제. 풀이 줄마다 그림에 절편 · 꼭짓점, 밑변 · 높이, 나눈 조각이 나타나요." },
-  { key: "cnt100", lesson: true, grade: "중2", level: "중등", title: "경우의 수와 확률 100제 해설",
+  { key: "cnt100", lesson: true, grade: "중2", level: "중등", unit: "m2-2:확률", after: "m-prob", title: "경우의 수와 확률 100제 해설",
     desc: "프린트 학년별 선발 · 주머니 공 · 사전식 나열(영어 단어) · 한 줄로 세우기 100제씩(1~5단계). 문제 → 전략 → 포지티브 · 네거티브 → 식을 한 줄씩 → 답. 사전식은 숫자 분석부터. 오른쪽 그림(자리 칸 · 학년 · 주머니 · 세로 나무)이 판서와 함께 움직이고, 「듀얼」이면 좌우 두 판을 따로 돌려요." },
-  ...GRADES.map((g) => ({ key: g.key, lesson: true, grade: g.grade, level: g.level, title: g.title, desc: g.desc })),
+  ...LEVELS.map((L) => ({ key: L.frame, lesson: true, basics: true, level: L.level, title: L.title, desc: L.desc })),
   { key: "monty", lab: true, title: "몬티홀 — 바꿀까, 그대로 둘까?",
     desc: "문을 눌러 고르고, 사회자가 문을 연 뒤 바꿀지 정해요. 문 수를 바꿔 가며 기록을 모아요." },
   { key: "branch", lab: true, title: "갈림길과 구슬 — 하나씩, 한꺼번에",
