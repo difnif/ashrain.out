@@ -5,20 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>기울기 샷</title>
 <!--
-  기울기 샷 — 일차함수 그래프 학습 게임(포켓볼 · 사구 · 컬링). 한 장짜리 HTML, 바깥 의존은 구글 폰트뿐.
-  앱에서는 관리자 화면 #/admin/games(src/pages/AdminGames.jsx)가 샌드박스 iframe(allow-scripts)으로 띄운다.
+  기울기 샷 — 일차함수 그래프 학습 게임(포켓볼 · 사구 · 컬링). 한 장짜리 HTML, 바깥 의존은 구글 폰트뿐(소리는 Web Audio 로 직접 만든다).
+  앱에서는 관리자 화면 #/admin/games(src/pages/AdminGames.jsx)가 샌드박스 iframe(allow-scripts, allow="fullscreen; autoplay")으로 띄운다.
   · 테마: <html data-theme="light|dark"> — AdminGames 가 처음에 심고, 바뀌면 postMessage({ type: "ash-theme", theme })로 넘긴다.
+  · 전체 화면: Fullscreen API 를 먼저 쓰고, 막히면 postMessage({ type: "ash-immersive", on })로 앱 상단 바를 숨겨 달라고 한다.
   · 저장소(localStorage 등)는 쓰지 않는다 — 샌드박스에서는 막혀 있다.
   · window.__slopeShot() — 스모크 테스트(tests/smoke/games.smoke.mjs)가 읽는 상태 요약(읽기 전용).
+  좌표: 테이블 x −20 ~ 20, y 0 ~ 20(격자 1칸 = 1, 굵은 선 5칸마다), 공 반지름 0.6. 세기 = Δx² + Δy², 거리 = 세기 ÷ 2.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
 <style>
-/* layout: a lobby of three games, then one playfield (the coordinate plane) with the shot console beside it on wide screens and below it on narrow ones.
+/* layout: a lobby (level picker + three games), then one playfield (the coordinate plane) with the shot console beside it on wide screens and below it on narrow ones.
+   In full screen the table is sized to the screen height and the console scrolls on its own.
    palette: the student app's Renaissance skin (src/shared/theme/tokens.css) — parchment light, night-studio dark, gold accent. */
 :root{
-  --bg:#F1E8D5; --surface:#FBF5E7; --ink:#33291A; --muted:#7E6F54; --line:#DACAA6;
+  --bg:#F1E8D5; --surface:#FBF5E7; --field:#F6EEDD; --ink:#33291A; --muted:#7E6F54; --line:#DACAA6;
   --accent:#8A6717; --accent-ink:#FFF7E4; --accent-soft:#F1E2BC;
   --good:#2E7D53; --bad:#B3402C; --scrim:rgba(40,30,15,.5);
   --f-display:"Do Hyeon","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
@@ -27,10 +30,10 @@
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#1A140D; --surface:#241B10; --ink:#F1E7D2; --muted:#A79A80; --line:#3B2F1D;
+  --bg:#1A140D; --surface:#241B10; --field:#1E160C; --ink:#F1E7D2; --muted:#A79A80; --line:#3B2F1D;
   --accent:#E1B54B; --accent-ink:#221807; --accent-soft:#2E2414; --good:#58B37E; --bad:#E0604A; --scrim:rgba(8,6,3,.62); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#1A140D; --surface:#241B10; --ink:#F1E7D2; --muted:#A79A80; --line:#3B2F1D;
+  --bg:#1A140D; --surface:#241B10; --field:#1E160C; --ink:#F1E7D2; --muted:#A79A80; --line:#3B2F1D;
   --accent:#E1B54B; --accent-ink:#221807; --accent-soft:#2E2414; --good:#58B37E; --bad:#E0604A; --scrim:rgba(8,6,3,.62); color-scheme:dark}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -41,7 +44,7 @@ img{max-width:100%}
 .screen{display:flex;flex-direction:column;gap:14px}
 h1{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0;letter-spacing:.5px;text-wrap:balance}
 .lede{margin:2px 0 0;color:var(--muted);max-width:62ch}
-button{font:inherit;color:inherit;cursor:pointer}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:600}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-size:16px}
@@ -51,8 +54,17 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid
 .err{color:var(--bad);font-size:13px;font-weight:500}
 .err:empty{display:none}
 .ok{color:var(--good)} .no{color:var(--bad)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.iconbtn{min-height:40px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.iconbtn[aria-pressed="false"]{color:var(--muted)}
 
 /* lobby */
+.lobby-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px 16px}
+.levels{display:flex;flex-wrap:wrap;gap:8px}
+.lv{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:52px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);text-align:left;min-width:150px}
+.lv b{font-family:var(--f-display);font-weight:400;font-size:20px;line-height:1.15}
+.lv small{font-size:12px;color:var(--muted)}
+.lv[aria-checked="true"]{border:2px solid var(--accent);background:var(--accent-soft);padding:7px 13px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .card canvas{display:block;width:100%;height:auto}
@@ -64,39 +76,62 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid
 .card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:4px}
 
 /* game */
-.game-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.game-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
 .back{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:transparent;font-weight:600}
-.modetag{font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.tag{font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag.lvl{border-color:var(--accent);color:var(--accent)}
 .stats{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center}
 .pills{display:flex;gap:8px;flex-wrap:wrap}
-.pill{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;padding:6px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
-.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.pill{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;padding:6px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);white-space:nowrap}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 352px;gap:16px;align-items:start}
 @media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
-.table-wrap{position:relative;min-width:0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px -12px rgba(0,0,0,.45)}
+.stage{min-width:0;display:flex;justify-content:center}
+#tableWrap{position:relative;width:100%;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px -12px rgba(0,0,0,.5);will-change:transform}
 #cv{display:block;width:100%;touch-action:manipulation}
+#fx{position:absolute;left:0;top:0;pointer-events:none}
 .console{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .turn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-soft)}
 .turn i{width:20px;height:20px;border-radius:50%;background:var(--pc,#999);border:1px solid rgba(0,0,0,.35);flex:none}
 .turn span{font-family:var(--f-display);font-size:22px;line-height:1}
 .turn small{color:var(--muted);font-size:13px}
 .turnline{font-weight:600;color:var(--accent)}
-.modes{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.mode{min-height:40px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:14px;font-weight:500}
-.mode[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
-.mode .n{font-family:var(--f-mono);margin-left:4px;color:var(--accent);font-weight:600}
-.mode:disabled{opacity:.4;cursor:not-allowed}
-.steppers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0}
-.stepper{display:flex;flex-direction:column;gap:4px}
-.stepper .row{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.stepper button{width:44px;height:44px;border:0;background:transparent;font-size:20px}
-.stepper output{flex:1;text-align:center;font-family:var(--f-mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+
+.chance{display:flex;flex-direction:column;gap:8px}
+.chance-btn{display:flex;align-items:center;gap:10px;min-height:46px;padding:0 14px 0 8px;border-radius:999px;border:1px solid #c9952a;background:linear-gradient(180deg,#fff1c2,#f1c75a 55%,#d9a032);color:#3d2500;font-weight:700;text-align:left;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 8px -2px rgba(160,100,10,.45)}
+.chance-btn .coin{width:32px;height:32px;border-radius:50%;flex:none;display:grid;place-items:center;font-family:var(--f-display);font-size:12px;color:#5a3600;background:radial-gradient(circle at 35% 30%,#fffbe6 0 10%,#ffd96b 35%,#d48f14 80%);box-shadow:0 0 0 2px rgba(255,255,255,.65),0 0 10px rgba(255,190,60,.8)}
+.chance-btn .n{margin-left:auto;font-family:var(--f-mono);font-size:15px;background:rgba(255,255,255,.55);border-radius:999px;padding:1px 9px}
+.chance-btn:disabled{filter:grayscale(.85);opacity:.5;cursor:not-allowed;box-shadow:none}
+.chance-btn.active{background:linear-gradient(180deg,#fff6d6,#ffd75e);outline:2px solid #c9952a;outline-offset:2px}
+.chance-pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px;border-radius:12px;border:1px dashed var(--accent);background:var(--accent-soft)}
+.chance-pick span{flex-basis:100%;font-size:13px;font-weight:600}
+.chance-pick button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--accent);background:var(--surface);font-weight:600}
+.chance-pick button[data-pick="cancel"]{border-color:var(--line);color:var(--muted)}
+
+.deltas{display:flex;flex-direction:column;gap:2px}
+.dhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;color:var(--muted);margin:6px 0 4px}
+.dhead b{color:var(--ink);font-weight:600}
+.drow{display:grid;grid-template-columns:38px 38px 38px minmax(64px,1fr) 38px 38px;gap:4px;align-items:center}
+.drow button{height:42px;border-radius:9px;border:1px solid var(--line);background:transparent;font-family:var(--f-mono);font-size:13.5px;font-weight:600;padding:0;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.drow button:active{background:var(--accent-soft)}
+.drow input{height:42px;min-width:0;width:100%;border:1px solid var(--line);border-radius:9px;background:var(--field);color:var(--ink);font-family:var(--f-mono);font-size:18px;font-weight:600;text-align:center;padding:0 4px}
 .field{display:flex;flex-direction:column;gap:4px}
-.field input{width:100%;height:44px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);font-family:var(--f-mono);font-size:18px;padding:0 12px}
+.field input{width:100%;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font-family:var(--f-mono);font-size:18px;padding:0 12px}
+.calc{border-radius:10px;border:1px dashed var(--accent);background:var(--accent-soft);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.calc .ct{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.04em}
+.calc .cm{font-family:var(--f-mono);font-size:14px;line-height:1.6;overflow-wrap:anywhere}
 .readout{border-radius:10px;background:var(--accent-soft);padding:12px;display:flex;flex-direction:column;gap:6px}
 .eq{font-family:var(--f-mono);font-size:20px;font-weight:600;overflow-wrap:anywhere}
 .power{display:flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
 .bar{flex:1 1 80px;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.pred{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 8px;align-items:baseline;margin-top:4px}
+.prow .pk{font-weight:700;font-size:14px}
+.prow .pw{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .pv{white-space:nowrap;font-size:13px;font-weight:600}
+.stars{font-size:15px;letter-spacing:1px;color:var(--accent)}
+.stars i{font-style:normal;color:var(--line)}
+.pn{margin:0;font-size:12.5px;color:var(--muted)}
 .check{display:flex;align-items:center;gap:8px;font-size:14px}
 .check input{width:20px;height:20px;accent-color:var(--accent)}
 .toast:empty{display:none}
@@ -104,27 +139,72 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid
 .report .mono{font-family:var(--f-mono);font-size:13px;overflow-wrap:anywhere}
 details{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
 summary{cursor:pointer;font-weight:600}
-details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px;max-width:78ch}
-.bubble{position:absolute;left:-30%;z-index:3;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid #fff;background:#ffb547;color:#2a1600;font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.4);animation:drift 8s linear forwards}
-.bubble span{display:block;animation:bob 1.2s ease-in-out infinite alternate}
-@keyframes drift{from{left:-30%}to{left:105%}}
-@keyframes bob{from{transform:translateY(-6px)}to{transform:translateY(6px)}}
-@keyframes fade{0%,85%{opacity:1}100%{opacity:0}}
-@media (prefers-reduced-motion:reduce){.bubble{left:40%;animation:fade 8s linear forwards}.bubble span{animation:none}}
+details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px;max-width:80ch}
+
+/* chance orb */
+.orb{position:absolute;z-index:3;width:66px;height:66px;margin:-33px 0 0 -33px;border:0;padding:0;border-radius:50%;background:none;touch-action:manipulation}
+.orb .core{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 34% 28%,#fffdf0 0 7%,#ffe68a 20%,#f5b93a 52%,#b86e0a 86%,#7a4300 100%);
+  box-shadow:0 0 0 2px rgba(255,246,210,.9),0 0 18px 4px rgba(255,200,70,.85),0 0 46px 14px rgba(255,160,40,.35);animation:pulse 1.4s ease-in-out infinite}
+.orb .core::after{content:"";position:absolute;inset:6px;border-radius:50%;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.75) 45%,transparent 60%);background-size:250% 100%;animation:shine 2.2s linear infinite;mix-blend-mode:screen}
+.orb .halo{position:absolute;inset:-10px;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 12%,rgba(255,244,190,.95) 16%,transparent 22% 46%,rgba(255,244,190,.95) 50%,transparent 56% 80%,rgba(255,244,190,.95) 84%,transparent 90%);
+  -webkit-mask:radial-gradient(circle,transparent 58%,#000 60%,#000 72%,transparent 74%);mask:radial-gradient(circle,transparent 58%,#000 60%,#000 72%,transparent 74%);animation:spin 2.6s linear infinite}
+.orb .g{position:relative;font-family:var(--f-display);font-size:19px;line-height:1;color:#4a2a00;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+.orb .tw{position:absolute;color:#fffbe0;font-size:14px;text-shadow:0 0 6px #ffd257;animation:twinkle 1.1s ease-in-out infinite}
+.orb .tw.a{top:-6px;right:-2px}.orb .tw.b{bottom:2px;left:-8px;animation-delay:.45s;font-size:11px}
+.orb .lbl{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:8px;white-space:nowrap;font-size:12px;font-weight:700;color:#fff;background:rgba(40,24,0,.62);padding:2px 9px;border-radius:999px;box-shadow:0 0 0 1px rgba(255,220,140,.6)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes shine{from{background-position:150% 0}to{background-position:-100% 0}}
+@keyframes twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.15)}}
+
+/* celebration banner */
+.banner{position:absolute;left:50%;top:42%;z-index:4;transform:translate(-50%,-50%);pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:12px 26px 14px;border-radius:20px;background:rgba(22,15,6,.62);box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,220,140,.35);animation:pop .5s cubic-bezier(.2,1.6,.4,1) both}
+.banner .bt{font-family:var(--f-display);font-weight:400;font-size:34px;line-height:1.1;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35),0 0 18px rgba(0,0,0,.35);white-space:nowrap}
+.banner .bs{font-size:13px;font-weight:700;color:#fff3d0;background:rgba(255,255,255,.12);padding:2px 10px;border-radius:999px;white-space:nowrap}
+.banner.t2 .bt{color:#ffe38a}
+.banner.t3 .bt{font-size:42px;color:#ffd257;text-shadow:0 2px 0 #7a4300,0 0 24px rgba(255,190,60,.8)}
+.banner.t4 .bt,.banner.t5 .bt{font-size:48px;background:linear-gradient(90deg,#ffd257,#ff7a7a,#c77dff,#5bc8ff,#4dd4ac,#ffd257);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 rgba(0,0,0,.45)) drop-shadow(0 0 14px rgba(255,210,120,.7));animation:rainbow 1.6s linear infinite}
+.banner.t5 .bt{font-size:58px}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.4)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes rainbow{to{background-position:-300% 0}}
+
 .overlay{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;z-index:20;padding:16px}
 .dialog{background:var(--surface);color:var(--ink);border-radius:16px;padding:20px;width:min(420px,100%);display:flex;flex-direction:column;gap:12px;border:1px solid var(--line)}
 .dialog h2{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0}
-.dialog input{height:44px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);font-family:var(--f-mono);font-size:18px;padding:0 12px}
+.dialog input{height:44px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font-family:var(--f-mono);font-size:18px;padding:0 12px}
 .q{font-family:var(--f-mono);font-size:19px;font-weight:600}
 .dialog .actions{display:flex;gap:8px;justify-content:flex-end}
+
+/* full screen: the table fits the screen height, the console scrolls on its own */
+body.fs .wrap{max-width:none;padding-block:10px 10px}
+body.fs .lede,body.fs #game details{display:none}
+body.fs #game{gap:10px}
+body.fs .console{overflow:auto;overscroll-behavior:contain}
+@media (prefers-reduced-motion:reduce){.orb .core,.orb .halo,.orb .core::after,.orb .tw{animation:none}.banner{animation:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <section class="screen" id="lobby">
+    <div class="lobby-top">
+      <div>
+        <h1>기울기 샷</h1>
+        <p class="lede">일차함수의 기울기와 절편을 입력해서 공과 스톤을 보내는 게임 세 가지. 둘이 할 때는 한 기기로 차례를 넘겨 가며 해요.</p>
+      </div>
+      <div class="tools">
+        <button class="iconbtn js-fs" type="button">⛶ 전체 화면</button>
+        <button class="iconbtn js-snd" type="button" aria-pressed="true">🔊 소리</button>
+      </div>
+    </div>
+
     <div>
-      <h1>기울기 샷</h1>
-      <p class="lede">일차함수의 기울기와 절편을 입력해서 공과 스톤을 보내는 게임 세 가지. 둘이 할 때는 한 기기로 차례를 넘겨 가며 해요.</p>
+      <div class="label">난이도</div>
+      <div class="levels" role="radiogroup" aria-label="난이도" style="margin-top:6px">
+        <button class="lv" type="button" role="radio" data-level="intro" aria-checked="false"><b>입문</b><small>공이 늘 격자점에 · 좌표 표시 · 찬스 3</small></button>
+        <button class="lv" type="button" role="radio" data-level="basic" aria-checked="true"><b>기본</b><small>공이 반 칸(0.5) 격자에 · 찬스 1</small></button>
+        <button class="lv" type="button" role="radio" data-level="pro" aria-checked="false"><b>도전</b><small>공이 멈춘 자리 그대로 · 찬스 0</small></button>
+      </div>
     </div>
 
     <div class="cards">
@@ -156,7 +236,7 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
         <canvas aria-hidden="true"></canvas>
         <div class="card-body">
           <h2>컬링</h2>
-          <p>스톤을 던져 상대 스톤보다 버튼 (5, 5)에 가깝게 붙여요.</p>
+          <p>스톤을 던져 상대 스톤보다 버튼 (10, 10)에 가깝게 붙여요.</p>
           <ul class="chips"><li>원점 = 아래 사이드 라인 가운데</li><li>회전하면 휨</li><li>둘이: 4개씩</li></ul>
           <div class="card-actions">
             <button class="btn primary open" type="button" data-game="curling" data-players="1">혼자 하기</button>
@@ -168,59 +248,83 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
   </section>
 
   <section class="screen" id="game" hidden>
-    <header class="game-head">
+    <header class="game-head" id="gameHead">
       <button class="back" id="back" type="button">← 게임 목록</button>
       <h1 id="gameName">포켓볼</h1>
-      <span class="modetag" id="modeTag">혼자</span>
+      <span class="tag" id="modeTag">혼자</span>
+      <span class="tag lvl" id="levelTag">기본</span>
       <div class="stats">
         <div class="pills" id="pills"></div>
+        <button class="iconbtn js-fs" type="button">⛶ 전체 화면</button>
+        <button class="iconbtn js-snd" type="button" aria-pressed="true">🔊 소리</button>
         <button class="btn" id="newGame" type="button">새 게임</button>
       </div>
     </header>
 
     <div class="main">
-      <div class="table-wrap" id="tableWrap">
-        <canvas id="cv" aria-label="좌표평면 위의 경기장"></canvas>
+      <div class="stage" id="stage">
+        <div id="tableWrap">
+          <canvas id="cv" aria-label="좌표평면 위의 경기장"></canvas>
+          <canvas id="fx" aria-hidden="true"></canvas>
+          <div class="banner" id="banner" hidden><b class="bt"></b><span class="bs"></span></div>
+        </div>
       </div>
 
-      <section class="console" aria-label="샷 입력">
+      <section class="console" id="console" aria-label="샷 입력">
         <div class="turn" id="turn" hidden aria-live="polite"><i aria-hidden="true"></i><span id="turnName">1P 차례</span><small id="turnTag"></small></div>
 
-        <div>
-          <div class="label">입력 방식</div>
-          <div class="modes">
-            <button class="mode" type="button" data-mode="base" aria-pressed="true">기본 (y절편)</button>
-            <button class="mode" type="button" data-mode="xint" aria-pressed="false">x절편 찬스<span class="n" id="nX">0</span></button>
-            <button class="mode" type="button" data-mode="coord" aria-pressed="false">좌표 찬스<span class="n" id="nC">0</span></button>
+        <div class="chance">
+          <button class="chance-btn" id="chanceBtn" type="button"><span class="coin" aria-hidden="true">절편</span><span id="chanceText">절편 찬스</span><span class="n" id="nChance">0</span></button>
+          <div class="chance-pick" id="chancePick" hidden>
+            <span>어느 절편으로 쓸까요? 공 중심을 지나는 값을 계산해서 채워 줘요.</span>
+            <button type="button" data-pick="y">y절편으로</button>
+            <button type="button" data-pick="x">x절편으로</button>
+            <button type="button" data-pick="cancel">취소</button>
           </div>
         </div>
 
-        <div>
+        <div class="deltas">
           <div class="label">기울기 = y 증가량 ÷ x 증가량 (세기도 결정)</div>
-          <div class="steppers">
-            <div class="stepper">
-              <span class="hint">x 증가량</span>
-              <div class="row"><button type="button" data-step="dx" data-d="-1" aria-label="x 증가량 줄이기">−</button><output id="dxOut">3</output><button type="button" data-step="dx" data-d="1" aria-label="x 증가량 늘리기">+</button></div>
-            </div>
-            <div class="stepper">
-              <span class="hint">y 증가량</span>
-              <div class="row"><button type="button" data-step="dy" data-d="-1" aria-label="y 증가량 줄이기">−</button><output id="dyOut">2</output><button type="button" data-step="dy" data-d="1" aria-label="y 증가량 늘리기">+</button></div>
-            </div>
+          <div class="dhead"><span>x 증가량</span><span>−12 ~ 12</span></div>
+          <div class="drow" data-axis="dx">
+            <button type="button" data-step="dx" data-d="flip" aria-label="x 증가량 부호 바꾸기">±</button>
+            <button type="button" data-step="dx" data-d="-1" aria-label="x 증가량 1 줄이기">−1</button>
+            <button type="button" data-step="dx" data-d="-0.1" aria-label="x 증가량 0.1 줄이기">−.1</button>
+            <input id="dxIn" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="x 증가량">
+            <button type="button" data-step="dx" data-d="0.1" aria-label="x 증가량 0.1 늘리기">+.1</button>
+            <button type="button" data-step="dx" data-d="1" aria-label="x 증가량 1 늘리기">+1</button>
           </div>
-          <p class="hint" id="dirHint"></p>
+          <div class="dhead"><span>y 증가량</span><span>−12 ~ 12</span></div>
+          <div class="drow" data-axis="dy">
+            <button type="button" data-step="dy" data-d="flip" aria-label="y 증가량 부호 바꾸기">±</button>
+            <button type="button" data-step="dy" data-d="-1" aria-label="y 증가량 1 줄이기">−1</button>
+            <button type="button" data-step="dy" data-d="-0.1" aria-label="y 증가량 0.1 줄이기">−.1</button>
+            <input id="dyIn" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="y 증가량">
+            <button type="button" data-step="dy" data-d="0.1" aria-label="y 증가량 0.1 늘리기">+.1</button>
+            <button type="button" data-step="dy" data-d="1" aria-label="y 증가량 1 늘리기">+1</button>
+          </div>
+          <p class="hint" id="dirHint" style="margin-top:6px"></p>
         </div>
 
         <div class="field" id="icptField">
           <label class="label" for="icpt" id="icptLabel">y절편 b</label>
           <input id="icpt" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="예: 3, −1.5, 7/3">
         </div>
-        <p class="hint" id="coordInfo" hidden></p>
+        <div class="calc" id="calcBox" hidden><span class="ct" id="calcTitle">절편 찬스</span><span class="cm" id="calcText"></span></div>
 
         <div class="readout">
           <div class="eq" id="eq">—</div>
           <p class="hint" id="eqSub"></p>
           <div class="power"><span id="powerTxt"></span><span class="bar"><i id="powerBar"></i></span></div>
           <div class="err" id="err" role="alert"></div>
+        </div>
+
+        <div class="pred" id="pred" hidden>
+          <div class="label">예측 난이도</div>
+          <div class="prow"><span class="pk">타점</span><span class="pw" id="pCueWho"></span><span class="pv"><span class="stars" id="pCueStars"></span> <span id="pCueName"></span></span></div>
+          <p class="pn" id="pCueNotes"></p>
+          <div class="prow"><span class="pk">목표</span><span class="pw" id="pTgtWho"></span><span class="pv"><span class="stars" id="pTgtStars"></span> <span id="pTgtName"></span></span></div>
+          <p class="pn" id="pTgtNotes"></p>
         </div>
 
         <label class="check"><input type="checkbox" id="preview"> 그래프 미리보기 (연습용)</label>
@@ -239,7 +343,7 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
 
 <div class="overlay" id="overlay" hidden>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="qTitle">
-    <h2 id="qTitle">찬스 문제</h2>
+    <h2 id="qTitle">절편 찬스 문제</h2>
     <div class="q" id="qText"></div>
     <input id="qAns" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="답">
     <p class="hint" id="qMsg" aria-live="polite"></p>
@@ -253,63 +357,196 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
 <script>
 (() => {
   'use strict';
-  const W = 10, H = 10, DIST_K = 0.8, SUB_HZ = 240, LIM = 6, MAX_POWER = 72;
+  /* ================= world ================= */
+  const XMIN = -20, XMAX = 20, YMIN = 0, YMAX = 20, MARGIN = 2;
+  const VW = XMAX - XMIN + 2 * MARGIN, VH = YMAX - YMIN + 2 * MARGIN;      // 44 × 24
+  const DIST_K = 0.5, LIM = 12, MAX_POWER = 2 * LIM * LIM, SUB_HZ = 240, STOP_V = 0.06;
   const $ = id => document.getElementById(id);
+  const REDUCED = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const toPx = (u, x, y) => [(x - XMIN + MARGIN) * u, (YMAX - y + MARGIN) * u];
+  const CANVAS_DISPLAY = '"Do Hyeon", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+  const CANVAS_BODY = '"Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
 
-  /* ---------- helpers ---------- */
-  const gcd = (a, b) => b ? gcd(b, a % b) : a;
-  const fmt = v => { const r = Math.round(v * 100) / 100; return (Object.is(r, -0) ? 0 : r).toString().replace('-', '−'); };
-  // 입력 수 — 정수 · 소수 · 분수(7/3, −7/3). 돌려주는 text 는 식에 그대로 쓰는 꼴(부호 없는 크기)
+  /* ================= numbers ================= */
+  const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b){ const t = a % b; a = b; b = t; } return a; };
+  const isInt = v => Math.abs(v - Math.round(v)) < 1e-9;
+  const round2 = v => Math.round(v * 100) / 100;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  function fmt(v, d = 2){ const p = 10 ** d; let r = Math.round(v * p) / p; if (Object.is(r, -0)) r = 0; return String(r).replace('-', '−'); }
+  const paren = s => s.startsWith('−') ? `(${s})` : s;
+  // 수 → 글자: 정수 · 끝나는 소수(3자리까지) · 그 밖은 분수(분모 200까지), 아니면 소수 둘째 자리
+  function fracText(v){
+    if (isInt(v)) return fmt(v, 0);
+    for (let q = 2; q <= 200; q++){
+      const p = v * q;
+      if (Math.abs(p - Math.round(p)) < 1e-7){
+        const P = Math.round(p), g = gcd(P, q), pp = P / g, qq = q / g;
+        if (qq === 1) return fmt(pp, 0);
+        if (1000 % qq === 0) return fmt(v, 3);
+        return (pp < 0 ? '−' : '') + `${Math.abs(pp)}/${qq}`;
+      }
+    }
+    return fmt(v, 2);
+  }
+  // 절편 입력 — 정수 · 소수 · 분수(7/3, −7/3). text 는 부호 없는 크기(식에 그대로 쓴다)
   function parseIn(s){
     s = String(s).trim().replace(/[−–]/g, '-').replace(/\s+/g, '').replace(',', '.');
     let m = s.match(/^([+-]?)(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);
     if (m){
       const den = Number(m[3]); if (!den) return null;
-      const v = (m[1] === '-' ? -1 : 1) * Number(m[2]) / den;
-      return { v, text: `${m[2]}/${m[3]}` };
+      return { v:(m[1] === '-' ? -1 : 1) * Number(m[2]) / den, text:`${m[2]}/${m[3]}` };
     }
     m = s.match(/^([+-]?)(\d+(?:\.\d*)?|\.\d+)$/);
     if (!m) return null;
     const v = (m[1] === '-' ? -1 : 1) * Number(m[2]);
-    return Number.isFinite(v) ? { v, text: fmt(Math.abs(v)) } : null;
+    return Number.isFinite(v) ? { v, text:fmt(Math.abs(v)) } : null;
   }
   const signed = n => (n.v < 0 && Math.round(n.v * 100) ? '−' : '') + n.text;
-  const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-  const half = (a, b) => ri(Math.round(a * 2), Math.round(b * 2)) / 2;
-  const norm = (x, y) => { const l = Math.hypot(x, y); return { x: x / l, y: y / l }; };
-  const sq = v => v < 0 ? `(${fmt(v)})²` : `${fmt(v)}²`;
-  const toPx = (u, x, y) => [(11 + x) * u, (11 - y) * u];
-  const PNAME = i => `${i + 1}P`;
-  const ARROWS = { '1,1':'↗', '1,0':'→', '1,-1':'↘', '0,-1':'↓', '-1,-1':'↙', '-1,0':'←', '-1,1':'↖', '0,1':'↑' };
-
-  function slopeStr(dx, dy){
-    const g = gcd(Math.abs(dx), Math.abs(dy)); let n = dy / g, d = dx / g;
-    if (d < 0){ n = -n; d = -d; }
-    const neg = n < 0; n = Math.abs(n);
-    return (neg ? '−' : '') + (d === 1 ? (n === 1 ? '' : String(n)) : `${n}/${d}`) + 'x';
+  function parseDelta(s){
+    s = String(s).trim().replace(/[−–]/g, '-').replace(',', '.');
+    if (!/^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(s)) return null;
+    const v = Number(s); return Number.isFinite(v) ? v : null;
   }
-  // y = (dy/dx)x + b — bText 가 있으면 그 꼴(분수 그대로)로 적는다
-  function eqY(dx, dy, b, bText){
-    let t = 'y = ' + slopeStr(dx, dy);
-    const br = Math.round(b * 100) / 100;
-    const mag = bText || fmt(Math.abs(br));
+  // 기울기 = dy/dx 를 정확한 분수로(증가량은 소수 둘째 자리까지)
+  function ratio(dx, dy){
+    let n = Math.round(dy * 100), d = Math.round(dx * 100);
+    if (d < 0){ n = -n; d = -d; }
+    const g = gcd(n, d) || 1;
+    return { n:n / g, d:d / g };
+  }
+  // 기울기 글자 — 정수 · 분수, 증가량에 소수가 있으면 끝나는 소수로
+  function slopeNum(dx, dy){
+    const { n, d } = ratio(dx, dy), an = Math.abs(n);
+    let body;
+    if (d === 1) body = String(an);
+    else if ((!isInt(dx) || !isInt(dy)) && 1000 % d === 0) body = fmt(an / d, 3);
+    else body = `${an}/${d}`;
+    return { text:(n < 0 ? '−' : '') + body, body, neg:n < 0, n, d, v:n / d };
+  }
+  const slopeX = (dx, dy) => { const s = slopeNum(dx, dy); return (s.neg ? '−' : '') + (s.body === '1' ? '' : s.body) + 'x'; };
+  function eqY(dx, dy, b, magText){
+    let t = 'y = ' + slopeX(dx, dy);
+    const br = round2(b), mag = magText || fracText(Math.abs(b));
     if (br > 0) t += ` + ${mag}`; else if (br < 0) t += ` − ${mag}`;
     return t;
   }
 
-  /* ---------- state ---------- */
-  const st = { bodies:[], shooter:null, shooters:[], players:1, turn:0, pts:[0, 0],
-    invs:[{ xint:0, coord:0 }, { xint:0, coord:0 }], inv:null, thrown:[0, 0], shots:0, mode:'base', dx:3, dy:2,
-    moving:false, over:false, last:null, theory:null, ev:{ pocketed:[], contacts:new Set(), removed:[] }, runId:0, quiz:null };
-  st.inv = st.invs[0];
-  let G = null;
+  /* ================= sound (Web Audio, 직접 합성) ================= */
+  const Snd = (() => {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    let ac = null, out = null, nbuf = null, on = true, slide = null;
+    const lastAt = {};
+    function ctx(){
+      if (!AC) return null;
+      if (!ac){
+        try { ac = new AC(); } catch (e){ return null; }
+        out = ac.createGain(); out.gain.value = 0.55; out.connect(ac.destination);
+        nbuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+        const ch = nbuf.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+      }
+      if (ac.state === 'suspended') ac.resume().catch(() => {});
+      return ac;
+    }
+    function env(gn, t, a, peak, dec){ gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + a); gn.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); }
+    function tone(f, t, o = {}){
+      const { type = 'sine', a = 0.004, peak = 0.2, dec = 0.15, f2 = null } = o;
+      const osc = ac.createOscillator(), gn = ac.createGain();
+      osc.type = type; osc.frequency.setValueAtTime(f, t);
+      if (f2) osc.frequency.exponentialRampToValueAtTime(f2, t + a + dec);
+      env(gn, t, a, peak, dec); osc.connect(gn); gn.connect(out); osc.start(t); osc.stop(t + a + dec + 0.05);
+    }
+    function noise(t, o = {}){
+      const { dur = 0.06, peak = 0.2, type = 'bandpass', f = 1500, q = 1, f2 = null, a = 0.002 } = o;
+      const s = ac.createBufferSource(), fl = ac.createBiquadFilter(), gn = ac.createGain();
+      s.buffer = nbuf; fl.type = type; fl.frequency.setValueAtTime(f, t); if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + a + dur); fl.Q.value = q;
+      env(gn, t, a, peak, dur); s.connect(fl); fl.connect(gn); gn.connect(out); s.start(t, Math.random() * 0.4); s.stop(t + a + dur + 0.05);
+    }
+    const N = { C5:523.25, E5:659.25, G5:783.99, C6:1046.5, E6:1318.51, G6:1567.98, C7:2093 };
+    const S = {
+      click(t){ tone(1300, t, { peak:0.035, dec:0.03 }); },
+      strike(t, k){ noise(t, { dur:0.05, peak:0.2 + 0.45 * k, f:2600, q:0.8 }); tone(150, t, { peak:0.12 + 0.25 * k, dec:0.09 }); },
+      clack(t, k){ tone(2900, t, { type:'triangle', a:0.001, peak:0.04 + 0.24 * k, dec:0.05 }); tone(4300, t, { a:0.001, peak:0.02 + 0.1 * k, dec:0.03 }); noise(t, { dur:0.025, peak:0.04 + 0.18 * k, type:'highpass', f:3000 }); },
+      cushion(t, k){ tone(95, t, { peak:0.06 + 0.28 * k, dec:0.14 }); noise(t, { dur:0.08, peak:0.04 + 0.18 * k, type:'lowpass', f:500 }); },
+      pocket(t){ tone(150, t, { peak:0.32, dec:0.16, f2:90 }); [0, 0.06, 0.13].forEach((dt, i) => noise(t + 0.04 + dt, { dur:0.05, peak:0.2 - i * 0.05, f:900 - i * 150, q:2 })); tone(70, t + 0.2, { peak:0.22, dec:0.2 }); },
+      stone(t, k){ tone(210, t, { type:'triangle', a:0.002, peak:0.08 + 0.3 * k, dec:0.14 }); noise(t, { dur:0.06, peak:0.06 + 0.24 * k, f:1200, q:1.5 }); },
+      whoosh(t, k = 0.5){ noise(t, { dur:0.28, peak:0.06 + 0.2 * k, f:400, f2:2200, q:1.2, a:0.05 }); },
+      release(t){ noise(t, { dur:0.35, peak:0.14, type:'lowpass', f:300, f2:900, a:0.06 }); tone(110, t, { peak:0.1, dec:0.25 }); },
+      perfect(t, k){ [N.G6, N.C7].forEach((f, i) => tone(f, t + i * 0.05, { type:'triangle', peak:0.05 + 0.05 * k, dec:0.18 })); },
+      chime(t){ [N.C6, N.E6, N.G6, N.C7].forEach((f, i) => tone(f, t + i * 0.07, { type:'triangle', peak:0.13, dec:0.4 })); },
+      correct(t){ tone(N.G5, t, { type:'triangle', peak:0.14, dec:0.15 }); tone(N.C6, t + 0.1, { type:'triangle', peak:0.16, dec:0.3 }); },
+      wrong(t){ tone(196, t, { type:'square', peak:0.045, dec:0.18 }); tone(147, t + 0.15, { type:'square', peak:0.045, dec:0.3 }); },
+      out(t){ tone(330, t, { peak:0.09, dec:0.3, f2:180 }); },
+      pop(t){ noise(t, { dur:0.3, peak:0.12, type:'lowpass', f:2200, f2:300 }); tone(95, t, { peak:0.12, dec:0.15 }); },
+      fanfare(t, tier){
+        const tri = (f, dt, peak, dec) => tone(f, t + dt, { type:'triangle', peak, dec });
+        if (tier <= 1){ tri(N.G5, 0, 0.13, 0.12); tri(N.C6, 0.09, 0.15, 0.3); return; }
+        [N.C5, N.E5, N.G5, N.C6].forEach((f, i) => tri(f, i * 0.075, 0.12, 0.18));
+        if (tier === 2) return;
+        const end = 0.32;
+        [N.C6, N.E6, N.G6].forEach(f => tri(f, end, 0.08, 0.7));
+        [N.E6, N.G6, N.C7].forEach((f, i) => tone(f * 2, t + end + 0.1 + i * 0.05, { peak:0.025, dec:0.25 }));
+        if (tier >= 4){ noise(t + end, { dur:0.9, peak:0.07, type:'highpass', f:6000, a:0.01 }); [0, 0.12, 0.24].forEach(dt => tone(80, t + dt, { peak:0.22, dec:0.12 })); }
+        if (tier >= 5){
+          [N.G5, N.C6, N.E6, N.G6, N.C7].forEach((f, i) => tri(f, end + 0.75 + i * 0.06, 0.09, 0.4));
+          [N.C6, N.E6, N.G6, N.C7].forEach(f => tri(f, end + 1.1, 0.06, 1.1));
+          noise(t + end + 1.1, { dur:1.2, peak:0.06, type:'highpass', f:7000 });
+        }
+      }
+    };
+    return {
+      get on(){ return on; },
+      unlock(){ if (on) ctx(); },
+      toggle(){ on = !on; if (!on) this.slideStop(); else ctx(); return on; },
+      play(name, k = 1, gap = 0){
+        if (!on || !S[name]) return;
+        const a = ctx(); if (!a) return;
+        const t = a.currentTime;
+        if (gap && lastAt[name] && t - lastAt[name] < gap) return;
+        lastAt[name] = t;
+        try { S[name](t + 0.005, k); } catch (e){ /* 소리는 없어도 게임은 돈다 */ }
+      },
+      slideSet(k){
+        if (!on) return; const a = ctx(); if (!a) return;
+        try {
+          if (!slide){
+            const s = a.createBufferSource(), f = a.createBiquadFilter(), gn = a.createGain();
+            s.buffer = nbuf; s.loop = true; f.type = 'lowpass'; f.frequency.value = 500; gn.gain.value = 0.0001;
+            s.connect(f); f.connect(gn); gn.connect(out); s.start(); slide = { s, f, gn };
+          }
+          const t = a.currentTime;
+          slide.gn.gain.setTargetAtTime(Math.max(0.0001, 0.15 * k), t, 0.05);
+          slide.f.frequency.setTargetAtTime(280 + 520 * k, t, 0.05);
+        } catch (e){ /* */ }
+      },
+      slideStop(){
+        if (!slide || !ac) return;
+        const sl = slide; slide = null;
+        try { sl.gn.gain.setTargetAtTime(0.0001, ac.currentTime, 0.06); } catch (e){ /* */ }
+        setTimeout(() => { try { sl.s.stop(); } catch (e){ /* */ } }, 400);
+      }
+    };
+  })();
 
-  const mk = (id, kind, x, y, color, extra) => Object.assign({ id, kind, x, y, vx:0, vy:0, spin:0, gone:false, color }, extra || {});
+  /* ================= state ================= */
+  const LEVELS = {
+    intro:{ name:'입문', snap:1, place:1, spawn:1, chances:3, coords:true, desc:'공이 멈추면 가장 가까운 격자점으로 옮겨져 좌표가 늘 정수예요. 내 공의 좌표를 테이블에 적어 줘요. 절편 찬스 3개로 시작.' },
+    basic:{ name:'기본', snap:0.5, place:0.5, spawn:1, chances:1, coords:false, desc:'공이 멈추면 반 칸(0.5) 격자로 옮겨져요. 좌표는 격자를 보고 읽어요. 절편 찬스 1개로 시작.' },
+    pro:{ name:'도전', snap:0, place:0.5, spawn:0.5, chances:0, coords:false, desc:'공이 멈춘 자리 그대로라 좌표가 소수가 돼요. 절편 찬스 없이 시작.' }
+  };
+  const st = { level:'basic', bodies:[], shooter:null, shooters:[], players:1, turn:0, pts:[0, 0], invs:[0, 0], thrown:[0, 0], shots:0,
+    chance:null, pickOpen:false, dx:6, dy:4, moving:false, phys:false, over:false, last:null, theory:null, ev:null, runId:0, quiz:null,
+    pred:null, success:null, fs:false, immersive:false };
+  let G = null;
+  const anim = { strike:null, snap:null };
+
+  const mk = (id, kind, x, y, color, extra) => Object.assign({ id, kind, x, y, vx:0, vy:0, spin:0, gone:false, color, trail:[] }, extra || {});
+  const onGrid = (a, b, step) => { const i0 = Math.ceil(a / step), i1 = Math.floor(b / step); return (i0 + Math.floor(Math.random() * (i1 - i0 + 1))) * step; };
   function scatter(bodies, items, box, avoid){
     for (const it of items){
-      for (let t = 0; t < 500; t++){
-        const x = half(box.x0, box.x1), y = half(box.y0, box.y1);
+      for (let t = 0; t < 800; t++){
+        const x = onGrid(box.x0, box.x1, box.step), y = onGrid(box.y0, box.y1, box.step);
         if (avoid && avoid(x, y)) continue;
         if (bodies.some(b => Math.hypot(b.x - x, b.y - y) < box.gap)) continue;
         bodies.push(mk(it.id, it.kind, x, y, it.color, it.extra)); break;
@@ -324,155 +561,213 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
     return spots[0];
   }
   const whoName = () => G.key === 'curling' ? '스톤' : (st.shooter && st.shooter.id === 'y' ? '노란 공' : '흰 공');
+  const newEv = () => ({ pocketed:[], contacts:new Set(), removed:[], first:null, path:0, cush:0, lastPocket:null, carom:null });
   function verdict2(){
     const [a, b] = st.pts;
     if (a === b) return `<b>무승부</b> · 1P ${fmt(a)} : ${fmt(b)} 2P`;
     return `<b class="ok">${PNAME(a > b ? 0 : 1)} 승리!</b> · 1P ${fmt(a)} : ${fmt(b)} 2P`;
   }
+  const PNAME = i => `${i + 1}P`;
+  const ARROWS = { '1,1':'↗', '1,0':'→', '1,-1':'↘', '0,-1':'↓', '-1,-1':'↙', '-1,0':'←', '-1,1':'↖', '0,1':'↑' };
+  const STAR_NAMES = ['', '쉬움', '보통', '어려움', '매우 어려움', '최고 난도'];
+  const TIER_NAMES = ['', '좋아요!', '멋져요!', '대단해요!', '환상적이에요!', '전설의 샷!'];
+  const starsHTML = n => '★'.repeat(n) + `<i>${'★'.repeat(5 - n)}</i>`;
 
-  /* ---------- drawing ---------- */
-  function roundRect(ctx, x, y, w, h, r){
-    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  /* ================= drawing: table ================= */
+  function roundRect(g, x, y, w, h, r){
+    g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
   }
-  function drawBall(ctx, u, b, R){
-    const [x, y] = toPx(u, b.x, b.y), r = R * u;
-    ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.arc(x + r * 0.18, y + r * 0.22, r, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+  function drawBall(g, u, b, R, sc = 1){
+    const [x, y] = toPx(u, b.rx ?? b.x, b.ry ?? b.y), r = R * u * sc;
+    g.fillStyle = 'rgba(0,0,0,0.3)'; g.beginPath(); g.arc(x + r * 0.18, y + r * 0.24, r, 0, Math.PI * 2); g.fill();
+    const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+    gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.18, b.color); gr.addColorStop(1, shade(b.color));
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1; g.stroke();
     if (b.label){
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, r * 0.52, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#111'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = `700 ${Math.max(7, r * 0.78)}px "IBM Plex Mono", monospace`; ctx.fillText(b.label, x, y + 0.5);
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, r * 0.52, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#111'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = `700 ${Math.max(7, r * 0.78)}px "IBM Plex Mono", monospace`; g.fillText(b.label, x, y + 0.5);
     }
-    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(x - r * 0.35, y - r * 0.35, r * 0.22, 0, Math.PI * 2); ctx.fill();
   }
-  function drawStone(ctx, u, b, R){
-    const [x, y] = toPx(u, b.x, b.y), r = R * u;
-    ctx.fillStyle = 'rgba(10,30,50,0.22)'; ctx.beginPath(); ctx.arc(x + r * 0.12, y + r * 0.16, r, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#8b939a'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#59616a'; ctx.lineWidth = Math.max(1, r * 0.12); ctx.stroke();
-    ctx.fillStyle = '#a7aeb4'; ctx.beginPath(); ctx.arc(x, y, r * 0.7, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = b.color; roundRect(ctx, x - r * 0.6, y - r * 0.2, r * 1.2, r * 0.4, r * 0.2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x, y, r * 0.38, 0, Math.PI * 2); ctx.fill();
+  const SHADES = {};
+  function shade(c){ // 공 그림자 쪽 색 — 조금 어둡게
+    if (SHADES[c]) return SHADES[c];
+    const n = parseInt(c.slice(1), 16), r = (n >> 16) & 255, gg = (n >> 8) & 255, b = n & 255;
+    return (SHADES[c] = `rgb(${r * 0.55 | 0},${gg * 0.55 | 0},${b * 0.55 | 0})`);
+  }
+  function drawStone(g, u, b, R, sc = 1){
+    const [x, y] = toPx(u, b.rx ?? b.x, b.ry ?? b.y), r = R * u * sc;
+    g.fillStyle = 'rgba(10,30,50,0.22)'; g.beginPath(); g.arc(x + r * 0.12, y + r * 0.16, r, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#8b939a'; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#59616a'; g.lineWidth = Math.max(1, r * 0.12); g.stroke();
+    g.fillStyle = '#a7aeb4'; g.beginPath(); g.arc(x, y, r * 0.7, 0, Math.PI * 2); g.fill();
+    g.fillStyle = b.color; roundRect(g, x - r * 0.6, y - r * 0.2, r * 1.2, r * 0.4, r * 0.2); g.fill();
+    g.beginPath(); g.arc(x, y, r * 0.38, 0, Math.PI * 2); g.fill();
     if (b.label){
-      ctx.fillStyle = b.color === YELLOW ? '#2a1d00' : '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = `700 ${Math.max(7, r * 0.62)}px "IBM Plex Mono", monospace`; ctx.fillText(b.label, x, y + 0.5);
+      g.fillStyle = b.color === YELLOW ? '#2a1d00' : '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = `700 ${Math.max(7, r * 0.62)}px "IBM Plex Mono", monospace`; g.fillText(b.label, x, y + 0.5);
     }
     if (b.waiting){
-      ctx.save(); ctx.setLineDash([r * 0.35, r * 0.25]); ctx.strokeStyle = '#d9480f'; ctx.lineWidth = Math.max(1.5, r * 0.12);
-      ctx.beginPath(); ctx.arc(x, y, r * 1.5, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+      g.save(); g.setLineDash([r * 0.35, r * 0.25]); g.strokeStyle = '#d9480f'; g.lineWidth = Math.max(1.5, r * 0.12);
+      g.beginPath(); g.arc(x, y, r * 1.5, 0, Math.PI * 2); g.stroke(); g.restore();
     }
   }
-  const billiardSurface = (felt, rail, cushion) => (ctx, u) => {
-    const Wp = u * 22, Hp = u * 12;
-    ctx.fillStyle = rail; ctx.fillRect(0, 0, Wp, Hp);
-    ctx.fillStyle = cushion; ctx.fillRect(u * 0.62, u * 0.62, Wp - u * 1.24, Hp - u * 1.24);
-    const [fx, fy] = toPx(u, -W, H);
-    ctx.fillStyle = felt; ctx.fillRect(fx, fy, 20 * u, 10 * u);
+  const billiardSurface = (felt, rail, cushion) => (g, u) => {
+    const Wp = u * VW, Hp = u * VH;
+    g.fillStyle = rail; g.fillRect(0, 0, Wp, Hp);
+    g.fillStyle = cushion; g.fillRect(u * 1.24, u * 1.24, Wp - u * 2.48, Hp - u * 2.48);
+    const [fx, fy] = toPx(u, XMIN, YMAX), fw = (XMAX - XMIN) * u, fh = (YMAX - YMIN) * u;
+    g.fillStyle = felt; g.fillRect(fx, fy, fw, fh);
+    const vg = g.createRadialGradient(fx + fw / 2, fy + fh / 2, fh * 0.15, fx + fw / 2, fy + fh / 2, fw * 0.62);
+    vg.addColorStop(0, 'rgba(255,255,255,0.07)'); vg.addColorStop(1, 'rgba(0,0,0,0.22)');
+    g.fillStyle = vg; g.fillRect(fx, fy, fw, fh);
   };
-  const POCKETS = [[-10, 0], [0, 0], [10, 0], [-10, 10], [0, 10], [10, 10]];
-  const BUTTON = { x:5, y:5 }, RINGS = [3.6, 2.4, 1.2, 0.3], HOG = -1, TEE = 5, BACK = 8.6, DELIVERY = -8;
-  function iceSurface(ctx, u){
-    const Wp = u * 22, Hp = u * 12;
-    ctx.fillStyle = '#21303a'; ctx.fillRect(0, 0, Wp, Hp);
-    const [fx, fy] = toPx(u, -W, H);
-    ctx.fillStyle = '#e8f1f5'; ctx.fillRect(fx, fy, 20 * u, 10 * u);
+  const POCKETS = [[-20, 0], [0, 0], [20, 0], [-20, 20], [0, 20], [20, 20]];
+  const BUTTON = { x:10, y:10 }, RINGS = [7.2, 4.8, 2.4, 0.6], HOG = -2, TEE = 10, BACK = 17.2, DELIVERY = -16;
+  function iceSurface(g, u){
+    const Wp = u * VW, Hp = u * VH;
+    g.fillStyle = '#21303a'; g.fillRect(0, 0, Wp, Hp);
+    const [fx, fy] = toPx(u, XMIN, YMAX);
+    g.fillStyle = '#e8f1f5'; g.fillRect(fx, fy, (XMAX - XMIN) * u, (YMAX - YMIN) * u);
     const [bx, by] = toPx(u, BUTTON.x, BUTTON.y);
-    ['#2f6fb3', '#f7fafc', '#c8323a', '#f7fafc'].forEach((c, i) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(bx, by, RINGS[i] * u, 0, Math.PI * 2); ctx.fill(); });
-    const thin = Math.max(1, u * 0.04);
-    const vline = (x, color, w, dash) => { const [a] = toPx(u, x, 0); ctx.save(); ctx.setLineDash(dash || []); ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a, fy); ctx.lineTo(a, fy + 10 * u); ctx.stroke(); ctx.restore(); };
-    const [, cy] = toPx(u, 0, 5);
-    ctx.strokeStyle = '#4a6375'; ctx.lineWidth = thin; ctx.beginPath(); ctx.moveTo(fx, cy); ctx.lineTo(fx + 20 * u, cy); ctx.stroke();
-    vline(TEE, '#4a6375', thin);
-    vline(BACK, '#4a6375', thin);
-    vline(HOG, '#b0282f', Math.max(2, u * 0.14));
-    vline(DELIVERY, '#4a6375', thin, [u * 0.25, u * 0.2]);
+    ['#2f6fb3', '#f7fafc', '#c8323a', '#f7fafc'].forEach((c, i) => { g.fillStyle = c; g.beginPath(); g.arc(bx, by, RINGS[i] * u, 0, Math.PI * 2); g.fill(); });
   }
-  function drawGrid(ctx, u, pal){
-    const [fx, fy] = toPx(u, -W, H);
-    ctx.lineWidth = 1;
-    for (let x = -W; x <= W; x++){ ctx.strokeStyle = x === 0 ? pal.axis : pal.grid; const [a] = toPx(u, x, 0); ctx.beginPath(); ctx.moveTo(a, fy); ctx.lineTo(a, fy + 10 * u); ctx.stroke(); }
-    for (let y = 0; y <= H; y++){ ctx.strokeStyle = pal.grid; const [, b] = toPx(u, 0, y); ctx.beginPath(); ctx.moveTo(fx, b); ctx.lineTo(fx + 20 * u, b); ctx.stroke(); }
+  function iceLines(g, u){
+    const [fx, fy] = toPx(u, XMIN, YMAX), fh = (YMAX - YMIN) * u, thin = Math.max(1, u * 0.06);
+    const vline = (x, color, w, dash) => { const [a] = toPx(u, x, 0); g.save(); g.setLineDash(dash || []); g.strokeStyle = color; g.lineWidth = w; g.beginPath(); g.moveTo(a, fy); g.lineTo(a, fy + fh); g.stroke(); g.restore(); };
+    const [, cy] = toPx(u, 0, BUTTON.y);
+    g.strokeStyle = '#4a6375'; g.lineWidth = thin; g.beginPath(); g.moveTo(fx, cy); g.lineTo(fx + (XMAX - XMIN) * u, cy); g.stroke();
+    vline(TEE, '#4a6375', thin); vline(BACK, '#4a6375', thin);
+    vline(HOG, '#b0282f', Math.max(2, u * 0.22)); vline(DELIVERY, '#4a6375', thin, [u * 0.5, u * 0.4]);
   }
-  function drawLabels(ctx, u, pal){
-    const Wp = u * 22, Hp = u * 12;
-    ctx.fillStyle = pal.label; ctx.font = `600 ${Math.max(9, u * 0.36)}px "IBM Plex Mono", monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (let x = -8; x <= 8; x += 2){ const [a] = toPx(u, x, 0); ctx.fillText(x === 0 ? 'O' : String(x).replace('-', '−'), a, Hp - u * 0.45); }
-    ctx.textAlign = 'right';
-    for (let y = 2; y <= 8; y += 2){ const [, b] = toPx(u, 0, y); ctx.fillText(String(y), u * 0.85, b); }
-    ctx.textAlign = 'left'; ctx.fillText('x', Wp - u * 0.7, Hp - u * 0.45);
-    ctx.textAlign = 'center'; ctx.fillText('y', toPx(u, 0.9, 0)[0], u * 0.45);
-  }
-  function strokeLine(ctx, u, p, d, color, dash, width){
-    const [x1, y1] = toPx(u, p.x - d.x * 60, p.y - d.y * 60), [x2, y2] = toPx(u, p.x + d.x * 60, p.y + d.y * 60);
-    ctx.save(); ctx.setLineDash(dash); ctx.strokeStyle = color; ctx.lineWidth = width;
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
-  }
-  function drawScene(ctx, u, game, bodies, ov){
-    game.surface(ctx, u);
-    const [fx, fy] = toPx(u, -W, H);
-    ctx.save(); ctx.beginPath(); ctx.rect(fx, fy, 20 * u, 10 * u); ctx.clip();
-    drawGrid(ctx, u, game.pal);
-    if (ov.line) strokeLine(ctx, u, ov.line.P, ov.line.d, game.pal.line, [], Math.max(2, u * 0.07));
-    if (ov.theory){
-      ctx.save(); ctx.setLineDash([u * 0.25, u * 0.2]); ctx.strokeStyle = game.pal.theory; ctx.lineWidth = Math.max(1.5, u * 0.045);
-      ctx.beginPath(); ov.theory.forEach((p, i) => { const [a, b] = toPx(u, p.x, p.y); if (i) ctx.lineTo(a, b); else ctx.moveTo(a, b); }); ctx.stroke(); ctx.restore();
+  function drawGrid(g, u, pal){
+    const [fx, fy] = toPx(u, XMIN, YMAX), fw = (XMAX - XMIN) * u, fh = (YMAX - YMIN) * u;
+    g.lineWidth = 1;
+    for (let x = XMIN; x <= XMAX; x++){
+      g.strokeStyle = x === 0 ? pal.axis : x % 5 === 0 ? pal.major : pal.grid;
+      const [a] = toPx(u, x, 0); g.beginPath(); g.moveTo(Math.round(a) + 0.5, fy); g.lineTo(Math.round(a) + 0.5, fy + fh); g.stroke();
     }
-    if (ov.preview) strokeLine(ctx, u, ov.preview.P, ov.preview.d, game.pal.preview, [u * 0.4, u * 0.25], Math.max(2, u * 0.06));
-    ctx.restore();
-    if (game.overGrid) game.overGrid(ctx, u);
-    drawLabels(ctx, u, game.pal);
-    for (const b of bodies) if (!b.gone) game.drawBody(ctx, u, b, game.R);
+    for (let y = YMIN; y <= YMAX; y++){
+      g.strokeStyle = y % 5 === 0 ? pal.major : pal.grid;
+      const [, b] = toPx(u, 0, y); g.beginPath(); g.moveTo(fx, Math.round(b) + 0.5); g.lineTo(fx + fw, Math.round(b) + 0.5); g.stroke();
+    }
+  }
+  function drawLabels(g, u, pal){
+    const Hp = u * VH;
+    g.fillStyle = pal.label; g.font = `600 ${Math.max(9, u * 0.62)}px "IBM Plex Mono", monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (let x = -15; x <= 15; x += 5){ const [a] = toPx(u, x, 0); g.fillText(x === 0 ? 'O' : String(x).replace('-', '−'), a, Hp - u * 0.85); }
+    g.textAlign = 'right';
+    for (let y = 5; y <= 15; y += 5){ const [, b] = toPx(u, 0, y); g.fillText(String(y), u * 1.6, b); }
+    g.textAlign = 'center';
+    g.fillText('x', u * (VW - 0.9), Hp - u * 0.85);
+    g.fillText('y', toPx(u, 1.6, 0)[0], u * 0.85);
+  }
+  function paintStatic(g, u, game){
+    game.surface(g, u);
+    const [fx, fy] = toPx(u, XMIN, YMAX);
+    g.save(); g.beginPath(); g.rect(fx, fy, (XMAX - XMIN) * u, (YMAX - YMIN) * u); g.clip();
+    drawGrid(g, u, game.pal);
+    if (game.key === 'curling') iceLines(g, u);
+    g.restore();
+    if (game.overGrid) game.overGrid(g, u);
+    drawLabels(g, u, game.pal);
+  }
+  function strokeLine(g, u, p, d, color, dash, width){
+    const [x1, y1] = toPx(u, p.x - d.x * 120, p.y - d.y * 120), [x2, y2] = toPx(u, p.x + d.x * 120, p.y + d.y * 120);
+    g.save(); g.setLineDash(dash); g.strokeStyle = color; g.lineWidth = width;
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.restore();
+  }
+  function taper(g, x0, x1, w0, w1){ g.beginPath(); g.moveTo(x0, -w0); g.lineTo(x1, -w1); g.lineTo(x1, w1); g.lineTo(x0, w0); g.closePath(); g.fill(); }
+  // 큐대: 팁이 tip(세계 좌표)에, 몸통은 −d 쪽으로
+  function drawCue(g, u, tip, d, alpha = 1){
+    const len = 17, [tx, ty] = toPx(u, tip.x, tip.y), [bx, by] = toPx(u, tip.x - d.x * len, tip.y - d.y * len);
+    const L = Math.hypot(bx - tx, by - ty);
+    g.save(); g.globalAlpha = alpha; g.translate(tx, ty); g.rotate(Math.atan2(by - ty, bx - tx));
+    g.save(); g.translate(u * 0.18, u * 0.3); g.fillStyle = 'rgba(0,0,0,0.25)'; taper(g, 0, L, u * 0.13, u * 0.3); g.restore();
+    const gr = g.createLinearGradient(0, 0, L, 0);
+    gr.addColorStop(0, '#f6e7c6'); gr.addColorStop(0.55, '#d8b07a'); gr.addColorStop(0.56, '#2f190c'); gr.addColorStop(0.6, '#8a4a22');
+    gr.addColorStop(0.75, '#5a2c12'); gr.addColorStop(0.76, '#e9d9a8'); gr.addColorStop(0.78, '#5a2c12'); gr.addColorStop(1, '#22110a');
+    g.fillStyle = gr; taper(g, 0, L, u * 0.13, u * 0.3);
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(u * 0.6, -u * 0.05, L * 0.5, u * 0.04);
+    g.fillStyle = '#fbfaf3'; taper(g, 0, u * 0.7, u * 0.13, u * 0.135);
+    g.fillStyle = '#2f62c9'; g.fillRect(0, -u * 0.13, u * 0.16, u * 0.26);
+    g.restore();
   }
 
-  /* ---------- games ---------- */
-  const FELT_PAL = { grid:'rgba(255,255,255,0.11)', axis:'rgba(255,255,255,0.4)', label:'#f2e3c8', line:'#ffb547', theory:'rgba(255,255,255,0.82)', preview:'rgba(255,181,71,0.8)' };
-  const ICE_PAL = { grid:'rgba(22,52,82,0.15)', axis:'rgba(22,52,82,0.45)', label:'#dfe8ee', line:'#d9480f', theory:'rgba(18,40,62,0.75)', preview:'rgba(217,72,15,0.75)' };
+  /* ================= games ================= */
+  const FELT_PAL = { grid:'rgba(255,255,255,0.07)', major:'rgba(255,255,255,0.17)', axis:'rgba(255,255,255,0.45)', label:'#f2e3c8', line:'#ffb547', theory:'rgba(255,255,255,0.82)', preview:'rgba(255,181,71,0.8)' };
+  const ICE_PAL = { grid:'rgba(22,52,82,0.08)', major:'rgba(22,52,82,0.18)', axis:'rgba(22,52,82,0.45)', label:'#dfe8ee', line:'#d9480f', theory:'rgba(18,40,62,0.75)', preview:'rgba(217,72,15,0.75)' };
   const WHITE = '#fbfaf3', YELLOW = '#f2c230', RED = '#d23b3b', BLUE = '#2f5fd0', PURPLE = '#7b3fb0', ORANGE = '#e8761c';
   const SPIN_RULE = '직선이 공 중심에서 비껴가면 좌우 스핀이 걸려 쿠션에서 튕기는 각도가 달라집니다. 점선은 스핀이 없을 때의 경로입니다.';
   const SHARED_RULES = [
-    'x 증가량과 y 증가량으로 기울기와 방향을 정하고, y절편으로 직선의 위치를 정합니다. 증가량의 부호 방향으로 나아갑니다.',
-    '세기 = (x 증가량)² + (y 증가량)². 막히는 것이 없으면 0.8 × 세기만큼 미끄러집니다. 증가량은 각각 −6부터 6까지입니다.',
-    'x = a 꼴은 x 증가량 0, y 증가량에 세기를 넣고 a 값을 입력합니다. y = b 꼴은 y 증가량 0, x 증가량에 세기를 넣고 b 값을 입력합니다.',
-    '절편은 정수 · 소수 · 분수(7/3, −7/3)로 입력할 수 있습니다.',
-    '직선이 중심을 지나면 정타, 반지름 0.3 안에서 비껴가면 회전이 걸리고, 그보다 멀면 헛스윙입니다. 실제로는 입력한 직선과 평행한 직선 위에서 출발합니다.',
-    '가끔 찬스 풍선이 떠다닙니다. 눌러서 문제를 맞히면 찬스가 쌓입니다. x절편 찬스는 y절편 대신 x절편을 입력하고, 좌표 찬스는 좌표를 알려 주어 기울기만 입력하면 됩니다.'
+    '테이블은 x가 −20부터 20, y가 0부터 20까지입니다. 격자 한 칸이 1, 굵은 선은 5칸마다, 공의 반지름은 0.6입니다.',
+    'x 증가량과 y 증가량(각각 −12 ~ 12, 소수 둘째 자리까지)으로 기울기와 방향을 정합니다. 증가량의 부호 방향으로 나아갑니다. ±1 · ±0.1 단추는 누르고 있으면 계속 바뀝니다.',
+    '세기 = (x 증가량)² + (y 증가량)². 막히는 것이 없으면 세기 ÷ 2 만큼 미끄러집니다. 그래서 x 증가량 10, y 증가량 1.2 처럼 완만하게 칠 수도 있고, 5와 0.6처럼 같은 기울기를 약하게 칠 수도 있습니다.',
+    'y절편으로 직선의 위치를 정합니다(정수 · 소수 · 분수 7/3). x = a 꼴은 x 증가량 0, y 증가량에 세기를 넣고 a 값을, y = b 꼴은 y 증가량 0, x 증가량에 세기를 넣고 b 값을 입력합니다.',
+    '직선이 공 중심을 지나면 정타, 반지름 0.6 안에서 비껴가면 회전(스핀)이 걸리고, 그보다 멀면 헛스윙입니다. 공은 입력한 직선과 평행한(공 중심을 지나는) 직선 위에서 출발합니다.',
+    '절편 찬스: 경기장 위를 떠다니는 금빛 구슬을 눌러 문제를 맞히면 하나 쌓입니다. 쓸 때 x절편 · y절편 중에서 고르면, 지금 기울기로 공 중심을 지나는 절편을 계산 과정과 함께 채워 줍니다.',
+    '예측 난이도: 타점(큐 → 내 공)은 공 좌표 · 기울기 · 절편 계산이 얼마나 까다로운지, 목표(내 공 → 목표)는 거리 · 쿠션 · 맞는 두께로 매깁니다. 성공하면 두 난이도를 합친 만큼 효과와 소리가 커집니다.'
   ];
-  const TWO_RULE = '둘이 할 때 찬스는 각자 따로 모읍니다. 풍선을 잡은 사람의 찬스로 쌓입니다.';
+  const TWO_RULE = '둘이 할 때 절편 찬스는 각자 따로 모읍니다. 구슬을 잡은 사람의 찬스로 쌓입니다.';
+
+  // 목표 난이도 — 내 공이 처음 닿는 공까지의 거리 · 쿠션 · 두께
+  function rateContact(first){
+    let p = 0; const notes = [];
+    const L = first.L;
+    if (L > 22){ p += 2; notes.push(`멀다 ${fmt(L, 0)}칸`); } else if (L > 10){ p += 1; notes.push(`거리 ${fmt(L, 0)}칸`); } else notes.push(`가깝다 ${fmt(L, 0)}칸`);
+    if (first.c){ p += Math.min(2, first.c); notes.push(`쿠션 ${first.c}번`); }
+    if (first.t > 0.8){ p += 2; notes.push('아주 얇게'); } else if (first.t > 0.5){ p += 1; notes.push('얇게'); } else notes.push(first.t < 0.25 ? '두껍게' : '반쯤');
+    return { p, notes };
+  }
 
   const GAMES = {
     pool: {
-      key:'pool', name:'포켓볼', noun:'공', R:0.3, PR:0.62, decel:3.2, rest:0.88, ballRest:0.95, contactSpin:0.3,
-      wall:'bounce', pockets:POCKETS, spinCushion:0.32, curl:0, defaults:{ dx:3, dy:2 }, pal:FELT_PAL,
+      key:'pool', name:'포켓볼', noun:'공', R:0.6, PR:1.24, decel:6.4, rest:0.88, ballRest:0.95, contactSpin:0.3,
+      wall:'bounce', pockets:POCKETS, spinCushion:0.32, curl:0, defaults:{ dx:6, dy:4 }, pal:FELT_PAL,
       surface:billiardSurface('#1f6a4c', '#4b2f1d', '#6a4329'), drawBody:drawBall,
       cap(){ return st.players === 2 ? 30 : 12; },
       tag(){ return ''; },
       color(i){ return i ? '#2f6fd0' : '#e05a2b'; },
-      rulesBase:['아래쪽 중간 구멍이 원점 O입니다. 테이블은 x가 −10부터 10, y가 0부터 10까지이고 격자 한 칸이 1입니다.', '흰 공이 구멍에 빠지면 (0, 2.5) 근처에 다시 놓습니다.', SPIN_RULE],
+      rulesBase:['아래쪽 중간 구멍이 원점 O입니다.', '흰 공이 구멍에 빠지면 (0, 5) 근처에 다시 놓습니다.', SPIN_RULE],
       rules1:['목표 공(1, 2, 3번) 3개를 12번 안에 모두 넣으면 승리입니다.'],
       rules2:['목표 공은 5개입니다. 공을 넣으면 한 번 더 치고, 못 넣거나 흰 공이 빠지면 차례가 넘어갑니다.', '넣은 공 1개가 1점입니다. 공을 모두 넣거나 합계 30샷이 되면 끝나고, 점수가 높은 사람이 이깁니다.'],
       setup(){
-        const cols = [YELLOW, BLUE, RED, PURPLE, ORANGE], n = st.players === 2 ? 5 : 3;
-        const b = [mk('cue', 'cue', -6, 3, WHITE)];
+        const step = LEVELS[st.level].place, cols = [YELLOW, BLUE, RED, PURPLE, ORANGE], n = st.players === 2 ? 5 : 3;
+        const b = [mk('cue', 'cue', -12, 6, WHITE)];
         scatter(b, cols.slice(0, n).map((c, i) => ({ id:'t' + (i + 1), kind:'target', color:c, extra:{ label:String(i + 1) } })),
-          { x0:-8, x1:8, y0:1.5, y1:8.5, gap:1.6 }, (x, y) => POCKETS.some(p => Math.hypot(p[0] - x, p[1] - y) < 2));
+          { x0:-16, x1:16, y0:3, y1:17, gap:3.2, step }, (x, y) => POCKETS.some(p => Math.hypot(p[0] - x, p[1] - y) < 4));
         st.bodies = b; st.shooter = b[0]; st.shooters = [b[0]];
       },
-      overGrid(ctx, u){ ctx.fillStyle = '#070a0b'; for (const [x, y] of POCKETS){ const [a, c] = toPx(u, x, y); ctx.beginPath(); ctx.arc(a, c, 0.62 * u, 0, Math.PI * 2); ctx.fill(); } },
+      overGrid(g, u){
+        for (const [x, y] of POCKETS){
+          const [a, c] = toPx(u, x, y), r = 1.24 * u, gr = g.createRadialGradient(a, c, r * 0.2, a, c, r);
+          gr.addColorStop(0, '#000'); gr.addColorStop(0.8, '#0b0d0e'); gr.addColorStop(1, '#2b1a10');
+          g.fillStyle = gr; g.beginPath(); g.arc(a, c, r, 0, Math.PI * 2); g.fill();
+        }
+      },
       left(){ return st.bodies.filter(b => b.kind === 'target' && !b.gone).length; },
+      rate(first){
+        const o = st.bodies.find(b => b.id === first.id);
+        if (!o || o.kind !== 'target') return null;
+        const r = rateContact(first);
+        return { stars:clamp(1 + r.p, 1, 5), who:`${whoName()} → ${o.label}번 공`, notes:r.notes };
+      },
       afterShot(lines){
         const cue = st.shooter; let scratch = false;
         if (cue.gone){
-          const [x, y] = freeSpot(cue, [[0, 2.5], [2, 2.5], [-2, 2.5], [0, 5], [4, 5], [-4, 5]]);
-          Object.assign(cue, { gone:false, x, y, vx:0, vy:0, spin:0 });
+          const [x, y] = freeSpot(cue, [[0, 5], [4, 5], [-4, 5], [0, 10], [8, 10], [-8, 10]]);
+          Object.assign(cue, { gone:false, x, y, vx:0, vy:0, spin:0, trail:[] }); delete cue.sink;
           scratch = true;
           lines.push('<span class="no">흰 공이 빠져서 다시 놓았어요.</span>');
+          Snd.play('out');
         }
         const pots = st.ev.pocketed.filter(id => id !== 'cue').length;
         if (pots){
           st.pts[st.last.player] += pots;
           lines.push(`<span class="ok">목표 공 ${pots}개 성공${st.players === 2 ? ` · ${PNAME(st.last.player)} +${pots}점` : ''}</span>`);
+          if (!scratch) st.success = successTier(pots >= 2 ? 1 : 0, st.ev.lastPocket || st.shooter);
         }
         return scratch || !pots;
       },
@@ -487,39 +782,51 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
         if (st.shots >= G.cap()) return `<b class="no">샷을 모두 썼어요. 남은 공 ${left}개.</b> 새 게임으로 다시 도전하세요.`;
         return null;
       },
-      intro(){ return st.players === 2 ? '1P부터 쳐요. 흰 공은 (−6, 3)에 있어요.' : '흰 공은 (−6, 3)에 있어요.'; },
-      sample(){ return { bodies:[mk('c', 'cue', -6, 3, WHITE), mk('a', 't', 3, 6, YELLOW, { label:'1' }), mk('b', 't', 6, 2, BLUE, { label:'2' }), mk('d', 't', -3, 7.5, RED, { label:'3' })], ov:{ line:{ P:{ x:0, y:5 }, d:norm(3, 1) } } }; }
+      intro(){ return st.players === 2 ? '1P부터 쳐요. 흰 공은 (−12, 6)에 있어요.' : '흰 공은 (−12, 6)에 있어요.'; },
+      sample(){ return { bodies:[mk('c', 'cue', -12, 6, WHITE), mk('a', 't', 6, 12, YELLOW, { label:'1' }), mk('b', 't', 12, 4, BLUE, { label:'2' }), mk('d', 't', -6, 15, RED, { label:'3' })], line:{ P:{ x:0, y:10 }, d:norm(3, 1) } }; }
     },
 
     carom: {
-      key:'carom', name:'사구', noun:'공', R:0.3, decel:3.2, rest:0.88, ballRest:0.95, contactSpin:0.3,
-      wall:'bounce', pockets:null, spinCushion:0.32, curl:0, goal:3, defaults:{ dx:3, dy:1 }, pal:FELT_PAL,
+      key:'carom', name:'사구', noun:'공', R:0.6, decel:6.4, rest:0.88, ballRest:0.95, contactSpin:0.3,
+      wall:'bounce', pockets:null, spinCushion:0.32, curl:0, goal:3, defaults:{ dx:6, dy:2 }, pal:FELT_PAL,
       surface:billiardSurface('#1d5a8c', '#3d2618', '#5b3a24'), drawBody:drawBall,
       cap(){ return st.players === 2 ? 40 : 15; },
       tag(i){ return i ? '노란 공' : '흰 공'; },
       color(i){ return i ? YELLOW : WHITE; },
-      rulesBase:['구멍이 없는 사구 테이블입니다. 아래쪽 쿠션의 가운데가 원점 O이고, 격자 한 칸이 1입니다.', '빨간 공 2개가 목표입니다. 한 번의 샷에서 내 공이 빨간 공 2개를 모두 맞히면 1점, 상대 공에 닿으면 파울로 1점을 잃습니다.', SPIN_RULE],
+      rulesBase:['구멍이 없는 사구 테이블입니다. 아래쪽 쿠션의 가운데가 원점 O입니다. 쿠션의 점은 5칸마다 있습니다.', '빨간 공 2개가 목표입니다. 한 번의 샷에서 내 공이 빨간 공 2개를 모두 맞히면 1점, 상대 공에 닿으면 파울로 1점을 잃습니다.', SPIN_RULE],
       rules1:['흰 공이 내 공, 노란 공이 상대 공입니다. 15번 안에 3점을 내면 승리입니다.'],
       rules2:['1P는 흰 공, 2P는 노란 공을 칩니다. 득점하면 한 번 더 치고, 그렇지 않으면 차례가 넘어갑니다.', '먼저 3점을 내면 이깁니다. 합계 40샷이 되면 점수로 정합니다.'],
       setup(){
+        const step = LEVELS[st.level].place;
         const b = scatter([], [{ id:'cue', kind:'cue', color:WHITE }, { id:'y', kind:'yellow', color:YELLOW }, { id:'r1', kind:'red', color:RED }, { id:'r2', kind:'red', color:RED }],
-          { x0:-8.5, x1:8.5, y0:1, y1:9, gap:1.8 });
+          { x0:-17, x1:17, y0:2, y1:18, gap:3.6, step });
         const white = b.find(o => o.id === 'cue'), yellow = b.find(o => o.id === 'y');
         st.bodies = b; st.shooter = white; st.shooters = st.players === 2 ? [white, yellow] : [white];
       },
-      overGrid(ctx, u){
-        ctx.fillStyle = '#f4ead6';
-        const dia = (x, y) => { const [a, b] = toPx(u, x, y), s = Math.max(2, u * 0.1); ctx.beginPath(); ctx.moveTo(a, b - s); ctx.lineTo(a + s, b); ctx.lineTo(a, b + s); ctx.lineTo(a - s, b); ctx.closePath(); ctx.fill(); };
-        for (let x = -8; x <= 8; x += 2){ dia(x, 10.45); dia(x, -0.2); }
-        for (let y = 2; y <= 8; y += 2) dia(10.45, y);
+      overGrid(g, u){
+        g.fillStyle = '#f4ead6';
+        const dia = (x, y) => { const [a, b] = toPx(u, x, y), s = Math.max(2, u * 0.18); g.beginPath(); g.moveTo(a, b - s); g.lineTo(a + s, b); g.lineTo(a, b + s); g.lineTo(a - s, b); g.closePath(); g.fill(); };
+        for (let x = -15; x <= 15; x += 5){ dia(x, YMAX + 0.45); dia(x, YMIN - 0.45); }
+        for (let y = 5; y <= 15; y += 5) dia(XMAX + 0.45, y);
+      },
+      rate(first){
+        const opp = st.shooter.id === 'cue' ? 'y' : 'cue', r = rateContact(first);
+        if (first.id === opp) return { stars:clamp(1 + r.p, 1, 5), who:`${whoName()} → ${opp === 'y' ? '노란 공' : '흰 공'}`, notes:['상대 공에 먼저 닿아요(파울 위험)', ...r.notes] };
+        const reds = st.bodies.filter(b => b.kind === 'red' && !b.gone);
+        if (reds.length === 2 && Math.hypot(reds[0].x - reds[1].x, reds[0].y - reds[1].y) > 16){ r.p += 1; r.notes.push('두 빨간 공이 멀다'); }
+        return { stars:clamp(1 + r.p, 1, 5), who:`${whoName()} → 빨간 공`, notes:r.notes };
       },
       afterShot(lines){
         const me = st.last.player;
         if (st.last.miss){ lines.push('<span>헛스윙이라 점수 변화가 없어요.</span>'); return true; }
         const c = st.ev.contacts, reds = ['r1', 'r2'].filter(id => c.has(id)).length;
         const oppId = st.last.body.id === 'cue' ? 'y' : 'cue', oppName = oppId === 'y' ? '노란 공' : '흰 공';
-        if (c.has(oppId)){ st.pts[me]--; lines.push(`<span class="no">${oppName}(상대 공)에 닿아 파울: −1점</span>`); return true; }
-        if (reds === 2){ st.pts[me]++; lines.push('<span class="ok">빨간 공 2개를 모두 맞혀 득점: +1점</span>'); return false; }
+        if (c.has(oppId)){ st.pts[me]--; lines.push(`<span class="no">${oppName}(상대 공)에 닿아 파울: −1점</span>`); Snd.play('out'); return true; }
+        if (reds === 2){
+          st.pts[me]++; lines.push('<span class="ok">빨간 공 2개를 모두 맞혀 득점: +1점</span>');
+          st.success = successTier(0, st.ev.carom || st.shooter);
+          return false;
+        }
         lines.push(reds === 1 ? '<span>빨간 공을 1개만 맞혔어요.</span>' : '<span>아무 공도 맞히지 못했어요.</span>');
         return true;
       },
@@ -535,57 +842,78 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
         if (st.shots >= G.cap()) return `<b class="no">샷을 모두 썼어요. 최종 ${fmt(st.pts[0])}점.</b> 새 게임으로 다시 도전하세요.`;
         return null;
       },
-      intro(){ const c = st.shooter; return st.players === 2 ? `1P(흰 공)부터 쳐요. 흰 공은 (${fmt(c.x)}, ${fmt(c.y)})에 있어요.` : `흰 공은 (${fmt(c.x)}, ${fmt(c.y)})에 있어요.`; },
-      sample(){ return { bodies:[mk('c', 'cue', -6, 2, WHITE), mk('a', 'red', -1, 4.5, RED), mk('b', 'red', 5, 7, RED), mk('d', 'yellow', 3, 2, YELLOW)], ov:{ line:{ P:{ x:0, y:5 }, d:norm(2, 1) } } }; }
+      intro(){ const c = st.shooter; return `${st.players === 2 ? '1P(흰 공)부터 쳐요. ' : ''}흰 공은 (${fmt(c.x)}, ${fmt(c.y)})에 있어요.`; },
+      sample(){ return { bodies:[mk('c', 'cue', -12, 4, WHITE), mk('a', 'red', -2, 9, RED), mk('b', 'red', 10, 14, RED), mk('d', 'yellow', 6, 4, YELLOW)], line:{ P:{ x:0, y:10 }, d:norm(2, 1) } }; }
     },
 
     curling: {
-      key:'curling', name:'컬링', noun:'스톤', R:0.3, decel:1.6, rest:0, ballRest:0.85, contactSpin:0.5,
-      wall:'remove', pockets:null, spinCushion:0, curl:1.2, defaults:{ dx:4, dy:0 }, pal:ICE_PAL,
+      key:'curling', name:'컬링', noun:'스톤', R:0.6, decel:3.2, rest:0, ballRest:0.85, contactSpin:0.5,
+      wall:'remove', pockets:null, spinCushion:0, curl:2.4, curlScale:2, defaults:{ dx:7.2, dy:0 }, pal:ICE_PAL,
       surface:iceSurface, drawBody:drawStone,
       cap(){ return st.players === 2 ? 8 : 6; },
       tag(i){ return i ? '노란 스톤' : '빨간 스톤'; },
       color(i){ return i ? YELLOW : RED; },
       rulesBase:[
-        '아래쪽 사이드 라인의 가운데가 원점 O입니다. 하우스 중심(버튼)은 (5, 5)이고, 격자 한 칸이 1입니다.',
-        '매 투구마다 스톤이 투구선(x = −8) 위 어딘가에 놓입니다.',
+        '아래쪽 사이드 라인의 가운데가 원점 O입니다. 하우스 중심(버튼)은 (10, 10), 하우스 반지름은 7.2입니다.',
+        '매 투구마다 스톤이 투구선(x = −16) 위 어딘가에 놓입니다. 버튼까지 26칸 — 세기 52(예: x 증가량 7.2)면 버튼 언저리에 멈춥니다.',
         '직선이 스톤 중심을 지나면 똑바로 갑니다. 진행 방향 기준으로 중심의 오른쪽을 지나면 시계 방향으로 회전해 오른쪽으로, 왼쪽을 지나면 반시계 방향으로 회전해 왼쪽으로 휩니다. 느려질수록 더 많이 휩니다. 점선은 회전이 없을 때의 경로입니다.',
-        '호그 라인(x = −1)을 완전히 넘지 못한 스톤(다른 스톤을 맞히지 않은 경우), 사이드 라인에 닿은 스톤, 백 라인을 완전히 넘은 스톤은 제거됩니다.',
+        '호그 라인(x = −2)을 완전히 넘지 못한 스톤(다른 스톤을 맞히지 않은 경우), 사이드 라인에 닿은 스톤, 백 라인(x = 17.2)을 완전히 넘은 스톤은 제거됩니다.',
         '모두 던진 뒤 버튼에 가장 가까운 스톤의 주인이, 상대의 가장 가까운 스톤보다 안쪽에 있는 자기 스톤 수만큼 득점합니다. 하우스에 닿아 있는 스톤만 셉니다.'
       ],
       rules1:['상대 스톤 2개가 미리 놓여 있고, 내 스톤 6개를 던집니다.'],
       rules2:['1P는 빨간 스톤, 2P는 노란 스톤을 4개씩 번갈아 던집니다. 마지막 스톤은 2P가 던집니다.'],
       setup(){
-        const b = [];
+        const b = [], step = LEVELS[st.level].place;
         if (st.players === 1){
-          b.push(mk('o1', 'stone', pick([-0.5, 0, 0.5]), pick([4, 4.5, 5, 5.5, 6]), YELLOW, { team:1 }));
-          for (let t = 0; t < 300; t++){
-            const x = half(3, 7.5), y = half(3, 7), d = Math.hypot(x - BUTTON.x, y - BUTTON.y);
-            if (d < 0.8 || d > 2.4) continue;
+          b.push(mk('o1', 'stone', pick([-2, -1, 0, 1, 2]), onGrid(8, 12, 1), YELLOW, { team:1 }));
+          for (let t = 0; t < 400; t++){
+            const x = onGrid(6, 15, step), y = onGrid(6, 14, step), d = Math.hypot(x - BUTTON.x, y - BUTTON.y);
+            if (d < 1.6 || d > 4.8) continue;
             b.push(mk('o2', 'stone', x, y, YELLOW, { team:1 })); break;
           }
         }
         st.bodies = b; st.shooters = []; spawnStone(0);
       },
-      overGrid(ctx, u){
-        ctx.fillStyle = ICE_PAL.label; ctx.font = `500 ${Math.max(9, u * 0.3)}px ${getComputedStyle(document.body).fontFamily}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        [[DELIVERY, '투구선'], [HOG, '호그 라인'], [TEE, '티 라인'], [BACK, '백 라인']].forEach(([x, t]) => ctx.fillText(t, toPx(u, x, 0)[0], u * 0.5));
+      overGrid(g, u){
+        g.fillStyle = ICE_PAL.label; g.font = `500 ${Math.max(9, u * 0.55)}px ${CANVAS_BODY}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+        [[DELIVERY, '투구선'], [HOG, '호그 라인'], [TEE, '티 라인'], [BACK, '백 라인']].forEach(([x, t]) => g.fillText(t, toPx(u, x, 0)[0], u * 0.85));
       },
       house(){
         const lim = RINGS[0] + G.R;
         const list = st.bodies.filter(b => !b.gone && !b.waiting)
           .map(b => ({ b, d:Math.hypot(b.x - BUTTON.x, b.y - BUTTON.y) })).filter(o => o.d <= lim).sort((p, q) => p.d - q.d);
-        if (!list.length) return { lead:null, pts:0 };
+        if (!list.length) return { lead:null, pts:0, list };
         const lead = list[0].b.team, cut = list.find(o => o.b.team !== lead);
-        return { lead, pts:list.filter(o => o.b.team === lead && (!cut || o.d < cut.d)).length };
+        return { lead, pts:list.filter(o => o.b.team === lead && (!cut || o.d < cut.d)).length, list };
+      },
+      // 목표 난이도(판의 형세): 버튼에서 상대 스톤이 얼마나 가까운가 · 가드가 길을 막는가
+      layout(){
+        const s = st.shooter, me = s.team, R = G.R, lim = RINGS[0] + R;
+        const live = st.bodies.filter(b => !b.gone && !b.waiting && b !== s);
+        const opp = live.filter(b => b.team !== me).map(b => ({ b, d:Math.hypot(b.x - BUTTON.x, b.y - BUTTON.y) })).filter(o => o.d <= lim).sort((a, b) => a.d - b.d);
+        let p = 0; const notes = [];
+        if (opp.length){ const dm = opp[0].d; p += dm < 1.2 ? 3 : dm < 2.4 ? 2 : dm < 4.8 ? 1 : 0; notes.push(`상대 스톤이 버튼에서 ${fmt(dm, 1)}칸`); }
+        else notes.push('하우스에 상대 스톤 없음');
+        const gx = BUTTON.x - s.x, gy = BUTTON.y - s.y, gl2 = gx * gx + gy * gy;
+        const guards = live.filter(o => {
+          const t = ((o.x - s.x) * gx + (o.y - s.y) * gy) / gl2; if (t <= 0 || t >= 1) return false;
+          return Math.hypot(o.x - (s.x + gx * t), o.y - (s.y + gy * t)) < 2 * R + 0.1 && Math.hypot(o.x - BUTTON.x, o.y - BUTTON.y) > lim;
+        });
+        if (guards.length){ p += 1; notes.push(`가드 ${guards.length}개가 버튼 길을 막음`); }
+        return { stars:clamp(1 + p, 1, 5), who:'스톤 → 버튼', notes };
       },
       afterShot(lines){
         const s = st.last.body;
         if (st.last.miss){ s.gone = true; lines.push('<span class="no">스톤을 놓쳐서 이 투구는 무효예요.</span>'); }
-        else if (!s.gone && s.x - G.R <= HOG && !st.ev.contacts.size){ s.gone = true; lines.push('<span class="no">호그 라인을 완전히 넘지 못해 제거됐어요.</span>'); }
+        else if (!s.gone && s.x - G.R <= HOG && !st.ev.contacts.size){ s.gone = true; lines.push('<span class="no">호그 라인을 완전히 넘지 못해 제거됐어요.</span>'); Snd.play('out'); popText(s.x, s.y + 1.8, '호그 라인', { color:'#ffb4a8', size:18 }); }
         for (const r of st.ev.removed) lines.push(`<span class="no">${stoneName(r.b)}: ${r.why}</span>`);
         const h = G.house();
         lines.push(`<span>${h.lead === null ? '하우스에 스톤이 없어요.' : `지금 버튼에 가장 가까운 스톤: ${teamName(h.lead)} (${h.pts}개 앞섬)`}</span>`);
+        if (!s.gone && !st.last.miss){
+          const inHouse = h.list.some(o => o.b === s), shot = h.list.length && h.list[0].b === s;
+          if (shot) st.success = successTier(0, s);
+          else if (inHouse) st.success = { tier:1, at:s, info:'하우스 안', title:'하우스 안!' };
+        }
         return true;
       },
       prepareNext(){ if (st.shots < G.cap()) spawnStone(st.players === 2 ? st.turn : 0); },
@@ -597,10 +925,11 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
         if (st.players === 2) return `<b class="ok">${PNAME(h.lead)} 승리!</b> · ${h.pts}점 득점`;
         return h.lead === 0 ? `<b class="ok">승리! ${h.pts}점을 땄어요.</b>` : `<b class="no">상대가 ${h.pts}점을 가져갔어요.</b> 새 게임으로 다시 도전하세요.`;
       },
-      intro(){ return `${st.players === 2 ? '1P(빨간 스톤)부터 던져요. ' : ''}첫 스톤은 (−8, ${fmt(st.shooter.y)})에 있어요.`; },
-      sample(){ return { bodies:[mk('a', 'stone', 0, 4.5, YELLOW, { team:1 }), mk('b', 'stone', 5.7, 5.8, YELLOW, { team:1 }), mk('c', 'stone', 4.6, 4.6, RED, { team:0, label:'1' }), mk('d', 'stone', -8, 6, RED, { team:0, label:'2', waiting:true })], ov:{ line:{ P:{ x:0, y:6 }, d:{ x:1, y:0 } } } }; }
+      intro(){ return `${st.players === 2 ? '1P(빨간 스톤)부터 던져요. ' : ''}첫 스톤은 (−16, ${fmt(st.shooter.y)})에 있어요.`; },
+      sample(){ return { bodies:[mk('a', 'stone', 0, 9, YELLOW, { team:1 }), mk('b', 'stone', 11.4, 11.6, YELLOW, { team:1 }), mk('c', 'stone', 9.2, 9.2, RED, { team:0, label:'1' }), mk('d', 'stone', -16, 12, RED, { team:0, label:'2', waiting:true })], line:{ P:{ x:0, y:12 }, d:{ x:1, y:0 } } }; }
     }
   };
+  function norm(x, y){ const l = Math.hypot(x, y); return { x:x / l, y:y / l }; }
 
   const teamName = t => st.players === 2 ? PNAME(t) : (t === 0 ? '내 스톤' : '상대 스톤');
   const stoneName = b => st.players === 2 ? `${PNAME(b.team)} 스톤 ${b.label}` : (b.team === 0 ? `내 스톤 ${b.label}` : '상대 스톤');
@@ -610,126 +939,596 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
     return h.lead === 0 ? `내가 앞섬 +${h.pts}` : `상대가 앞섬 −${h.pts}`;
   }
   function spawnStone(team){
-    const n = st.thrown[team] + 1, R = G.R;
-    const ys = [2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5].sort(() => Math.random() - 0.5);
+    const n = st.thrown[team] + 1, R = G.R, step = LEVELS[st.level].spawn;
+    const ys = []; for (let y = 5; y <= 15 + 1e-9; y += step) ys.push(y);
+    ys.sort(() => Math.random() - 0.5);
     const y = ys.find(v => st.bodies.every(o => o.gone || Math.hypot(o.x - DELIVERY, o.y - v) > 2 * R + 0.1));
-    const s = mk(`s${team}-${n}`, 'stone', DELIVERY, y === undefined ? 5 : y, team ? YELLOW : RED, { team, label:String(n), waiting:true });
+    const s = mk(`s${team}-${n}`, 'stone', DELIVERY, y === undefined ? 10 : y, team ? YELLOW : RED, { team, label:String(n), waiting:true });
     st.bodies.push(s); st.shooter = s;
   }
 
-  /* ---------- line from inputs ---------- */
+  /* ================= line from inputs ================= */
   function computeLine(){
-    const { dx, dy, mode } = st;
+    const { dx, dy } = st;
     if (!dx && !dy) return { err:'x 증가량과 y 증가량이 모두 0이면 방향이 없어요.', power:0 };
-    const d = norm(dx, dy), power = dx * dx + dy * dy, s = st.shooter, who = whoName();
-    if (mode === 'coord'){
-      let eq;
-      if (dx === 0) eq = `x = ${fmt(s.x)}`; else if (dy === 0) eq = `y = ${fmt(s.y)}`; else eq = eqY(dx, dy, s.y - dy / dx * s.x);
-      return { d, P:{ x:s.x, y:s.y }, eq, sub:`${who} 중심을 지나는 직선 · 중심 (${fmt(s.x)}, ${fmt(s.y)})`, power };
+    const d = norm(dx, dy), power = dx * dx + dy * dy, s = st.shooter;
+    if (st.chance){
+      const P = { x:s.x, y:s.y }, X = fracText(s.x), Y = fracText(s.y);
+      const head = `${whoName()} 중심 (${X}, ${Y})`;
+      if (dx === 0) return { d, P, power, form:'x=a', eq:`x = ${X}`, sub:'y축에 평행한 직선', calc:`${head} → 세로선 x = ${X}` + (st.chance === 'y' ? ' (y절편이 없는 직선)' : '') };
+      if (dy === 0) return { d, P, power, form:'y=b', eq:`y = ${Y}`, sub:'x축에 평행한 직선', calc:`${head} → 가로선 y = ${Y}` + (st.chance === 'x' ? ' (x절편이 없는 직선)' : '') };
+      const m = slopeNum(dx, dy), b = s.y - m.v * s.x, bT = fracText(b);
+      if (st.chance === 'y') return { d, P, power, form:'y', eq:eqY(dx, dy, b), sub:`y절편 ${bT}`, calc:`${head}, 기울기 ${m.text}<br>b = ${Y} − ${paren(m.text)} × ${paren(X)} = ${bT}` };
+      const a = s.x - s.y / m.v, aT = fracText(a);
+      return { d, P, power, form:'x', eq:eqY(dx, dy, b), sub:`x절편 ${aT} → y절편 ${bT}`, calc:`${head}, 기울기 ${m.text}<br>x절편 = ${X} − ${Y} ÷ ${paren(m.text)} = ${aT}` };
     }
     const raw = $('icpt').value, n = parseIn(raw);
     const bad = raw.trim() ? '수로 읽을 수 없어요. 3, −1.5, 7/3 처럼 입력하세요.' : null;
-    if (mode === 'xint'){
-      if (dy === 0) return { err:'기울기가 0인 직선(y = b 꼴)은 x절편이 없어요. y 증가량을 0이 아닌 값으로 바꾸세요.', power };
-      if (!n) return { err:bad || 'x절편을 입력하세요.', power };
-      if (dx === 0) return { d, P:{ x:n.v, y:0 }, eq:`x = ${signed(n)}`, sub:`x절편 ${signed(n)}`, power };
-      const b = -dy / dx * n.v;
-      return { d, P:{ x:n.v, y:0 }, eq:eqY(dx, dy, b), sub:`x절편 ${signed(n)} → y절편 ${fmt(b)}`, power };
-    }
-    if (!n) return { err:bad || (dx === 0 ? 'x = a 의 a 값을 입력하세요.' : 'y절편을 입력하세요.'), power };
-    if (dx === 0) return { d, P:{ x:n.v, y:0 }, eq:`x = ${signed(n)}`, sub:'y축에 평행한 직선 · y 증가량이 세기', power };
-    if (dy === 0) return { d, P:{ x:0, y:n.v }, eq:`y = ${signed(n)}`, sub:'x축에 평행한 직선 · x 증가량이 세기', power };
-    return { d, P:{ x:0, y:n.v }, eq:eqY(dx, dy, n.v, n.text), sub:'', power };
+    if (!n) return { err:bad || (dx === 0 ? 'x = a 의 a 값을 입력하세요.' : 'y절편을 입력하세요.'), power, d };
+    if (dx === 0) return { d, P:{ x:n.v, y:0 }, power, form:'x=a', eq:`x = ${signed(n)}`, sub:'y축에 평행한 직선 · y 증가량이 세기' };
+    if (dy === 0) return { d, P:{ x:0, y:n.v }, power, form:'y=b', eq:`y = ${signed(n)}`, sub:'x축에 평행한 직선 · x 증가량이 세기' };
+    return { d, P:{ x:0, y:n.v }, power, form:'y', eq:eqY(dx, dy, n.v, n.text), sub:'' };
   }
 
-  /* ---------- UI ---------- */
-  const cv = $('cv'), ctx = cv.getContext('2d');
-  let unit = 40, dpr = 1;
+  /* ================= difficulty ================= */
+  function cueDifficulty(){
+    const s = st.shooter, who = G.key === 'curling' ? '투구 → 스톤' : `큐 → ${whoName()}`;
+    if (st.chance) return { stars:1, who, notes:['절편 찬스 — 계산을 채워 줘요'] };
+    const x0 = s.x, y0 = s.y, notes = [];
+    let p = 0;
+    const onInt = isInt(x0) && isInt(y0), onHalf = isInt(x0 * 2) && isInt(y0 * 2);
+    if (onInt) notes.push('공이 격자점에'); else if (onHalf){ p += 1; notes.push('공이 반 칸에'); } else { p += 2; notes.push('공 좌표를 눈으로 읽어야 함'); }
+    if (st.dx === 0 || st.dy === 0) notes.push(st.dx === 0 ? 'x = a 꼴 — 공의 x좌표 그대로' : 'y = b 꼴 — 공의 y좌표 그대로');
+    else {
+      const m = slopeNum(st.dx, st.dy), decimal = !isInt(st.dx) || !isInt(st.dy);
+      if (m.d === 1) notes.push('정수 기울기');
+      else if (decimal && 1000 % m.d === 0){ p += 1; notes.push('소수 기울기'); }
+      else if (m.d <= 5){ p += 1; notes.push('분수 기울기'); }
+      else { p += 2; notes.push('복잡한 분수 기울기'); }
+      if (onHalf){
+        const b = y0 - m.v * x0;
+        if (isInt(b)) notes.push('절편이 정수'); else if (isInt(b * 2)){ p += 0.5; notes.push('절편이 .5'); } else { p += 1; notes.push('절편이 분수 · 소수'); }
+      }
+      if (Math.abs(m.v * x0) > 30){ p += 0.5; notes.push('큰 수 곱셈'); }
+    }
+    return { stars:clamp(1 + Math.round(p), 1, 5), who, notes };
+  }
+  function cloneWorld(){
+    const bodies = st.bodies.filter(b => !b.gone).map(b => ({ id:b.id, kind:b.kind, x:b.x, y:b.y, vx:0, vy:0, spin:0, gone:false, team:b.team, waiting:b.waiting }));
+    return { bodies, shooter:bodies.find(b => b.id === st.shooter.id), ev:newEv() };
+  }
+  // 정타라고 치고(회전 없이) 이 방향 · 세기로 내 공이 처음 닿는 공을 미리 굴려 본다 — 입력한 절편은 쓰지 않는다
+  function dryFirst(d, power){
+    const W = cloneWorld(), s = W.shooter; if (!s) return null;
+    const v0 = Math.sqrt(2 * G.decel * DIST_K * power); s.vx = d.x * v0; s.vy = d.y * v0;
+    const dt = 1 / SUB_HZ;
+    for (let i = 0; i < SUB_HZ * 25; i++){
+      stepWorld(W, dt, false);
+      if (W.ev.first || s.gone || (!s.vx && !s.vy)) break;
+    }
+    return W.ev;
+  }
+  function predict(){
+    if (!G || !st.shooter) return null;
+    const L = computeLine(); if (L.err) return null;
+    const cue = cueDifficulty();
+    let tgt;
+    if (G.key === 'curling') tgt = G.layout();
+    else {
+      const ev = dryFirst(L.d, L.power), r = ev && ev.first ? G.rate(ev.first) : null;
+      tgt = r || { stars:0, who:`${whoName()} → ?`, notes:[ev && ev.first ? '처음 닿는 공이 목표 공이 아니에요' : '이 방향 · 세기로는 다른 공에 닿지 않아요'] };
+    }
+    return { cue, tgt };
+  }
+  function successTier(extra, at){
+    const L = st.last, cs = L.chance ? 1 : ((L.pred && L.pred.cue && L.pred.cue.stars) || 1);
+    let ts;
+    if (G.key === 'curling') ts = (L.pred && L.pred.tgt && L.pred.tgt.stars) || 1;
+    else { const r = st.ev.first && G.rate(st.ev.first); ts = r ? r.stars : 1; }
+    const tier = clamp(Math.ceil((cs + ts) / 2) + (extra || 0), 1, 5);
+    return { tier, at:{ x:at.x, y:at.y }, info:`타점 ${'★'.repeat(cs)} · 목표 ${'★'.repeat(ts)}`, title:TIER_NAMES[tier] };
+  }
 
+  /* ================= physics ================= */
+  function cushion(b, axis, sign, W, live){
+    const vn = Math.abs(axis === 'x' ? b.vx : b.vy);
+    if (axis === 'x') b.vx = -b.vx * G.rest; else b.vy = -b.vy * G.rest;
+    if (b === W.shooter && !W.ev.first) W.ev.cush++;
+    if (b === W.shooter && G.spinCushion && Math.abs(b.spin) > 0.05){
+      // right-hand spin (counter-clockwise seen from above) turns the rebound counter-clockwise, i.e. to the shooter's right
+      const a = b.spin * G.spinCushion, c = Math.cos(a), s = Math.sin(a);
+      const rx = b.vx * c - b.vy * s, ry = b.vx * s + b.vy * c;
+      if ((axis === 'x' ? rx * sign : ry * sign) < -0.05){ b.vx = rx; b.vy = ry; }
+      b.spin *= 0.4;
+    }
+    if (live && vn > 0.8) fxCushion(b, axis, sign, vn);
+  }
+  function outReason(b, R){
+    if (b.y - R <= YMIN || b.y + R >= YMAX) return '사이드 라인에 닿아 제거됐어요.';
+    if (b.x - R > BACK) return '백 라인을 완전히 넘어 제거됐어요.';
+    if (b.x + R < XMIN) return '시트 밖으로 나가 제거됐어요.';
+    return null;
+  }
+  function stepWorld(W, dt, live){
+    const R = G.R, ev = W.ev;
+    for (const b of W.bodies){
+      if (b.gone || b.sink) continue;
+      let sp = Math.hypot(b.vx, b.vy); if (!sp) continue;
+      if (G.curl && b.spin){
+        const a = G.curl * b.spin / (sp / G.curlScale + 1), nx = b.vy / sp, ny = -b.vx / sp;   // clockwise turn pushes toward the right of travel
+        b.vx += a * nx * dt; b.vy += a * ny * dt; sp = Math.hypot(b.vx, b.vy);
+      }
+      const ns = sp - G.decel * dt;
+      if (ns < STOP_V){ b.vx = b.vy = 0; continue; }
+      b.vx *= ns / sp; b.vy *= ns / sp;
+      const mx = b.vx * dt, my = b.vy * dt;
+      b.x += mx; b.y += my;
+      if (b === W.shooter && !ev.first) ev.path += Math.hypot(mx, my);
+      if (G.pockets){
+        const p = G.pockets.find(q => Math.hypot(q[0] - b.x, q[1] - b.y) < G.PR);
+        if (p){
+          ev.pocketed.push(b.id); ev.lastPocket = { x:p[0], y:p[1] }; b.vx = b.vy = 0;
+          if (live){ b.sink = { t:0, x0:b.x, y0:b.y, px:p[0], py:p[1] }; fxPocket(b, p); } else b.gone = true;
+          continue;
+        }
+      }
+      if (G.wall === 'bounce'){
+        if (b.x < XMIN + R){ b.x = XMIN + R; cushion(b, 'x', -1, W, live); }
+        if (b.x > XMAX - R){ b.x = XMAX - R; cushion(b, 'x', 1, W, live); }
+        if (b.y < YMIN + R){ b.y = YMIN + R; cushion(b, 'y', -1, W, live); }
+        if (b.y > YMAX - R){ b.y = YMAX - R; cushion(b, 'y', 1, W, live); }
+      } else {
+        const why = outReason(b, R);
+        if (why){ b.gone = true; b.vx = b.vy = 0; ev.removed.push({ b, why }); if (live) fxOut(b); }
+      }
+    }
+    const act = W.bodies.filter(b => !b.gone && !b.sink);
+    for (let i = 0; i < act.length; i++) for (let j = i + 1; j < act.length; j++){
+      const a = act[i], c = act[j];
+      const dx = c.x - a.x, dy = c.y - a.y, d2 = dx * dx + dy * dy;
+      if (d2 >= 4 * R * R || d2 === 0) continue;
+      const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (2 * R - d) / 2;
+      const sh = a === W.shooter ? a : c === W.shooter ? c : null;
+      if (sh && !ev.first){
+        const o = sh === a ? c : a, sp = Math.hypot(sh.vx, sh.vy) || 1, sx = sh.vx / sp, sy = sh.vy / sp;
+        const ux = (o.x - sh.x) / d, uy = (o.y - sh.y) / d;
+        ev.first = { id:o.id, t:Math.abs(sx * uy - sy * ux), L:ev.path, c:ev.cush, x:(a.x + c.x) / 2, y:(a.y + c.y) / 2 };
+      }
+      a.x -= nx * ov; a.y -= ny * ov; c.x += nx * ov; c.y += ny * ov;
+      const rel = (a.vx - c.vx) * nx + (a.vy - c.vy) * ny;
+      if (rel > 0){
+        const k = rel * (1 + G.ballRest) / 2; a.vx -= k * nx; a.vy -= k * ny; c.vx += k * nx; c.vy += k * ny;
+        if (live) fxHit(a, c, rel);
+      }
+      if (sh){
+        const o = sh === a ? c : a;
+        ev.contacts.add(o.id); sh.spin *= G.contactSpin;
+        if (G.key === 'carom' && o.kind === 'red' && !ev.carom){
+          const reds = ['r1', 'r2'].filter(id => ev.contacts.has(id));
+          if (reds.length === 2) ev.carom = { x:o.x, y:o.y };
+        }
+      }
+    }
+    if (G.wall === 'bounce') for (const b of act){ b.x = clamp(b.x, XMIN + R, XMAX - R); b.y = clamp(b.y, YMIN + R, YMAX - R); }
+  }
+
+  /* ================= effects ================= */
+  const FX = { parts:[], rings:[], texts:[], rockets:[], shakeT:0, shakeA:0 };
+  const fxAlive = () => FX.parts.length || FX.rings.length || FX.texts.length || FX.rockets.length || FX.shakeT > 0;
+  const GOLD = ['#fff3c4', '#ffd257', '#ffb347', '#ffffff'];
+  const CONF = ['#ffd257', '#ff6b6b', '#4dd4ac', '#5b8def', '#c77dff', '#ffffff'];
+  function sparks(x, y, n, o = {}){
+    const { colors = GOLD, speed = 8, life = 0.5, size = 2.2, g = 0, kind = 'spark' } = o;
+    n = REDUCED ? Math.ceil(n / 3) : n;
+    for (let i = 0; i < n; i++){
+      const a = Math.random() * Math.PI * 2, s = speed * (0.35 + Math.random() * 0.65);
+      FX.parts.push({ x, y, vx:Math.cos(a) * s, vy:Math.sin(a) * s, age:0, life:life * (0.6 + Math.random() * 0.6), size:size * (0.6 + Math.random() * 0.8), color:colors[i % colors.length], g, kind, rot:Math.random() * 6, vr:rand(-8, 8) });
+    }
+    kick();
+  }
+  function ring(x, y, o = {}){ const { color = 'rgba(255,230,150,0.9)', r0 = 0.4, r1 = 3, life = 0.45, width = 3 } = o; FX.rings.push({ x, y, color, r0, r1, life, width, age:0 }); kick(); }
+  function popText(x, y, text, o = {}){ const { color = '#fff', size = 22, life = 1.1, rise = 2.4 } = o; FX.texts.push({ x, y, text, color, size, life, rise, age:0 }); kick(); }
+  function confetti(n){
+    n = REDUCED ? Math.ceil(n / 4) : n;
+    for (let i = 0; i < n; i++) FX.parts.push({ x:rand(XMIN, XMAX), y:YMAX + rand(0.5, 7), vx:rand(-2.5, 2.5), vy:rand(-7, -2), age:0, life:rand(1.8, 3.2), size:rand(3, 6), color:CONF[i % CONF.length], g:-3, kind:'conf', rot:rand(0, 6), vr:rand(-10, 10), sway:rand(0, 6) });
+    kick();
+  }
+  function firework(x, y, color){ if (REDUCED){ sparks(x, y, 30, { colors:[color, '#fff'], speed:12, life:1 }); return; } FX.rockets.push({ x, y0:YMIN - 1, ty:y, age:0, life:0.7, color }); kick(); }
+  function shake(amp, dur){ if (REDUCED) return; FX.shakeA = Math.max(FX.shakeA, amp); FX.shakeT = Math.max(FX.shakeT, dur); kick(); }
+  function fxHit(a, c, rel){
+    const k = Math.min(1, rel / 22), x = (a.x + c.x) / 2, y = (a.y + c.y) / 2;
+    Snd.play(G.key === 'curling' ? 'stone' : 'clack', 0.2 + 0.8 * k, 0.03);
+    if (rel > 1.5){ sparks(x, y, 4 + Math.round(12 * k), { speed:5 + 10 * k, life:0.35, size:1.8 }); ring(x, y, { r0:0.3, r1:1 + 1.6 * k, life:0.3, color:'rgba(255,255,255,0.8)', width:2 }); }
+  }
+  function fxCushion(b, axis, sign, vn){
+    const k = Math.min(1, vn / 22);
+    Snd.play('cushion', 0.2 + 0.8 * k, 0.04);
+    const x = axis === 'x' ? b.x + sign * G.R : b.x, y = axis === 'y' ? b.y + sign * G.R : b.y;
+    sparks(x, y, 3 + Math.round(6 * k), { colors:['rgba(255,255,255,0.8)', 'rgba(220,240,220,0.7)'], speed:3 + 4 * k, life:0.4, size:2, kind:'dust' });
+  }
+  function fxPocket(b, p){
+    Snd.play('pocket');
+    ring(p[0], p[1], { r0:0.6, r1:3.2, life:0.5, color:'rgba(255,214,120,0.95)', width:3 });
+    sparks(p[0], p[1], 14, { speed:7, life:0.5 });
+    if (b.label) popText(p[0], p[1] + (p[1] > 10 ? -2.2 : 2.2), `${b.label}번 공!`, { color:'#ffe38a', size:22 });
+  }
+  function fxOut(b){ Snd.play('whoosh', 0.4); sparks(b.x, b.y, 10, { colors:['#ffffff', '#cfe6f2'], speed:4, life:0.45, kind:'dust' }); popText(b.x, b.y + 1.6, '아웃', { color:'#ffb4a8', size:18 }); }
+  function celebrate(sx){
+    const { tier, at } = sx;
+    Snd.play('fanfare', tier);
+    sparks(at.x, at.y, 10 + tier * 8, { colors:GOLD, speed:7 + tier * 2, life:0.7 + tier * 0.1, size:2.6 });
+    ring(at.x, at.y, { r0:0.5, r1:2.5 + tier * 1.5, life:0.5 + tier * 0.08, width:3 + tier });
+    if (tier >= 2) confetti(tier === 2 ? 40 : tier === 3 ? 80 : 120);
+    if (tier >= 3) shake(tier === 3 ? 3 : tier === 4 ? 6 : 9, 0.25 + 0.1 * tier);
+    if (tier >= 4){ const n = tier === 4 ? 3 : 6, id = st.runId; for (let i = 0; i < n; i++) setTimeout(() => { if (id === st.runId) firework(rand(XMIN + 6, XMAX - 6), rand(11, 18), pick(CONF)); }, i * 260); }
+    if (tier >= 5){ const id = st.runId; setTimeout(() => { if (id === st.runId) confetti(100); }, 650); }
+    banner(tier, sx.title || TIER_NAMES[tier], sx.info);
+  }
+  let bannerT = 0;
+  function banner(tier, title, sub){
+    const el = $('banner');
+    el.className = 'banner t' + tier; el.querySelector('.bt').textContent = title; el.querySelector('.bs').textContent = sub || '';
+    el.hidden = false; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+    clearTimeout(bannerT); bannerT = setTimeout(() => { el.hidden = true; }, 1300 + tier * 380);
+  }
+  function updateFX(dt){
+    for (const p of FX.parts){
+      p.age += dt; p.vy += p.g * dt;
+      if (p.kind === 'conf'){ p.vx *= 0.985; p.vy = Math.max(p.vy, -6); p.x += Math.sin((p.age + p.sway) * 3) * 0.03; }
+      else { const k = Math.pow(0.04, dt); p.vx *= k; p.vy *= k; }
+      p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+    }
+    FX.parts = FX.parts.filter(p => p.age < p.life);
+    for (const r of FX.rings) r.age += dt; FX.rings = FX.rings.filter(r => r.age < r.life);
+    for (const t of FX.texts) t.age += dt; FX.texts = FX.texts.filter(t => t.age < t.life);
+    for (const r of FX.rockets){
+      r.age += dt;
+      if (r.age >= r.life){ r.done = true; sparks(r.x, r.ty, 46, { colors:[r.color, '#ffffff', r.color], speed:12, life:1.1, g:-5, size:2.6 }); ring(r.x, r.ty, { color:r.color, r0:0.5, r1:5, life:0.5, width:2 }); Snd.play('pop'); }
+      else if (Math.random() < 0.6) FX.parts.push({ x:r.x + rand(-0.15, 0.15), y:r.y0 + (r.ty - r.y0) * easeOut(r.age / r.life), vx:0, vy:-1, age:0, life:0.35, size:1.8, color:'#fff3c4', g:0, kind:'spark', rot:0, vr:0 });
+    }
+    FX.rockets = FX.rockets.filter(r => !r.done);
+    if (FX.shakeT > 0){
+      FX.shakeT -= dt;
+      const a = FX.shakeA * Math.max(0, FX.shakeT) / 0.6;
+      $('tableWrap').style.transform = FX.shakeT > 0 ? `translate(${rand(-a, a).toFixed(1)}px, ${rand(-a, a).toFixed(1)}px)` : '';
+      if (FX.shakeT <= 0) FX.shakeA = 0;
+    }
+  }
+  const easeOut = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  function drawFX(){
+    const g = fctx; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, cssW, cssH);
+    if (!G) return;
+    const u = unit, sc = Math.max(0.7, u / 18);
+    for (const r of FX.rings){
+      const k = r.age / r.life, [x, y] = toPx(u, r.x, r.y);
+      g.globalAlpha = 1 - k; g.strokeStyle = r.color; g.lineWidth = r.width * (1 - k * 0.6);
+      g.beginPath(); g.arc(x, y, (r.r0 + (r.r1 - r.r0) * easeOut(k)) * u, 0, Math.PI * 2); g.stroke();
+    }
+    for (const p of FX.parts){
+      const k = p.age / p.life, [x, y] = toPx(u, p.x, p.y);
+      if (p.kind === 'conf'){
+        g.globalAlpha = Math.min(1, (1 - k) * 2); g.fillStyle = p.color;
+        g.save(); g.translate(x, y); g.rotate(p.rot); g.fillRect(-p.size * sc / 2, -p.size * sc / 4, p.size * sc, p.size * sc / 2); g.restore();
+      } else if (p.kind === 'dust'){
+        g.globalAlpha = 0.55 * (1 - k); g.fillStyle = p.color; g.beginPath(); g.arc(x, y, p.size * sc * (1 + k), 0, Math.PI * 2); g.fill();
+      } else {
+        g.globalAlpha = 1 - k; g.fillStyle = p.color; g.beginPath(); g.arc(x, y, p.size * sc * (1 - k * 0.5), 0, Math.PI * 2); g.fill();
+      }
+    }
+    g.globalAlpha = 1;
+    for (const r of FX.rockets){ const [x, y] = toPx(u, r.x, r.y0 + (r.ty - r.y0) * easeOut(r.age / r.life)); g.fillStyle = '#fffbe0'; g.beginPath(); g.arc(x, y, 2.6 * sc, 0, Math.PI * 2); g.fill(); }
+    for (const t of FX.texts){
+      const k = t.age / t.life, [x, y] = toPx(u, t.x, t.y + t.rise * easeOut(k));
+      const s = t.size * sc * (k < 0.15 ? 0.6 + 0.4 * (k / 0.15) * 1.15 : 1);
+      g.globalAlpha = k > 0.6 ? (1 - k) / 0.4 : 1;
+      g.font = `${Math.round(s)}px ${CANVAS_DISPLAY}`;
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = Math.max(2, s * 0.14); g.strokeStyle = 'rgba(0,0,0,0.55)';
+      g.strokeText(t.text, x, y); g.fillStyle = t.color; g.fillText(t.text, x, y);
+    }
+    g.globalAlpha = 1;
+  }
+
+  /* ================= canvas & frame loop ================= */
+  const cv = $('cv'), ctx = cv.getContext('2d'), fxc = $('fx'), fctx = fxc.getContext('2d');
+  let unit = 18, dpr = 1, cssW = 0, cssH = 0, bg = null;
+  function resize(){
+    if (!G || $('game').hidden) return;
+    const stage = $('stage'), wrap = $('tableWrap');
+    let w = stage.clientWidth; if (!w) return;
+    if (st.fs){
+      const top = stage.getBoundingClientRect().top, avail = window.innerHeight - top - 12;
+      w = Math.max(280, Math.min(w, avail * VW / VH));
+      wrap.style.width = w + 'px';
+      $('console').style.maxHeight = Math.max(240, window.innerHeight - $('console').getBoundingClientRect().top - 12) + 'px';
+    } else { wrap.style.width = ''; $('console').style.maxHeight = ''; w = wrap.clientWidth || w; }
+    const ndpr = window.devicePixelRatio || 1;
+    if (bg && Math.abs(w - cssW) < 0.5 && ndpr === dpr) return;
+    dpr = ndpr; unit = w / VW; cssW = w; cssH = unit * VH;
+    for (const c of [cv, fxc]){ c.width = Math.round(cssW * dpr); c.height = Math.round(cssH * dpr); c.style.width = cssW + 'px'; c.style.height = cssH + 'px'; }
+    bg = document.createElement('canvas'); bg.width = cv.width; bg.height = cv.height;
+    const g = bg.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); paintStatic(g, unit, G);
+    draw(); drawFX();
+  }
+  function draw(){
+    if (!G || $('game').hidden || !bg) return;
+    const u = unit, R = G.R, pal = G.pal;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(bg, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const [fx, fy] = toPx(u, XMIN, YMAX);
+    ctx.save(); ctx.beginPath(); ctx.rect(fx, fy, (XMAX - XMIN) * u, (YMAX - YMIN) * u); ctx.clip();
+    if (st.last && !anim.strike) strokeLine(ctx, u, st.last.P, st.last.d, pal.line, [], Math.max(2, u * 0.12));
+    if (st.theory){
+      ctx.save(); ctx.setLineDash([u * 0.5, u * 0.4]); ctx.strokeStyle = pal.theory; ctx.lineWidth = Math.max(1.5, u * 0.08);
+      ctx.beginPath(); st.theory.forEach((p, i) => { const [a, b] = toPx(u, p.x, p.y); if (i) ctx.lineTo(a, b); else ctx.moveTo(a, b); }); ctx.stroke(); ctx.restore();
+    }
+    let prev = null;
+    if ($('preview').checked && !st.moving && !st.over){ prev = computeLine(); if (prev.err) prev = null; else strokeLine(ctx, u, prev.P, prev.d, pal.preview, [u * 0.8, u * 0.5], Math.max(2, u * 0.1)); }
+    // 궤적
+    const now = performance.now();
+    for (const b of st.bodies){
+      if (b.gone || !b.trail.length) continue;
+      ctx.lineCap = 'round';
+      for (let i = 1; i < b.trail.length; i++){
+        const p0 = b.trail[i - 1], p1 = b.trail[i], age = (now - p1.t) / 600; if (age >= 1) continue;
+        const [x0, y0] = toPx(u, p0.x, p0.y), [x1, y1] = toPx(u, p1.x, p1.y);
+        ctx.globalAlpha = 0.35 * (1 - age); ctx.strokeStyle = G.key === 'curling' ? '#ffffff' : b.color; ctx.lineWidth = R * u * 1.4 * (1 - age * 0.6);
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    for (const b of st.bodies){
+      if (b.gone) continue;
+      if (b.sink){ const k = Math.min(1, b.sink.t / 0.35); const view = { ...b, rx:b.sink.x0 + (b.sink.px - b.sink.x0) * k, ry:b.sink.y0 + (b.sink.py - b.sink.y0) * k }; ctx.globalAlpha = 1 - k * 0.7; G.drawBody(ctx, u, view, R, 1 - k * 0.65); ctx.globalAlpha = 1; continue; }
+      G.drawBody(ctx, u, b, R);
+    }
+    if (G.key !== 'curling'){
+      if (anim.strike) drawStrikeCue(anim.strike);
+      else if (prev && st.shooter && !st.shooter.gone) drawCue(ctx, u, cueTip(prev, st.shooter, 1.1).tip, prev.d, 0.85);
+    }
+    if (LEVELS[st.level].coords && st.shooter && !st.shooter.gone && !st.moving) coordTag(st.shooter);
+  }
+  function coordTag(s){
+    const u = unit, [x, y] = toPx(u, s.x, s.y), t = `(${fracText(s.x)}, ${fracText(s.y)})`;
+    ctx.font = `600 ${Math.max(10, u * 0.62)}px "IBM Plex Mono", monospace`;
+    const w = ctx.measureText(t).width + 10, h = Math.max(16, u * 0.95);
+    let bx = x + G.R * u + 4, by = y - G.R * u - h - 2;
+    if (bx + w > cssW - 4) bx = x - G.R * u - 4 - w;
+    if (by < 4) by = y + G.R * u + 2;
+    ctx.fillStyle = 'rgba(20,14,6,0.72)'; roundRect(ctx, bx, by, w, h, 6); ctx.fill();
+    ctx.fillStyle = '#ffe9b0'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(t, bx + 5, by + h / 2 + 0.5);
+  }
+  // 직선이 공에 닿는 점(맞지 않으면 공 옆의 가장 가까운 점)과 그 뒤로 gap 만큼 물러난 팁
+  function cueTip(L, s, gap){
+    const d = L.d, t0 = (s.x - L.P.x) * d.x + (s.y - L.P.y) * d.y, pc = { x:L.P.x + d.x * t0, y:L.P.y + d.y * t0 };
+    const off = Math.hypot(s.x - pc.x, s.y - pc.y), back = off < G.R ? Math.sqrt(G.R * G.R - off * off) : 0;
+    const c = { x:pc.x - d.x * back, y:pc.y - d.y * back };
+    return { contact:c, tip:{ x:c.x - d.x * gap, y:c.y - d.y * gap } };
+  }
+  function drawStrikeCue(a){
+    const k = a.t / a.dur, pull = 1 + 3 * Math.min(1, a.L.power / 150), pullEnd = 0.72;
+    let gap;
+    if (k < pullEnd) gap = 1.1 + pull * easeOut(k / pullEnd);
+    else { const q = (k - pullEnd) / (1 - pullEnd); gap = (1.1 + pull) * (1 - q * q) - (a.miss ? 2.5 * q : 0); }
+    const { contact } = cueTip(a.L, a.s, 0);
+    drawCue(ctx, unit, { x:contact.x - a.L.d.x * gap, y:contact.y - a.L.d.y * gap }, a.L.d, Math.min(1, k * 4));
+  }
+  let rafOn = false, lastT = 0;
+  function kick(){ if (!rafOn){ rafOn = true; lastT = performance.now(); requestAnimationFrame(tick); } }
+  function tick(now){
+    const dt = Math.min(0.05, Math.max(0, (now - lastT) / 1000)); lastT = now;
+    let busy = false;
+    if (G && anim.strike){
+      busy = true; anim.strike.t += dt;
+      if (anim.strike.t >= anim.strike.dur){ const a = anim.strike; anim.strike = null; contact(a); }
+    } else if (G && st.moving && st.phys){
+      busy = true;
+      const n = Math.max(1, Math.ceil(dt * SUB_HZ));
+      for (let i = 0; i < n; i++) stepWorld(liveWorld(), dt / n, true);
+      let vmax = 0;
+      for (const b of st.bodies){
+        if (b.sink){ b.sink.t += dt; if (b.sink.t >= 0.35){ b.gone = true; delete b.sink; } continue; }
+        if (b.gone) continue;
+        const sp = Math.hypot(b.vx, b.vy); vmax = Math.max(vmax, sp);
+        if (sp){
+          const tl = b.trail, lp = tl[tl.length - 1];
+          if (!lp || Math.hypot(lp.x - b.x, lp.y - b.y) > 0.25) tl.push({ x:b.x, y:b.y, t:now });
+          if (tl.length > 40) tl.shift();
+          if (G.key === 'curling' && Math.random() < Math.min(0.9, sp / 8)) FX.parts.push({ x:b.x - b.vx / sp * G.R + rand(-0.3, 0.3), y:b.y - b.vy / sp * G.R + rand(-0.3, 0.3), vx:rand(-1, 1) - b.vx * 0.05, vy:rand(-1, 1) - b.vy * 0.05, age:0, life:0.5, size:1.6, color:'rgba(255,255,255,0.9)', g:0, kind:'dust', rot:0, vr:0 });
+        }
+      }
+      if (G.key === 'curling') Snd.slideSet(Math.min(1, vmax / 13));
+      if (!st.bodies.some(b => !b.gone && (b.vx || b.vy || b.sink))){ st.phys = false; Snd.slideStop(); settle(); }
+    }
+    if (G && anim.snap){
+      busy = true; anim.snap.t += dt; const k = easeOut(anim.snap.t / anim.snap.dur);
+      for (const s of anim.snap.list){ s.b.rx = s.x0 + (s.b.x - s.x0) * k; s.b.ry = s.y0 + (s.b.y - s.y0) * k; }
+      if (anim.snap.t >= anim.snap.dur){ for (const s of anim.snap.list){ delete s.b.rx; delete s.b.ry; } anim.snap = null; }
+    }
+    if (G && st.bodies.some(b => b.trail.length && now - b.trail[b.trail.length - 1].t < 650)) busy = true;
+    if (orb.el){ busy = true; updateOrb(dt); }
+    if (fxAlive()){ busy = true; updateFX(dt); }
+    draw(); drawFX();
+    if (busy) requestAnimationFrame(tick);
+    else { rafOn = false; for (const b of st.bodies) b.trail.length = 0; draw(); drawFX(); }
+  }
+  let LW = null;
+  const liveWorld = () => (LW && LW.bodies === st.bodies && LW.ev === st.ev && LW.shooter === st.shooter) ? LW : (LW = { bodies:st.bodies, shooter:st.shooter, ev:st.ev });
+
+  /* ================= card previews ================= */
+  function drawPreviews(){
+    document.querySelectorAll('.card').forEach(card => {
+      const game = GAMES[card.dataset.game], c = card.querySelector('canvas'), w = 440, u = w / VW, k = 2;
+      c.width = w * k; c.height = Math.round(u * VH * k);
+      const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, 0, 0);
+      paintStatic(g, u, game);
+      const s = game.sample();
+      const [fx, fy] = toPx(u, XMIN, YMAX);
+      g.save(); g.beginPath(); g.rect(fx, fy, (XMAX - XMIN) * u, (YMAX - YMIN) * u); g.clip();
+      strokeLine(g, u, s.line.P, s.line.d, game.pal.line, [], Math.max(2, u * 0.12)); g.restore();
+      for (const b of s.bodies) game.drawBody(g, u, b, game.R);
+    });
+  }
+
+  /* ================= UI ================= */
+  function setDelta(k, v, keepField){
+    if (v === 'flip') v = -st[k];
+    st[k] = clamp(round2(v), -LIM, LIM);
+    if (!keepField) $(k + 'In').value = fmt(st[k]);
+    updateUI();
+  }
   function updateUI(){
     if (!G) return;
-    $('dxOut').textContent = fmt(st.dx); $('dyOut').textContent = fmt(st.dy);
+    for (const k of ['dx', 'dy']){ const el = $(k + 'In'); if (document.activeElement !== el) el.value = fmt(st[k]); }
     const arrow = ARROWS[`${Math.sign(st.dx)},${Math.sign(st.dy)}`];
-    $('dirHint').textContent = arrow ? `x가 ${fmt(st.dx)} 증가할 때 y가 ${fmt(st.dy)} 증가 · 방향 ${arrow}` : '증가량 중 하나는 0이 아니어야 방향이 생겨요.';
+    $('dirHint').textContent = !arrow ? '증가량 중 하나는 0이 아니어야 방향이 생겨요.'
+      : `x가 ${fmt(st.dx)} 증가할 때 y가 ${fmt(st.dy)} 증가 · 방향 ${arrow}` + (st.dx && st.dy ? ` · 기울기 ${slopeNum(st.dx, st.dy).text}` : st.dx ? ' · 기울기 0' : ' · 기울기 없음(세로)');
     const two = st.players === 2 && !st.over, tb = $('turn');
     tb.hidden = !two;
     if (two){ tb.style.setProperty('--pc', G.color(st.turn)); $('turnName').textContent = `${PNAME(st.turn)} 차례`; $('turnTag').textContent = G.tag(st.turn); }
-    document.querySelectorAll('.mode').forEach(b => {
-      const m = b.dataset.mode;
-      b.setAttribute('aria-pressed', String(m === st.mode));
-      if (m !== 'base') b.disabled = st.inv[m] <= 0 && st.mode !== m;
-    });
-    $('nX').textContent = st.inv.xint; $('nC').textContent = st.inv.coord;
-    const coord = st.mode === 'coord', who = whoName();
-    $('icptField').hidden = coord; $('coordInfo').hidden = !coord;
-    if (coord) $('coordInfo').textContent = `${who} 좌표 (${fmt(st.shooter.x)}, ${fmt(st.shooter.y)}) · 기울기만 정하면 ${who} 중심을 지나요.`;
-    $('icptLabel').textContent = st.mode === 'xint' ? 'x절편 (y = 0일 때 x 값)' : (st.dx === 0 ? 'x = a 의 a' : 'y절편 b');
+    // 절편 찬스
+    const inv = st.invs[st.turn], cb = $('chanceBtn');
+    $('nChance').textContent = inv;
+    cb.classList.toggle('active', !!st.chance);
+    $('chanceText').textContent = st.chance ? `찬스 쓰는 중 · ${st.chance === 'x' ? 'x절편' : 'y절편'} (누르면 취소)` : '절편 찬스';
+    cb.disabled = !st.chance && (inv <= 0 || st.moving || st.over);
+    $('chancePick').hidden = !st.pickOpen || !!st.chance;
+    $('icptField').hidden = !!st.chance;
+    $('icptLabel').textContent = st.dx === 0 ? 'x = a 의 a' : st.dy === 0 ? 'y = b 의 b' : 'y절편 b';
     const L = computeLine();
+    $('calcBox').hidden = !st.chance || !!L.err;
+    if (st.chance && !L.err){ $('calcTitle').textContent = `절편 찬스 · ${st.chance === 'x' ? 'x절편' : 'y절편'}으로 계산`; $('calcText').innerHTML = L.calc; }
     $('eq').textContent = L.eq || '—';
     $('eqSub').textContent = L.sub || '';
     $('err').textContent = L.err || '';
     const p = st.dx * st.dx + st.dy * st.dy;
-    $('powerTxt').textContent = `세기 ${sq(st.dx)} + ${sq(st.dy)} = ${p} · 거리 ${fmt(DIST_K * p)}`;
+    $('powerTxt').textContent = `세기 ${sq(st.dx)} + ${sq(st.dy)} = ${fmt(p)} → 거리 ${fmt(DIST_K * p)}`;
     $('powerBar').style.width = Math.min(100, p / MAX_POWER * 100) + '%';
     $('pills').innerHTML = G.stats().map(t => `<span class="pill">${t}</span>`).join('');
     $('shoot').textContent = G.key === 'curling' ? '던지기' : '치기';
     $('shoot').disabled = st.moving || st.over || !!L.err;
-    draw();
+    schedulePred();
+    if (!rafOn) draw();
+  }
+  const sq = v => v < 0 ? `(${fmt(v)})²` : `${fmt(v)}²`;
+  let predT = 0;
+  function schedulePred(){
+    clearTimeout(predT);
+    predT = setTimeout(() => { if (!G || st.moving) return; st.pred = predict(); renderPred(); }, 60);
+  }
+  function renderPred(){
+    const p = st.pred, el = $('pred');
+    if (!G || !p){ el.hidden = true; return; }
+    el.hidden = false;
+    $('pCueWho').textContent = p.cue.who; $('pCueStars').innerHTML = starsHTML(p.cue.stars); $('pCueName').textContent = STAR_NAMES[p.cue.stars]; $('pCueNotes').textContent = p.cue.notes.join(' · ');
+    $('pTgtWho').textContent = p.tgt.who; $('pTgtStars').innerHTML = starsHTML(p.tgt.stars); $('pTgtName').textContent = p.tgt.stars ? STAR_NAMES[p.tgt.stars] : '—'; $('pTgtNotes').textContent = p.tgt.notes.join(' · ');
   }
 
-  function resize(){
-    const w = $('tableWrap').clientWidth; if (!w) return;
-    dpr = window.devicePixelRatio || 1; unit = w / 22;
-    cv.width = Math.round(w * dpr); cv.height = Math.round(unit * 12 * dpr); cv.style.height = unit * 12 + 'px';
-    draw();
-  }
-  function draw(){
-    if (!G || $('game').hidden) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const ov = { line:st.last ? { P:st.last.P, d:st.last.d } : null, theory:st.theory };
-    if ($('preview').checked && !st.moving && !st.over){ const L = computeLine(); if (!L.err) ov.preview = L; }
-    drawScene(ctx, unit, G, st.bodies, ov);
-  }
-  function drawPreviews(){
-    document.querySelectorAll('.card').forEach(card => {
-      const game = GAMES[card.dataset.game], c = card.querySelector('canvas'), w = 440, u = w / 22, k = 2;
-      c.width = w * k; c.height = Math.round(u * 12 * k);
-      const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, 0, 0);
-      const s = game.sample(); drawScene(g, u, game, s.bodies, s.ov);
+  // ±1 · ±0.1 · 부호 — 누르고 있으면 계속
+  document.querySelectorAll('[data-step]').forEach(btn => {
+    const k = btn.dataset.step, d = btn.dataset.d, apply = () => setDelta(k, d === 'flip' ? 'flip' : st[k] + Number(d));
+    let t1 = 0, t2 = 0;
+    const stop = () => { clearTimeout(t1); clearInterval(t2); };
+    btn.addEventListener('pointerdown', e => {
+      if (e.button) return; Snd.unlock(); apply(); Snd.play('click');
+      if (d !== 'flip') t1 = setTimeout(() => { t2 = setInterval(apply, 70); }, 380);
     });
+    ['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach(ev => btn.addEventListener(ev, stop));
+    btn.addEventListener('click', e => { if (e.detail === 0) apply(); });       // 키보드
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  });
+  for (const k of ['dx', 'dy']){
+    const el = $(k + 'In');
+    el.addEventListener('input', () => { const v = parseDelta(el.value); if (v !== null) setDelta(k, v, true); });
+    el.addEventListener('change', () => { const v = parseDelta(el.value); setDelta(k, v === null ? st[k] : v); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
   }
-
-  document.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => {
-    const k = b.dataset.step; st[k] = Math.max(-LIM, Math.min(LIM, st[k] + Number(b.dataset.d))); updateUI();
-  }));
-  document.querySelectorAll('.mode').forEach(b => b.addEventListener('click', () => {
-    const m = b.dataset.mode; if (m !== 'base' && st.inv[m] <= 0) return; st.mode = m; updateUI();
-  }));
   $('icpt').addEventListener('input', updateUI);
-  $('preview').addEventListener('change', draw);
+  $('preview').addEventListener('change', () => { if (!rafOn) draw(); });
   $('newGame').addEventListener('click', () => newGame());
   $('shoot').addEventListener('click', () => shoot());
   $('back').addEventListener('click', backToLobby);
+  $('chanceBtn').addEventListener('click', () => {
+    Snd.unlock();
+    if (st.chance){ st.chance = null; st.pickOpen = false; Snd.play('click'); }
+    else if (st.invs[st.turn] > 0){ st.pickOpen = !st.pickOpen; Snd.play('click'); }
+    updateUI();
+  });
+  document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
+    const v = b.dataset.pick; st.pickOpen = false;
+    if (v !== 'cancel'){ st.chance = v; Snd.play('chime'); if (st.shooter) sparks(st.shooter.x, st.shooter.y, 18, { speed:6, life:0.6 }); }
+    updateUI();
+  }));
+  document.querySelectorAll('.lv').forEach(b => b.addEventListener('click', () => {
+    st.level = b.dataset.level;
+    document.querySelectorAll('.lv').forEach(o => o.setAttribute('aria-checked', String(o === b)));
+    Snd.unlock(); Snd.play('click');
+  }));
+  document.querySelectorAll('.js-snd').forEach(b => b.addEventListener('click', () => { const on = Snd.toggle(); syncTools(); if (on) Snd.play('click'); }));
+  document.querySelectorAll('.js-fs').forEach(b => b.addEventListener('click', toggleFs));
+  function syncTools(){
+    document.querySelectorAll('.js-snd').forEach(b => { b.setAttribute('aria-pressed', String(Snd.on)); b.textContent = Snd.on ? '🔊 소리' : '🔇 소리 끔'; });
+    document.querySelectorAll('.js-fs').forEach(b => { b.textContent = st.fs ? '✕ 전체 화면 끝' : '⛶ 전체 화면'; b.setAttribute('aria-pressed', String(st.fs)); });
+  }
+  document.addEventListener('pointerdown', () => Snd.unlock(), { passive:true });
 
-  /* ---------- game flow ---------- */
+  /* ================= full screen ================= */
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  async function toggleFs(){
+    Snd.unlock();
+    if (fsEl()){ try { await (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e){ /* */ } return; }
+    if (st.immersive){ setImmersive(false); return; }
+    const root = document.documentElement, req = root.requestFullscreen || root.webkitRequestFullscreen;
+    const can = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+    let ok = false;
+    if (req && can){
+      ok = await new Promise(res => {
+        let done = false; const fin = v => { if (!done){ done = true; res(v); } };
+        const onCh = () => fin(!!fsEl());
+        document.addEventListener('fullscreenchange', onCh, { once:true });
+        document.addEventListener('webkitfullscreenchange', onCh, { once:true });
+        try { const r = req.call(root); if (r && r.then) r.then(() => fin(!!fsEl() || true), () => fin(false)); } catch (e){ fin(false); }
+        setTimeout(() => fin(!!fsEl()), 600);
+      });
+    }
+    if (!ok && !fsEl()) setImmersive(true);
+  }
+  function setImmersive(on){
+    st.immersive = on;
+    try { if (window.parent !== window) window.parent.postMessage({ type:'ash-immersive', on }, '*'); } catch (e){ /* */ }
+    applyFs();
+  }
+  function applyFs(){
+    st.fs = !!fsEl() || st.immersive;
+    document.body.classList.toggle('fs', st.fs);
+    syncTools(); requestAnimationFrame(resize);
+  }
+  document.addEventListener('fullscreenchange', applyFs);
+  document.addEventListener('webkitfullscreenchange', applyFs);
+
+  /* ================= game flow ================= */
   function newGame(){
     st.runId++;
-    Object.assign(st, { shots:0, turn:0, pts:[0, 0], invs:[{ xint:1, coord:0 }, { xint:1, coord:0 }], thrown:[0, 0], mode:'base',
-      moving:false, over:false, last:null, theory:null, quiz:null, dx:G.defaults.dx, dy:G.defaults.dy, ev:{ pocketed:[], contacts:new Set(), removed:[] } });
-    st.inv = st.invs[0];
+    const lv = LEVELS[st.level];
+    Object.assign(st, { shots:0, turn:0, pts:[0, 0], invs:[lv.chances, lv.chances], thrown:[0, 0], chance:null, pickOpen:false,
+      moving:false, phys:false, over:false, last:null, theory:null, quiz:null, pred:null, success:null, dx:G.defaults.dx, dy:G.defaults.dy, ev:newEv() });
+    anim.strike = null; anim.snap = null;
+    FX.parts = []; FX.rings = []; FX.texts = []; FX.rockets = []; FX.shakeT = 0; $('tableWrap').style.transform = ''; $('banner').hidden = true;
     $('overlay').hidden = true;
+    Snd.slideStop();
     G.setup();
     const s = st.shooter, { dx, dy } = st;
     const v = dx === 0 ? s.x : dy === 0 ? s.y : s.y - dy / dx * s.x;
-    $('icpt').value = String(Math.round(v * 100) / 100).replace('-', '−');
-    const gift = st.players === 2 ? '두 사람 모두 연습용 x절편 찬스를 1개씩 받았어요.' : '연습용 x절편 찬스 1개를 드렸어요.';
-    $('report').innerHTML = `<span class="hint">새 게임입니다. ${G.intro()} 예시 식이 채워져 있고, ${gift}</span>`;
+    $('icpt').value = fracText(v);
+    const gift = lv.chances ? (st.players === 2 ? `두 사람 모두 절편 찬스를 ${lv.chances}개씩 받았어요.` : `절편 찬스 ${lv.chances}개를 드렸어요.`) : '도전 난이도라 절편 찬스 없이 시작해요.';
+    $('report').innerHTML = `<span class="hint">새 게임입니다. ${G.intro()} 예시 식이 채워져 있어요. ${gift}</span>`;
     $('toast').innerHTML = '';
-    updateUI(); scheduleBubble();
+    for (const k of ['dx', 'dy']) $(k + 'In').value = fmt(st[k]);
+    updateUI(); scheduleOrb(true);
   }
 
   function passTurn(lines){
-    st.turn = 1 - st.turn; st.inv = st.invs[st.turn]; st.mode = 'base';
+    st.turn = 1 - st.turn; st.chance = null; st.pickOpen = false;
     if (st.shooters.length > 1) st.shooter = st.shooters[st.turn];
     const tag = G.tag(st.turn);
     lines.push(`<span class="turnline">→ ${PNAME(st.turn)} 차례${tag ? ' · ' + tag : ''}</span>`);
@@ -739,9 +1538,9 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
     if (G.wall !== 'bounce') return [{ x:s.x, y:s.y }, { x:s.x + d.x * len, y:s.y + d.y * len }];
     const R = G.R, pts = [{ x:s.x, y:s.y }];
     let x = s.x, y = s.y, vx = d.x, vy = d.y, left = len;
-    for (let i = 0; i < 5 && left > 1e-6; i++){
-      const tx = vx > 1e-9 ? (W - R - x) / vx : vx < -1e-9 ? (-W + R - x) / vx : Infinity;
-      const ty = vy > 1e-9 ? (H - R - y) / vy : vy < -1e-9 ? (R - y) / vy : Infinity;
+    for (let i = 0; i < 6 && left > 1e-6; i++){
+      const tx = vx > 1e-9 ? (XMAX - R - x) / vx : vx < -1e-9 ? (XMIN + R - x) / vx : Infinity;
+      const ty = vy > 1e-9 ? (YMAX - R - y) / vy : vy < -1e-9 ? (YMIN + R - y) / vy : Infinity;
       const t = Math.max(0, Math.min(tx, ty, left));
       x += vx * t; y += vy * t; left -= t; pts.push({ x, y });
       if (t === tx) vx = -vx; else if (t === ty) vy = -vy;
@@ -749,108 +1548,89 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
     return pts;
   }
 
-  let lastT = 0;
   function shoot(){
     if (!G || st.moving || st.over) return;
     const L = computeLine(); if (L.err) return;
+    Snd.unlock();
+    clearTimeout(predT);
+    const pred = predict();
     const s = st.shooter, R = G.R, n = { x:-L.d.y, y:L.d.x };
     const off = (s.x - L.P.x) * n.x + (s.y - L.P.y) * n.y;   // > 0: the line passes on the right of the centre
-    const usedMode = st.mode;
-    if (usedMode !== 'base'){ st.inv[usedMode]--; st.mode = 'base'; }
+    const chance = st.chance;
+    if (chance){ st.invs[st.turn]--; st.chance = null; }
+    st.pickOpen = false;
     st.shots++;
     if (s.kind === 'stone') st.thrown[s.team]++;
-    st.ev = { pocketed:[], contacts:new Set(), removed:[] };
-    st.last = { P:L.P, d:L.d, eq:L.eq, off, miss:Math.abs(off) > R, usedMode, dx:st.dx, dy:st.dy, power:L.power,
-      dist:DIST_K * L.power, start:{ x:s.x, y:s.y }, body:s, player:st.turn };
+    st.ev = newEv(); st.success = null; st.theory = null;
+    st.last = { P:L.P, d:L.d, eq:L.eq, off, miss:Math.abs(off) > R, chance, dx:st.dx, dy:st.dy, power:L.power,
+      dist:DIST_K * L.power, start:{ x:s.x, y:s.y }, body:s, player:st.turn, pred };
     s.waiting = false;
-    if (st.last.miss){ st.theory = null; settle(); return; }
+    for (const b of st.bodies) b.trail.length = 0;
+    st.moving = true; st.phys = false;
+    anim.strike = { t:0, dur:G.key === 'curling' ? 0.45 : 0.72, L, off, miss:st.last.miss, s };
+    updateUI(); kick();
+  }
+  function contact(a){
+    const s = a.s, L = a.L, d = L.d, R = G.R, curling = G.key === 'curling';
+    if (a.miss){
+      Snd.play('whoosh', 0.7);
+      popText(s.x, s.y + 1.8, curling ? '놓쳤어요' : '헛스윙', { color:'#d8d8d8', size:20 });
+      settle(); return;
+    }
+    const k = clamp(L.power / 120, 0.15, 1), { contact: c } = cueTip(L, s, 0);
+    if (curling) Snd.play('release'); else Snd.play('strike', k);
+    ring(c.x, c.y, { r0:0.2, r1:1.6 + 2.4 * k, life:0.35, color:'rgba(255,255,255,0.85)', width:2 });
+    sparks(c.x, c.y, 6 + Math.round(10 * k), { speed:6 + 9 * k, life:0.35 });
+    const pct = Math.round(Math.abs(a.off) / R * 100), cs = (st.last.pred && st.last.pred.cue && st.last.pred.cue.stars) || 1;
+    if (pct < 15){
+      popText(s.x, s.y + 1.9, curling ? '똑바로!' : '정타!', { color:'#ffd257', size:20 + 2 * cs });
+      Snd.play('perfect', cs / 5); sparks(s.x, s.y, 4 * cs, { speed:5, life:0.6 });
+    } else popText(s.x, s.y + 1.9, curling ? `${a.off > 0 ? '시계' : '반시계'} 회전 ${pct}%` : `${a.off > 0 ? '오른쪽' : '왼쪽'} 스핀 ${pct}%`, { color:'#ffffff', size:18 });
     const v0 = Math.sqrt(2 * G.decel * st.last.dist);
-    s.vx = L.d.x * v0; s.vy = L.d.y * v0; s.spin = off / R;
-    st.theory = theoryPath(s, L.d, st.last.dist);
-    st.moving = true; updateUI();
-    const id = st.runId; lastT = performance.now();
-    requestAnimationFrame(t => loop(t, id));
+    s.vx = d.x * v0; s.vy = d.y * v0; s.spin = a.off / R;
+    st.theory = theoryPath(s, d, st.last.dist);
+    st.phys = true;
   }
 
-  function loop(now, id){
-    if (id !== st.runId) return;
-    const dt = Math.min(0.05, Math.max(0, (now - lastT) / 1000)); lastT = now;
-    const n = Math.max(1, Math.ceil(dt * SUB_HZ));
-    for (let i = 0; i < n; i++) step(dt / n);
-    draw();
-    if (st.bodies.some(b => !b.gone && (b.vx || b.vy))) requestAnimationFrame(t => loop(t, id));
-    else settle();
-  }
-
-  function cushion(b, axis, wallSign){
-    if (axis === 'x') b.vx = -b.vx * G.rest; else b.vy = -b.vy * G.rest;
-    if (b === st.shooter && G.spinCushion && Math.abs(b.spin) > 0.05){
-      // right-hand spin (counter-clockwise seen from above) turns the rebound counter-clockwise, i.e. to the shooter's right
-      const a = b.spin * G.spinCushion, c = Math.cos(a), s = Math.sin(a);
-      const rx = b.vx * c - b.vy * s, ry = b.vx * s + b.vy * c;
-      const into = axis === 'x' ? rx * wallSign : ry * wallSign;
-      if (into < -0.05){ b.vx = rx; b.vy = ry; }
-      b.spin *= 0.4;
+  // 입문 · 기본: 멈춘 공을 가장 가까운 (반) 격자점으로 — 비어 있고 구멍에서 떨어진 자리만
+  function snapBalls(){
+    const step = LEVELS[st.level].snap; if (!step || G.key === 'curling') return;
+    const R = G.R, live = st.bodies.filter(b => !b.gone), fin = new Map();
+    for (const b of live){
+      const cx = Math.round(b.x / step) * step, cy = Math.round(b.y / step) * step, cand = [];
+      for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) cand.push([cx + i * step, cy + j * step]);
+      cand.sort((p, q) => Math.hypot(p[0] - b.x, p[1] - b.y) - Math.hypot(q[0] - b.x, q[1] - b.y));
+      const others = live.filter(o => o !== b).map(o => fin.get(o) || [o.x, o.y]);
+      const ok = cand.find(([x, y]) => x >= XMIN + R && x <= XMAX - R && y >= YMIN + R && y <= YMAX - R
+        && (!G.pockets || G.pockets.every(p => Math.hypot(p[0] - x, p[1] - y) > G.PR + R + 0.2))
+        && others.every(([ox, oy]) => Math.hypot(ox - x, oy - y) >= 2 * R + 0.1));
+      fin.set(b, ok || [b.x, b.y]);
     }
-  }
-  function outReason(b, R){
-    if (b.y - R <= 0 || b.y + R >= H) return '사이드 라인에 닿아 제거됐어요.';
-    if (b.x - R > BACK) return '백 라인을 완전히 넘어 제거됐어요.';
-    if (b.x + R < -W) return '시트 밖으로 나가 제거됐어요.';
-    return null;
-  }
-  function step(dt){
-    const R = G.R;
-    for (const b of st.bodies){
-      if (b.gone) continue;
-      let sp = Math.hypot(b.vx, b.vy); if (!sp) continue;
-      if (G.curl && b.spin){
-        const a = G.curl * b.spin / (sp + 1), nx = b.vy / sp, ny = -b.vx / sp;   // clockwise turn pushes toward the right of travel
-        b.vx += a * nx * dt; b.vy += a * ny * dt; sp = Math.hypot(b.vx, b.vy);
-      }
-      const ns = sp - G.decel * dt;
-      if (ns < 0.03){ b.vx = b.vy = 0; continue; }
-      b.vx *= ns / sp; b.vy *= ns / sp;
-      b.x += b.vx * dt; b.y += b.vy * dt;
-      if (G.pockets && G.pockets.some(p => Math.hypot(p[0] - b.x, p[1] - b.y) < G.PR)){ b.gone = true; b.vx = b.vy = 0; st.ev.pocketed.push(b.id); continue; }
-      if (G.wall === 'bounce'){
-        if (b.x < -W + R){ b.x = -W + R; cushion(b, 'x', -1); }
-        if (b.x > W - R){ b.x = W - R; cushion(b, 'x', 1); }
-        if (b.y < R){ b.y = R; cushion(b, 'y', -1); }
-        if (b.y > H - R){ b.y = H - R; cushion(b, 'y', 1); }
-      } else {
-        const why = outReason(b, R);
-        if (why){ b.gone = true; b.vx = b.vy = 0; st.ev.removed.push({ b, why }); }
-      }
+    const list = [];
+    for (const b of live){
+      const [x, y] = fin.get(b);
+      if (Math.abs(x - b.x) > 1e-9 || Math.abs(y - b.y) > 1e-9){ list.push({ b, x0:b.x, y0:b.y }); b.x = x; b.y = y; }
     }
-    const live = st.bodies.filter(b => !b.gone);
-    for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++){
-      const a = live[i], c = live[j];
-      const dx = c.x - a.x, dy = c.y - a.y, d2 = dx * dx + dy * dy;
-      if (d2 >= 4 * R * R || d2 === 0) continue;
-      const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (2 * R - d) / 2;
-      a.x -= nx * ov; a.y -= ny * ov; c.x += nx * ov; c.y += ny * ov;
-      const rel = (a.vx - c.vx) * nx + (a.vy - c.vy) * ny;
-      if (rel > 0){ const k = rel * (1 + G.ballRest) / 2; a.vx -= k * nx; a.vy -= k * ny; c.vx += k * nx; c.vy += k * ny; }
-      if (a === st.shooter){ st.ev.contacts.add(c.id); a.spin *= G.contactSpin; }
-      if (c === st.shooter){ st.ev.contacts.add(a.id); c.spin *= G.contactSpin; }
-    }
-    if (G.wall === 'bounce') for (const b of live){ b.x = Math.min(W - R, Math.max(-W + R, b.x)); b.y = Math.min(H - R, Math.max(R, b.y)); }
+    if (list.length){ anim.snap = { t:0, dur:0.3, list }; kick(); }
   }
 
   function settle(){
-    st.moving = false;
+    st.moving = false; st.phys = false;
     const lines = [];
-    const pass = G.afterShot(lines);          // true: the turn goes to the other player
+    st.success = null;
+    const pass = G.afterShot(lines);
     const msg = G.end();
     if (!msg && st.players === 2){
       if (pass) passTurn(lines);
       else lines.push('<span class="turnline">득점해서 한 번 더 칩니다.</span>');
     }
     if (!msg && G.prepareNext) G.prepareNext();
+    snapBalls();
     report(lines);
-    if (msg){ st.over = true; $('toast').innerHTML = msg; clearTimeout(bubbleTimer); removeBubble(); }
-    updateUI();
+    if (st.success) celebrate(st.success);
+    if (msg){ st.over = true; $('toast').innerHTML = msg; stopOrb(); }
+    st.pred = null;
+    updateUI(); kick();
   }
 
   function report(lines){
@@ -858,8 +1638,8 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
     const dist = Math.abs(L.off), pct = Math.round(dist / R * 100);
     let verdict;
     if (L.miss){
-      verdict = curling ? `<b class="no">스톤을 놓쳤어요</b> · 직선이 스톤 중심에서 ${fmt(dist)} 떨어져 있어요(반지름 0.3).`
-        : `<b class="no">헛스윙</b> · 직선이 공 중심에서 ${fmt(dist)} 떨어져 공(반지름 0.3)을 못 맞혔어요.`;
+      verdict = curling ? `<b class="no">스톤을 놓쳤어요</b> · 직선이 스톤 중심에서 ${fmt(dist)} 떨어져 있어요(반지름 0.6).`
+        : `<b class="no">헛스윙</b> · 직선이 공 중심에서 ${fmt(dist)} 떨어져 공(반지름 0.6)을 못 맞혔어요.`;
     } else {
       const right = L.off > 0;
       const tag = pct < 15 ? (curling ? '<b class="ok">회전 없이 똑바로</b>' : '<b class="ok">정타</b>')
@@ -870,45 +1650,66 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
     let parallel = '';
     if (!L.miss && dist > 0.005){
       const s = L.start;
-      const eq = L.dx === 0 ? `x = ${fmt(s.x)}` : L.dy === 0 ? `y = ${fmt(s.y)}` : eqY(L.dx, L.dy, s.y - L.dy / L.dx * s.x);
+      const eq = L.dx === 0 ? `x = ${fracText(s.x)}` : L.dy === 0 ? `y = ${fracText(s.y)}` : eqY(L.dx, L.dy, s.y - L.dy / L.dx * s.x);
       parallel = `<span>${noun}은 입력한 직선과 <b>평행한 직선</b> 위에서 출발했어요.</span><span class="mono">${eq}</span>`;
     }
-    const used = { base:'', xint:' · x절편 찬스 사용', coord:' · 좌표 찬스 사용' }[L.usedMode];
+    const used = L.chance ? ` · 절편 찬스(${L.chance === 'x' ? 'x절편' : 'y절편'}) 사용` : '';
     const who = st.players === 2 ? ` · ${PNAME(L.player)}` : '';
+    const prd = L.pred ? `<span class="hint">예측 난이도 — 타점 ${'★'.repeat(L.pred.cue.stars)} · 목표 ${L.pred.tgt.stars ? '★'.repeat(L.pred.tgt.stars) : '—'}</span>` : '';
     $('report').innerHTML = `<span class="label">${st.shots}번째 ${curling ? '투구' : '샷'}${who}${used}</span>`
-      + `<span class="mono">입력: ${L.eq} · 세기 ${L.power} → 거리 ${fmt(L.dist)}</span><span>${verdict}</span>${parallel}${lines.join('')}`;
+      + `<span class="mono">입력: ${L.eq} · 세기 ${fmt(L.power)} → 거리 ${fmt(L.dist)}</span><span>${verdict}</span>${parallel}${lines.join('')}${prd}`;
   }
 
-  /* ---------- chance bubbles & quiz ---------- */
-  let bubbleTimer = null, bubble = null;
-  function scheduleBubble(){ clearTimeout(bubbleTimer); bubbleTimer = setTimeout(spawnBubble, 9000 + Math.random() * 9000); }
-  function removeBubble(){ if (bubble){ bubble.remove(); bubble = null; } }
-  function spawnBubble(){
+  /* ================= chance orb & quiz ================= */
+  const orb = { el:null, t:0, dur:9, dir:1, y0:0.5 };
+  let orbTimer = 0;
+  function scheduleOrb(first){ clearTimeout(orbTimer); orbTimer = setTimeout(spawnOrb, (first ? 9000 : 12000) + Math.random() * 8000); }
+  function stopOrb(){ clearTimeout(orbTimer); removeOrb(); }
+  function removeOrb(){ if (orb.el){ orb.el.remove(); orb.el = null; } }
+  function spawnOrb(){
     if (!G || st.over || $('game').hidden) return;
-    if (bubble || !$('overlay').hidden){ scheduleBubble(); return; }
-    const type = Math.random() < 0.5 ? 'xint' : 'coord';
+    if (orb.el || !$('overlay').hidden){ scheduleOrb(); return; }
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'bubble'; b.style.top = (10 + Math.random() * 60) + '%';
-    b.dataset.type = type;
-    b.innerHTML = `<span>${type === 'xint' ? 'x절편 찬스' : '좌표 찬스'} 잡기</span>`;
-    b.addEventListener('click', () => { removeBubble(); openQuiz(type); });
-    b.addEventListener('animationend', e => { if (e.target === b){ removeBubble(); scheduleBubble(); } });
-    $('tableWrap').appendChild(b); bubble = b;
+    b.type = 'button'; b.className = 'orb'; b.setAttribute('aria-label', '절편 찬스 구슬 잡기');
+    b.innerHTML = '<span class="halo"></span><span class="core"><span class="g">절편</span></span><span class="tw a">✦</span><span class="tw b">✦</span><span class="lbl">찬스 잡기</span>';
+    b.addEventListener('click', catchOrb);
+    orb.el = b; orb.t = 0; orb.dir = Math.random() < 0.5 ? 1 : -1; orb.y0 = 0.28 + Math.random() * 0.44;
+    $('tableWrap').appendChild(b); updateOrb(0); kick();
   }
-  const paren = v => v < 0 ? `(${String(v).replace('-', '−')})` : String(v);
+  function orbPos(){
+    const p = orb.t / orb.dur, xr = REDUCED ? 0.5 : orb.dir > 0 ? -0.06 + 1.12 * p : 1.06 - 1.12 * p;
+    const yr = orb.y0 + (REDUCED ? 0 : 0.08 * Math.sin(orb.t * 2 * Math.PI / 2.6));
+    return { xr, yr, x:XMIN - MARGIN + xr * VW, y:YMAX + MARGIN - yr * VH };
+  }
+  function updateOrb(dt){
+    orb.t += dt;
+    if (orb.t >= orb.dur){ removeOrb(); scheduleOrb(); return; }
+    const p = orbPos();
+    orb.el.style.left = (p.xr * 100) + '%'; orb.el.style.top = (p.yr * 100) + '%';
+    orb.el.style.opacity = String(Math.min(1, orb.t / 0.4, (orb.dur - orb.t) / 0.7));
+    if (!REDUCED && Math.random() < 0.7) FX.parts.push({ x:p.x + rand(-0.5, 0.5), y:p.y + rand(-0.5, 0.5), vx:-orb.dir * rand(0.5, 2), vy:rand(-1, 1), age:0, life:rand(0.4, 0.8), size:rand(1.4, 2.6), color:pick(GOLD), g:0, kind:'spark', rot:0, vr:0 });
+  }
+  function catchOrb(){
+    if (!orb.el) return;
+    Snd.unlock(); Snd.play('chime');
+    const p = orbPos();
+    sparks(p.x, p.y, 34, { speed:10, life:0.7, size:2.6 }); ring(p.x, p.y, { r0:1, r1:5, life:0.5, width:3 });
+    removeOrb(); openQuiz();
+  }
+  const pr = v => v < 0 ? `(${String(v).replace('-', '−')})` : String(v);
+  const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   function makeQuestion(){
     const kind = ri(0, 3);
-    if (kind === 0){ const a = ri(-9, 9), b = ri(-6, 6) || 2, c = ri(-6, 6) || -3; return { text:`${paren(a)} + ${paren(b)} × ${paren(c)} = ?`, ans:a + b * c }; }
-    if (kind === 1){ const q = ri(-6, 6) || 4, d = ri(2, 5) * (Math.random() < 0.5 ? -1 : 1), e = ri(-8, 8); return { text:`${paren(q * d)} ÷ ${paren(d)} − ${paren(e)} = ?`, ans:q - e }; }
+    if (kind === 0){ const a = ri(-9, 9), b = ri(-6, 6) || 2, c = ri(-6, 6) || -3; return { text:`${pr(a)} + ${pr(b)} × ${pr(c)} = ?`, ans:a + b * c }; }
+    if (kind === 1){ const q = ri(-6, 6) || 4, d = ri(2, 5) * (Math.random() < 0.5 ? -1 : 1), e = ri(-8, 8); return { text:`${pr(q * d)} ÷ ${pr(d)} − ${pr(e)} = ?`, ans:q - e }; }
     if (kind === 2){ const m = ri(-3, 3) || 2, x1 = ri(-4, 3), y1 = ri(-4, 4), k = ri(1, 4); return { text:`두 점 (${x1}, ${y1}), (${x1 + k}, ${y1 + m * k})을 지나는 직선의 기울기는?`.replace(/-/g, '−'), ans:m }; }
     const m = ri(-3, 3) || 3, c = ri(-4, 4) || 1;
     return { text:`${eqY(1, m, -m * c)} 의 x절편은?`, ans:c };
   }
-  function openQuiz(type){
-    const q = makeQuestion(); st.quiz = { ...q, type, player:st.turn, done:false };
-    const whose = st.players === 2 ? `${PNAME(st.turn)} · ` : '';
-    $('qTitle').textContent = `${whose}${type === 'xint' ? 'x절편 찬스 문제' : '좌표 찬스 문제'}`;
-    $('qText').textContent = q.text; $('qAns').value = ''; $('qMsg').textContent = '한 번만 답할 수 있어요.';
+  function openQuiz(){
+    const q = makeQuestion(); st.quiz = { ...q, player:st.turn, done:false };
+    $('qTitle').textContent = `${st.players === 2 ? `${PNAME(st.turn)} · ` : ''}절편 찬스 문제`;
+    $('qText').textContent = q.text; $('qAns').value = ''; $('qMsg').textContent = '맞히면 절편 찬스가 하나 쌓여요. 한 번만 답할 수 있어요.';
     $('qSubmit').disabled = false; $('overlay').hidden = false; $('qAns').focus();
   }
   function submitQuiz(){
@@ -916,54 +1717,66 @@ details ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;g
     const n = parseIn($('qAns').value); if (!n){ $('qMsg').textContent = '수로 답을 입력하세요.'; return; }
     q.done = true; $('qSubmit').disabled = true;
     if (Math.abs(n.v - q.ans) < 1e-9){
-      st.invs[q.player][q.type]++;                 // 풍선을 잡은 사람의 찬스로(그사이 차례가 넘어가도)
-      const whose = st.players === 2 ? `${PNAME(q.player)}의 ` : '';
-      $('qMsg').innerHTML = `<b class="ok">정답!</b> ${whose}${q.type === 'xint' ? 'x절편' : '좌표'} 찬스가 쌓였어요.`;
+      st.invs[q.player]++;                 // 구슬을 잡은 사람의 찬스로(그사이 차례가 넘어가도)
+      Snd.play('correct');
+      $('qMsg').innerHTML = `<b class="ok">정답!</b> ${st.players === 2 ? `${PNAME(q.player)}의 ` : ''}절편 찬스가 하나 쌓였어요.`;
       updateUI();
-    } else $('qMsg').innerHTML = `<b class="no">아쉬워요.</b> 정답은 ${fmt(q.ans)}입니다.`;
+    } else { Snd.play('wrong'); $('qMsg').innerHTML = `<b class="no">아쉬워요.</b> 정답은 ${fmt(q.ans)}입니다.`; }
   }
-  function closeQuiz(){ $('overlay').hidden = true; st.quiz = null; if (G && !st.over) scheduleBubble(); }
+  function closeQuiz(){ $('overlay').hidden = true; st.quiz = null; if (G && !st.over) scheduleOrb(); }
   $('qSubmit').addEventListener('click', submitQuiz);
   $('qAns').addEventListener('keydown', e => { if (e.key === 'Enter') submitQuiz(); });
   $('qClose').addEventListener('click', closeQuiz);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('overlay').hidden) closeQuiz(); });
 
-  /* ---------- navigation ---------- */
+  /* ================= navigation ================= */
   function openGame(key, players){
     G = GAMES[key]; st.players = players;
     $('lobby').hidden = true; $('game').hidden = false;
     $('gameName').textContent = G.name;
     $('modeTag').textContent = players === 2 ? '둘이 번갈아' : '혼자';
-    $('rules').innerHTML = [...G.rulesBase, ...(players === 2 ? G.rules2 : G.rules1), ...SHARED_RULES, ...(players === 2 ? [TWO_RULE] : [])]
+    $('levelTag').textContent = LEVELS[st.level].name;
+    $('rules').innerHTML = [`난이도 ${LEVELS[st.level].name}: ${LEVELS[st.level].desc}`, ...G.rulesBase, ...(players === 2 ? G.rules2 : G.rules1), ...SHARED_RULES, ...(players === 2 ? [TWO_RULE] : [])]
       .map(t => `<li>${t}</li>`).join('');
-    newGame(); resize(); window.scrollTo(0, 0);
+    bg = null; resize(); newGame(); window.scrollTo(0, 0);
   }
   function backToLobby(){
-    st.runId++; st.moving = false; clearTimeout(bubbleTimer); removeBubble();
+    st.runId++; st.moving = false; st.phys = false; anim.strike = null; anim.snap = null;
+    stopOrb(); Snd.slideStop();
+    FX.parts = []; FX.rings = []; FX.texts = []; FX.rockets = []; FX.shakeT = 0; $('tableWrap').style.transform = ''; $('banner').hidden = true;
     $('overlay').hidden = true; st.quiz = null;
     $('game').hidden = true; $('lobby').hidden = false; G = null;
   }
-  document.querySelectorAll('.open').forEach(b => b.addEventListener('click', () => openGame(b.dataset.game, Number(b.dataset.players))));
+  document.querySelectorAll('.open').forEach(b => b.addEventListener('click', () => { Snd.unlock(); Snd.play('click'); openGame(b.dataset.game, Number(b.dataset.players)); }));
 
-  /* ---------- host (AdminGames) · test hook ---------- */
+  /* ================= host (AdminGames) · test hook ================= */
   window.addEventListener('message', e => {
     const d = e.data;
     if (d && d.type === 'ash-theme' && (d.theme === 'light' || d.theme === 'dark')) document.documentElement.dataset.theme = d.theme;
   });
   window.__slopeShot = () => ({
-    game:G && G.key, players:st.players, turn:st.turn, shots:st.shots, pts:st.pts.slice(), moving:st.moving, over:st.over,
-    inv:st.invs.map(i => ({ ...i })), mode:st.mode, dx:st.dx, dy:st.dy,
+    game:G && G.key, level:st.level, players:st.players, turn:st.turn, shots:st.shots, pts:st.pts.slice(), moving:st.moving, over:st.over,
+    inv:st.invs.slice(), chance:st.chance, dx:st.dx, dy:st.dy, sound:Snd.on, fs:st.fs, immersive:st.immersive,
     shooter:st.shooter && { id:st.shooter.id, x:st.shooter.x, y:st.shooter.y },
     bodies:st.bodies.filter(b => !b.gone).map(b => ({ id:b.id, x:b.x, y:b.y, team:b.team, waiting:!!b.waiting })),
-    quiz:st.quiz && { text:st.quiz.text, ans:st.quiz.ans, type:st.quiz.type, player:st.quiz.player }
+    pred:st.pred && { cue:st.pred.cue.stars, tgt:st.pred.tgt.stars, cueNotes:st.pred.cue.notes.slice(), tgtWho:st.pred.tgt.who },
+    success:st.success && { tier:st.success.tier }, orb:!!orb.el,
+    quiz:st.quiz && { text:st.quiz.text, ans:st.quiz.ans, player:st.quiz.player }
   });
+  // 스모크 테스트용 — 기다리지 않고 찬스 구슬을 띄우거나, 성공 효과 단계를 미리 본다
+  window.__slopeShotDebug = {
+    spawnOrb(){ clearTimeout(orbTimer); spawnOrb(); return !!orb.el; },
+    celebrate(tier){ if (!G) return false; const t = clamp(Math.round(tier) || 1, 1, 5); celebrate({ tier:t, at:{ x:0, y:10 }, title:TIER_NAMES[t], info:`효과 미리 보기 ${t}단계` }); return true; }
+  };
 
+  syncTools();
   drawPreviews();
-  new ResizeObserver(resize).observe($('tableWrap'));
+  new ResizeObserver(() => resize()).observe($('stage'));
+  window.addEventListener('resize', () => { if (st.fs) resize(); });
   // 캔버스 글자(좌표 눈금 · 공 번호)는 폰트가 다 온 뒤 한 번 더 그린다 — 숨은 화면의 폰트는 저절로 받지 않으므로 직접 부른다
   if (document.fonts && document.fonts.load){
     Promise.all(['600 16px "IBM Plex Mono"', '700 16px "IBM Plex Mono"', '16px "Do Hyeon"'].map(f => document.fonts.load(f)))
-      .then(() => { drawPreviews(); draw(); }).catch(() => {});
+      .then(() => { drawPreviews(); bg = null; resize(); }).catch(() => {});
   }
 })();
 </script>
