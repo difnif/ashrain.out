@@ -708,6 +708,8 @@ def time():
             r = m % 5
             lines += [L(f"5 × {big_n} = {5 * big_n}", pre=f"긴바늘 {big_n}을 지나" if _has_b(big_n) else f"긴바늘 {big_n}를 지나", memo="숫자 하나에 5분") if big_n else L("긴바늘 12를 지나", memo="0분부터"),
                       L(f"{5 * big_n} + {r} = {m}", pre=f"작은 눈금 {r}칸 더", memo="작은 눈금 한 칸 1분"), L(f"{h}시 {m}분")]
+        # 시계 읽기 움직임 — 짧은바늘 사이 · 긴바늘을 12에서 쓸며 5, 10, 15 … · 남은 눈금 한 칸씩
+        clock_read(f, h, m, 0, 1, 2 if m % 5 else None)
         S.add(2, q, f"{h}시 {m}분", "긴바늘이 가리키는 숫자 × 5, 작은 눈금은 1분씩", lines, f.out(), omr="ex", key=f"{h}:{m}", qfig=True)
     fill(S, 2, 20, g2)
 

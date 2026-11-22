@@ -1,6 +1,8 @@
 # ashrain.out — 해설 그림 DSL (fig.py) — 무대 오른쪽 그림 칸 660 × 680 (frames/figdsl.jsx 가 그린다)
 # 요소마다 at: "q"(문제와 함께) · "p"(방침) · 정수 i(판서 i번째 줄) · "a"(답) — 그때 나타난다.
-#   hl: 그 줄일 때 금빛으로 빛남 · dl: 나타나는 늦춤(ms) · dr: 선을 그리듯 · un: 사라지는 때 · mv: {at, dx, dy, r, cx, cy} 옮기기
+#   hl: 그 줄일 때 금빛으로 빛남 · dl: 나타나는 늦춤(ms) · dr: 선을 그리듯 · un: 사라지는 때 · mv: {at, dx, dy, r, cx, cy, dl} 옮기기
+#   fr: {dx, dy, dl, ms} 떨어진 곳에서 날아오기(받아올림 · 빌려 오기) — fly() · rv: 각을 시계 방향으로 쓸기(arc(rv=True))
+# 그리는 쪽(figdsl.jsx)은 요소마다 그리듯 나타낸다(선은 그어지고 · 각은 쓸리고 · 칸은 칠해지고 · 글자는 써지고), 같은 때 요소는 차례로.
 # 색 c/f 는 무대 팔레트 이름(ink soft red gold teal sky coral lilac leaf blue yellow) — 인쇄(흑백)에서는 회색 단계로 바꾼다.
 import math
 
@@ -69,9 +71,12 @@ class Fig:
     def text(self, x, y, s, z=30, c="ink", a="m", b=600, at="q", ho=True, dl=0, hl=False, un=None, o=None):
         return self._a({"k": "T", "s": str(s)}, x=x, y=y, z=z, c=c, a=a, b=b, at=at, ho=ho, dl=dl, hl=hl, un=un, o=o)
 
-    def arc(self, x, y, r, a0, a1, at="q", c="gold", sw=3, f=None, fo=None, hl=False, dl=0, un=None, o=None):
-        """각 표시 — a0 → a1 (도, 동쪽 0 · 시계 반대 방향 +)"""
-        return self._a({"k": "A"}, x=x, y=y, r=r, a0=a0, a1=a1, at=at, c=c, sw=sw, f=f, fo=fo, hl=hl, dl=dl, un=un, o=o)
+    def arc(self, x, y, r, a0, a1, at="q", c="gold", sw=3, f=None, fo=None, hl=False, dl=0, un=None, o=None, rv=False):
+        """각 표시 — a0 → a1 (도, 동쪽 0 · 시계 반대 방향 +) · rv: a1 쪽에서 a0 쪽으로 쓸며 나타남(시계 방향)"""
+        el = self._a({"k": "A"}, x=x, y=y, r=r, a0=a0, a1=a1, at=at, c=c, sw=sw, f=f, fo=fo, hl=hl, dl=dl, un=un, o=o)
+        if rv:
+            el["rv"] = 1
+        return el
 
     def cross(self, x, y, s=12, at=0, c="red", w=4, dl=0, un=None):
         """× 지우기 표시"""
@@ -82,6 +87,16 @@ class Fig:
         if self.note:
             d["note"] = self.note
         return d
+
+def fly(el, dx, dy, dl=None, ms=None):
+    """나타날 때 (dx, dy) 떨어진 곳에서 출발해 제자리로 날아온다 — 끝 모습(인쇄)은 제자리"""
+    fr = {"dx": R1(dx), "dy": R1(dy)}
+    if dl is not None:
+        fr["dl"] = int(dl)
+    if ms is not None:
+        fr["ms"] = int(ms)
+    el["fr"] = fr
+    return el
 
 def mv(el, at, dx=0, dy=0, r=0, cx=0, cy=0):
     m = {"at": at}
