@@ -1,18 +1,28 @@
-// 관리자 — 게임 (#/admin/games)
-// 일차함수 그래프 학습 게임 「기울기 샷」(포켓볼 · 사구 · 컬링, 혼자 · 둘이 번갈아). 학생 공개 전까지 관리자 전용.
-// 게임은 HTML 한 장(src/features/games/slope-shot.html)이다. 관리자 확인이 끝난 뒤에만 내려받고(따로 나뉜 파일),
+// 관리자 — 게임 (#/admin/games · #/admin/games/po)
+// 학생 공개 전까지 관리자 전용 게임 두 가지:
+//   · 기울기 샷(#/admin/games) — 일차함수 당구(포켓볼 · 사구 · 컬링, 혼자 · 둘이 번갈아) — src/features/games/slope-shot.html
+//   · 포의 민족(#/admin/games/po) — 이차함수 포격전(스토리 12장 · 2인 대전 · 프리 모드) — src/features/games/po-minjok.html
+// 게임은 HTML 한 장이다. 관리자 확인이 끝난 뒤에만 내려받고(따로 나뉜 파일),
 // 샌드박스 iframe(allow-scripts — 앱의 저장소 · 로그인 세션에 닿지 않는다)에 띄운다. 전체 화면 · 소리를 위해 allow="fullscreen; autoplay".
 // 테마: 처음엔 문서에 data-theme 으로 심고(번쩍임 없음), 앱 테마가 바뀌면 postMessage 로 넘긴다(판이 새로 시작되지 않는다).
 // 전체 화면: 게임이 Fullscreen API 를 먼저 쓰고, 막힌 기기에서는 { type: "ash-immersive", on } 을 보내면 여기서 상단 바를 숨긴다.
+// 진행 저장: 샌드박스라 게임이 localStorage 를 못 쓴다 — { type: "ash-store-get" | "ash-store-set", key, data } 를 받아
+//   이 기기의 localStorage("ashrain.games.<key>")에 맡아 두고 { type: "ash-store", key, data } 로 돌려준다(이 iframe 에서 온 것만, 20KB 까지).
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
-import FeatureBar from "../components/FeatureBar";
+import FeatureBar, { FbAct } from "../components/FeatureBar";
 
+const GAMES = {
+  slope: { title: "기울기 샷", hash: "#/admin/games", load: () => import("../features/games/slope-shot.html?raw") },
+  po: { title: "포의 민족", hash: "#/admin/games/po", load: () => import("../features/games/po-minjok.html?raw") },
+};
+const STORE_PREFIX = "ashrain.games.";
 const themeMsg = (theme) => ({ type: "ash-theme", theme: theme === "light" ? "light" : "dark" });
 
-export default function AdminGames({ theme = "dark" }) {
+export default function AdminGames({ theme = "dark", game = "slope" }) {
+  const g = GAMES[game] ? game : "slope";
   const [me, setMe] = useState(undefined);    // undefined 확인 중 | false 비관리자 | true
-  const [html, setHtml] = useState(null);
+  const [html, setHtml] = useState(null);      // { game, text }
   const [err, setErr] = useState("");
   const [immersive, setImmersive] = useState(false);
   const frame = useRef(null);
@@ -32,38 +42,52 @@ export default function AdminGames({ theme = "dark" }) {
   useEffect(() => {
     if (me !== true) return;
     let alive = true;
-    import("../features/games/slope-shot.html?raw")
-      .then((m) => { if (alive) setHtml(m.default); })
+    setErr(""); setImmersive(false);
+    GAMES[g].load()
+      .then((m) => { if (alive) setHtml({ game: g, text: m.default }); })
       .catch(() => { if (alive) setErr("게임을 불러오지 못했어요. 새로고침해 주세요."); });
     return () => { alive = false; };
-  }, [me]);
+  }, [me, g]);
 
-  // 게임이 보내는 몰입 모드(상단 바 숨김) 요청 — 이 iframe 에서 온 것만
+  // 게임이 보내는 몰입 모드(상단 바 숨김) · 진행 저장 요청 — 이 iframe 에서 온 것만
   useEffect(() => {
     const on = (e) => {
       if (!frame.current || e.source !== frame.current.contentWindow) return;
       const d = e.data;
-      if (d && d.type === "ash-immersive") setImmersive(!!d.on);
+      if (!d || typeof d !== "object") return;
+      if (d.type === "ash-immersive") { setImmersive(!!d.on); return; }
+      if ((d.type !== "ash-store-get" && d.type !== "ash-store-set") || !/^[a-z0-9-]{1,40}$/.test(d.key || "")) return;
+      const k = STORE_PREFIX + d.key;
+      if (d.type === "ash-store-set") {
+        try { const s = JSON.stringify(d.data ?? null); if (s.length <= 20000) localStorage.setItem(k, s); } catch { /* 저장소가 막혀도 게임은 돈다 */ }
+        return;
+      }
+      let data = null;
+      try { data = JSON.parse(localStorage.getItem(k) || "null"); } catch { data = null; }
+      e.source.postMessage({ type: "ash-store", key: d.key, data }, "*");
     };
     window.addEventListener("message", on);
     return () => window.removeEventListener("message", on);
   }, []);
 
   // 문서가 처음 올 때의 테마를 심는다 — 이후 테마가 바뀌어도 srcDoc 은 그대로(다시 읽히지 않게)
-  const doc = useMemo(() => html && html.replace('<html lang="ko">',
-    `<html lang="ko" data-theme="${themeMsg(themeNow.current).theme}">`), [html]);
+  const doc = useMemo(() => html && html.game === g && html.text.replace('<html lang="ko">',
+    `<html lang="ko" data-theme="${themeMsg(themeNow.current).theme}">`), [html, g]);
   const post = () => frame.current?.contentWindow?.postMessage(themeMsg(themeNow.current), "*");
   useEffect(() => { post(); }, [theme]);
 
   if (me === undefined) return null;
+  const tabs = me ? Object.entries(GAMES).map(([id, x]) => (
+    <FbAct key={id} pri={id === g} onClick={() => { if (location.hash !== x.hash) location.hash = x.hash; }}>{x.title}</FbAct>
+  )) : null;
   return (
     <div className={`ag-root ag-${theme}${immersive ? " ag-imm" : ""}`}>
       <style>{CSS}</style>
-      <FeatureBar theme={theme} title="게임" sub={me ? "기울기 샷 · 관리자 전용" : undefined} back="#/" />
+      <FeatureBar theme={theme} title="게임" sub={me ? "관리자 전용" : undefined} back="#/" actions={tabs} />
       {!me ? <p className="ag-note">관리자만 들어올 수 있는 곳이에요.</p>
         : err ? <p className="ag-note">{err}</p>
         : !doc ? <p className="ag-note">여는 중…</p>
-        : <iframe ref={frame} className="ag-frame" title="기울기 샷" srcDoc={doc} sandbox="allow-scripts"
+        : <iframe key={g} ref={frame} className="ag-frame" title={GAMES[g].title} srcDoc={doc} sandbox="allow-scripts"
             allow="fullscreen; autoplay" allowFullScreen onLoad={post} />}
     </div>
   );
