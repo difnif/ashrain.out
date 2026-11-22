@@ -1747,7 +1747,10 @@ body.fs #battle{gap:8px}
     if (un.guard){ g.font = `${Math.round(s * 0.9)}px system-ui`; g.textAlign = 'center'; g.fillText('🐶', px - face * s * 1.8, py - s * 0.3); }
     if (!un.alive) return;
     // 체력 · 이름 · 차례 표시
-    const bw = s * 2.6, bx = px - bw / 2, by = py - s * (un.kind === 'ship' ? 4.4 : 3.0);
+    // 이름표 — 같은 편 부대가 붙어 있으면 번갈아 높이를 달리해 겹치지 않게
+    const mates = BT.sides[un.side].units, idx = mates.indexOf(un);
+    const lift = idx % 2 && mates.some(o => o !== un && Math.abs(o.x - un.x) < 9) ? Math.max(s * 1.05, 13) : 0;
+    const bw = s * 2.6, bx = px - bw / 2, by = py - s * (un.kind === 'ship' ? 4.4 : 3.0) - lift;
     g.fillStyle = 'rgba(20,14,6,0.6)'; g.fillRect(bx - 1, by - 1, bw + 2, s * 0.32 + 2);
     g.fillStyle = un.side === 0 ? '#e0604a' : '#6f9be0'; g.fillRect(bx, by, bw * un.hp / un.maxHp, s * 0.32);
     g.font = `700 ${Math.max(10, s * 0.6)}px ${'"Apple SD Gothic Neo","Malgun Gothic",sans-serif'}`; g.textAlign = 'center'; g.textBaseline = 'bottom';
