@@ -300,6 +300,17 @@ function nameFields(pg) {
     }
     out.push({ label: [s.x, s.y, s.x1, s.y1], values, box, size: s.size, align });
   }
+  // 긴 덩이 속 「이름: 홍길동」 (제목과 한 줄에 붙은 경우)
+  for (const s of sp) {
+    if (labelOf(s.t)[0]) continue;
+    const m = /(이름|성명)\s*[:：]\s*([가-힣]{2,4})(?![가-힣])/.exec(s.t);
+    if (!m) continue;
+    const cw = (s.x1 - s.x) / Math.max(1, s.t.length);
+    const at = m.index + m[0].length - m[2].length;
+    const r = [s.x + at * cw, s.y, s.x + (at + m[2].length) * cw, s.y1];
+    const lx = s.x + m.index * cw;
+    out.push({ label: [lx, s.y, r[0], s.y1], values: [[m[2], r]], box: [r[0] - 2, s.y - 2, Math.min(W - 14, r[0] + 110), s.y1 + 2], size: s.size, align: "left" });
+  }
   return out;
 }
 const inter = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
@@ -632,4 +643,5 @@ export async function attachAnswer(pr, up, ctx) {
   log("answer_attach", null, pr.id, { quick: n, designed });
   return n;
 }
-export { A4W, A4H, paste };
+// 옮겨 오기(PDF 묶음)에서 쓰는 도구
+export { readDoc, readManifest, findNames, redactPages, stampCode, codePrinted, validCode };

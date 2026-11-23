@@ -83,8 +83,26 @@ async function openSqlite(bytes) {
 }
 const tableCols = (q, t) => { try { return new Set(q(`PRAGMA table_info(${t})`).map((r) => r.name)); } catch { return new Set(); } };
 
+// 묶음이 zip 으로 왔으면 풀어서 같은 꼴로 (프린트 묶음 · data 폴더 압축 둘 다)
+async function unzipAll(files) {
+  const out = [];
+  for (const f of files) {
+    if (!/\.zip$/i.test(f.path)) { out.push(f); continue; }
+    try {
+      const { readZip } = await import("../../../lib/unzip");
+      const base = f.path.replace(/\.zip$/i, "");
+      for (const e of await readZip(await f.file.arrayBuffer())) {
+        const name = e.name.replace(/\\/g, "/");
+        out.push({ path: base + "/" + name, file: new File([e.data], name.split("/").pop()) });
+      }
+    } catch { out.push(f); }
+  }
+  return out;
+}
+
 // ── 무엇이 들었나 보기
-async function scan(files) {
+async function scan(files0) {
+  const files = await unzipAll(files0);
   const norm = files.map((f) => ({ ...f, path: f.path.replace(/\\/g, "/") }));
   const res = { pc: null, packages: [] };
   const dbf = norm.find((f) => /(^|\/)mf\.db$/.test(f.path));
@@ -98,16 +116,124 @@ async function scan(files) {
     const cnt = (t) => { try { return S.q(`SELECT COUNT(*) n FROM ${t}`)[0].n; } catch { return 0; } };
     res.pc = { S, fileMap, base, n: { students: cnt("students"), prints: cnt("prints"), gradings: cnt("gradings"), scans: cnt("scans"), marks: cnt("marks"), class: cnt("class_records"), events: cnt("events"), transcripts: cnt("transcripts") } };
   }
+  // 그 밖의 PDF (PC data 폴더·묶음 안의 것은 빼고) → Claude 프린트 PDF 후보
+  const taken = (path) => (res.pc && path.startsWith(res.pc.base)) || res.packages.some((p) => path.startsWith(p.base));
+  res.pdfs = () => norm.filter((x) => /\.pdf$/i.test(x.path) && !taken(x.path));
   for (const f of norm.filter((x) => /(^|\/)print\.json$/.test(x.path))) {
     try {
       const j = JSON.parse(await f.file.text());
       if (j && j.kind === "ashrain.tt.package") {
         const base = f.path.replace(/print\.json$/, "");
-        res.packages.push({ j, files: new Map(norm.filter((x) => x.path.startsWith(base)).map((x) => [x.path.slice(base.length), x.file])) });
+        res.packages.push({ j, base, files: new Map(norm.filter((x) => x.path.startsWith(base)).map((x) => [x.path.slice(base.length), x.file])) });
       }
     } catch { /* 다른 json */ }
   }
+  const left = res.pdfs();
+  res.claude = left.length ? await scanPdfs(left) : null;
   return res;
+}
+
+// ── Claude 프린트 PDF: 안에 든 등록 정보(코드)로 묶는다. 코드가 없으면 파일 이름으로 묶고 새 코드를 준다.
+const ROLE_ANS = /정답|풀이|해설|answer/i, ROLE_MON = /모니터|monitor/i, ROLE_STU = /학생용|답안지|활동지/;
+const stemOf = (name) => name.replace(/\.pdf$/i, "").replace(/[_\-\s]*(문제지|정답과\s*풀이|정답과\s*해설|정답지|빠른\s*정답|정답|풀이|해설|학생용|답안지|활동지|모니터\s*해설|최종|수정본?|v\d+|\(\d+\)|\d{6,8})[_\-\s]*/gi, " ").replace(/\s+/g, " ").trim();
+async function scanPdfs(pdfs) {
+  const B = await import("./engine/base.js");
+  const groups = new Map(), skipped = [];
+  for (const x of pdfs) {
+    const name = x.path.split("/").pop();
+    let man = null, text = "", pages = 0;
+    try {
+      const doc = await B.openPdf(new Uint8Array(await x.file.arrayBuffer()));
+      pages = doc.numPages;
+      try {
+        const at = await doc.getAttachments();
+        for (const k of Object.keys(at || {})) {
+          if (!/\.json$/i.test(at[k].filename || k)) continue;
+          try { const m = JSON.parse(new TextDecoder().decode(at[k].content).replace(/^\uFEFF/, "")); if (m && m.kind === "ashrain.print") man = m; } catch { /* */ }
+        }
+      } catch { /* 첨부 없음 */ }
+      const tc = await (await doc.getPage(1)).getTextContent();
+      text = tc.items.map((i) => i.str).join(" ");
+      doc.destroy();
+    } catch { skipped.push(name + " (PDF를 읽지 못함)"); continue; }
+    const pm = /코드\s*([2-9A-HJKMNP-Z]{3})\s*-\s*([2-9A-HJKMNP-Z]{3})/.exec(text);
+    const code = (man && /^[2-9A-HJKMNP-Z]{6}$/.test(String(man.code || "").toUpperCase()) && String(man.code).toUpperCase()) || (pm ? pm[1] + pm[2] : null);
+    if (!man && !code && !/@\s*ashrain\.out/i.test(text)) { skipped.push(name); continue; }
+    const mt = man ? `${man.title || ""} ${man.sub || ""}` : "";
+    const role = ROLE_MON.test(name) ? "모니터해설" : ROLE_STU.test(name) ? "학생용" : ROLE_ANS.test(name) || ROLE_ANS.test(mt) ? "정답" : "문제지";
+    const key = code || "stem:" + stemOf(name);
+    if (!groups.has(key)) groups.set(key, { code, fresh: !code, title: "", sub: "", label: "", man: null, files: [] });
+    const g = groups.get(key);
+    g.files.push({ x, name, role, man, pages, t: x.file.lastModified || 0 });
+    if (man && role === "문제지") { g.man = man; g.title = man.title || g.title; g.sub = man.sub || g.sub; g.label = man.label || g.label; }
+    if (!g.title) g.title = (man && man.title) || stemOf(name) || name;
+  }
+  // 같은 역할이 여러 개면 가장 새것만 (옛 판은 건너뜀)
+  const list = [...groups.values()].map((g) => {
+    const by = new Map();
+    for (const f of [...g.files].sort((a, b) => b.t - a.t)) if (!by.has(f.role)) by.set(f.role, f); else f.old = true;
+    g.use = by;
+    g.old = g.files.filter((f) => f.old).map((f) => f.name);
+    return g;
+  }).filter((g) => g.use.has("문제지") || (skipped.push(...g.files.map((f) => f.name + " (문제지 없음)")), false));
+  return { groups: list, skipped };
+}
+async function importClaudePdfs(cl, ui) {
+  const E = await import("./engine/register.js");
+  const { knownNames } = await import("./backend.js");
+  const { newCode } = await import("./logic.js");
+  const have = new Set((await all(() => T("tt_prints").select("code"))).map((r) => r.code));
+  const known = await knownNames();
+  let done = 0, skipped = 0;
+  const errors = [];
+  let k = 0;
+  for (const g of cl.groups) {
+    k++;
+    ui.status(`Claude 프린트 ${k}/${cl.groups.length} · ${g.title}`);
+    let code = g.code;
+    if (code && have.has(code)) { skipped++; continue; }
+    if (!code) { do code = newCode(); while (have.has(code)); }
+    try {
+      const found = new Set();
+      let boxes = [];
+      const prep = async (f, stamp) => {
+        let bytes = new Uint8Array(await f.x.file.arrayBuffer());
+        const D = await E.readDoc(bytes);
+        const fn = E.findNames(D, known);
+        fn.removed.forEach((r) => found.add(r.text));
+        if (f.role === "문제지") boxes = fn.boxes;
+        bytes = await E.redactPages(bytes, D, fn.targets);
+        if (stamp) bytes = await E.stampCode(bytes, code);
+        return new Uint8Array(bytes);
+      };
+      const files = { sheet: `${code}/sheet.pdf`, answer: null, src: [], extras: [] };
+      const s = g.use.get("문제지");
+      await put(files.sheet, await prep(s, g.fresh), "application/pdf");
+      const a = g.use.get("정답");
+      if (a) { files.answer = `${code}/answer.pdf`; await put(files.answer, await prep(a, g.fresh), "application/pdf"); }
+      let n = 0;
+      for (const [role, f] of g.use) {
+        if (role === "문제지" || role === "정답") continue;
+        const rel = `${code}/extras/x${++n}.pdf`;
+        await put(rel, await prep(f, g.fresh), "application/pdf");
+        files.extras.push({ name: f.name, role, path: rel });
+      }
+      files.sheet_name = s.name; files.answer_name = a ? a.name : null;
+      const strip = (t) => { let o = String(t || ""); for (const nm of [...found, ...known].filter((v) => v && v.length >= 2)) o = o.split(nm).join(" "); return o.replace(/\s{2,}/g, " ").trim(); };
+      const made = new Date(s.t || Date.now());
+      must(await T("tt_prints").insert({
+        code, title: strip(g.title) || code, sub: strip(g.sub), kind: "registered", template: "등록", label: g.label || "서답형",
+        n_items: g.man && Array.isArray(g.man.items) ? g.man.items.length : 0, pages: s.pages || 0,
+        sources: [...g.use.values()].map((f) => strip(f.name)), files, name_boxes: boxes, shelf: "library",
+        options: { library: { made: `${made.getFullYear()}-${String(made.getMonth() + 1).padStart(2, "0")}-${String(made.getDate()).padStart(2, "0")}`,
+          for: [...found], roles: [...g.use.keys()], fresh_code: g.fresh, old: g.old } },
+      }).select("id").single());
+      log("library_import", null, null, { code, title: g.title, files: g.use.size, fresh: g.fresh });
+      have.add(code);
+      done++;
+    } catch (e) { errors.push(`${g.title}: ${e.message}`); }
+  }
+  return { done, skipped, errors };
 }
 
 // 여러 파일 올리기 (동시에 4개)
@@ -297,10 +423,12 @@ export async function importView({ view, $, esc, toast, fmtCode }) {
   view.innerHTML = `<h1>옮겨 오기</h1>
     <div class="card"><h2>무엇을 옮기나요?</h2>
       <p class="sub small" style="margin:0 0 6px">① <b>PC 강사도구 자료</b> — PC 강사도구 폴더 안의 <b>data</b> 폴더(mf.db · prints · scans)를 통째로. 학생·프린트·채점 기록·스캔본·수업 기록·활동 로그·전사본이 옮겨져요. <b>PC 강사도구는 닫고</b> 하세요.</p>
-      <p class="sub small" style="margin:0">② <b>Claude와 만든 프린트 묶음</b> — 「강사도구로 옮길 프린트」 폴더(프린트마다 print.json). 보관함에 들어가고, 쓸 때 코드로 꺼내 등록해요.</p>
+      <p class="sub small" style="margin:0">② <b>Claude와 만든 프린트 묶음</b> — 「강사도구로 옮길 프린트」 폴더(프린트마다 print.json, zip 이어도 돼요). 보관함에 들어가고, 쓸 때 코드로 꺼내 등록해요.</p>
+      <p class="sub small" style="margin:0">③ <b>Claude와 만든 프린트 PDF</b> — 받아 둔 문제지·정답 PDF를 한 폴더에 모아 통째로. PDF 안의 코드로 묶어 보관함에 넣고(옛 판은 가장 새것만), 코드가 없던 예전 프린트는 새 코드를 찍어요. 매쓰플랫·기출 PDF는 알아서 건너뛰어요.</p>
       <p class="sub small" style="margin:6px 0 0">이미 있는 코드는 건너뛰어서 여러 번 해도 겹치지 않아요.</p>
       <div class="drop" id="imDrop" style="margin-top:12px"><b>폴더를 끌어다 놓거나 눌러서 고르기</b><span class="sub small">둘 다 한꺼번에 놓아도 돼요</span>
         <input type="file" id="imPick" webkitdirectory directory multiple hidden></div>
+      <div class="row" style="margin-top:8px"><span class="sub small">묶음이 zip 파일이면</span><button class="btn ghost small" id="imZipBtn">zip 파일 고르기</button><input type="file" id="imZip" accept=".zip" multiple hidden></div>
     </div><div id="imOut"></div>`;
   const out = $("#imOut");
   const dz = $("#imDrop"), pick = $("#imPick");
@@ -313,11 +441,14 @@ export async function importView({ view, $, esc, toast, fmtCode }) {
     out.innerHTML = `<div class="card"><span class="busy"></span>폴더를 읽는 중… (파일 ${files.length}개)</div>`;
     let r;
     try { r = await scan(files); } catch (e) { out.innerHTML = `<div class="card" style="border-color:#fca5a5"><b>읽지 못했어요</b><div class="sub">${esc(e.message)}</div></div>`; return; }
-    if (!r.pc && !r.packages.length) { out.innerHTML = `<div class="card" style="border-color:#fca5a5"><b>옮길 것을 찾지 못했어요</b><div class="sub small">mf.db 가 든 data 폴더나, print.json 이 든 프린트 묶음 폴더를 놓아 주세요.</div></div>`; return; }
+    if (!r.pc && !r.packages.length && !(r.claude && r.claude.groups.length)) { out.innerHTML = `<div class="card" style="border-color:#fca5a5"><b>옮길 것을 찾지 못했어요</b><div class="sub small">mf.db 가 든 data 폴더나, print.json 이 든 프린트 묶음 폴더를 놓아 주세요.</div></div>`; return; }
     const n = r.pc && r.pc.n;
     out.innerHTML = `<div class="card"><h2>찾은 것</h2>
       ${r.pc ? `<div>PC 강사도구 자료 — 학생 ${n.students} · 프린트 ${n.prints} · 채점 ${n.gradings} (기록 ${n.marks}) · 스캔본 ${n.scans} · 수업 기록 ${n.class} · 활동 로그 ${n.events} · 전사본 ${n.transcripts}</div>` : ""}
       ${r.packages.length ? `<div>Claude 프린트 묶음 — ${r.packages.length}개 <span class="sub small">(${r.packages.slice(0, 6).map((p) => esc(p.j.print.title || "")).join(", ")}${r.packages.length > 6 ? " …" : ""})</span></div>` : ""}
+      ${r.claude && r.claude.groups.length ? `<div>Claude 프린트 PDF — <b>${r.claude.groups.length}개 프린트</b> (코드 있음 ${r.claude.groups.filter((g) => !g.fresh).length} · 코드 없어 새로 줌 ${r.claude.groups.filter((g) => g.fresh).length})
+        <details><summary class="small">목록</summary><table class="t small">${r.claude.groups.map((g) => `<tr><td class="code">${g.code ? esc(fmtCode(g.code)) : "<span class='sub'>새 코드</span>"}</td><td>${esc(g.title)}</td><td class="sub">${[...g.use.keys()].map(esc).join(" · ")}${g.old.length ? ` · 옛 판 ${g.old.length}개 건너뜀` : ""}</td></tr>`).join("")}</table></details></div>` : ""}
+      ${r.claude && r.claude.skipped.length ? `<div class="sub small">Claude 프린트가 아니어서(매쓰플랫·기출 등) 건너뛸 PDF ${r.claude.skipped.length}개</div>` : ""}
       <div class="row" style="margin-top:12px"><button class="btn big" id="imGo">옮기기 시작</button><span class="sub small">창을 닫지 마세요 — 파일이 많으면 몇 분 걸려요</span></div>
       <div id="imRun" hidden style="margin-top:12px"><div class="sub small" id="imSt">…</div><div style="height:8px;background:#e2e8f0;border-radius:6px;overflow:hidden;margin-top:6px"><div id="imBar" style="height:8px;width:0;background:var(--acc);transition:width .2s"></div></div></div></div>`;
     $("#imGo").onclick = async () => {
@@ -329,6 +460,11 @@ export async function importView({ view, $, esc, toast, fmtCode }) {
           const a = await importPc(r.pc, ui);
           lines.push(`<b>PC 자료</b>: 학생 ${a.students}명 · 프린트 ${a.prints}개${a.skipped.length ? ` (이미 있던 ${a.skipped.length}개는 건너뜀: ${a.skipped.slice(0, 8).map(fmtCode).join(", ")}${a.skipped.length > 8 ? " …" : ""})` : ""} · 채점 ${a.gradings}건 · 스캔본 ${a.scans}개`);
           a.errors.forEach((e) => lines.push(`<span style="color:#b91c1c">${esc(e)}</span>`));
+        }
+        if (r.claude && r.claude.groups.length) {
+          const c = await importClaudePdfs(r.claude, ui);
+          lines.push(`<b>Claude 프린트 PDF</b>: 보관함에 ${c.done}개${c.skipped ? ` · 이미 있던 ${c.skipped}개는 건너뜀` : ""} — 학생 이름은 지운 판으로 넣었어요`);
+          c.errors.forEach((e) => lines.push(`<span style="color:#b91c1c">${esc(e)}</span>`));
         }
         if (r.packages.length) {
           const b = await importPackages(r.packages, ui);
@@ -345,6 +481,8 @@ export async function importView({ view, $, esc, toast, fmtCode }) {
     };
   };
   dz.onclick = () => pick.click();
+  $("#imZipBtn").onclick = () => $("#imZip").click();
+  $("#imZip").onchange = (e) => { run([...e.target.files].map((f) => ({ path: f.name, file: f }))); e.target.value = ""; };
   pick.onchange = () => { run([...pick.files].map((f) => ({ path: f.webkitRelativePath || f.name, file: f }))); pick.value = ""; };
   ["dragenter", "dragover"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("over"); }));
   ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("over"); }));
