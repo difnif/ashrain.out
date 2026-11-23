@@ -11,7 +11,7 @@
   · 진행 저장: 샌드박스라 localStorage 를 못 쓰면 부모에게 { type: "ash-store-get" | "ash-store-set", key: "po-minjok", data } 로 맡긴다.
   · window.__poMinjok() — 스모크 테스트가 읽는 상태 요약, window.__poDebug — 시험용 갈고리.
   좌표: 전장 x 0 ~ 60, y 0 ~ 30(격자 1칸 = 1). 중력 g = 10. 포탄은 입력한 이차함수의 그래프를 그대로 따라 난다(포의 힘을 넘으면 같은 각도로 최대 세기).
-  조작 난이도 — 뉴비: 꼭짓점 (p, q)만(포구가 원점) · 에이스: y = ax² + bx(포구가 원점) · 마스터: 절대 좌표 y = a(x − p)² + q(포구를 지나야 발사).
+  조작 난이도(넣는 값의 수) — 꼴은 모두 y = a(x − b)² + c(전장 좌표). 뉴비: a만(쏘는 기울기 · 방향 자동, b · c는 a로 정해짐) · 에이스: a, b(c는 포구를 지나게 자동) · 마스터: a, b, c 모두(포구를 지나야 발사).
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -130,7 +130,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .main{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:12px;align-items:start}
 .stage{min-width:0;display:flex;flex-direction:column;align-items:center;gap:10px}
 #fieldWrap{position:relative;width:100%;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px -12px rgba(0,0,0,.5);will-change:transform}
-#cv{display:block;width:100%;touch-action:manipulation;cursor:crosshair}
+#cv{display:block;width:100%;touch-action:pan-y;cursor:crosshair}
+.hud{position:absolute;right:6px;top:6px;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-family:var(--f-mono);font-size:11.5px;font-weight:600;color:#fff6dc}
+.hud span{background:rgba(14,10,6,.6);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.camtools{position:absolute;right:6px;bottom:20px;z-index:2;display:flex;gap:4px}
+.camtools button{min-height:30px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.45);background:rgba(14,10,6,.58);color:#fff6dc;font-size:12px;font-weight:700;touch-action:manipulation}
+.camtools button[aria-pressed="true"]{background:rgba(255,214,90,.9);color:#2a1a00;border-color:rgba(255,214,90,1)}
+.hud i{font-style:normal}
+#fieldWrap.small .camtools{bottom:18px;right:4px;gap:3px}
+#fieldWrap.small .camtools button{min-height:24px;padding:0 7px;font-size:10.5px}
+#fieldWrap.small .hud{flex-direction:row;gap:3px;top:4px;right:4px;font-size:10px}
+#fieldWrap.small .hud span{padding:1px 6px}
+#fieldWrap.small .hud i{display:none}
 #fx{position:absolute;left:0;top:0;pointer-events:none}
 .out{max-width:100%;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:6px}
 .out:has(> .report:empty){display:none}
@@ -144,6 +155,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .hps{display:flex;flex-direction:column;gap:4px}
 .hp{display:grid;grid-template-columns:minmax(0,1fr) 92px 34px;gap:6px;align-items:center;font-size:12.5px}
 .hp span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp span small{font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
 .hp .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
 .hp .bar i{display:block;height:100%;background:var(--pc,var(--me));transition:width .3s}
 .hp b{font-family:var(--f-mono);font-size:12px;text-align:right}
@@ -153,6 +165,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .energy .bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden;position:relative}
 .energy .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f5b93a,#ffd96b,#ff8a3d);transition:width .3s}
 .energy .bar.full i{animation:glow 1s ease-in-out infinite alternate}
+.move{display:flex;flex-direction:column;gap:4px}
+.move .row{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;font-weight:700}
+.move .row span:last-child{font-family:var(--f-mono);font-weight:600}
+.moverow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:center}
+.moverow button{min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--field);font-weight:700;font-size:13.5px;touch-action:none;user-select:none;-webkit-user-select:none}
+.moverow button:active{background:var(--accent-soft)}
+.moverow button:disabled{opacity:.4;cursor:not-allowed}
+.moverow .bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.moverow .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4f8fcf,#86c8ee);transition:width .15s}
 @keyframes glow{to{filter:brightness(1.35)}}
 .weps{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 .wep{display:flex;flex-direction:column;align-items:flex-start;gap:0;min-height:44px;padding:5px 8px;border-radius:10px;border:1px solid var(--line);background:var(--field);text-align:left;min-width:0}
@@ -166,7 +187,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .ctl-h{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:26px}
 .ctl-h label{font-size:13px;font-weight:700}
 .ctl-row{display:grid;grid-template-columns:42px 42px minmax(0,1fr) 42px 42px;gap:4px}
-.ctl-row button{height:40px;border-radius:9px;border:1px solid var(--line);background:transparent;font-family:var(--f-mono);font-size:12px;font-weight:600;padding:0;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.ctl-row button{height:40px;border-radius:9px;border:1px solid var(--line);background:transparent;font-family:var(--f-mono);font-size:11px;font-weight:600;padding:0;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .ctl-row input{height:40px;width:100%;min-width:0;border:1px solid var(--line);border-radius:9px;background:var(--field);color:var(--ink);font-family:var(--f-mono);font-size:17px;font-weight:600;text-align:center;padding:0 4px}
 .ctl-row button:active{background:var(--accent-soft)}
 .form{font-size:12.5px;color:var(--muted);line-height:1.5}
@@ -252,7 +273,7 @@ body.fs #battle{gap:8px}
     <div class="lobby-top">
       <div>
         <h1 class="title">포의 민족<small>이차함수 포격전</small></h1>
-        <p class="lede">포탄은 내가 입력한 이차함수의 그래프를 따라 날아가요. 고려 말 최무선의 화포부터 조선 말 강화도의 포대까지 — 시대마다 쳐들어온 적과 포를 겨뤄 보세요.</p>
+        <p class="lede">포탄은 내가 입력한 이차함수 <b>y = a(x − b)² + c</b>의 그래프를 따라 날아가요. 고려 말 최무선의 화포부터 조선 말 강화도의 포대까지 — 시대마다 쳐들어온 적과 포를 겨뤄 보세요.</p>
       </div>
       <div class="tools">
         <button class="iconbtn js-fs" type="button">⛶ 전체 화면</button>
@@ -262,9 +283,9 @@ body.fs #battle{gap:8px}
     <div>
       <div class="label">조작 난이도</div>
       <div class="levels" role="radiogroup" aria-label="조작 난이도">
-        <button class="lv" type="button" role="radio" data-level="newbie" aria-checked="true"><b>뉴비</b><small>꼭짓점 (p, q)만 · 포구가 원점 · 적 명중률 낮음</small></button>
-        <button class="lv" type="button" role="radio" data-level="ace" aria-checked="false"><b>에이스</b><small>y = ax² + bx · 포구가 원점 · 적 명중률 보통</small></button>
-        <button class="lv" type="button" role="radio" data-level="master" aria-checked="false"><b>마스터</b><small>절대 좌표 y = a(x − p)² + q · 적 명중률 높음</small></button>
+        <button class="lv" type="button" role="radio" data-level="newbie" aria-checked="true"><b>뉴비</b><small>a만 넣어요 · 쏘는 기울기 · 꼭짓점은 자동 · 적 명중률 낮음</small></button>
+        <button class="lv" type="button" role="radio" data-level="ace" aria-checked="false"><b>에이스</b><small>a, b 를 넣어요 · c는 포구를 지나게 자동 · 적 명중률 보통</small></button>
+        <button class="lv" type="button" role="radio" data-level="master" aria-checked="false"><b>마스터</b><small>a, b, c 모두 · 포구를 지나게 직접 계산 · 적 명중률 높음</small></button>
       </div>
     </div>
     <div class="modes">
@@ -336,9 +357,11 @@ body.fs #battle{gap:8px}
     <div class="main">
       <div class="stage" id="stage">
         <div id="fieldWrap">
-          <canvas id="cv" aria-label="전장 — 좌표평면. 누르면 그 점을 꼭짓점으로 잡아요"></canvas>
+          <canvas id="cv" aria-label="전장 — 좌표평면. 누르면 그 점을 겨눠 값을 잡아 주고, 옆으로 끌면 둘러봐요"></canvas>
           <canvas id="fx" aria-hidden="true"></canvas>
           <div class="banner" id="banner" hidden><b class="bt"></b><span class="bs"></span></div>
+          <div class="hud" id="seaHud" hidden aria-live="polite"></div>
+          <div class="camtools" id="camTools" aria-label="볼 곳"><button type="button" data-cam="me">◎ 내 부대</button><button type="button" data-cam="foe">적 보기 ▸</button><button type="button" data-cam="all" aria-pressed="false">전체</button></div>
         </div>
         <p class="hint rotate-hint">📱 휴대폰을 가로로 돌리면 전장이 더 크게 보여요.</p>
         <div class="out" id="outBelow" hidden></div>
@@ -347,6 +370,7 @@ body.fs #battle{gap:8px}
         <div class="turn" id="turn" aria-live="polite"><i aria-hidden="true"></i><div><span id="turnName">내 차례</span><small id="turnSub"></small></div></div>
         <div class="hps" id="hps"></div>
         <div class="energy" id="energyBox"><div class="row"><span>기운</span><span id="energyNum">0 / 100</span></div><div class="bar" id="energyBar"><i></i></div></div>
+        <div class="move" id="moveBox" title="체력(선원 · 병사)이 줄면 차례마다 받는 이동 기운도 줄어요"><div class="row"><span>이동 기운</span><span id="mpNum">0 / 100</span></div><div class="moverow"><button type="button" id="mvL" aria-label="왼쪽으로 이동 — 누르고 있는 동안">◀ 이동</button><span class="bar" id="mpBar"><i></i></span><button type="button" id="mvR" aria-label="오른쪽으로 이동 — 누르고 있는 동안">이동 ▶</button></div></div>
         <div><div class="label">포</div><div class="weps" id="weps"></div><p class="wepinfo" id="wepInfo"></p></div>
         <div id="inputs"></div>
         <div class="readout">
@@ -358,7 +382,7 @@ body.fs #battle{gap:8px}
         <div><div class="label">십이지신 기술 <span id="skHint"></span></div><div class="skills" id="skills"></div></div>
         <div class="items" id="items"></div>
         <button class="gust" type="button" id="gustBtn" title="상대가 쏠 때 누르면 애쉬래인이 바람을 불어 포탄을 밀어내요">🌬 애쉬래인 바람 <b id="gustNum">0</b></button>
-        <label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="hints"> 도움 보기(올라가는 길 · 축 · 같은 높이 낙하점)</label>
+        <label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="hints"> 도움 보기(올라가는 길 · 축 · 같은 높이 낙하점 · 바람에 휜 길)</label>
         <div class="shootbar"><button class="btn primary" id="fire" type="button">발사!</button></div>
         <div class="report" id="report" aria-live="polite"></div>
       </section>
@@ -513,29 +537,41 @@ body.fs #battle{gap:8px}
   /* ================= firepower ================= */
   // 시대(연도) → 화력 단계. 같은 시대끼리는 화력이 같고, 시대가 벌어질수록 격차가 크다(위력 · 폭발 반경 · 포의 힘)
   const TIERS = [null,
-    { lv:1, label:'초기 화포 · 활 (~1450)', dmg:30, blast:2.0, v:20 },
-    { lv:2, label:'총통 · 로켓 화살 (1450~1600)', dmg:34, blast:2.2, v:21.5 },
-    { lv:3, label:'홍이포 · 불랑기 · 조총 (1600~1700)', dmg:40, blast:2.4, v:23.5 },
-    { lv:4, label:'전열 포병 (1700~1850)', dmg:48, blast:2.7, v:26 },
-    { lv:5, label:'강선포 · 후장 소총 (1850~1890)', dmg:60, blast:3.0, v:29 },
-    { lv:6, label:'속사포 · 1차 세계 대전 (1890~1918)', dmg:75, blast:3.4, v:33 },
-    { lv:7, label:'2차 세계 대전 (1939~1945)', dmg:95, blast:3.9, v:38 }
+    // P = 포의 힘: 꼭짓점이 포구에서 가로로 X, 위로 Y 떨어져 있을 때 X + Y 의 상한(사정거리 · 고도를 함께 묶는다)
+    { lv:1, label:'초기 화포 · 활 (~1450)', dmg:30, blast:2.0, P:44 },
+    { lv:2, label:'총통 · 로켓 화살 (1450~1600)', dmg:34, blast:2.2, P:50 },
+    { lv:3, label:'홍이포 · 불랑기 · 조총 (1600~1700)', dmg:40, blast:2.4, P:56 },
+    { lv:4, label:'전열 포병 (1700~1850)', dmg:48, blast:2.7, P:64 },
+    { lv:5, label:'강선포 · 후장 소총 (1850~1890)', dmg:60, blast:3.0, P:74 },
+    { lv:6, label:'속사포 · 1차 세계 대전 (1890~1918)', dmg:75, blast:3.4, P:86 },
+    { lv:7, label:'2차 세계 대전 (1939~1945)', dmg:95, blast:3.9, P:100 }
   ];
   const tierOf = y => y <= 1450 ? 1 : y <= 1600 ? 2 : y <= 1700 ? 3 : y <= 1850 ? 4 : y <= 1890 ? 5 : y <= 1918 ? 6 : 7;
   const G_ACC = 10;                         // 중력
   // 포의 쓰임새(게임 규칙) — 같은 시대 안에서는 어느 것을 골라도 기대 위력이 비슷하게
+  // pk: 힘(P) 배율 · hk: 고도 한도 = 힘 × hk(배에 실린 포는 hk < 0.9 이면 × 0.8 — 포문이 좁아 높이 못 든다) · rc: 반동
   const STYLES = {
-    heavy:{ name:'중포', note:'한 발 · 기본 위력', dmg:1, blast:1, ammo:Infinity },
-    twin:{ name:'연발', note:'두 발을 잇달아(한 발 위력 58%)', dmg:0.58, blast:0.85, shots:2, ammo:3 },
-    splash:{ name:'산탄', note:'넓게 터짐(위력 72% · 폭발 1.6배)', dmg:0.72, blast:1.6, ammo:2 },
-    salvo:{ name:'일제 발사', note:'작은 탄 6발이 흩어져 떨어짐(한 발 24%)', dmg:0.24, blast:0.6, shots:6, ammo:2 },
-    delay:{ name:'시한 폭탄', note:'떨어지고 잠시 뒤 크게 터짐(폭발 1.45배)', dmg:1.12, blast:1.45, fuse:0.9, ammo:2 },
-    pierce:{ name:'관통', note:'땅을 4칸 뚫고 들어가 터짐', dmg:0.98, blast:0.9, pierce:4, ammo:2 },
-    bounce:{ name:'도탄', note:'땅에 한 번 튀었다가 터짐', dmg:0.95, blast:1, bounce:1, ammo:3 },
-    fire:{ name:'불', note:'터진 자리에 2턴 동안 불(턴마다 7)', dmg:0.75, blast:0.9, fire:2, ammo:3 },
-    arrow:{ name:'화살', note:'맞히면 세고 폭발은 작음', dmg:0.95, blast:0.55, ammo:Infinity },
-    hang:{ name:'매달아 쏨', note:'위력 1.15배 · 매달려 흔들려 세기가 ±3% 달라짐', dmg:1.15, blast:1, jitter:0.03, ammo:2 }
+    heavy:{ name:'중포', note:'한 발 · 기본 위력', dmg:1, blast:1, ammo:Infinity, pk:1, hk:0.7, rc:1 },
+    twin:{ name:'연발', note:'두 발을 잇달아(한 발 위력 58%)', dmg:0.58, blast:0.85, shots:2, ammo:3, pk:0.9, hk:0.6, rc:0.8 },
+    splash:{ name:'산탄', note:'넓게 터짐(위력 72% · 폭발 1.6배) · 높이 쏘기 좋음', dmg:0.72, blast:1.6, ammo:2, pk:0.8, hk:1, rc:0.9 },
+    salvo:{ name:'일제 발사', note:'작은 탄 6발이 흩어져 떨어짐(한 발 24%) · 반동 작음', dmg:0.24, blast:0.6, shots:6, ammo:2, pk:1.1, hk:0.9, rc:0.35 },
+    delay:{ name:'시한 폭탄', note:'떨어지고 잠시 뒤 크게 터짐(폭발 1.45배) · 높이 쏘기 좋음', dmg:1.12, blast:1.45, fuse:0.9, ammo:2, pk:0.85, hk:1, rc:0.9 },
+    pierce:{ name:'관통', note:'땅을 4칸 뚫고 들어가 터짐', dmg:0.98, blast:0.9, pierce:4, ammo:2, pk:1.05, hk:0.6, rc:1.1 },
+    bounce:{ name:'도탄', note:'땅에 한 번 튀었다가 터짐 · 낮게 쏘는 포', dmg:0.95, blast:1, bounce:1, ammo:3, pk:0.95, hk:0.5, rc:0.9 },
+    fire:{ name:'불', note:'터진 자리에 2턴 동안 불(턴마다 7)', dmg:0.75, blast:0.9, fire:2, ammo:3, pk:0.85, hk:0.9, rc:0.4 },
+    arrow:{ name:'화살', note:'맞히면 세고 폭발은 작음 · 높이 쏘기 좋음 · 반동 없음', dmg:0.95, blast:0.55, ammo:Infinity, pk:0.75, hk:1, rc:0.1 },
+    hang:{ name:'매달아 쏨', note:'위력 1.15배 · 줄에 매달려 반동이 적지만 흔들려 꼭짓점이 ±3% 달라짐', dmg:1.15, blast:1, jitter:0.03, ammo:2, pk:1, hk:0.7, rc:0.35 }
   };
+  // 배의 종류 — stab: 안정성(파도 · 조류 · 반동 · 맞아 밀림이 1/stab) · speed: 이동 · armor: 받는 피해 배율 · sink: 체력이 35% 아래일 때 맞으면 뒤집혀 가라앉을 확률의 크기
+  const SHIPS = {
+    pan:{ name:'판옥선', hp:1.15, armor:1, stab:1.7, speed:1, sink:0, note:'바닥이 평평하고 넓어 파도 · 반동 · 맞아도 덜 흔들려요' },
+    turtle:{ name:'거북선', hp:1.2, armor:0.8, stab:1.6, speed:1.05, sink:0, note:'덮개가 포탄을 막아 받는 피해 20% 줄어요 · 흔들림 적음' },
+    jp:{ name:'안택선', hp:0.9, armor:1.12, stab:0.6, speed:1.6, sink:0.55, note:'윗부분이 무겁고 바닥이 뾰족 — 빠르지만 약하고 잘 흔들려요. 체력이 낮으면 맞을 때 뒤집혀 가라앉을 수 있어요' },
+    junk:{ name:'정크선', hp:1, armor:1, stab:1.1, speed:1.1, sink:0.15, note:'평범한 돛배' },
+    sail:{ name:'범선', hp:1.05, armor:1, stab:1.2, speed:1.3, sink:0.1, note:'큰 돛으로 빠르게 움직여요' },
+    steam:{ name:'증기선', hp:1.15, armor:0.9, stab:1.4, speed:1.4, sink:0.05, note:'쇠 덮개 · 증기 기관 — 튼튼하고 빨라요' }
+  };
+  const LAND_SPEED = { cart:1, archer:1.25, field:1, modern:1.1, truck:1.35 };
   const ERAS = [['고려 · 조선', f => f.korea], ['스토리의 상대', f => f.story && !f.korea], ['15 ~ 17세기 세계', f => !f.story && f.year < 1700], ['18 ~ 19세기 세계', f => !f.story && f.year >= 1700 && f.year < 1900], ['1차 세계 대전', f => !f.story && f.year >= 1900 && f.year < 1930], ['2차 세계 대전', f => !f.story && f.year >= 1930]];
   // 세력 — 첫 번째 포는 탄이 끝없고, 나머지는 쓰임새마다 탄 수가 정해져 있다. d 는 고증 메모(게임 규칙은 STYLES)
   const W = (n, s, d) => ({ n, s, d });
@@ -576,7 +612,7 @@ body.fs #battle{gap:8px}
       W('대완구', 'splash', '짧고 굵은 포 — 돌이나 진천뢰를 높이 쏘아 올린다'),
       W('화승총 일제사격', 'salvo', '포수(사냥꾼)들의 화승총 — 정족산성에서 큰 힘을 썼다'),
       W('수뢰포', 'delay', '신헌이 만든 물속 폭탄(1867)') ] },
-    { id:'wokou', name:'왜구', year:1380, color:'#3c3f47', flag:'#d9d9d9', unit:'archer', ship:'jp', story:true, w:[
+    { id:'wokou', recoil:0.45, name:'왜구', year:1380, color:'#3c3f47', flag:'#d9d9d9', unit:'archer', ship:'jp', story:true, w:[
       W('대궁 화살', 'arrow', '긴 일본식 활로 쏘는 화살'),
       W('강궁', 'heavy', '힘껏 당겨 멀리 쏘는 화살'),
       W('불화살', 'fire', '배와 마을을 불태우던 불화살'),
@@ -588,7 +624,7 @@ body.fs #battle{gap:8px}
       W('불화살', 'fire', '불을 붙인 화살'),
       W('화살비', 'salvo', '말 탄 궁수들이 한꺼번에 쏘는 화살'),
       W('돌팔매', 'splash', '돌을 던져 퍼붓는다') ] },
-    { id:'japan1592', name:'일본(임진왜란)', year:1592, color:'#2b2b33', flag:'#e9e3d3', unit:'cart', ship:'jp', story:true, w:[
+    { id:'japan1592', recoil:0.45, name:'일본(임진왜란)', year:1592, color:'#2b2b33', flag:'#e9e3d3', unit:'cart', ship:'jp', story:true, w:[
       W('대통(大筒)', 'heavy', '구경이 큰 화승총 — 작은 대포처럼 썼다'),
       W('조총 일제사격', 'salvo', '일본군의 주력 화승총(조총)'),
       W('석화시(石火矢)', 'twin', '포르투갈에서 들어온 후장식 포'),
@@ -912,8 +948,10 @@ body.fs #battle{gap:8px}
     ['운요호 사건(1875) 이듬해에 맺은 조약은?', ['강화도 조약', '시모노세키 조약', '을사조약', '톈진 조약']]
   ];
   // 수학 퀴즈 — 이차함수(답은 정수)
-  function mathQuestion(){
-    const k = ri(0, 6), A = () => pick([-3, -2, -1, 1, 2, 3]);
+  // 이차함수 찬스 문제(답은 정수) — 난이도마다 고르는 꼴이 다르다: 뉴비 꼭짓점 · 최댓값 · 함숫값, 에이스 + 축 · a 구하기, 마스터 + 두 근 · x절편 · c 구하기
+  function mathQuestion(level = 'ace'){
+    const pool = { newbie:[0, 1, 4, 5], ace:[0, 1, 3, 4, 5, 7], master:[2, 3, 4, 6, 7, 8] }[level] || [0, 1, 3, 4, 5, 7];
+    const k = pick(pool), A = () => pick([-3, -2, -1, 1, 2, 3]);
     const sx = (a, x) => (a === 1 ? '' : a === -1 ? '−' : mi(a)) + x;
     const shift = (v) => v === 0 ? 'x' : `(x ${v > 0 ? '−' : '+'} ${Math.abs(v)})`;
     const cst = v => v === 0 ? '' : ` ${v > 0 ? '+' : '−'} ${Math.abs(v)}`;
@@ -923,6 +961,8 @@ body.fs #battle{gap:8px}
     if (k === 3){ const p = ri(-5, 5), b = -2 * p, c = ri(-6, 6); return { text:`y = x²${b ? ` ${b > 0 ? '+' : '−'} ${Math.abs(b)}x` : ''}${cst(c)} 의 축의 방정식 x = ?`, ans:p }; }
     if (k === 4){ const a = A(), b = ri(-4, 4), c = ri(-5, 5), x = ri(-3, 3); return { text:`y = ${sx(a, 'x²')}${b ? ` ${b > 0 ? '+' : '−'} ${Math.abs(b) === 1 ? '' : Math.abs(b)}x` : ''}${cst(c)} 에서 x = ${mi(x)} 일 때 y의 값은?`, ans:a * x * x + b * x + c }; }
     if (k === 5){ const p = ri(-5, 5), q = ri(-6, 8); return { text:`y = −${shift(p)}²${cst(q)} 의 최댓값은?`, ans:q }; }
+    if (k === 7){ const b = pick([1, 2, 3, -1, -2, -3]), a = pick([-3, -2, -1, 1, 2]), c = -a * b * b; return { text:`꼭짓점이 (${mi(b)}, ${mi(c)})이고 원점을 지나는 포물선 y = a${shift(b)}²${cst(c)} 에서 a의 값은?`, ans:a }; }
+    if (k === 8){ const a = pick([-2, -1, 1, 2]), b = ri(-4, 4), x = b + pick([-3, -2, -1, 1, 2, 3]), y = ri(-6, 8); return { text:`y = ${sx(a, shift(b) + '²')} + c 의 그래프가 점 (${mi(x)}, ${mi(y)})를 지날 때 c의 값은?`, ans:y - a * (x - b) ** 2 }; }
     const r = ri(2, 9) * pick([1, -1]); return { text:`y = −x² ${r > 0 ? '+' : '−'} ${Math.abs(r)}x 의 그래프가 원점이 아닌 곳에서 x축과 만나는 점의 x좌표는?`, ans:r };
   }
 
@@ -931,7 +971,7 @@ body.fs #battle{gap:8px}
     { id:'rat', zi:'子', ani:'쥐', emo:'🐭', name:'땅굴탄', cost:25, kind:'shot', desc:'이번 포탄이 땅을 6칸 더 뚫고 들어가 터져요.' },
     { id:'ox', zi:'丑', ani:'소', emo:'🐮', name:'우직한 방패', cost:30, kind:'now', desc:'다음에 맞는 피해를 60% 줄여요(상대 차례 2번까지).' },
     { id:'tiger', zi:'寅', ani:'범', emo:'🐯', name:'범의 포효', cost:35, kind:'shot', desc:'이번 포탄의 위력이 1.5배.' },
-    { id:'rabbit', zi:'卯', ani:'토끼', emo:'🐰', name:'달토끼 도약', cost:20, kind:'move', desc:'전장을 눌러 10칸 안의 땅으로 옮겨 가요(차례는 그대로).' },
+    { id:'rabbit', zi:'卯', ani:'토끼', emo:'🐰', name:'달토끼 도약', cost:20, kind:'move', desc:'전장을 눌러 20칸 안으로 단숨에 옮겨 가요(이동 기운은 그대로 · 차례도 그대로).' },
     { id:'dragon', zi:'辰', ani:'용', emo:'🐲', name:'용의 불비', cost:100, kind:'shot', ult:true, desc:'필살기 — 포탄이 터진 자리 둘레에 용의 불덩이 다섯이 쏟아져요.' },
     { id:'snake', zi:'巳', ani:'뱀', emo:'🐍', name:'뱀의 눈', cost:15, kind:'shot', desc:'이번 차례에 포탄이 날아갈 길과 떨어질 곳을 끝까지 보여 줘요.' },
     { id:'horse', zi:'午', ani:'말', emo:'🐴', name:'천리마', cost:30, kind:'shot', desc:'이번 포탄은 포의 힘이 1.6배 — 사거리가 크게 늘어요.' },
@@ -950,21 +990,22 @@ body.fs #battle{gap:8px}
     ammo:{ name:'보급 포탄', emo:'🎒', desc:'아껴 쓰는 포마다 1발씩 더' }
   };
   const LEVELS = {
-    newbie:{ name:'뉴비', ctl:'vertex', acc:0.28, foeHp:0.75, meHp:120, hints:true, desc:'꼭짓점 (p, q)만 넣어요 — 포구가 원점이고, 포탄은 포구에서 꼭짓점을 지나 같은 모양으로 떨어져요. 적 명중률이 낮아요.' },
-    ace:{ name:'에이스', ctl:'std', acc:0.45, foeHp:0.9, meHp:110, hints:true, desc:'y = ax² + bx 를 넣어요 — 포구가 원점이에요. b는 처음 기울기(쏘는 각도), a는 얼마나 빨리 휘는지(음수). 적 명중률 보통.' },
-    master:{ name:'마스터', ctl:'abs', acc:0.62, foeHp:1, meHp:100, hints:false, desc:'절대 좌표로 y = a(x − p)² + q 를 넣어요 — 그래프가 내 포구를 지나야 발사돼요(0.35칸 안). 적 명중률이 높아요.' }
+    // 조작 난이도 = 넣는 값의 수(진입 장벽). 꼴은 모두 y = a(x − b)² + c(전장 좌표), 넣지 않는 값은 게임이 정한다.
+    newbie:{ name:'뉴비', ctl:'a', acc:0.28, foeHp:0.75, meHp:120, hints:true, desc:'a만 넣어요 — 쏘는 기울기와 방향은 자동, 꼭짓점 (b, c)는 a에 따라 저절로 정해져요. 적 명중률이 낮아요.' },
+    ace:{ name:'에이스', ctl:'ab', acc:0.45, foeHp:0.9, meHp:110, hints:true, desc:'a와 b를 넣어요 — c는 그래프가 포구를 지나도록 저절로 계산돼요. 적 명중률 보통.' },
+    master:{ name:'마스터', ctl:'abc', acc:0.62, foeHp:1, meHp:100, hints:false, desc:'a, b, c를 모두 넣어요 — 그래프가 내 포구를 지나도록 직접 계산해야 발사돼요(0.35칸 안). 도움 선 없음 · 적 명중률이 높아요.' }
   };
 
   /* ================= world ================= */
-  const WX = 60, WY = 30, MARGIN = 1.4;
-  const VW = WX + 2 * MARGIN, VH = WY + 2 * MARGIN;
-  const DXC = 0.2, NC = Math.round(WX / DXC) + 1;          // 지형 기둥 301개
-  const toPx = (u, x, y) => [(x + MARGIN) * u, (WY - y + MARGIN) * u];
+  // 맵마다 크기가 다르다 — 바다 170 · 해안 160 · 뭍 150칸(세로 40 ~ 56). 화면은 카메라로 일부를 크게 보여 준다.
+  let WX = 150, WY = 50, NC = 601;
+  const DXC = 0.25;                                         // 지형 기둥 간격(0.25칸)
   const SIM = 1.35;                                         // 화면 속도 = 물리 시간 × 1.35
   let FAST = 1, battleSeq = 0;                              // FAST: 시험에서만 빠르게
   const st = { level:'newbie', screen:'lobby', preview:false, setup:{ mode:'versus', fac:['joseon3', 'japan1592'], map:'random', opp:'ai' },
     save:{ v:1, cleared:{ newbie:Array(12).fill(false), ace:Array(12).fill(false), master:Array(12).fill(false) }, catches:0 }, fs:false, immersive:false };
   let BT = null;                                            // 전투 상태
+  function setWorld(m){ WX = m.w; WY = m.h; NC = Math.round(WX / DXC) + 1; }
 
   /* ================= save (샌드박스면 부모가 맡아 둔다) ================= */
   const SAVE_KEY = 'po-minjok';
@@ -989,38 +1030,82 @@ body.fs #battle{gap:8px}
   const freeOpen = () => st.preview || st.save.cleared.master.every(Boolean);
   const chapterOpen = (lv, i) => st.preview || i === 0 || st.save.cleared[lv][i - 1];
 
+  /* ================= maps — 60칸으로 그린 설계를 넓은 맵으로 ================= */
+  // 바다(sea) — 넓고 단조로운 물: 바람 · 파도 · 조류가 변수 / 해안(coast) — 물과 뭍 / 뭍(land) — 더 높고, 진지 사이에 능선 · 골짜기를 덧붙여 높낮이가 복잡
+  const MAP_KIND = { jinpo:'sea', hansan:'sea', amur:'sea', islands:'sea', tsushima:'coast', gwangseong:'coast', yeongjong:'coast', seacliff:'coast', normandy:'coast' };
+  function scaleOp(op, kx, ky, kind){
+    const [k, a, b, c, d] = op, wall = x0 => [x0 * kx, x0 * kx + (b - x0) * 1.25];
+    if (k === 'base' || k === 'noise') return [k, a * ky];
+    if (k === 'wave') return [k, a * ky, b / kx * 1.6];
+    if (k === 'hill') return [k, a * kx, b * kx * (kind === 'land' ? 0.7 : 0.85), c * ky];
+    if (k === 'plat') return [k, a * kx, b * kx, c * ky, (d ?? 2) * kx * 0.6];
+    if (k === 'ramp') return [k, a * kx, b * kx, c * ky, d * ky];
+    if (k === 'cut') return [k, a * kx, b * kx, c * ky, (d ?? 1.5) * kx * 0.6];
+    if (k === 'wall') return [k, ...wall(a), c * 1.35];
+    if (k === 'mat') return c === 'wall' ? [k, ...wall(a), c] : [k, a * kx, b * kx, c];
+    if (k === 'pyramid') return [k, a * kx, b * kx * 0.6, c * ky];
+    if (k === 'craters') return [k, Math.round(a * kx)];
+    return op;
+  }
+  function scaleBg(L, kx, ky){
+    const [k, c, a, b, r] = L;
+    if (k === 'mts' || k === 'hills') return [k, c, a * ky, b * ky, r];
+    if (k === 'pines') return [k, c, a * kx, b * kx];
+    if (k === 'castle') return [k, c * kx, a * ky, b * kx * 0.7, r];
+    if (k === 'pavilion') return [k, c * kx, a * ky, b];
+    if (k === 'wire') return L;
+    return [k, c, a * ky];
+  }
+  for (const m of MAPS){
+    const kind = MAP_KIND[m.id] || 'land', w = kind === 'sea' ? 170 : kind === 'coast' ? 160 : 150, kx = w / 60, ky = kind === 'land' ? 1.45 : kind === 'coast' ? 1.15 : 1;
+    Object.assign(m, { kind, sea:kind !== 'land', w, h:kind === 'land' ? 56 : kind === 'coast' ? 46 : 40 });
+    if (m.water != null) m.water = Math.round(m.water * ky * 2) / 2;      // 물 높이는 0.5 단위 — 배의 포구 좌표가 깔끔하게
+    m.ops = m.ops.map(op => scaleOp(op, kx, ky, kind));
+    m.L = m.L.map(v => v * kx); m.R = m.R.map(v => v * kx);
+    if (kind === 'land') m.ops.push(['relief', 4, 4 * ky, 9 * ky]);
+    m.bg = (m.bg || []).map(L => scaleBg(L, kx, ky));
+  }
+
   /* ================= terrain ================= */
   const colX = i => i * DXC;
   function genTerrain(map){
-    const h = new Float64Array(NC), mat = new Array(NC).fill('soil');
-    const each = (x0, x1, fn) => { for (let i = 0; i < NC; i++){ const x = colX(i); if (x >= x0 - 1e-9 && x <= x1 + 1e-9) fn(i, x); } };
+    const W = map.w, N = Math.round(W / DXC) + 1, h = new Float64Array(N), mat = new Array(N).fill('soil');
+    const each = (x0, x1, fn) => { const i0 = Math.max(0, Math.ceil(x0 / DXC - 1e-9)), i1 = Math.min(N - 1, Math.floor(x1 / DXC + 1e-9)); for (let i = i0; i <= i1; i++) fn(i, colX(i)); };
     const wgt = (x, x0, x1, e) => x >= x0 && x <= x1 ? 1 : (x < x0 ? (x0 - x < e ? 0.5 + 0.5 * Math.cos(Math.PI * (x0 - x) / e) : 0) : (x - x1 < e ? 0.5 + 0.5 * Math.cos(Math.PI * (x - x1) / e) : 0));
     for (const op of map.ops){
       const [k, a, b, c, d] = op;
       if (k === 'base') h.fill(a);
-      else if (k === 'noise'){ const fs = [rand(0.07, 0.12), rand(0.17, 0.28), rand(0.38, 0.6)], ps = fs.map(() => rand(0, 6.28)), as = [0.55, 0.3, 0.15]; each(0, WX, (i, x) => { h[i] += a * fs.reduce((s, f, j) => s + as[j] * Math.sin(f * x + ps[j]), 0); }); }
-      else if (k === 'wave'){ const ph = rand(0, 6.28); each(0, WX, (i, x) => { h[i] += a * Math.sin(b * x + ph); }); }
+      else if (k === 'noise'){ const fs = [rand(0.07, 0.12), rand(0.17, 0.28), rand(0.38, 0.6)], ps = fs.map(() => rand(0, 6.28)), as = [0.55, 0.3, 0.15]; each(0, W, (i, x) => { h[i] += a * fs.reduce((s, f, j) => s + as[j] * Math.sin(f * x + ps[j]), 0); }); }
+      else if (k === 'wave'){ const ph = rand(0, 6.28); each(0, W, (i, x) => { h[i] += a * Math.sin(b * x + ph); }); }
       else if (k === 'hill') each(a - b / 2, a + b / 2, (i, x) => { h[i] += c * (1 + Math.cos(2 * Math.PI * (x - a) / b)) / 2; });
-      else if (k === 'plat'){ const e = d ?? 2; each(0, WX, (i, x) => { const w = wgt(x, a, b, e); h[i] += (c - h[i]) * w; }); }
+      else if (k === 'plat'){ const e = d ?? 2; each(0, W, (i, x) => { const w = wgt(x, a, b, e); h[i] += (c - h[i]) * w; }); }
       else if (k === 'ramp') each(a, b, (i, x) => { const t = (x - a) / (b - a), s = t * t * (3 - 2 * t); h[i] = c + (d - c) * s; });
-      else if (k === 'cut'){ const e = d ?? 1.5; each(0, WX, (i, x) => { const w = wgt(x, a, b, e); if (h[i] > c) h[i] -= (h[i] - c) * w; }); }
+      else if (k === 'cut'){ const e = d ?? 1.5; each(0, W, (i, x) => { const w = wgt(x, a, b, e); if (h[i] > c) h[i] -= (h[i] - c) * w; }); }
       else if (k === 'wall'){ let s = 0, n = 0; each(a, b, i => { s += h[i]; n++; }); const top = (n ? s / n : 6) + c; each(a, b, i => { h[i] = top; mat[i] = 'wall'; }); }
       else if (k === 'mat') each(a, b, i => { if (mat[i] !== 'wall' || c === 'wall') mat[i] = c; });
       else if (k === 'pyramid'){ const base = h[Math.round(a / DXC)]; each(a - b, a + b, (i, x) => { h[i] = Math.max(h[i], base + c * (1 - Math.abs(x - a) / b)); }); }
-      else if (k === 'craters'){ for (let j = 0; j < a; j++){ const cx = rand(4, WX - 4); carveCols(h, mat, cx, heightOf(h, cx) + rand(0.2, 0.8), rand(1.4, 2.4)); } }
+      else if (k === 'craters'){ for (let j = 0; j < a; j++){ const cx = rand(4, W - 4); carveCols(h, mat, cx, heightOf(h, cx) + rand(0.2, 0.8), rand(1.4, 2.4)); } }
+      else if (k === 'relief'){                   // 능선 · 골짜기 — 양쪽 진지 사이를 고르게 나눠 오르내리게(한곳에 쌓이지 않게)
+        const x0 = map.L[1] + 4, x1 = map.R[0] - 4, span = x1 - x0, n = Math.min(a, Math.floor(span / 9));
+        for (let j = 0; j < n; j++){
+          const cx = x0 + span * (j + 0.5 + rand(-0.25, 0.25)) / n, wd = clamp(span / n * rand(0.9, 1.4), 8, 24), hh = rand(b, c) * (Math.random() < 0.3 ? -0.55 : 1);
+          each(cx - wd / 2, cx + wd / 2, (i, x) => { h[i] += hh * (1 + Math.cos(2 * Math.PI * (x - cx) / wd)) / 2; });
+        }
+      }
     }
-    for (let i = 0; i < NC; i++) h[i] = clamp(h[i], 0.6, 26);
-    return { h, mat, water:map.water ?? null, ice:!!map.ice };
+    for (let i = 0; i < N; i++) h[i] = clamp(h[i], 0.6, map.h - 10);
+    return { h, mat, water:map.water ?? null, ice:!!map.ice, W, N };
   }
   function heightOf(h, x){
-    const f = clamp(x, 0, WX) / DXC, i = Math.floor(f), j = Math.min(NC - 1, i + 1), t = f - i;
+    const n = h.length, f = clamp(x / DXC, 0, n - 1), i = Math.floor(f), j = Math.min(n - 1, i + 1), t = f - i;
     return h[i] * (1 - t) + h[j] * t;
   }
   const groundAt = x => heightOf(BT.ter.h, x);
-  const matAt = x => BT.ter.mat[clamp(Math.round(x / DXC), 0, NC - 1)];
+  const matAt = x => BT.ter.mat[clamp(Math.round(x / DXC), 0, BT.ter.N - 1)];
   const isWater = x => BT.ter.water != null && groundAt(x) < BT.ter.water - 0.05;
+  const standY = x => Math.max(groundAt(x - 0.6), groundAt(x), groundAt(x + 0.6));
   function carveCols(h, mat, cx, cy, r){
-    const i0 = Math.max(0, Math.floor((cx - r) / DXC)), i1 = Math.min(NC - 1, Math.ceil((cx + r) / DXC));
+    const n = h.length, i0 = Math.max(0, Math.floor((cx - r) / DXC)), i1 = Math.min(n - 1, Math.ceil((cx + r) / DXC));
     for (let i = i0; i <= i1; i++){
       const rr = r * (MATS[mat[i]] || MATS.soil).hard, dx = colX(i) - cx;
       if (Math.abs(dx) >= rr) continue;
@@ -1032,24 +1117,24 @@ body.fs #battle{gap:8px}
 
   /* ================= units ================= */
   const SHIP_OF = f => f.ship || (f.year < 1700 ? 'junk' : 'steam');
+  const half = v => Math.round(v * 2) / 2;
+  function flattenPad(x, y){ const T = BT.ter; for (let i = 0; i < T.N; i++) if (Math.abs(colX(i) - x) <= 1.4){ T.h[i] = y; if (T.mat[i] === 'wall') T.mat[i] = 'rock'; } }
   function makeUnit(side, fac, name, hp, x, wantShip){
     const ter = BT.ter, water = ter.water != null && heightOf(ter.h, x) < ter.water - 0.2;
-    const u = { id:`${side}-${BT.sides[side].units.length}`, side, fac:fac.id, name, hp, maxHp:hp, x, y:0, face:side === 0 ? 1 : -1, alive:true,
-      kind:water ? 'ship' : fac.unit, ship:water ? (wantShip || SHIP_OF(fac)) : null, aim:side === 0 ? 0.6 : Math.PI - 0.6, wep:0,
+    const ship = water ? (wantShip || SHIP_OF(fac)) : null;
+    hp = Math.round(hp * (ship ? SHIPS[ship].hp : 1));
+    const u = { id:`${side}-${BT.sides[side].units.length}`, side, fac:fac.id, name, hp, maxHp:hp, x:half(x), y:0, face:side === 0 ? 1 : -1, alive:true,
+      kind:water ? 'ship' : fac.unit, ship, aim:side === 0 ? 0.6 : Math.PI - 0.6, wep:0, mp:0, ox:0, oy:0, sinkT:null,
       ammo:fac.w.map((w, i) => i === 0 ? Infinity : STYLES[w.s].ammo), shield:0, shieldTurns:0, guard:false, armor:false, fall:null, bob:rand(0, 6) };
     if (water) u.y = ter.water;
-    else {                                       // 부대가 설 자리를 평평하게(높이는 0.5 단위로 — 마스터 모드에서 포구 좌표가 깔끔하게)
-      const pad = Math.round(heightOf(ter.h, x) * 2) / 2;
-      for (let i = 0; i < NC; i++) if (Math.abs(colX(i) - x) <= 1.4){ ter.h[i] = pad; if (ter.mat[i] === 'wall') ter.mat[i] = 'rock'; }
-      u.y = pad;
-    }
+    else u.y = half(heightOf(ter.h, u.x));     // 설 자리 높이는 0.5 단위(포구 좌표가 깔끔하게) — 땅 고르기는 자리가 다 정해진 뒤(settlePads)
     return u;
   }
-  // 보루 — 부대 자리를 rise 만큼 높이고 둘레를 부드럽게 쌓는다(높이는 0.5 단위 그대로)
+  // 보루 — 부대 자리를 rise 만큼 높이고 둘레를 부드럽게 쌓는다
   function raiseMound(u, rise){
     const ter = BT.ter, top = u.y + rise, wd = 1.6 * rise + 1;
     u.mound = rise;
-    for (let i = 0; i < NC; i++){
+    for (let i = 0; i < ter.N; i++){
       const dx = Math.abs(colX(i) - u.x);
       if (dx <= 1.4){ ter.h[i] = top; if (ter.mat[i] === 'wall') ter.mat[i] = 'rock'; }
       else { const t = (dx - 1.4) / wd; if (t < 1){ const y = top - rise * t * t * (3 - 2 * t); if (y > ter.h[i]) ter.h[i] = y; } }
@@ -1057,32 +1142,43 @@ body.fs #battle{gap:8px}
     u.y = top;
   }
   // 자리 옮기기(배는 물 위, 땅 부대는 뭍에만) — 패드 · 보루를 새 자리에 다시 만든다
-  function placeAt(u, x){
+  // pad = false — 자리만 옮기고 땅은 그대로(배치를 고르는 동안 계단이 남지 않게)
+  function placeAt(u, x, pad = true){
     const ter = BT.ter, water = ter.water != null && heightOf(ter.h, x) < ter.water - 0.2;
-    if (x < 2 || x > WX - 2 || water !== (u.kind === 'ship') || allUnits().some(o => o !== u && Math.abs(o.x - x) < 3.6)) return false;
-    u.x = x;
+    if (x < 3 || x > WX - 3 || water !== (u.kind === 'ship') || allUnits().some(o => o !== u && Math.abs(o.x - x) < (isShip(u) || isShip(o) ? 6 : 4))) return false;   // 배는 길어서 6칸
+    u.x = half(x);
     if (water) u.y = ter.water;
     else {
-      const pad = Math.round(heightOf(ter.h, x) * 2) / 2;
-      for (let i = 0; i < NC; i++) if (Math.abs(colX(i) - x) <= 1.4){ ter.h[i] = pad; if (ter.mat[i] === 'wall') ter.mat[i] = 'rock'; }
-      u.y = pad;
+      u.y = half(heightOf(ter.h, u.x));
       if (u.mound){ const r = u.mound; u.mound = 0; raiseMound(u, r); }
+      else if (pad) flattenPad(u.x, u.y);
     }
     return true;
   }
+  function settlePads(){ for (const u of allUnits()) if (!isShip(u) && !u.mound){ const y = half(heightOf(BT.ter.h, u.x)); flattenPad(u.x, y); u.y = y; } }
   // 서로 맞힐 길이 있게 — 닿지 않으면 오른쪽 부대를 조금씩 당겨 온다(지형 · 시대 사거리 때문에)
+  // 한 부대를 당기면 다른 부대 앞을 막을 수 있어 — 모두 닿을 때까지 몇 번 되풀이
   function ensureReach(){
     const me = BT.sides[0].units[0];
-    for (const f of BT.sides[1].units.slice().sort((a, b) => Math.abs(a.x - me.x) - Math.abs(b.x - me.x))){
-      for (let k = 0; k < 18 && !(aimAt(me, f) && aimAt(f, me)); k++){
-        const dir = Math.sign(me.x - f.x); let moved = false;
-        for (let step = 2; step <= 16; step++){ const nx = f.x + dir * step; if (Math.abs(nx - me.x) < 12) break; if (placeAt(f, nx)){ moved = true; break; } }
-        if (!moved) break;
+    for (let pass = 0; pass < 4; pass++){
+      let bad = 0;
+      for (const f of BT.sides[1].units.slice().sort((a, b) => Math.abs(a.x - me.x) - Math.abs(b.x - me.x))){
+        for (let k = 0; k < 24 && !(aimAt(me, f, { best:true }) && aimAt(f, me, { best:true })); k++){
+          bad++;
+          const dir = Math.sign(me.x - f.x); let moved = false;
+          for (let step = 3; step <= 30; step++){ const nx = f.x + dir * step; if (Math.abs(nx - me.x) < 16) break; if (placeAt(f, nx, false)){ moved = true; break; } }
+          // 상대가 더 못 오면(물가 · 절벽) 내 쪽이 다가간다
+          if (!moved) for (let step = 3; step <= 30; step++){ const nx = me.x - dir * step; if (Math.abs(nx - f.x) < 16) break; if (placeAt(me, nx, false)){ moved = true; break; } }
+          if (!moved) break;
+        }
       }
+      if (!bad) break;
     }
   }
   const isShip = u => u.kind === 'ship';
-  const muzzle = u => isShip(u) ? { x:u.x + u.face * 1.6, y:u.y + 2 } : { x:u.x + u.face, y:u.y + 1.5 };
+  // 포구 — 쏘는 쪽(face)에 달려 있다. 계산에 쓰는 좌표는 늘 0.5 단위
+  const muzzleAt = (u, face) => isShip(u) ? { x:u.x + face * 1.5, y:u.y + 2 } : { x:u.x + face, y:u.y + 1.5 };
+  const muzzle = u => muzzleAt(u, u.face);
   const box = u => isShip(u) ? { x0:u.x - 2.4, x1:u.x + 2.4, y0:u.y - 0.6, y1:u.y + 2.3 } : { x0:u.x - 1.15, x1:u.x + 1.15, y0:u.y, y1:u.y + 2.0 };
   const center = u => { const b = box(u); return { x:(b.x0 + b.x1) / 2, y:(b.y0 + b.y1) / 2 }; };
   function distToBox(px, py, b){ const dx = Math.max(b.x0 - px, 0, px - b.x1), dy = Math.max(b.y0 - py, 0, py - b.y1); return Math.hypot(dx, dy); }
@@ -1091,123 +1187,236 @@ body.fs #battle{gap:8px}
   const alive = side => BT.sides[side].units.filter(u => u.alive);
   const activeUnit = () => BT && BT.sides[BT.turn.side].units[BT.turn.unit];
   const sideTier = s => BT.sides[s].tier;
-  const vmaxOf = (side, horse) => TIERS[sideTier(side)].v * (horse ? 1.6 : 1);
-  const rangeOf = tier => TIERS[tier].v ** 2 / G_ACC;
+  const stabOf = u => isShip(u) ? SHIPS[u.ship].stab : 3;
+  const crewK = u => 0.4 + 0.6 * u.hp / u.maxHp;            // 체력(선원 · 병사 수)이 줄면 이동 · 기운도 준다
+  const mpFor = u => Math.round(100 * crewK(u));
+  // 포의 힘 P(가로 X + 높이 Y 의 상한) · 고도 한도 H
+  function wepSpec(u, wi, horse){
+    const f = FAC[u.fac], S = STYLES[f.w[wi].s], P = Math.round(TIERS[sideTier(u.side)].P * (S.pk || 1) * (horse ? 1.6 : 1));
+    const hk = S.hk ?? 0.7;
+    return { P, H:Math.round(P * hk * (isShip(u) && hk < 0.9 ? 0.8 : 1)) };
+  }
+  // 바람 — 포탄의 가로 움직임을 (1 + 바람 × 방향) 배로(순풍이면 그래프가 가로로 늘어나고 역풍이면 줄어든다)
+  const windFactor = dir => 1 + (BT.sea ? BT.sea.wind : 0) * dir;
+  // 반동 — 화력만큼 뒤로. 줄에 매다는 포(왜구 · 임진왜란 일본)는 적게, 배는 안정성만큼 나눠서, 땅 부대는 조금만
+  const recoilOf = (u, wi) => { const f = FAC[u.fac], S = STYLES[f.w[wi].s]; return (TIERS[sideTier(u.side)].dmg / 30) * (S.rc ?? 1) * (f.recoil ?? 1) * 1.1 * (isShip(u) ? 1 / Math.sqrt(stabOf(u)) : 0.22); };
 
   /* ================= battle setup ================= */
-  // cfg: { mode, chapter?, fac:[id, id], map, human:[bool, bool], hp:[n, ...], foes:[[name, hp, type]...] }
+  // cfg: { mode, chapter?, fac:[id, id], map, human:[bool, bool], foes:[[name, hp, type]...] }
   function newBattle(cfg){
     const lv = LEVELS[st.level], map = MAP[cfg.map];
-    BT = { id:++battleSeq, mode:cfg.mode, chapter:cfg.chapter ?? null, level:st.level, map, ter:genTerrain(map), round:1, phase:'start', projs:[], bombs:[], fires:[], crates:[], fx:[],
-      turn:{ side:0, unit:0 }, extra:false, mods:{}, moveMode:false, gustArmed:false, aiForce:null, aiPlan:null, over:false, log:[], shots:0, lastShot:null, flakes:[], t:0, wind:null };
+    setWorld(map);
+    BT = { id:++battleSeq, mode:cfg.mode, chapter:cfg.chapter ?? null, level:st.level, map, ter:genTerrain(map), round:1, phase:'start', projs:[], bombs:[], fires:[], crates:[],
+      turn:{ side:0, unit:0 }, extra:false, mods:{}, moveMode:false, gustArmed:false, aiForce:null, aiPlan:null, aiMove:null, over:false, shots:0, lastShot:null, lastImpact:null, flakes:[], t:0,
+      sea:{ wind:0, cur:0, wave:0 }, moveHold:null, autoAim:null };
+    if (map.sea) BT.sea = { wind:Math.round(rand(-0.2, 0.2) * 20) / 20, cur:Math.round(rand(-1.5, 1.5) * 2) / 2, wave:pick([0.5, 1]) };
     const facs = cfg.fac.map(id => FAC[id]);
     const story = cfg.mode === 'story', tiers = story ? [tierOf(CHAPTERS[cfg.chapter].year), tierOf(CHAPTERS[cfg.chapter].year)] : facs.map(f => tierOf(f.year));
     BT.sides = facs.map((f, i) => ({ fac:f, tier:tiers[i], human:cfg.human[i], units:[], energy:0, gust:0, items:[], next:0, name:f.name }));
-    // 시대가 낮은 쪽에 처음 기운을 더 준다(기술 · 아이템으로 격차를 넘을 수 있게)
     const gap = Math.abs(tiers[0] - tiers[1]);
     if (gap) BT.sides[tiers[0] < tiers[1] ? 0 : 1].energy = Math.min(100, 20 * gap);
-    // 부대 자리 — 시대가 낮은 쪽의 사거리에 맞춘 간격(낮은 쪽도 닿게)
-    const want = clamp(0.72 * Math.min(rangeOf(tiers[0]), rangeOf(tiers[1])), 16, 46);
-    const mid = 30, xL = clamp(Math.round(mid - want / 2), map.L[0], map.L[1]);
-    // 체력 — 시대가 올라가도 '몇 번 맞아야 쓰러지는지'는 비슷하게(스토리는 그 장의 화력, 대전은 두 세력 화력의 평균에 맞춘다)
+    // 부대 자리 — 낮은 시대의 포로도 낮게 쏘면 닿을 만한 거리(멀면 움직여 다가가거나, 오른쪽을 당겨 온다)
+    const reach = t => 2 * (TIERS[t].P - 8);
+    const want = clamp(0.8 * Math.min(reach(tiers[0]), reach(tiers[1])), 30, WX * 0.7);
+    const mid = WX / 2, xL = clamp(Math.round(mid - want / 2), map.L[0], map.L[1]);
     const hpK = story ? TIERS[tiers[0]].dmg / TIERS[1].dmg : 1;
     const base = Math.round(3.6 * (TIERS[tiers[0]].dmg + TIERS[tiers[1]].dmg) / 2 / 10) * 10;
     const vsAI = !story && !cfg.human[1];
     const foes = cfg.foes || [[facs[1].name, vsAI ? Math.round(base * lv.foeHp) : base, 'any']];
-    const n = foes.length, spread = 5.6;
-    let xR = clamp(mid + want / 2 - spread * (n - 1) / 2, map.R[0], map.R[1] - spread * (n - 1));
+    const n = foes.length, spread = 7;
+    const xR = clamp(xL + want - spread * (n - 1) / 2, map.R[0], map.R[1] - spread * (n - 1));
     const meHp = story ? Math.round(lv.meHp * hpK) : vsAI ? Math.round(base * lv.meHp / 100) : base;
-    const me = makeUnit(0, facs[0], story ? CHAPTERS[cfg.chapter].meName : facs[0].name, meHp, xL, story && CHAPTERS[cfg.chapter].meShip ? facs[0].ship : null);
-    BT.sides[0].units.push(me);
+    BT.sides[0].units.push(makeUnit(0, facs[0], story ? CHAPTERS[cfg.chapter].meName : facs[0].name, meHp, xL, story && CHAPTERS[cfg.chapter].meShip ? facs[0].ship : null));
     foes.forEach(([name, hp, type], k) => {
       let x = Math.round(xR + k * spread);
       if (type === 'ship' || type === 'land'){                 // 배는 물 위, 땅 부대는 뭍에 — 범위 안에서 가까운 자리를 찾는다
-        const ok = xx => (type === 'ship') === (BT.ter.water != null && heightOf(BT.ter.h, xx) < BT.ter.water - 0.2);
-        if (!ok(x)){ for (let d = 1; d <= 30; d++){ if (x + d <= map.R[1] + 2 && ok(x + d) && !BT.sides[1].units.some(o => Math.abs(o.x - x - d) < spread - 0.5)){ x += d; break; } if (x - d >= map.R[0] - 8 && ok(x - d) && !BT.sides[1].units.some(o => Math.abs(o.x - x + d) < spread - 0.5)){ x -= d; break; } } }
+        const ok = xx => (type === 'ship') === (BT.ter.water != null && heightOf(BT.ter.h, xx) < BT.ter.water - 0.2) && !BT.sides[1].units.some(o => Math.abs(o.x - xx) < spread - 1);
+        if (!ok(x)){ for (let d = 1; d <= 60; d++){ if (x + d <= map.R[1] + 4 && x + d < WX - 3 && ok(x + d)){ x += d; break; } if (x - d >= map.R[0] - 16 && ok(x - d)){ x -= d; break; } } }
       }
-      const u = makeUnit(1, facs[1], name, Math.round(story ? hp * lv.foeHp * hpK : hp), clamp(x, 2, WX - 2), null);
-      BT.sides[1].units.push(u);
+      BT.sides[1].units.push(makeUnit(1, facs[1], name, Math.round(story ? hp * lv.foeHp * hpK : hp), clamp(x, 3, WX - 3), null));
     });
-    // 시대가 낮은 쪽은 높은 보루 위에서 시작한다(높은 곳에서 쏘면 더 멀리 나가고, 올려 쏘는 쪽은 힘이 더 든다) — 땅 부대만
     if (gap){ const low = tiers[0] < tiers[1] ? 0 : 1; for (const u of BT.sides[low].units) if (!isShip(u)) raiseMound(u, Math.min(4, gap)); }
     ensureReach();
-    BT.flakes = map.snow ? Array.from({ length:70 }, () => ({ x:rand(0, WX), y:rand(0, WY + 2), s:rand(0.6, 1.4), v:rand(0.6, 1.4) })) : [];
+    settlePads();
+    seaHeave();
+    ensureReach();                                  // 파도로 높이가 바뀐 배까지 한 번 더(대개 그대로)
+    settlePads();
+    BT.flakes = map.snow ? Array.from({ length:70 }, () => ({ x:Math.random(), y:Math.random(), s:rand(0.6, 1.4), v:rand(0.03, 0.08) })) : [];
+    BT.scenery = buildScenery(map);
+    CAM.all = false; CAM.manual = false; CAM.mf = null; CAM.intro = 1.5; CAM.snap = true;
     return BT;
   }
 
+  /* ================= sea: 바람 · 조류 · 파도 ================= */
+  // 파도 — 배마다 높이가 오르내린다(안정성이 높을수록 적게, 0.5칸 단위)
+  function seaHeave(){
+    if (!BT.map.sea || BT.ter.water == null) return;
+    for (const u of allUnits()) if (u.alive && isShip(u)){
+      const amp = Math.min(1, BT.sea.wave / stabOf(u)), ny = BT.ter.water + half(rand(-amp, amp));
+      u.oy += u.y - ny; u.y = ny;
+    }
+  }
+  // 회전이 바뀔 때 — 바람 · 조류 · 파도가 조금씩 바뀌고, 배는 조류에 떠밀린다
+  function seaRound(){
+    if (!BT.map.sea) return;
+    const S = BT.sea;
+    S.wind = clamp(Math.round((S.wind + rand(-0.12, 0.12)) * 20) / 20, -0.3, 0.3);
+    S.cur = clamp(half(S.cur + rand(-0.9, 0.9)), -2.5, 2.5);
+    S.wave = clamp(S.wave + pick([-0.5, 0, 0, 0.5]), 0, 1.5);
+    for (const u of allUnits()) if (u.alive && isShip(u) && S.cur) pushUnit(u, S.cur / stabOf(u) * (SHIPS[u.ship].speed > 1.4 ? 1.2 : 1));
+    seaHeave();
+  }
+
+  /* ================= movement · 밀림 ================= */
+  // 한 걸음 — 뭍은 오르막일수록 기운이 많이 들고(기울기 1.3 넘으면 못 오름), 배는 물 위로만
+  function moveCost(u, dx, dy){
+    if (isShip(u)) return 6 / SHIPS[u.ship].speed;
+    const sl = dy / Math.max(1e-6, Math.abs(dx));
+    return 8 * (1 + 2.6 * Math.max(0, sl)) * (1 - 0.2 * Math.min(1, Math.max(0, -sl))) / (LAND_SPEED[u.kind] || 1);
+  }
+  const blockedByUnit = (u, nx) => allUnits().some(o => o !== u && o.alive && Math.abs(o.x - nx) < 3.4 && Math.abs(o.x - nx) < Math.abs(o.x - u.x));
+  const seaAhead = (x, dir) => BT.ter.water != null && groundAt(x + dir * 2.2) < BT.ter.water - 0.3 && groundAt(x) < BT.ter.water - 0.2;
+  function stepMove(u, dir, dt){
+    const sp = isShip(u) ? 7 * SHIPS[u.ship].speed : 5 * (LAND_SPEED[u.kind] || 1);
+    const nx = clamp(u.x + dir * sp * dt, 3, WX - 3), dx = nx - u.x;
+    if (Math.abs(dx) < 1e-6 || blockedByUnit(u, nx)) return false;
+    if (isShip(u)){
+      if (!seaAhead(nx, dir)) return false;
+      const cost = Math.abs(dx) * moveCost(u);
+      if (u.mp < cost) return false;
+      u.mp -= cost; u.x = nx; u.face = dir; return true;
+    }
+    if (BT.ter.water != null && groundAt(nx) < BT.ter.water - 0.6) return false;      // 깊은 물
+    const ny = standY(nx), dy = ny - u.y;
+    if (dy / Math.abs(dx) > 1.3) return false;                                         // 너무 가파르다
+    const cost = Math.abs(dx) * moveCost(u, dx, dy);
+    if (u.mp < cost) return false;
+    u.mp -= cost; u.x = nx; u.face = dir;
+    if (ny >= u.y - 0.45) u.y = ny;                                                    // 크게 꺼진 곳이면 떨어진다(settleUnits)
+    if (Math.random() < dt * 6) dirt(u.x - dir, u.y + 0.1, 2);
+    return true;
+  }
+  // 멈춘 자리 — x · 높이를 0.5 단위로 고른다
+  function finishMove(u){
+    if (!u || !u.alive) return;
+    const x = half(u.x);
+    if (!blockedByUnit(u, x) && (!isShip(u) || seaAhead(x, 0))){ u.ox += u.x - x; u.x = x; }
+    if (!isShip(u) && !u.fall){ const y = half(standY(u.x)); flattenPad(u.x, y); u.oy += u.y - y; u.y = y; }
+  }
+  // 밀기(반동 · 폭발 · 조류) — 배는 물 위로만, 땅 부대는 크게 오르지 못한다
+  function pushUnit(u, dx){
+    if (!u.alive || Math.abs(dx) < 0.02) return;
+    const n = Math.ceil(Math.abs(dx) / 0.1), step = dx / n, dir = Math.sign(dx);
+    let x = u.x;
+    for (let i = 0; i < n; i++){
+      const nx = clamp(x + step, 3, WX - 3);
+      if (Math.abs(nx - x) < 1e-6 || allUnits().some(o => o !== u && o.alive && Math.abs(o.x - nx) < 3.2 && Math.abs(o.x - nx) < Math.abs(o.x - x))) break;
+      if (isShip(u) ? !seaAhead(nx, dir) : standY(nx) - u.y > 0.5) break;
+      x = nx;
+    }
+    if (Math.abs(x - u.x) < 1e-3) return;
+    // 멈춘 자리는 0.5 단위로(포구 좌표가 깔끔하게) — 막히면 반대쪽 0.5 자리, 그것도 막히면 그대로
+    const okAt = tx => tx >= 3 && tx <= WX - 3 && (isShip(u) ? seaAhead(tx, 0) : standY(tx) - u.y <= 0.5) && !allUnits().some(o => o !== u && o.alive && Math.abs(o.x - tx) < 3.2);
+    const nx = [half(x), Math.floor(x * 2) / 2, Math.ceil(x * 2) / 2].find(okAt);
+    if (nx == null || Math.abs(nx - u.x) < 1e-3) return;
+    u.ox += u.x - nx; u.x = nx;
+    if (!isShip(u)){ const y = standY(nx); if (y > u.y) u.y = y; if (!u.fall && Math.abs(standY(nx) - u.y) < 0.3){ const p = half(standY(nx)); flattenPad(nx, p); u.y = p; } }
+  }
+
   /* ================= shots: 입력 → 발사 값 ================= */
-  // 포탄의 길: 포구 (x₀, y₀)에서 x(t) = x₀ + dir·vx·t, y(t) = y₀ + vy·t − g t² / 2 — 이것이 곧 입력한 이차함수의 그래프
+  // 포탄의 길 = 입력한 그래프 y = a(x − b)² + c(포구를 지난다). 힘: 꼭짓점까지 가로 X + 높이 Y ≤ P, 높이 Y ≤ H — 넘으면 같은 각도로 작게(짧게)
   function readInputs(){
     const v = id => { const el = $(id); if (!el) return NaN; const n = parseIn(el.value); return n ? n.v : NaN; };
-    return { p:v('in_p'), q:v('in_q'), a:v('in_a'), b:v('in_b') };
+    return { a:v('in_a'), b:v('in_b'), c:v('in_c') };
   }
-  const cx = c => c === 1 ? '' : c === -1 ? '−' : fracText(c);       // 계수 1 · −1 은 숨긴다
+  // 수 → 글자: a는 분수(분모 200까지) · 끝나는 소수, 아니면 소수 넷째 자리 / b · c는 소수 둘째 자리(0.5 · 0.25 같은 수는 그대로)
+  const aText = v => { const t = fracText(v); return t.includes('/') || Math.abs(v * 1000 - Math.round(v * 1000)) < 1e-6 ? t : fmt(v, 4); };
+  const cx = c => c === 1 ? '' : c === -1 ? '−' : aText(c);       // 계수 1 · −1 은 숨긴다
+  const num = v => isInt(v) ? fmt(v, 0) : Math.abs(v * 1000 - Math.round(v * 1000)) < 1e-6 ? fmt(v, 3) : fmt(v, 2);
+  const vform = (a, b, c) => `y = ${cx(a)}(x ${b >= 0 ? '−' : '+'} ${num(Math.abs(b))})² ${c >= 0 ? '+' : '−'} ${num(Math.abs(c))}`;
+  // 뉴비 — 쏘는 기울기 s 와 방향을 정해 준다(가장 가까운 적에게 막힘 없이 닿는 기울기, 45°를 먼저)
+  function autoAim(u){
+    const t = foesOf(u)[0], dir = t ? (Math.sign(center(t).x - u.x) || u.face) : u.face;
+    let s = 1, reach = false;
+    if (t) for (const cand of [1, 0.75, 1.25, 0.5, 1.5, 2, 2.5, 3]) if (solveSlope(u, t, cand, u.wep, BT.mods.horse)){ s = cand; reach = true; break; }
+    return { u, s, dir, reach, wep:u.wep, horse:!!BT.mods.horse };
+  }
+  // 처음 기울기 s 로 표적 중심을 지나는 포물선(바람 포함) — 힘 · 고도 한도 안이고 막힘이 없으면 발사 값
+  function solveSlope(u, t, s, wi, horse){
+    const c = center(t), dir = Math.sign(c.x - u.x) || u.face, m = muzzleAt(u, dir), D = (c.x - m.x) * dir, dy = c.y + 0.2 - m.y, f = windFactor(dir);
+    if (D < 1) return null;
+    const nm = s * D / f - dy; if (nm <= 0.02) return null;
+    const A = nm * f * f / (D * D), X = s / (2 * A), Y = s * s / (4 * A), { P, H } = wepSpec(u, wi, horse);
+    if (X + Y > P + 1e-9 || Y > H + 1e-9) return null;
+    const vx0 = Math.sqrt(G_ACC / (2 * A)), L = { x0:m.x, y0:m.y, vx:dir * vx0 * f, vy:s * vx0, f, a:-A, b:m.x + dir * X, c:m.y + Y };
+    const r = simulate(L, u);
+    return r.unit === t || (!r.out && Math.hypot(r.x - c.x, r.y - c.y) < 0.8) ? { L, cost:X + Y, s } : null;
+  }
   function shotParams(u, inp, mods = {}){
-    const mode = LEVELS[BT.level].ctl, m = muzzle(u), g = G_ACC;
-    let a, s, dir, eq, vx0, vy0, local = mode !== 'abs', vertex;
-    if (mode === 'vertex'){
-      const { p, q } = inp;
-      if (!Number.isFinite(p) || !Number.isFinite(q)) return { err:'꼭짓점 (p, q)를 넣으세요.' };
-      if (Math.abs(p) < 0.3) return { err:'p가 0에 너무 가까워요 — 오른쪽으로 쏘려면 p > 0, 왼쪽이면 p < 0.' };
-      if (q <= 0.05) return { err:'꼭짓점이 포구보다 높아야 해요(q > 0).' };
-      a = -q / (p * p); s = 2 * q / p; dir = Math.sign(p);
-      eq = `y = ${cx(a)}(x ${p > 0 ? '−' : '+'} ${fracText(Math.abs(p))})² + ${fracText(q)}`;
-      vertex = { x:p, y:q };
-    } else if (mode === 'std'){
-      a = inp.a; const b = inp.b;
-      if (!Number.isFinite(a) || !Number.isFinite(b)) return { err:'a와 b를 넣으세요.' };
-      if (a >= 0) return { err:'a는 음수여야 포탄이 다시 떨어져요(위로 볼록).' };
-      s = b; dir = Math.sign(b) || u.face;
-      eq = `y = ${cx(a)}x²${b ? ` ${b > 0 ? '+' : '−'} ${Math.abs(b) === 1 ? '' : fracText(Math.abs(b))}x` : ''}`;
-      vertex = { x:-b / (2 * a), y:-b * b / (4 * a) };
+    const mode = LEVELS[BT.level].ctl, g = G_ACC, a = inp.a;
+    if (!Number.isFinite(a)) return { err:'a를 넣으세요.' };
+    if (a >= 0) return { err:'a는 음수여야 포탄이 다시 떨어져요(위로 볼록한 포물선).' };
+    const A = -a;
+    let b, c, s, dir, X, Y, auto = null, m;
+    if (mode === 'a'){
+      const AA = BT.autoAim;
+      if (!AA || AA.u !== u || AA.wep !== u.wep || AA.horse !== !!mods.horse) BT.autoAim = autoAim(u);
+      s = BT.autoAim.s; dir = BT.autoAim.dir; u.face = dir; m = muzzle(u);
+      X = s / (2 * A); Y = s * s / (4 * A); b = m.x + dir * X; c = m.y + Y;
+      auto = { s, dir, reach:BT.autoAim.reach };
     } else {
-      a = inp.a; const { p, q } = inp;
-      if (![a, p, q].every(Number.isFinite)) return { err:'a, p, q를 모두 넣으세요.' };
-      if (a >= 0) return { err:'a는 음수여야 포탄이 다시 떨어져요(위로 볼록).' };
-      eq = `y = ${cx(a)}(x ${p >= 0 ? '−' : '+'} ${fracText(Math.abs(p))})² ${q >= 0 ? '+' : '−'} ${fracText(Math.abs(q))}`;
-      const yAt = a * (m.x - p) ** 2 + q, off = yAt - m.y;
-      vertex = { x:p, y:q };
-      if (Math.abs(off) > 0.35) return { err:`그래프가 포구 (${fracText(m.x)}, ${fracText(m.y)})를 지나지 않아요 — x = ${fracText(m.x)} 일 때 y = ${fmt(yAt)}(${fmt(Math.abs(off))}칸 ${off > 0 ? '위' : '아래'}). 0.35칸 안이어야 발사돼요.`, misfire:true, eq, vertex, local:false, m };
-      s = 2 * a * (m.x - p); dir = Math.sign(p - m.x) || u.face;
+      b = inp.b;
+      if (!Number.isFinite(b)) return { err:'b(꼭짓점의 x좌표)를 넣으세요.' };
+      dir = Math.sign(b - u.x) || u.face; u.face = dir; m = muzzle(u);       // 꼭짓점이 있는 쪽으로 돌아선다
+      X = (b - m.x) * dir;
+      if (X < 0.5) return { err:`b가 포구 x(${num(m.x)})와 너무 가까워요 — 쏘는 쪽으로 포구에서 0.5칸 넘게 떨어뜨리세요.`, m };
+      if (mode === 'ab'){ c = m.y + A * X * X; auto = { c }; }
+      else {
+        c = inp.c;
+        if (!Number.isFinite(c)) return { err:'c(꼭짓점의 y좌표)를 넣으세요.' };
+        const yAt = a * (m.x - b) ** 2 + c, off = yAt - m.y;
+        if (Math.abs(off) > 0.35) return { err:`그래프가 포구 (${num(m.x)}, ${num(m.y)})를 지나지 않아요 — x = ${num(m.x)} 일 때 y = ${fmt(yAt)}(${fmt(Math.abs(off))}칸 ${off > 0 ? '위' : '아래'}). 0.35칸 안이어야 발사돼요.`, misfire:true, eq:vform(a, b, c), vertex:{ x:b, y:c }, m };
+      }
+      Y = A * X * X; s = 2 * A * X;                // 포구에서 출발하는 실제 길(포구를 정확히 지나게)
     }
-    vx0 = Math.sqrt(g / (2 * -a)); vy0 = s * dir * vx0;
-    const need = Math.hypot(vx0, vy0), vmax = vmaxOf(u.side, mods.horse);
-    let k = 1, clipped = false;
-    if (need > vmax + 1e-9){ k = vmax / need; clipped = true; }
-    const vx = dir * vx0 * k, vy = vy0 * k;
-    const flat = mode === 'std' ? -inp.b / inp.a : mode === 'vertex' ? 2 * inp.p : null;   // 포구와 같은 높이로 떨어지는 곳(포구 기준 x)
-    return { ok:true, mode, a, s, dir, vx, vy, need, vmax, clipped, eq, vertex, local, flat, m, x0:m.x, y0:m.y };
+    const { P, H } = wepSpec(u, u.wep, mods.horse);
+    const k = Math.min(1, P / (X + Y), Y > 0 ? H / Y : 1), clipped = k < 1 - 1e-9;
+    const A2 = A / k, vx0 = Math.sqrt(g / (2 * A2)), f = windFactor(dir);
+    return { ok:true, mode, a, b, c, A, X, Y, P, H, k, clipped, s, dir, f, auto, m, x0:m.x, y0:m.y, vx:dir * vx0 * f, vy:s * vx0,
+      eq:vform(a, b, c), vertex:{ x:b, y:c }, flat:2 * b - m.x, need:X + Y };
   }
   const posAt = (L, t) => ({ x:L.x0 + L.vx * t, y:L.y0 + L.vy * t - G_ACC * t * t / 2 });
 
   /* ================= projectiles ================= */
   function spawnProj(u, L, wi, opt = {}){
     const f = FAC[u.fac], w = f.w[wi], style = STYLES[w.s], side = u.side;
+    const T = Math.max(0.6, 2 * Math.max(0, L.vy) / G_ACC);
     return { x0:L.x0, y0:L.y0, vx:L.vx, vy:L.vy, t:0, x:L.x0, y:L.y0, side, owner:u, wi, style:w.s, name:w.n, dmgMul:opt.dmgMul || 1, blastMul:opt.blastMul || 1,
       pierce:(style.pierce || 0) + (opt.rat ? 6 : 0), bounce:style.bounce || 0, fuse:style.fuse || 0, fire:style.fire || 0, split:!!opt.monkey, dragon:!!opt.dragon,
-      delay:opt.delay || 0, alive:true, trail:[], gusted:false, isDragon:!!opt.isDragon, small:!!opt.small, hitAny:false, inGround:false };
+      delay:opt.delay || 0, alive:true, trail:[], gusted:false, isDragon:!!opt.isDragon, small:!!opt.small, inGround:false, ts:clamp(T / 2.6, 1, 2.4) };
   }
   function rebase(p, vx, vy){ p.x0 = p.x; p.y0 = p.y; p.vx = vx; p.vy = vy; p.t = 0; }
   const velOf = p => ({ vx:p.vx, vy:p.vy - G_ACC * p.t });
-  // 한 발 쏘기 — 쓰임새에 따라 여러 발로 나뉜다
+  // 한 발 쏘기 — 쓰임새에 따라 여러 발로 나뉜다. 쏘고 나면 반동으로 뒤로 밀린다
   function fireShot(u, L, wi){
     const f = FAC[u.fac], w = f.w[wi], style = STYLES[w.s], side = BT.sides[u.side], mods = BT.mods;
     const opt = { dmgMul:(mods.tiger ? 1.5 : 1) * (mods.powder ? 1.3 : 1), rat:mods.rat, monkey:mods.monkey, dragon:mods.dragon };
-    const list = [];
-    const jitter = style.jitter ? 1 + rand(-style.jitter, style.jitter) : 1;
+    const list = [], jitter = style.jitter ? 1 + rand(-style.jitter, style.jitter) : 1;
     const mk = (k, delay, extra) => { const p = spawnProj(u, { x0:L.x0, y0:L.y0, vx:L.vx * k * jitter, vy:L.vy * k * jitter }, wi, { ...opt, ...extra }); p.delay = delay; return p; };
     if (style.shots === 2){ list.push(mk(1, 0), mk(1.012, 0.32, { monkey:false, dragon:false })); }
     else if (style.shots === 6){ [0.95, 0.97, 0.99, 1.01, 1.03, 1.05].forEach((k, i) => list.push(mk(k, i * 0.07, { small:true, monkey:i === 2 && opt.monkey, dragon:i === 3 && opt.dragon }))); }
     else list.push(mk(1, 0));
     for (const p of list) BT.projs.push(p);
     if (u.ammo[wi] !== Infinity) u.ammo[wi]--;
-    u.aim = Math.atan2(L.vy, L.vx);
+    u.aim = Math.atan2(L.vy, L.vx); u.face = Math.sign(L.vx) || u.face;
     side.lastWep = wi;
-    BT.phase = 'fly'; BT.shots++;
-    BT.lastShot = { side:u.side, unit:u.name, wep:w.n, eq:L.eq || eqFromL(L), clipped:!!L.clipped, hits:[], dmg:0 };
+    BT.phase = 'fly'; BT.shots++; BT.moveHold = null; CAM.manual = false; CAM.mf = null; BT.lastImpact = null;
+    BT.lastShot = { side:u.side, unit:u.name, wep:w.n, eq:L.eq || eqFromL(L), clipped:!!L.clipped, f:L.f || 1, hits:[], dmg:0 };
     const m = muzzle(u);
     smoke(m.x, m.y, 10, 0.9); flash(m.x, m.y);
     Snd.play(w.s === 'arrow' || /화살|궁/.test(w.n) ? 'bow' : /총|머스킷|소총|기관총|PIAT|바주카/.test(w.n) ? 'gun' : w.s === 'salvo' || /로켓|신기전|주화|화전|카추샤|베르퍼|매트리스/.test(w.n) ? 'rocket' : 'boom', 0.6);
+    const rec = recoilOf(u, wi);
+    if (rec > 0.05) setTimeout(() => { if (BT && u.alive){ pushUnit(u, -Math.sign(L.vx || u.face) * rec); if (rec > 0.6) popText(u.x, u.y + 3.2, '반동!', { color:'#ffe9b8', size:13 }); } }, 90);
     if (BT.gustArmed && BT.gustBy !== u.side) BT.gustArmedAt = 0.35;      // 애쉬래인이 숨을 모아 두었다면 쏘자마자 분다
     kick();
   }
@@ -1216,7 +1425,7 @@ body.fs #battle{gap:8px}
     for (const p of BT.projs){
       if (!p.alive) continue;
       if (p.delay > 0){ p.delay -= dt; if (p.delay <= 0 && p.gustQueued){ p.gustQueued = false; gustOne(p, BT.gustBy ?? 0); } continue; }
-      const t0 = p.t, t1 = p.t + dt, a = posAt(p, t0), b = posAt(p, t1);
+      const t0 = p.t, t1 = p.t + dt * p.ts, a = posAt(p, t0), b = posAt(p, t1);
       const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 0.08));
       let done = false;
       for (let k = 1; k <= n && !done; k++){
@@ -1224,29 +1433,29 @@ body.fs #battle{gap:8px}
         p.t = t; p.x = q.x; p.y = q.y;
         if (p.split && prevVy > 0 && vy <= 0){            // 원숭이 — 꼭짓점에서 셋으로
           p.split = false;
-          for (const kk of [0.86, 1.14]){ const c = spawnProj(p.owner, { x0:p.x, y0:p.y, vx:p.vx * kk, vy:0 }, p.wi, { dmgMul:p.dmgMul }); c.side = p.side; BT.projs.push(c); }
+          for (const kk of [0.86, 1.14]){ const c = spawnProj(p.owner, { x0:p.x, y0:p.y, vx:p.vx * kk, vy:0 }, p.wi, { dmgMul:p.dmgMul }); c.side = p.side; c.ts = p.ts; BT.projs.push(c); }
           sparks(p.x, p.y, 14, { colors:['#ffe08a', '#ffffff'], speed:5, life:0.4 });
         }
         done = collide(p, q.x, q.y, vy);
       }
       if (!done){
         const tl = p.trail, lp = tl[tl.length - 1];
-        if (!lp || Math.hypot(lp.x - p.x, lp.y - p.y) > 0.35) tl.push({ x:p.x, y:p.y, a:1 });
-        if (tl.length > 26) tl.shift();
+        if (!lp || Math.hypot(lp.x - p.x, lp.y - p.y) > 0.45) tl.push({ x:p.x, y:p.y });
+        if (tl.length > 30) tl.shift();
       }
     }
     BT.projs = BT.projs.filter(p => p.alive);
   }
   // 부딪힘 — 밖 · 개(파수) · 부대 · 물 · 땅(관통 · 도탄 · 시한)
   function collide(p, x, y, vy){
-    if (x < -3 || x > WX + 3 || y < -2){ p.alive = false; note(p, '밖으로'); return true; }
+    if (x < -4 || x > WX + 4 || y < -2){ p.alive = false; note(p, '밖으로'); BT.lastImpact = { x:clamp(x, 0, WX), y:Math.max(0, y) + 4 }; return true; }
     const firstGrace = p.t < 0.22;
     for (const u of allUnits()){
       if (!u.alive) continue;
       if (u.guard && u.side !== p.side){
         const c = center(u);
         if (Math.hypot(c.x - x, c.y - y) < 7 && Math.sign(c.x - x) === Math.sign(p.vx || 1)){
-          u.guard = false; p.alive = false; airBurst(x, y, '충견 파수!'); return true;
+          u.guard = false; p.alive = false; airBurst(x, y, '충견 파수!'); BT.lastImpact = { x, y }; return true;
         }
       }
       if (u === p.owner && firstGrace) continue;
@@ -1266,11 +1475,11 @@ body.fs #battle{gap:8px}
       }
       impact(p, x, gh, {}); return true;
     }
-    if (p.inGround){ p.inGround = false; }
+    if (p.inGround) p.inGround = false;
     return false;
   }
   function impact(p, x, y, o){
-    p.alive = false;
+    p.alive = false; BT.lastImpact = { x, y:y + 3 };
     if (p.fuse){ BT.bombs.push({ x, y:o.water ? BT.ter.water : y, t:p.fuse, p, water:!!o.water }); Snd.play('clang', 0.5, 0.05); return; }
     explode(p, x, y, o);
   }
@@ -1281,45 +1490,57 @@ body.fs #battle{gap:8px}
     const R = tier.blast * style.blast * p.blastMul * (o.water ? 0.85 : 1);
     const base = tier.dmg * style.dmg * p.dmgMul * (o.water ? 0.85 : 1);
     let total = 0;
+    const pushes = [];
     for (const u of allUnits()){
       if (!u.alive) continue;
       const direct = o.hit === u, d = direct ? 0 : distToBox(x, y, box(u));
       if (!direct && d > R) continue;
       let dmg = direct ? base : base * (1 - 0.6 * d / R) * 0.9;
+      if (isShip(u)) dmg *= SHIPS[u.ship].armor;
       if (u.shield){ dmg *= u.shield; u.shield = 0; u.shieldTurns = 0; popText(u.x, u.y + 3.6, '방패!', { color:'#cfe6ff', size:15 }); }
       if (u.armor){ dmg *= 0.5; u.armor = false; }
       dmg = Math.max(1, Math.round(dmg));
       hurt(u, dmg, p.side);
       if (u.side !== p.side) total += dmg;
-      if (BT.lastShot && p.side === BT.lastShot.side){ BT.lastShot.hits.push({ id:u.id, name:u.name, dmg, direct, own:u.side === p.side }); if (p.gusted) BT.lastShot.gusted = true; }
+      if (BT.lastShot && p.side === BT.lastShot.side) BT.lastShot.hits.push({ id:u.id, name:u.name, dmg, direct, own:u.side === p.side });
+      // 맞아 밀림 — 배는 안정성만큼 나눠서, 땅 부대는 조금
+      const k = (base / 30) * (1 - 0.5 * d / R) * (isShip(u) ? 1.3 / stabOf(u) : 0.25);
+      pushes.push([u, (Math.sign(u.x - x) || Math.sign(p.vx) || 1) * k]);
     }
     if (BT.lastShot && p.side === BT.lastShot.side) BT.lastShot.dmg += total;
     side.energy = Math.min(100, side.energy + total * 0.2);
     if (!o.water) carve(x, y, R * 0.95);
+    for (const [u, k] of pushes) pushUnit(u, k);
     for (const c of BT.crates) if (!c.taken && Math.hypot(c.x - x, c.y + 0.6 - y) < R + 0.9) takeCrate(c, p.side);
     if (p.fire) BT.fires.push({ x, y, r:2.4, turns:2, dmg:7, side:p.side });
-    // 효과
     if (o.water){ splash(x, y, R); Snd.play('splash'); }
     else { boomFX(x, y, R, p); Snd.play('explode', clamp(R / 4, 0.3, 1)); }
+    BT.lastImpact = { x, y:y + 3 };
     if (p.dragon){                                // 용의 불비 — 둘레에 불덩이 다섯
       [-4, -2, 0, 2, 4].forEach((dx, i) => {
-        const d = spawnProj(p.owner, { x0:clamp(x + dx, 0.5, WX - 0.5), y0:WY + 3, vx:0, vy:-4 }, p.wi, { dmgMul:0.8 * p.dmgMul, isDragon:true });
-        d.side = p.side; d.delay = 0.25 + i * 0.12; d.pierce = 0; d.bounce = 0; d.fuse = 0; d.fire = 0; d.blastMul = 0.9; BT.projs.push(d);
+        const d = spawnProj(p.owner, { x0:clamp(x + dx, 0.5, WX - 0.5), y0:y + 26, vx:0, vy:-4 }, p.wi, { dmgMul:0.8 * p.dmgMul, isDragon:true });
+        d.side = p.side; d.delay = 0.25 + i * 0.12; d.pierce = 0; d.bounce = 0; d.fuse = 0; d.fire = 0; d.blastMul = 0.9; d.ts = 1.4; BT.projs.push(d);
       });
       Snd.play('dragon');
     }
   }
-  function hurt(u, dmg, bySide){
+  function hurt(u, dmg){
     u.hp = Math.max(0, u.hp - dmg);
     BT.sides[u.side].energy = Math.min(100, BT.sides[u.side].energy + dmg * 0.12);
     popText(u.x, u.y + 3, `−${dmg}`, { color:u.side === 0 ? '#ffb0a0' : '#ffe38a', size:20 });
+    // 무게중심이 높은 배(안택선 등)는 체력이 35% 아래로 떨어진 채 맞으면 뒤집혀 가라앉을 수 있다
+    if (u.alive && u.hp > 0 && isShip(u) && SHIPS[u.ship].sink){
+      const r = u.hp / u.maxHp;
+      if (r < 0.35 && Math.random() < SHIPS[u.ship].sink * (1 - r / 0.35) + 0.05){ u.capsized = true; u.hp = 0; popText(u.x, u.y + 5, '중심을 잃고 뒤집혔다!', { color:'#cfe6ff', size:17 }); }
+    }
     if (u.hp <= 0 && u.alive){
       u.alive = false;
       const c = center(u);
+      if (isShip(u)) u.sinkT = 0;
       sparks(c.x, c.y, 40, { colors:['#ffd257', '#ff7a3d', '#ffffff', '#5a4a3a'], speed:10, life:0.9, size:2.6 });
       smoke(c.x, c.y, 18, 1.6); shake(7, 0.5);
-      popText(c.x, c.y + 3.2, isShip(u) ? '격침!' : '격파!', { color:'#ffffff', size:22 });
-      Snd.play('explode', 1);
+      popText(c.x, c.y + 3.2, isShip(u) ? (u.capsized ? '침몰!' : '격침!') : '격파!', { color:'#ffffff', size:22 });
+      Snd.play(isShip(u) ? 'splash' : 'explode', 1);
     }
   }
   // 떨어진 땅 — 부대가 서 있던 땅이 패이면 떨어진다(높이 2.5 넘게 떨어지면 피해)
@@ -1327,7 +1548,7 @@ body.fs #battle{gap:8px}
     let moving = false;
     for (const u of allUnits()){
       if (!u.alive || isShip(u)) continue;
-      const gnd = Math.max(groundAt(u.x - 0.6), groundAt(u.x), groundAt(u.x + 0.6));
+      const gnd = standY(u.x);
       const floor = BT.ter.water != null && gnd < BT.ter.water ? BT.ter.water - 0.5 : gnd;
       if (u.y > floor + 0.02){
         if (!u.fall) u.fall = { from:u.y, v:0 };
@@ -1335,11 +1556,10 @@ body.fs #battle{gap:8px}
         if (u.y <= floor + 1e-6){
           const drop = u.fall.from - u.y; u.fall = null;
           if (drop > 2.5){ const dmg = Math.round((drop - 2.5) * 4); hurt(u, dmg); dirt(u.x, u.y, 10); }
-          // 내려앉은 자리를 0.5 단위로 고른다(마스터 모드의 포구 좌표가 깔끔하게)
           const pad = Math.floor(u.y * 2 + 1e-6) / 2;
-          if (pad < u.y - 1e-6 && !(BT.ter.water != null && pad < BT.ter.water)){ for (let i = 0; i < NC; i++) if (Math.abs(colX(i) - u.x) <= 1.15 && BT.ter.h[i] > pad) BT.ter.h[i] = pad; u.y = pad; }
+          if (pad < u.y - 1e-6 && !(BT.ter.water != null && pad < BT.ter.water)){ for (let i = 0; i < BT.ter.N; i++) if (Math.abs(colX(i) - u.x) <= 1.15 && BT.ter.h[i] > pad) BT.ter.h[i] = pad; u.y = pad; }
         }
-      } else if (u.y < floor - 0.02){ u.y = floor; }
+      } else if (u.y < floor - 0.02) u.y = floor;
     }
     return moving;
   }
@@ -1347,11 +1567,12 @@ body.fs #battle{gap:8px}
   /* ================= crates · fire ================= */
   function spawnCrate(){
     if (BT.crates.filter(c => !c.taken).length >= 2) return;
-    for (let k = 0; k < 30; k++){
-      const x = rand(10, 50);
-      if (isWater(x) || allUnits().some(u => u.alive && Math.abs(u.x - x) < 3.5)) continue;
-      BT.crates.push({ x, y:groundAt(x), item:pick(Object.keys(ITEMS)), taken:false, t:0 });
-      popText(x, groundAt(x) + 2.4, '보급 상자', { color:'#fff3c4', size:14 });
+    for (let k = 0; k < 40; k++){
+      const x = rand(WX * 0.12, WX * 0.88), wet = isWater(x);
+      if ((wet && !BT.map.sea) || allUnits().some(u => u.alive && Math.abs(u.x - x) < 4)) continue;
+      const y = wet ? BT.ter.water : groundAt(x);
+      BT.crates.push({ x, y, wet, item:pick(Object.keys(ITEMS)), taken:false, t:0 });
+      popText(x, y + 2.4, wet ? '떠다니는 보급 상자' : '보급 상자', { color:'#fff3c4', size:14 });
       return;
     }
   }
@@ -1362,18 +1583,16 @@ body.fs #battle{gap:8px}
     sparks(c.x, c.y + 0.5, 16, { colors:['#ffe08a', '#c8a26a'], speed:5, life:0.5 }); Snd.play('pickup');
   }
   function tickFires(u){
-    for (const f of BT.fires){
-      if (f.turns > 0 && u.alive && Math.abs(u.x - f.x) < f.r + 0.6){ hurt(u, f.dmg); flames(u.x, u.y, 10); }
-    }
+    for (const f of BT.fires) if (f.turns > 0 && u.alive && Math.abs(u.x - f.x) < f.r + 0.6){ hurt(u, f.dmg); flames(u.x, u.y, 10); }
   }
 
   /* ================= AI ================= */
   // 경로를 미리 굴려 본다(부딪히는 첫 자리 · 맞은 부대)
   function simulate(L, owner){
     const ter = BT.ter;
-    for (let t = 0.01; t < 12; t += 0.012){
+    for (let t = 0.01; t < 14; t += 0.012){
       const q = posAt(L, t);
-      if (q.x < -3 || q.x > WX + 3 || q.y < -2) return { x:q.x, y:q.y, out:true };
+      if (q.x < -4 || q.x > WX + 4 || q.y < -2) return { x:q.x, y:q.y, out:true };
       for (const u of allUnits()){ if (!u.alive || (u === owner && t < 0.22)) continue; if (inBox(q.x, q.y, box(u))) return { x:q.x, y:q.y, unit:u }; }
       const gh = heightOf(ter.h, q.x);
       if (ter.water != null && q.y <= ter.water && gh < ter.water) return { x:q.x, y:ter.water, water:true };
@@ -1381,49 +1600,57 @@ body.fs #battle{gap:8px}
     }
     return { x:0, y:0, out:true };
   }
-  function aimAt(u, target, horse){
-    const m = muzzle(u), c = center(target), dx = c.x - m.x, D = Math.abs(dx), dir = Math.sign(dx) || u.face, dy = c.y + 0.2 - m.y, vmax = vmaxOf(u.side, horse), sols = [];
-    for (let deg = 10; deg <= 80; deg += 2){
-      const th = deg * Math.PI / 180, den = 2 * Math.cos(th) ** 2 * (D * Math.tan(th) - dy);
-      if (den <= 0.01) continue;
-      const v = Math.sqrt(G_ACC * D * D / den);
-      if (v > vmax) continue;
-      const L = { x0:m.x, y0:m.y, vx:dir * v * Math.cos(th), vy:v * Math.sin(th) };
-      const r = simulate(L, u);
-      if (r.unit === target || (!r.out && Math.hypot(r.x - c.x, r.y - c.y) < 0.8)) sols.push({ L, v, deg });
-    }
+  const SLOPES = [0.15, 0.25, 0.35, 0.5, 0.65, 0.8, 1, 1.2, 1.45, 1.7, 2, 2.4, 2.9, 3.5, 4.2];
+  // 맞힐 길 — 처음 기울기마다 표적을 지나는 포물선(바람 포함)을 구해 힘 · 고도 한도 · 막힘을 따진다
+  function aimAt(u, target, opts = {}){
+    const sols = [];
+    for (const s of SLOPES){ const r = solveSlope(u, target, s, opts.wi ?? 0, opts.horse); if (r) sols.push(r); }
     if (!sols.length) return null;
-    sols.sort((a, b) => a.v - b.v);
-    return pick(sols.slice(0, 3)).L;
+    sols.sort((a, b) => a.cost - b.cost);
+    return (opts.best ? sols[0] : pick(sols.slice(0, 3))).L;
   }
   function aiAccuracy(){
     const lv = LEVELS[BT.level], e = Math.max(0, ...BT.sides.filter(s => s.human).map(s => s.energy));
     return clamp(lv.acc + (e >= 90 ? 0.12 : e >= 60 ? 0.07 : e >= 40 ? 0.03 : 0), 0, 0.88);   // 기운을 많이 모은 상대에겐 조금 더 정확하게(아깝게!)
   }
+  const foesOf = u => BT.sides[1 - u.side].units.filter(t => t.alive).sort((a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x));
+  function canHitAny(u, quick){
+    const f = FAC[u.fac], ws = quick ? [0] : f.w.map((w, i) => i).filter(i => u.ammo[i] > 0);
+    for (const t of foesOf(u)) for (const wi of ws) if (aimAt(u, t, { wi, best:true })) return true;
+    return false;
+  }
   function aiPlan(u){
-    const foes = BT.sides.filter((s, i) => i !== u.side).flatMap(s => s.units).filter(t => t.alive);
-    const target = foes.sort((a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x))[0];
-    const f = FAC[u.fac];
+    const foes = foesOf(u), f = FAC[u.fac];
     let wi = 0;
     const spare = f.w.map((w, i) => i).filter(i => i > 0 && u.ammo[i] > 0);
     if (spare.length && Math.random() < 0.32) wi = pick(spare);
-    const exact = aimAt(u, target);
+    let target = null, exact = null;
+    const order = [wi, 0, ...spare.filter(i => i !== wi)];
+    for (const w of order){ for (const t of foes){ exact = aimAt(u, t, { wi:w }); if (exact){ target = t; wi = w; break; } } if (exact) break; }
+    target = target || foes[0];
     const R = TIERS[sideTier(u.side)].blast * STYLES[f.w[wi].s].blast;
     const hit = BT.aiForce ? BT.aiForce === 'hit' : Math.random() < aiAccuracy();
     let L = null;
     if (exact && hit){ const k = 1 + rand(-0.002, 0.002); L = { ...exact, vx:exact.vx * k, vy:exact.vy * k }; }
     else if (exact){                              // 아깝게 빗나가게 — 표적에서 폭발 반경의 1.4 ~ 4.5배 떨어진 곳
-      const c = center(target);
-      for (const k of shuffle([0.9, 0.93, 0.95, 1.05, 1.07, 1.1, 0.86, 1.14])){
+      const c = center(target), allies = BT.sides[u.side].units.filter(o => o.alive);
+      const allyD = r => Math.min(...allies.map(o => distToBox(r.x, r.y, box(o))));     // 우리 편(자기 자신 포함) 가까이엔 떨어뜨리지 않게
+      let best = null, bestD = -1;
+      for (const k of shuffle([0.9, 0.93, 0.95, 1.05, 1.07, 0.86, 1.1, 1.14, 0.82])){
         const T = { ...exact, vx:exact.vx * k, vy:exact.vy * k }, r = simulate(T, u);
-        const d = Math.hypot(r.x - c.x, r.y - c.y);
-        if (r.unit !== target && !r.out && d > R * 1.4 && d < R * 4.5 && !(r.unit && r.unit.side === u.side)){ L = T; break; }
+        if (r.unit === target || r.out || (r.unit && r.unit.side === u.side)) continue;
+        const d = Math.hypot(r.x - c.x, r.y - c.y), da = allyD(r);
+        if (da < R * 1.3) continue;
+        if (d > R * 1.4 && d < R * 4.5){ L = T; break; }
+        if (da > bestD){ bestD = da; best = T; }
       }
-      if (!L) L = { ...exact, vx:exact.vx * 0.85, vy:exact.vy * 0.85 };
-    } else {                                      // 닿지 않으면 가장 세게 45°로
-      const m = muzzle(u), v = vmaxOf(u.side), dir = Math.sign(target.x - u.x) || u.face;
-      L = { x0:m.x, y0:m.y, vx:dir * v * Math.SQRT1_2, vy:v * Math.SQRT1_2 };
+      if (!L) L = best || { ...exact, vx:exact.vx * 1.12, vy:exact.vy * 1.12 };
+    } else {                                      // 닿지 않으면 힘껏 45°로
+      const dir = target ? Math.sign(target.x - u.x) || u.face : u.face, m = muzzleAt(u, dir), { P } = wepSpec(u, wi), A = 3 / (4 * P), vx0 = Math.sqrt(G_ACC / (2 * A)), fw = windFactor(dir);
+      L = { x0:m.x, y0:m.y, vx:dir * vx0 * fw, vy:vx0, f:fw };
     }
+    L.f = L.f || windFactor(Math.sign(L.vx) || 1);
+    u.face = Math.sign(L.vx) || u.face;            // 쏠 쪽으로 돌아서서 조준
     return { u, target, wi, L, t:0, dur:1.5, from:u.aim, to:Math.atan2(L.vy, L.vx) };
   }
 
@@ -1433,18 +1660,24 @@ body.fs #battle{gap:8px}
     const side = BT.sides[BT.turn.side];
     let u = activeUnit();
     if (!u || !u.alive){ BT.turn.unit = nextAlive(BT.turn.side); u = activeUnit(); }
-    if (!u){ return checkEnd(true); }
-    BT.mods = {}; BT.moveMode = false; BT.gustArmed = false; BT.gustArmedAt = null; BT.gustUsed = false; side.moved = false;
-    // 불 · 물 · 방패 시간
+    if (!u || !u.alive) return checkEnd(true);
+    BT.mods = {}; BT.moveMode = false; BT.gustArmed = false; BT.gustArmedAt = null; BT.gustUsed = false; BT.moveHold = null; BT.aiMove = null; side.moved = false;
+    CAM.manual = false; CAM.mf = null; BT.lastImpact = null;
     tickFires(u);
     if (!isShip(u) && BT.ter.water != null && groundAt(u.x) < BT.ter.water - 0.2){ hurt(u, 8); popText(u.x, u.y + 3.6, '물에 잠김', { color:'#cfe6ff', size:14 }); }
     for (const o of allUnits()) if (o.side !== u.side && o.shieldTurns > 0 && --o.shieldTurns === 0) o.shield = 0;
     if (checkEnd()) return;
-    side.energy = Math.min(100, side.energy + 5);
+    side.energy = Math.min(100, side.energy + 5 * crewK(u));
+    u.mp = mpFor(u); u.mpMax = u.mp;
     u.wep = side.human ? clamp(side.lastWep ?? 0, 0, 4) : 0;
     if (u.ammo[u.wep] <= 0) u.wep = 0;
+    BT.autoAim = null;
     if (side.human){ BT.phase = 'aim'; scheduleOrb(true); prefillInputs(u); }
-    else { BT.phase = 'ai'; aiUseItems(u); BT.aiPlan = aiPlan(u); }
+    else {
+      aiUseItems(u);
+      if (!canHitAny(u) && u.mp > 12){ BT.phase = 'aimove'; BT.aiMove = { u, dir:Math.sign((foesOf(u)[0] || u).x - u.x) || u.face, moved:0, check:0 }; }
+      else { BT.phase = 'ai'; BT.aiPlan = aiPlan(u); }
+    }
     updateUI(); kick();
   }
   function nextAlive(sideIdx){
@@ -1453,22 +1686,27 @@ body.fs #battle{gap:8px}
     return 0;
   }
   function shotDone(){
-    // 모든 포탄 · 시한 폭탄이 끝나고 부대가 자리 잡은 뒤
     if (BT.lastShot) reportShot();
     if (checkEnd()) return;
     if (BT.extra){ BT.extra = false; popText(activeUnit().x, activeUnit().y + 4, '한 번 더!', { color:'#ffe38a', size:18 }); startBattleTurn(); return; }
     const nxt = 1 - BT.turn.side;
     BT.turn.side = nxt; BT.turn.unit = nextAlive(nxt);
-    if (nxt === 0){ BT.round++; BT.fires.forEach(f => f.turns--); BT.fires = BT.fires.filter(f => f.turns > 0); if (BT.round % 2 === 0) spawnCrate(); }
+    if (nxt === 0){
+      BT.round++; BT.fires.forEach(f => f.turns--); BT.fires = BT.fires.filter(f => f.turns > 0);
+      if (BT.round % 2 === 0) spawnCrate();
+      seaRound();
+      if (BT.map.sea) toast(`${BT.round}회전 — ${seaText()}`);
+    }
     startBattleTurn();
   }
+  const seaText = () => { const S = BT.sea; return `바람 ${S.wind ? (S.wind > 0 ? '→ ' : '← ') + Math.round(Math.abs(S.wind) * 100) + '%' : '없음'} · 조류 ${S.cur ? (S.cur > 0 ? '→ ' : '← ') + fmt(Math.abs(S.cur), 1) : '없음'} · 파도 ${S.wave ? fmt(S.wave, 1) : '잔잔'}`; };
   function checkEnd(force){
     const a = alive(0).length, b = alive(1).length;
     if (a && b && !force) return false;
     BT.over = true; BT.phase = 'over'; stopOrb();
     const winner = a && !b ? 0 : b && !a ? 1 : -1;
     const id = BT.id;
-    setTimeout(() => { if (BT && BT.id === id) showResult(winner); }, 900);
+    setTimeout(() => { if (BT && BT.id === id) showResult(winner); }, 1100);
     return true;
   }
 
@@ -1479,9 +1717,24 @@ body.fs #battle{gap:8px}
     const rdt = Math.min(0.05, Math.max(0, (now - lastT) / 1000)) * FAST; lastT = now;
     let busy = false;
     if (BT && !$('battle').hidden){
-      busy = true;                                       // 전장에서는 늘 그린다(눈 · 물결 · 깃발)
+      busy = true;                                       // 전장에서는 늘 그린다(카메라 · 물결 · 깃발)
       const dt = rdt * SIM;
       BT.t += rdt;
+      // 사람의 이동(단추를 누르고 있는 동안)
+      if (BT.phase === 'aim' && BT.moveHold){
+        const u = activeUnit();
+        if (!u || !stepMove(u, BT.moveHold.dir, rdt)){ BT.moveHold.stuck = true; }
+        else { BT.autoAim = null; BT.moveHold.moved = true; }
+        if ((BT.uiM = (BT.uiM || 0) + rdt) > 0.08){ BT.uiM = 0; moveTick(); }
+      }
+      // 컴퓨터의 이동 — 맞힐 길이 생기거나 기운이 떨어질 때까지
+      if (BT.phase === 'aimove' && BT.aiMove && !quizOpen()){
+        const M = BT.aiMove, x0 = M.u.x, ok = stepMove(M.u, M.dir, rdt);
+        M.moved += Math.abs(M.u.x - x0); M.check += Math.abs(M.u.x - x0);
+        let go = !ok;
+        if (ok && M.check > 2){ M.check = 0; if (canHitAny(M.u, true)) go = true; }
+        if (go){ finishMove(M.u); BT.aiMove = null; BT.phase = 'ai'; BT.aiPlan = aiPlan(M.u); updateUI(); }
+      }
       if (BT.phase === 'ai' && BT.aiPlan && !quizOpen()){
         const P = BT.aiPlan; P.t += rdt;
         const k = Math.min(1, P.t / P.dur); P.u.aim = P.from + (P.to - P.from) * (1 - Math.pow(1 - k, 3));
@@ -1492,17 +1745,23 @@ body.fs #battle{gap:8px}
         stepProjs(dt);
         for (const b of BT.bombs){ b.t -= dt; if (b.t <= 0 && !b.done){ b.done = true; explode(b.p, b.x, b.y, { water:b.water }); } }
         BT.bombs = BT.bombs.filter(b => !b.done);
-        const falling = settleUnits(dt);
-        if (!BT.projs.length && !BT.bombs.length && !falling){
+        const falling = settleUnits(dt), sinking = allUnits().some(u => u.sinkT != null && u.sinkT < 1.2);
+        if (!BT.projs.length && !BT.bombs.length && !falling && !sinking){
           BT.settle = (BT.settle || 0) + rdt;
-          if (BT.settle > 0.45){ BT.settle = 0; BT.phase = 'resolve'; shotDone(); }
+          if (BT.settle > 0.6){ BT.settle = 0; BT.phase = 'resolve'; shotDone(); }
         } else BT.settle = 0;
-      } else if (BT.phase !== 'over') settleUnits(rdt * SIM);
-      for (const fl of BT.flakes){ fl.y -= fl.v * rdt; fl.x += Math.sin(BT.t * 0.8 + fl.s * 5) * 0.4 * rdt; if (fl.y < -1){ fl.y = WY + 2; fl.x = rand(0, WX); } }
-      for (const c of BT.crates){ c.t += rdt; c.y = Math.min(c.y, groundAt(c.x)); }
+      } else if (BT.phase !== 'over') settleUnits(dt);
+      for (const u of allUnits()){
+        u.ox *= Math.pow(0.012, rdt); u.oy *= Math.pow(0.012, rdt);
+        if (Math.abs(u.ox) < 0.005) u.ox = 0; if (Math.abs(u.oy) < 0.005) u.oy = 0;
+        if (u.sinkT != null) u.sinkT += rdt;
+      }
+      for (const fl of BT.flakes){ fl.y += fl.v * rdt; fl.x += Math.sin(BT.t * 0.8 + fl.s * 5) * 0.01 * rdt; if (fl.y > 1.02){ fl.y = -0.02; fl.x = Math.random(); } }
+      for (const c of BT.crates){ c.t += rdt; if (!c.wet) c.y = Math.min(c.y, groundAt(c.x)); }
       updateOrb(rdt);
       if (BT.phase === 'fly' && (BT.uiT = (BT.uiT || 0) + rdt) > 0.2){ BT.uiT = 0; renderStatus(); }
       if (BT.gustFx){ BT.gustFx.t += rdt; if (BT.gustFx.t > 1.4) BT.gustFx = null; }
+      updateCam(rdt);
     }
     if (fxAlive()){ busy = true; updateFX(rdt); }
     draw(); drawFX();
@@ -1554,119 +1813,208 @@ body.fs #battle{gap:8px}
     }
   }
 
+  /* ================= camera ================= */
+  // 화면은 전장의 일부(가로 약 36 ~ 72칸)를 보여 준다 — 차례인 부대 · 날아가는 포탄을 따라가고, 끌어서 옮기거나 미니맵 · 단추로 볼 곳을 고른다
+  const ASPECT = 1.75;
+  const CAM = { x:0, y:0, vw:64, all:false, manual:false, mf:null, intro:0, snap:false };
+  let unit = 16, dpr = 1, cssW = 0, cssH = 0, sky = null;
+  const viewW = () => CAM.all ? Math.max(WX + 8, (WY + 4) * ASPECT) : CAM.vw;
+  const toPx = (u, x, y) => [(x - CAM.x) * u, cssH - (y - CAM.y) * u];
+  const toWorld = (px, py) => ({ x:CAM.x + px / unit, y:CAM.y + (cssH - py) / unit });
+  function camFocus(){
+    if (CAM.all) return null;
+    if (CAM.manual) return CAM.mf ? { x:CAM.mf.x + CAM.mf.face * viewW() * 0.12, y:CAM.mf.y + 6 } : null;
+    if (CAM.intro > 0){ const t = BT.sides[1].units.find(u => u.alive); if (t) return { x:t.x, y:t.y + 6 }; }
+    if (BT.phase === 'fly'){
+      const p = BT.projs.find(q => q.alive && q.delay <= 0);
+      if (p) return { x:p.x + Math.sign(p.vx) * viewW() * 0.08, y:p.y };
+      if (BT.lastImpact) return BT.lastImpact;
+    }
+    if ((BT.phase === 'resolve' || BT.phase === 'over') && BT.lastImpact) return BT.lastImpact;
+    const u = activeUnit(); if (!u) return null;
+    return { x:u.x + u.face * viewW() * 0.18, y:u.y + 6 };
+  }
+  function clampCam(){
+    const vw = viewW(), vh = cssH / unit;
+    CAM.x = vw >= WX + 6 ? (WX - vw) / 2 : clamp(CAM.x, -3, WX + 3 - vw);
+    CAM.y = clamp(CAM.y, -1.5, Math.max(-1.5, WY - vh));
+  }
+  function updateCam(rdt){
+    if (!cssW) return;
+    if (CAM.intro > 0) CAM.intro -= rdt;
+    const f = camFocus(), vw = viewW(), vh = cssH / unit;
+    if (f){
+      const tx = f.x - vw / 2, ty = f.y - vh * 0.42;
+      if (CAM.snap){ CAM.x = tx; CAM.y = ty; CAM.snap = false; }
+      else { const k = 1 - Math.pow(BT.phase === 'fly' ? 0.0008 : 0.006, rdt); CAM.x += (tx - CAM.x) * k; CAM.y += (ty - CAM.y) * k; }
+    }
+    clampCam();
+  }
+  function panBy(dxPx, dyPx){ CAM.manual = true; CAM.mf = null; CAM.x -= dxPx / unit; CAM.y += dyPx / unit; clampCam(); kick(); }
+  function lookAt(u){ CAM.manual = true; CAM.mf = u; CAM.all = false; setZoom(); kick(); }
+  function setZoom(){ unit = cssW / viewW(); clampCam(); }
+
   /* ================= drawing ================= */
   const cv = $('cv'), ctx = cv.getContext('2d'), fxc = $('fx'), fctx = fxc.getContext('2d');
-  let unit = 16, dpr = 1, cssW = 0, cssH = 0, bg = null;
   const easeOut = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
   function shadeHex(c, k){ const n = parseInt(c.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255; return `rgb(${clamp(r * k, 0, 255) | 0},${clamp(g * k, 0, 255) | 0},${clamp(b * k, 0, 255) | 0})`; }
   function seeded(seed){ let s = seed >>> 0 || 1; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
-  // 배경(하늘 · 먼 산 · 성 · 배 …) — 맵마다 한 번 그려 둔다
-  function paintBg(g, u, map, w, h){
+  // 하늘(그라데이션 · 해 · 구름) — 화면에 붙어 있는 배경, 맵마다 한 번
+  function paintSky(g, w, h, map){
     const tone = TONES[map.tone] || TONES.day, R = seeded(map.id.length * 977 + map.id.charCodeAt(0) * 131);
-    const sky = g.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, tone.sky[0]); sky.addColorStop(1, tone.sky[1]);
-    g.fillStyle = sky; g.fillRect(0, 0, w, h);
-    const sx = w * (0.15 + R() * 0.7), sy = h * (0.16 + R() * 0.12), sr = u * 1.6;
+    const sk = g.createLinearGradient(0, 0, 0, h); sk.addColorStop(0, tone.sky[0]); sk.addColorStop(1, tone.sky[1]);
+    g.fillStyle = sk; g.fillRect(0, 0, w, h);
+    const sx = w * (0.15 + R() * 0.7), sy = h * (0.14 + R() * 0.1), sr = Math.max(12, h * 0.045);
     const sg = g.createRadialGradient(sx, sy, sr * 0.2, sx, sy, sr * 3); sg.addColorStop(0, tone.sun); sg.addColorStop(0.3, tone.sun + 'aa'); sg.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = sg; g.beginPath(); g.arc(sx, sy, sr * 3, 0, Math.PI * 2); g.fill();
     g.fillStyle = tone.sun; g.beginPath(); g.arc(sx, sy, sr, 0, Math.PI * 2); g.fill();
     g.globalAlpha = 0.55; g.fillStyle = tone.clouds;
-    for (let i = 0; i < 5; i++){ const cx = R() * w, cy = h * (0.08 + R() * 0.25), cw = u * (3 + R() * 5); for (let j = 0; j < 4; j++){ g.beginPath(); g.ellipse(cx + (j - 1.5) * cw * 0.5, cy + (j % 2) * u * 0.25, cw * 0.55, u * (0.7 + R() * 0.4), 0, 0, Math.PI * 2); g.fill(); } }
+    for (let i = 0; i < 6; i++){ const cx = R() * w, cy = h * (0.06 + R() * 0.22), cw = h * (0.08 + R() * 0.12); for (let j = 0; j < 4; j++){ g.beginPath(); g.ellipse(cx + (j - 1.5) * cw * 0.5, cy + (j % 2) * cw * 0.12, cw * 0.55, cw * (0.22 + R() * 0.1), 0, 0, Math.PI * 2); g.fill(); } }
     g.globalAlpha = 1;
-    const Y = y => toPx(u, 0, y)[1];
+  }
+  // 풍경 — 먼 산 · 돛 · 섬 따위는 느리게(시차), 성 · 정자 · 소나무는 땅에 붙어서
+  function buildScenery(map){
+    const R = seeded(map.id.length * 613 + map.id.charCodeAt(1) * 97), items = [];
     for (const L of map.bg || []){
-      const [k, c, a, b, rough] = L;
+      const [k, c, a, b, r] = L;
+      if (k === 'mts' || k === 'hills') items.push({ k, color:c, base:a, amp:b, rough:r / 1.4, ph:R() * 10, p:k === 'mts' ? 0.3 : 0.5 });
+      else if (k === 'pines'){ const xs = []; for (let x = a; x <= b; x += 1.2 + R() * 1.6) xs.push({ x, h:2.2 + R() * 2.4 }); items.push({ k, color:c, xs }); }
+      else if (k === 'sails'){ const xs = []; for (let i = 0; i < 12; i++) xs.push({ x:R() * WX, s:0.5 + R() * 0.5 }); items.push({ k, color:c, y:a, xs, p:0.5 }); }
+      else if (k === 'isles'){ const xs = []; for (let i = 0; i < 8; i++) xs.push({ x:R() * WX, w:3 + R() * 7, h:1.2 + R() * 2 }); items.push({ k, color:c, y:a, xs, p:0.4 }); }
+      else if (k === 'castle') items.push({ k, x:c, y:a, w:b, color:r });
+      else if (k === 'pavilion') items.push({ k, x:c, sc:b });
+      else if (k === 'pyramids') items.push({ k, color:c, y:a, xs:[{ x:WX * 0.1, s:6 }, { x:WX * 0.2, s:4 }, { x:WX * 0.62, s:5.5 }], p:0.5 });
+      else if (k === 'bergs'){ const xs = []; for (let i = 0; i < 10; i++) xs.push({ x:R() * WX, s:2 + R() * 3.5 }); items.push({ k, color:c, y:a, xs, p:0.5 }); }
+      else if (k === 'ruins'){ const xs = []; for (let i = 0; i < 16; i++) xs.push({ x:R() * WX, w:1.4 + R() * 2.2, h:3 + R() * 6 }); items.push({ k, color:c, y:a, xs, p:0.7 }); }
+      else if (k === 'river' || k === 'dunes' || k === 'greatwall') items.push({ k, color:c, y:a, ph:R() * 6, p:k === 'river' ? 0.7 : 0.55 });
+      else if (k === 'wire') items.push({ k, color:c });
+    }
+    return items;
+  }
+  function drawScenery(g, s){
+    const tone = TONES[BT.map.tone] || TONES.day;
+    const LX = (x, p) => (x - CAM.x * p) * s, LY = (y, p) => cssH - (y - CAM.y * p) * s;
+    for (const it of BT.scenery){
+      const { k, p = 1 } = it;
       if (k === 'mts' || k === 'hills'){
-        g.fillStyle = c; g.beginPath(); g.moveTo(0, h);
-        const ph = R() * 10, steps = 80;
-        for (let i = 0; i <= steps; i++){ const x = i / steps * w, wx = i / steps * VW; const v = a + b * (k === 'mts' ? (Math.abs(Math.sin(wx * rough + ph)) * 0.8 + Math.sin(wx * rough * 2.7 + ph * 2) * 0.25) : Math.sin(wx * rough + ph) * 0.6); g.lineTo(x, Y(v)); }
-        g.lineTo(w, h); g.closePath(); g.fill();
-        if (k === 'mts' && map.snow){ g.fillStyle = 'rgba(255,255,255,0.35)'; g.fill(); }
+        g.fillStyle = it.color; g.beginPath(); g.moveTo(0, cssH);
+        for (let sx = 0; sx <= cssW + 6; sx += 6){
+          const wx = CAM.x * p + sx / s, v = it.base + it.amp * (k === 'mts' ? (Math.abs(Math.sin(wx * it.rough + it.ph)) * 0.8 + Math.sin(wx * it.rough * 2.7 + it.ph * 2) * 0.25) : Math.sin(wx * it.rough + it.ph) * 0.6);
+          g.lineTo(sx, LY(v, p));
+        }
+        g.lineTo(cssW + 6, cssH); g.closePath(); g.fill();
+        if (k === 'mts' && BT.map.snow){ g.fillStyle = 'rgba(255,255,255,0.3)'; g.fill(); }
       } else if (k === 'pines'){
-        g.fillStyle = c;
-        for (let x = a; x <= b; x += 1.1 + R() * 0.9){ const [px, py] = toPx(u, x, 0); const top = Y(9 + R() * 3.5), base = Y(5); g.beginPath(); g.moveTo(px, top); g.lineTo(px - u * 0.9, base); g.lineTo(px + u * 0.9, base); g.closePath(); g.fill(); }
-      } else if (k === 'sails' || k === 'isles'){
-        if (k === 'isles'){ g.fillStyle = c; for (let i = 0; i < 4; i++){ const cx = R() * w, cw = u * (2 + R() * 4); g.beginPath(); g.ellipse(cx, Y(a), cw, u * (1 + R() * 1.5), 0, Math.PI, 0); g.fill(); } }
-        else { g.fillStyle = c; for (let i = 0; i < 7; i++){ const cx = w * (0.3 + R() * 0.65), s = u * (0.4 + R() * 0.4), y0 = Y(a); g.fillRect(cx - s * 1.4, y0 - s * 0.3, s * 2.8, s * 0.35); g.beginPath(); g.moveTo(cx, y0 - s * 0.3); g.lineTo(cx, y0 - s * 2.4); g.lineTo(cx + s * 1.1, y0 - s * 0.6); g.closePath(); g.fill(); } }
-      } else if (k === 'castle'){                 // ['castle', x, 밑 y, 너비, 색] — 먼 성벽과 여장
-        const [x0] = toPx(u, c, 0), [x1] = toPx(u, c + b, 0), yb = Y(a);
-        g.fillStyle = rough; g.fillRect(x0, yb - u * 1.4, x1 - x0, u * 1.4 + 2);
-        for (let x = x0; x < x1 - u * 0.3; x += u * 0.9) g.fillRect(x, yb - u * 1.78, u * 0.5, u * 0.4);
-      } else if (k === 'greatwall'){              // ['greatwall', 색, y] — 능선을 따라 굽이치는 장성
-        g.fillStyle = c; g.beginPath();
-        const yy = x => Y(a + 1.6 * Math.sin(x / w * 7.5 + 0.6));
-        g.moveTo(0, yy(0) + u * 1.1); for (let x = 0; x <= w; x += 6) g.lineTo(x, yy(x)); g.lineTo(w, yy(w) + u * 1.1); g.closePath(); g.fill();
-        for (let x = 0; x < w; x += u * 0.9) g.fillRect(x, yy(x) - u * 0.36, u * 0.45, u * 0.4);
-        for (let x = w * 0.08; x < w; x += w * 0.22){ g.fillRect(x - u * 0.6, yy(x) - u * 1.2, u * 1.2, u * 1.3); }
-      } else if (k === 'pavilion'){               // ['pavilion', x, y, 크기] — 밑은 땅에 묻히게 그 자리 땅 높이에 맞춘다
-        const gy = BT ? heightOf(BT.ter.h, c) - 0.25 : a, [px, py] = toPx(u, c, gy), s = u * b;
-        g.fillStyle = '#5d4636'; g.fillRect(px - s * 2.2, py - s * 0.9, s * 4.4, s * 0.9);
-        g.fillStyle = '#8b2f22'; for (let i = -2; i <= 2; i++) g.fillRect(px + i * s * 0.9 - s * 0.1, py - s * 2.1, s * 0.2, s * 1.2);
-        g.fillStyle = '#3e3a3a'; g.beginPath(); g.moveTo(px - s * 3.2, py - s * 2.0); g.quadraticCurveTo(px - s * 1.6, py - s * 2.4, px - s * 1.3, py - s * 3.0); g.lineTo(px + s * 1.3, py - s * 3.0); g.quadraticCurveTo(px + s * 1.6, py - s * 2.4, px + s * 3.2, py - s * 2.0); g.lineTo(px + s * 2.6, py - s * 2.2); g.lineTo(px - s * 2.6, py - s * 2.2); g.closePath(); g.fill();
+        g.fillStyle = it.color;
+        for (const t of it.xs){ const gy = groundAt(t.x) - 0.3, [px, py] = toPx(s, t.x, gy); if (px < -20 || px > cssW + 20) continue; g.beginPath(); g.moveTo(px, py - t.h * s); g.lineTo(px - s * 0.9, py); g.lineTo(px + s * 0.9, py); g.closePath(); g.fill(); }
+      } else if (k === 'sails'){
+        g.fillStyle = it.color;
+        for (const t of it.xs){ const px = LX(t.x, p), py = LY(it.y, p), z = s * t.s; if (px < -30 || px > cssW + 30) continue; g.fillRect(px - z * 1.4, py - z * 0.3, z * 2.8, z * 0.35); g.beginPath(); g.moveTo(px, py - z * 0.3); g.lineTo(px, py - z * 2.4); g.lineTo(px + z * 1.1, py - z * 0.6); g.closePath(); g.fill(); }
+      } else if (k === 'isles'){
+        g.fillStyle = it.color;
+        for (const t of it.xs){ const px = LX(t.x, p); if (px < -t.w * s - 10 || px > cssW + t.w * s + 10) continue; g.beginPath(); g.ellipse(px, LY(it.y, p), t.w * s, t.h * s, 0, Math.PI, 0); g.fill(); }
+      } else if (k === 'castle'){
+        const [x0, yb] = toPx(s, it.x, it.y), [x1] = toPx(s, it.x + it.w, it.y);
+        g.fillStyle = it.color; g.fillRect(x0, yb - s * 1.4, x1 - x0, s * 1.4 + 2);
+        for (let x = x0; x < x1 - s * 0.3; x += s * 0.9) g.fillRect(x, yb - s * 1.78, s * 0.5, s * 0.4);
+      } else if (k === 'pavilion'){
+        const [px, py] = toPx(s, it.x, groundAt(it.x) - 0.25), z = s * it.sc;
+        g.fillStyle = '#5d4636'; g.fillRect(px - z * 2.2, py - z * 0.9, z * 4.4, z * 0.9);
+        g.fillStyle = '#8b2f22'; for (let i = -2; i <= 2; i++) g.fillRect(px + i * z * 0.9 - z * 0.1, py - z * 2.1, z * 0.2, z * 1.2);
+        g.fillStyle = '#3e3a3a'; g.beginPath(); g.moveTo(px - z * 3.2, py - z * 2.0); g.quadraticCurveTo(px - z * 1.6, py - z * 2.4, px - z * 1.3, py - z * 3.0); g.lineTo(px + z * 1.3, py - z * 3.0); g.quadraticCurveTo(px + z * 1.6, py - z * 2.4, px + z * 3.2, py - z * 2.0); g.lineTo(px + z * 2.6, py - z * 2.2); g.lineTo(px - z * 2.6, py - z * 2.2); g.closePath(); g.fill();
       } else if (k === 'river'){
-        g.fillStyle = c; g.globalAlpha = 0.7; g.fillRect(0, Y(a), w, u * 0.5); g.globalAlpha = 1;
+        g.fillStyle = it.color; g.globalAlpha = 0.7; g.fillRect(0, LY(it.y, p), cssW, s * 0.5); g.globalAlpha = 1;
       } else if (k === 'dunes'){
-        g.fillStyle = c; g.beginPath(); g.moveTo(0, h); for (let i = 0; i <= 60; i++){ const x = i / 60 * w; g.lineTo(x, Y(a + Math.sin(i * 0.45 + R()) * 0.9)); } g.lineTo(w, h); g.closePath(); g.fill();
+        g.fillStyle = it.color; g.beginPath(); g.moveTo(0, cssH);
+        for (let sx = 0; sx <= cssW + 8; sx += 8){ const wx = CAM.x * p + sx / s; g.lineTo(sx, LY(it.y + Math.sin(wx * 0.18 + it.ph) * 1.3, p)); }
+        g.lineTo(cssW + 8, cssH); g.closePath(); g.fill();
       } else if (k === 'pyramids'){
-        g.fillStyle = c; for (const [cx, s] of [[0.15, 3], [0.27, 2], [0.82, 2.6]]){ const px = w * cx, py = Y(a); g.beginPath(); g.moveTo(px - u * s, py); g.lineTo(px, py - u * s * 0.95); g.lineTo(px + u * s, py); g.closePath(); g.fill(); }
+        g.fillStyle = it.color;
+        for (const t of it.xs){ const px = LX(t.x, p), py = LY(it.y, p); g.beginPath(); g.moveTo(px - s * t.s, py); g.lineTo(px, py - s * t.s * 0.95); g.lineTo(px + s * t.s, py); g.closePath(); g.fill(); }
       } else if (k === 'bergs'){
-        g.fillStyle = c; for (let i = 0; i < 6; i++){ const px = R() * w, s = u * (1.5 + R() * 2.5), py = Y(a); g.beginPath(); g.moveTo(px - s, py); g.lineTo(px - s * 0.3, py - s * 1.1); g.lineTo(px + s * 0.4, py - s * 0.7); g.lineTo(px + s, py); g.closePath(); g.fill(); }
+        g.fillStyle = it.color;
+        for (const t of it.xs){ const px = LX(t.x, p), py = LY(it.y, p), z = s * t.s; g.beginPath(); g.moveTo(px - z, py); g.lineTo(px - z * 0.3, py - z * 1.1); g.lineTo(px + z * 0.4, py - z * 0.7); g.lineTo(px + z, py); g.closePath(); g.fill(); }
       } else if (k === 'ruins'){
-        for (let i = 0; i < 9; i++){ const px = R() * w, bw = u * (1 + R() * 1.6), bh = u * (2 + R() * 4), py = Y(a); g.fillStyle = c; g.fillRect(px, py - bh, bw, bh); g.fillStyle = tone.sky[1]; g.fillRect(px + bw * 0.3, py - bh * 0.7, bw * 0.25, bh * 0.2); }
+        for (const t of it.xs){ const px = LX(t.x, p), py = LY(it.y, p), bw = s * t.w, bh = s * t.h; if (px < -bw || px > cssW + bw) continue; g.fillStyle = it.color; g.fillRect(px, py - bh, bw, bh); g.fillStyle = tone.sky[1]; g.fillRect(px + bw * 0.3, py - bh * 0.7, bw * 0.25, bh * 0.2); }
+      } else if (k === 'greatwall'){
+        g.fillStyle = it.color; g.beginPath();
+        const yy = sx => LY(it.y + 2.2 * Math.sin((CAM.x * p + sx / s) * 0.07 + it.ph), p);
+        g.moveTo(0, yy(0) + s * 1.1); for (let sx = 0; sx <= cssW; sx += 6) g.lineTo(sx, yy(sx)); g.lineTo(cssW, yy(cssW) + s * 1.1); g.closePath(); g.fill();
+        for (let sx = 0; sx < cssW; sx += s * 0.9) g.fillRect(sx, yy(sx) - s * 0.36, s * 0.45, s * 0.4);
       } else if (k === 'wire'){
-        g.strokeStyle = c; g.lineWidth = 1; for (let x = 0; x < w; x += u * 1.6){ g.beginPath(); g.moveTo(x, Y(7.6)); g.lineTo(x, Y(6.6)); g.stroke(); }
+        g.strokeStyle = it.color; g.lineWidth = 1;
+        for (let x = Math.floor(CAM.x); x < CAM.x + cssW / s; x += 1.6){ if (x < 0 || x > WX) continue; const [px, py] = toPx(s, x, groundAt(x)); g.beginPath(); g.moveTo(px, py - s * 1.1); g.lineTo(px, py); g.stroke(); }
       }
     }
   }
-  function paintGrid(g, u, w, h){
-    const [x0, y0] = toPx(u, 0, WY), [x1, y1] = toPx(u, WX, 0);
+  // 격자 — 보이는 곳만(1칸 · 5칸 · 10칸 굵기)
+  function drawGrid(g, s){
+    const vx0 = CAM.x, vx1 = CAM.x + cssW / s, vy0 = Math.max(0, CAM.y), vy1 = CAM.y + cssH / s, step = s < 6 ? 5 : 1;
+    const [, yTop] = toPx(s, 0, Math.min(WY, vy1)), [, yBot] = toPx(s, 0, 0), [xa] = toPx(s, 0, 0), [xb] = toPx(s, WX, 0);
     g.lineWidth = 1;
-    for (let x = 0; x <= WX; x++){ g.strokeStyle = x % 10 === 0 ? 'rgba(255,255,255,0.32)' : x % 5 === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.09)'; const px = Math.round(toPx(u, x, 0)[0]) + 0.5; g.beginPath(); g.moveTo(px, y0); g.lineTo(px, y1); g.stroke(); }
-    for (let y = 0; y <= WY; y++){ g.strokeStyle = y % 10 === 0 ? 'rgba(255,255,255,0.32)' : y % 5 === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.09)'; const py = Math.round(toPx(u, 0, y)[1]) + 0.5; g.beginPath(); g.moveTo(x0, py); g.lineTo(x1, py); g.stroke(); }
-    g.fillStyle = 'rgba(20,14,6,0.55)'; g.fillRect(0, h - MARGIN * u, w, MARGIN * u); g.fillRect(0, 0, MARGIN * u, h);
-    g.fillStyle = '#fff3d8'; g.font = `600 ${Math.max(9, u * 0.62)}px "IBM Plex Mono", monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    for (let x = 0; x <= WX; x += 5) g.fillText(String(x), toPx(u, x, 0)[0], h - MARGIN * u / 2);
-    for (let y = 5; y <= WY; y += 5) g.fillText(String(y), MARGIN * u / 2, toPx(u, 0, y)[1]);
+    for (let x = Math.max(0, Math.ceil(vx0 / step) * step); x <= Math.min(WX, vx1); x += step){
+      g.strokeStyle = x % 10 === 0 ? 'rgba(255,255,255,0.3)' : x % 5 === 0 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)';
+      const px = Math.round(toPx(s, x, 0)[0]) + 0.5; g.beginPath(); g.moveTo(px, yTop); g.lineTo(px, yBot); g.stroke();
+    }
+    for (let y = Math.ceil(vy0 / step) * step; y <= Math.min(WY, vy1); y += step){
+      g.strokeStyle = y % 10 === 0 ? 'rgba(255,255,255,0.3)' : y % 5 === 0 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)';
+      const py = Math.round(toPx(s, 0, y)[1]) + 0.5; g.beginPath(); g.moveTo(Math.max(0, xa), py); g.lineTo(Math.min(cssW, xb), py); g.stroke();
+    }
   }
-  // 지형 — 재료가 같은 구간끼리 칠한다
-  function drawTerrain(g, u){
-    const T = BT.ter, h = T.h, bottom = toPx(u, 0, 0)[1];
-    let i = 0;
-    while (i < NC){
-      const m = T.mat[i]; let j = i; while (j + 1 < NC && T.mat[j + 1] === m) j++;
-      const M = MATS[m] || MATS.soil, i0 = Math.max(0, i - 1), i1 = Math.min(NC - 1, j + 1);
-      g.beginPath(); g.moveTo(toPx(u, colX(i0), 0)[0], bottom);
-      for (let k = i0; k <= i1; k++){ const [px, py] = toPx(u, colX(k), h[k]); g.lineTo(px, py); }
-      g.lineTo(toPx(u, colX(i1), 0)[0], bottom); g.closePath();
-      const top = toPx(u, 0, 14)[1], gr = g.createLinearGradient(0, top, 0, bottom);
-      gr.addColorStop(0, M.body); gr.addColorStop(1, M.deep); g.fillStyle = gr; g.fill();
+  // 눈금 숫자 — 화면 아래 · 왼쪽 띠
+  function drawAxisLabels(g, s){
+    const vx0 = CAM.x, vx1 = CAM.x + cssW / s, vy0 = CAM.y, vy1 = CAM.y + cssH / s, lab = s < 5 ? 20 : s < 9 ? 10 : 5;
+    g.fillStyle = 'rgba(20,14,6,0.55)'; g.fillRect(0, cssH - 15, cssW, 15); g.fillRect(0, 0, 24, cssH - 15);
+    g.fillStyle = '#fff3d8'; g.font = '600 10.5px "IBM Plex Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (let x = Math.max(0, Math.ceil(vx0 / lab) * lab); x <= Math.min(WX, vx1); x += lab){ const px = toPx(s, x, 0)[0]; if (px > 30 && px < cssW - 10) g.fillText(String(x), px, cssH - 7.5); }
+    for (let y = Math.max(0, Math.ceil(vy0 / lab) * lab); y <= Math.min(WY, vy1); y += lab){ const py = toPx(s, 0, y)[1]; if (py > 8 && py < cssH - 20) g.fillText(String(y), 12, py); }
+  }
+  // 지형 — 보이는 기둥만, 재료가 같은 구간끼리 칠한다
+  function drawTerrain(g, s){
+    const T = BT.ter, h = T.h, n = T.N, bottom = cssH + 4;
+    const i0v = clamp(Math.floor(CAM.x / DXC) - 2, 0, n - 1), i1v = clamp(Math.ceil((CAM.x + cssW / s) / DXC) + 2, 0, n - 1);
+    const top = toPx(s, 0, WY * 0.45)[1];
+    let i = i0v;
+    while (i <= i1v){
+      const m = T.mat[i]; let j = i; while (j + 1 <= i1v && T.mat[j + 1] === m) j++;
+      const M = MATS[m] || MATS.soil, a0 = Math.max(0, i - 1), a1 = Math.min(n - 1, j + 1);
+      g.beginPath(); g.moveTo(toPx(s, colX(a0), 0)[0], bottom);
+      for (let k = a0; k <= a1; k++){ const [px, py] = toPx(s, colX(k), h[k]); g.lineTo(px, py); }
+      g.lineTo(toPx(s, colX(a1), 0)[0], bottom); g.closePath();
+      const gr = g.createLinearGradient(0, top, 0, bottom); gr.addColorStop(0, M.body); gr.addColorStop(1, M.deep); g.fillStyle = gr; g.fill();
       if (M.bricks){
         g.save(); g.clip(); g.strokeStyle = 'rgba(60,50,40,0.45)'; g.lineWidth = 1;
-        const yTop = toPx(u, 0, 26)[1];
-        for (let yy = yTop, r = 0; yy < bottom; yy += u * 0.55, r++){ g.beginPath(); g.moveTo(toPx(u, colX(i0), 0)[0], yy); g.lineTo(toPx(u, colX(i1), 0)[0], yy); g.stroke(); for (let xx = toPx(u, colX(i0), 0)[0] + (r % 2) * u * 0.5; xx < toPx(u, colX(i1), 0)[0]; xx += u) { g.beginPath(); g.moveTo(xx, yy); g.lineTo(xx, yy + u * 0.55); g.stroke(); } }
+        let hmax = 0; for (let k = a0; k <= a1; k++) hmax = Math.max(hmax, h[k]);
+        const xA = toPx(s, colX(a0), 0)[0], xB = toPx(s, colX(a1), 0)[0];
+        for (let yy = toPx(s, 0, hmax)[1], r = 0; yy < bottom; yy += s * 0.55, r++){ g.beginPath(); g.moveTo(xA, yy); g.lineTo(xB, yy); g.stroke(); for (let xx = xA + (r % 2) * s * 0.5; xx < xB; xx += s){ g.beginPath(); g.moveTo(xx, yy); g.lineTo(xx, yy + s * 0.55); g.stroke(); } }
         g.restore();
       }
       if (M.glow){ g.save(); g.clip(); const gl = g.createLinearGradient(0, top, 0, bottom); gl.addColorStop(0, 'rgba(255,90,30,0.0)'); gl.addColorStop(0.5, 'rgba(255,90,30,0.25)'); gl.addColorStop(1, 'rgba(255,140,40,0.5)'); g.fillStyle = gl; g.fill(); g.restore(); }
       g.beginPath();
-      for (let k = i0; k <= i1; k++){ const [px, py] = toPx(u, colX(k), h[k]); if (k === i0) g.moveTo(px, py); else g.lineTo(px, py); }
-      g.strokeStyle = M.top; g.lineWidth = Math.max(2, u * 0.28); g.lineJoin = 'round'; g.stroke();
+      for (let k = a0; k <= a1; k++){ const [px, py] = toPx(s, colX(k), h[k]); if (k === a0) g.moveTo(px, py); else g.lineTo(px, py); }
+      g.strokeStyle = M.top; g.lineWidth = Math.max(2, s * 0.28); g.lineJoin = 'round'; g.stroke();
       i = j + 1;
     }
   }
-  function drawWater(g, u){
+  // 물 — 수면은 배 둘레에서 그 배의 높이(파도에 오르내린 만큼)로 부풀고, 잔물결이 흐른다
+  function drawWater(g, s){
     const T = BT.ter; if (T.water == null) return;
-    const tone = TONES[BT.map.tone] || TONES.day, [, wy] = toPx(u, 0, T.water);
-    let i = 0;
-    while (i < NC){
+    const tone = TONES[BT.map.tone] || TONES.day, n = T.N, amp = T.ice ? 0 : 1.2 + BT.sea.wave * 1.8;
+    const ships = T.ice ? [] : allUnits().filter(u => isShip(u) && (u.alive || (u.sinkT != null && u.sinkT < 2.2)));
+    const surf = x => { let v = T.water; for (const u of ships){ const d = (x - u.x - u.ox) / 3.2; if (d > -3 && d < 3) v += (u.y + u.oy - T.water) * Math.exp(-d * d); } return v; };
+    const i0v = clamp(Math.floor(CAM.x / DXC) - 2, 0, n - 1), i1v = clamp(Math.ceil((CAM.x + cssW / s) / DXC) + 2, 0, n - 1), stepW = Math.max(DXC, 3 / s);
+    let i = i0v;
+    while (i <= i1v){
       if (T.h[i] >= T.water){ i++; continue; }
-      let j = i; while (j + 1 < NC && T.h[j + 1] < T.water) j++;
-      const xa = toPx(u, colX(Math.max(0, i - 0.5)), 0)[0], xb = toPx(u, colX(Math.min(NC - 1, j + 0.5)), 0)[0];
-      g.beginPath(); g.moveTo(xa, wy);
-      for (let k = i; k <= j; k++){ const [px, py] = toPx(u, colX(k), T.h[k]); g.lineTo(px, py); }
-      g.lineTo(xb, wy); g.closePath();
+      let j = i; while (j + 1 <= i1v && T.h[j + 1] < T.water) j++;
+      const xa = colX(Math.max(0, i - 0.5)), xb = colX(Math.min(n - 1, j + 0.5)), top = [];
+      for (let x = xa; ; x += stepW){ const xx = Math.min(x, xb), [px, py] = toPx(s, xx, surf(xx)); top.push([px, py + Math.sin(xx * 0.9 + BT.t * 2.2) * amp]); if (xx >= xb) break; }
+      g.beginPath(); top.forEach(([px, py], k) => k ? g.lineTo(px, py) : g.moveTo(px, py));
+      for (let k = j; k >= i; k--){ const [px, py] = toPx(s, colX(k), T.h[k]); g.lineTo(px, py); }
+      g.closePath();
       g.fillStyle = T.ice ? 'rgba(214,236,246,0.92)' : tone.water + 'c8'; g.fill();
       g.strokeStyle = T.ice ? 'rgba(160,200,220,0.9)' : 'rgba(255,255,255,0.6)'; g.lineWidth = 1.5; g.beginPath();
-      for (let x = xa; x <= xb; x += 3){ const yy = wy + (T.ice ? 0 : Math.sin(x * 0.06 + BT.t * 2) * 1.6); if (x === xa) g.moveTo(x, yy); else g.lineTo(x, yy); }
-      g.stroke();
+      top.forEach(([px, py], k) => k ? g.lineTo(px, py) : g.moveTo(px, py)); g.stroke();
       i = j + 1;
     }
   }
@@ -1681,21 +2029,27 @@ body.fs #battle{gap:8px}
   function wheel(g, x, y, r, c){ g.fillStyle = '#3a2716'; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); g.strokeStyle = c; g.lineWidth = Math.max(1, r * 0.22); g.beginPath(); g.arc(x, y, r * 0.8, 0, Math.PI * 2); g.stroke(); g.lineWidth = 1; for (let i = 0; i < 6; i++){ const a = i * Math.PI / 3; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * r * 0.8, y + Math.sin(a) * r * 0.8); g.stroke(); } }
   function flagAt(g, s, x, y, f, face){
     g.strokeStyle = '#3a2a1a'; g.lineWidth = Math.max(1, s * 0.08); g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - s * 2.2); g.stroke();
-    const wv = Math.sin(BT.t * 4 + x) * s * 0.12;
+    const wv = Math.sin(BT.t * 4 + x) * s * 0.12 * (1 + Math.abs(BT.sea.wind) * 4);
     g.fillStyle = f.color; g.beginPath(); g.moveTo(x, y - s * 2.2); g.lineTo(x - face * s * 1.1, y - s * 1.95 + wv); g.lineTo(x, y - s * 1.6); g.closePath(); g.fill();
     g.fillStyle = f.flag; g.beginPath(); g.arc(x - face * s * 0.42, y - s * 1.9 + wv * 0.5, s * 0.13, 0, Math.PI * 2); g.fill();
   }
   function drawUnit(g, s, un, active){
-    const f = FAC[un.fac], [px, py] = toPx(s, un.x, un.y), face = un.face, ang = un.aim, wStyle = f.w[un.wep] ? f.w[un.wep].s : 'heavy';
+    const f = FAC[un.fac], vx = un.x + un.ox, vy = un.y + un.oy, [px, py] = toPx(s, vx, vy), face = un.face, ang = un.aim, wStyle = f.w[un.wep] ? f.w[un.wep].s : 'heavy';
+    if (px < -s * 6 || px > cssW + s * 6) return;
     const bkind = wStyle === 'salvo' && /신기전|화차|로켓|화전|카추샤|베르퍼|매트리스|일와봉/.test(f.w[un.wep].n) ? 'rocket' : un.kind === 'archer' ? 'bow' : 'gun';
     g.save();
-    if (!un.alive){ g.globalAlpha = 0.55; g.filter = 'grayscale(1) brightness(0.6)'; }
-    const m = muzzle(un), [mx, my] = toPx(s, m.x - face * 0.95, m.y);
+    if (un.sinkT != null){ const k = Math.min(1, un.sinkT / 2.2); g.translate(px, py); g.rotate(face * (un.capsized ? 1.5 : 0.45) * Math.min(1, un.sinkT / 1.4)); g.translate(-px, -py); g.translate(0, s * 2.6 * k); g.globalAlpha = 1 - 0.75 * k; }
+    else if (!un.alive){ g.globalAlpha = 0.55; g.filter = 'grayscale(1) brightness(0.6)'; }
+    const m = muzzle(un), [mx, my] = toPx(s, m.x - face * 0.95 + un.ox, m.y + un.oy);
     if (un.kind === 'ship'){
-      const bob = Math.sin(BT.t * 1.8 + un.bob) * s * 0.08, st2 = un.ship;
+      const bob = Math.sin(BT.t * 1.8 + un.bob) * s * (0.06 + BT.sea.wave * 0.08 / stabOf(un)), st2 = un.ship;
       g.translate(0, bob);
       const hullC = st2 === 'steam' ? '#2f3338' : st2 === 'sail' ? '#3a2e26' : st2 === 'jp' ? '#4a3524' : '#6b4a2c';
-      g.fillStyle = hullC; g.beginPath(); g.moveTo(px - s * 2.5, py - s * 0.6); g.lineTo(px + s * 2.5, py - s * 0.6); g.lineTo(px + s * 2.0, py + s * 0.55); g.lineTo(px - s * 2.0, py + s * 0.55); g.closePath(); g.fill();
+      g.fillStyle = hullC; g.beginPath();
+      if (st2 === 'jp'){ g.moveTo(px - s * 2.5, py - s * 0.6); g.lineTo(px + s * 2.5, py - s * 0.6); g.lineTo(px + s * 1.2, py + s * 0.25); g.lineTo(px, py + s * 0.75); g.lineTo(px - s * 1.2, py + s * 0.25); }   // 바닥이 뾰족
+      else if (st2 === 'pan' || st2 === 'turtle'){ g.moveTo(px - s * 2.6, py - s * 0.6); g.lineTo(px + s * 2.6, py - s * 0.6); g.lineTo(px + s * 2.3, py + s * 0.45); g.lineTo(px - s * 2.3, py + s * 0.45); }   // 바닥이 평평하고 넓다
+      else { g.moveTo(px - s * 2.5, py - s * 0.6); g.lineTo(px + s * 2.5, py - s * 0.6); g.lineTo(px + s * 2.0, py + s * 0.55); g.lineTo(px - s * 2.0, py + s * 0.55); }
+      g.closePath(); g.fill();
       if (st2 === 'turtle'){
         g.fillStyle = '#4b5a3a'; g.beginPath(); g.ellipse(px, py - s * 0.6, s * 2.2, s * 1.2, 0, Math.PI, 0); g.fill();
         g.fillStyle = '#d8c9a0'; for (let i = -4; i <= 4; i++){ g.beginPath(); g.arc(px + i * s * 0.45, py - s * 0.6 - Math.sqrt(Math.max(0, 1 - (i / 4.8) ** 2)) * s * 1.15, s * 0.07, 0, Math.PI * 2); g.fill(); }
@@ -1706,9 +2060,9 @@ body.fs #battle{gap:8px}
         g.fillStyle = '#8b2f22'; for (let i = -2; i <= 2; i++) g.fillRect(px + i * s * 0.6 - s * 0.06, py - s * 2.1, s * 0.12, s * 0.7);
         g.fillStyle = '#3e3a3a'; g.beginPath(); g.moveTo(px - s * 1.9, py - s * 2.05); g.quadraticCurveTo(px, py - s * 2.6, px + s * 1.9, py - s * 2.05); g.lineTo(px + s * 1.5, py - s * 2.2); g.lineTo(px - s * 1.5, py - s * 2.2); g.closePath(); g.fill();
       } else if (st2 === 'jp'){
-        g.fillStyle = '#2a211a'; g.fillRect(px - s * 1.8, py - s * 1.9, s * 3.6, s * 1.3);
-        g.fillStyle = '#efe6d2'; g.fillRect(px - s * 1.7, py - s * 1.75, s * 3.4, s * 0.45);
-        g.fillStyle = '#2a211a'; g.beginPath(); g.arc(px, py - s * 1.52, s * 0.18, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#2a211a'; g.fillRect(px - s * 1.9, py - s * 2.3, s * 3.8, s * 1.7);      // 높고 무거운 윗부분
+        g.fillStyle = '#efe6d2'; g.fillRect(px - s * 1.8, py - s * 2.15, s * 3.6, s * 0.5);
+        g.fillStyle = '#2a211a'; g.beginPath(); g.arc(px, py - s * 1.9, s * 0.18, 0, Math.PI * 2); g.fill();
       } else if (st2 === 'junk'){
         g.strokeStyle = '#3a2a1a'; g.lineWidth = Math.max(1, s * 0.1); g.beginPath(); g.moveTo(px - face * s * 0.3, py - s * 0.6); g.lineTo(px - face * s * 0.3, py - s * 3.0); g.stroke();
         g.fillStyle = '#c9a77a'; g.beginPath(); g.moveTo(px - face * s * 0.3, py - s * 2.9); g.lineTo(px - face * s * 1.6, py - s * 1.0); g.lineTo(px - face * s * 0.3, py - s * 0.9); g.closePath(); g.fill();
@@ -1731,7 +2085,7 @@ body.fs #battle{gap:8px}
       flagAt(g, s, px - face * s * 1.0, py, f, face);
     } else {
       const modern = un.kind === 'modern' || un.kind === 'truck', wood = un.kind === 'cart';
-      if (un.kind === 'truck'){ g.fillStyle = '#4e5530'; g.fillRect(px - s * 1.3, py - s * 1.1, s * 2.6, s * 0.8); g.fillRect(px - face * s * 1.4, py - s * 1.6, s * 0.8 * -face + 0, s * 0.6); wheel(g, px - s * 0.8, py - s * 0.3, s * 0.32, '#777'); wheel(g, px + s * 0.8, py - s * 0.3, s * 0.32, '#777'); }
+      if (un.kind === 'truck'){ g.fillStyle = '#4e5530'; g.fillRect(px - s * 1.3, py - s * 1.1, s * 2.6, s * 0.8); g.fillRect(px - face * s * 1.4, py - s * 1.6, s * 0.8 * -face, s * 0.6); wheel(g, px - s * 0.8, py - s * 0.3, s * 0.32, '#777'); wheel(g, px + s * 0.8, py - s * 0.3, s * 0.32, '#777'); }
       else {
         g.fillStyle = wood ? '#6b4a2c' : modern ? '#4e5530' : '#4a3b2a';
         g.fillRect(px - s * 0.9, py - s * 0.95, s * 1.8, s * 0.35);
@@ -1743,10 +2097,9 @@ body.fs #battle{gap:8px}
       flagAt(g, s, px - face * s * 1.1, py - s * 0.8, f, face);
     }
     g.restore();
+    if (!un.alive) return;
     if (un.shield){ g.strokeStyle = 'rgba(160,210,255,0.85)'; g.lineWidth = 2; g.beginPath(); g.arc(px, py - s * 1.0, s * 2.0, Math.PI * 1.05, Math.PI * 1.95); g.stroke(); }
     if (un.guard){ g.font = `${Math.round(s * 0.9)}px system-ui`; g.textAlign = 'center'; g.fillText('🐶', px - face * s * 1.8, py - s * 0.3); }
-    if (!un.alive) return;
-    // 체력 · 이름 · 차례 표시
     // 이름표 — 같은 편 부대가 붙어 있으면 번갈아 높이를 달리해 겹치지 않게
     const mates = BT.sides[un.side].units, idx = mates.indexOf(un);
     const lift = idx % 2 && mates.some(o => o !== un && Math.abs(o.x - un.x) < 9) ? Math.max(s * 1.05, 13) : 0;
@@ -1786,73 +2139,143 @@ body.fs #battle{gap:8px}
     g.restore();
   }
   function drawCrate(g, s, c){
-    const [px, py] = toPx(s, c.x, c.y), bob = Math.sin(c.t * 3) * s * 0.06;
+    const [px, py] = toPx(s, c.x, c.y), bob = Math.sin(c.t * 3) * s * (c.wet ? 0.16 : 0.06);
     g.fillStyle = '#8b5e34'; g.fillRect(px - s * 0.6, py - s * 1.0 + bob, s * 1.2, s * 0.95);
     g.strokeStyle = '#5a3a1e'; g.lineWidth = 1.5; g.strokeRect(px - s * 0.6, py - s * 1.0 + bob, s * 1.2, s * 0.95);
     g.fillStyle = '#d9b24a'; g.fillRect(px - s * 0.08, py - s * 1.0 + bob, s * 0.16, s * 0.95); g.fillRect(px - s * 0.6, py - s * 0.6 + bob, s * 1.2, s * 0.14);
   }
-  // 도움 — 올라가는 길 · 축 · 같은 높이 낙하점 (뱀의 눈 · 천리경이면 끝까지)
+  function markVertex(g, s, x, y, c){ const [px, py] = toPx(s, x, y); g.fillStyle = c; g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(px, py - s * 0.4); g.lineTo(px + s * 0.4, py); g.lineTo(px, py + s * 0.4); g.lineTo(px - s * 0.4, py); g.closePath(); g.fill(); g.stroke(); }
+  // 도움 — 입력한 그래프(흰 점선: 포구 → 꼭짓점 · 축 · 포구 높이로 떨어지는 곳), 바람 · 힘 때문에 실제 길이 다르면 주황 점선, 뱀의 눈 · 천리경이면 끝까지
+  // 힘의 끝 — 꼭짓점이 갈 수 있는 곳: 가로 X + 높이 Y ≤ P(노란 빗금) · 높이 Y ≤ H(천장)
+  function drawPowerEdge(g, s, m, dir, P, H){
+    const pts = [[m.x + dir * P, m.y], [m.x + dir * Math.max(0, P - H), m.y + Math.min(H, P)], [m.x, m.y + Math.min(H, P)]];
+    g.save(); g.setLineDash([6, 5]); g.strokeStyle = 'rgba(255,214,90,0.8)'; g.lineWidth = 1.6;
+    g.beginPath(); pts.forEach(([x, y], i) => { const [px, py] = toPx(s, x, y); if (i) g.lineTo(px, py); else g.moveTo(px, py); }); g.stroke(); g.setLineDash([]);
+    g.font = `700 ${Math.max(10, s * 0.55)}px "IBM Plex Mono",monospace`; g.textBaseline = 'bottom'; g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,0.55)'; g.fillStyle = '#ffe08a';
+    const lab = (t, x, y, al) => {
+      const [px, py] = toPx(s, x, y), M = BT.mini, under = py < 22 || (M && px < M.x0 + M.w + 60 && py < M.y0 + M.h + 16);   // 미니맵 · 화면 위 끝이면 선 아래에
+      g.textAlign = al; g.textBaseline = under ? 'top' : 'bottom';
+      const ty = under ? py + 4 : py - 3; g.strokeText(t, px, ty); g.fillText(t, px, ty);
+    };
+    const d = Math.min(H, P) * 0.5;
+    lab(`X + Y = ${P}`, m.x + dir * (P - d), m.y + d, dir > 0 ? 'left' : 'right');
+    if (H < P) lab(`높이 ${H}`, m.x + dir * (P - H) / 2, m.y + H, 'center');
+    g.restore();
+  }
   function drawAimHelp(g, s, u){
-    const L = currentShot(); if (!L || !L.ok) { if (L && L.misfire && L.vertex){ markVertex(g, s, L.vertex.x, L.vertex.y, '#ff9a8a'); } return; }
+    const L = currentShot(); if (!L) return;
+    if (!L.ok){ if (L.misfire && L.vertex) markVertex(g, s, L.vertex.x, L.vertex.y, '#ff9a8a'); return; }
     const full = BT.mods.snake || BT.mods.scope, hints = BT.hints;
-    if (!full && !hints){ if (!L.clipped && L.vy > 0){ const top = posAt(L, L.vy / G_ACC); markVertex(g, s, top.x, top.y, '#ffffff'); } return; }
-    const m = L.m, pts = [];
-    const vt = L.vy / G_ACC;                         // 꼭짓점에 닿는 시간
+    drawPowerEdge(g, s, L.m, L.dir, L.P, L.H);
+    markVertex(g, s, L.b, L.c, L.clipped ? '#ff9a8a' : '#ffffff');
+    if (hints && (L.clipped || Math.abs(L.f - 1) > 1e-6)) markVertex(g, s, L.x0 + L.dir * L.f * L.k * L.X, L.y0 + L.k * L.Y, '#ffb050');
+    if (!full && !hints) return;
+    g.save(); g.lineWidth = Math.max(2, s * 0.13);
+    if (hints){
+      g.setLineDash([s * 0.35, s * 0.25]); g.strokeStyle = 'rgba(255,255,255,0.9)';
+      g.beginPath();
+      for (let i = 0; i <= 40; i++){ const x = L.x0 + (L.b - L.x0) * i / 40, [px, py] = toPx(s, x, L.a * (x - L.b) ** 2 + L.c); if (i) g.lineTo(px, py); else g.moveTo(px, py); }
+      g.stroke();
+      g.setLineDash([4, 5]); g.strokeStyle = 'rgba(255,255,255,0.5)'; g.lineWidth = 1.5;
+      const [tx, ty] = toPx(s, L.b, L.c), [, gy] = toPx(s, 0, Math.max(0, Math.min(L.y0, groundAt(L.b))));
+      g.beginPath(); g.moveTo(tx, ty); g.lineTo(tx, gy); g.stroke(); g.setLineDash([]);
+      const [lx, ly] = toPx(s, L.flat, L.y0); g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 2; g.beginPath(); g.arc(lx, ly, s * 0.35, 0, Math.PI * 2); g.stroke();
+      if (L.clipped || Math.abs(L.f - 1) > 1e-6){        // 실제로 날아갈 길(꼭짓점까지)
+        const vt = L.vy / G_ACC; g.setLineDash([2, 5]); g.strokeStyle = 'rgba(255,170,80,0.95)'; g.lineWidth = Math.max(2, s * 0.12); g.beginPath();
+        for (let i = 0; i <= 40; i++){ const q = posAt(L, vt * i / 40), [px, py] = toPx(s, q.x, q.y); if (i) g.lineTo(px, py); else g.moveTo(px, py); }
+        g.stroke(); g.setLineDash([]);
+      }
+    }
     if (full){
-      for (let t = 0; t < 12; t += 0.03){ const q = posAt(L, t); pts.push(q); if (q.x < -1 || q.x > WX + 1 || q.y < -1) break; if (t > 0.2 && (q.y <= groundAt(q.x) || allUnits().some(o => o.alive && o !== u && inBox(q.x, q.y, box(o))) || (BT.ter.water != null && q.y <= BT.ter.water && groundAt(q.x) < BT.ter.water))) break; }
-    } else for (let t = 0; t <= vt + 1e-9; t += Math.max(0.02, vt / 60)) pts.push(posAt(L, Math.min(t, vt)));
-    g.save(); g.setLineDash([s * 0.35, s * 0.25]); g.strokeStyle = full ? 'rgba(255,214,90,0.95)' : 'rgba(255,255,255,0.9)'; g.lineWidth = Math.max(2, s * 0.13);
-    g.beginPath(); pts.forEach((q, i) => { const [x, y] = toPx(s, q.x, q.y); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
-    if (full && pts.length){ const e = pts[pts.length - 1], [ex, ey] = toPx(s, e.x, e.y); g.strokeStyle = '#ffd257'; g.lineWidth = 2.5; g.beginPath(); g.arc(ex, ey, s * 0.8, 0, Math.PI * 2); g.moveTo(ex - s, ey); g.lineTo(ex + s, ey); g.moveTo(ex, ey - s); g.lineTo(ex, ey + s); g.stroke(); }
-    // 꼭짓점 · 축 · 같은 높이 낙하점
-    if (!L.clipped && vt > 0){
-      const top = posAt(L, vt), [tx, ty] = toPx(s, top.x, top.y), [, gy] = toPx(s, 0, 0);
-      if (hints){ g.setLineDash([4, 5]); g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(tx, ty); g.lineTo(tx, gy); g.stroke(); g.setLineDash([]); }
-      markVertex(g, s, top.x, top.y, '#ffffff');
-      if (hints){ const land = posAt(L, vt * 2), [lx, ly] = toPx(s, land.x, land.y); g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 2; g.beginPath(); g.arc(lx, ly, s * 0.35, 0, Math.PI * 2); g.stroke(); }
+      const pts = [];
+      for (let t = 0; t < 14; t += 0.03){ const q = posAt(L, t); pts.push(q); if (q.x < -1 || q.x > WX + 1 || q.y < -1) break; if (t > 0.2 && (q.y <= groundAt(q.x) || allUnits().some(o => o.alive && o !== u && inBox(q.x, q.y, box(o))) || (BT.ter.water != null && q.y <= BT.ter.water && groundAt(q.x) < BT.ter.water))) break; }
+      g.setLineDash([s * 0.35, s * 0.25]); g.strokeStyle = 'rgba(255,214,90,0.95)'; g.lineWidth = Math.max(2, s * 0.13);
+      g.beginPath(); pts.forEach((q, i) => { const [x, y] = toPx(s, q.x, q.y); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
+      if (pts.length){ const e = pts[pts.length - 1], [ex, ey] = toPx(s, e.x, e.y); g.strokeStyle = '#ffd257'; g.lineWidth = 2.5; g.beginPath(); g.arc(ex, ey, s * 0.8, 0, Math.PI * 2); g.moveTo(ex - s, ey); g.lineTo(ex + s, ey); g.moveTo(ex, ey - s); g.lineTo(ex, ey + s); g.stroke(); }
     }
     g.restore();
   }
-  function markVertex(g, s, x, y, c){ const [px, py] = toPx(s, x, y); g.fillStyle = c; g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(px, py - s * 0.4); g.lineTo(px + s * 0.4, py); g.lineTo(px, py + s * 0.4); g.lineTo(px - s * 0.4, py); g.closePath(); g.fill(); g.stroke(); }
-  // 포구가 원점인 축(뉴비 · 에이스)
-  function drawLocalAxes(g, s, u){
-    const m = muzzle(u), [ox, oy] = toPx(s, m.x, m.y);
-    g.save(); g.strokeStyle = 'rgba(255,236,170,0.75)'; g.lineWidth = 1.5; g.setLineDash([6, 4]);
-    g.beginPath(); g.moveTo(toPx(s, 0, 0)[0], oy); g.lineTo(toPx(s, WX, 0)[0], oy); g.moveTo(ox, toPx(s, 0, WY)[1]); g.lineTo(ox, toPx(s, 0, 0)[1]); g.stroke(); g.setLineDash([]);
-    g.fillStyle = '#ffec9a'; g.font = `700 ${Math.max(10, s * 0.6)}px "IBM Plex Mono",monospace`; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 3; g.strokeText('O', ox + 3, oy + 3); g.fillText('O', ox + 3, oy + 3);
+  // 포구 표시 — 계산에 쓰는 좌표
+  function drawMuzzleMark(g, s, u){
+    const m = muzzle(u), [px, py] = toPx(s, m.x, m.y);
+    g.save(); g.fillStyle = '#ffec9a'; g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 1.5; g.beginPath(); g.arc(px, py, Math.max(3, s * 0.22), 0, Math.PI * 2); g.fill(); g.stroke();
+    g.font = `700 ${Math.max(10, s * 0.55)}px "IBM Plex Mono",monospace`; g.textAlign = u.face > 0 ? 'right' : 'left'; g.textBaseline = 'top';
+    const t = `포구 (${num(m.x)}, ${num(m.y)})`, tx = px - u.face * 6, ty = py + 6;
+    g.lineWidth = 3; g.strokeText(t, tx, ty); g.fillText(t, tx, ty); g.restore();
+  }
+  // 화면 밖 부대 — 가장자리에 방향 표시
+  function drawEdgeMarks(g, s){
+    const marks = { l:[], r:[] };
+    for (const u of allUnits()){
+      if (!u.alive) continue;
+      const [px, py] = toPx(s, u.x, u.y + 1);
+      if (px < -s) marks.l.push({ u, py }); else if (px > cssW + s) marks.r.push({ u, py });
+    }
+    for (const k of ['l', 'r']){
+      const left = k === 'l', x = left ? 38 : cssW - 6, d = left ? -1 : 1, list = marks[k].sort((a, b) => a.py - b.py);
+      const y0 = left ? 58 : BT.map.sea && cssW >= 640 ? 84 : 32, y1 = cssH - 58, ys = [];
+      for (const { py } of list) ys.push(Math.max(clamp(py, y0, y1), ys.length ? ys[ys.length - 1] + 20 : -Infinity));   // 겹치지 않게 아래로
+      const over = ys.length ? ys[ys.length - 1] - y1 : 0;
+      if (over > 0) for (let i = 0; i < ys.length; i++) ys[i] = Math.max(y0 - 10, ys[i] - over);                        // 넘치면 위로 당긴다
+      list.forEach(({ u }, i) => {
+        const y = ys[i];
+        g.fillStyle = u.side === 0 ? '#e0604a' : '#6f9be0'; g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1.5;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x - d * 12, y - 8); g.lineTo(x - d * 12, y + 8); g.closePath(); g.fill(); g.stroke();
+        g.font = '700 11px "IBM Plex Mono",monospace'; g.textAlign = left ? 'left' : 'right'; g.textBaseline = 'middle';
+        const t = `x ${num(u.x)}`; g.lineWidth = 3; g.strokeText(t, x - d * 16, y); g.fillStyle = '#fff'; g.fillText(t, x - d * 16, y);
+      });
+    }
+  }
+  // 미니맵 — 전장 전체 · 부대 · 지금 보는 곳(누르면 그곳으로)
+  function drawMinimap(g){
+    const w = clamp(cssW * 0.42, 140, 380), h = clamp(w * 0.13, 22, 40), x0 = 30, y0 = 6;
+    BT.mini = { x0, y0, w, h };
+    const X = x => x0 + x / WX * w, Y = y => y0 + h - clamp(y / WY, 0, 1) * h;
+    g.save();
+    g.fillStyle = 'rgba(12,10,8,0.5)'; g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 1;
+    g.beginPath(); g.rect(x0, y0, w, h); g.fill(); g.stroke();
+    g.beginPath(); g.rect(x0, y0, w, h); g.clip();
+    if (BT.ter.water != null){ g.fillStyle = 'rgba(80,150,200,0.75)'; g.fillRect(x0, Y(BT.ter.water), w, h); }
+    g.fillStyle = 'rgba(200,170,120,0.95)'; g.beginPath(); g.moveTo(x0, y0 + h);
+    for (let x = 0; x <= WX; x += WX / 140) g.lineTo(X(x), Y(groundAt(x)));
+    g.lineTo(x0 + w, y0 + h); g.closePath(); g.fill();
+    const au = activeUnit();
+    for (const u of allUnits()){ if (!u.alive) continue; g.fillStyle = u.side === 0 ? '#ff6a50' : '#6fa8ff'; g.beginPath(); g.arc(X(u.x), Y(u.y + 1), u === au ? 3.6 : 2.6, 0, Math.PI * 2); g.fill(); if (u === au){ g.strokeStyle = '#ffd257'; g.lineWidth = 1.5; g.stroke(); } }
+    g.fillStyle = '#ffd257'; for (const p of BT.projs) if (p.delay <= 0){ g.beginPath(); g.arc(X(p.x), Y(p.y), 1.8, 0, Math.PI * 2); g.fill(); }
+    g.strokeStyle = '#ffffff'; g.lineWidth = 1.5; g.strokeRect(X(CAM.x), y0 + 1, (cssW / unit) / WX * w, h - 2);
     g.restore();
   }
   function draw(){
-    if (!BT || $('battle').hidden || !bg) return;
+    if (!BT || $('battle').hidden || !sky) return;
     const s = unit, g = ctx;
-    g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(bg, 0, 0); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(sky, 0, 0); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawScenery(g, s); drawGrid(g, s);
     drawTerrain(g, s); drawWater(g, s);
     for (const f of BT.fires){ const [fx, fy] = toPx(s, f.x, groundAt(f.x)); for (let i = 0; i < 5; i++){ const xx = fx + (i - 2) * s * 0.45, hh = s * (0.6 + 0.35 * Math.sin(BT.t * 9 + i * 1.7)); g.fillStyle = i % 2 ? 'rgba(255,140,40,0.85)' : 'rgba(255,210,80,0.85)'; g.beginPath(); g.moveTo(xx - s * 0.22, fy); g.quadraticCurveTo(xx, fy - hh * 1.6, xx + s * 0.22, fy); g.fill(); } }
     for (const c of BT.crates) if (!c.taken) drawCrate(g, s, c);
     const u = activeUnit(), aiming = BT.phase === 'aim' && u && BT.sides[u.side].human;
-    if (aiming && LEVELS[BT.level].ctl !== 'abs') drawLocalAxes(g, s, u);
     for (const un of allUnits()) drawUnit(g, s, un, un === u && BT.phase !== 'over');
-    if (aiming) drawAimHelp(g, s, u);
+    if (aiming){ drawAimHelp(g, s, u); drawMuzzleMark(g, s, u); }
     for (const b of BT.bombs){ const [bx, by] = toPx(s, b.x, b.y); g.fillStyle = '#26221e'; g.beginPath(); g.arc(bx, by - s * 0.25, s * 0.3, 0, Math.PI * 2); g.fill(); if (Math.sin(BT.t * 30) > 0){ g.fillStyle = '#ffd257'; g.beginPath(); g.arc(bx, by - s * 0.6, s * 0.1, 0, Math.PI * 2); g.fill(); } }
     for (const p of BT.projs) if (p.delay <= 0) drawProj(g, s, p);
-    for (const p of BT.projs) if (p.delay <= 0 && p.y > WY + MARGIN){ const [px] = toPx(s, p.x, 0); g.fillStyle = '#ffd257'; g.beginPath(); g.moveTo(px, 4); g.lineTo(px - 6, 14); g.lineTo(px + 6, 14); g.closePath(); g.fill(); g.font = `600 11px "IBM Plex Mono",monospace`; g.textAlign = 'center'; g.fillText(`y ${fmt(p.y, 0)}`, px, 24); }
     if (BT.gustFx){ const gu = BT.gustFx.u; drawAshrain(g, s, gu.x - gu.face * 1.2, gu.y + (isShip(gu) ? 7.8 : 6.4), gu.face, BT.gustFx.t); }
-    if (BT.flakes.length){ g.fillStyle = 'rgba(255,255,255,0.85)'; for (const f of BT.flakes){ const [x, y] = toPx(s, f.x, f.y); g.beginPath(); g.arc(x, y, f.s * Math.max(1, s * 0.08), 0, Math.PI * 2); g.fill(); } }
+    if (BT.flakes.length){ g.fillStyle = 'rgba(255,255,255,0.85)'; for (const f of BT.flakes){ g.beginPath(); g.arc(f.x * cssW, f.y * cssH, f.s * Math.max(1, s * 0.08), 0, Math.PI * 2); g.fill(); } }
+    drawAxisLabels(g, s); drawEdgeMarks(g, s); drawMinimap(g);
   }
   function drawFX(){
     const g = fctx; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, cssW, cssH);
     if (!BT) return;
-    const s = unit, sc = Math.max(0.7, s / 16);
+    const s = unit, sc = clamp(s / 16, 0.7, 1.3);
     for (const r of FX.rings){ const k = r.age / r.life, [x, y] = toPx(s, r.x, r.y); g.globalAlpha = 1 - k; g.strokeStyle = r.color; g.lineWidth = r.width * (1 - k * 0.6); g.beginPath(); g.arc(x, y, (r.r0 + (r.r1 - r.r0) * easeOut(k)) * s, 0, Math.PI * 2); g.stroke(); }
     for (const p of FX.parts){
       const k = p.age / p.life, [x, y] = toPx(s, p.x, p.y);
+      if (x < -20 || x > cssW + 20) continue;
       if (p.kind === 'smoke'){ g.globalAlpha = 0.6 * (1 - k); g.fillStyle = p.color; g.beginPath(); g.arc(x, y, p.size * sc * (0.6 + k), 0, Math.PI * 2); g.fill(); }
       else { g.globalAlpha = 1 - k * 0.8; g.fillStyle = p.color; g.beginPath(); g.arc(x, y, p.size * sc * (p.kind === 'drop' ? 0.8 : 1 - k * 0.5), 0, Math.PI * 2); g.fill(); }
     }
     g.globalAlpha = 1;
     for (const t of FX.texts){
-      const k = t.age / t.life, [x, y] = toPx(s, t.x, t.y + t.rise * easeOut(k)), sz = t.size * sc;
+      const k = t.age / t.life, [x, y] = toPx(s, t.x, t.y + t.rise * easeOut(k)), sz = t.size * clamp(s / 14, 0.85, 1.2);
       g.globalAlpha = k > 0.6 ? (1 - k) / 0.4 : 1; g.font = `${Math.round(sz)}px "Do Hyeon","Apple SD Gothic Neo",sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
       g.lineWidth = Math.max(2, sz * 0.14); g.strokeStyle = 'rgba(0,0,0,0.6)'; g.strokeText(t.text, x, y); g.fillStyle = t.color; g.fillText(t.text, x, y);
     }
@@ -1865,20 +2288,22 @@ body.fs #battle{gap:8px}
     const fit = st.fs || WIDE.matches, top = stage.getBoundingClientRect().top + window.scrollY;
     let w = sw;
     if (fit){
-      w = Math.max(320, Math.min(sw, (window.innerHeight - top - 10) * VW / VH));
+      w = Math.max(320, Math.min(sw, (window.innerHeight - top - 10) * ASPECT));
       con.style.maxHeight = Math.max(300, window.innerHeight - (con.getBoundingClientRect().top + window.scrollY) - 10) + 'px';
     } else con.style.maxHeight = '';
     wrap.style.width = w < sw - 0.5 ? w + 'px' : '';
     w = wrap.clientWidth || w;
-    placeOut(fit && window.innerHeight - top - w * VH / VW - 22 >= 110, w);
+    placeOut(fit && window.innerHeight - top - w / ASPECT - 22 >= 110, w);
     const ndpr = window.devicePixelRatio || 1;
-    if (bg && Math.abs(w - cssW) < 0.5 && ndpr === dpr && bg.mapId === BT.map.id) return;
-    dpr = ndpr; unit = w / VW; cssW = w; cssH = unit * VH;
+    if (sky && Math.abs(w - cssW) < 0.5 && ndpr === dpr && sky.mapId === BT.map.id) return;
+    dpr = ndpr; cssW = w; cssH = Math.round(w / ASPECT);
+    wrap.classList.toggle('small', cssW < 640);              // 작은 화면 — 단추 · 바다 표시를 작게
+    CAM.vw = clamp(cssW / 13, 34, 72); unit = cssW / viewW();
     for (const c of [cv, fxc]){ c.width = Math.round(cssW * dpr); c.height = Math.round(cssH * dpr); c.style.width = cssW + 'px'; c.style.height = cssH + 'px'; }
-    bg = document.createElement('canvas'); bg.width = cv.width; bg.height = cv.height; bg.mapId = BT.map.id;
-    const g = bg.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); paintBg(g, unit, BT.map, cssW, cssH); paintGrid(g, unit, cssW, cssH);
+    sky = document.createElement('canvas'); sky.width = cv.width; sky.height = cv.height; sky.mapId = BT.map.id;
+    const g = sky.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); paintSky(g, cssW, cssH, BT.map);
     if (orb.el) orb.el.style.setProperty('--d', orbSize() + 'px');
-    draw(); drawFX();
+    updateCam(0); draw(); drawFX();
   }
   function placeOut(below, w){
     const box2 = $('outBelow'), r = $('report');
@@ -1903,7 +2328,7 @@ body.fs #battle{gap:8px}
     const n = host.querySelectorAll(':scope > .toastf').length;
     const el = document.createElement('div'); el.className = 'toastf'; el.textContent = msg;
     if (!inBattle) el.style.position = 'fixed';
-    Object.assign(el.style, { top:(10 + n * 34) + 'px', maxWidth:'calc(100% - 20px)', whiteSpace:'normal', textAlign:'center' });
+    Object.assign(el.style, { top:((inBattle ? 52 : 10) + n * 34) + 'px', maxWidth:'calc(100% - 20px)', whiteSpace:'normal', textAlign:'center' });
     host.append(el);
     setTimeout(() => el.remove(), ms);
   }
@@ -1961,33 +2386,33 @@ body.fs #battle{gap:8px}
     $('unlockAll').textContent = st.preview ? '모두 풀림 — 이번 접속에만' : '모든 잠금 풀기(이번 접속에만)';
     renderChapters();
   }
-  // 작은 전장 그림(맵 고르기 · 시작 화면) — 하늘 · 먼 산 · 땅 · 물
+  // 작은 전장 그림(맵 고르기 · 시작 화면) — 하늘 · 먼 산 · 땅 · 물(맵 전체)
   function thumb(map, w, h, o = {}){
     const c = document.createElement('canvas'), d = Math.min(2, window.devicePixelRatio || 1);
     c.width = Math.round(w * d); c.height = Math.round(h * d);
     const g = c.getContext('2d'); g.scale(d, d);
-    const T = genTerrain(map), tone = TONES[map.tone] || TONES.day;
-    const X = x => x / WX * w, Y = y => h - y / (WY * 0.8) * h;
-    const sky = g.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, tone.sky[0]); sky.addColorStop(1, tone.sky[1]);
-    g.fillStyle = sky; g.fillRect(0, 0, w, h);
+    const T = genTerrain(map), tone = TONES[map.tone] || TONES.day, W = T.W, N = T.N, top = map.h * 0.92;
+    const X = x => x / W * w, Y = y => h - y / top * h;
+    const sky2 = g.createLinearGradient(0, 0, 0, h); sky2.addColorStop(0, tone.sky[0]); sky2.addColorStop(1, tone.sky[1]);
+    g.fillStyle = sky2; g.fillRect(0, 0, w, h);
     const far = (map.bg || []).find(L => L[0] === 'mts') || (map.bg || []).find(L => L[0] === 'hills');
-    if (far){ g.fillStyle = far[1]; g.beginPath(); g.moveTo(0, h); for (let i = 0; i <= 48; i++){ const x = i / 48 * WX; g.lineTo(X(x), Y(far[2] + far[3] * Math.abs(Math.sin(x * far[4] + 1.7)) * 0.8)); } g.lineTo(w, h); g.closePath(); g.fill(); }
+    if (far){ g.fillStyle = far[1]; g.beginPath(); g.moveTo(0, h); for (let i = 0; i <= 48; i++){ const x = i / 48 * W; g.lineTo(X(x), Y(far[2] + far[3] * Math.abs(Math.sin(x * far[4] / 2.6 + 1.7)) * 0.8)); } g.lineTo(w, h); g.closePath(); g.fill(); }
     g.beginPath(); g.moveTo(0, h);
-    for (let i = 0; i < NC; i += 2) g.lineTo(X(colX(i)), Y(T.h[i]));
-    g.lineTo(w, Y(T.h[NC - 1])); g.lineTo(w, h); g.closePath();
-    const M0 = MATS[T.mat[Math.floor(NC / 2)]] || MATS.soil, gr = g.createLinearGradient(0, Y(14), 0, h);
+    for (let i = 0; i < N; i += 2) g.lineTo(X(colX(i)), Y(T.h[i]));
+    g.lineTo(w, Y(T.h[N - 1])); g.lineTo(w, h); g.closePath();
+    const M0 = MATS[T.mat[Math.floor(N / 2)]] || MATS.soil, gr = g.createLinearGradient(0, Y(map.h * 0.5), 0, h);
     gr.addColorStop(0, M0.body); gr.addColorStop(1, M0.deep); g.fillStyle = gr; g.fill();
     g.lineWidth = Math.max(1.5, h / 32);
-    for (let i = 0; i < NC - 2; i += 2){ const M = MATS[T.mat[i]] || MATS.soil; g.strokeStyle = M.top; g.beginPath(); g.moveTo(X(colX(i)), Y(T.h[i])); g.lineTo(X(colX(i + 2)), Y(T.h[i + 2])); g.stroke(); }
-    if (T.water != null){ g.fillStyle = T.ice ? 'rgba(214,236,246,0.92)' : tone.water + 'd8'; for (let i = 0; i < NC; i++) if (T.h[i] < T.water) g.fillRect(X(colX(i)) - 0.6, Y(T.water), X(DXC) + 1.2, Y(T.h[i]) - Y(T.water)); }
+    for (let i = 0; i < N - 4; i += 4){ const M = MATS[T.mat[i]] || MATS.soil; g.strokeStyle = M.top; g.beginPath(); g.moveTo(X(colX(i)), Y(T.h[i])); g.lineTo(X(colX(i + 4)), Y(T.h[i + 4])); g.stroke(); }
+    if (T.water != null){ g.fillStyle = T.ice ? 'rgba(214,236,246,0.92)' : tone.water + 'd8'; for (let i = 0; i < N; i++) if (T.h[i] < T.water) g.fillRect(X(colX(i)) - 0.6, Y(T.water), X(DXC) + 1.2, Y(T.h[i]) - Y(T.water)); }
     if (o.arc){
       const x0 = (map.L[0] + map.L[1]) / 2, x1 = (map.R[0] + map.R[1]) / 2;
-      const y0 = Math.max(heightOf(T.h, x0), T.water ?? 0) + 1.5, y1 = Math.max(heightOf(T.h, x1), T.water ?? 0) + 1, pk = Math.max(y0, y1) + 8;
-      const cx = (x0 + x1) / 2, cy = 2 * pk - (y0 + y1) / 2;
+      const y0 = Math.max(heightOf(T.h, x0), T.water ?? 0) + 1.5, y1 = Math.max(heightOf(T.h, x1), T.water ?? 0) + 1, pk = Math.max(y0, y1) + map.h * 0.3;
+      const cx2 = (x0 + x1) / 2, cy = 2 * pk - (y0 + y1) / 2;
       g.fillStyle = '#2b241c'; g.fillRect(X(x0) - 5, Y(y0 - 1.5) - 7, 10, 7); g.fillRect(X(x1) - 5, Y(y1 - 1) - 7, 10, 7);
       g.setLineDash([5, 4]); g.strokeStyle = 'rgba(255,255,255,0.92)'; g.lineWidth = 2;
-      g.beginPath(); g.moveTo(X(x0), Y(y0)); g.quadraticCurveTo(X(cx), Y(cy), X(x1), Y(y1)); g.stroke(); g.setLineDash([]);
-      const t = 0.64, bx = (1 - t) ** 2 * x0 + 2 * t * (1 - t) * cx + t * t * x1, by = (1 - t) ** 2 * y0 + 2 * t * (1 - t) * cy + t * t * y1;
+      g.beginPath(); g.moveTo(X(x0), Y(y0)); g.quadraticCurveTo(X(cx2), Y(cy), X(x1), Y(y1)); g.stroke(); g.setLineDash([]);
+      const t = 0.64, bx = (1 - t) ** 2 * x0 + 2 * t * (1 - t) * cx2 + t * t * x1, by = (1 - t) ** 2 * y0 + 2 * t * (1 - t) * cy + t * t * y1;
       g.fillStyle = '#1f1a15'; g.beginPath(); g.arc(X(bx), Y(by), 4, 0, Math.PI * 2); g.fill();
       g.fillStyle = 'rgba(255,214,90,0.9)'; g.beginPath(); g.arc(X(bx) - 1.2, Y(by) - 1.2, 1.3, 0, Math.PI * 2); g.fill();
     }
@@ -2024,13 +2449,14 @@ body.fs #battle{gap:8px}
     const m = new Map(); for (const [n] of foes) m.set(n, (m.get(n) || 0) + 1);
     return [...m].map(([n, k]) => k > 1 ? `${n} ×${k}` : n).join(', ');
   }
+  const KIND_TEXT = { sea:'바다 — 바람 · 조류 · 파도가 회전마다 바뀌어요', coast:'해안 — 물과 뭍, 바다의 바람 · 조류가 있어요', land:'뭍 — 높낮이가 복잡해 이동이 어렵고 높이 쏘아 올려야 해요' };
   function openChapter(i){
-    const c = CHAPTERS[i], t = TIERS[tierOf(c.year)];
+    const c = CHAPTERS[i], t = TIERS[tierOf(c.year)], m = MAP[c.map];
     pendingChapter = i;
     $('sYear').textContent = `${c.year}년 · ${i + 1}장 · ${LEVELS[st.level].name}`;
     $('sTitle').textContent = c.title;
     $('sText').textContent = c.intro;
-    $('sMeta').innerHTML = `<b>인물</b> ${esc(c.people)} · <b>곳</b> ${esc(c.place)}<br><b>우리</b> ${esc(c.meName)}(${esc(FAC[c.me].name)}) · <b>적</b> ${esc(foeList(c.foes))}<br><b>화력</b> ${t.lv}단계 ${esc(t.label)} — 같은 시대라 양쪽이 같아요`;
+    $('sMeta').innerHTML = `<b>인물</b> ${esc(c.people)} · <b>곳</b> ${esc(c.place)}<br><b>우리</b> ${esc(c.meName)}(${esc(FAC[c.me].name)}) · <b>적</b> ${esc(foeList(c.foes))}<br><b>화력</b> ${t.lv}단계 ${esc(t.label)} — 같은 시대라 양쪽이 같아요 · 포의 힘 ${t.P}<br><b>전장</b> ${esc(m.name)} · 가로 ${m.w}칸 · ${esc(KIND_TEXT[m.kind])}`;
     $('storyOv').hidden = false; setTimeout(() => $('sGo').focus(), 30);
   }
   $('sBack').onclick = () => { $('storyOv').hidden = true; };
@@ -2045,8 +2471,8 @@ body.fs #battle{gap:8px}
   const cur = () => st.setup[st.setup.mode];
   function facInfo(f){
     const t = TIERS[tierOf(f.year)];
-    return `<b>${esc(f.name)}</b> · ${f.year}년 · 화력 ${t.lv}단계 — ${esc(t.label)}<br>` +
-      f.w.map((w, i) => `${i + 1}. <b>${esc(w.n)}</b> · ${STYLES[w.s].name}${i === 0 ? '(탄 무한)' : ` ${STYLES[w.s].ammo}발`} — ${esc(w.d)}`).join('<br>');
+    return `<b>${esc(f.name)}</b> · ${f.year}년 · 화력 ${t.lv}단계 — ${esc(t.label)}${f.ship ? ` · 배 ${esc(SHIPS[f.ship].name)}` : ''}<br>` +
+      f.w.map((w, i) => `${i + 1}. <b>${esc(w.n)}</b> · ${STYLES[w.s].name} · 힘 ${Math.round(t.P * (STYLES[w.s].pk || 1))}${i === 0 ? '(탄 무한)' : ` · ${STYLES[w.s].ammo}발`} — ${esc(w.d)}`).join('<br>');
   }
   function renderFacs(){
     const S = cur(), mode = st.setup.mode, vsAI = mode === 'free' && S.opp === 'ai';
@@ -2062,17 +2488,17 @@ body.fs #battle{gap:8px}
     $('pickLabel1').textContent = vsAI ? '컴퓨터 세력' : '2P 세력';
     const t0 = tierOf(FAC[S.fac[0]].year), t1 = tierOf(FAC[S.fac[1]].year), gap = Math.abs(t0 - t1);
     $('gapNote').textContent = gap
-      ? `시대 차이 ${gap}단계 — 화력이 크게 달라요(위력 ${TIERS[t0].dmg} : ${TIERS[t1].dmg} · 포의 힘 ${TIERS[t0].v} : ${TIERS[t1].v}). 시대가 낮은 쪽은 높은 보루 위에서, 기운 ${Math.min(100, 20 * gap)}을 받고 시작해요 — 높은 곳 · 성벽 · 보급품 · 십이지신 기술로 뒤집어 보세요.`
+      ? `시대 차이 ${gap}단계 — 화력이 크게 달라요(위력 ${TIERS[t0].dmg} : ${TIERS[t1].dmg} · 포의 힘 ${TIERS[t0].P} : ${TIERS[t1].P}). 시대가 낮은 쪽은 높은 보루 위에서, 기운 ${Math.min(100, 20 * gap)}을 받고 시작해요 — 다가가기 · 높은 곳 · 보급품 · 십이지신 기술로 뒤집어 보세요.`
       : '같은 시대 — 화력이 같아요. 맵과 솜씨로 겨뤄요.';
   }
   function renderMaps(){
     const S = cur(), box2 = $('maps');
     if (!box2.childElementCount){
       box2.innerHTML = MAPS.map(m => `<button class="mapbtn" type="button" data-map="${m.id}" aria-pressed="false"><span>${esc(m.name)}</span></button>`).join('');
-      box2.querySelectorAll('.mapbtn').forEach(b => b.prepend(thumb(MAP[b.dataset.map], 120, 56)));
+      box2.querySelectorAll('.mapbtn').forEach(b => b.prepend(thumb(MAP[b.dataset.map], 120, 50)));
     }
     box2.querySelectorAll('.mapbtn').forEach(b => b.setAttribute('aria-pressed', String(S.map === b.dataset.map)));
-    $('mapName').textContent = S.map === 'random' ? '무작위 — 30곳 가운데 하나' : MAP[S.map].name;
+    $('mapName').textContent = S.map === 'random' ? '무작위 — 30곳 가운데 하나' : `${MAP[S.map].name} · 가로 ${MAP[S.map].w}칸 · ${MAP[S.map].kind === 'land' ? '뭍' : MAP[S.map].kind === 'sea' ? '바다' : '해안'}`;
   }
   function openSetup(mode){
     st.setup.mode = mode;
@@ -2103,34 +2529,36 @@ body.fs #battle{gap:8px}
 
   /* ================= battle start ================= */
   function startBattle(cfg){
-    stopOrb();
+    stopOrb(); stopMove(true);
     FX.parts = []; FX.rings = []; FX.texts = []; FX.shakeT = 0; $('fieldWrap').style.transform = '';
     $('fieldWrap').querySelectorAll('.toastf').forEach(e => e.remove());
     $('resultOv').hidden = true; $('quizOv').hidden = true; QZ = null;
     newBattle(cfg);
     BT.cfg = cfg;
     BT.hints = LEVELS[st.level].hints;
-    const story = cfg.mode === 'story', ch = story ? CHAPTERS[cfg.chapter] : null;
+    const ctl = LEVELS[st.level].ctl, story = cfg.mode === 'story', ch = story ? CHAPTERS[cfg.chapter] : null;
     $('bTitle').textContent = story ? ch.title : `${BT.sides[0].fac.name} vs ${BT.sides[1].fac.name}`;
     $('bMode').textContent = story ? `스토리 ${cfg.chapter + 1}장 · ${ch.year}` : cfg.mode === 'versus' ? '2인 대전' : cfg.human[1] ? '프리 · 둘이서' : '프리 · 컴퓨터와';
     $('bLevel').textContent = LEVELS[st.level].name;
-    $('hints').checked = BT.hints; $('hints').disabled = LEVELS[st.level].ctl === 'abs';
-    $('hints').parentElement.title = LEVELS[st.level].ctl === 'abs' ? '마스터는 도움 선이 꺼져 있어요 — 뱀의 눈 · 천리경으로만 길을 볼 수 있어요' : '';
+    $('hints').checked = BT.hints; $('hints').disabled = ctl === 'abc';
+    $('hints').parentElement.title = ctl === 'abc' ? '마스터는 도움 선이 꺼져 있어요 — 뱀의 눈 · 천리경으로만 길을 볼 수 있어요' : '';
     buildInputs(); renderRules();
     $('report').innerHTML = '';
-    bg = null;
+    sky = null;
     show('battle');
-    const s0 = BT.sides[0], s1 = BT.sides[1];
+    const s0 = BT.sides[0], s1 = BT.sides[1], id = BT.id;
     showBanner(story ? ch.title : BT.map.name, story ? `${ch.year}년 · ${ch.place}` : `${s0.fac.name} ${TIERS[s0.tier].lv}단계 vs ${s1.fac.name} ${TIERS[s1.tier].lv}단계`, 2100);
-    if (s0.tier !== s1.tier){ const lo = s0.tier < s1.tier ? 0 : 1, id = BT.id; setTimeout(() => { if (BT && BT.id === id && !BT.over) toast(`${sideTag(lo) === '나' ? '우리' : sideTag(lo)} — 시대가 낮아 높은 보루와 기운 ${Math.round(BT.sides[lo].energy)}을 받고 시작해요`); }, 900); }
+    if (s0.tier !== s1.tier){ const lo = s0.tier < s1.tier ? 0 : 1; setTimeout(() => { if (BT && BT.id === id && !BT.over) toast(`${sideTag(lo) === '나' ? '우리' : sideTag(lo)} — 시대가 낮아 높은 보루와 기운 ${Math.round(BT.sides[lo].energy)}을 받고 시작해요`); }, 900); }
+    if (BT.map.sea) setTimeout(() => { if (BT && BT.id === id && !BT.over) toast(`${BT.map.kind === 'sea' ? '바다' : '해안'} — ${seaText()}`); }, 2300);
     startBattleTurn();
   }
 
   /* ================= inputs ================= */
+  // 조작 난이도 = 넣는 값의 수 — 꼴은 모두 y = a(x − b)² + c(전장 좌표)
   const FIELDS = {
-    vertex:[['p', 'p · 꼭짓점의 x', '오른쪽 + · 왼쪽 −', [-1, -0.5, 0.5, 1]], ['q', 'q · 꼭짓점의 y', '포구보다 높이(+)', [-1, -0.5, 0.5, 1]]],
-    std:[['a', 'a · 휘는 정도', '음수 · 0에 가까울수록 멀리', [-0.01, -0.001, 0.001, 0.01]], ['b', 'b · 처음 기울기', '클수록 높이 · 음수면 왼쪽', [-0.5, -0.1, 0.1, 0.5]]],
-    abs:[['a', 'a · 휘는 정도', '음수', [-0.01, -0.001, 0.001, 0.01]], ['p', 'p · 꼭짓점의 x', '전장 좌표', [-1, -0.1, 0.1, 1]], ['q', 'q · 꼭짓점의 y', '전장 좌표', [-1, -0.1, 0.1, 1]]]
+    a:[['a', 'a · 휘는 정도', '음수 · 0에 가까울수록 멀리', [-0.001, -0.0001, 0.0001, 0.001]]],
+    ab:[['a', 'a · 휘는 정도', '음수 · 0에 가까울수록 낮고 완만', [-0.001, -0.0001, 0.0001, 0.001]], ['b', 'b · 꼭짓점의 x', '전장 좌표 · 쏘는 쪽', [-1, -0.5, 0.5, 1]]],
+    abc:[['a', 'a · 휘는 정도', '음수', [-0.001, -0.0001, 0.0001, 0.001]], ['b', 'b · 꼭짓점의 x', '전장 좌표', [-1, -0.5, 0.5, 1]], ['c', 'c · 꼭짓점의 y', '전장 좌표 · 높이', [-1, -0.5, 0.5, 1]]]
   };
   const stepLabel = d => (d < 0 ? '−' : '+') + String(Math.abs(d)).replace(/^0\./, '.');
   const stepBtn = (k, d) => `<button type="button" data-k="${k}" data-d="${d}" aria-label="${k} ${d > 0 ? '더하기' : '빼기'} ${Math.abs(d)}">${stepLabel(d)}</button>`;
@@ -2150,102 +2578,194 @@ body.fs #battle{gap:8px}
     const el = $('in_' + k); if (!el || el.disabled || !BT) return;
     const n = parseIn(el.value), dec = k === 'a' ? 4 : 2;
     let v = Math.round(((n ? n.v : 0) + d) * 10 ** dec) / 10 ** dec;
-    if (k === 'a' && v >= 0) v = -0.001;
-    if (k === 'q' && LEVELS[BT.level].ctl === 'vertex' && v < 0.5) v = 0.5;
+    if (k === 'a' && v >= 0) v = -0.0001;
     el.value = fmt(v, dec); recalc();
   }
   function saveInputs(sideIdx){
     const v = {}; $('inputs').querySelectorAll('input').forEach(el => { v[el.id.slice(3)] = el.value; });
     BT.sides[sideIdx].inputs = v;
   }
-  function nearestFoe(u){ return BT.sides[1 - u.side].units.filter(t => t.alive).sort((a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x))[0]; }
-  // 차례 시작 — 지난번 값을 그대로, 처음이면 상대 쪽으로 조금 짧은 한 발
+  const nearestFoe = u => foesOf(u)[0];
+  // 차례 시작 — 지난번 값을 그대로, 처음이면 상대 쪽으로 조금 짧은 한 발(힘 안에서)
   function prefillInputs(u){
     const side = BT.sides[u.side], mode = LEVELS[BT.level].ctl;
     if (side.inputs){ for (const [k, s] of Object.entries(side.inputs)) setInRaw(k, s); return; }
-    const t = nearestFoe(u), m = muzzle(u), D = t ? Math.abs(center(t).x - m.x) : 20, f = t ? Math.sign(center(t).x - m.x) || u.face : u.face;
-    const pp = Math.max(3, Math.round(D * 0.4)), qq = Math.max(3, Math.round(D * 0.25));
-    if (mode === 'vertex'){ setInRaw('p', mi(f * pp)); setInRaw('q', String(qq)); }
-    else if (mode === 'std'){ setInRaw('b', f > 0 ? '1' : '−1'); setInRaw('a', `−1/${Math.max(4, Math.round(D * 0.8))}`); }
-    else { setInRaw('p', fracText(m.x + f * pp)); setInRaw('q', fracText(m.y + qq)); setInRaw('a', `−${qq}/${pp * pp}`); }
+    const t = nearestFoe(u), dir = t ? Math.sign(center(t).x - u.x) || u.face : u.face, m = muzzleAt(u, dir), D = t ? Math.abs(center(t).x - m.x) : 20;
+    const { P, H } = wepSpec(u, u.wep);
+    if (mode === 'a'){
+      const s = (BT.autoAim = autoAim(u)).s, R = Math.max(4, Math.min(Math.round(D * 0.8), Math.floor(3.6 * P / (2 + s)), Math.floor(3.6 * H / s)));
+      setInRaw('a', fracText(-s / R));
+    } else {
+      const B = Math.max(3, Math.min(Math.round(D * 0.4), Math.floor(0.6 * P), Math.floor(1.8 * H))), b = m.x + dir * B;
+      setInRaw('a', `−1/${2 * B}`); setInRaw('b', fracText(b));
+      if (mode === 'abc') setInRaw('c', fracText(m.y + B / 2));
+    }
   }
   const currentShot = () => BT && BT.shot;
   function recalc(){
     if (!BT) return;
     const u = activeUnit(), aim = !!u && BT.phase === 'aim' && BT.sides[u.side].human;
     BT.shot = aim ? shotParams(u, readInputs(), BT.mods) : null;
-    if (aim) renderReadout(u, BT.shot);
+    if (aim){ if (BT.shot.ok) u.aim = Math.atan2(BT.shot.vy, BT.shot.vx); renderReadout(u, BT.shot); }
     kick();
   }
+  const windWord = w => w ? `${w > 0 ? '→' : '←'} ${Math.round(Math.abs(w) * 100)}%` : '없음';
   function renderReadout(u, L){
-    const mode = LEVELS[BT.level].ctl, m = muzzle(u), bar = $('pwBar');
-    $('err').textContent = L.err || (L.clipped ? '포의 힘이 모자라요 — 같은 각도로 가장 세게만 날아가 그래프보다 짧게 떨어져요(꼭짓점을 낮추거나 가깝게).' : '');
+    const mode = LEVELS[BT.level].ctl, m = L.m || muzzle(u), bar = $('pwBar'), Bm = v => `<b class="mono">${v}</b>`;
+    $('err').textContent = L.err || (L.clipped ? `힘이 모자라요 — ${L.X + L.Y > L.P + 1e-9 ? `X + Y(${fmt(L.X + L.Y, 1)})가 힘 ${L.P}` : `높이 Y(${fmt(L.Y, 1)})가 고도 한도 ${L.H}`}를 넘어, 같은 각도로 ${Math.round(L.k * 100)}% 크기의 포물선으로만 날아가요(짧게 떨어져요). 꼭짓점을 노란 선 안으로!` : '');
     $('eq').textContent = L.eq || '—';
-    if (!L.ok){ $('ro').innerHTML = mode === 'abs' ? `내 포구 <b class="mono">(${fracText(m.x)}, ${fracText(m.y)})</b>` : ''; $('pwTxt').textContent = ''; bar.classList.remove('max'); bar.firstElementChild.style.width = '0'; return; }
+    if (!L.ok){ $('ro').innerHTML = `내 포구 ${Bm(`(${num(m.x)}, ${num(m.y)})`)}`; $('pwTxt').textContent = ''; bar.classList.remove('max'); bar.firstElementChild.style.width = '0'; return; }
     const lines = [];
-    if (mode === 'vertex'){
-      lines.push(`꼭짓점 <b class="mono">(${fracText(L.vertex.x)}, ${fracText(L.vertex.y)})</b> · a = −q/p² = <b class="mono">${fracText(L.a)}</b>`);
-      if (BT.hints) lines.push(`포구 높이로 떨어지는 곳 x = 2p = <b class="mono">${fracText(2 * L.vertex.x)}</b>`);
-    } else if (mode === 'std'){
-      if (BT.hints){ lines.push(`축 x = −b/2a = <b class="mono">${fmt(L.vertex.x)}</b> · 꼭짓점 높이 <b class="mono">${fmt(L.vertex.y)}</b>`); lines.push(`포구 높이로 떨어지는 곳 x = −b/a = <b class="mono">${fmt(L.flat)}</b>`); }
-      else lines.push('도움 끔 — 축 · 떨어지는 곳은 스스로 계산해요');
+    if (mode === 'a'){
+      lines.push(`쏘는 기울기 ${Bm(num(L.s))}(자동 · ${L.dir > 0 ? '오른쪽 →' : '← 왼쪽'}) · 포구 ${Bm(`(${num(m.x)}, ${num(m.y)})`)}`);
+      lines.push(`꼭짓점 b = 포구 x ${L.dir > 0 ? '+' : '−'} s ÷ 2|a| = ${Bm(num(L.b))} · c = 포구 y + s² ÷ 4|a| = ${Bm(num(L.c))}`);
+      if (BT.hints) lines.push(`포구 높이로 떨어지는 곳 x = 2b − 포구 x = ${Bm(num(L.flat))}`);
+      if (L.auto && !L.auto.reach) lines.push('<span class="no">지금 자리에서는 막힘 없이 닿는 길이 없어요 — ◀ ▶ 로 다가가 보세요.</span>');
+    } else if (mode === 'ab'){
+      lines.push(`c = 포구 y − a(포구 x − b)² = ${num(m.y)} − (${aText(L.a)})(${num(m.x)} − ${num(L.b)})² = ${Bm(num(L.c))} (자동)`);
+      if (BT.hints) lines.push(`축 x = ${Bm(num(L.b))} · 포구 높이로 떨어지는 곳 x = 2b − 포구 x = ${Bm(num(L.flat))}`);
     } else {
-      const yAt = L.a * (m.x - L.vertex.x) ** 2 + L.vertex.y;
-      lines.push(`내 포구 <b class="mono">(${fracText(m.x)}, ${fracText(m.y)})</b> — x = ${fracText(m.x)} 일 때 y = <b class="mono">${fmt(yAt)}</b> <span class="ok">✓ 지나요</span>`);
+      const yAt = L.a * (m.x - L.b) ** 2 + L.c;
+      lines.push(`내 포구 ${Bm(`(${num(m.x)}, ${num(m.y)})`)} — x = ${num(m.x)} 일 때 y = ${Bm(fmt(yAt))} <span class="ok">✓ 지나요</span>`);
     }
+    if (Math.abs(L.f - 1) > 1e-6){
+      let t = `🌬 바람 ${windWord(L.f - 1 === 0 ? 0 : (L.f - 1) * L.dir)} — 포탄 길이 가로로 ${fmt(L.f, 2)}배(${L.f > 1 ? '순풍 · 멀리' : '역풍 · 짧게'})`;
+      if (BT.hints) t += `: 실제 길 ${Bm(vform(-L.A / (L.k * L.f * L.f), L.x0 + L.dir * L.f * L.k * L.X, L.y0 + L.k * L.Y))}`;
+      lines.push(t);
+    } else if (L.clipped && BT.hints) lines.push(`실제 길 ${Bm(vform(-L.A / L.k, L.x0 + L.dir * L.k * L.X, L.y0 + L.k * L.Y))}`);
     $('ro').innerHTML = lines.join('<br>');
-    $('pwTxt').textContent = `필요한 힘 ${fmt(L.need, 1)} / 포의 힘 ${fmt(L.vmax, 1)}${BT.mods.horse ? ' (천리마)' : ''}`;
+    const r = Math.max((L.X + L.Y) / L.P, L.H ? L.Y / L.H : 0);
+    $('pwTxt').textContent = `X + Y = ${fmt(L.X, 1)} + ${fmt(L.Y, 1)} = ${fmt(L.X + L.Y, 1)} / 힘 ${L.P} · 높이 ${fmt(L.Y, 1)} / 한도 ${L.H}${BT.mods.horse ? ' (천리마)' : ''}`;
     bar.classList.toggle('max', L.clipped);
-    bar.firstElementChild.style.width = Math.min(100, 100 * L.need / L.vmax).toFixed(1) + '%';
+    bar.firstElementChild.style.width = Math.min(100, 100 * r).toFixed(1) + '%';
   }
-  // 전장을 누르면 — 뉴비: 그 점을 꼭짓점으로 · 에이스: 그 점을 꼭짓점으로 하는 a, b · 마스터: p, q만(a는 직접)
+  // 전장을 누르면 — 뉴비: 그 점을 지나는 a · 에이스: 그 점이 꼭짓점이 되는 a, b · 마스터: b, c만(a는 직접)
   function setFromTap(u, wx, wy){
-    const mode = LEVELS[BT.level].ctl, m = muzzle(u), snap = v => Math.round(v * 2) / 2;
-    if (mode === 'vertex'){
-      let p = snap(wx - m.x), q = snap(wy - m.y);
-      if (Math.abs(p) < 0.5) p = (wx < m.x ? -1 : 1) * 0.5;
-      if (q < 0.5) q = 0.5;
-      setInRaw('p', fmt(p, 1)); setInRaw('q', fmt(q, 1));
-    } else if (mode === 'std'){
-      let p = wx - m.x, q = Math.max(0.4, wy - m.y);
-      if (Math.abs(p) < 0.5) p = (p < 0 ? -1 : 1) * 0.5;
-      const b = Math.round(2 * q / p * 10) / 10 || (p > 0 ? 0.1 : -0.1);
-      const a = Math.min(-0.001, Math.round(-b * b / (4 * q) * 1000) / 1000);
-      setInRaw('a', fmt(a, 3)); setInRaw('b', fmt(b, 1));
-    } else { setInRaw('p', fmt(snap(wx), 1)); setInRaw('q', fmt(snap(wy), 1)); }
+    const mode = LEVELS[BT.level].ctl, snap = v => Math.round(v * 2) / 2;
+    if (mode === 'a'){
+      const AA = BT.autoAim && BT.autoAim.u === u ? BT.autoAim : (BT.autoAim = autoAim(u)), m = muzzleAt(u, AA.dir);
+      const dx = Math.max(1, (wx - m.x) * AA.dir), dy = wy - m.y;
+      let A = (AA.s * dx - dy) / (dx * dx); if (!(A > 0.0005)) A = AA.s / dx;
+      setInRaw('a', fmt(-Math.max(0.0001, A), 4));
+    } else {
+      const dir = Math.sign(wx - u.x) || u.face, m = muzzleAt(u, dir);
+      let b = snap(wx); if ((b - m.x) * dir < 1) b = m.x + dir;
+      if (mode === 'ab'){
+        const X = Math.abs(b - m.x), Y = Math.max(0.5, wy - m.y);
+        setInRaw('a', fmt(-Math.max(0.0001, Y / (X * X)), 4)); setInRaw('b', fmt(b, 2));
+      } else { setInRaw('b', fmt(b, 2)); setInRaw('c', fmt(snap(Math.max(wy, m.y + 0.5)), 2)); }
+    }
     Snd.play('click'); recalc();
   }
+  // 🐰 달토끼 도약 — 20칸 안으로 단숨에
   function tryMove(u, wx){
-    const x = Math.round(clamp(wx, 2.5, WX - 2.5) * 2) / 2, side = BT.sides[u.side];
-    if (Math.abs(x - u.x) > 10) return toast('🐰 10칸 안에서만 옮길 수 있어요');
-    if (isShip(u) !== isWater(x)) return toast(isShip(u) ? '🐰 배는 물 위로만 옮겨요' : '🐰 물 위로는 갈 수 없어요');
-    if (allUnits().some(o => o !== u && o.alive && Math.abs(o.x - x) < 3.2)) return toast('🐰 다른 부대와 너무 가까워요');
+    const x = Math.round(clamp(wx, 3, WX - 3) * 2) / 2, side = BT.sides[u.side];
+    if (Math.abs(x - u.x) > 20) return toast('🐰 20칸 안에서만 옮길 수 있어요');
+    const wet = BT.ter.water != null && groundAt(x) < BT.ter.water - 0.2;
+    if (isShip(u) !== wet) return toast(isShip(u) ? '🐰 배는 물 위로만 옮겨요' : '🐰 물 위로는 갈 수 없어요');
+    if (allUnits().some(o => o !== u && Math.abs(o.x - x) < 4)) return toast('🐰 다른 부대와 너무 가까워요');
+    const x0 = u.x, y0 = u.y;
+    if (!placeAt(u, x)) return toast('🐰 그곳으로는 옮길 수 없어요');
+    sparks(x0, y0 + 1, 16, { colors:['#ffffff', '#f6d8ff', '#ffe08a'], speed:5, life:0.5 });
+    u.fall = null; u.ox = 0; u.oy = 0; BT.moveMode = false; BT.autoAim = null;
     sparks(u.x, u.y + 1, 16, { colors:['#ffffff', '#f6d8ff', '#ffe08a'], speed:5, life:0.5 });
-    if (!isShip(u)){
-      const pad = Math.round(groundAt(x) * 2) / 2;
-      for (let i = 0; i < NC; i++) if (Math.abs(colX(i) - x) <= 1.4){ BT.ter.h[i] = pad; if (BT.ter.mat[i] === 'wall') BT.ter.mat[i] = 'rock'; }
-      u.y = pad;
-    }
-    u.x = x; u.fall = null; BT.moveMode = false;
-    sparks(x, u.y + 1, 16, { colors:['#ffffff', '#f6d8ff', '#ffe08a'], speed:5, life:0.5 });
-    popText(x, u.y + 3.6, '달토끼 도약!', { color:'#fff3c4', size:17 }); Snd.play('pickup');
+    popText(u.x, u.y + 3.6, '달토끼 도약!', { color:'#fff3c4', size:17 }); Snd.play('pickup');
     side.moved = true;
     updateUI();
   }
+
+  /* ================= field pointer: 누르기(겨누기) · 끌기(둘러보기) · 미니맵 ================= */
+  let drag = null, dragAt = 0;
+  cv.addEventListener('pointerdown', e => {
+    if (!BT || e.button) return;
+    drag = { id:e.pointerId, x:e.clientX, y:e.clientY, moved:false, cx:CAM.x, cy:CAM.y, mouse:e.pointerType === 'mouse' };
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id || !BT) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) > 8){ drag.moved = true; try { cv.setPointerCapture(e.pointerId); } catch (er){ /* */ } }
+    if (drag.moved){ CAM.manual = true; CAM.mf = null; CAM.x = drag.cx - dx / unit; if (drag.mouse) CAM.y = drag.cy + dy / unit; clampCam(); kick(); }
+  });
+  const endDrag = e => { if (drag && e.pointerId === drag.id){ if (drag.moved) dragAt = performance.now(); drag = null; } };
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', () => { drag = null; });
+  cv.addEventListener('wheel', e => { if (!BT || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return; e.preventDefault(); panBy(-e.deltaX, 0); }, { passive:false });
   cv.addEventListener('click', e => {             // click — 화면을 밀어 내리다 잘못 찍히지 않게
-    if (!BT || BT.phase !== 'aim' || quizOpen()) return;
+    if (!BT || performance.now() - dragAt < 320) return;
+    const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, M = BT.mini;
+    if (M && px >= M.x0 && px <= M.x0 + M.w && py >= M.y0 && py <= M.y0 + M.h){
+      CAM.all = false; setZoom(); CAM.manual = true; CAM.mf = null; CAM.x = (px - M.x0) / M.w * WX - viewW() / 2; clampCam(); syncCam(); kick(); return;
+    }
+    if (BT.phase !== 'aim' || quizOpen()) return;
     const u = activeUnit(); if (!u || !BT.sides[u.side].human) return;
-    const r = cv.getBoundingClientRect(), wx = (e.clientX - r.left) / unit - MARGIN, wy = WY + MARGIN - (e.clientY - r.top) / unit;
+    const w = toWorld(px, py);
     Snd.unlock();
-    if (BT.moveMode) tryMove(u, wx); else setFromTap(u, wx, wy);
+    if (BT.moveMode) tryMove(u, w.x); else setFromTap(u, w.x, w.y);
   });
   $('hints').addEventListener('change', () => { if (BT){ BT.hints = $('hints').checked; recalc(); } });
+  // 카메라 단추 — 내 부대(따라가기) · 적 보기(차례로) · 전체
+  const viewSide = () => two() ? BT.turn.side : 0;
+  function syncCam(){ const b = $('camTools').querySelector('[data-cam="all"]'); if (b) b.setAttribute('aria-pressed', String(CAM.all)); }
+  $('camTools').addEventListener('click', e => {
+    const b = e.target.closest('[data-cam]'); if (!b || !BT) return;
+    Snd.unlock(); Snd.play('click');
+    const k = b.dataset.cam;
+    if (k === 'me'){ CAM.all = false; CAM.manual = false; CAM.mf = null; CAM.intro = 0; setZoom(); }
+    else if (k === 'foe'){
+      const fs = BT.sides[1 - viewSide()].units.filter(o => o.alive);
+      if (fs.length){ CAM.foeI = ((CAM.foeI ?? -1) + 1) % fs.length; lookAt(fs[CAM.foeI]); }
+    } else { CAM.all = !CAM.all; CAM.manual = CAM.all; CAM.mf = null; setZoom(); }
+    syncCam(); kick();
+  });
+
+  /* ================= 이동(차례마다 이동 기운) ================= */
+  function startMove(dir){
+    if (!BT || BT.phase !== 'aim' || quizOpen()) return;
+    const u = activeUnit(); if (!u || !BT.sides[u.side].human) return;
+    if (u.mp < 1){ toast('이동 기운을 다 썼어요 — 다음 차례에 다시 차요'); return; }
+    if (BT.moveMode){ BT.moveMode = false; BT.sides[u.side].energy += SKILLS.find(k => k.id === 'rabbit').cost; }
+    BT.moveHold = { dir, moved:false, stuck:false, told:false };
+    CAM.manual = false; CAM.mf = null; CAM.all = false; setZoom(); syncCam();
+    kick();
+  }
+  function stopMove(silent){
+    if (!BT || !BT.moveHold) return;
+    const u = activeUnit();
+    BT.moveHold = null;
+    if (u) finishMove(u);
+    BT.autoAim = null;
+    if (!silent){ recalc(); updateUI(); }
+  }
+  function moveTick(){
+    const u = activeUnit(); if (!u || !BT.moveHold) return;
+    renderMove(u);
+    const m = muzzle(u); $('turnSub').textContent = `${u.name} · x ${num(u.x)} · 움직이는 중`;
+    if (BT.moveHold.stuck && !BT.moveHold.told){
+      BT.moveHold.told = true;
+      toast(u.mp < 3 ? '이동 기운을 다 썼어요' : isShip(u) ? '더 갈 수 없어요 — 얕은 물이나 다른 배가 막아요' : '더 갈 수 없어요 — 너무 가파르거나 깊은 물 · 다른 부대가 막아요');
+    }
+    recalc();
+  }
+  function renderMove(u){
+    if (!u) return;
+    const mp = Math.max(0, u.mp || 0), max = u.mpMax || mpFor(u);
+    $('mpNum').textContent = `${Math.floor(mp)} / ${max}${max < 100 ? ` (병력 ${Math.round(crewK(u) * 100)}%)` : ''}`;
+    $('mpBar').firstElementChild.style.width = clamp(mp, 0, 100) + '%';
+  }
+  function bindMove(btn, dir){
+    btn.addEventListener('pointerdown', e => { if (e.button || btn.disabled) return; e.preventDefault(); Snd.unlock(); startMove(dir); try { btn.setPointerCapture(e.pointerId); } catch (er){ /* */ } });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => btn.addEventListener(ev, () => stopMove()));
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+    btn.addEventListener('click', e => { if (e.detail === 0 && !btn.disabled){ startMove(dir); setTimeout(() => stopMove(), 260); } });   // 키보드(Enter · Space)
+  }
+  bindMove($('mvL'), -1); bindMove($('mvR'), 1);
 
   /* ================= fire ================= */
   $('fire').onclick = () => { Snd.unlock(); fireHuman(); };
   function fireHuman(){
     if (!BT || BT.phase !== 'aim' || quizOpen()) return;
     const u = activeUnit(); if (!u || !BT.sides[u.side].human) return;
+    stopMove(true);
     recalc();
     const L = BT.shot;
     if (!L || !L.ok){ Snd.play('wrong'); $('err').textContent = (L && L.err) || '값을 넣어 주세요.'; shakeEl($('inputs')); return; }
@@ -2265,12 +2785,19 @@ body.fs #battle{gap:8px}
   function renderStatus(){
     if (!BT) return;
     $('hps').innerHTML = BT.sides.map((s, si) => s.units.map(u =>
-      `<div class="hp${u.alive ? '' : ' dead'}" style="--pc:var(${si ? '--foe' : '--me'})"><span title="${esc(u.name)}">${esc(sideTag(si))} · ${esc(u.name)}${u.shield ? ' 🛡' : ''}${u.armor ? ' ⛨' : ''}${u.guard ? ' 🐶' : ''}</span><span class="bar"><i style="width:${(100 * u.hp / u.maxHp).toFixed(1)}%"></i></span><b>${Math.ceil(u.hp)}</b></div>`).join('')).join('');
+      `<div class="hp${u.alive ? '' : ' dead'}" style="--pc:var(${si ? '--foe' : '--me'})"><span title="${esc(u.name)}${isShip(u) ? ` · ${esc(SHIPS[u.ship].name)}` : ''}">${esc(sideTag(si))} · ${esc(u.name)}${u.shield ? ' 🛡' : ''}${u.armor ? ' ⛨' : ''}${u.guard ? ' 🐶' : ''} <small class="mono">x ${num(u.x)}</small></span><span class="bar"><i style="width:${(100 * u.hp / u.maxHp).toFixed(1)}%"></i></span><b>${Math.ceil(u.hp)}</b></div>`).join('')).join('');
     const es = two() ? BT.turn.side : 0, e = BT.sides[es].energy;
     $('energyNum').textContent = `${Math.floor(e)} / 100` + (two() ? ` · ${es + 1}P` : '');
     $('energyBar').firstElementChild.style.width = clamp(e, 0, 100) + '%';
     $('energyBar').classList.toggle('full', e >= 100);
     renderGust();
+  }
+  function renderSea(){
+    const h = $('seaHud');
+    if (!BT || !BT.map.sea){ h.hidden = true; return; }
+    const S = BT.sea, ar = v => v > 0 ? '→' : '←';
+    h.hidden = false;
+    h.innerHTML = `<span title="바람">🌬<i> 바람</i> ${windWord(S.wind)}</span><span title="조류">🌊<i> 조류</i> ${S.cur ? `${ar(S.cur)} ${fmt(Math.abs(S.cur), 1)}<i>칸</i>` : '없음'}</span><span title="파도">〰<i> 파도</i> ${S.wave ? fmt(S.wave, 1) : '잔잔'}</span>`;
   }
   function updateUI(){
     if (!BT) return;
@@ -2279,20 +2806,22 @@ body.fs #battle{gap:8px}
     t.classList.toggle('foe', !!u && u.side === 1);
     t.style.setProperty('--pc', side ? side.fac.color : '#999');
     $('turnName').textContent = !u || BT.phase === 'over' ? '전투 끝' : two() ? `${u.side + 1}P 차례 — ${side.fac.name}` : human ? '내 차례' : `적의 차례 — ${side.fac.name}`;
-    if (u && BT.phase !== 'over'){ const m = muzzle(u); $('turnSub').textContent = `${u.name} · 포구 (${fracText(m.x)}, ${fracText(m.y)})${BT.phase === 'ai' ? ' · 조준 중…' : BT.phase === 'fly' ? ' · 포탄이 날아가요' : ''}`; }
+    if (u && BT.phase !== 'over'){ const m = muzzle(u); $('turnSub').textContent = `${u.name} · 포구 (${num(m.x)}, ${num(m.y)})${BT.phase === 'ai' ? ' · 조준 중…' : BT.phase === 'aimove' ? ' · 움직이는 중…' : BT.phase === 'fly' ? ' · 포탄이 날아가요' : ''}`; }
     else $('turnSub').textContent = '';
     $('roundPill').textContent = `${BT.round}회전`;
-    renderStatus(); renderWeps(); renderSkills(); renderItems();
+    renderStatus(); renderWeps(); renderSkills(); renderItems(); renderSea(); syncCam();
+    const vu = viewUnit(); renderMove(aim ? u : vu);
+    $('mvL').disabled = $('mvR').disabled = !aim || !u || u.mp < 1;
     $('inputs').querySelectorAll('input, button').forEach(el => { el.disabled = !aim; });
     const fire = $('fire');
     fire.disabled = !aim;
-    fire.textContent = aim ? (BT.moveMode ? '🐰 옮길 땅을 누르세요 · 그냥 쏘기' : '발사!') : BT.phase === 'ai' ? '상대가 조준하고 있어요…' : BT.phase === 'fly' ? '포탄이 날아가요…' : BT.phase === 'over' ? '전투 끝' : '…';
-    const mode = LEVELS[BT.level].ctl, vu = viewUnit(), fl = $('formLine');
+    fire.textContent = aim ? (BT.moveMode ? '🐰 옮길 땅을 누르세요 · 그냥 쏘기' : '발사!') : BT.phase === 'ai' ? '상대가 조준하고 있어요…' : BT.phase === 'aimove' ? '상대가 움직이고 있어요…' : BT.phase === 'fly' ? '포탄이 날아가요…' : BT.phase === 'over' ? '전투 끝' : '…';
+    const mode = LEVELS[BT.level].ctl, fl = $('formLine');
     if (fl && vu){
-      const m = muzzle(vu);
-      fl.innerHTML = mode === 'vertex' ? '포구가 원점 O — 꼭짓점 (p, q)만 넣으면 a = −q/p²는 저절로 정해져요(그래프가 O를 지나게).'
-        : mode === 'std' ? '포구가 원점 O — <b>y = ax² + bx</b>'
-        : `전장 좌표 그대로 — <b>y = a(x − p)² + q</b> 가 내 포구 <b class="mono">(${fracText(m.x)}, ${fracText(m.y)})</b>를 지나야 발사돼요.`;
+      const m = muzzle(vu), mm = `<b class="mono">(${num(m.x)}, ${num(m.y)})</b>`;
+      fl.innerHTML = mode === 'a' ? `꼴 <b>y = a(x − b)² + c</b> — <b>a만</b> 넣어요. 쏘는 기울기 · 방향은 저절로, 꼭짓점 (b, c)는 a에 따라 정해져 그래프가 포구 ${mm}를 지나요.`
+        : mode === 'ab' ? `꼴 <b>y = a(x − b)² + c</b> — <b>a와 b</b>를 넣으면 c는 그래프가 포구 ${mm}를 지나게 저절로 정해져요.`
+        : `꼴 <b>y = a(x − b)² + c</b> — <b>a, b, c</b> 모두. 그래프가 내 포구 ${mm}를 지나야 발사돼요.`;
     }
     if (aim) recalc();
     else { BT.shot = null; if (BT.phase !== 'fly'){ $('err').textContent = ''; } }
@@ -2301,16 +2830,18 @@ body.fs #battle{gap:8px}
     const u = viewUnit(); if (!u) return;
     const f = FAC[u.fac], aim = BT.phase === 'aim' && activeUnit() === u, tier = TIERS[sideTier(u.side)];
     $('weps').innerHTML = f.w.map((w, i) => {
-      const am = u.ammo[i];
-      return `<button class="wep" type="button" data-w="${i}" aria-pressed="${u.wep === i}"${aim && am > 0 ? '' : ' disabled'}><b>${esc(w.n)}</b><small>${STYLES[w.s].name} · ${am === Infinity ? '∞' : `${am}발`}</small></button>`;
+      const am = u.ammo[i], sp = wepSpec(u, i);
+      return `<button class="wep" type="button" data-w="${i}" aria-pressed="${u.wep === i}"${aim && am > 0 ? '' : ' disabled'}><b>${esc(w.n)}</b><small>${STYLES[w.s].name} · 힘 ${sp.P} · ${am === Infinity ? '∞' : `${am}발`}</small></button>`;
     }).join('');
-    const w = f.w[u.wep], S = STYLES[w.s];
-    $('wepInfo').innerHTML = `<b>${esc(w.n)}</b> — ${esc(S.note)} · 위력 ${Math.round(tier.dmg * S.dmg)} · 폭발 ${fmt(tier.blast * S.blast, 1)}칸<br>${esc(w.d)} · 화력 ${tier.lv}단계`;
+    const w = f.w[u.wep], S = STYLES[w.s], sp = wepSpec(u, u.wep), rec = recoilOf(u, u.wep);
+    $('wepInfo').innerHTML = `<b>${esc(w.n)}</b> — ${esc(S.note)} · 위력 ${Math.round(tier.dmg * S.dmg)} · 폭발 ${fmt(tier.blast * S.blast, 1)}칸<br>` +
+      `힘(꼭짓점까지 X + Y 한도) <b>${sp.P}</b> · 고도 한도 <b>${sp.H}</b> · 반동 ${fmt(rec, 1)}칸${(f.recoil ?? 1) < 1 ? '(줄에 매단 포 · 적음)' : ''}<br>` +
+      `${esc(w.d)} · 화력 ${tier.lv}단계${isShip(u) ? `<br>🚢 ${esc(SHIPS[u.ship].name)} — ${esc(SHIPS[u.ship].note)}` : ''}`;
   }
   $('weps').addEventListener('click', e => {
     const b = e.target.closest('[data-w]'); if (!b || b.disabled || !BT) return;
     const u = activeUnit(); if (!u) return;
-    u.wep = Number(b.dataset.w); Snd.play('click'); renderWeps(); recalc();
+    u.wep = Number(b.dataset.w); BT.autoAim = null; Snd.play('click'); renderWeps(); recalc();
   });
 
   /* ================= 십이지신 기술 ================= */
@@ -2341,6 +2872,7 @@ body.fs #battle{gap:8px}
   }
   function useSkill(id){
     if (!BT || BT.phase !== 'aim') return;
+    stopMove(true);
     const k = SKILLS.find(s => s.id === id), u = activeUnit(), side = BT.sides[u.side];
     if (k.kind === 'shot'){
       if (BT.mods[id]){ BT.mods[id] = false; side.energy += k.cost; toast(`${k.emo} ${k.name} 취소 — 기운을 돌려받았어요`); }
@@ -2352,7 +2884,7 @@ body.fs #battle{gap:8px}
       }
     } else if (k.kind === 'move'){
       if (BT.moveMode){ BT.moveMode = false; side.energy += k.cost; toast('🐰 달토끼 도약 취소'); }
-      else { side.energy -= k.cost; BT.moveMode = true; Snd.play('skill'); toast('🐰 전장에서 옮겨 갈 땅을 누르세요(10칸 안)'); }
+      else { side.energy -= k.cost; BT.moveMode = true; Snd.play('skill'); toast('🐰 전장에서 옮겨 갈 곳을 누르세요(20칸 안)'); }
     } else {
       side.energy -= k.cost; Snd.play(id === 'sheep' || id === 'pig' ? 'heal' : 'skill');
       if (id === 'ox'){ u.shield = 0.4; u.shieldTurns = 2; popText(u.x, u.y + 4, '우직한 방패', { color:'#cfe6ff', size:16 }); }
@@ -2371,7 +2903,7 @@ body.fs #battle{gap:8px}
     const vs = aim ? u.side : (two() ? BT.turn.side : 0), items = BT.sides[vs].items;
     $('items').innerHTML = items.length
       ? `<span class="label">보급품</span>` + items.map((it, i) => `<button class="item" type="button" data-it="${i}"${aim ? '' : ' disabled'} title="${esc(ITEMS[it].desc)}">${ITEMS[it].emo} ${esc(ITEMS[it].name)}</button>`).join('')
-      : `<span class="hint">보급품 없음 — 짝수 회전마다 상자가 떨어져요(포탄 폭발로 주워요)</span>`;
+      : `<span class="hint">보급품 없음 — 짝수 회전마다 상자가 떨어져요(포탄 폭발로 주워요${BT.map.sea ? ' · 바다에선 떠다녀요' : ''})</span>`;
   }
   $('items').addEventListener('click', e => { const b = e.target.closest('[data-it]'); if (b && !b.disabled) useItem(Number(b.dataset.it)); });
   function useItem(i){
@@ -2408,7 +2940,7 @@ body.fs #battle{gap:8px}
     if (!BT || BT.over) return false;
     const d = gustSide(), s = BT.sides[d];
     if (!s.human || s.gust <= 0 || BT.turn.side === d || BT.gustUsed) return false;
-    if (BT.phase === 'ai') return true;
+    if (BT.phase === 'ai' || BT.phase === 'aimove') return true;
     if (BT.phase === 'fly') return BT.projs.some(p => p.alive && p.side !== d);
     return false;
   }
@@ -2422,7 +2954,7 @@ body.fs #battle{gap:8px}
     if (!gustReady()) return;
     const d = gustSide(), s = BT.sides[d];
     s.gust--; BT.gustUsed = true; BT.gustBy = d;
-    if (BT.phase === 'ai'){ BT.gustArmed = true; Snd.play('gust', 0.35); toast('🌬 애쉬래인이 숨을 들이마셔요 — 상대가 쏘면 바로 불어요!'); }
+    if (BT.phase === 'ai' || BT.phase === 'aimove'){ BT.gustArmed = true; Snd.play('gust', 0.35); toast('🌬 애쉬래인이 숨을 들이마셔요 — 상대가 쏘면 바로 불어요!'); }
     else applyGust();
     renderStatus();
   };
@@ -2459,8 +2991,9 @@ body.fs #battle{gap:8px}
   }
 
   /* ================= 찬스 구슬 · 퀴즈 ================= */
+  // 구슬은 화면 위쪽을 떠다닌다(전장 좌표가 아니라 화면 비율 — 카메라가 움직여도 그 자리)
   const orb = { el:null, wait:-1, life:0, x:0, y:0, vx:0, vy:0, kind:'math', t:0 };
-  const orbSize = () => Math.round(clamp(unit * 1.6, 22, 34));
+  const orbSize = () => Math.round(clamp(cssW / 28, 22, 34));
   function scheduleOrb(){
     stopOrb();
     const pr = { newbie:0.75, ace:0.65, master:0.55 }[BT.level] ?? 0.6;
@@ -2470,8 +3003,8 @@ body.fs #battle{gap:8px}
   function spawnOrb(kind){
     if (orb.el) orb.el.remove();
     orb.kind = kind || (Math.random() < 0.45 ? 'hist' : 'math');
-    orb.x = rand(8, 52); orb.y = rand(17, 26.5);
-    const a = rand(0, Math.PI * 2), sp = rand(1.4, 2.4); orb.vx = Math.cos(a) * sp; orb.vy = Math.sin(a) * sp * 0.6;
+    orb.x = rand(0.2, 0.8); orb.y = rand(0.2, 0.45);
+    const a = rand(0, Math.PI * 2), sp = rand(0.05, 0.08); orb.vx = Math.cos(a) * sp; orb.vy = Math.sin(a) * sp * 0.6;
     orb.life = BT.level === 'master' ? 5.5 : 7; orb.t = 0;
     const b = document.createElement('button'); b.type = 'button'; b.className = `orb ${orb.kind}`;
     b.setAttribute('aria-label', orb.kind === 'math' ? '찬스 구슬 — 이차함수 문제' : '찬스 구슬 — 역사 문제');
@@ -2482,7 +3015,7 @@ body.fs #battle{gap:8px}
     $('fieldWrap').append(b); orb.el = b; placeOrb();
     Snd.play('chime', 0.5);
   }
-  function placeOrb(){ const [px, py] = toPx(unit, orb.x, orb.y); orb.el.style.left = px + 'px'; orb.el.style.top = py + 'px'; }
+  function placeOrb(){ orb.el.style.left = (orb.x * 100).toFixed(2) + '%'; orb.el.style.top = (orb.y * 100).toFixed(2) + '%'; }
   function updateOrb(dt){
     if (!BT) return;
     const aimHuman = BT.phase === 'aim' && BT.sides[BT.turn.side].human;
@@ -2490,27 +3023,28 @@ body.fs #battle{gap:8px}
     if (quizOpen()) return;
     if (!orb.el){ if (orb.wait > 0){ orb.wait -= dt; if (orb.wait <= 0){ orb.wait = -1; spawnOrb(); } } return; }
     orb.t += dt; orb.life -= dt;
-    orb.x += orb.vx * dt; orb.y += orb.vy * dt + Math.sin(orb.t * 2.2) * 0.01;
-    if (orb.x < 4 || orb.x > 56) orb.vx *= -1;
-    if (orb.y < 15 || orb.y > 27.5) orb.vy *= -1;
-    orb.x = clamp(orb.x, 4, 56); orb.y = clamp(orb.y, 15, 27.5);
+    orb.x += orb.vx * dt; orb.y += orb.vy * dt + Math.sin(orb.t * 2.2) * 0.0006;
+    if (orb.x < 0.1 || orb.x > 0.9) orb.vx *= -1;
+    if (orb.y < 0.18 || orb.y > 0.5) orb.vy *= -1;
+    orb.x = clamp(orb.x, 0.1, 0.9); orb.y = clamp(orb.y, 0.18, 0.5);
     orb.el.style.opacity = orb.life < 1 ? String(Math.max(0, orb.life)) : '';
     placeOrb();
     if (orb.life <= 0) stopOrb();
   }
   function catchOrb(){
     if (!orb.el || quizOpen() || !BT) return;
-    const kind = orb.kind, x = orb.x, y = orb.y;
+    const kind = orb.kind, w = toWorld(orb.x * cssW, orb.y * cssH);
     stopOrb();
-    sparks(x, y, 18, { colors:kind === 'math' ? ['#ffe08a', '#ffffff', '#f5b93a'] : ['#d9c4ff', '#ffffff', '#9b7bd8'], speed:6, life:0.5 });
+    sparks(w.x, w.y, 18, { colors:kind === 'math' ? ['#ffe08a', '#ffffff', '#f5b93a'] : ['#d9c4ff', '#ffffff', '#9b7bd8'], speed:6, life:0.5 });
     Snd.play('pickup');
+    stopMove();
     openQuiz(kind);
   }
   let QZ = null;
   const usedHist = new Set();
   function openQuiz(kind){
     const side = BT.turn.side;
-    if (kind === 'math'){ const q = mathQuestion(); QZ = { kind, side, text:q.text, ans:q.ans, done:false }; }
+    if (kind === 'math'){ const q = mathQuestion(BT.level); QZ = { kind, side, text:q.text, ans:q.ans, done:false }; }
     else {
       if (usedHist.size >= HISTORY_Q.length) usedHist.clear();
       const idx = shuffle(HISTORY_Q.map((q, i) => i).filter(i => !usedHist.has(i)))[0]; usedHist.add(idx);
@@ -2563,14 +3097,11 @@ body.fs #battle{gap:8px}
   $('qClose').onclick = closeQuiz;
 
   /* ================= report · result ================= */
-  // 컴퓨터가 쏜 포탄도 지금 난이도의 꼴로 보여 준다(배우기)
+  // 컴퓨터가 쏜 포탄도 같은 꼴 y = a(x − b)² + c 로 보여 준다(바람에 늘기 전의 그래프 — 배우기)
   function eqFromL(L){
-    if (!BT || Math.abs(L.vx) < 1e-6) return null;
-    const mode = LEVELS[BT.level].ctl, g = G_ACC, a = -g / (2 * L.vx * L.vx), b = L.vy / L.vx, p = L.vx * L.vy / g, q = L.vy * L.vy / (2 * g);
-    if (mode === 'vertex') return `꼭짓점 (${fmt(p)}, ${fmt(q)}) — 그 포구가 원점`;
-    if (mode === 'std') return `y = ${fmt(a, 4)}x² ${b >= 0 ? '+' : '−'} ${fmt(Math.abs(b))}x — 그 포구가 원점`;
-    const P = L.x0 + p, Q = L.y0 + q;
-    return `y = ${fmt(a, 4)}(x ${P >= 0 ? '−' : '+'} ${fmt(Math.abs(P))})² + ${fmt(Q)}`;
+    if (!L || Math.abs(L.vx) < 1e-6) return null;
+    const f = L.f || 1, vx0 = Math.abs(L.vx) / f, dir = Math.sign(L.vx), A = G_ACC / (2 * vx0 * vx0), s = L.vy / vx0;
+    return vform(-A, L.x0 + dir * s / (2 * A), L.y0 + s * s / (4 * A));
   }
   function reportShot(){
     const R = BT.lastShot; BT.lastShot = null; if (!R) return;
@@ -2581,7 +3112,7 @@ body.fs #battle{gap:8px}
     let line = foeHits.length ? `<span class="ok">명중</span> ${merge(foeHits)}` : `<span class="no">빗나감</span>${R.out ? ` — ${esc(R.out)}` : ''}`;
     if (own.length) line += ` · 우리 편도 ${merge(own)}`;
     const el = document.createElement('div');
-    el.innerHTML = `<div><b>${esc(who)}</b> · ${esc(R.wep)}${R.clipped ? ' · 힘 모자람' : ''}${R.gusted ? ' · 🌬 바람에 밀림' : ''}</div>${R.eq ? `<div class="mono">${esc(R.eq)}</div>` : ''}<div>${line}</div>`;
+    el.innerHTML = `<div><b>${esc(who)}</b> · ${esc(R.wep)}${R.clipped ? ' · 힘 모자람' : ''}${Math.abs((R.f || 1) - 1) > 1e-6 ? ` · 바람 ×${fmt(R.f, 2)}` : ''}${R.gusted ? ' · 🌬 애쉬래인 바람에 밀림' : ''}</div>${R.eq ? `<div class="mono">${esc(R.eq)}</div>` : ''}<div>${line}</div>`;
     const rep = $('report'); rep.prepend(el); while (rep.children.length > 3) rep.lastChild.remove();
   }
   function resultActions(list){
@@ -2606,7 +3137,7 @@ body.fs #battle{gap:8px}
         title = '승리!'; text = ch.outro; good = true;
         if (first) meta.push(`${LEVELS[lv].name} ${i + 1}장 처음 깸`);
         if (!wasFree && freeOpen()) meta.push('🎉 마스터 12장을 모두 깨서 프리 모드가 열렸어요!');
-      } else { title = '패배…'; good = false; text = `${ch.title}에서 물러났어요. 찬스 구슬로 기운을 모아 십이지신 기술을 쓰거나, 애쉬래인 바람 · 보급품을 아껴 두었다가 위기에 써 보세요.`; }
+      } else { title = '패배…'; good = false; text = `${ch.title}에서 물러났어요. 가까이 다가가 쏘거나, 찬스 구슬로 기운을 모아 십이지신 기술을 쓰고, 애쉬래인 바람 · 보급품을 아껴 두었다가 위기에 써 보세요.`; }
     } else if (two()){
       good = winner >= 0;
       title = winner < 0 ? '무승부' : `${winner + 1}P 승리!`;
@@ -2617,7 +3148,7 @@ body.fs #battle{gap:8px}
       text = winner === 0 ? `${josa(BT.sides[0].fac.name, '이', '가')} ${BT.sides[1].fac.name}에 이겼어요.` : `${josa(BT.sides[1].fac.name, '이', '가')} 이겼어요. 다른 맵이나 기술로 다시 겨뤄 보세요.`;
     }
     Snd.play(good ? 'fanfare' : 'lose');
-    if (good) for (let i = 0; i < 4; i++) setTimeout(() => { if (BT) sparks(rand(10, 50), rand(16, 26), 24, { colors:['#ffd257', '#ffffff', '#ff8a3d', '#9be7ff'], speed:9, life:0.9 }); }, i * 220);
+    if (good) for (let i = 0; i < 4; i++) setTimeout(() => { if (BT && cssW){ const w = toWorld(rand(0.15, 0.85) * cssW, rand(0.15, 0.45) * cssH); sparks(w.x, w.y, 24, { colors:['#ffd257', '#ffffff', '#ff8a3d', '#9be7ff'], speed:9, life:0.9 }); } }, i * 220);
     $('rTitle').textContent = title; $('rText').textContent = text; $('rMeta').textContent = meta.join(' · ');
     if (story){
       const nxt = BT.chapter + 1;
@@ -2629,7 +3160,7 @@ body.fs #battle{gap:8px}
   }
   function leaveBattle(to){
     const mode = BT ? BT.mode : 'story';
-    stopOrb(); BT = null; QZ = null;
+    stopOrb(); stopMove(true); BT = null; QZ = null;
     for (const id of ['resultOv', 'quizOv', 'banner']) $(id).hidden = true;
     FX.parts = []; FX.rings = []; FX.texts = []; FX.shakeT = 0; $('fieldWrap').style.transform = '';
     $('fieldWrap').querySelectorAll('.toastf').forEach(e => e.remove());
@@ -2645,20 +3176,25 @@ body.fs #battle{gap:8px}
   function renderRules(){
     const mode = LEVELS[st.level].ctl;
     const items = [
-      '전장은 좌표평면이에요 — x 0 ~ 60, y 0 ~ 30, 격자 한 칸이 1. 중력 g = 10.',
-      mode === 'vertex' ? '뉴비: 포구가 원점 O인 좌표에서 꼭짓점 (p, q)만 넣어요. 포탄은 y = a(x − p)² + q(a = −q/p²)를 따라 O에서 꼭짓점을 지나 같은 모양으로 떨어져요 — 포구와 같은 높이로 떨어지는 곳은 x = 2p.'
-        : mode === 'std' ? '에이스: 포구가 원점 O인 좌표에서 y = ax² + bx 를 넣어요. b는 처음 기울기(클수록 높이 쏨 · 음수면 왼쪽), a는 휘는 정도(음수 · 0에 가까울수록 멀리). 축은 x = −b/2a, 포구 높이로 떨어지는 곳은 x = −b/a. 분수(−1/30)도 돼요.'
-        : '마스터: 전장 좌표 그대로 y = a(x − p)² + q 를 넣어요. 그래프가 내 포구를 지나야(0.35칸 안) 발사되고, 포탄은 포구에서부터 그래프를 따라 날아가요. 도움 선은 꺼져 있어요.',
-      mode === 'abs' ? '전장을 누르면 그 점이 꼭짓점 (p, q)가 돼요. a는 포구를 지나도록 직접 계산해요: a = (포구 y − q) ÷ (포구 x − p)².' : '전장을 누르면 그 점을 꼭짓점으로 잡아 줘요. ± 단추를 누르고 있으면 계속 바뀌어요.',
-      '포의 힘: 그래프를 따라가려면 처음 속도(필요한 힘)가 있어야 해요. 그 힘이 포의 힘보다 크면 같은 각도로 가장 세게만 날아가 그래프보다 짧게 떨어져요(막대가 빨개져요). 꼭짓점이 높을수록 · 멀수록 힘이 많이 들어요.',
-      '화력: 같은 시대끼리는 화력이 같아요(스토리는 늘 같은 시대). 대전에서 시대가 다르면 위력 · 폭발 반경 · 포의 힘이 크게 벌어지고, 시대가 낮은 쪽은 높은 보루 위에서 기운을 더 받고 시작해요 — 지형 · 보급품 · 십이지신 기술로 뒤집을 수 있어요.',
+      '전장은 좌표평면이에요 — 맵마다 가로 150 ~ 170칸, 격자 한 칸이 1, 중력 g = 10. 화면은 전장의 일부를 크게 보여 주고 차례인 부대 · 날아가는 포탄을 따라가요. 끌어서 둘러보거나, 왼쪽 위 미니맵 · 오른쪽 아래 단추(내 부대 · 적 보기 · 전체)로 볼 곳을 골라요.',
+      '포탄은 입력한 이차함수 y = a(x − b)² + c 의 그래프를 따라 날아가요. a는 음수(위로 볼록), 꼭짓점이 (b, c), 그래프는 내 포구를 지나요.',
+      mode === 'a' ? '뉴비: a만 넣어요. 쏘는 기울기 s와 방향은 가장 가까운 적에게 막힘 없이 닿게 저절로 정해지고, 꼭짓점은 b = 포구 x ± s ÷ 2|a|, c = 포구 y + s² ÷ 4|a| — a가 0에 가까울수록 크고 멀리 날아가요. 전장을 누르면 그 점을 지나는 a를 잡아 줘요.'
+        : mode === 'ab' ? '에이스: a와 b를 넣어요. c는 그래프가 포구를 지나도록 c = 포구 y − a(포구 x − b)² 로 저절로 정해져요. b를 멀리 · a를 0에서 멀게 하면 높이 올라가요. 전장을 누르면 그 점이 꼭짓점이 되게 a, b를 잡아 줘요.'
+        : '마스터: a, b, c를 모두 넣어요. 그래프가 내 포구를 지나야(0.35칸 안) 발사돼요 — c = 포구 y − a(포구 x − b)². 움직이거나 파도에 배가 오르내리면 포구가 바뀌니 다시 계산해요. 전장을 누르면 b, c만 잡아 주고 a는 직접 구해요. 도움 선은 꺼져 있어요.',
+      '포의 힘: 꼭짓점까지의 가로 X = |b − 포구 x| 와 높이 Y = c − 포구 y 의 합 X + Y 가 포마다 정해진 힘 P를 넘을 수 없고, 높이 Y는 고도 한도 H를 넘을 수 없어요(전장의 노란 점선 — 꼭짓점이 갈 수 있는 끝). 넘으면 같은 각도로 작게 날아가 짧게 떨어져요. 힘 · 한도는 시대 · 포의 쓰임새마다 달라요(산탄 · 시한 폭탄 · 화살은 높이 쏘기 좋고, 도탄 · 관통은 낮게 · 멀리).',
+      '이동: 차례마다 이동 기운을 받아 ◀ ▶ 단추(또는 ← → 키)를 누르고 있는 동안 움직여요. 뭍은 오르막일수록 기운이 많이 들고 너무 가파르면 못 올라요. 배는 물 위로만, 빠른 배일수록 멀리 가요. 체력(선원 · 병사)이 줄면 받는 이동 기운과 기운도 줄어요.',
+      '바다 · 해안: 회전마다 바람 · 조류 · 파도가 바뀌어요(오른쪽 위). 바람은 포탄 길을 가로로 늘이거나 줄이고(순풍이면 멀리 — 꼭짓점의 x가 포구에서 바람 배율만큼 멀어져요), 조류는 배를 떠밀고, 파도는 배를 0.5칸씩 오르내려 포구 높이가 달라져요.',
+      '배: 판옥선 · 거북선은 바닥이 평평하고 넓어 파도 · 반동 · 포격에 덜 흔들려요(거북선은 덮개로 피해 20% 줄임). 안택선은 윗부분이 무겁고 바닥이 뾰족해 빠르지만 잘 흔들리고 약해요 — 체력이 35% 아래일 때 맞으면 뒤집혀 가라앉을 수 있어요.',
+      '반동: 쏠 때마다 화력만큼 뒤로 밀려요 — 배는 안정성만큼 덜, 땅 부대는 조금. 왜구 · 임진왜란 일본의 포는 줄에 매달아 반동이 적어요. 포탄이 터지면 가까운 부대도 밀려나요.',
+      '뭍: 진지 사이 능선 · 골짜기로 높낮이가 복잡해 이동이 어렵고, 능선 너머를 맞히려면 높이 쏘아 올려야 해요(고도 한도 안에서).',
+      '화력: 같은 시대끼리는 화력이 같아요(스토리는 늘 같은 시대). 대전에서 시대가 다르면 위력 · 폭발 반경 · 포의 힘이 크게 벌어지고, 시대가 낮은 쪽은 높은 보루 위에서 기운을 더 받고 시작해요.',
       '포는 세력마다 5가지 — 첫 번째는 탄이 끝없고, 나머지는 쓰임새(연발 · 산탄 · 일제 발사 · 시한 폭탄 · 관통 · 도탄 · 불 · 화살 · 매달아 쏨)마다 탄 수가 정해져 있어요.',
       '찬스 구슬: 내 차례에 금빛(이차함수) · 보랏빛(역사) 구슬이 떠다녀요. 눌러서 맞히면 기운이 오르고, 십이지신 두루마리에 찬스가 쌓여 기술이 하나씩 열려요.',
       '애쉬래인 바람: 역사 문제를 맞히면 가끔 생겨요(최대 3). 상대가 조준하거나 포탄이 날아올 때 누르면 애쉬래인이 바람을 불어 포탄을 되밀거나 더 멀리 날려 보내요.',
-      '십이지신 기술은 기운을 써요. 🐲 용의 불비(기운 100)는 필살기 — 터진 자리 둘레에 용의 불덩이 다섯이 쏟아져요.',
-      '보급 상자: 짝수 회전마다 떨어져요. 포탄 폭발이 닿으면 쏜 쪽이 가져가요(화약 주머니 · 무쇠 방패 · 약초 · 천리경 · 보급 포탄).',
-      '땅: 바위 · 성벽은 단단해 덜 패고, 모래 · 눈은 잘 패요. 부대 밑이 패여 2.5칸 넘게 떨어지면 다치고, 물에 잠기면 차례마다 8씩 다쳐요. 물 위의 부대는 배예요.',
-      `적의 솜씨는 난이도에 따라 달라요(지금 ${LEVELS[st.level].name}). 기운을 많이 모으면 적도 긴장해 조금 더 날카로워져요.`
+      '십이지신 기술은 기운을 써요. 🐲 용의 불비(기운 100)는 필살기 — 터진 자리 둘레에 용의 불덩이 다섯이 쏟아져요. 기운은 차례마다 조금씩(병력만큼) 차요.',
+      '보급 상자: 짝수 회전마다 떨어져요(바다에선 물 위에 떠요). 포탄 폭발이 닿으면 쏜 쪽이 가져가요(화약 주머니 · 무쇠 방패 · 약초 · 천리경 · 보급 포탄).',
+      '땅: 바위 · 성벽은 단단해 덜 패고, 모래 · 눈은 잘 패요. 부대 밑이 패여 2.5칸 넘게 떨어지면 다치고, 물에 잠기면 차례마다 8씩 다쳐요.',
+      `적의 솜씨는 난이도에 따라 달라요(지금 ${LEVELS[st.level].name}). 적이 닿지 않으면 다가오고, 기운을 많이 모으면 적도 긴장해 조금 더 날카로워져요.`
     ];
     $('rules').innerHTML = items.map(t => `<li>${esc(t)}</li>`).join('');
   }
@@ -2698,11 +3234,20 @@ body.fs #battle{gap:8px}
   window.addEventListener('resize', () => resize());
   if (window.ResizeObserver) new ResizeObserver(() => resize()).observe($('stage'));
   if (WIDE.addEventListener) WIDE.addEventListener('change', () => resize());
+  const typing = () => { const a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName); };
   document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape') return;
-    if (!$('quizOv').hidden) closeQuiz();
-    else if (!$('storyOv').hidden) $('storyOv').hidden = true;
+    if (e.key === 'Escape'){
+      if (!$('quizOv').hidden) closeQuiz();
+      else if (!$('storyOv').hidden) $('storyOv').hidden = true;
+      return;
+    }
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && BT && !$('battle').hidden && !typing() && !quizOpen() && $('resultOv').hidden){
+      e.preventDefault();
+      if (!e.repeat && !BT.moveHold) startMove(e.key === 'ArrowLeft' ? -1 : 1);
+    }
   });
+  document.addEventListener('keyup', e => { if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && BT && BT.moveHold) stopMove(); });
+  window.addEventListener('blur', () => stopMove());
 
   /* ================= host (AdminGames) · test hooks ================= */
   window.addEventListener('message', e => {
@@ -2711,48 +3256,77 @@ body.fs #battle{gap:8px}
     if (d.type === 'ash-theme' && (d.theme === 'light' || d.theme === 'dark')) document.documentElement.dataset.theme = d.theme;
     if (d.type === 'ash-store' && d.key === SAVE_KEY){ mergeSave(d.data); renderLobby(); }
   });
+  const shotView = L => L && { ok:!!L.ok, err:L.err || null, eq:L.eq || null, clipped:!!L.clipped, misfire:!!L.misfire, a:L.a ?? null, b:L.b ?? null, c:L.c ?? null,
+    X:L.X ?? null, Y:L.Y ?? null, need:L.ok ? L.X + L.Y : null, P:L.P ?? null, H:L.H ?? null, k:L.k ?? null, f:L.f ?? null, s:L.s ?? null, dir:L.dir ?? null, flat:L.flat ?? null };
   window.__poMinjok = () => ({
     screen:st.screen, level:st.level, preview:st.preview, save:JSON.parse(JSON.stringify(st.save)), unlocked:unlockedSkills(), freeOpen:freeOpen(),
     sound:Snd.on, fs:st.fs, immersive:st.immersive, unit, orb:orb.el ? orb.kind : null,
     quiz:QZ && { kind:QZ.kind, text:QZ.text, ans:QZ.ans, opts:QZ.opts || null, done:QZ.done },
     battle:BT && {
-      mode:BT.mode, chapter:BT.chapter, map:BT.map.id, phase:BT.phase, round:BT.round, shots:BT.shots, over:BT.over, turn:{ ...BT.turn }, hints:BT.hints,
-      moveMode:BT.moveMode, mods:{ ...BT.mods }, extra:BT.extra, gustArmed:!!BT.gustArmed, water:BT.ter.water,
+      mode:BT.mode, chapter:BT.chapter, map:BT.map.id, kind:BT.map.kind, world:{ w:WX, h:WY }, phase:BT.phase, round:BT.round, shots:BT.shots, over:BT.over, turn:{ ...BT.turn }, hints:BT.hints, ctl:LEVELS[BT.level].ctl,
+      moveMode:BT.moveMode, moving:!!BT.moveHold, mods:{ ...BT.mods }, extra:BT.extra, gustArmed:!!BT.gustArmed, water:BT.ter.water, sea:{ ...BT.sea },
+      cam:{ x:CAM.x, y:CAM.y, vw:viewW(), all:CAM.all, manual:CAM.manual, intro:CAM.intro },
       sides:BT.sides.map(s => ({ fac:s.fac.id, tier:s.tier, human:s.human, energy:Math.round(s.energy * 10) / 10, gust:s.gust, items:s.items.slice(),
-        units:s.units.map(u => ({ id:u.id, name:u.name, x:u.x, y:u.y, hp:u.hp, maxHp:u.maxHp, alive:u.alive, ship:isShip(u), muzzle:muzzle(u), wep:u.wep,
-          ammo:u.ammo.map(a => a === Infinity ? -1 : a), shield:u.shield, armor:u.armor, guard:u.guard })) })),
-      shot:BT.shot && { ok:!!BT.shot.ok, err:BT.shot.err || null, eq:BT.shot.eq || null, clipped:!!BT.shot.clipped, need:BT.shot.need, vmax:BT.shot.vmax },
+        units:s.units.map(u => ({ id:u.id, name:u.name, x:u.x, y:u.y, hp:u.hp, maxHp:u.maxHp, alive:u.alive, ship:isShip(u), shipType:u.ship, kind:u.kind, face:u.face, muzzle:muzzle(u), wep:u.wep,
+          mp:Math.round(u.mp * 10) / 10, mpMax:u.mpMax, capsized:!!u.capsized, ammo:u.ammo.map(a => a === Infinity ? -1 : a), shield:u.shield, armor:u.armor, guard:u.guard,
+          spec:FAC[u.fac].w.map((w, i) => wepSpec(u, i)) })) })),
+      shot:shotView(BT.shot), autoAim:BT.autoAim && { s:BT.autoAim.s, dir:BT.autoAim.dir, reach:BT.autoAim.reach },
       projs:BT.projs.length, bombs:BT.bombs.length, crates:BT.crates.filter(c => !c.taken).length, fires:BT.fires.length
     }
   });
+  const findUnit = id => BT && allUnits().find(u => u.id === id);
   window.__poDebug = {
     fast(k){ FAST = k; },
     spawnOrb(kind){ if (BT && BT.phase === 'aim') spawnOrb(kind); return !!orb.el; },
+    noOrb(){ stopOrb(); },
     orbPos(){ if (!orb.el) return null; const r = orb.el.getBoundingClientRect(); return { x:r.left + r.width / 2, y:r.top + r.height / 2 }; },
     toCanvas(x, y){ const r = cv.getBoundingClientRect(), [px, py] = toPx(unit, x, y); return { x:r.left + px, y:r.top + py }; },
     toCanvasRel(x, y){ const [px, py] = toPx(unit, x, y); return { x:px, y:py }; },
+    // 카메라 — 한 점이 화면 가운데 오게(시험용), 처음 보여 주기 건너뛰기
+    look(x, y){ CAM.all = false; setZoom(); CAM.manual = true; CAM.mf = null; CAM.intro = 0; CAM.x = x - viewW() / 2; CAM.y = (y ?? CAM.y + cssH / unit * 0.42) - cssH / unit * 0.42; clampCam(); draw(); return { x:CAM.x, y:CAM.y }; },
+    camSnap(){ CAM.intro = 0; CAM.snap = true; updateCam(0); draw(); return { x:CAM.x, y:CAM.y }; },
     setEnergy(side, v){ BT.sides[side].energy = v; updateUI(); },
     giveGust(side, n){ BT.sides[side].gust = n; updateUI(); },
     giveItem(side, it){ BT.sides[side].items.push(it); updateUI(); },
     forceAI(mode){ BT.aiForce = mode || null; },
     damage(side, n){ for (const u of alive(side)) hurt(u, n); updateUI(); },
+    hurtUnit(id, n){ const u = findUnit(id); if (u) hurt(u, n); updateUI(); return u && { hp:u.hp, alive:u.alive, capsized:!!u.capsized }; },
+    setHp(id, hp){ const u = findUnit(id); if (u){ u.hp = hp; updateUI(); } return !!u; },
     story(i){ startStory(i); }, start(cfg){ startBattle(cfg); },
+    sea(o){ Object.assign(BT.sea, o); BT.autoAim = null; updateUI(); return { ...BT.sea }; },
+    seaRound(){ seaRound(); updateUI(); return { ...BT.sea }; },
+    setMp(n){ const u = activeUnit(); if (u){ u.mp = n; updateUI(); } return !!u; },
+    // 이동 — sec 초 동안 dir 쪽으로 걸은 것처럼(시험용, 프레임과 상관없이)
+    moveBy(dir, sec){
+      const u = activeUnit(); if (!u || BT.phase !== 'aim') return null;
+      const x0 = u.x, mp0 = u.mp; let t = 0, ok = true;
+      while (t < sec && ok){ ok = stepMove(u, dir, 1 / 60); t += 1 / 60; }
+      finishMove(u); BT.autoAim = null; updateUI();
+      return { from:x0, to:u.x, y:u.y, used:Math.round((mp0 - u.mp) * 10) / 10, mp:Math.round(u.mp * 10) / 10, stuck:!ok };
+    },
+    place(id, x){ const u = findUnit(id); const ok = !!u && placeAt(u, x); if (ok) updateUI(); return ok; },
+    push(id, dx){ const u = findUnit(id); if (!u) return null; const x0 = u.x; pushUnit(u, dx); updateUI(); return { from:x0, to:u.x }; },
+    recoil(id, wi = 0){ const u = findUnit(id); return u ? recoilOf(u, wi) : null; },
     // 지금 차례 부대가 가장 가까운 적(또는 i번째)을 맞히는 입력값 — 시험용
     solve(i = 0){
       const u = activeUnit(); if (!u) return null;
-      const foes = BT.sides[1 - u.side].units.filter(t => t.alive).sort((a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x));
-      const tg = foes[Math.min(i, foes.length - 1)]; if (!tg) return null;
-      const L = aimAt(u, tg, !!BT.mods.horse); if (!L) return null;
-      const g = G_ACC, mode = LEVELS[BT.level].ctl, r = v => String(Math.round(v * 10000) / 10000);
-      const p = L.vx * L.vy / g, q = L.vy * L.vy / (2 * g), a = -g / (2 * L.vx * L.vx), b = L.vy / L.vx;
-      return mode === 'vertex' ? { p:r(p), q:r(q) } : mode === 'std' ? { a:r(a), b:r(b) } : { a:r(a), p:r(L.x0 + p), q:r(L.y0 + q) };
+      const tg = foesOf(u)[Math.min(i, foesOf(u).length - 1)]; if (!tg) return null;
+      const mode = LEVELS[BT.level].ctl, r = v => String(Math.round(v * 1e6) / 1e6), horse = !!BT.mods.horse;
+      if (mode === 'a'){
+        const AA = autoAim(u); BT.autoAim = AA;
+        const S = solveSlope(u, tg, AA.s, u.wep, horse); if (!S) return null;
+        return { a:r(S.L.a) };
+      }
+      const L = aimAt(u, tg, { wi:u.wep, best:true, horse }); if (!L) return null;
+      return mode === 'ab' ? { a:r(L.a), b:r(L.b) } : { a:r(L.a), b:r(L.b), c:r(L.c) };
     },
-    setInputs(o){ for (const [k, v] of Object.entries(o)) setInRaw(k, v); recalc(); return BT && BT.shot && { ok:!!BT.shot.ok, err:BT.shot.err || null }; },
+    setInputs(o){ for (const [k, v] of Object.entries(o)) setInRaw(k, v); recalc(); return shotView(BT && BT.shot); },
+    shot(){ return shotView(BT && BT.shot); },
     // 스토리 각 장 · 맵마다 양쪽이 서로 닿는지(포의 힘 안에서 맞힐 길이 있는지)
     reach(){
       if (!BT) return null;
       const out = [];
-      for (const a of allUnits()) for (const b of allUnits()) if (a.side !== b.side && a.alive && b.alive) out.push({ from:a.id, to:b.id, ok:!!aimAt(a, b), dx:Math.round(b.x - a.x) });
+      for (const a of allUnits()) for (const b of allUnits()) if (a.side !== b.side && a.alive && b.alive) out.push({ from:a.id, to:b.id, ok:!!aimAt(a, b, { best:true }), dx:Math.round(b.x - a.x) });
       return out;
     }
   };

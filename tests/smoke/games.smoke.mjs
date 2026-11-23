@@ -553,8 +553,18 @@ async function poChecks(fr, shot) {
   const txt = async (sel) => ((await fr.locator(sel).innerText()) || "").replace(/\s+/g, " ").trim();
   const until = async (pred, ms = 15000) => { const t0 = Date.now(); for (;;) { const s = await S(); if (pred(s)) return s; if (Date.now() - t0 > ms) return s; await fr.waitForTimeout(60); } };
   const myAim = (s) => s.battle && !s.battle.over && s.battle.phase === "aim" && s.battle.sides[s.battle.turn.side].human;
+  const active = (b) => b.sides[b.turn.side].units[b.turn.unit];
+  const nearFoe = (b, u) => b.sides[1 - b.turn.side].units.filter((t) => t.alive).sort((p, q) => Math.abs(p.x - u.x) - Math.abs(q.x - u.x))[0];
+  const ids = () => fr.locator("#inputs input").evaluateAll((els) => els.map((e) => e.id).join());
+  // 정답 입력으로 쏘기 — 지금 자리에서 닿는 길이 없으면 조금 다가가서
   async function fireSolved() {
-    const sol = await D("solve");
+    let sol = await D("solve");
+    for (let k = 0; !sol && k < 4; k++) {
+      const b = (await S()).battle, u = active(b), t = nearFoe(b, u);
+      await D("setMp", 100);
+      await D("moveBy", Math.sign(t.x - u.x) || 1, 1.5);
+      sol = await D("solve");
+    }
     if (sol) await D("setInputs", sol);
     await fr.locator("#fire").click();
     return sol;
@@ -570,6 +580,7 @@ async function poChecks(fr, shot) {
   await fr.locator("#lobby").waitFor({ timeout: 20000 });
   ok((await fr.locator(".lv").count()) === 3 && (await fr.locator('.lv[aria-checked="true"]').getAttribute("data-level")) === "newbie"
     && (await fr.locator(".mode").count()) === 3 && (await fr.locator(".zcard").count()) === 12, "W1 시작 화면 — 조작 난이도 3(뉴비 · 에이스 · 마스터) · 방식 3 · 십이지신 12");
+  ok(/a만/.test(await txt('.lv[data-level="newbie"]')) && /a, b/.test(await txt('.lv[data-level="ace"]')) && /a, b, c/.test(await txt('.lv[data-level="master"]')), "W1b 난이도 = 넣는 값의 수 — 뉴비 a · 에이스 a, b · 마스터 a, b, c");
   let s = await S();
   const catches0 = s.save.catches;
   ok(!s.freeOpen && await fr.locator("#freeLock").isVisible(), "W2 프리 모드는 마스터 12장을 깨기 전엔 잠겨 있다");
@@ -579,31 +590,103 @@ async function poChecks(fr, shot) {
   await fr.locator("#goStory").click();
   ok((await fr.locator(".chap").count()) === 12 && await fr.locator('.chap[data-ch="0"]').isEnabled() && (s.save.cleared.newbie[0] || await fr.locator('.chap[data-ch="1"]').isDisabled()), "W4 스토리 12장 — 앞 장을 깨야 다음 장이 열린다");
   await fr.locator('.chap[data-ch="0"]').click();
-  ok(/진포 대첩/.test(await txt("#sTitle")) && /1380/.test(await txt("#sYear")) && /최무선/.test(await txt("#sText")), "W5 1장 이야기 — 1380 진포 대첩 · 최무선");
+  ok(/진포 대첩/.test(await txt("#sTitle")) && /1380/.test(await txt("#sYear")) && /최무선/.test(await txt("#sText")) && /가로 170칸/.test(await txt("#sMeta")), "W5 1장 이야기 — 1380 진포 대첩 · 최무선 · 바다 가로 170칸");
   await fr.locator("#sGo").click();
   s = await until(myAim);
+  await D("noOrb");
   const b0 = s.battle;
-  ok(s.screen === "battle" && b0.mode === "story" && b0.sides[0].units[0].ship && b0.sides[1].units.length === 2 && b0.sides[0].tier === b0.sides[1].tier
-    && (await fr.locator("#inputs input").evaluateAll((els) => els.map((e) => e.id).join())) === "in_p,in_q", "W6 전투 — 화포선 vs 왜구 배 2척 · 같은 시대 화력 · 뉴비는 꼭짓점 (p, q) 입력");
-  await D("setInputs", { p: "10", q: "5" });
-  ok((await txt("#eq")) === "y = −0.05(x − 10)² + 5" && /a = −q\/p² = −0\.05/.test(await txt("#ro")) && /x = 2p = 20/.test(await txt("#ro")), "W7 꼭짓점 (10, 5) → a = −q/p² = −0.05 · y = −0.05(x − 10)² + 5 · 포구 높이로 떨어지는 곳 x = 2p = 20");
-  await D("setInputs", { p: "40", q: "1" });
-  ok(/포의 힘이 모자라요/.test(await txt("#err")) && await fr.locator("#pwBar.max").count() === 1, "W8 포의 힘을 넘으면 경고 — 같은 각도로 가장 세게만");
+  ok(s.screen === "battle" && b0.mode === "story" && b0.kind === "sea" && b0.world.w === 170 && b0.sides[0].units[0].shipType === "pan" && b0.sides[1].units.length === 2 && b0.sides[1].units.every((u) => u.shipType === "jp") && b0.sides[0].tier === b0.sides[1].tier
+    && (await ids()) === "in_a", "W6 전투 — 판옥선 vs 왜구 안택선 2척 · 같은 시대 · 바다 가로 170 · 뉴비는 a만 입력");
+  // 뉴비: a만 — 쏘는 기울기 · 방향은 자동, 꼭짓점은 b = 포구 x ± s ÷ 2|a|, c = 포구 y + s² ÷ 4|a|
+  await D("sea", { wind: 0 });
+  await D("setInputs", { a: "-1/30" });
+  s = await S();
   {
-    const m = b0.sides[0].units[0].muzzle, pos = await D("toCanvasRel", m.x + 8, m.y + 6);
+    const sh = s.battle.shot, m = active(s.battle).muzzle, A = s.battle.autoAim;
+    const eb = m.x + A.dir * A.s * 15, ec = m.y + A.s * A.s * 7.5;
+    ok(sh.ok && Math.abs(sh.b - eb) < 1e-6 && Math.abs(sh.c - ec) < 1e-6 && /^y = −1\/30\(x − [\d.]+\)² \+ [\d.]+$/.test(sh.eq) && /b = 포구 x/.test(await txt("#ro")) && /2b − 포구 x/.test(await txt("#ro")),
+      `W7 뉴비 a = −1/30 → 기울기 ${A.s}(자동) · 꼭짓점 (${sh.b}, ${sh.c}) = (포구 x ± s ÷ 2|a|, 포구 y + s² ÷ 4|a|) · ${sh.eq}`);
+  }
+  await D("setInputs", { a: "-0.002" });
+  s = await S();
+  ok(/힘이 모자라요/.test(await txt("#err")) && await fr.locator("#pwBar.max").count() === 1 && s.battle.shot.clipped && s.battle.shot.k < 1, `W8 꼭짓점까지 X + Y 가 힘 ${s.battle.shot.P}를 넘으면 경고 — 같은 각도로 ${Math.round(s.battle.shot.k * 100)}% 크기`);
+  {
+    await D("camSnap"); await D("noOrb");
+    s = await S();
+    const m = active(s.battle).muzzle, A = s.battle.autoAim, pos = await D("toCanvasRel", m.x + A.dir * 20, m.y + 10);
     await fr.locator("#cv").click({ position: pos });
-    ok((await fr.locator("#in_p").inputValue()) === "8" && (await fr.locator("#in_q").inputValue()) === "6", "W9 전장을 누르면 그 점이 꼭짓점(포구 기준 8, 6)");
+    const want = -(A.s * 20 - 10) / 400, got = Number((await fr.locator("#in_a").inputValue()).replace("−", "-"));
+    ok(Math.abs(got - want) < 0.0006, `W9 전장을 누르면 그 점을 지나는 a(${got}) — 포구에서 가로 20 · 위로 10`);
   }
   await shot("po-aim");
+  // 카메라 — 전장이 화면보다 넓다
+  {
+    s = await S();
+    const c0 = s.battle.cam;
+    const box = await fr.locator("#cv").boundingBox();
+    await fr.locator("#cv").hover({ position: { x: box.width * 0.62, y: box.height * 0.62 } });
+    const page = fr.page();
+    await page.mouse.down(); await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.62, { steps: 6 }); await page.mouse.up();
+    const c1 = (await S()).battle.cam;
+    await fr.locator('[data-cam="all"]').click();
+    const c2 = (await S()).battle.cam;
+    await fr.locator('[data-cam="me"]').click();
+    const c3 = (await S()).battle.cam;
+    ok(c0.vw < s.battle.world.w && c1.manual && c1.x > c0.x + 5 && c2.all && c2.vw >= s.battle.world.w && !c3.all && !c3.manual, `W37 카메라 — 전장 ${s.battle.world.w}칸 중 ${Math.round(c0.vw)}칸만 보임 · 끌면 둘러보기 · 「전체」 · 「내 부대」`);
+  }
+  // 이동 — 차례마다 이동 기운
+  {
+    s = await S();
+    const u0 = active(s.battle), dir = Math.sign(nearFoe(s.battle, u0).x - u0.x) || 1;
+    const r = await D("moveBy", dir, 0.6);
+    const btn = fr.locator(dir > 0 ? "#mvR" : "#mvL");
+    await btn.scrollIntoViewIfNeeded();
+    const bb = await btn.boundingBox(), page = fr.page();
+    const x1 = active((await S()).battle).x;
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2); await page.mouse.down(); await fr.waitForTimeout(450); await page.mouse.up();
+    await fr.waitForTimeout(120);
+    const u2 = active((await S()).battle);
+    ok(u0.mpMax === 100 && r && (r.to - r.from) * dir > 1 && r.used > 0 && (u2.x - x1) * dir > 0.4 && u2.mp < r.mp && !(await S()).battle.moving && /\d+ \/ 100/.test(await txt("#mpNum")),
+      `W38 이동 — 이동 기운 100 · 배가 ${r && r.from} → ${u2.x}(◀ ▶ 누르고 있기) · 남은 기운 ${Math.floor(u2.mp)}`);
+  }
+  // 바다 — 바람 · 조류 · 파도
+  {
+    ok(await fr.locator("#seaHud").isVisible() && /바람/.test(await txt("#seaHud")) && /조류/.test(await txt("#seaHud")) && /파도/.test(await txt("#seaHud")), "W39 바다 맵 — 바람 · 조류 · 파도 표시");
+    s = await S();
+    const before = s.battle.sides.map((sd) => sd.units.map((u) => u.x));
+    await D("sea", { cur: 2, wave: 0 });
+    const sr = await D("seaRound");
+    s = await S();
+    const dMe = s.battle.sides[0].units[0].x - before[0][0], dJp = Math.max(...s.battle.sides[1].units.map((u, i) => u.x - before[1][i]));
+    ok(sr.cur > 0 && dMe > 0 && dJp > dMe, `W40 조류 → ${sr.cur} — 배가 떠밀린다(판옥선 +${dMe} · 잘 흔들리는 안택선 +${dJp})`);
+    await D("sea", { wind: 0.2, cur: 0, wave: 0 });
+    await D("setInputs", { a: "-1/30" });
+    s = await S();
+    const sh = s.battle.shot;
+    ok(Math.abs(sh.f - (1 + 0.2 * sh.dir)) < 1e-9 && /바람/.test(await txt("#ro")) && new RegExp(String(1 + 0.2 * sh.dir).replace(".", "\\.") + "배").test(await txt("#ro")), `W41 바람 ${sh.dir > 0 ? "순풍" : "역풍"} 20% — 포탄 길이 가로로 ${sh.f}배`);
+    await D("sea", { wind: 0 });
+  }
+  // 포마다 힘(X + Y 한도) · 고도 한도 · 반동
+  {
+    s = await S();
+    const me = active(s.battle), Ps = me.spec.map((p) => p.P);
+    ok(new Set(Ps).size >= 3 && me.spec.every((p) => p.H > 0 && p.H <= p.P) && /힘\(꼭짓점까지 X \+ Y 한도\)/.test(await txt("#wepInfo")) && /고도 한도/.test(await txt("#wepInfo")), `W42 포마다 힘이 달라요 — ${Ps.join(" · ")} · 고도 한도 ${me.spec.map((p) => p.H).join(" · ")}`);
+    const rPan = await D("recoil", "0-0", 0), rJp = await D("recoil", "1-0", 1);
+    ok(rPan > 0 && rJp > 0 && rJp < rPan, `W43 반동 — 판옥선 ${rPan.toFixed(2)}칸 · 줄에 매단 왜구 대포 ${rJp.toFixed(2)}칸(적음)`);
+  }
   await D("fast", 3);
   await D("forceAI", "miss");
-  const foeHp0 = b0.sides[1].units.reduce((a, u) => a + u.hp, 0);
-  await fireSolved();
+  const foeHp0 = (await S()).battle.sides[1].units.reduce((a, u) => a + u.hp, 0);
+  const xFire = active((await S()).battle).x;
+  const solW = await fireSolved();
   s = await until((s) => s.battle.phase !== "aim");
-  s = await until((s) => s.battle.phase === "aim" || s.battle.over, 20000);
+  await fr.waitForTimeout(250);
+  const xRec = (await S()).battle.sides[0].units[0].x;
+  s = await until((s) => s.battle.phase === "aim" || s.battle.over, 25000);
   const foeHp1 = s.battle.sides[1].units.reduce((a, u) => a + u.hp, 0);
-  ok(foeHp1 < foeHp0 && /명중/.test(await txt("#report")), `W10 정답 입력으로 쏘면 명중 — 적 체력 ${foeHp0} → ${foeHp1}`);
-  ok(/적 포격/.test(await txt("#report")) && /꼭짓점 \(/.test(await txt("#report")), "W11 적의 포탄도 지금 난이도의 꼴(꼭짓점)로 보여 준다");
+  ok(solW && foeHp1 < foeHp0 && /명중/.test(await txt("#report")), `W10 정답 a로 쏘면 명중 — 적 체력 ${foeHp0} → ${foeHp1}`);
+  ok(xRec !== xFire, `W45 쏘면 반동으로 밀린다 — x ${xFire} → ${xRec}`);
+  ok(/적 포격/.test(await txt("#report")) && /y = −[\d.\/]+\(x [−+] [\d.]+\)² [+−] [\d.]+/.test(await txt("#report")), "W11 적의 포탄도 같은 꼴 y = a(x − b)² + c 로 보여 준다");
   // 찬스 구슬
   await D("fast", 1);
   s = await until(myAim);
@@ -636,9 +719,9 @@ async function poChecks(fr, shot) {
   // 애쉬래인 바람 — 상대가 조준할 때 누르면 포탄을 밀어낸다
   await D("giveGust", 0, 1);
   await D("forceAI", "hit");
-  await D("setInputs", { p: "3", q: "3" });
+  await D("setInputs", { a: "-0.5" });
   await fr.locator("#fire").click();
-  s = await until((s) => s.battle.phase === "ai" || s.battle.over, 10000);
+  s = await until((s) => s.battle.phase === "ai" || s.battle.over, 15000);
   if (s.battle.phase === "ai") {
     ok(await fr.locator("#gustBtn").isEnabled(), "W19 상대가 조준하는 동안 바람 단추가 켜진다");
     await fr.evaluate(() => document.getElementById("gustBtn").click());
@@ -648,26 +731,26 @@ async function poChecks(fr, shot) {
     await fr.waitForTimeout(500);
     await shot("po-gust");
     s = await until((s) => s.battle.phase === "aim" || s.battle.over, 15000);
-    ok(/바람에 밀림/.test(await txt("#report")), "W21 적 포탄이 바람에 밀린다(결과에 표시)");
+    ok(/바람에 밀림/.test(await txt("#report")), "W21 적 포탄이 애쉬래인 바람에 밀린다(결과에 표시)");
   } else skip("W19 ~ W21 — 전투가 먼저 끝났다");
   // 끝까지 — 이기면 기록 · 다음 장이 열린다
   await D("forceAI", "miss");
   await D("fast", 4);
   for (let k = 0; k < 40; k++) {
-    s = await until((s) => myAim(s) || !s.battle || s.battle.over, 20000);
+    s = await until((s) => myAim(s) || !s.battle || s.battle.over, 25000);
     if (!s.battle || s.battle.over) break;
     if (s.quiz) await fr.locator("#qClose").click();
     await fireSolved();
     await until((s) => !s.battle || s.battle.phase !== "aim" || s.battle.over, 5000);
   }
-  await fr.locator("#resultOv").waitFor({ timeout: 20000 });
+  await fr.locator("#resultOv").waitFor({ timeout: 25000 });
   s = await S();
   ok(/승리/.test(await txt("#rTitle")) && s.save.cleared.newbie[0] === true, "W22 이기면 승리 · 뉴비 1장 기록");
   await shot("po-result");
   await fr.locator("#rActions .btn", { hasText: "장 목록" }).click();
   ok(await fr.locator('.chap[data-ch="1"]').isEnabled(), "W23 다음 장(대마도 정벌)이 열린다");
   await D("fast", 1);
-  // 에이스 · 마스터 — 입력 꼴
+  // 에이스 · 마스터 — 넣는 값이 늘어난다
   await fr.locator("#story [data-back]").click();
   await fr.locator("#unlockAll").click();
   s = await S();
@@ -675,24 +758,32 @@ async function poChecks(fr, shot) {
   await fr.locator('.lv[data-level="ace"]').click();
   await D("story", 4);
   s = await until(myAim);
-  ok((await fr.locator("#inputs input").evaluateAll((els) => els.map((e) => e.id).join())) === "in_a,in_b" && s.battle.shot && s.battle.shot.ok && /^y = .*x² [+−] .*x$/.test(s.battle.shot.eq), `W25 에이스 — y = ax² + bx 입력 (${s.battle.shot && s.battle.shot.eq})`);
-  await fr.locator('#battle #leave').click();
+  {
+    const sh = s.battle.shot, m = active(s.battle).muzzle;
+    ok((await ids()) === "in_a,in_b" && sh && sh.ok && Math.abs(sh.c - (m.y - sh.a * (m.x - sh.b) ** 2)) < 1e-9 && /c = 포구 y − a\(포구 x − b\)²/.test(await txt("#ro")) && /^y = .+\(x [−+] [\d.]+\)² [+−] [\d.]+$/.test(sh.eq),
+      `W25 에이스 — a, b를 넣으면 c는 포구를 지나게 자동 (${sh && sh.eq})`);
+  }
+  await fr.locator("#battle #leave").click();
   await fr.locator("#story [data-back]").click();
   await fr.locator('.lv[data-level="master"]').click();
   await D("story", 7);
   s = await until(myAim);
-  ok((await fr.locator("#inputs input").evaluateAll((els) => els.map((e) => e.id).join())) === "in_a,in_p,in_q" && await fr.locator("#hints").isDisabled(), "W26 마스터 — 절대 좌표 y = a(x − p)² + q · 도움 선 꺼짐");
-  await D("setInputs", { a: "-0.1", p: "30", q: "25" });
-  await fr.locator("#fire").click();
-  s = await S();
-  ok(s.battle.phase === "aim" && /포구 .+를 지나지 않아요/.test(await txt("#err")), "W27 마스터 — 그래프가 포구를 지나지 않으면 발사되지 않는다");
+  ok((await ids()) === "in_a,in_b,in_c" && await fr.locator("#hints").isDisabled(), "W26 마스터 — a, b, c 모두 · 도움 선 꺼짐");
+  ok(s.battle.kind === "land" && s.battle.world.w === 150 && s.battle.world.h === 56 && await fr.locator("#seaHud").isHidden(), "W46 뭍 맵(남한산성) — 가로 150 · 높이 56, 바다 표시 없음");
+  {
+    const m = active(s.battle).muzzle, dir = Math.sign(nearFoe(s.battle, active(s.battle)).x - active(s.battle).x) || 1;
+    await D("setInputs", { a: "-0.1", b: String(m.x + 10 * dir), c: String(m.y + 25) });
+    await fr.locator("#fire").click();
+    s = await S();
+    ok(s.battle.phase === "aim" && /포구 .+를 지나지 않아요/.test(await txt("#err")), "W27 마스터 — 그래프가 포구를 지나지 않으면 발사되지 않는다");
+  }
   {
     const sol = await D("solve");
     const r = await D("setInputs", sol);
-    ok(r && r.ok, `W28 포구를 지나는 식이면 발사 준비 (a ${sol.a} · p ${sol.p} · q ${sol.q})`);
+    ok(r && r.ok, `W28 포구를 지나는 식이면 발사 준비 (a ${sol.a} · b ${sol.b} · c ${sol.c})`);
   }
   await shot("po-master");
-  await fr.locator('#battle #leave').click();
+  await fr.locator("#battle #leave").click();
   // 2인 대전 · 프리
   await fr.locator("#story [data-back]").click();
   await fr.locator('.lv[data-level="newbie"]').click();
@@ -700,7 +791,7 @@ async function poChecks(fr, shot) {
   ok((await fr.locator("#facs0 .fac").count()) === 15 && (await fr.locator("#maps .mapbtn").count()) === 30 && await fr.locator("#oppSeg").isHidden(), "W29 2인 대전 — 스토리 세력 15 가운데 고르기 · 맵 30");
   await fr.locator('#facs0 [data-fac="joseon5"]').click();
   await fr.locator('#facs1 [data-fac="goryeo"]').click();
-  ok(/시대 차이 4단계/.test(await txt("#gapNote")), "W30 시대가 다르면 화력 차이 안내(4단계)");
+  ok(/시대 차이 4단계/.test(await txt("#gapNote")) && /포의 힘 74 : 44/.test(await txt("#gapNote")), "W30 시대가 다르면 화력 차이 안내(4단계 · 포의 힘 74 : 44)");
   await fr.locator('#maps [data-map="plain"]').click();
   await fr.locator("#startSetup").click();
   s = await until(myAim);
@@ -708,7 +799,7 @@ async function poChecks(fr, shot) {
   await fireSolved();
   s = await until((s) => s.battle.phase === "aim" && s.battle.turn.side === 1, 20000);
   ok(s.battle.turn.side === 1 && /2P 차례/.test(await txt("#turnName")), "W32 1P가 쏘면 2P 차례");
-  await fr.locator('#battle #leave').click();
+  await fr.locator("#battle #leave").click();
   await fr.locator("#setup [data-back]").click();
   await fr.locator("#goFree").click();
   ok((await fr.locator("#facs0 .fac").count()) === 31 && await fr.locator("#oppSeg").isVisible(), "W33 프리 모드 — 세계 31개 세력(2차 세계 대전까지) · 컴퓨터와 / 둘이서");
@@ -726,7 +817,43 @@ async function poChecks(fr, shot) {
   await fr.locator("#battle .js-fs").click();
   await until((s) => s.fs === false, 3000);
   ok((await S()).fs === false, "W36 전체 화면 끄기");
-  await fr.locator('#battle #leave').click();
+  // 컴퓨터가 닿지 않으면 다가온다 · 체력이 줄면 이동 기운도 준다
+  await D("start", { mode: "free", fac: ["goryeo", "wokou"], map: "plain", human: [true, false] });
+  s = await until(myAim);
+  {
+    const me = s.battle.sides[0].units[0];
+    ok(await D("place", "1-0", s.battle.world.w - 5), "적을 멀리 둔다");
+    const far = (await S()).battle.sides[1].units[0].x;
+    await D("setHp", "0-0", Math.round(me.maxHp / 2));
+    await D("fast", 3);
+    await D("forceAI", "miss");
+    await D("setInputs", { a: "-0.5" });
+    await fr.locator("#fire").click();
+    let saw = false;
+    s = await until((s) => { if (s.battle && s.battle.phase === "aimove") saw = true; return myAim(s) && s.battle.round > 1; }, 30000);
+    const fx = s.battle.sides[1].units[0].x, mu = s.battle.sides[0].units[0];
+    ok(saw && fx < far - 3, `W47 컴퓨터는 닿지 않으면 다가온다 — x ${far} → ${fx}`);
+    ok(mu.mpMax === Math.round(100 * (0.4 + 0.6 * mu.hp / mu.maxHp)) && mu.mpMax < 100, `W48 체력(병력) ${Math.round(100 * mu.hp / mu.maxHp)}% → 이동 기운 ${mu.mpMax}`);
+    await D("fast", 1);
+    await D("forceAI", null);
+  }
+  // 안택선 — 체력이 낮을 때 맞으면 뒤집혀 가라앉을 수 있다 · 거북선(판옥선 계열)은 그렇지 않다
+  await D("story", 4);
+  s = await until(myAim);
+  {
+    const jp = s.battle.sides[1].units[1], me = s.battle.sides[0].units[0];
+    let caps = null, tries = 0;
+    for (; tries < 80 && !caps; tries++) {
+      await D("setHp", jp.id, Math.round(jp.maxHp * 0.25));
+      const r = await D("hurtUnit", jp.id, 1);
+      if (r.capsized) caps = r;
+    }
+    let panCaps = false;
+    for (let k = 0; k < 30; k++) { await D("setHp", me.id, Math.round(me.maxHp * 0.25)); const r = await D("hurtUnit", me.id, 1); if (r.capsized) panCaps = true; }
+    await D("setHp", me.id, me.maxHp);
+    ok(caps && !caps.alive && !panCaps, `W44 안택선은 체력 25%에서 맞으면 뒤집혀 침몰(${tries}번째) · 거북선은 안 뒤집힘`);
+  }
+  await fr.locator("#battle #leave").click();
 }
 
 (async () => {
