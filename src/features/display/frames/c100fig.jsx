@@ -7,10 +7,11 @@
 //          무리를 짚어 세고(합) · 아래 「뽑은 자리」로 하나씩 뽑아 보내고(곱 — n, n − 1 …) · 순서가 없으면 자리끼리 바꿔 「÷ 2」,
 //          적힌 수의 공을 꺼내 늘어놓고(나열) · A · B 공을 잇는다(순서쌍). 맞추지 못한 줄은 그대로 둔다.
 // at · cntAt … 은 판서 줄 번호 — 그 줄이 써지기 시작하는 시각(l10Plan)부터 움직인다(줄마다 hold 로 시간을 늘려 둠).
+// 개념 설명의 움직이는 예시(../concept-av.js)는 그림 자료에 smax(줄 세우기 칸 크기 상한 — 기본 84) · slow(돌리기 · 짚기 박자 배율 — 기본 1)를 더해 크게 · 천천히 보인다.
 import { seg, E, clamp } from "../core.js";
 import { SANS, mathWidth } from "../draw.jsx";
 import { l10Plan, lineAt } from "../lin10.js";
-import { seatsPlan, seatsTimes, reelTick, gapTick, SEAT_T } from "../seatwalk.js";
+import { seatsPlan, seatsTimes, reelTickOf, gapTickOf, SEAT_T } from "../seatwalk.js";
 import { objectsOf, slotsOf, pickPlan, pickTimes, touchTick, PICK_T } from "../pickwalk.js";
 
 const BOX = { x0: 880, y0: 170, x1: 1540, y1: 850 };
@@ -23,7 +24,7 @@ export function seatsGeom(f) {
     const total = ws.reduce((a, b) => a + b, 0) + (r.units.length - 1) * 0.16;
     return { ws, total };
   });
-  const S = Math.min(84, Math.floor((BOX.x1 - BOX.x0 - 60) / Math.max(...rows.map((r) => r.total))));
+  const S = Math.min(f.smax || 84, Math.floor((BOX.x1 - BOX.x0 - 60) / Math.max(...rows.map((r) => r.total))));   // smax — 칸 크기 상한(개념 설명의 움직이는 예시는 크게)
   const ys = f.rows.length === 1 ? [BOX.y0 + 360] : [BOX.y0 + 240, BOX.y0 + 520];
   const out = rows.map((r, ri) => {
     const W = r.total * S, x0 = (BOX.x0 + BOX.x1) / 2 - W / 2;
@@ -166,7 +167,7 @@ export function SeatsFig({ it, t, C, uid = "" }) {
         </g>);
       } else if (reel && t >= reel.t0) {
         // 후보가 돌며 지나간다(위 수가 1, 2, 3 … 으로 세어진다) → 한 사람이 앉고 가짓수가 찍힌다
-        const tick = reelTick(reel.cnt), run = reel.cnt * tick;
+        const tick = reelTickOf(reel), run = reel.cnt * tick;
         const seq = reel.ok ? [...reel.cands.filter((k) => k !== reel.pick), reel.pick] : reel.cands;
         const e = t - reel.t0;
         const j = Math.min(reel.cnt - 1, Math.floor(e / tick));
@@ -193,7 +194,7 @@ export function SeatsFig({ it, t, C, uid = "" }) {
       }
       // 가짓수 — 세는 동안은 옅게 1, 2, 3 … · 다 세면 금빛으로 찍힌다
       if (reel && t >= reel.t0) {
-        const tick = reelTick(reel.cnt), run = reel.cnt * tick, e = t - reel.t0;
+        const tick = reelTickOf(reel), run = reel.cnt * tick, e = t - reel.t0;
         const n = Math.min(reel.cnt, Math.floor(e / tick) + 1);
         const done = e >= run;
         const pop = done ? seg(t, reel.t0 + run, reel.t0 + run + 260, E.lin) : (e % tick) / tick;
@@ -205,7 +206,7 @@ export function SeatsFig({ it, t, C, uid = "" }) {
     // 빈자리 고르기 — 남은 빈자리를 하나씩 짚어 세고, 그 가운데 하나에 내려앉는다
     for (const a of acts.filter((x) => x.type === "gap")) {
       if (t < a.t0) continue;
-      const tick = gapTick(a.cnt), run = a.cnt * tick, e = t - a.t0;
+      const tick = gapTickOf(a), run = a.cnt * tick, e = t - a.t0;
       const tu = g.us[a.ui];
       if (e < run) {
         const j = Math.min(a.avail.length - 1, Math.floor(e / tick)), q = g.us[a.avail[j]];
@@ -339,7 +340,7 @@ function pickState(it, P, t) {
     if (a.line !== line) { reset(); line = a.line; }
     const tt = Math.min(t, a.t1), on = t < a.t1;
     if (a.type === "count") {
-      const tick = touchTick(a.ids.length), u0 = a.t0 + PICK_T.POOL;
+      const tick = touchTick(a.ids.length) * (a.slow || 1), u0 = a.t0 + PICK_T.POOL;
       const n = tt < u0 ? 0 : Math.min(a.ids.length, Math.floor((tt - u0) / tick) + 1);
       for (let q = 0; q < n; q++) S.lit.set(a.ids[q], 1);
       if (on && n > 0 && tt < u0 + a.ids.length * tick) S.spot = { j: a.ids[n - 1], n, k: ((tt - u0) % tick) / tick };
@@ -416,9 +417,10 @@ function Obj({ it, o, x, y, r, C, lit = 0, dim = 1, ghost = false, sc = 1 }) {
     );
   }
   const fill = o.c ? BALL[o.c] : "#F4EEDC";
+  const darkOnDark = o.c === "검은" && C.name === "dark";      // 남색 종이 위 검은 공 — 테두리를 밝게 해 보이게
   return (
     <g opacity={dim}>
-      <circle cx={x} cy={y} r={r * sc} fill={fill} stroke={lit > 0.3 ? C.gold : "rgba(0,0,0,.35)"} strokeWidth={lit > 0.3 ? 5 : 1.5} />
+      <circle cx={x} cy={y} r={r * sc} fill={fill} stroke={lit > 0.3 ? C.gold : darkOnDark ? C.soft : "rgba(0,0,0,.35)"} strokeWidth={lit > 0.3 ? 5 : darkOnDark ? 2.4 : 1.5} />
       {o.n != null && <text x={x} y={y + r * 0.34 * sc} fontFamily={SANS} fontSize={r * (o.n >= 10 ? 0.8 : 0.95) * sc} fontWeight={800} fill="#2b2418" textAnchor="middle">{o.n}</text>}
     </g>
   );

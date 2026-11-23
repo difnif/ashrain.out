@@ -24,6 +24,9 @@ export const SEAT_T = { INTRO: 650, START: 260, SETTLE: 220, GAP_DROP: 320, INNE
 /** 후보 하나를 지나가는 시간 — 후보가 많으면 빨리(휘리릭) */
 export const reelTick = (n) => Math.max(70, Math.min(150, 520 / Math.max(1, n)));
 export const gapTick = (n) => Math.max(90, Math.min(170, 560 / Math.max(1, n)));
+/** 이 움직임의 박자 — 그림에 slow 가 있으면(개념 설명의 움직이는 예시) 그만큼 천천히 */
+export const reelTickOf = (a) => reelTick(a.cnt) * (a.slow || 1);
+export const gapTickOf = (a) => gapTick(a.cnt) * (a.slow || 1);
 
 const PLANS = new WeakMap();
 /**
@@ -83,7 +86,7 @@ export function seatsPlan(it) {
         const tok = takeLab(insertLab) || { lab: insertLab };
         gapsLeft.splice(gapsLeft.indexOf(ui), 1);
         units[ui].tok = tok;
-        acts.push({ type: "gap", ri, ui, avail, tok, cnt, line, ok: avail.length === cnt });
+        acts.push({ type: "gap", ri, ui, avail, tok, cnt, line, ok: avail.length === cnt, slow: f.slow || 1 });
         continue;
       }
       let cands;
@@ -97,7 +100,7 @@ export function seatsPlan(it) {
       const ok = cands.length === cnt && !!pick;
       if (pick) pool.splice(pool.indexOf(pick), 1);
       units[ui].tok = pick || units[ui].tok;
-      acts.push({ type: "reel", ri, ui, cands: ok ? cands.slice() : Array.from({ length: cnt }, (_, j) => ({ lab: String(j + 1) })), pick, cnt, line, ok });
+      acts.push({ type: "reel", ri, ui, cands: ok ? cands.slice() : Array.from({ length: cnt }, (_, j) => ({ lab: String(j + 1) })), pick, cnt, line, ok, slow: f.slow || 1 });
     }
     r.units.forEach((u, ui) => { if (u.inner && u.w > 1) acts.push({ type: "inner", ri, ui, line: r.innerAt, n: u.w }); });
     r.swaps.forEach((sw, si) => acts.push({ type: "swap", ri, si, line: sw.at }));
@@ -111,8 +114,8 @@ export function seatsPlan(it) {
 
 /** 움직임 하나의 길이(ms) */
 export function actMs(a) {
-  if (a.type === "reel") return a.cnt * reelTick(a.cnt) + SEAT_T.SETTLE;
-  if (a.type === "gap") return a.cnt * gapTick(a.cnt) + SEAT_T.GAP_DROP;
+  if (a.type === "reel") return a.cnt * reelTickOf(a) + SEAT_T.SETTLE;
+  if (a.type === "gap") return a.cnt * gapTickOf(a) + SEAT_T.GAP_DROP;
   if (a.type === "inner") return SEAT_T.INNER + (a.n > 2 ? 250 : 0);
   if (a.type === "swap") return SEAT_T.SWAP;
   return SEAT_T.NOTE;

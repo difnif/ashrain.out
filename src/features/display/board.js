@@ -8,6 +8,7 @@
 //      그림을 배율 0.6 아래로 줄여야만 들어가면 그림을 뺀다(글자가 먼저).
 //   ④ 촘촘으로도 넘치면 판서가 위로 흐른다 — 문제는 위에 그대로, 방침 · 판서 · 답 칸만 흘러 지금 줄이 늘 보인다(boardScroll).
 // 판(region): 단일 모드는 무대 전체(STAGE_REGION), 듀얼 모드는 반쪽 판(PANE_REGION — 800 × 900, 무대와 같은 배율).
+//   개념 설명의 움직이는 예시(components/ConceptAv.jsx)는 제 판을 쓴다 — 넓은 판 · 좁은 판(세로로 긴 판 — 그림은 글자 아래), figTop 이면 그림을 남은 칸 위에 붙인다.
 import { mathWidth } from "./draw.jsx";
 import { seg, E } from "./core.js";
 
@@ -90,7 +91,7 @@ function layOnce(it, T, R, colR, split = 0) {
   const boxes = [];
   const wOf = (s, z, wt) => mathWidth(s, z, wt);
   // ① 문제 — 판 너비를 다 쓴다
-  const qTxt = `${it.no}. ${it.q}`;
+  const qTxt = it.no === "" || it.no == null ? it.q : `${it.no}. ${it.q}`;   // 번호가 없으면(개념 설명의 움직이는 예시) 문제만
   const qParts = wrapMath(qTxt, T.q, W0, 560);
   let y = R.top;
   const q = qParts.map((s, i) => {
@@ -250,7 +251,8 @@ function figSpot(lay, fig, R) {
     if (!best || c.a > best.a + 1 || (Math.abs(c.a - best.a) <= 1 && w * h > best.w0 * best.h0)) best = { ...c, x0, y0, w0: w, h0: h };
   }
   if (!best || (!fig.flex && best.s < FIG_MIN)) return null;
-  return { x: best.x0 + (best.w0 - best.bw) / 2, y: best.y0 + (best.h0 - best.bh) / 2, w: best.bw, h: best.bh, s: best.s,
+  // R.figTop — 남은 칸의 위에 붙인다(개념 설명의 움직이는 예시: 판을 그림 아래에서 잘라 쓰므로 가운데에 띄우지 않는다)
+  return { x: best.x0 + (best.w0 - best.bw) / 2, y: R.figTop ? best.y0 + 6 : best.y0 + (best.h0 - best.bh) / 2, w: best.bw, h: best.bh, s: best.s,
     room: [best.x0, best.y0, best.x0 + best.w0, best.y0 + best.h0] };
 }
 
