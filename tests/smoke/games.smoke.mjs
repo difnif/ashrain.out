@@ -154,7 +154,11 @@ async function gameChecks(fr, shot) {
       "P3 삼각형 랙 — 15개 · 5줄 · 맨 앞 1번 (10, 10) · 8번은 셋째 줄 가운데 · 줄무늬 공 7개");
   }
   const c0 = s.shooter;
-  ok((await txt("#eq")) === `y = 2/3x + ${c0.y + 8}` && c0.x === -12, `P4 예시 식 = 흰 공 (−12, ${c0.y})을 지나는 y = 2/3x + ${c0.y + 8}`);
+  ok((await txt("#eq")) === "—" && /x 증가량과 y 증가량을 넣으세요/.test(await txt("#err")) && await fr.locator("#shoot").isDisabled()
+    && (await fr.locator("#dxIn").inputValue()) === "" && (await fr.locator("#dyIn").inputValue()) === "" && (await fr.locator("#icpt").inputValue()) === "" && c0.x === -12,
+    "P4 처음엔 빈 칸 — 값을 넣기 전엔 식 · 방향이 없고 치기 잠김(예시 값을 채워 두지 않는다)");
+  await setD("dx", 6); await setD("dy", 4); await setIcpt(String(c0.y + 8));
+  ok((await txt("#eq")) === `y = 2/3x + ${c0.y + 8}`, `P4b 직접 넣은 값으로 식 — 흰 공 (−12, ${c0.y})을 지나는 y = 2/3x + ${c0.y + 8}`);
   ok(/세기 6² \+ 4² = 52 \/ 120 → 거리 26/.test(await txt("#powerTxt")), "P5 세기 6² + 4² = 52 / 상한 120 → 거리 26 (세기 ÷ 2)");
   ok(/오른쪽 위로/.test(await txt("#dirText")) && /큐는 반대쪽\(↙\)/.test(await txt("#dirText")) && (await txt("#flipDir")) === "↗", "P6 방향 안내 — 오른쪽 위로 · 큐는 반대쪽(↙)에서");
   let pr = await predNow();
@@ -182,18 +186,16 @@ async function gameChecks(fr, shot) {
   ok((await fr.locator("#icpt").inputValue()) === "15", "P14 y절편 ▲1 → 15");
   await fr.locator('[data-ib="-0.1"]').click();
   ok((await fr.locator("#icpt").inputValue()) === "14.9", "P15 y절편 ▼0.1 → 14.9");
-  // 경기장을 누르면 그쪽으로 — 쉬운 증가량, 세기는 비슷하게
+  // 경기장을 누르면 그 점(공)의 좌표만 — 값은 그대로(늘 직접 넣는다)
   await setD("dx", 6); await setD("dy", 4);
   {
     s = await S();
-    const c = s.shooter, t = s.bodies.find((b) => b.id === "t1");
+    const t = s.bodies.find((b) => b.id === "t1"), icpt0 = await fr.locator("#icpt").inputValue();
     const pos = await fr.evaluate(([x, y]) => window.__slopeShotDebug.toCanvas(x, y), [t.x, t.y]);
     await fr.locator("#cv").click({ position: pos });
     s = await S();
-    const want = Math.atan2(t.y - c.y, t.x - c.x), got = Math.atan2(s.dy, s.dx);
-    let da = Math.abs(want - got); if (da > Math.PI) da = 2 * Math.PI - da;
-    const p = s.dx * s.dx + s.dy * s.dy;
-    ok(da < 0.035 && p > 52 * 0.7 && p < 52 * 1.35 && [s.dx, s.dy].every((v) => Math.abs(v * 10 - Math.round(v * 10)) < 1e-9), `P16 경기장을 누르면 그쪽으로 방향(Δ ${s.dx}, ${s.dy} · 오차 ${(da * 180 / Math.PI).toFixed(2)}°) · 세기는 비슷하게`);
+    ok(s.dx === 6 && s.dy === 4 && (await fr.locator("#icpt").inputValue()) === icpt0 && s.probe && s.probe.x === t.x && s.probe.y === t.y && /중심 \(10, 10\)/.test(s.probe.label),
+      `P16 경기장을 누르면 그 공의 중심 좌표만 보여 준다(${s.probe && s.probe.label}) — 증가량 · 절편은 그대로`);
   }
   // 첫 샷은 브레이크 — 도움 보기(마스터는 꺼진 채로 시작)
   ok(!s.hints && await fr.locator("#hintCard").isHidden() && !(await fr.locator("#hints").isChecked()), "P17 마스터 — 도움 보기는 꺼진 채로 시작");
@@ -263,16 +265,21 @@ async function gameChecks(fr, shot) {
   }
   await fr.locator("#cR").click();
   ok(await fr.locator("#rPick").isVisible(), "P37 마스터의 추천 찬스 — 증가량 추천 · y절편 추천 고르기");
+  const d0 = { dx: (await S()).dx, dy: (await S()).dy, ic: await fr.locator("#icpt").inputValue() };
   await fr.locator('[data-rp="delta"]').click();
   await waitRec();
   s = await S();
   const rec1 = s.rec;
   if (s.recInfo.kind === "delta") {
-    ok(rec1 && rec1.ok && s.dx === rec1.dx && s.dy === rec1.dy && s.inv[0].r === 0 && /추천 찬스 · 증가량/.test(await txt("#calcBox")), `P38 증가량 추천 — Δ ${s.dx}, ${s.dy}로 채우고 찬스 하나 씀`);
+    ok(rec1 && rec1.ok && s.recInfo.dx === rec1.dx && s.recInfo.dy === rec1.dy && s.dx === d0.dx && s.dy === d0.dy && s.inv[0].r === 0 && /추천 찬스 · 증가량/.test(await txt("#calcBox")) && /직접 넣으세요/.test(await txt("#calcText")),
+      `P38 증가량 추천 — Δ ${rec1.dx}, ${rec1.dy}를 알려만 주고(칸은 그대로) 찬스 하나 씀`);
+    await useRecD(rec1);
     await catchOrb("r");
     await fr.locator("#cR").click(); await fr.locator('[data-rp="icpt"]').click();
     s = await S();
-    ok(s.recInfo.kind === "icpt" && /b = y₀ − 기울기 × x₀|가로선이라|세로선이라/.test(await txt("#calcText")) && s.inv[0].r === 0, "P39 y절편 추천 — 공 중심을 지나는 b를 계산 과정과 함께");
+    ok(s.recInfo.kind === "icpt" && /b = y₀ − 기울기 × x₀|가로선이라|세로선이라/.test(await txt("#calcText")) && s.inv[0].r === 0 && (await fr.locator("#icpt").inputValue()) === d0.ic,
+      "P39 y절편 추천 — 공 중심을 지나는 b를 계산 과정과 함께 알려만 준다(칸은 그대로)");
+    await setIcpt(s.recInfo.text);
     pr = await predNow();
     ok(pr && pr.cue === 1, "P40 추천 y절편을 쓰면 타점 난이도 ★1");
     const left0 = (await txt("#pills")).match(/남은 공 (\d+)/)[1];
@@ -350,11 +357,13 @@ async function gameChecks(fr, shot) {
     await waitAuto();
     const rec = (await S()).rec;
     if (rec && rec.ok && Math.abs(rec.dx) > 1e-9) {
+      const v0 = await fr.locator("#slopeIn").inputValue();
       await fr.locator("#cR").click();
       await waitRec();
       s = await S();
-      const v = (await fr.locator("#slopeIn").inputValue()).replace("−", "-"), m = /\//.test(v) ? Number(v.split("/")[0]) / Number(v.split("/")[1]) : Number(v);
-      ok(s.recInfo.kind === "slope" && Math.abs(m - rec.dy / rec.dx) < 1e-6 && s.inv[0].r === 1, `N6 추천 찬스 — 추천 기울기 ${v}를 넣어 준다(찬스 2 → 1)`);
+      const v = String(s.recInfo.text || "").replace("−", "-"), m = /\//.test(v) ? Number(v.split("/")[0]) / Number(v.split("/")[1]) : Number(v);
+      ok(s.recInfo.kind === "slope" && Math.abs(m - rec.dy / rec.dx) < 1e-6 && s.inv[0].r === 1 && (await fr.locator("#slopeIn").inputValue()) === v0, `N6 추천 찬스 — 추천 기울기 ${s.recInfo.text}를 알려만 준다(칸은 그대로 · 찬스 2 → 1)`);
+      await setSlope(s.recInfo.text);
       const left0 = Number((await txt("#pills")).match(/남은 공 (\d+)/)[1]);
       r = await shoot();
       const left1 = Number((await txt("#pills")).match(/남은 공 (\d+)/)[1]);
@@ -373,12 +382,11 @@ async function gameChecks(fr, shot) {
   }
   {
     s = await S();
-    const sh = s.shooter, t = s.bodies.filter((b) => b.kind !== "cue" && b.id !== "cue")[0];
+    const t = s.bodies.filter((b) => b.kind !== "cue" && b.id !== "cue")[0], v0 = await fr.locator("#slopeIn").inputValue();
     const pos = await fr.evaluate(([x, y]) => window.__slopeShotDebug.toCanvas(x, y), [t.x, t.y]);
     await fr.locator("#cv").click({ position: pos });
-    const v = await fr.locator("#slopeIn").inputValue();
-    const want = (t.y - sh.y) / (t.x - sh.x), parsed = /\//.test(v) ? Number(v.replace("−", "-").split("/")[0]) / Number(v.split("/")[1]) : Number(v.replace("−", "-"));
-    ok(Math.abs(parsed - want) < Math.max(0.05, Math.abs(want) * 0.08), `N9 경기장을 누르면 그쪽 기울기 ${v} (≈ ${want.toFixed(3)})`);
+    s = await S();
+    ok((await fr.locator("#slopeIn").inputValue()) === v0 && s.probe && Math.abs(s.probe.x - t.x) < 1e-9 && Math.abs(s.probe.y - t.y) < 1e-9, `N9 뉴비도 경기장을 누르면 좌표만(${s.probe && s.probe.label}) — 기울기 칸은 그대로`);
   }
 
   // AC. 에이스 — 증가량으로 방향 · 세기, y절편은 공 중심을 지나게 자동
@@ -388,11 +396,15 @@ async function gameChecks(fr, shot) {
   s = await S();
   ok(s.ctl === "delta" && await fr.locator("#dxCtl").isVisible() && await fr.locator("#dyCtl").isVisible() && await fr.locator("#icptCtl").isHidden()
     && /타점: 흰 공 중심/.test(await txt("#autoBox")) && /남은 공 10/.test(await txt("#pills")) && s.inv[0].x === 1 && s.inv[0].r === 1, "AC1 에이스 — 증가량 칸만(y절편 자동) · 공 10개 · 어림 1 · 추천 1");
+  ok((await txt("#eq")) === "—" && /x 증가량과 y 증가량을 넣으세요/.test(await txt("#err")) && await fr.locator("#shoot").isDisabled(), "AC2a 에이스도 처음엔 빈 칸 — 증가량을 넣어야 친다");
+  await setD("dx", 6); await setD("dy", 4);
   ok((await txt("#eq")) === `y = 2/3x + ${s.shooter.y + 8}`, "AC2 식은 늘 흰 공 중심을 지난다");
   await fr.locator("#cR").click();
   await waitRec();
   s = await S();
-  ok(s.recInfo.kind === "delta" && s.rec && s.rec.brk && s.dx === s.rec.dx && s.dy === s.rec.dy && s.inv[0].r === 0 && await fr.locator("#rPick").isHidden(), "AC3 추천 찬스 — 고를 것 없이 바로 증가량(브레이크)을 넣어 준다");
+  ok(s.recInfo.kind === "delta" && s.rec && s.rec.brk && s.recInfo.dx === s.rec.dx && s.recInfo.dy === s.rec.dy && s.dx === 6 && s.dy === 4 && s.inv[0].r === 0 && await fr.locator("#rPick").isHidden(),
+    "AC3 추천 찬스 — 고를 것 없이 바로 추천 증가량(브레이크)을 알려 준다(칸은 그대로)");
+  await useRecD({ dx: s.recInfo.dx, dy: s.recInfo.dy });
   r = await shoot();
   ok(/정타/.test(r), "AC4 그대로 치면 정타");
   await live();
@@ -417,7 +429,9 @@ async function gameChecks(fr, shot) {
     && s.inv.map((i) => `${i.x}${i.r}`).join() === "11,11", "Q2 둘이 — 공 15개 · 샷 0 / 60 · 찬스는 사람마다(어림 1 · 추천 1)");
   await fr.locator("#cR").click();
   await waitRec();
-  ok((await S()).inv.map((i) => `${i.x}${i.r}`).join() === "10,11", "Q3 1P가 쓴 추천 찬스는 1P 것만 준다");
+  s = await S();
+  ok(s.inv.map((i) => `${i.x}${i.r}`).join() === "10,11", "Q3 1P가 쓴 추천 찬스는 1P 것만 준다");
+  if (s.recInfo && s.recInfo.kind === "delta") await useRecD({ dx: s.recInfo.dx, dy: s.recInfo.dy }); else { await setD("dx", 6); await setD("dy", 0); }
   r = await shoot();
   s = await S();
   ok(/정타/.test(r) && (s.pts[0] > 0 ? s.turn === 0 : s.turn === 1 && /→ 2P 차례/.test(r)), `Q4 넣으면 한 번 더, 못 넣으면 2P 차례 (1P ${s.pts[0]}점 · ${s.turn + 1}P 차례)`);
@@ -461,7 +475,9 @@ async function gameChecks(fr, shot) {
   ok(/단계 1/.test(await txt("#pills")) && /1번째 시도/.test(await txt("#pills")) && opp0.length === 1 && s.shooter.x === -16 && s.shooter.y === 10
     && s.bodies.find((b) => b.id === s.shooter.id).waiting, "K1 단계 1 — 상대 스톤 1개 · 내 스톤은 (−16, 10)");
   await waitAuto();
-  ok((await txt("#eq")) === "y = 10" && /던지기/.test(await txt("#shoot")) && /세기 .+ \(자동\)/.test(await txt("#powerTxt")), "K2 뉴비 — 예시 기울기 0 → y = 10 · 세기는 추천대로 자동");
+  ok((await txt("#eq")) === "—" && /기울기를 입력하세요/.test(await txt("#err")) && await fr.locator("#shoot").isDisabled(), "K2a 뉴비 — 처음엔 기울기 칸이 비어 있어 던질 수 없다");
+  await setSlope("0");
+  ok((await txt("#eq")) === "y = 10" && /던지기/.test(await txt("#shoot")) && /세기 .+ \(자동\)/.test(await txt("#powerTxt")), "K2 기울기 0을 넣으면 y = 10 · 세기는 추천대로 자동");
   pr = await predNow();
   s = await S();
   ok(pr && pr.cue === 1 && pr.tgtWho === "스톤 → 버튼" && s.rec && s.rec.ok, `K3 예측 — 타점 ★1(자동) · 목표 ★${pr && pr.tgt} · 추천 샷이 미리 준비됨`);
@@ -520,6 +536,7 @@ async function gameChecks(fr, shot) {
   s = await S();
   ok(/1P 차례/.test(await txt("#turnName")) && /빨간 스톤/.test(await txt("#turnTag")) && s.bodies.length === 1, "L1 컬링 둘이 — 1P(빨간 스톤)부터");
   let alt = true;
+  await setD("dx", 7.2); await setD("dy", 0);           // 둘이 번갈아도 넣은 증가량은 남는다
   for (let i = 0; i < 8; i++) {
     s = await S();
     if (s.turn !== i % 2 || s.shooter.id !== `s${i % 2}-${(i >> 1) + 1}`) alt = false;
@@ -597,26 +614,34 @@ async function poChecks(fr, shot) {
   const b0 = s.battle;
   ok(s.screen === "battle" && b0.mode === "story" && b0.kind === "sea" && b0.world.w === 170 && b0.sides[0].units[0].shipType === "pan" && b0.sides[1].units.length === 2 && b0.sides[1].units.every((u) => u.shipType === "jp") && b0.sides[0].tier === b0.sides[1].tier
     && (await ids()) === "in_a", "W6 전투 — 판옥선 vs 왜구 안택선 2척 · 같은 시대 · 바다 가로 170 · 뉴비는 a만 입력");
+  ok((await fr.locator("#in_a").inputValue()) === "" && /a를 넣으세요/.test(await txt("#err")) && !b0.shot.ok, "W6b 처음엔 빈 칸 — 값을 넣기 전엔 포탄 길이 없다");
   // 뉴비: a만 — 쏘는 기울기 · 방향은 자동, 꼭짓점은 b = 포구 x ± s ÷ 2|a|, c = 포구 y + s² ÷ 4|a|
   await D("sea", { wind: 0 });
-  await D("setInputs", { a: "-1/30" });
+  await D("setInputs", { a: "-4/3" });
   s = await S();
   {
-    const sh = s.battle.shot, m = active(s.battle).muzzle, A = s.battle.autoAim;
-    const eb = m.x + A.dir * A.s * 15, ec = m.y + A.s * A.s * 7.5;
-    ok(sh.ok && Math.abs(sh.b - eb) < 1e-6 && Math.abs(sh.c - ec) < 1e-6 && /^y = −1\/30\(x − [\d.]+\)² \+ [\d.]+$/.test(sh.eq) && /b = 포구 x/.test(await txt("#ro")) && /2b − 포구 x/.test(await txt("#ro")),
-      `W7 뉴비 a = −1/30 → 기울기 ${A.s}(자동) · 꼭짓점 (${sh.b}, ${sh.c}) = (포구 x ± s ÷ 2|a|, 포구 y + s² ÷ 4|a|) · ${sh.eq}`);
+    const sh = s.battle.shot, u = active(s.battle), m = u.muzzleD, A = s.battle.autoAim;
+    const eb = m.x + A.dir * A.s * 3 / 8, ec = m.y + A.s * A.s * 3 / 16;
+    ok(sh.ok && Math.abs(sh.b - eb) < 1e-6 && Math.abs(sh.c - ec) < 1e-6 && /^y = −4\/3\(x − [\d.]+\)² \+ [\d.]+$/.test(sh.eq) && /b = 포구 x/.test(await txt("#ro")) && /2b − 포구 x/.test(await txt("#ro")),
+      `W7 뉴비 a = −4/3 → 기울기 ${A.s}(자동) · 꼭짓점 (${sh.b}, ${sh.c}) = (포구 x ± s ÷ 2|a|, 포구 y + s² ÷ 4|a|) · ${sh.eq}`);
+    ok(Math.abs(m.x - u.muzzle.x / 10) < 1e-9 && m.y === u.muzzle.y && (await txt("#ro")).includes(`포구 (${Math.round(m.x * 1000) / 1000}, ${m.y})`),
+      `W7b 좌표 단위 — 가로 눈금 1 = 10칸: 포구 ${u.muzzle.x}칸 → x ${m.x}, 높이는 칸 그대로 ${m.y}`);
+    const as = [];
+    for (const a of ["-1", "-2", "-3"]) { const r = await D("setInputs", { a }); as.push(r.ok && !r.clipped); }
+    ok(as.filter(Boolean).length >= 2, `W7c a = −1 · −2 · −3 같은 교과서 값으로 힘 안에서 쏠 수 있다 (${as.join(" · ")})`);
   }
-  await D("setInputs", { a: "-0.002" });
+  await D("setInputs", { a: "-0.05" });
   s = await S();
   ok(/힘이 모자라요/.test(await txt("#err")) && await fr.locator("#pwBar.max").count() === 1 && s.battle.shot.clipped && s.battle.shot.k < 1, `W8 꼭짓점까지 X + Y 가 힘 ${s.battle.shot.P}를 넘으면 경고 — 같은 각도로 ${Math.round(s.battle.shot.k * 100)}% 크기`);
   {
     await D("camSnap"); await D("noOrb");
     s = await S();
-    const m = active(s.battle).muzzle, A = s.battle.autoAim, pos = await D("toCanvasRel", m.x + A.dir * 20, m.y + 10);
+    const m = active(s.battle).muzzle, A = s.battle.autoAim, before = await fr.locator("#in_a").inputValue(), pos = await D("toCanvasRel", m.x + A.dir * 20, m.y + 10);
     await fr.locator("#cv").click({ position: pos });
-    const want = -(A.s * 20 - 10) / 400, got = Number((await fr.locator("#in_a").inputValue()).replace("−", "-"));
-    ok(Math.abs(got - want) < 0.0006, `W9 전장을 누르면 그 점을 지나는 a(${got}) — 포구에서 가로 20 · 위로 10`);
+    s = await S();
+    const p = s.battle.probe;
+    ok((await fr.locator("#in_a").inputValue()) === before && p && Math.abs(p.x - (m.x + A.dir * 20)) < 0.6 && Math.abs(p.y - (m.y + 10)) < 0.6 && /^\([\d.]+, [\d.]+\)$/.test(p.label),
+      `W9 전장을 누르면 그 점의 좌표만 보여 준다(${p && p.label}) — a는 그대로(값은 늘 직접)`);
   }
   await shot("po-aim");
   // 카메라 — 전장이 화면보다 넓다
@@ -660,7 +685,7 @@ async function poChecks(fr, shot) {
     const dMe = s.battle.sides[0].units[0].x - before[0][0], dJp = Math.max(...s.battle.sides[1].units.map((u, i) => u.x - before[1][i]));
     ok(sr.cur > 0 && dMe > 0 && dJp > dMe, `W40 조류 → ${sr.cur} — 배가 떠밀린다(판옥선 +${dMe} · 잘 흔들리는 안택선 +${dJp})`);
     await D("sea", { wind: 0.2, cur: 0, wave: 0 });
-    await D("setInputs", { a: "-1/30" });
+    await D("setInputs", { a: "-2" });
     s = await S();
     const sh = s.battle.shot;
     ok(Math.abs(sh.f - (1 + 0.2 * sh.dir)) < 1e-9 && /바람/.test(await txt("#ro")) && new RegExp(String(1 + 0.2 * sh.dir).replace(".", "\\.") + "배").test(await txt("#ro")), `W41 바람 ${sh.dir > 0 ? "순풍" : "역풍"} 20% — 포탄 길이 가로로 ${sh.f}배`);
@@ -670,7 +695,7 @@ async function poChecks(fr, shot) {
   {
     s = await S();
     const me = active(s.battle), Ps = me.spec.map((p) => p.P);
-    ok(new Set(Ps).size >= 3 && me.spec.every((p) => p.H > 0 && p.H <= p.P) && /힘\(꼭짓점까지 X \+ Y 한도\)/.test(await txt("#wepInfo")) && /고도 한도/.test(await txt("#wepInfo")), `W42 포마다 힘이 달라요 — ${Ps.join(" · ")} · 고도 한도 ${me.spec.map((p) => p.H).join(" · ")}`);
+    ok(new Set(Ps).size >= 3 && me.spec.every((p) => p.H > 0 && p.H <= p.P) && /힘\(꼭짓점까지 가로 \+ 높이, 칸\)/.test(await txt("#wepInfo")) && /고도 한도/.test(await txt("#wepInfo")), `W42 포마다 힘이 달라요 — ${Ps.join(" · ")} · 고도 한도 ${me.spec.map((p) => p.H).join(" · ")}`);
     const rPan = await D("recoil", "0-0", 0), rJp = await D("recoil", "1-0", 1);
     ok(rPan > 0 && rJp > 0 && rJp < rPan, `W43 반동 — 판옥선 ${rPan.toFixed(2)}칸 · 줄에 매단 왜구 대포 ${rJp.toFixed(2)}칸(적음)`);
   }
@@ -686,7 +711,7 @@ async function poChecks(fr, shot) {
   const foeHp1 = s.battle.sides[1].units.reduce((a, u) => a + u.hp, 0);
   ok(solW && foeHp1 < foeHp0 && /명중/.test(await txt("#report")), `W10 정답 a로 쏘면 명중 — 적 체력 ${foeHp0} → ${foeHp1}`);
   ok(xRec !== xFire, `W45 쏘면 반동으로 밀린다 — x ${xFire} → ${xRec}`);
-  ok(/적 포격/.test(await txt("#report")) && /y = −[\d.\/]+\(x [−+] [\d.]+\)² [+−] [\d.]+/.test(await txt("#report")), "W11 적의 포탄도 같은 꼴 y = a(x − b)² + c 로 보여 준다");
+  ok(/적 포격/.test(await txt("#report")) && /y = −[\d.\/]*\(x [−+] [\d.]+\)² [+−] [\d.]+/.test(await txt("#report")), "W11 적의 포탄도 같은 꼴 y = a(x − b)² + c 로 보여 준다");
   // 찬스 구슬
   await D("fast", 1);
   s = await until(myAim);
@@ -719,7 +744,7 @@ async function poChecks(fr, shot) {
   // 애쉬래인 바람 — 상대가 조준할 때 누르면 포탄을 밀어낸다
   await D("giveGust", 0, 1);
   await D("forceAI", "hit");
-  await D("setInputs", { a: "-0.5" });
+  await D("setInputs", { a: "-50" });
   await fr.locator("#fire").click();
   s = await until((s) => s.battle.phase === "ai" || s.battle.over, 15000);
   if (s.battle.phase === "ai") {
@@ -759,8 +784,11 @@ async function poChecks(fr, shot) {
   await D("story", 4);
   s = await until(myAim);
   {
-    const sh = s.battle.shot, m = active(s.battle).muzzle;
-    ok((await ids()) === "in_a,in_b" && sh && sh.ok && Math.abs(sh.c - (m.y - sh.a * (m.x - sh.b) ** 2)) < 1e-9 && /c = 포구 y − a\(포구 x − b\)²/.test(await txt("#ro")) && /^y = .+\(x [−+] [\d.]+\)² [+−] [\d.]+$/.test(sh.eq),
+    const u = active(s.battle), md = u.muzzleD, dir = Math.sign(nearFoe(s.battle, u).x - u.x) || 1;
+    ok((await ids()) === "in_a,in_b" && (await fr.locator("#in_a").inputValue()) === "" && (await fr.locator("#in_b").inputValue()) === "" && !s.battle.shot.ok, "W25a 에이스 — 처음엔 a, b 빈 칸");
+    const sh = await D("setInputs", { a: "-2", b: String(Math.round((md.x + dir * 2.5) * 10) / 10) });
+    const m = active((await S()).battle).muzzleD;
+    ok(sh && sh.ok && Math.abs(sh.c - (m.y - sh.a * (m.x - sh.b) ** 2)) < 1e-9 && /c = 포구 y − a\(포구 x − b\)²/.test(await txt("#ro")) && /^y = −2\(x [−+] [\d.]+\)² [+−] [\d.]+$/.test(sh.eq),
       `W25 에이스 — a, b를 넣으면 c는 포구를 지나게 자동 (${sh && sh.eq})`);
   }
   await fr.locator("#battle #leave").click();
@@ -771,8 +799,8 @@ async function poChecks(fr, shot) {
   ok((await ids()) === "in_a,in_b,in_c" && await fr.locator("#hints").isDisabled(), "W26 마스터 — a, b, c 모두 · 도움 선 꺼짐");
   ok(s.battle.kind === "land" && s.battle.world.w === 150 && s.battle.world.h === 56 && await fr.locator("#seaHud").isHidden(), "W46 뭍 맵(남한산성) — 가로 150 · 높이 56, 바다 표시 없음");
   {
-    const m = active(s.battle).muzzle, dir = Math.sign(nearFoe(s.battle, active(s.battle)).x - active(s.battle).x) || 1;
-    await D("setInputs", { a: "-0.1", b: String(m.x + 10 * dir), c: String(m.y + 25) });
+    const m = active(s.battle).muzzleD, dir = Math.sign(nearFoe(s.battle, active(s.battle)).x - active(s.battle).x) || 1;
+    await D("setInputs", { a: "-0.1", b: String(Math.round((m.x + dir) * 10) / 10), c: String(m.y + 25) });
     await fr.locator("#fire").click();
     s = await S();
     ok(s.battle.phase === "aim" && /포구 .+를 지나지 않아요/.test(await txt("#err")), "W27 마스터 — 그래프가 포구를 지나지 않으면 발사되지 않는다");
@@ -781,6 +809,22 @@ async function poChecks(fr, shot) {
     const sol = await D("solve");
     const r = await D("setInputs", sol);
     ok(r && r.ok, `W28 포구를 지나는 식이면 발사 준비 (a ${sol.a} · b ${sol.b} · c ${sol.c})`);
+  }
+  // 🐰 달토끼 도약 — 옮길 곳도 x좌표를 직접 넣는다
+  {
+    await D("setEnergy", 0, 100);
+    s = await S();
+    const u = active(s.battle), dir = Math.sign(nearFoe(s.battle, u).x - u.x) || 1;
+    await fr.locator('[data-sk="rabbit"]').click();
+    const vis = await fr.locator("#jumpBox").isVisible();
+    let x1 = u.x;
+    for (const d of [1.2, 0.8, 1.6, -1.2, -0.8]) {
+      await fr.locator("#in_jump").fill(String(Math.round((u.x / 10 + dir * d) * 10) / 10));
+      await fr.locator("#jumpGo").click();
+      x1 = active((await S()).battle).x;
+      if (x1 !== u.x) break;
+    }
+    ok(vis && x1 !== u.x && await fr.locator("#jumpBox").isHidden() && !(await S()).battle.moveMode, `W49 달토끼 도약 — 옮길 곳의 x좌표를 직접 넣어 옮긴다(x ${u.x / 10} → ${x1 / 10})`);
   }
   await shot("po-master");
   await fr.locator("#battle #leave").click();
@@ -827,7 +871,7 @@ async function poChecks(fr, shot) {
     await D("setHp", "0-0", Math.round(me.maxHp / 2));
     await D("fast", 3);
     await D("forceAI", "miss");
-    await D("setInputs", { a: "-0.5" });
+    await D("setInputs", { a: "-50" });
     await fr.locator("#fire").click();
     let saw = false;
     s = await until((s) => { if (s.battle && s.battle.phase === "aimove") saw = true; return myAim(s) && s.battle.round > 1; }, 30000);
