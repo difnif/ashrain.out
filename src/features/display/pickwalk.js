@@ -417,6 +417,8 @@ export function pickPlan(it) {
     }
     return { acts, expect };
   });
+  // 그림에 slow 가 있으면(개념 설명의 움직이는 예시) 짚는 박자를 그만큼 천천히
+  if (f.slow) for (const L of lines) for (const a of L.acts) a.slow = f.slow;
   const out = { objs, lines };
   PLANS.set(it, out);
   return out;
@@ -427,10 +429,10 @@ export const PICK_T = { START: 260, TOUCH_MIN: 70, TOUCH_MAX: 165, TOUCH_ALL: 90
 export const touchTick = (n) => Math.max(PICK_T.TOUCH_MIN, Math.min(PICK_T.TOUCH_MAX, PICK_T.TOUCH_ALL / Math.max(1, n)));
 export function pickActMs(a) {
   switch (a.type) {
-    case "count": return PICK_T.POOL + a.ids.length * touchTick(a.ids.length) + PICK_T.STAMP;
+    case "count": return PICK_T.POOL + a.ids.length * touchTick(a.ids.length) * (a.slow || 1) + PICK_T.STAMP;
     case "pick": {
       let d = PICK_T.POOL;
-      for (let q = 0; q < a.k; q++) { const n = a.pool.ids.length - q; d += n * touchTick(n) + PICK_T.FLY + PICK_T.STAMP; }
+      for (let q = 0; q < a.k; q++) { const n = a.pool.ids.length - q; d += n * touchTick(n) * (a.slow || 1) + PICK_T.FLY + PICK_T.STAMP; }
       return d + (a.div ? PICK_T.UNORDER : 0);
     }
     case "clear": return PICK_T.CLEAR;
@@ -467,7 +469,7 @@ export function pickTimes(it, P) {
         let u = c + PICK_T.POOL;
         A.steps = [];
         for (let q = 0; q < a.k; q++) {
-          const n = a.pool.ids.length - q, tick = touchTick(n);
+          const n = a.pool.ids.length - q, tick = touchTick(n) * (a.slow || 1);
           A.steps.push({ q, n, tick, c0: u, fly: u + n * tick, end: u + n * tick + PICK_T.FLY + PICK_T.STAMP });
           u = A.steps[q].end;
         }

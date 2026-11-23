@@ -5,6 +5,7 @@
 //   경우의 수와 확률 100제(frames/cnt100.jsx)도 이 그리기를 쓴다 — it.planTag 가 있으면 방침 칸 이름을 바꾸고(사전식 「숫자 분석」),
 //   it.fig.kind 가 tree(사전식 — 카드로 순번 찾기, frames/lexcards.jsx · 받은 칸에 맞춰 그린다) · seats · grades · bag(줄 세우기 · 학년별 선발 · 주머니 공 — frames/c100fig.jsx)면 그 그림.
 //   기본기 해설(frames/basics.jsx — 초등 · 중등 · 고등 단원)도 이 그리기를 쓴다 — it.fig.kind === "dsl" 이면 그림 DSL(frames/figdsl.jsx).
+//   개념 설명의 「움직이는 예시」(../concept-av.js · components/ConceptAv.jsx)도 — it.fig.kind === "outs" 면 경우 카드(frames/outfig.jsx · ../outwalk.js).
 // 글자 판은 ../board.js(배치) · frames/board.jsx(그리기): 글자 크기 두 벌로 고르게, 문제는 판 너비를 다 쓰고,
 //   그림은 글자를 다 놓고 남은 빈자리에 줄여 넣는다(화면의 25%까지 · 배율 0.6 아래면 뺀다). region 을 주면(듀얼 반쪽 판) 그 판 안에 같은 규칙으로.
 // 조작은 해설 액자 공통 틀(frames/lesson.jsx) — 「세트 1 | 세트 2」 · 빠르기 0.75× ~ 2× · 번호 · 단계 목록(전체 · 1~10단계) · 단일 | 듀얼.
@@ -19,6 +20,7 @@ import { LessonFrame } from "./lesson.jsx";
 import { LexCards, LEX_FIG } from "./lexcards.jsx";
 import { SeatsFig, GradesFig, BagFig } from "./c100fig.jsx";
 import { FigDsl } from "./figdsl.jsx";
+import { OutsFig, outsBox } from "./outfig.jsx";
 
 import { boardLayout, STAGE_REGION, PANE_REGION } from "../board.js";
 import { Board, FigSlot } from "./board.jsx";
@@ -36,6 +38,7 @@ const FIGS = {
   grades: { draw: (p) => <GradesFig {...p} />, box: (f, it) => gradesBox(f, it) },
   bag: { draw: (p) => <BagFig {...p} />, box: (f, it) => bagBox(f, it) },
   dsl: { draw: (p) => <FigDsl {...p} />, box: (f) => dslBox(f) },          // 기본기 해설(frames/basics.jsx)
+  outs: { draw: (p) => <OutsFig {...p} />, box: (f) => outsBox(f) },       // 경우 카드 — 주사위 눈 · 동전 · 갈림길(개념 설명의 움직이는 예시 · ../concept-av.js)
 };
 const AREA9 = { draw: (p) => <Figure {...p} />, box: (f) => area9Box(f), ts: true };
 const figOf = (it) => (it.fig ? FIGS[it.fig.kind] || AREA9 : null);
