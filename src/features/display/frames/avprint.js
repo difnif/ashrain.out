@@ -54,13 +54,19 @@ export function problemPages(set) {
   return pages;
 }
 
+/** 세트에 든 단계 — 「1 ~ 5단계」(단원 · 회차) · 「3단계」(유형 하나) */
+export function stageSpan(set) {
+  const s = [...new Set(set.items.map((it) => it.st))].sort((a, b) => a - b);
+  return !s.length ? "" : s.length === 1 ? `${s[0]}단계` : `${s[0]} ~ ${s[s.length - 1]}단계`;
+}
+
 /* ══════════ 등록 정보(ashrain-print.json) ══════════ */
 export function avManifest(meta, set) {
   const pageOf = new Map();
   problemPages(set).forEach((p, i) => p.items.forEach((it) => pageOf.set(it.no, i + 1)));
   return {
     kind: "ashrain.print", version: 1, code: meta.code,
-    title: meta.title, sub: `기본기 해설 · ${meta.span} · ${set.items.length}문항 · 1 ~ 5단계`, label: "서답형",
+    title: meta.title, sub: `기본기 해설 · ${meta.span} · ${set.items.length}문항 · ${stageSpan(set)}`, label: "서답형",
     items: set.items.map((it) => ({
       no: String(it.no), answer: String(it.ap).replace(/−/g, "-"), choice: false, points: 1, topic: `${it.st}단계 ${meta.stages[it.st] || ""}`.trim(),
       key: `av/${meta.id}/${it.no}`, page: pageOf.get(it.no),
@@ -113,9 +119,9 @@ function head(title, extra) {
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)}</title>`
     + AV_PRINT_FONTS.map((u) => `<link rel="stylesheet" href="${u}">`).join("") + `<style>${extra}</style></head>`;
 }
-function header(meta, kind, n, who) {
+function header(meta, kind, set, who) {
   return `<header class="hd"><div class="hl"><div class="t1">${esc(meta.title)}</div>`
-    + `<div class="t2">기본기 해설 · ${esc(meta.span)} · ${esc(unitLabel(meta.unit))} · ${kind} · ${n}문항 · 1 ~ 5단계</div></div>`
+    + `<div class="t2">기본기 해설 · ${esc(meta.span)} · ${esc(unitLabel(meta.unit))} · ${kind} · ${set.items.length}문항 · ${stageSpan(set)}</div></div>`
     + `<div class="hr"><div class="code">코드 ${fmtCode(meta.code)}</div>${who ? '<div class="who">이름<u></u>날짜<u></u></div>' : ""}</div></header>`;
 }
 const stageHead = (meta, set, st, cont) => `<div class="stg${cont ? " cont" : ""}"><span class="sn">${st}단계 · ${esc(meta.stages[st] || "")}${cont ? " (이어서)" : ""}</span>`
@@ -141,7 +147,7 @@ export function problemsHtml(meta, set, figOf) {
       return `<div class="q"><div class="qt"><span class="no">${it.no}.</span>${mathHtml(it.q)}</div>`
         + (fig ? `<div class="qf">${fig}</div>` : "") + `<div class="ab">답</div></div>`;
     }).join("");
-    return `<section class="pg">${i === 0 ? header(meta, "문제지", set.items.length, true) : ""}${stageHead(meta, set, p.st, !p.first)}`
+    return `<section class="pg">${i === 0 ? header(meta, "문제지", set, true) : ""}${stageHead(meta, set, p.st, !p.first)}`
       + `<div class="grid" style="grid-template-rows:repeat(${rows},minmax(0,1fr))">${cells}</div></section>`;
   }).join("");
   return head(`${meta.short} 문제지`, css(meta.code) + P_CSS) + `<body><div class="av av-p">${body}</div></body></html>`;
@@ -165,7 +171,7 @@ const S_CSS = `.note{border:.3mm solid #444;border-radius:1.6mm;padding:2mm 3mm;
 .sf svg{width:34mm;height:auto}
 `;
 export function solutionsHtml(meta, set, figOf) {
-  let body = header(meta, "해설지", set.items.length, false);
+  let body = header(meta, "해설지", set, false);
   if (set.note) body += `<div class="note"><span class="nh">지도 도움말</span>${mathHtml(set.note)}</div>`;
   for (let st = 1; st <= 5; st++) {
     const list = set.items.filter((it) => it.st === st);
@@ -191,7 +197,7 @@ const A_CSS = `.ak{display:grid;grid-template-columns:repeat(4,1fr);border-top:.
 .ks{break-inside:avoid}
 `;
 export function answersHtml(meta, set) {
-  let body = header(meta, "빠른 정답", set.items.length, false);
+  let body = header(meta, "빠른 정답", set, false);
   for (let st = 1; st <= 5; st++) {
     const list = set.items.filter((it) => it.st === st);
     if (!list.length) continue;

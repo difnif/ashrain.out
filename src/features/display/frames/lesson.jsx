@@ -5,14 +5,18 @@
 //   · 이전 · 멈춤 · 다음(←/→ · 스페이스) · 이 문항 반복(R) · 밝기 · 전체 화면(F) · 액자 목록 · 나가기
 //   · 두 막대(frames/scrub.jsx — 아래 긴 막대 = 문항 이동, 옆 짧은 막대 = 풀이 이동) · 오른쪽 위 더할 것(기본기 해설의 📄 문서).
 //   듀얼 모드는 화면을 좌우 둘로 나눠 두 판을 따로 돌린다 — 판마다 세트(같은 세트 둘도 됨) · 단계 · 번호 · 빠르기 · 멈춤 · 반복 · 두 막대.
+//   판마다 고를 수 있는 것은 이 액자의 세트가 아니라 문제 풀이 해설 전부 — 단원 100제 · 유형 · 주차별 회차 · 해설 액자 세트
+//   (frames/allspec.jsx 가 setDualAll 로 넣어 둔 「전부」 spec — 액자마다 따로 기억, 처음엔 단일 모드에서 보던 것).
 //   가운데 ⇄(X)는 두 판의 자리를 맞바꾼다. 판마다 자리 · 고른 것은 기기에 기억한다(벽시계라 새로고침해도 이어 돈다).
 // 액자마다 다른 것은 spec 하나로 넘긴다:
 //   { lsk 기억 이름, title 액자 이름, sets [{ key, name, short, icon?, note?, sub? }], stages(set) → [{ v, lab, chip? }], scenes(set, sp, st) → 장면 목록,
 //     posKey(lsk, set, st) 단일 모드 자리 기억 이름, cols 목록 칸 수, topExtra({ set, open, onOpen, poke }) 오른쪽 위,
 //     setMenu { word, title, hint } — 세트가 많으면(기본기 해설의 단원) 「세트」 칸 대신 단추 → 목록(U),
-//     ready(set) · load(set) → Promise — 세트 문항을 고를 때 들여오면(기본기 해설) 들여오는 동안 「불러오는 중」 }
+//     ready(set) · load(set) → Promise — 세트 문항을 고를 때 들여오면(기본기 해설) 들여오는 동안 「불러오는 중」,
+//     세트가 아주 많거나 늦게 알게 되면(「전부」 spec) sets 대신 hasSet(key) · setOf(key) · defSet · single0() · Menu(목록 화면) ·
+//     titleOf(set) · colsOf(set) — 세트마다 액자 이름 · 목록 칸 수가 다를 때 }
 //   pick — 처음 열 때 이 세트로(학생앱에서 고른 단원 — 단일 모드로 연다).
-//   menuExtra({ close }) — 세트 목록 머리에 더 놓을 것(기본기 해설: 「단원 100제 | 주차별 학년」 바꾸기) · 세트에 grp 가 있으면 목록을 그 이름으로 나눈다.
+//   menuExtra({ close }) — 세트 목록 머리에 더 놓을 것(기본기 해설: 「단원 100제 | 유형 | 주차별 학년」 바꾸기) · 세트에 grp 가 있으면 목록을 그 이름으로 나눈다.
 //   onSeen(set, no) — 단일 모드에서 장면이 바뀔 때마다(학생앱이 본 기록을 남긴다).
 //   장면 = StoryPlayer 형식(key · no · st · dur · grp · marks · title · sub · render) + pane(t, C, uid) 반쪽 판 그리기 · card 목록 칸 글자 · head 판 머리 글자.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -32,12 +36,22 @@ const LIST_IC = "M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01";
 
 /** spec 다듬기 — 고를 수 있는 값으로만 */
 function fixers(spec) {
-  const keys = spec.sets.map((s) => s.key);
-  const fixSet = (v) => (keys.includes(v) ? v : spec.defSet ?? keys[0]);
+  const keys = spec.sets ? spec.sets.map((s) => s.key) : [];
+  const has = spec.hasSet || ((v) => keys.includes(v));
+  const fixSet = (v) => (v != null && has(v) ? v : spec.defSet ?? keys[0]);
   const fixSt = (set, v) => { const st = spec.stages(set); return Number.isInteger(v) && (v === 0 || st.some((x) => x.v === v)) ? v : 0; };
   return { keys, fixSet, fixSt };
 }
+/** 세트 하나의 이름표 { key, name, short, icon?, note?, sub? } */
+export const setOfSpec = (spec, k) => (spec.setOf ? spec.setOf(k) : spec.sets.find((x) => x.key === k)) || null;
 const posKeyOf = (spec, set, st) => (spec.posKey ? spec.posKey(spec.lsk, set, st) : `${spec.lsk}.${set}.${st}`);
+/** 단일 모드에서 보던 세트 */
+const single0Of = (spec, F) => (spec.single0 ? F.fixSet(spec.single0()) : F.fixSet((lsRead(spec.lsk) || {}).set ?? (lsRead(spec.lsk) || {}).id));
+
+/** 듀얼 모드 판마다 고를 「전부」 spec — frames/allspec.jsx 가 넣는다(이 파일이 액자 모듈을 들이면 서로 물리므로 거꾸로) */
+let DUAL_ALL = null;
+export function setDualAll(fn) { DUAL_ALL = fn; }
+const dualSpecOf = (spec) => (DUAL_ALL && !spec.all ? DUAL_ALL(spec) || spec : spec);
 
 /** 해설 액자 — 단일 | 듀얼. pick(세트 key)을 주면 그 세트로 단일 모드부터 */
 export function LessonFrame({ spec, pick = null, menuExtra = null, onSeen = null, ...props }) {
@@ -46,8 +60,9 @@ export function LessonFrame({ spec, pick = null, menuExtra = null, onSeen = null
   useEffect(() => { lsWrite(spec.lsk + ".mode", dual ? "dual" : "single"); }, [dual, spec.lsk]);
   const pick0 = pk.current;
   useEffect(() => { pk.current = null; }, []);                   // 처음 한 번만 — 듀얼로 갔다 오면 기억한 자리로
+  const dspec = useMemo(() => dualSpecOf(spec), [spec]);
   return dual
-    ? <DualStage spec={spec} menuExtra={menuExtra} {...props} onSingle={() => setDual(false)} />
+    ? <DualStage spec={dspec} menuExtra={dspec === spec ? menuExtra : null} {...props} onSingle={() => setDual(false)} />
     : <SingleStage spec={spec} pick={pick0} menuExtra={menuExtra} onSeen={onSeen} {...props} onDual={() => setDual(true)} />;
 }
 
@@ -81,7 +96,7 @@ export function Loading({ C, ui, onExit, title, err }) {
 /** 세트 고르는 단추 — 세트가 많으면(setMenu) 목록을 여는 칩, 아니면 칸 고르기 */
 function SetPick({ spec, value, onChange, onMenu, menuOn, poke, label = "세트" }) {
   if (spec.setMenu) {
-    const S = spec.sets.find((x) => x.key === value) || spec.sets[0];
+    const S = setOfSpec(spec, value) || setOfSpec(spec, spec.defSet) || { name: String(value) };
     return (
       <button type="button" className={"dsp-chip lsn-unit" + (menuOn ? " on" : "")} title={`${spec.setMenu.word} 목록 (U)`} aria-pressed={!!menuOn}
         onClick={() => { onMenu(); poke(); }}>
@@ -169,7 +184,7 @@ function SingleStage({ menuExtra, onSeen, ...props }) {
     d: () => { onDual(); poke(); },
     Escape: () => { setList(false); setMenu(false); setDocs(false); },
   }, inert || docs);
-  const meta = spec.sets.find((s) => s.key === cfg.set);
+  const meta = setOfSpec(spec, cfg.set);
   if (!scenes) return <Loading C={C} ui={ui} onExit={onExit} title={meta.name} err={err} />;
   const extra = (
     <>
@@ -227,7 +242,7 @@ const elapsed = (p, now) => (p.held != null ? p.held : now - p.t0);
 function DualStage(props) {
   const { spec } = props;
   const need = useMemo(() => {
-    const F = fixers(spec), o = lsRead(spec.lsk + ".dual") || {}, s0 = F.fixSet((lsRead(spec.lsk) || {}).set ?? (lsRead(spec.lsk) || {}).id);
+    const F = fixers(spec), o = lsRead(spec.lsk + ".dual") || {}, s0 = single0Of(spec, F);
     return [...new Set([F.fixSet(o.L?.set || s0), F.fixSet(o.R?.set || s0)])];
   }, [spec]);
   const [ready, err] = useSetsReady(spec, need);
@@ -243,7 +258,7 @@ function DualInner(props) {
   const panes = useRef(null);
   if (!panes.current) {
     const o = lsRead(DLSK) || {};
-    const single0 = F.fixSet((lsRead(spec.lsk) || {}).set ?? (lsRead(spec.lsk) || {}).id);
+    const single0 = single0Of(spec, F);
     panes.current = { L: paneLoad(spec, o.L, "L", single0), R: paneLoad(spec, o.R, "R", single0) };
   }
   const [, setFrame] = useState(0);
@@ -324,7 +339,7 @@ function DualInner(props) {
   const now = Date.now();
   const stop = (e) => e.stopPropagation();
   const view = SIDES.map((side, k) => {
-    const p = panes.current[side], S = spec.sets.find((x) => x.key === p.set), L = sc(p), s = L[p.i];
+    const p = panes.current[side], S = setOfSpec(spec, p.set) || { key: p.set, name: String(p.set) }, L = sc(p), s = L[p.i];
     const e = Math.min(elapsed(p, now), s.dur);
     return { side, k, p, S, L, s, e };
   });
@@ -397,12 +412,15 @@ function DualInner(props) {
         <Scrub key={"sc" + side} variant={side} show={ctl && !list && !menu} scenes={L} idx={p.i} onPick={(i) => { goTo(side, i); poke(); }}
           t={e} dur={s.dur} marks={s.marks} onSeek={(tt) => { seek(side, tt); poke(); }} poke={poke} />
       ))}
-      {menu && (
-        <div className={"lsn-pane-list " + menu}>
-          <SetMenu spec={spec} cur={panes.current[menu].set} side={menu === "L" ? "왼쪽" : "오른쪽"} extra={menuExtra}
-            onPick={(v) => { setSet(menu, v); setMenu(null); poke(); }} onClose={() => setMenu(null)} />
-        </div>
-      )}
+      {menu && (() => {
+        const M = spec.Menu || SetMenu;
+        return (
+          <div className={"lsn-pane-list " + menu}>
+            <M spec={spec} cur={panes.current[menu].set} side={menu === "L" ? "왼쪽" : "오른쪽"} extra={menuExtra}
+              onPick={(v) => { setSet(menu, v); setMenu(null); poke(); }} onClose={() => setMenu(null)} />
+          </div>
+        );
+      })()}
       {list && (() => {
         const p = panes.current[list];
         return (
@@ -418,8 +436,8 @@ function DualInner(props) {
 
 /** 판 머리 — 세트 짧은 이름 · 단계 · 번호(판 폭에 맞게 줄인다) */
 export function paneHead(spec, S, s) {
-  const nm = S.short || S.name;
-  const cands = [...(spec.paneHead ? [spec.paneHead(S, s)] : []), `${nm} · ${s.sub?.m || `${s.no}번`}`,
+  const nm = S.short || S.name, own = spec.paneHead ? spec.paneHead(S, s) : null;
+  const cands = [...(own ? [own] : []), `${nm} · ${s.sub?.m || `${s.no}번`}`,
     `${nm} · ${s.grp ? `${s.grp} · ` : ""}${s.no}번`, `${s.grp ? `${s.grp} · ` : ""}${s.no}번`];
   return cands.find((c) => mathWidth(c, 30, 800) <= 540) || cands[cands.length - 1];
 }
@@ -473,17 +491,18 @@ export const DUAL_CSS = `
 
 /** 번호 · 단계 목록 — 단계 칩을 고르면 그 단계만 돌고, 번호를 고르면 그 문항부터 */
 export function NumList({ spec, set, st, scenes, cur, onPick, onStage, onClose, side = "" }) {
-  const S = spec.sets.find((x) => x.key === set);
+  const S = setOfSpec(spec, set) || { name: String(set) };
   const stages = spec.stages(set);
+  const title = spec.titleOf ? spec.titleOf(set) : spec.title, cols = (spec.colsOf ? spec.colsOf(set) : spec.cols) || 5;
   const lap = scenes.reduce((a, x) => a + x.dur, 0);
   const all = spec.scenes(set, 1, 0).length;
   const now = stages.find((x) => x.v === st);
   return (
     <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
       <div className="dsp-list-in" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="번호 · 단계 목록">
-        <style>{`.lsn-grid { grid-template-columns: repeat(${spec.cols || 5}, 1fr); }`}</style>
+        <style>{`.lsn-grid { grid-template-columns: repeat(${cols}, 1fr); }`}</style>
         <div className="dsp-list-h">
-          <b>{side ? `${side} 판 · ` : ""}{spec.title} · {S.name}</b>
+          <b>{side ? `${side} 판 · ` : ""}{title} · {S.name}</b>
           <button type="button" onClick={onClose} aria-label="닫기">✕</button>
         </div>
         {stages.length > 0 && (

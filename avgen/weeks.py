@@ -387,7 +387,8 @@ def build_grade(gk, gname, level, t1, t2, nxt, codes, used_all):
 def main(only=None):
     codes = json.load(open(WCODES)) if os.path.exists(WCODES) else {}
     old = json.load(open(CODES)) if os.path.exists(CODES) else {}
-    taken = set(old.values())
+    tcodes = os.path.join(os.path.dirname(__file__), "tcodes.json")              # 유형 코드(typetags.py)와도 겹치지 않게
+    taken = set(old.values()) | (set(json.load(open(tcodes)).values()) if os.path.exists(tcodes) else set())
     heads = []
     for g in GRADES:
         if only and g[0] not in only:
