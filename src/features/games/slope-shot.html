@@ -279,7 +279,7 @@ body.fs #game{gap:8px}
     <div class="main">
       <div class="stage" id="stage">
         <div id="tableWrap">
-          <canvas id="cv" aria-label="좌표평면 위의 경기장 — 누르면 그쪽으로 방향을 잡아요"></canvas>
+          <canvas id="cv" aria-label="좌표평면 위의 경기장 — 누르면 그 점(공)의 좌표를 보여 줘요"></canvas>
           <canvas id="fx" aria-hidden="true"></canvas>
           <div class="banner" id="banner" hidden><b class="bt"></b><span class="bs"></span></div>
         </div>
@@ -616,7 +616,7 @@ body.fs #game{gap:8px}
   };
   const ctlMode = () => LEVELS[st.level].ctl;
   const st = { level:'ace', bodies:[], shooter:null, shooters:[], players:1, turn:0, pts:[0, 0], invs:[{ x:0, r:0 }, { x:0, r:0 }], thrown:[0, 0], shots:0,
-    xmode:false, yText:'', xText:'', pickOpen:false, recInfo:null, hints:true, dx:6, dy:4, moving:false, phys:false, over:false, waitStage:false,
+    xmode:false, yText:'', xText:'', pickOpen:false, recInfo:null, hints:true, dx:0, dy:0, dset:{ dx:false, dy:false }, moving:false, phys:false, over:false, waitStage:false,
     last:null, theory:null, ev:null, runId:0, quiz:null, pred:null, success:null, fs:false, immersive:false, stage:1, tries:0, stageInit:null, stageNext:null, slopeDir:1, slopePower:60, autoKey:null, autoRec:false };
   let G = null;
   const anim = { strike:null, snap:null };
@@ -829,12 +829,12 @@ body.fs #game{gap:8px}
   const sharedRules = () => [
     '테이블은 x가 −20부터 20, y가 0부터 20까지입니다. 격자 한 칸이 1, 굵은 선은 5칸마다, 공의 반지름은 0.6입니다.',
     '조작 난이도 — 뉴비: 기울기만 넣으면 공이 갈 쪽(오른쪽 · 왼쪽) · 세기 · 타점(공 중심)이 추천대로 정해져요. 에이스: x · y 증가량으로 방향과 세기까지, 타점은 자동. 마스터: 증가량에 y절편(타점)까지 직접.',
-    '방향: 공은 x 증가량 · y 증가량의 부호 쪽으로 갑니다(x +면 오른쪽, x −면 왼쪽, y +면 위, y −면 아래). 공 앞의 화살표가 갈 쪽, 공 뒤의 흐린 큐가 치는 쪽입니다. 둥근 화살표 단추를 누르면 두 부호가 함께 바뀌어(기울기는 그대로) 반대 방향이 되고, 경기장을 누르면 그쪽으로 방향(쉬운 증가량)을 잡아 줍니다.',
+    '방향: 공은 x 증가량 · y 증가량의 부호 쪽으로 갑니다(x +면 오른쪽, x −면 왼쪽, y +면 위, y −면 아래). 공 앞의 화살표가 갈 쪽, 공 뒤의 흐린 큐가 치는 쪽입니다. 둥근 화살표 단추를 누르면 두 부호가 함께 바뀌어(기울기는 그대로) 반대 방향이 됩니다. 값은 늘 직접 넣어요 — 경기장을 누르면 그 점(공을 누르면 공 중심)의 좌표만 보여 줘요.',
     `세기 = (x 증가량)² + (y 증가량)², 이 게임의 상한은 ${P_CAP}(포켓볼 120 · 사구 150 · 컬링 100). 막히는 것이 없으면 세기 ÷ 2 만큼 미끄러집니다. 증가량은 얼마든지 넣어도 되고(기울기가 같으면 같은 방향), 세기가 ${P_CAP}을 넘으면 ${P_CAP}으로 칩니다.`,
     '마스터: y절편으로 직선의 위치를 정합니다(정수 · 소수 · 분수 7/3, ▲▼ 단추로 1 · 0.1씩). x = a 꼴은 x 증가량 0, y = b 꼴은 y 증가량 0 으로 넣습니다. 뉴비 · 에이스는 공 중심을 지나는 y절편을 계산 과정과 함께 보여 줘요.',
     '직선이 공 중심을 지나면 정타, 반지름 0.6 안에서 비껴가면 회전(스핀)이 걸리고, 그보다 멀면 헛스윙입니다. 공은 입력한 직선과 평행한(공 중심을 지나는) 직선 위에서 출발합니다.',
     '도움 보기: 미리 굴려 보고 고른 추천 샷(무엇을 노릴지 · 기울기 · 세기)을 금색 화살표로, 지금 세기로 쳤을 때(다른 공에 안 부딪히면) 멈출 자리를 표시합니다.',
-    '찬스 구슬: 경기장을 떠다니는 작은 구슬을 눌러 문제를 맞히면 쌓입니다. 은빛 = 약한 찬스(뉴비 · 에이스: 추천 샷의 기울기를 어림해 줌 / 마스터: y절편 대신 x절편을 직접 계산해 입력), 금빛 = 추천 찬스(뉴비: 추천 기울기 · 에이스: 추천 증가량 · 마스터: 추천 증가량 또는 공 중심을 지나는 y절편 — 강함).',
+    '찬스 구슬: 경기장을 떠다니는 작은 구슬을 눌러 문제를 맞히면 쌓입니다. 은빛 = 약한 찬스(뉴비 · 에이스: 추천 샷의 기울기를 어림해 줌 / 마스터: y절편 대신 x절편을 직접 계산해 입력), 금빛 = 추천 찬스(뉴비: 추천 기울기 · 에이스: 추천 증가량 · 마스터: 추천 증가량 또는 공 중심을 지나는 y절편 — 강함. 알려만 주고 칸에는 직접 넣어요).',
     '예측 난이도: 타점(큐 → 내 공)은 공 좌표 · 기울기 · 절편 계산이 얼마나 까다로운지, 목표(내 공 → 목표)는 거리 · 쿠션 · 맞는 두께로 매깁니다. 성공하면 두 난이도를 합친 만큼 효과와 소리가 커집니다.'
   ];
   const TWO_RULE = '둘이 할 때 찬스는 각자 따로 모읍니다. 구슬을 잡은 사람의 찬스로 쌓입니다.';
@@ -1161,6 +1161,9 @@ body.fs #game{gap:8px}
     const t = sd.text.replace(/^−/, ''), br = round2(b), mag = fracText(Math.abs(b));
     return 'y = ' + (sd.m < 0 ? '−' : '') + (t === '1' ? '' : t) + 'x' + (br > 0 ? ` + ${mag}` : br < 0 ? ` − ${mag}` : '');
   }
+  // 에이스 · 마스터 — x · y 증가량을 둘 다 넣어야 방향이 생긴다(0이면 0을 넣는다)
+  const deltaSet = () => st.dset.dx && st.dset.dy;
+  const lineReady = () => ctlMode() === 'slope' ? !!slopeDelta() : deltaSet();
   function computeLine(){
     const mode = ctlMode(), s = st.shooter;
     if (mode === 'slope'){
@@ -1168,6 +1171,7 @@ body.fs #game{gap:8px}
       if (!sd) return { err:$('slopeIn').value.trim() ? '수로 읽을 수 없어요. 2, −0.5, 2/5 처럼 입력하세요.' : '기울기를 입력하세요.', power:0 };
       return { d:sd.d, P:{ x:s.x, y:s.y }, power:sd.P, eq:eqM(sd, s.y - sd.m * s.x), sub:'', slope:sd };
     }
+    if (!deltaSet()) return { err:!st.dset.dx && !st.dset.dy ? 'x 증가량과 y 증가량을 넣으세요.' : !st.dset.dx ? 'x 증가량을 넣으세요(0이면 0).' : 'y 증가량을 넣으세요(0이면 0).', power:0 };
     const { dx, dy } = st;
     if (!dx && !dy) return { err:'x 증가량과 y 증가량이 모두 0이면 방향이 없어요.', power:0 };
     const d = norm(dx, dy), power = dx * dx + dy * dy;
@@ -1723,7 +1727,7 @@ body.fs #game{gap:8px}
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const [fx, fy] = toPx(u, XMIN, YMAX);
     const idle = !st.moving && !st.waitStage && !st.over && s && !s.gone;
-    const dirOK = idle && (st.dx || st.dy), d = dirOK ? norm(st.dx, st.dy) : null;
+    const dirOK = idle && lineReady() && (st.dx || st.dy), d = dirOK ? norm(st.dx, st.dy) : null;
     const rec = idle && st.hints ? recNow() : null;
     ctx.save(); ctx.beginPath(); ctx.rect(fx, fy, (XMAX - XMIN) * u, (YMAX - YMIN) * u); ctx.clip();
     if (st.last && !anim.strike && !st.waitStage) strokeLine(ctx, u, st.last.P, st.last.d, pal.line, [], Math.max(2, u * 0.12));
@@ -1868,33 +1872,33 @@ body.fs #game{gap:8px}
 
   /* ================= UI ================= */
   function setDelta(k, v, keepField){
-    if (v === 'flip') v = -st[k];
-    st[k] = clamp(round2(v), -D_MAX, D_MAX);
+    if (v === 'flip'){ if (!st.dset[k]) return; v = -st[k]; }
+    st[k] = clamp(round2(v), -D_MAX, D_MAX); st.dset[k] = true;
     if (!keepField) $(k + 'In').value = fmt(st[k]);
     updateUI();
   }
+  function clearDelta(k){ st[k] = 0; st.dset[k] = false; updateUI(); }
   const sq = v => v < 0 ? `(${fmt(v)})²` : `${fmt(v)}²`;
   function renderDir(){
-    const mode = ctlMode(), k = sgnKey(st.dx, st.dy), a = ARROWS[k];
+    const mode = ctlMode(), ready = lineReady(), k = sgnKey(st.dx, st.dy), a = ready ? ARROWS[k] : null;
     $('flipDir').textContent = a || '·';
-    $('flipDir').disabled = mode === 'slope';           // 뉴비는 공이 갈 쪽이 추천대로 정해진다
-    if (!a){ $('dirText').innerHTML = mode === 'slope' ? '기울기를 넣으면 방향이 생겨요.' : '증가량 중 하나는 0이 아니어야 방향이 생겨요.'; return; }
+    $('flipDir').disabled = mode === 'slope' || !a;     // 뉴비는 공이 갈 쪽이 추천대로 정해진다
+    if (!a){ $('dirText').innerHTML = mode === 'slope' ? '기울기를 넣으면 방향이 생겨요.' : !ready ? 'x · y 증가량을 넣으면 방향이 생겨요.' : '증가량 중 하나는 0이 아니어야 방향이 생겨요.'; return; }
     const back = ARROWS[sgnKey(-st.dx, -st.dy)];
     if (mode === 'slope'){
-      $('dirText').innerHTML = `<b>${DIR_TO[k]}</b> 가요 (갈 쪽은 추천대로)<br>${G.key === 'curling' ? '' : `큐는 반대쪽(${back})에서 쳐요<br>`}경기장을 누르면 그쪽 기울기로`;
+      $('dirText').innerHTML = `<b>${DIR_TO[k]}</b> 가요 (갈 쪽은 추천대로)${G.key === 'curling' ? '' : `<br>큐는 반대쪽(${back})에서 쳐요`}`;
       return;
     }
     const sx = st.dx > 0 ? '+' : st.dx < 0 ? '−' : '0', sy = st.dy > 0 ? '+' : st.dy < 0 ? '−' : '0';
-    $('dirText').innerHTML = `<b>${DIR_TO[k]}</b> 가요 (x ${sx}, y ${sy})<br>`
-      + (G.key === 'curling' ? '경기장을 누르면 그쪽을 겨눠요' : `큐는 반대쪽(${back})에서 쳐요<br>경기장을 누르면 그쪽을 겨눠요`);
+    $('dirText').innerHTML = `<b>${DIR_TO[k]}</b> 가요 (x ${sx}, y ${sy})` + (G.key === 'curling' ? '' : `<br>큐는 반대쪽(${back})에서 쳐요`);
   }
   const weakName = () => ctlMode() === 'full' ? 'x절편' : '어림';
   function updateUI(){
     if (!G) return;
     const mode = ctlMode();
     syncAuto();
-    if (mode === 'slope'){ const sd = slopeDelta(); if (sd){ st.dx = sd.dx; st.dy = sd.dy; } }
-    else for (const k of ['dx', 'dy']){ const el = $(k + 'In'); if (document.activeElement !== el) el.value = fmt(st[k]); }
+    if (mode === 'slope'){ const sd = slopeDelta(); if (sd){ st.dx = sd.dx; st.dy = sd.dy; } else { st.dx = 0; st.dy = 0; } }
+    else for (const k of ['dx', 'dy']){ const el = $(k + 'In'); if (document.activeElement !== el) el.value = st.dset[k] ? fmt(st[k]) : ''; }
     renderDir();
     const two = st.players === 2 && !st.over, tb = $('turn');
     tb.hidden = !two;
@@ -1903,7 +1907,7 @@ body.fs #game{gap:8px}
     const inv = st.invs[st.turn], busy = st.moving || st.over || st.waitStage, full = mode === 'full';
     $('cXName').textContent = weakName();
     $('cX').title = full ? 'y절편 대신 x절편을 입력해요(계산은 직접)' : '추천 샷의 기울기를 어림해 알려 줘요';
-    $('cR').title = mode === 'slope' ? '추천 샷의 기울기를 그대로 넣어 줘요' : mode === 'delta' ? '추천 샷의 x · y 증가량을 넣어 줘요' : '추천 증가량이나 추천 y절편을 알려 줘요';
+    $('cR').title = mode === 'slope' ? '추천 샷의 기울기를 알려 줘요(칸에는 직접 넣어요)' : mode === 'delta' ? '추천 샷의 x · y 증가량을 알려 줘요(칸에는 직접 넣어요)' : '추천 증가량이나 추천 y절편을 알려 줘요(칸에는 직접 넣어요)';
     $('nX').textContent = inv.x; $('nR').textContent = inv.r;
     $('cX').classList.toggle('on', st.xmode);
     $('cX').disabled = !st.xmode && (inv.x <= 0 || busy);
@@ -1917,9 +1921,9 @@ body.fs #game{gap:8px}
       $('calcWarn').textContent = '';
     } else if (ri){
       cb.hidden = false; $('calcTitle').textContent = ri.title; $('calcText').innerHTML = ri.calc;
-      $('calcWarn').textContent = ri.kind === 'icpt' && !recIcptLive() ? '증가량이나 절편을 바꿨어요 — 알려 준 y절편은 처음 증가량일 때의 값이에요.'
-        : ri.kind === 'delta' && (st.dx !== ri.dx || st.dy !== ri.dy) ? '증가량을 바꿨어요 — 추천한 증가량과 달라요.'
-        : ri.kind === 'slope' && $('slopeIn').value !== ri.text ? '기울기를 바꿨어요 — 추천한 기울기와 달라요.' : '';
+      $('calcWarn').textContent = ri.kind === 'icpt' && $('icpt').value.trim() && !recIcptLive() ? '증가량이나 절편이 달라요 — 알려 준 y절편은 그때 증가량일 때의 값이에요.'
+        : ri.kind === 'delta' && deltaSet() && (st.dx !== ri.dx || st.dy !== ri.dy) ? '넣은 증가량이 추천한 증가량과 달라요.'
+        : ri.kind === 'slope' && $('slopeIn').value.trim() && $('slopeIn').value !== ri.text ? '넣은 기울기가 추천한 기울기와 달라요.' : '';
     } else cb.hidden = true;
     const L = computeLine();
     $('eq').textContent = L.eq || '—';
@@ -1939,8 +1943,9 @@ body.fs #game{gap:8px}
       ab.innerHTML = (mode === 'slope' ? `<b>자동</b> · 갈 쪽 ${st.slopeDir > 0 ? '→ 오른쪽' : '← 왼쪽'} · 세기 ${fmt(st.slopePower, 1)} ${st.autoRec ? '(추천대로)' : '(추천을 찾는 중)'}<br>` : '<b>자동</b> · ')
         + `타점: ${whoName()} 중심 (${X}, ${Y})을 지나게${ic ? `<br><span class="mono">${ic}</span>` : ''}`;
     }
-    const p = mode === 'slope' ? (L.err ? 0 : L.power) : st.dx * st.dx + st.dy * st.dy, over = p > P_CAP;
+    const p = mode === 'slope' ? (L.err ? 0 : L.power) : deltaSet() ? st.dx * st.dx + st.dy * st.dy : 0, over = p > P_CAP;
     $('powerTxt').textContent = mode === 'slope' ? `세기 ${fmt(p, 1)} (자동) → 거리 ${fmt(DIST_K * applied(p), 1)}`
+      : !deltaSet() ? `세기 = (x 증가량)² + (y 증가량)² / ${P_CAP}`
       : `세기 ${sq(st.dx)} + ${sq(st.dy)} = ${fmt(p)}${over ? ` → 상한 ${P_CAP}` : ` / ${P_CAP}`} → 거리 ${fmt(DIST_K * applied(p))}`;
     $('powerBar').style.width = Math.min(100, applied(p) / P_CAP * 100) + '%';
     $('powerBarWrap').classList.toggle('max', over);
@@ -2018,15 +2023,15 @@ body.fs #game{gap:8px}
     $('icpt').value = fmt(v); updateUI();
   }));
   $('flipDir').addEventListener('click', () => {
-    if (!G) return; Snd.unlock(); Snd.play('aim');
+    if (!G || !deltaSet()) return; Snd.unlock(); Snd.play('aim');
     st.dx = round2(-st.dx) || 0; st.dy = round2(-st.dy) || 0;
     for (const k of ['dx', 'dy']) $(k + 'In').value = fmt(st[k]);
     updateUI();
   });
   for (const k of ['dx', 'dy']){
     const el = $(k + 'In');
-    el.addEventListener('input', () => { const v = parseDelta(el.value); if (v !== null) setDelta(k, v, true); });
-    el.addEventListener('change', () => { const v = parseDelta(el.value); setDelta(k, v === null ? st[k] : v); });
+    el.addEventListener('input', () => { if (!el.value.trim()) return clearDelta(k); const v = parseDelta(el.value); if (v !== null) setDelta(k, v, true); });
+    el.addEventListener('change', () => { if (!el.value.trim()) return clearDelta(k); const v = parseDelta(el.value); if (v === null){ el.value = st.dset[k] ? fmt(st[k]) : ''; updateUI(); } else setDelta(k, v); });
     el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
   }
   $('icpt').addEventListener('input', updateUI);
@@ -2049,24 +2054,20 @@ body.fs #game{gap:8px}
   $('newGame').addEventListener('click', () => newGame());
   $('shoot').addEventListener('click', () => shoot());
   $('back').addEventListener('click', backToLobby);
-  // 경기장을 누르면 그쪽으로 방향 — 세기는 그대로, 증가량은 쉬운 수로(0.1 단위, 정수 · .5 를 먼저)
+  // 경기장을 누르면 그 점의 좌표만 보여 준다(공 · 스톤을 누르면 그 중심) — 값은 늘 직접 넣는다
+  const coordTxt = v => isInt(v) ? fmt(v, 0) : isInt(v * 2) ? fmt(v, 1) : fmt(v, 2);
   cv.addEventListener('click', e => {
-    if (!G || st.moving || st.over || st.waitStage || !st.shooter || st.shooter.gone) return;
+    if (!G || st.over) return;
     const r = cv.getBoundingClientRect(), k = cssW / (r.width || cssW);
     const x = (e.clientX - r.left) * k / unit + XMIN - MARGIN, y = YMAX + MARGIN - (e.clientY - r.top) * k / unit;
-    const s = st.shooter, vx = x - s.x, vy = y - s.y; if (Math.hypot(vx, vy) < 0.8) return;
-    Snd.unlock(); Snd.play('aim');
-    if (ctlMode() === 'slope'){                        // 뉴비: 누른 점과 공을 잇는 직선의 기울기만(갈 쪽은 추천대로)
-      if (Math.abs(vx) < 0.3) return;
-      $('slopeIn').value = niceSlope(vy / vx);
-      ring(x, y, { r0:0.2, r1:1.4, life:0.35, color:G.key === 'curling' ? 'rgba(18,44,70,0.8)' : 'rgba(255,255,255,0.85)', width:2 });
-      updateUI(); return;
-    }
-    const P0 = applied(st.dx * st.dx + st.dy * st.dy), nd = niceDelta(Math.atan2(vy, vx), P0 < 4 ? 40 : P0);
-    st.dx = nd.dx; st.dy = nd.dy;
-    for (const kk of ['dx', 'dy']) $(kk + 'In').value = fmt(st[kk]);
-    ring(x, y, { r0:0.2, r1:1.4, life:0.35, color:G.key === 'curling' ? 'rgba(18,44,70,0.8)' : 'rgba(255,255,255,0.85)', width:2 });
-    updateUI();
+    if (x < XMIN - 0.5 || x > XMAX + 0.5 || y < YMIN - 0.5 || y > YMAX + 0.5) return;
+    const hit = st.bodies.filter(b => !b.gone && Math.hypot(b.x - x, b.y - y) <= G.R * 1.6).sort((p, q) => Math.hypot(p.x - x, p.y - y) - Math.hypot(q.x - x, q.y - y))[0];
+    const px = hit ? hit.x : x, py = hit ? hit.y : y;
+    const label = hit ? `${hit === st.shooter ? whoName() : G.noun} 중심 (${coordTxt(px)}, ${coordTxt(py)})` : `(${fmt(px, 1)}, ${fmt(py, 1)})`;
+    Snd.unlock(); Snd.play('click');
+    ring(px, py, { r0:0.15, r1:hit ? G.R * 1.6 : 0.8, life:0.5, color:G.key === 'curling' ? 'rgba(18,44,70,0.8)' : 'rgba(255,255,255,0.85)', width:2 });
+    popText(px, py + (hit ? G.R + 0.6 : 0.5), label, { color:G.key === 'curling' ? '#12304a' : '#fff6dc', size:15, life:2.4, rise:0.7 });
+    st.probe = { x:px, y:py, label };
   });
   // 찬스
   function setXmode(on){
@@ -2114,15 +2115,14 @@ body.fs #game{gap:8px}
     if (kind === 'icpt'){
       if (st.xmode) setXmode(false);
       const { dx, dy } = st;
-      if (!dx && !dy){ st.recInfo = { kind:'none', title:'추천 찬스', calc:'증가량을 먼저 정하세요. 찬스는 그대로예요.' }; updateUI(); return; }
+      if (!deltaSet() || (!dx && !dy)){ st.recInfo = { kind:'none', title:'추천 찬스', calc:'증가량을 먼저 넣으세요. 찬스는 그대로예요.' }; updateUI(); return; }
       const X = fracText(s.x), Y = fracText(s.y);
       let txt, calc;
       if (dx === 0){ txt = X; calc = `세로선이라 x = x₀ = ${X}`; }
       else if (dy === 0){ txt = Y; calc = `가로선이라 y = y₀ = ${Y}`; }
       else { const m = slopeNum(dx, dy), b = s.y - m.v * s.x; txt = fracText(b); calc = `b = y₀ − 기울기 × x₀ = ${Y} − ${paren(m.text)} × ${paren(X)} = ${txt}`; }
-      $('icpt').value = txt;
       st.invs[turn].r--;
-      st.recInfo = { kind:'icpt', dx, dy, text:txt, title:'추천 찬스 · y절편', calc:`${whoName()} 중심 (${X}, ${Y})<br>${calc}` };
+      st.recInfo = { kind:'icpt', dx, dy, text:txt, title:'추천 찬스 · y절편', calc:`${whoName()} 중심 (${X}, ${Y})<br>${calc}<br>y절편 칸에 <b>${txt}</b>를 직접 넣으세요.` };
       Snd.play('chime'); sparks(s.x, s.y, 20, { speed:6, life:0.6 }); updateUI(); return;
     }
     const key0 = layoutKey();
@@ -2133,15 +2133,13 @@ body.fs #game{gap:8px}
     if (ctlMode() === 'slope'){                    // 뉴비 — 추천 기울기(갈 쪽 · 세기도 추천대로)
       if (Math.abs(res.dx) < 1e-9){ st.recInfo = { kind:'none', title:'추천 찬스 · 기울기', calc:'추천 샷이 세로선이라 기울기로 나타낼 수 없어요. 찬스는 그대로예요.' }; updateUI(); return; }
       const sl = slopeNum(res.dx, res.dy).text;
-      $('slopeIn').value = sl; st.slopeDir = Math.sign(res.dx); st.slopePower = applied(res.power); st.autoKey = layoutKey(); st.autoRec = true;
+      st.slopeDir = Math.sign(res.dx); st.slopePower = applied(res.power); st.autoKey = layoutKey(); st.autoRec = true;   // 갈 쪽 · 세기는 추천대로(자동 부분)
       st.invs[turn].r--;
-      st.recInfo = { kind:'slope', text:sl, title:'추천 찬스 · 기울기', calc:`기울기 <b>${sl}</b> → ${res.text}<br>갈 쪽 · 세기 · 타점은 자동이라 이대로 치면 성공해요.` };
+      st.recInfo = { kind:'slope', text:sl, title:'추천 찬스 · 기울기', calc:`기울기 <b>${sl}</b> → ${res.text}<br>기울기 칸에 <b>${sl}</b>를 직접 넣으면 — 갈 쪽 · 세기 · 타점은 자동이라 그대로 성공해요.` };
       Snd.play('chime'); sparks(s.x, s.y, 20, { speed:6, life:0.6 }); updateUI(); return;
     }
-    st.dx = res.dx; st.dy = res.dy;
-    for (const k of ['dx', 'dy']) $(k + 'In').value = fmt(st[k]);
     st.invs[turn].r--;
-    st.recInfo = { kind:'delta', dx:res.dx, dy:res.dy, title:'추천 찬스 · 증가량', calc:`x 증가량 <b>${fmt(res.dx)}</b>, y 증가량 <b>${fmt(res.dy)}</b> → ${res.text}<br>${ctlMode() === 'full' ? `정타(직선이 ${G.noun} 중심을 지남)로 치면 성공하는 샷이에요. y절편은 직접 계산하세요.` : '타점은 자동이라 이대로 치면 성공해요.'}` };
+    st.recInfo = { kind:'delta', dx:res.dx, dy:res.dy, title:'추천 찬스 · 증가량', calc:`x 증가량 <b>${fmt(res.dx)}</b>, y 증가량 <b>${fmt(res.dy)}</b> → ${res.text}<br>증가량 칸에 직접 넣으세요. ${ctlMode() === 'full' ? `정타(직선이 ${G.noun} 중심을 지남)로 치면 성공하는 샷이에요 — y절편은 직접 계산하세요.` : '타점은 자동이라 그대로 치면 성공해요.'}` };
     Snd.play('chime'); sparks(s.x, s.y, 20, { speed:6, life:0.6 }); updateUI();
   }
   document.querySelectorAll('.lv').forEach(b => b.addEventListener('click', () => {
@@ -2196,23 +2194,20 @@ body.fs #game{gap:8px}
     st.runId++;
     const lv = LEVELS[st.level];
     Object.assign(st, { shots:0, turn:0, pts:[0, 0], invs:[{ ...lv.chances }, { ...lv.chances }], thrown:[0, 0], xmode:false, xText:'', yText:'', pickOpen:false, recInfo:null,
-      moving:false, phys:false, over:false, waitStage:false, last:null, theory:null, quiz:null, pred:null, success:null, stageNext:null, dx:G.defaults.dx, dy:G.defaults.dy, ev:newEv() });
+      moving:false, phys:false, over:false, waitStage:false, last:null, theory:null, quiz:null, pred:null, success:null, stageNext:null, dx:0, dy:0, dset:{ dx:false, dy:false }, probe:null, ev:newEv() });
     anim.strike = null; anim.snap = null;
     FX.parts = []; FX.rings = []; FX.texts = []; FX.rockets = []; FX.shakeT = 0; $('tableWrap').style.transform = ''; $('banner').hidden = true;
     $('overlay').hidden = true;
     REC.job++; REC.key = null; REC.result = null; REC.busy = false;
     Snd.slideStop();
     G.setup();
-    const s = st.shooter, { dx, dy } = st;
-    const v = dx === 0 ? s.x : dy === 0 ? s.y : s.y - dy / dx * s.x;
-    $('icpt').value = fracText(v);
-    $('slopeIn').value = slopeNum(dx, dy).text;       // 뉴비 예시 기울기 — 갈 쪽 · 세기는 추천대로
+    $('icpt').value = ''; $('slopeIn').value = '';      // 값은 늘 직접 넣는다 — 예시 값을 채워 두지 않는다
     st.autoKey = null; st.autoRec = false;
     applyMode();
     const c = lv.chances, gift = c.x + c.r ? `${st.players === 2 ? '두 사람 모두 ' : ''}${weakName()} 찬스 ${c.x} · 추천 찬스 ${c.r}로 시작해요.` : '찬스 없이 시작해요.';
-    $('report').innerHTML = `<span class="hint">새 게임입니다. ${G.intro()} 예시 식이 채워져 있어요. ${gift}</span>`;
+    $('report').innerHTML = `<span class="hint">새 게임입니다. ${G.intro()} 값을 직접 넣어야 칠 수 있어요. ${gift}</span>`;
     $('toast').innerHTML = '';
-    for (const k of ['dx', 'dy']) $(k + 'In').value = fmt(st[k]);
+    for (const k of ['dx', 'dy']) $(k + 'In').value = '';
     updateUI(); scheduleOrb(true);
   }
 
@@ -2467,7 +2462,7 @@ body.fs #game{gap:8px}
       bodies:st.bodies.filter(b => !b.gone).map(b => ({ id:b.id, x:b.x, y:b.y, team:b.team, waiting:!!b.waiting, stripe:!!b.stripe })),
       pred:st.pred && { cue:st.pred.cue.stars, tgt:st.pred.tgt.stars, cueNotes:st.pred.cue.notes.slice(), tgtWho:st.pred.tgt.who },
       rec:rec && { ok:!!rec.ok, brk:!!rec.brk, dx:rec.dx, dy:rec.dy, text:rec.text }, recBusy:REC.busy,
-      recInfo:st.recInfo && { kind:st.recInfo.kind },
+      recInfo:st.recInfo && { kind:st.recInfo.kind, text:st.recInfo.text ?? null, dx:st.recInfo.dx ?? null, dy:st.recInfo.dy ?? null }, dset:{ ...st.dset }, probe:st.probe || null,
       unit, success:st.success && { tier:st.success.tier }, orb:orb.el ? orb.kind : null,
       quiz:st.quiz && { text:st.quiz.text, ans:st.quiz.ans, player:st.quiz.player, kind:st.quiz.kind }
     };
