@@ -5,6 +5,9 @@
 //   받은 파일 이름은 앱이 붙인다(blob + a.download): 「초1-10만들기-문제지.pdf」 · ZIP 「초1-10만들기.zip」(압축 없는 ZIP, 한글 이름 UTF-8).
 //   PDF 가 아직 없으면(머지 전 · 미리보기) 같은 문서를 그 자리에서 만들어 인쇄 창으로 연다 — 문제지 · 해설지 · 빠른 정답은
 //   frames/avprint.js(그림은 frames/avfig.jsx 가 흑백 SVG 로), OMR 카드는 grid.js(손글씨 한 줄 칸). 인쇄 창에서 「PDF로 저장」하면 된다.
+//   유형(e-ten.3) · 주차별 회차는 PDF 를 미리 찍어 두지 않는다(워크플로는 단원 100제만) — [확인] 다음이 바로 「인쇄 창으로 열기」.
+// 받기 흐름(고르기 → 확인 → 받기 | 인쇄 창)은 useDocsFlow 하나 — 액자 오른쪽 위 📄(DocsMenu)와
+//   학생앱 목록에서 꾹 눌러 「📄 프린트」(components/AvPrintSheet.jsx)가 같이 쓴다.
 import { useEffect, useState } from "react";
 import { FILES_BASE } from "../../../lib/conceptsets.js";
 import { zipStore } from "../../../lib/zipstore.js";
@@ -27,15 +30,17 @@ export const avDownloadName = (meta, doc) => `${avFileBase(meta)}-${(AV_DOCS.fin
 export { avCard, fmtCode };
 
 let filesP = null;
-function loadFiles() {
+export function loadFiles() {
   if (!filesP) filesP = fetch("/av-sets/files.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   return filesP;
 }
-function readPick() {
+export function readPick() {
   try { const v = JSON.parse(localStorage.getItem(PICK_KEY) || "null"); if (Array.isArray(v)) return v.filter((x) => AV_DOCS.some((d) => d.id === x)); } catch { /* 무시 */ }
   return ["problems", "solutions"];
 }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+/** PDF 를 미리 찍어 두는 세트인가 — 단원 100제(유형은 base, 회차는 week 가 있다) */
+export const prerendered = (meta) => !!meta && !meta.base && meta.week == null;
 function saveBlob(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -56,7 +61,7 @@ async function fetchPdf(url) {
   if (b.length < 5 || String.fromCharCode(...b.slice(0, 5)) !== "%PDF-") throw new Error("NOFILE");
   return b;
 }
-const fmtBytes = (n) => (!n ? "" : n >= 1e6 ? `${(n / 1e6).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1e3))}KB`);
+export const fmtBytes = (n) => (!n ? "" : n >= 1e6 ? `${(n / 1e6).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1e3))}KB`);
 
 /** 고른 문서를 한 인쇄 창으로 (PDF 가 아직 없을 때) — set: 세트 자료({ items, pp, note, tips }) */
 export async function avPrint(meta, set, picks, win) {
@@ -70,20 +75,28 @@ export async function avPrint(meta, set, picks, win) {
   fillPrintWindow(win, composePrint(parts, `${avFileBase(meta)} ${AV_DOCS.filter((d) => picks.includes(d.id)).map((d) => d.label).join(" · ")}`));
 }
 
-export function DocsMenu({ meta, set, open, onOpen, poke }) {
-  const items = set.items;
+/**
+ * 문서 받기 흐름 — { picks, tog, order, step, setStep, msg, files, info, hasPdf, confirm, down, printNow }
+ *   meta: 머리 정보(id · level · short · title · span · code) · set: 문항(없으면 loadSet() 으로 들여온다) · open: 펼쳤나
+ *   step: pick → (PDF 가 있으면) how → busy → done | nofile · (PDF 가 없으면) print
+ */
+export function useDocsFlow({ meta, set, open, loadSet = null }) {
   const [picks, setPicks] = useState(readPick);
-  const [step, setStep] = useState("pick");          // pick → how → busy → done | nofile
+  const [step, setStep] = useState("pick");
   const [msg, setMsg] = useState("");
   const [files, setFiles] = useState(null);
-  useEffect(() => { if (open) { setStep("pick"); setMsg(""); loadFiles().then(setFiles); } }, [open]);
+  useEffect(() => { if (open) { setStep("pick"); setMsg(""); loadFiles().then(setFiles); } }, [open, meta?.id]);
   const tog = (id) => setPicks((p) => {
     const n = p.includes(id) ? p.filter((x) => x !== id) : AV_DOCS.map((d) => d.id).filter((x) => x === id || p.includes(x));
     try { localStorage.setItem(PICK_KEY, JSON.stringify(n)); } catch { /* 무시 */ }
     return n;
   });
-  const info = (id) => files?.sets?.[meta.id]?.[id] || null;
+  const info = (id) => files?.sets?.[meta?.id]?.[id] || null;
   const order = AV_DOCS.map((d) => d.id).filter((id) => picks.includes(id));
+  // PDF 를 미리 찍어 올려 두는 것은 단원 100제뿐(워크플로 push-av-files) — 유형 · 회차는 [확인] 다음이 바로 인쇄 창.
+  //   단원도 아직 안 올라갔으면(머지 전 · 미리보기) 받아 보다가 404 일 때 인쇄 창으로(nofile)
+  const hasPdf = prerendered(meta) || !!files?.sets?.[meta?.id];
+  const confirm = () => setStep(hasPdf ? "how" : "print");
 
   const down = async (how) => {
     setStep("busy"); setMsg("");
@@ -118,8 +131,18 @@ export function DocsMenu({ meta, set, open, onOpen, poke }) {
   const printNow = () => {
     const win = openPrintWindow();                       // 누르는 순간 창부터(팝업 차단 회피)
     if (!win) { setMsg("새 창이 막혔어요 — 이 사이트의 팝업을 허용해 주세요"); return; }
-    avPrint(meta, set, order, win).catch((e) => failPrintWindow(win, e?.message || "인쇄를 준비하지 못했어요"));
+    setMsg("");
+    Promise.resolve(set || (loadSet ? loadSet() : null))
+      .then((S) => { if (!S) throw new Error("문항을 불러오지 못했어요"); return avPrint(meta, S, order, win); })
+      .catch((e) => failPrintWindow(win, e?.message || "인쇄를 준비하지 못했어요"));
   };
+  return { picks, tog, order, step, setStep, msg, files, info, hasPdf, confirm, down, printNow };
+}
+
+export function DocsMenu({ meta, set, open, onOpen, poke }) {
+  const items = set.items;
+  const F = useDocsFlow({ meta, set, open });
+  const { order, step, setStep, msg } = F;
   const stop = (e) => e.stopPropagation();
   return (
     <div className="gdoc" onPointerDown={stop}>
@@ -136,9 +159,9 @@ export function DocsMenu({ meta, set, open, onOpen, poke }) {
           {step === "pick" && (<>
             <div className="gdoc-list" role="group" aria-label="받을 문서 고르기">
               {AV_DOCS.map((d) => {
-                const on = picks.includes(d.id), f = info(d.id);
+                const on = F.picks.includes(d.id), f = F.info(d.id);
                 return (
-                  <button key={d.id} type="button" className={"gdoc-row" + (on ? " on" : "")} role="checkbox" aria-checked={on} onClick={() => tog(d.id)}>
+                  <button key={d.id} type="button" className={"gdoc-row" + (on ? " on" : "")} role="checkbox" aria-checked={on} onClick={() => F.tog(d.id)}>
                     <span className="ck" aria-hidden="true">{on ? "✓" : ""}</span>
                     <span className="nm">{d.label}</span>
                     <small>{f ? `${f.pages}쪽 · ${fmtBytes(f.bytes)}` : ""}</small>
@@ -146,13 +169,13 @@ export function DocsMenu({ meta, set, open, onOpen, poke }) {
                 );
               })}
             </div>
-            <button type="button" className="gdoc-ok" disabled={!order.length} onClick={() => setStep("how")}>확인</button>
+            <button type="button" className="gdoc-ok" disabled={!order.length} onClick={F.confirm}>확인</button>
           </>)}
           {step === "how" && (<>
             <p className="gdoc-p">{order.map((id) => AV_DOCS.find((d) => d.id === id).label).join(" · ")} — 어떻게 받을까요?</p>
             <div className="gdoc-two">
-              <button type="button" className="gdoc-ok" onClick={() => down("each")}>개별 다운</button>
-              <button type="button" className="gdoc-ok alt" onClick={() => down("zip")}>압축 다운</button>
+              <button type="button" className="gdoc-ok" onClick={() => F.down("each")}>개별 다운</button>
+              <button type="button" className="gdoc-ok alt" onClick={() => F.down("zip")}>압축 다운</button>
             </div>
             <button type="button" className="gdoc-back" onClick={() => setStep("pick")}>← 다시 고르기</button>
           </>)}
@@ -161,9 +184,11 @@ export function DocsMenu({ meta, set, open, onOpen, poke }) {
             <p className="gdoc-p">{msg}</p>
             <button type="button" className="gdoc-back" onClick={() => setStep("pick")}>← 다른 문서 받기</button>
           </>)}
-          {step === "nofile" && (<>
-            <p className="gdoc-p">PDF 파일이 아직 올라가지 않았어요. 같은 문서를 인쇄 창으로 열 수 있어요 — 인쇄 창에서 「PDF로 저장」을 고르면 파일로 받을 수 있어요.</p>
-            <button type="button" className="gdoc-ok" onClick={printNow}>인쇄 창으로 열기</button>
+          {(step === "nofile" || step === "print") && (<>
+            <p className="gdoc-p">{step === "print"
+              ? `${order.map((id) => AV_DOCS.find((d) => d.id === id).label).join(" · ")} — 이 자리에서 만들어 인쇄 창으로 열어요. 인쇄 창에서 「PDF로 저장」을 고르면 파일로 받을 수 있어요.`
+              : "PDF 파일이 아직 올라가지 않았어요. 같은 문서를 인쇄 창으로 열 수 있어요 — 인쇄 창에서 「PDF로 저장」을 고르면 파일로 받을 수 있어요."}</p>
+            <button type="button" className="gdoc-ok" onClick={F.printNow}>인쇄 창으로 열기</button>
             {msg && <p className="gdoc-p warn">{msg}</p>}
             <button type="button" className="gdoc-back" onClick={() => setStep("pick")}>← 다시 고르기</button>
           </>)}

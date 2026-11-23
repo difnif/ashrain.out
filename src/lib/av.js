@@ -7,12 +7,14 @@
 //                  + 해설 액자(일차함수 그래프 그리기 · 10단계 계산 · 그래프와 넓이 · 경우의 수와 확률 100제 — 중등, after 단원 뒤에).
 //                  학교급(level)으로 나눠 보인다(AV_LEVELS — 학생앱 상단 버튼). 학년 꼬리표 대신 학년 범위(grade = span).
 //   · unit — 콘텐츠의 주요 단원(lib/units.js). 꾹 누르면 우물이 떠서 앞 · 같은 · 다음 단원 콘텐츠를 추천한다(components/WellPick.jsx).
-// 여는 주소: #/av/<key> — key 는 액자 key(frames/index.js) · 기본기 단원 id(basics/index.js) · scenes-<묶음>(pairs.js 의 GROUPS).
+// 여는 주소: #/av/<key> — key 는 액자 key(frames/index.js) · 기본기 단원 id(basics/index.js) · 유형 「<단원>.<단계>」(lib/avtypes.js)
+//   · 회차 「w-<학년>-<주><A|B>」(weeks/index.js) · scenes-<묶음>(pairs.js 의 GROUPS).
 // 교실 모니터에 액자가 새로 들어오면: frames/index.js 의 lesson 표시를 따라 저절로 갈린다(lesson → 문제 풀이 해설, 나머지 → 수학 호기심).
 import { FRAMES } from "../features/display/frames/index.js";
 import { BASICS, LEVELS } from "../features/display/basics/index.js";
 import { relatedOf } from "./units.js";
 import { parseWeekId, gradeOf, frameOfGrade, weekMetaCached, KIND_ICON, WGRADES } from "../features/display/weeks/index.js";
+import { parseTypeKey, typeMeta, typesOf } from "./avtypes.js";
 
 export const AV_CATS = [
   { id: "fun", title: "수학 호기심", icon: "🔭", sub: "도형이 움직이고, 구슬이 떨어지고, 문이 열려요 — 보고 직접 해 보는 수학" },
@@ -70,7 +72,17 @@ export function weekItem(id) {
     grade: g.grade, level: g.level, unit: m ? m.unit : null, week: p.week, slot: p.slot,
   };
 }
-export const avItem = (key) => weekItem(key) || AV_ITEMS.find((x) => x.key === key) || AV_ITEMS.find((x) => x.key === OLD[key]) || null;
+/** 단원 100제의 유형 하나(#/av/e-ten.3) — 그 단원 액자를 그 단계만(20문항) */
+export function typeItem(key) {
+  const p = parseTypeKey(key);
+  if (!p) return null;
+  const m = typeMeta(key);
+  return {
+    key, frame: LEVEL_FRAME[m.level], set: key, grp: null, cat: "sol", icon: m.icon, kind: "유형",
+    title: m.title, short: m.short, desc: `${m.short} — ${m.name} 20문항`, grade: m.span, level: m.level, unit: m.unit, base: p.id, st: p.st,
+  };
+}
+export const avItem = (key) => weekItem(key) || typeItem(key) || AV_ITEMS.find((x) => x.key === key) || AV_ITEMS.find((x) => x.key === OLD[key]) || null;
 
 /* ══════════ 우물 추천용 카드(lib/recommend.js 의 pool) ══════════ */
 const GIDX = Object.fromEntries(WGRADES.map((g, i) => [g.grade, i]));
@@ -81,6 +93,13 @@ export const weekCard = (m) => ({
 });
 /** 단원 100제 · 해설 액자 → 카드(학년 범위의 첫 학년 · 주는 없음) */
 export const unitCard = (it) => ({ ...it, gidx: GIDX[String(it.grade || "").split("~")[0]] ?? null, week: 60, kind: "단원" });
+/** 유형 → 카드(교과서 단원의 학년 · 단원 100제 뒤) — base 는 유형이 든 단원(우물 추천이 서로 품은 것끼리는 고르지 않게) */
+export const typeCard = (m) => ({
+  key: m.id, base: m.base, unit: m.unit, gidx: GIDX[m.span] ?? null, week: 60 + m.st, kind: "유형", seq: m.st, level: m.level,
+  title: m.title, short: m.short, icon: m.icon, grade: `${m.span} · ${m.st}단계`,
+});
+/** 단원 100제의 유형 전부(학교급) — 목록 · 우물 추천 */
+export const typesOfLevel = (lv) => SOL.filter((x) => x.level === lv && x.frame === LEVEL_FRAME[lv]).flatMap((x) => typesOf(x.key));
 export const avOfCat = (cat) => AV_ITEMS.filter((x) => x.cat === cat);
 export const avOfLevel = (lv) => SOL.filter((x) => x.level === lv);
 /** 꾹 눌렀을 때 우물에 띄울 추천 — 앞 단원 · 같은 단원 · 다음 단원 콘텐츠(학교급을 넘어서도) */

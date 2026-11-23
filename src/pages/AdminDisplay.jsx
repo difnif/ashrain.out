@@ -45,6 +45,7 @@ import { Cnt100Frame, Cnt100Thumb } from "../features/display/frames/cnt100.jsx"
 import { hanoiTimeline } from "../features/display/hanoi";
 import { CURIO_LABS, CurioThumb } from "../features/display/frames/curio.jsx";
 import { BASIC_LABS, BasicsThumb } from "../features/display/frames/basics.jsx";
+import "../features/display/frames/allspec.jsx";        // 듀얼 모드 판마다 「문제 풀이 해설 전부」에서 고르기(frames/lesson.jsx 에 넣어 둔다)
 import { DSP_CSS, Btn, Ic, FrameIc } from "../features/display/stage-ui.jsx";
 import { avOfCat } from "../lib/av.js";
 

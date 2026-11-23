@@ -130,6 +130,20 @@ REG = [
 ]
 LV = {"e": "초등", "m": "중등", "h": "고등"}
 
+def new_code(cj):
+    """새 단원 코드 — 단원 · 회차(wcodes.json) · 유형(tcodes.json) 코드 모두와 겹치지 않게"""
+    here = os.path.dirname(__file__)
+    used = set(cj.values())
+    for f in ("wcodes.json", "tcodes.json"):
+        p = os.path.join(here, f)
+        if os.path.exists(p):
+            used |= set(json.load(open(p)).values())
+    while True:
+        c = "".join(secrets.choice(ALPHA) for _ in range(6))
+        if c not in used:
+            return c
+
+
 def codes():
     return json.load(open(CODES)) if os.path.exists(CODES) else {}
 
@@ -161,7 +175,7 @@ def build(only=None):
         for st in range(1, 6):
             assert sum(1 for it in S.items if it["st"] == st) == 20, (sid, st)
         if sid not in cj:
-            cj[sid] = cj.get(old) if old and old in cj else "".join(secrets.choice(ALPHA) for _ in range(6))
+            cj[sid] = cj.get(old) if old and old in cj else new_code(cj)
         S.id, S.level, S.span, S.icon, S.desc, S.code, S.unit = sid, LV[sid[0]], span, icon, desc, cj[sid], unit
         out.append(S)
     json.dump(cj, open(CODES, "w"), indent=1)
