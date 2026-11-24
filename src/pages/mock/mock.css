@@ -95,7 +95,8 @@
 .mx-key { position: absolute; left: 9%; top: 0; transform: rotate(-3deg); white-space: nowrap; pointer-events: none;
   font: 700 17px 'Gaegu', cursive; color: #d42a3c; }
 .mx-key.sa { left: auto; right: 8px; font-size: 19px; }
-.mx-score { position: absolute; right: 7%; top: 1.4%; z-index: 2; line-height: 1; transform: rotate(-7deg); pointer-events: none; font: 700 44px 'Gaegu', cursive; color: #d42a3c; }
+.mx-score { position: absolute; right: 7%; top: 1.4%; z-index: 2; line-height: 1; transform: rotate(-7deg); pointer-events: none; font: 700 44px 'Gaegu', cursive; color: #d42a3c;
+  text-shadow: 0 0 3px #fff, 0 0 6px #fff; }
 .mx-score small { font-size: .55em; margin-left: 2px; }
 .mx-timer { font-variant-numeric: tabular-nums; }
 .mx-timer.run { color: var(--accent); }
