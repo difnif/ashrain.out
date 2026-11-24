@@ -59,6 +59,7 @@ const SeiroccoApp = lazy(() => import("./apps/seirocco/SeiroccoApp"));
 const JongseongApp = lazy(() => import("./apps/jongseong/JongseongApp"));
 const AnswerKey = lazy(() => import("./pages/AnswerKey"));
 const SetsRouter = lazy(() => import("./pages/sets/SetsRouter"));   // 공부하기 › 컨셉 문제 (#/sets/*)
+const MockRouter = lazy(() => import("./pages/mock/MockRouter"));   // 공부하기 › 시험 보기 › 학교별 모의고사 (#/mock/*)
 // 서술형 평가 — /e(/코드) 단독 페이지(로그인 무관) · 관리자 등록 화면
 const AssessApp = lazy(() => import("./pages/assess/AssessApp"));
 const AdminAssess = lazy(() => import("./pages/assess/AdminAssess"));
@@ -299,7 +300,7 @@ function AppRoutes() {
   }
 
   const LOCKED = ["#/learn/calc", "#/learn/wrong", "#/learn/hint", "#/board", "#/p/", "#/solve",
-    "#/study/practice", "#/study/sets", "#/sets/", "#/study/exam", "#/tools", "#/records"];
+    "#/study/practice", "#/study/sets", "#/sets/", "#/study/exam", "#/mock/", "#/tools", "#/records"];
   if (!verified && LOCKED.some((x) => hash.startsWith(x))) {
     return <VerifyGate theme={theme} prof={prof} />;
   }
@@ -386,6 +387,7 @@ function AppRoutes() {
   }
   if (hash.startsWith("#/solve")) return <Rx theme={theme}><SolveRouter hash={hash} theme={theme} /></Rx>;
   if (hash.startsWith("#/sets/")) return <Rx theme={theme}><SetsRouter hash={hash} theme={theme} /></Rx>;
+  if (hash.startsWith("#/mock/")) return <Rx theme={theme}><MockRouter hash={hash} theme={theme} /></Rx>;
   return <HomeDash theme={theme} onToggleTheme={toggle} />;
 }
 

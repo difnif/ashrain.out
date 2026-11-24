@@ -1,11 +1,11 @@
 // ashrain.out — 컨셉 문제 「종이처럼 풀기」: 손글씨(획) 데이터 · SVG · 판독용 묶음 이미지
 //
-// 손글씨 답 = { k:"ink", lay:"int"|"frac"|"pair", w, h, s:[[x0,y0,x1,y1,…],…], wd:[굵기,…] }
+// 손글씨 답 = { k:"ink", lay:"int"|"frac"|"pair"|"free", w, h, s:[[x0,y0,x1,y1,…],…], wd:[굵기,…] }
 //   좌표는 입력판(InkPad) 논리 px, 정수. 분수 판은 가운데 가로선(y = h/2) 위가 분자 · 아래가 분모, 두 수 판은 가운데 세로선 왼쪽 · 오른쪽.
 // 화면(문제지 괄호)에는 SVG 로, 판독(/api/ai task "omr")에는 번호를 붙인 칸들을 한 장(JPEG)에 모아 보낸다.
 
 export const INK_COLOR = "#2c3138";          // 연필 흑연색
-export const PAD_H = { int: 150, frac: 230, pair: 150 };
+export const PAD_H = { int: 150, frac: 230, pair: 150, free: 380 };   // free — 모의고사 서답형 풀이(줄 공책)
 
 const r1 = (v) => Math.round(v * 10) / 10;
 
