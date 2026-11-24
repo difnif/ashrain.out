@@ -1,7 +1,8 @@
-// 공부하기 › 시청각 학습 · 컨셉 문제 판서 모드 스모크
+// 공부하기 › 시청각 학습 · 컨셉 문제 강사 모드(문제지 그대로 + 필기 도구 창) 스모크
 //   시청각 학습: 서브탭 → 범주 폴더 2개 → 항목 목록 → 하노이의 탑 · 도형 애니메이션 · 해설 액자 → 무대 안 목록은 같은 범주만 → 나가기
-//   판서 모드: 학생에겐 단추 없음 · 관리자에겐 「바로 풀기」 옆 → 문제지 한 쪽 → 펜 · 터치 동시 필기 → 손 받침 잠금 → 쪽 넘기기 → 저장 · 되돌리기
-//   node tests/smoke/board-av.smoke.mjs [--headed]   (준비: npx vite build)
+//   강사 모드: 학생에겐 단추 · 토글 없음 · 관리자에겐 「바로 풀기」 옆 → 문제지 그대로 화면 + 도구 창 → 펜 · 터치 동시 필기 → 손 받침 잠금 · 해제 →
+//             두 손가락 확대 → 되돌리기 → 학생 모드(도구 창 나감 · 답 시트) ↔ 강사 모드 → 손가락 넘기기 → 왼손잡이 배치
+//   node tests/smoke/board-av.smoke.mjs [--headed] [--only av|board]   (준비: npx vite build)
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -63,12 +64,14 @@ async function open(browser, role, port, viewport = { width: 1280, height: 800 }
 }
 let n = 0;
 const step = (s) => console.log(`✓ ${++n}. ${s}`);
+const ONLY = (process.argv.find((a, i, all) => all[i - 1] === "--only") || "").trim();
+const want = (part) => !ONLY || ONLY === part;
 
 const { srv, port } = await serve();
 const browser = await chromium.launch({ headless: !process.argv.includes("--headed") });
 try {
   // ── 시청각 학습 (학생) ──
-  {
+  if (want("av")) {
     const { page, errs, go, ctx } = await open(browser, "student", port, { width: 420, height: 860 });
     await go("#/study/av");
     await page.getByText("시청각 학습", { exact: true }).first().waitFor();
@@ -120,94 +123,166 @@ try {
     assert.deepEqual(errs, []);
     await go("#/sets/prob/01");
     await page.locator(".cs-go").first().waitFor();
-    assert.equal(await page.getByText("✍ 판서 모드").count(), 0);
-    step("학생 화면엔 판서 모드 단추가 없다");
+    assert.equal(await page.getByText("✍ 강사 모드").count(), 0);
+    step("학생 화면엔 강사 모드 단추가 없다");
     await ctx.close();
   }
-  // ── 판서 모드 (관리자) ──
-  {
+  // ── 강사 모드 (관리자) — 문제지 그대로 화면 위 학생 | 강사 토글 ──
+  if (want("board")) {
     const { page, errs, go, ctx } = await open(browser, "admin", port);
     await go("#/sets/prob/01");
-    await page.getByText("✍ 판서 모드").waitFor();
-    await page.screenshot({ path: path.join(SHOTS, "bd-1-home.png") });
-    step("관리자 — 「바로 풀기」 옆에 판서 모드");
-    await page.getByText("✍ 판서 모드").click();
+    await page.getByText("✍ 강사 모드").waitFor();
+    step("관리자 — 「바로 풀기」 옆에 강사 모드");
+    await page.getByText("✍ 강사 모드").click();
     await page.waitForFunction(() => location.hash.endsWith("/board"));
-    await page.locator(".bd-pg", { hasText: "1 /" }).waitFor();
-    await page.waitForTimeout(800);
-    const pages = await page.locator(".bd-pg").textContent();
-    const box = await page.evaluate(() => {
-      const st = document.querySelector(".bd-stage"), host = document.querySelector(".bd-host");
-      const pg = host.shadowRoot.querySelector(".pg.bd-cur"), sr = st.getBoundingClientRect(), r = pg.getBoundingClientRect();
-      return { l: r.left - sr.left, t: r.top - sr.top, r: r.right - sr.left, b: r.bottom - sr.top, shown: [...host.shadowRoot.querySelectorAll(".pg")].filter((e) => getComputedStyle(e).display !== "none").length };
+    await page.locator(".pb-panel.in").waitFor();
+    await page.locator(".pb-touch").waitFor();
+    await page.waitForTimeout(900);
+    const geo = () => page.evaluate(() => {
+      const host = document.querySelector(".cs-paperhost"), pg = host.shadowRoot.querySelector(".pg"), r = pg.getBoundingClientRect();
+      const t = document.querySelector(".pb-touch")?.getBoundingClientRect() || { top: 0 }, pn = document.querySelector(".pb-panel").getBoundingClientRect();
+      return { l: r.left, r: r.right, t: r.top, w: r.width, W: innerWidth, H: innerHeight, top: t.top, panelR: pn.right, panelL: pn.left, y: scrollY,
+        bar: getComputedStyle(document.querySelector(".cs-pbar2")).transform, zl: document.querySelector('.pb-panel button[title="폭 맞춤"]')?.textContent || "" };
     });
-    assert.equal(box.shown, 1);
-    assert.ok(box.b - box.t > 700 && box.r - box.l > 500, JSON.stringify(box));
-    assert.ok(await page.locator(".bd-zone.hint").count() === 1);
-    step(`문제지 한 쪽이 화면 가득(${pages.trim()}) · 손 받침 안내`);
-    await page.screenshot({ path: path.join(SHOTS, "bd-2-hint.png") });
+    let g = await geo();
+    assert.ok(g.l >= 84 && g.l <= 92 && Math.abs(g.w - (g.W - 84 - 44 - 8)) < 3, JSON.stringify(g));
+    assert.ok(g.bar !== "none" && g.panelL >= 0 && g.panelR <= 90, JSON.stringify(g));
+    assert.equal(await page.locator(".pb-zone.hint").count(), 1);
+    await page.screenshot({ path: path.join(SHOTS, "bd-1-teacher.png") });
+    step(`강사 모드 — 같은 폭 맞춤 화면(쪽 너비 ${Math.round(g.w)}px), 도구 창이 왼쪽에서 들어오고 풀기 막대는 내려감 · 손 받침 안내`);
 
-    // 합성 포인터 — 펜(선생님)과 터치(학생)를 섞어 동시에
+    // 합성 포인터 — 화면(뷰포트) 좌표
     const fire = (evs) => page.evaluate((evs) => {
-      const st = document.querySelector(".bd-stage"), sr = st.getBoundingClientRect();
+      const st = document.querySelector(".pb-touch");
       for (const [type, kind, id, x, y, w] of evs) {
-        st.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: id, pointerType: kind, clientX: sr.left + x, clientY: sr.top + y,
+        st.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: id, pointerType: kind, clientX: x, clientY: y,
           width: w || 1, height: w || 1, buttons: type === "pointerup" ? 0 : 1, isPrimary: id === 1 }));
       }
     }, evs);
-    const mid = (box.l + box.r) / 2, R = box.r;
-    // 학생 손바닥을 오른쪽 단에 대고 있기 → 잠금
-    await fire([["pointerdown", "touch", 20, R - 80, box.b - 160, 10]]);
+    const L = 84, R = g.W - 44, T = g.top, mid = (L + R) / 2;
+    await fire([["pointerdown", "touch", 20, R - 90, g.H - 160, 10]]);
     await page.waitForTimeout(450);
-    await page.locator(".bd-zone.lock").waitFor();
+    await page.locator(".pb-zone.lock").waitFor();
     step("오른쪽 단에 손바닥 0.3초 → 그 단 잠금(옅은 음영)");
-    // 펜과 터치를 번갈아 동시에
-    const evs = [["pointerdown", "pen", 1, box.l + 60, box.t + 200], ["pointerdown", "touch", 2, box.l + 80, box.t + 520, 8]];
+    const evs = [["pointerdown", "pen", 1, L + 60, T + 200], ["pointerdown", "touch", 2, L + 80, T + 460, 8]];
     for (let i = 1; i <= 24; i++) {
-      evs.push(["pointermove", "pen", 1, box.l + 60 + i * 9, box.t + 200 + Math.sin(i / 3) * 14]);
-      evs.push(["pointermove", "touch", 2, box.l + 80 + i * 8, box.t + 520 + Math.cos(i / 3) * 12, 8]);
+      evs.push(["pointermove", "pen", 1, L + 60 + i * 9, T + 200 + Math.sin(i / 3) * 14]);
+      evs.push(["pointermove", "touch", 2, L + 80 + i * 8, T + 460 + Math.cos(i / 3) * 12, 8]);
     }
     await fire(evs.slice(0, 2));
     for (let i = 2; i < evs.length; i += 2) { await fire(evs.slice(i, i + 2)); await page.waitForTimeout(8); }
-    await fire([["pointerup", "pen", 1, box.l + 280, box.t + 200], ["pointerup", "touch", 2, box.l + 272, box.t + 520]]);
-    // 잠긴 단에서 시작한 터치는 버려진다
-    await fire([["pointerdown", "touch", 3, mid + 80, box.t + 300, 8], ["pointermove", "touch", 3, mid + 140, box.t + 320, 8]]);
-    await page.waitForTimeout(120);
-    await fire([["pointermove", "touch", 3, mid + 200, box.t + 330, 8], ["pointerup", "touch", 3, mid + 200, box.t + 330, 8]]);
+    await fire([["pointerup", "pen", 1, L + 280, T + 200], ["pointerup", "touch", 2, L + 272, T + 460]]);
+    await fire([["pointerdown", "touch", 3, mid + 80, T + 300, 8], ["pointermove", "touch", 3, mid + 140, T + 320, 8]]);
+    await page.waitForTimeout(260);
+    await fire([["pointermove", "touch", 3, mid + 200, T + 330, 8], ["pointerup", "touch", 3, mid + 200, T + 330, 8]]);
     await page.waitForTimeout(600);
-    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("ash.cs.board.prob.01") || "null"));
-    const st = saved?.pages?.["0"] || [];
+    const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem("ash.cs.board.prob.01") || "null"));
+    let st = (await saved())?.pages?.["0"] || [];
     assert.equal(st.filter((s) => s.s === "pen").length, 1, JSON.stringify(st.map((s) => s.s)));
     assert.equal(st.filter((s) => s.s === "touch").length, 1);
     assert.ok(st.find((s) => s.s === "pen").c === "#d42a3c" && st.find((s) => s.s === "touch").c === "#1d5fd6");
-    await page.screenshot({ path: path.join(SHOTS, "bd-3-both.png") });
+    await page.screenshot({ path: path.join(SHOTS, "bd-2-both.png") });
     step("펜(빨강)과 터치(파랑) 동시 필기 · 잠긴 단에서 시작한 터치는 안 그림 · 저장");
-    // 쪽 오른쪽 바깥으로 손바닥이 걸치면 해제
-    await fire([["pointerup", "touch", 20, R - 80, box.b - 160, 10], ["pointerdown", "touch", 21, R + 40, box.t + 400, 10]]);
+    await fire([["pointerup", "touch", 20, R - 90, g.H - 160, 10], ["pointerdown", "touch", 21, R + 20, T + 400, 10]]);
     await page.waitForTimeout(450);
-    assert.equal(await page.locator(".bd-zone").count(), 0);
-    await fire([["pointerup", "touch", 21, R + 40, box.t + 400, 10]]);
-    step("쪽 밖 손 쪽에 0.3초 → 잠금 해제");
-    // 학생 되돌리기
+    assert.equal(await page.locator(".pb-zone").count(), 0);
+    await fire([["pointerup", "touch", 21, R + 20, T + 400, 10]]);
+    step("손 받침 띠(쪽 밖 손 쪽)에 0.3초 → 잠금 해제");
+
+    // 두 손가락 확대 — 필기는 안 생기고 확대가 확정된다(가운데 아래 내용은 제자리)
+    const before = await geo();
+    const anchor = await page.evaluate(([x, y]) => {
+      const pg = document.querySelector(".cs-paperhost").shadowRoot.querySelector(".pg").getBoundingClientRect();
+      return { u: (x - pg.left) / pg.width, v: (y - pg.top) / pg.width };
+    }, [mid, T + 300]);
+    await fire([["pointerdown", "touch", 30, mid - 100, T + 300, 8]]);
+    await page.waitForTimeout(40);
+    await fire([["pointerdown", "touch", 31, mid + 100, T + 300, 8]]);
+    for (let i = 1; i <= 10; i++) { await fire([["pointermove", "touch", 30, mid - 100 - i * 10, T + 300, 8], ["pointermove", "touch", 31, mid + 100 + i * 10, T + 300, 8]]); await page.waitForTimeout(16); }
+    await fire([["pointerup", "touch", 30, mid - 200, T + 300, 8], ["pointerup", "touch", 31, mid + 200, T + 300, 8]]);
+    await page.waitForTimeout(400);
+    g = await geo();
+    assert.ok(Math.abs(g.w / before.w - 2) < 0.02, `${before.w} → ${g.w}`);
+    assert.equal(g.zl.trim(), "200%");
+    const after = await page.evaluate(([x, y, u, v]) => {
+      const pg = document.querySelector(".cs-paperhost").shadowRoot.querySelector(".pg").getBoundingClientRect();
+      return { x: pg.left + u * pg.width, y: pg.top + v * pg.width, x0: x, y0: y };
+    }, [mid, T + 300, anchor.u, anchor.v]);
+    assert.ok(Math.abs(after.x - after.x0) < 4 && Math.abs(after.y - after.y0) < 4, JSON.stringify(after));
+    st = (await saved())?.pages?.["0"] || [];
+    assert.equal(st.length, 2);
+    await page.screenshot({ path: path.join(SHOTS, "bd-3-pinch.png") });
+    step("두 손가락으로 벌리면 2배 확대(손가락 가운데 아래 내용은 제자리) · 필기는 안 생김");
+    await page.locator('.pb-panel button[title="폭 맞춤"]').click();
+    await page.waitForTimeout(300);
+    g = await geo();
+    assert.ok(Math.abs(g.w - (g.W - 84 - 44 - 8)) < 3);
     await page.locator('button[title="학생 되돌리기"]').click();
     await page.waitForTimeout(500);
-    const saved2 = await page.evaluate(() => JSON.parse(localStorage.getItem("ash.cs.board.prob.01") || "null"));
-    assert.deepEqual((saved2.pages["0"] || []).map((s) => s.s), ["pen"]);
-    step("학생 되돌리기는 학생 획만");
-    await page.locator('button[title="다음 쪽"]').click();
-    await page.locator(".bd-pg", { hasText: "2 /" }).waitFor();
-    assert.equal(await page.locator(".bd-zone.hint").count(), 1);
-    await page.locator('button[title="앞 쪽"]').click();
-    await page.locator(".bd-pg", { hasText: "1 /" }).waitFor();
-    step("쪽 넘기기 → 새 쪽은 손 받침 안내부터");
-    await page.locator('button[title="설정"]').click();
-    await page.getByText("판서 설정").waitFor();
-    await page.locator(".bd-set .seg button", { hasText: "켬" }).click();
-    await page.locator(".bd-set .seg button", { hasText: "왼손" }).click();
+    assert.deepEqual(((await saved()).pages["0"] || []).map((s) => s.s), ["pen"]);
+    step("폭 맞춤으로 되돌리기 · 학생 되돌리기는 학생 획만");
+
+    // 학생 모드로 — 도구 창은 나가고 풀기 막대가 올라온다. 필기는 그대로 보이고 칸을 누르면 답 시트
+    await page.locator('.pb-panel .pb-mode button', { hasText: "학생" }).click();
+    await page.waitForFunction(() => location.hash.endsWith("/paper"));
+    await page.waitForTimeout(450);
+    assert.equal(await page.locator(".pb-panel.in").count(), 0);
+    assert.equal(await page.locator(".pb-touch").count(), 0);
+    assert.equal(await page.locator(".cs-pbar2.pb-out").count(), 0);
+    g = await geo();
+    assert.ok(Math.abs(g.w - (g.W - 8)) < 3, JSON.stringify(g));
+    const inkPx = await page.evaluate(() => {
+      const cv = document.querySelector(".pb-cv"), c = cv.getContext("2d"), d = c.getImageData(0, 0, cv.width, cv.height).data;
+      let n = 0; for (let i = 3; i < d.length; i += 4 * 7) if (d[i] > 0) n++;
+      return n;
+    });
+    assert.ok(inkPx > 20, `ink pixels ${inkPx}`);
+    await page.screenshot({ path: path.join(SHOTS, "bd-4-student.png") });
+    await page.evaluate(() => document.querySelector(".cs-paperhost").shadowRoot.querySelector(".q").click());
+    await page.locator(".cs-sheet").waitFor();
+    step("학생 모드 — 도구 창이 나가고 풀기 막대 · 폭 맞춤이 돌아옴, 필기는 그대로 보이고 칸을 누르면 답 시트");
+    await page.locator(".cs-sheet .sv-btn", { hasText: "확인" }).click();
+    await page.locator('.cs-pbar2 .pb-mode button', { hasText: "강사" }).click();
+    await page.waitForFunction(() => location.hash.endsWith("/board"));
+    await page.locator(".pb-panel.in").waitFor();
+    step("풀다가도 막대의 토글로 다시 강사 모드");
+
+    // 넘기기 — 한 손가락은 이동만
+    await page.locator('button[title="손가락으로 넘기기(쓰지 않고 이동만)"]').click();
+    const y0 = await page.evaluate(() => scrollY);
+    await fire([["pointerdown", "touch", 40, mid, T + 500, 8]]);
+    for (let i = 1; i <= 8; i++) { await fire([["pointermove", "touch", 40, mid, T + 500 - i * 40, 8]]); await page.waitForTimeout(12); }
+    await fire([["pointerup", "touch", 40, mid, T + 180, 8]]);
     await page.waitForTimeout(300);
-    assert.equal(await page.locator(".bd-bar.R").count(), 1);
-    await page.screenshot({ path: path.join(SHOTS, "bd-4-settings-left.png") });
-    step("설정 — 왼손잡이면 도구 막대가 오른쪽 · 진단 표시");
+    const y1 = await page.evaluate(() => scrollY);
+    assert.ok(y1 - y0 > 250, `${y0} → ${y1}`);
+    assert.deepEqual(((await saved()).pages["0"] || []).map((s) => s.s), ["pen"]);
+    step(`손가락 넘기기 — 한 손가락으로 끌면 이동(${Math.round(y1 - y0)}px) · 필기 없음`);
+    await page.locator('button[title="손가락으로 넘기기(쓰지 않고 이동만)"]').click();
+
+    await page.locator('.pb-panel button[title="설정"]').click();
+    await page.getByText("강사 모드 설정").waitFor();
+    await page.locator(".pb-set .seg button", { hasText: "켬" }).click();
+    await page.locator(".pb-set .seg button", { hasText: "왼손" }).click();
+    await page.waitForTimeout(500);
+    assert.equal(await page.locator(".pb-panel.R.in").count(), 1);
+    g = await geo();
+    assert.ok(g.l >= 44 && g.l <= 52 && g.panelL >= g.W - 90, JSON.stringify(g));
+    await page.screenshot({ path: path.join(SHOTS, "bd-5-left.png") });
+    step("설정 — 왼손잡이면 도구 창은 오른쪽, 손 받침 띠는 왼쪽 · 진단 표시");
+    assert.deepEqual(errs, []);
+    await ctx.close();
+  }
+  // ── 학생 계정: 토글 없음 · …/board 로 와도 학생 모드 ──
+  if (want("board")) {
+    const { page, errs, go, ctx } = await open(browser, "student", port);
+    await go("#/sets/prob/01/board");
+    await page.locator(".cs-pbar2").waitFor();
+    await page.waitForTimeout(700);
+    assert.equal(await page.locator(".pb-mode").count(), 0);
+    assert.equal(await page.locator(".pb-panel").count(), 0);
+    assert.equal(await page.locator(".pb-touch").count(), 0);
+    step("학생 계정 — 학생 | 강사 토글 없음, …/board 로 열어도 학생 모드");
     assert.deepEqual(errs, []);
     await ctx.close();
   }
