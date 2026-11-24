@@ -1,5 +1,8 @@
 // 강사도구 엔진 — 시험지 짜기 (PC mf2exam: 쪽·단 배치 · 문정중/초등 양식 · 머리 · 바닥글) + 정답과 해설 (mfsolution.build_answer_pdf)
-import { MM, A4W, A4H, twoPass } from "./base";
+import { MM, A4W, A4H, twoPass, baseOf, isXmas } from "./base";
+import { TEMPLATES } from "../logic";
+export { baseOf, isXmas };
+export const TEMPLATE_KEYS = TEMPLATES.map(([k]) => k);
 
 export const DEFAULTS = {
   제목: "", 부제: "", 윗줄: "", 바닥글_왼쪽: "수학", 바닥글_오른쪽: "", 소요시간: "",
@@ -12,16 +15,35 @@ export const GEO = {
 };
 export const fmtCode = (c) => { c = String(c || "").toUpperCase(); return c.length === 6 ? `${c.slice(0, 3)}-${c.slice(3)}` : c; };
 
-export function colBox(pageNo, side) {
+// 「초등 크리스마스」: 테두리 안 아래 눈밭 띠(트리·산타·순록) 자리만큼 단 아래 끝을 올린다.
+// 장식 그림은 public/tt-deco/xmas.pdf (쪽 0 전구 줄 · 1 화환 · 2 눈밭 띠) — 그린 코드는 프로젝트 문서 SRC-초등크리스마스양식-v1.py
+export const XMAS = { strip_h: 26 * MM, pad_b: 27.5 * MM };
+const XMAS_LIGHTS = [0, 0, A4W, 34];
+const xmasStripBox = () => [0, GEO.frame[3] - XMAS.strip_h - 2, A4W, GEO.frame[3] + 1];
+let xmasBytes = null;
+async function xmasDeco(doc) {
+  if (!xmasBytes) {
+    xmasBytes = fetch("/tt-deco/xmas.pdf").then((r) => { if (!r.ok) throw new Error("크리스마스 장식 파일을 불러오지 못했어요"); return r.arrayBuffer(); })
+      .then((b) => new Uint8Array(b)).catch((e) => { xmasBytes = null; throw e; });
+  }
+  const [lights, wreath, strip] = await doc.embedPdf(await xmasBytes, [0, 1, 2]);
+  return { lights, wreath, strip };
+}
+function drawDeco(pen, emb, [bx0, by0, bx1, by1]) {
+  pen.p.drawPage(emb, { x: bx0, y: A4H - by1, width: bx1 - bx0, height: by1 - by0 });
+}
+
+export function colBox(pageNo, side, cfg = null) {
   const [x0, y0, x1, y1] = GEO.frame;
   const cw = (x1 - x0) / 2;
   const top = y0 + (pageNo === 0 ? GEO.head_h : 0);
   const cx0 = x0 + side * cw;
-  return [cx0 + GEO.pad_side, top + GEO.pad_t, cx0 + cw - GEO.pad_side, y1 - (side === 0 ? GEO.pad_bL : GEO.pad_bR)];
+  const padB = cfg && isXmas(cfg.양식) ? XMAS.pad_b : side === 0 ? GEO.pad_bL : GEO.pad_bR;
+  return [cx0 + GEO.pad_side, top + GEO.pad_t, cx0 + cw - GEO.pad_side, y1 - padB];
 }
 function colCaps(P, cfg) {
   const caps = [];
-  for (let pg = 0; pg < P; pg++) for (const side of [0, 1]) { const [, y0, , y1] = colBox(pg, side); caps.push(y1 - y0); }
+  for (let pg = 0; pg < P; pg++) for (const side of [0, 1]) { const [, y0, , y1] = colBox(pg, side, cfg); caps.push(y1 - y0); }
   if (cfg.끝_표시) caps[caps.length - 1] -= GEO.end_h;
   return caps;
 }
@@ -179,12 +201,13 @@ function pill(pen, x, y, w, h, label, value) {
     pen.text(x + lw, y + h / 2 + 3.6, value, { size: pen.fit(value, 11, w - lw - 3 * MM, true), bold: true, color: EL_DARK });
   }
 }
-function drawHeaderElem(pen, cfg, title, sub, n, npages, nch) {
+function drawHeaderElem(pen, cfg, title, sub, n, npages, nch, deco = null) {
   const [x0, y0, x1] = GEO.frame;
   const band = [x0 + 2.5 * MM, y0 + 2.5 * MM, x1 - 2.5 * MM, y0 + GEO.head_h - 1.5 * MM];
   pen.rect(...band, { color: null, fill: EL_SOFT, radius: 0.18 });
   const stR = 10.5 * MM;
   const scx = band[2] - stR - 3.5 * MM, scy = (band[1] + band[3]) / 2;
+  if (deco) drawDeco(pen, deco.wreath, [scx - 42, scy - 42, scx + 42, scy + 42]);   // 도장 둘레 화환 (원 안쪽은 아래 흰 원이 덮음)
   pen.circle(scx, scy, stR, { color: EL_DOTS[1], width: 1.1, dashes: [2.5, 2], fill: [1, 1, 1] });
   pen.text(scx, scy - 1.0, "참 잘했어요", { size: 7.5, bold: true, align: "center", color: EL_DOTS[1] });
   pen.text(scx, scy + 9, "도장", { size: 7, align: "center", color: EL_GRAY });
@@ -207,7 +230,8 @@ function drawHeaderElem(pen, cfg, title, sub, n, npages, nch) {
 // items: [{seq, choice, w, heights[], sizes[[w,h]], renders[png bytes]}] · layout: plan() 결과 → PDF bytes
 export async function renderSheet(items, layout, cfg, title, sub) {
   return twoPass(cfg.양식, async (ctx) => {
-  const elem = cfg.양식 === "초등";
+  const elem = baseOf(cfg.양식) === "초등";
+  const deco = isXmas(cfg.양식) ? await xmasDeco(ctx.doc) : null;
   const P = layout.P;
   const [x0, y0, x1, y1] = GEO.frame;
   const nch = items.filter((it) => it.choice).length;
@@ -225,8 +249,9 @@ export async function renderSheet(items, layout, cfg, title, sub) {
     const right = cfg.바닥글_오른쪽 || (cfg.코드 ? `코드 ${fmtCode(cfg.코드)}` : "");
     if (elem) {
       pen.rect(x0, y0, x1, y1, { color: EL_ACC, width: 1.6, radius: 0.025 });
-      pen.line((x0 + x1) / 2, top + 3 * MM, (x0 + x1) / 2, y1 - 3 * MM, { color: [0.8, 0.86, 0.88], width: 0.9, dashes: [3, 3] });
-      if (pg === 0) drawHeaderElem(pen, cfg, title, sub, items.length, P, nch);
+      pen.line((x0 + x1) / 2, top + 3 * MM, (x0 + x1) / 2, deco ? y1 - XMAS.strip_h - 1.5 * MM : y1 - 3 * MM, { color: [0.8, 0.86, 0.88], width: 0.9, dashes: [3, 3] });
+      if (pg === 0) drawHeaderElem(pen, cfg, title, sub, items.length, P, nch, deco);
+      if (deco) { drawDeco(pen, deco.lights, XMAS_LIGHTS); drawDeco(pen, deco.strip, xmasStripBox()); }
       if (cfg.바닥글_왼쪽) pen.text(x0 + 2 * MM, fy, cfg.바닥글_왼쪽, { size: 9, color: EL_GRAY });
       pen.text(A4W / 2, fy, `${pg + 1} / ${P}`, { size: 9.5, bold: true, align: "center", color: EL_ACC });
       if (right) pen.text(x1 - 2 * MM, fy, right, { size: 9, align: "right", color: EL_GRAY });
@@ -243,7 +268,7 @@ export async function renderSheet(items, layout, cfg, title, sub) {
     for (const side of [0, 1]) {
       const ci = pg * 2 + side;
       const [k, i, pick] = layout.cols[ci];
-      const [cx0, cy0, cx1, cy1] = colBox(pg, side);
+      const [cx0, cy0, cx1, cy1] = colBox(pg, side, cfg);
       const cap = layout.caps[ci];
       const idx = [];
       for (let t = k; t < i; t++) idx.push(t);
@@ -279,12 +304,13 @@ export async function renderSheet(items, layout, cfg, title, sub) {
 // ── 정답과 해설 (강사도구 양식) — entries: [{seq, choice, answer, answer_png, answer_wh:[w,h] pt, sol:{png,w,h}|null}]
 const CIRC = { 1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤" };
 function theme(cfg) {
-  const elem = cfg.양식 === "초등";
+  const elem = baseOf(cfg.양식) === "초등";
   return { elem, acc: elem ? EL_ACC : [0, 0, 0], dark: elem ? EL_DARK : [0, 0, 0], soft: elem ? EL_SOFT : [0.94, 0.94, 0.94],
     gray: elem ? EL_GRAY : [0.35, 0.35, 0.35], line: elem ? [0.8, 0.86, 0.88] : [0.55, 0.55, 0.55] };
 }
-function frame(pen, th, cfg, title, pno, npages, first) {
+function frame(pen, th, cfg, title, pno, npages, first, deco = null) {
   const [x0, y0, x1, y1] = GEO.frame;
+  if (deco) drawDeco(pen, deco.lights, XMAS_LIGHTS);     // 정답지는 전구 줄만 (해설 자리를 줄이지 않게)
   if (th.elem) pen.rect(x0, y0, x1, y1, { color: th.acc, width: 1.6, radius: 0.025 });
   else pen.rect(x0, y0, x1, y1, { width: 1.3 });
   const fy = A4H - 9 * MM;
@@ -309,6 +335,7 @@ function frame(pen, th, cfg, title, pno, npages, first) {
 export async function buildAnswerPdf(entries, cfg, title, appendPages = []) {
   return twoPass(cfg.양식, async (ctx) => {
   const th = theme(cfg);
+  const deco = isXmas(cfg.양식) ? await xmasDeco(ctx.doc) : null;
   const [x0, y0, x1, y1] = GEO.frame;
   const pages = [];
   const newPage = () => { const p = ctx.doc.addPage([A4W, A4H]); const pen = new Pen(ctx, p); pages.push(pen); return pen; };
@@ -394,7 +421,7 @@ export async function buildAnswerPdf(entries, cfg, title, appendPages = []) {
     }
   }
   const n = pages.length;
-  pages.forEach((p, i) => frame(p, th, cfg, title, i, n, i === 0));
+  pages.forEach((p, i) => frame(p, th, cfg, title, i, n, i === 0, deco));
   // 번호를 못 찾은 쪽(그림으로 바꿔 이름을 지운 것)은 뒤에 그대로
   for (const pg of appendPages) {
     const page = ctx.doc.addPage([pg.w || A4W, pg.h || A4H]);

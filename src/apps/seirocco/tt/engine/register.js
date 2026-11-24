@@ -1,7 +1,7 @@
 // 강사도구 엔진 — 프린트 등록 (PC printreg · anon) · 정답 PDF 붙이기 · 보관함 초안
 import { openPdf, pdflib, embedText, pageSpans, pageLines, pageGraphics, renderClip, gray, crop, newImg, paste, fillRect, bboxWhere, toPng,
   imgHash, A4W, A4H } from "./base";
-import { fmtCode, buildAnswerPdf } from "./layout";
+import { fmtCode, buildAnswerPdf, TEMPLATE_KEYS } from "./layout";
 import { nn } from "../sb";
 import { settings, reserveCode, storePrint } from "./print";
 import { parseQuick, renderQuick, solutionPages, parseSolutions, pageImageNoNames } from "./mathflat";
@@ -627,7 +627,7 @@ export async function attachAnswer(pr, up, ctx) {
           }
           entries.push({ seq: it.seq, choice: !!it.choice, answer: it.answer || "", answer_png: it._png || null, answer_wh: it._wh || null, sol: solE });
         }
-        const cfg = settings({ template: ["문정중", "초등"].includes(pr.template) ? pr.template : "문정중" });
+        const cfg = settings({ template: TEMPLATE_KEYS.includes(pr.template) ? pr.template : "문정중" });
         cfg.코드 = pr.code;
         const left = [];
         for (const i of sp.filter((x) => !used.includes(x))) left.push(await pageImageNoNames(A.doc, i, known));

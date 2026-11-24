@@ -53,7 +53,10 @@ export async function fontFile(key) {
   }
   try { return await fontBytes.get(key); } catch (e) { fontBytes.delete(key); throw e; }
 }
-export const fontsFor = (template) => (template === "초등" ? ["sansR", "sansB"] : ["serifR", "serifB"]);
+// 양식: 「초등 크리스마스」는 초등 양식에 장식만 더한 판 — 글꼴·배치의 바탕은 초등
+export const baseOf = (template) => (String(template || "").startsWith("초등") ? "초등" : template);
+export const isXmas = (template) => template === "초등 크리스마스";
+export const fontsFor = (template) => (baseOf(template) === "초등" ? ["sansR", "sansB"] : ["serifR", "serifB"]);
 
 // ── 글꼴 줄이기 (HarfBuzz hb-subset) — pdf-lib 자체 줄이기는 한글 글자가 빠지는 문제가 있어 쓰지 않는다.
 //    쓴 글자만 남기고 GSUB·GPOS 표를 빼서(대체 글자·커닝 없음) 글자 폭·글자 뽑기가 PyMuPDF 때처럼 단순해진다.
@@ -119,9 +122,10 @@ export async function twoPass(template, draw) {
   const [mr, mb] = await Promise.all([measurer(rk), measurer(bk)]);
   const fakeFont = (m) => ({ widthOfTextAtSize: (s, size) => { note(s); return m.widthOfTextAtSize(s, size); } });
   let nPages = 0;
-  const fakePage = (size) => ({ drawText: (s) => note(s), drawLine() {}, drawRectangle() {}, drawSvgPath() {}, drawCircle() {}, drawImage() {},
+  const fakePage = (size) => ({ drawText: (s) => note(s), drawLine() {}, drawRectangle() {}, drawSvgPath() {}, drawCircle() {}, drawImage() {}, drawPage() {},
     getSize: () => ({ width: (size || [A4W, A4H])[0], height: (size || [A4W, A4H])[1] }) });
   const fakeDoc = { addPage: (size) => { nPages++; return fakePage(size); }, embedPng: async (b) => pngSize(b), embedJpg: async () => ({ width: 100, height: 100 }),
+    embedPdf: async (b, idx = [0]) => idx.map(() => ({ width: 1, height: 1 })),
     getPageCount: () => nPages, save: async () => new Uint8Array(0), registerFontkit() {} };
   await draw({ P, doc: fakeDoc, R: fakeFont(mr), B: fakeFont(mb), dry: true });
   const doc = await P.PDFDocument.create();

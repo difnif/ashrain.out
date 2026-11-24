@@ -112,9 +112,11 @@ export function autoJudge(key, given) {
 }
 
 export const LEVELS = ["초등", "중등", "고등"];
+// 프린트 양식 [값, 보이는 이름] — 「초등 크리스마스」는 초등 양식 + 장식(전구 줄·도장 화환·아래 눈밭 띠)
+export const TEMPLATES = [["문정중", "문정중 (중등)"], ["초등", "초등 (귀여운)"], ["초등 크리스마스", "초등 크리스마스"]];
 export function guessLevel(title, sub, template) {
   const t = `${title} ${sub}`;
-  if (template === "초등" || /초\s*[1-6]|초등/.test(t)) return "초등";
+  if (String(template || "").startsWith("초등") || /초\s*[1-6]|초등/.test(t)) return "초등";
   if (/고\s*[1-3]|고등|수학\s*[ⅠⅡ]|미적분|기하|확률과\s*통계/.test(t)) return "고등";
   return "중등";
 }

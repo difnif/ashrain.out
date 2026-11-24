@@ -2,7 +2,7 @@
    라우트: #/tt/convert · #/tt/register · #/tt/grade[/코드[/학생id]] · #/tt/class · #/tt/students[/id] · #/tt/prints · #/tt/print/코드 · #/tt/log */
 import * as B from "./backend";
 import { importView } from "./importer";
-import { autoJudge } from "./logic";
+import { autoJudge, TEMPLATES } from "./logic";
 
 const PH = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
@@ -272,7 +272,7 @@ async function viewConvert(arg) {
       </div>
     </div>
     <div id="out"></div>`;
-  seg($("#oTpl"), [["문정중", "문정중 (중등)"], ["초등", "초등 (귀여운)"]], st.template, (v) => (st.template = v));
+  seg($("#oTpl"), TEMPLATES, st.template, (v) => (st.template = v));
   seg($("#oLabel"), [["서답형", "서답형"], ["단답형", "단답형"]], st.label, (v) => (st.label = v));
   seg($("#oMode"), [["each", "파일마다 따로 (일괄)"], ["merge", "하나로 합치기"]], st.mode, (v) => { st.mode = v; draw(); });
   const targets = nameChips($("#oTargets"), students, []);
@@ -1134,7 +1134,7 @@ async function viewWrong(kind, a, b) {
       <b>JSON</b>: 고른 문항의 번호·정답·유형·정답률·학생별 결과(1차·2차…)·전사본(있으면) — 유사 문항을 만들 때 시험지 PDF와 함께 Claude에게 주세요.</p>
     <div id="wOut"></div></div>`;
   seg($("#wWhich"), [["final", "지금도 틀린 문항"], ["ever", "한 번이라도 틀린 문항"], ["repeat", "두 번 넘게 틀린 문항"]], st.which, (v) => { st.which = v; store.set("wrongWhich", v); load(); });
-  seg($("#wTpl"), [["문정중", "문정중 (중등)"], ["초등", "초등 (귀여운)"]], st.tpl, (v) => { st.tpl = v; store.set("wrongTpl", v); });
+  seg($("#wTpl"), TEMPLATES, st.tpl, (v) => { st.tpl = v; store.set("wrongTpl", v); });
   $("#wU").onchange = (e) => { st.withU = e.target.checked; store.set("wrongU", st.withU); load(); };
   ["wFrom", "wTo"].forEach((k) => ($("#" + k).onchange = () => load()));
   const drawStu = () => {

@@ -125,7 +125,7 @@ export async function stampNames(bytes, boxes, names, template, kind) {
   const P = await pdflib();
   const base = await P.PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false });
   const out = await P.PDFDocument.create();
-  const fk = template === "문정중" ? "serifR" : template === "초등" ? "sansB" : "sansR";
+  const fk = template === "문정중" ? "serifR" : String(template || "").startsWith("초등") ? "sansB" : "sansR";
   const font = await embedText(out, fk, names.join("") + "이름 ");
   const n = base.getPageCount();
   const idx = [...Array(n).keys()];
