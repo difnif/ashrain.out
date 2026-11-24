@@ -1,6 +1,7 @@
 // ashrain.out — 손글씨 입력판 (손가락 · 펜 · 마우스) — 컨셉 문제 「종이처럼 풀기」의 답 시트
 // 펜이 한 번이라도 닿으면 그다음부터 손가락(손바닥) 터치는 무시한다(S펜 · 애플 펜슬로 쓸 때 손을 대도 괜찮게).
-// 펜 압력은 굵기로. 판 모양: int(한 칸 + 단위) · frac(가운데 가로선 — 위 분자, 아래 분모) · pair(가운데 세로선 — 두 수).
+// 펜 압력은 굵기로. 판 모양: int(한 칸 + 단위) · frac(가운데 가로선 — 위 분자, 아래 분모) · pair(가운데 세로선 — 두 수)
+//   · free(줄 공책 — 모의고사 서답형 풀이를 여러 줄로).
 // 획 좌표는 판의 논리 px(정수)로 저장하고, 판 크기가 바뀌면(화면 회전 등) 처음 쓴 판 크기에 맞춰 늘이거나 줄여 그린다.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { drawInk, PAD_H, INK_COLOR } from "./ink";
@@ -47,6 +48,9 @@ export default function InkPad({ lay = "int", value, onChange, unit = "", labels
     if (lay === "frac") {
       ctx.beginPath(); ctx.moveTo(18, H / 2); ctx.lineTo(W - 18, H / 2); ctx.stroke();
       ctx.fillText("분자", 12, 10); ctx.fillText("분모", 12, H / 2 + 10);
+    } else if (lay === "free") {
+      ctx.setLineDash([]); ctx.strokeStyle = "rgba(60,70,90,.16)"; ctx.lineWidth = 1;
+      for (let y = 46; y < H - 8; y += 46) { ctx.beginPath(); ctx.moveTo(14, y); ctx.lineTo(W - 14, y); ctx.stroke(); }
     } else if (lay === "pair") {
       ctx.beginPath(); ctx.moveTo(W / 2, 14); ctx.lineTo(W / 2, H - 14); ctx.stroke();
       ctx.fillText(labels[0] || "", 12, 10); ctx.fillText(labels[1] || "", W / 2 + 12, 10);

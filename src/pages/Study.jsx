@@ -1,5 +1,6 @@
 // 공부하기 탭 (#/study) — 서브탭: 개념 공부 · 연습문제 · 컨셉 문제 · 시청각 학습 · 시험 보기 (셸이 상·하단을 그린다)
-// sub: '' | 'concept' | 'practice' | 'sets[/<범주>]' | 'av[/<범주>]' | 'exam'  (''=concept)
+// sub: '' | 'concept' | 'practice' | 'sets[/<범주>]' | 'av[/<범주>]' | 'exam[/school[/<학교>[/<판>]]]'  (''=concept)
+//   시험 보기 › 학교별 모의고사 = 학교 찾기 → 판(융합 · 기본 …) → 회차 → #/mock/<id> (pages/mock/SchoolExams.jsx · lib/mockexams.js)
 //   시청각 학습 = 교실 모니터 콘텐츠(lib/av.js) — 수학 호기심 · 문제 풀이 해설 두 범주, 고르면 #/av/<key> 가로 무대로
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { UNIT_NAMES, UNIT_ORDER } from "../lib/items";
@@ -19,7 +20,9 @@ import { loadProfile } from "../lib/recommendLoad";
 import { readHist, histDone, lastSeen } from "../lib/avHistory";
 import { unitLabel } from "../lib/units";
 import { useWellPick } from "../components/WellPick";
+import { loadMockIndex } from "../lib/mockexams";
 const AvPrintSheet = lazy(() => import("../components/AvPrintSheet"));
+const SchoolExams = lazy(() => import("./mock/SchoolExams"));
 import "./solve/solve.css";
 
 const CSS = `
@@ -258,10 +261,16 @@ const EXAM_GROUPS = [
 ];
 
 // 시험 보기 부분 개방(2026-09-21, 사용자 확정) — 개념 묶음·단원 테스트는 열고, 나머지는 개발중 표시.
-function ExamSub() {
+// 맨 위 「학교별 모의고사」(2026-11-24) — 학교 찾기 → 판 → 회차 → 시험지 그대로 풀기 · 강사 모드 · 시청각 해설.
+function ExamSub({ path = [] }) {
+  if (path[0] === "school") {
+    return <Suspense fallback={<div className="st-empty">불러오는 중…</div>}><SchoolExams path={path.slice(1)} /></Suspense>;
+  }
   return (
     <>
-      <div className="st-devnote">🧩 <b>개념 묶음</b>과 📘 <b>단원 테스트</b>부터 열었어요 — 나머지 유형은 문항을 쌓는 대로 차례차례 열려요.</div>
+      <p className="st-sec">학교별 모의고사</p>
+      <SchoolFolder />
+      <div className="st-devnote" style={{ marginTop: 14 }}>🧩 <b>개념 묶음</b>과 📘 <b>단원 테스트</b>부터 열었어요 — 나머지 유형은 문항을 쌓는 대로 차례차례 열려요.</div>
       {EXAM_GROUPS.map(([label, codes]) => (
         <div key={label}>
           <p className="st-sec">{label}</p>
@@ -290,6 +299,25 @@ function ExamSub() {
         </div>
       ))}
     </>
+  );
+}
+
+/** 「학교별 모의고사」 폴더 — 학교 · 회차 수는 목록(index.json)을 읽은 뒤 */
+function SchoolFolder() {
+  const [n, setN] = useState(null);
+  useEffect(() => {
+    let ok = true;
+    loadMockIndex().then((ix) => { if (ok) setN({ s: ix.schools.filter((x) => (x.n || 0) > 0).length, e: ix.exams.length }); }).catch(() => {});
+    return () => { ok = false; };
+  }, []);
+  return (
+    <div className="st-list">
+      <button className="st-folder" onClick={() => (location.hash = "#/study/exam/school")}>
+        <span className="fi" aria-hidden="true">🏫</span>
+        <span className="nm"><b>학교별 모의고사</b><small>{n?.e ? `학교 ${n.s}곳 · 모의고사 ${n.e}회 — ` : ""}우리 학교 시험지 그대로 · 학교를 고르면 융합 · 기본으로 나눠 풀어요</small></span>
+        <span className="go" aria-hidden="true">›</span>
+      </button>
+    </div>
   );
 }
 
@@ -600,7 +628,7 @@ export default function Study({ sub = "", theme = "light" }) {
     <div className={`st-root st-${theme}`}>
       <style>{CSS}</style>
       <div className="st-wrap">
-        {s === "practice" ? <PracticeSub /> : s === "exam" ? <ExamSub /> : s === "sets" ? <SetsSub path={segs.slice(1)} /> : s === "av" ? <AvSub path={segs.slice(1)} /> : <ConceptSub />}
+        {s === "practice" ? <PracticeSub /> : s === "exam" ? <ExamSub path={segs.slice(1)} /> : s === "sets" ? <SetsSub path={segs.slice(1)} /> : s === "av" ? <AvSub path={segs.slice(1)} /> : <ConceptSub />}
       </div>
     </div>
   );

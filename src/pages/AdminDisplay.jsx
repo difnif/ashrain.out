@@ -140,7 +140,7 @@ export function Stage({ av = null }) {
   useEffect(() => { if (!av) lsSet(LS.view, view || ""); }, [view, av]);
   const avExit = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    location.hash = `#/study/av/${av?.cat || ""}`;
+    location.hash = av?.back || `#/study/av/${av?.cat || ""}`;      // 학교별 모의고사 등에서 왔으면 그곳으로(AvPlayer 의 ?from=)
   }, [av]);
   useEffect(() => { lsSet(LS.prm, JSON.stringify(prm)); }, [prm]);
 
