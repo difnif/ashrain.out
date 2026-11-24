@@ -1,8 +1,8 @@
 // src/apps/seirocco/SeiroccoApp.jsx — 시록고 셸 v3 (기록 중심 재편)
 // 본질: 기록. 서고(장서고·문서고·기록고) · 사무(행정, 무료) · 서무(코퍼스, 유료) + 공통 광장(하소·방).
 // 내부 해시: #/ 홈 · #/seogo(/:tab) · #/samu(/:id) · #/seomu(/:tab) · #/more
-//           #/haso · #/bang · #/my · #/support · #/fonts(관리자)
-import { useEffect, useState } from "react";
+//           #/haso · #/bang · #/my · #/support · #/fonts(관리자) · #/tt(/…) 강사도구(PC 강사도구의 웹판)
+import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import RoleSwitch from "../../shared/RoleSwitch";
 import LogoTrigger from "../../shared/LogoTrigger";
@@ -18,8 +18,9 @@ import My from "./pages/My";
 import Support from "./pages/Support";
 import Fonts from "./pages/Fonts";
 import More from "./pages/More";
+const TeacherTool = lazy(() => import("./TeacherTool"));
 
-const NAV = [["", "홈"], ["seogo", "서고"], ["samu", "사무"], ["seomu", "서무"], ["more", "더보기"]];
+const NAV = [["", "홈"], ["seogo", "서고"], ["samu", "사무"], ["seomu", "서무"], ["tt", "강사도구"], ["more", "더보기"]];
 const MORE_SET = ["haso", "bang", "my", "support", "fonts", "more"];
 
 export default function SeiroccoApp() {
@@ -49,7 +50,7 @@ export default function SeiroccoApp() {
   const allowed = isInstructor || isAssistant;
 
   const PAGES = { "": Home, seogo: Seogo, samu: Samu, seomu: Seomu,
-    haso: Haso, bang: Bang, my: My, support: Support, fonts: Fonts, more: More };
+    haso: Haso, bang: Bang, my: My, support: Support, fonts: Fonts, more: More, tt: TeacherTool };
   // 조교 제한 모드: 광장과 문의만
   const AST = { "": Home, haso: Haso, bang: Bang, support: Support };
   const Cmp = (isAssistant ? AST[page] : PAGES[page]) || Home;
@@ -58,7 +59,7 @@ export default function SeiroccoApp() {
   return (
     <div className="ap-shell">
       <Kit />
-      <div className="ap-wrap">
+      <div className={"ap-wrap" + (page === "tt" && !isAssistant ? " tt-wide" : "")}>
         <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <LogoTrigger handle={<span className="lt-tile">시</span>}
             right={{ tag: "모", label: "학부모앱", go: () => navigatePath("/jongseong") }}
@@ -84,10 +85,12 @@ export default function SeiroccoApp() {
             <div className="d-tabs" style={{ marginBottom: 10 }}>
               {(isAssistant ? [["", "홈"], ["haso", "하소"], ["bang", "방"], ["support", "문의"]] : NAV).map(([k, l]) => (
                 <button key={k} className={"d-tab" + (navCur === k ? " on" : "")}
-                  onClick={() => (location.hash = "#/" + k)}>{l}</button>
+                  onClick={() => (location.hash = "#/" + k + (k === "tt" ? "/grade" : ""))}>{l}</button>
               ))}
             </div>
-            <Cmp param={param} isAssistant={isAssistant} isAdmin={adm} />
+            <Suspense fallback={<div className="ap-card">불러오는 중…</div>}>
+              <Cmp param={param} isAssistant={isAssistant} isAdmin={adm} />
+            </Suspense>
           </>
         ) : (
           <div className="ap-card">
