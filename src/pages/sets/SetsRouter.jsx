@@ -4,7 +4,8 @@
 //   #/sets/<범주>/<NN>/omr         OMR 카드 사진 → 판독 → 확인 → 채점
 //   #/sets/<범주>/<NN>/paper       종이처럼 풀기 — 문제지를 그대로 펼쳐 손글씨 · 타자 · 체크 → 제출하면 자동 채점
 //   #/sets/<범주>/<NN>/video       해설 영상 — 50문항 해설을 교실 모니터처럼 끝없이 돈다(조작 막대 · 전체 화면)
-//   #/sets/<범주>/<NN>/board       판서 모드(관리자) — 문제지 한 쪽을 펼쳐 놓고 선생님(S펜) · 학생(터치 모니터)이 동시에 쓴다(BoardMode.jsx · palm.js)
+//   #/sets/<범주>/<NN>/board       종이처럼 풀기를 강사 모드로 열기(관리자) — 같은 화면에서 학생 | 강사 토글, 필기 도구 창이 옆에서 들어온다
+//                                  선생님(S펜) · 학생(터치 모니터) 동시 필기 · 두 손가락 확대 · 이동(PaperBoard.jsx · boardview.js · palm.js)
 //   #/sets/<범주>/<NN>/sol         해설지 바로 보기 — 인쇄용 해설지를 화면 폭에 맞춰 펼침(빠른 정답 번호 → 그 해설, ?no=N)
 // 목록(범주 · 아이콘)은 공부하기 탭(#/study/sets[/<범주>])에 있다.
 import { lazy, Suspense, useMemo, useState } from "react";
@@ -23,7 +24,6 @@ const OmrGrade = lazy(() => import("./OmrGrade"));
 const PaperSolve = lazy(() => import("./PaperSolve"));
 const SetVideo = lazy(() => import("./SetVideo"));
 const SolView = lazy(() => import("./SolView"));
-const BoardMode = lazy(() => import("./BoardMode"));
 
 export function parseSetsHash(hash) {
   const parts = String(hash || "").split("?")[0].replace(/^#\/sets\/?/, "").split("/").filter(Boolean);
@@ -53,17 +53,16 @@ function SetScreen({ r, theme }) {
   else if (!set) body = fall;
   else if (r.view === "q") body = <Suspense fallback={fall}><ItemSolve catId={r.cat} set={set} qno={r.qno} uid={uid} say={setSay} /></Suspense>;
   else if (r.view === "omr") body = <Suspense fallback={fall}><OmrGrade catId={r.cat} set={set} uid={uid} say={setSay} /></Suspense>;
-  else if (r.view === "paper") body = uid === undefined ? fall : <Suspense fallback={fall}><PaperSolve catId={r.cat} set={set} say={setSay} /></Suspense>;
-  else if (r.view === "board") return set ? <Suspense fallback={fall}><BoardMode catId={r.cat} set={set} /></Suspense> : fall;
+  else if (r.view === "paper" || r.view === "board") body = uid === undefined ? fall : <Suspense fallback={fall}><PaperSolve catId={r.cat} set={set} say={setSay} startMode={r.view === "board" ? "teacher" : "student"} /></Suspense>;
   else if (r.view === "video") return set ? <Suspense fallback={fall}><SetVideo catId={r.cat} set={set} at={r.at} /></Suspense> : fall;
   else if (r.view === "sol") body = <Suspense fallback={fall}><SolView catId={r.cat} set={set} at={r.at} say={setSay} /></Suspense>;
   else body = <SetHome catId={r.cat} set={set} cat={cat} files={files} uid={uid} say={setSay} />;
-  const actions = set && (r.view === "q" || r.view === "paper" || r.view === "sol")
+  const actions = set && (r.view === "q" || r.view === "paper" || r.view === "board" || r.view === "sol")
     ? <FbAct onClick={() => (location.hash = `#/sets/${r.cat}/${pad2(r.no)}`)}>목록</FbAct>
     : set && r.view === "home" ? <FbAct pri onClick={() => (location.hash = `#/sets/${r.cat}/${pad2(r.no)}/omr`)}>📷 OMR 채점</FbAct> : null;
   return (
     <>
-      <FeatureBar theme={theme} title={title} sub={r.view === "q" ? `${r.qno}번` : r.view === "omr" ? "OMR 채점" : r.view === "paper" ? "종이처럼 풀기" : r.view === "sol" ? "해설지" : cat?.title || ""} back={back} actions={actions} />
+      <FeatureBar theme={theme} title={title} sub={r.view === "q" ? `${r.qno}번` : r.view === "omr" ? "OMR 채점" : r.view === "paper" || r.view === "board" ? "종이처럼 풀기" : r.view === "sol" ? "해설지" : cat?.title || ""} back={back} actions={actions} />
       {body}
       <Toast msg={say} />
     </>
@@ -109,8 +108,8 @@ function SetHome({ catId, set, cat, files, uid, say }) {
           📝 {paper.graded ? `채점한 문제지 보기 · ${paper.graded.score}/${paper.graded.n}` : paperN ? `이어서 풀기 · 문제지 ${paperN}/${set.items.length}칸` : "바로 풀기 · 문제지 그대로"}
         </button>
         {admin && (
-          <button className="sv-btn cs-go cs-board" title="관리자 — 선생님 S펜과 학생 터치 모니터로 문제지 위에 함께 쓰기"
-            onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/board`)}>✍ 판서 모드</button>
+          <button className="sv-btn cs-go cs-board" title="관리자 — 문제지 그대로 화면을 강사 모드(필기 도구 창)로 열기 · 풀다가도 막대의 학생 | 강사 토글로 오간다"
+            onClick={() => (location.hash = `#/sets/${catId}/${pad2(set.no)}/board`)}>✍ 강사 모드</button>
         )}
       </div>
       <div className="cs-go2">

@@ -222,7 +222,7 @@
 
 /* ── 종이처럼 풀기 ── */
 .cs-paperpage { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
-.cs-paperbox { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.cs-paperbox { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }   /* 세로는 창이 스크롤 — 두 손가락 확대 미리 보기가 상자 안 세로 스크롤을 만들지 않게 */
 .cs-paperhost { display: block; }
 .cs-gsum { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 8px auto 4px; padding: 8px 14px;
   max-width: 680px; font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; color: var(--text); font-size: 13px; }
@@ -235,6 +235,10 @@
   padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--border);
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; color: var(--text); box-shadow: 0 -4px 18px rgba(0,0,0,.08); }
 .cs-fill { flex: 1; }
+.cs-pbar2 { transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.cs-pbar2.pb-out { transform: translateY(115%); pointer-events: none; }
+.cs-pbar2 > .pb-mode { flex: 0 0 auto; }
+.cs-paperbox.pb-on { box-sizing: border-box; }
 .cs-zoom { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
 .cs-tb { border: 0; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 700; padding: 8px 11px; cursor: pointer;
   border-radius: 999px; white-space: nowrap; -webkit-tap-highlight-color: transparent; }

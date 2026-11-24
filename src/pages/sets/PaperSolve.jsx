@@ -5,7 +5,9 @@
 //   · 빈칸이 있어도 그냥 제출된다. 제출하면 바로 채점(손글씨는 AI 로 읽어서) — 빨간 동그라미 · 빗금 · 정답 · 점수.
 //   · 채점 뒤 문항을 누르면 3단 해설(움직이는 판서 · 도식)이 시트로 열린다. 「틀린 문제만 다시」 · 「처음부터」.
 // 답안은 이 기기 · 계정에 바로바로 저장된다(나갔다 와도 이어서).
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// 관리자에겐 막대에 「학생 | 강사」 토글 — 강사로 바꾸면 같은 화면(같은 확대 · 위치) 위에 필기 도구 창이 옆에서 들어온다(PaperBoard.jsx).
+//   #/sets/<범주>/<NN>/board 로 열면 강사 모드부터. 바꿀 때마다 주소도 …/paper ↔ …/board 로 바꿔 둔다(새로 고침해도 그 모드).
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { printUrl, readPaper, savePaper, clearPaper, saveAttempt, saveOmrResult, pad2 } from "../../lib/conceptsets";
 import { splitDoc } from "./printdoc";
 import { Paper, PAGE_W_PX, ensureLinks, answerTextHtml } from "./paper";
@@ -13,17 +15,29 @@ import { gradePaper, isAnswered, togglePick, levelSummary, answerLabel } from ".
 import { hasInk, inkSvg } from "./ink";
 import { readInkAnswers } from "./recognize";
 import InkPad from "./InkPad";
-import { AnswerInput, ensureSerif, useAnim } from "./common";
+import { AnswerInput, ensureSerif, useAnim, useIsAdmin } from "./common";
+import PaperBoard, { ModeSwitch, boardPads, loadBoardCfg } from "./PaperBoard";
+import { anchorScroll, clampZoom, stepZoom, zoomLabel } from "./boardview";
 import { headHtml, questionHtml, solutionHtml, answerHtml, LV_COLOR } from "./render";
 import { kindLabel, LEVELS } from "./labels";
 
-const ZOOMS = [1, 1.25, 1.5, 2];                 // 폭 맞춤의 배수
-const ZK = "ash.cs.paper.zoom", MK = "ash.cs.inmode";
+const ZK = "ash.cs.paper.zoom", ZK2 = "ash.cs.paper.zm", MK = "ash.cs.inmode";   // 확대 = 폭 맞춤의 배수(1 ~ 3, 두 손가락으로도)
 const lsGet = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, String(v)); } catch { /* 무시 */ } };
 
-export default function PaperSolve({ catId, set, say }) {
+function loadZm() {
+  const v = Number(lsGet(ZK2, NaN));
+  if (Number.isFinite(v)) return clampZoom(v);
+  return [1, 1.25, 1.5, 2][Number(lsGet(ZK, 0))] || 1;          // 예전 단계 번호
+}
+
+export default function PaperSolve({ catId, set, say, startMode = "student" }) {
   const hostRef = useRef(null), paperRef = useRef(null), boxRef = useRef(null);
+  const admin = useIsAdmin();
+  const [mode, setMode] = useState(startMode === "teacher" ? "teacher" : "student");
+  const teacher = mode === "teacher" && admin === true;
+  const [hand, setHand] = useState(() => loadBoardCfg().hand);
+  const pads = teacher ? boardPads(hand) : { l: 0, r: 0 };
   const [state, setState] = useState(() => readPaper(catId, set.no));      // { answers, reads, graded }
   const [ready, setReady] = useState(false);
   const [err, setErr] = useState(null);
@@ -31,9 +45,9 @@ export default function PaperSolve({ catId, set, say }) {
   const [sol, setSol] = useState(null);           // no
   const [jump, setJump] = useState(false);
   const [busy, setBusy] = useState("");
-  const [zi, setZi] = useState(() => { const v = Number(lsGet(ZK, 0)); return v >= 0 && v < ZOOMS.length ? v : 0; });
+  const [zm, setZm] = useState(loadZm);
   const S = useRef({});
-  S.current = { state, sheet, sol };
+  S.current = { state, sheet, sol, teacher };
   const byNo = useMemo(() => Object.fromEntries(set.items.map((it) => [it.no, it])), [set]);
 
   // 문제지 HTML 불러와 shadow 에 펼치기
@@ -56,20 +70,50 @@ export default function PaperSolve({ catId, set, say }) {
     return () => { alive = false; paperRef.current?.destroy(); paperRef.current = null; };
   }, [catId, set]);
 
-  // 확대: 폭 맞춤 × 배수
-  const fit = useCallback(() => {
-    const host = boxRef.current, p = paperRef.current;
-    if (!host || !p) return;
-    const z = Math.max(0.3, (host.clientWidth - 8) / PAGE_W_PX) * ZOOMS[zi];
-    p.setZoom(z.toFixed(4));
-  }, [zi]);
-  useEffect(() => { if (ready) fit(); }, [ready, fit]);
+  // 확대: 폭 맞춤 × 배수. 바꿀 때 화면의 한 점(손가락 가운데 · 화면 가운데) 아래 내용이 제자리에 남게 스크롤을 고친다.
+  // 강사 모드에선 도구 창 · 손 받침 띠 자리를 빼고 맞춘다.
+  const zRef = useRef(0), zmRef = useRef(zm), padsRef = useRef(pads);
+  padsRef.current = pads;
+  const applyZoom = useCallback((zm1, anchor) => {
+    zm1 = clampZoom(zm1);
+    zmRef.current = zm1;
+    setZm(zm1);
+    const box = boxRef.current, host = hostRef.current, p = paperRef.current;
+    if (!box || !host || !p) return;
+    const pd = padsRef.current;
+    const z1 = Math.max(0.3, (box.clientWidth - pd.l - pd.r - 8) / PAGE_W_PX) * zm1, z0 = zRef.current;
+    // 기준은 첫 쪽 상자 — 폭 맞춤의 가운데 맞춤 여백(배율 따라 생겼다 없어짐)에 흔들리지 않게
+    const ref = p.firstPage || host;
+    const r0 = ref.getBoundingClientRect();
+    p.setZoom(z1.toFixed(4));
+    zRef.current = z1;
+    if (anchor === false || !z0) return;
+    const a = anchor || { x: (pd.l + window.innerWidth - pd.r) / 2, y: window.innerHeight / 2 };
+    const { dx, dy } = anchorScroll(r0, z0, ref.getBoundingClientRect(), z1, a.x, a.y, a.tx || 0, a.ty || 0);
+    if (dx) box.scrollLeft += dx;
+    if (dy) window.scrollBy(0, dy);
+  }, []);
+  useEffect(() => { if (ready) applyZoom(zmRef.current, false); }, [ready, applyZoom]);
   useEffect(() => {
-    const on = () => fit();
+    const on = () => applyZoom(zmRef.current);
     window.addEventListener("resize", on);
     return () => window.removeEventListener("resize", on);
-  }, [fit]);
-  useEffect(() => { lsSet(ZK, zi); }, [zi]);
+  }, [applyZoom]);
+  useEffect(() => { lsSet(ZK2, zm); }, [zm]);
+  // 모드 · 손잡이가 바뀌면 양옆 자리가 달라진다 — 보던 곳을 지키며 다시 맞춤
+  useLayoutEffect(() => { if (ready) applyZoom(zmRef.current); }, [teacher, hand]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 학생 | 강사
+  const switchMode = useCallback((m) => {
+    if (m === "teacher" && admin !== true) return;
+    setSheet(null); setSol(null); setJump(false);
+    setMode(m);
+    try { history.replaceState(history.state, "", `#/sets/${catId}/${pad2(set.no)}/${m === "teacher" ? "board" : "paper"}`); } catch { /* 무시 */ }
+  }, [admin, catId, set.no]);
+  const onBoardCfg = useCallback((c) => setHand(c.hand), []);
+  useEffect(() => {
+    if (startMode === "teacher" && admin === false) say?.("강사 모드는 관리자만 쓸 수 있어요 — 학생 모드로 열었어요");
+  }, [startMode, admin, say]);
 
   // 그리기 · 저장
   useEffect(() => {
@@ -93,6 +137,7 @@ export default function PaperSolve({ catId, set, say }) {
   // 칸 · 보기 누르기 (shadow 안 이벤트 → 최신 상태를 ref 로)
   const onCellRef = useRef(() => {}), onPickRef = useRef(() => {});
   onCellRef.current = (no) => {
+    if (S.current.teacher) return;
     const st = S.current.state;
     if (st.graded) {
       const row = st.graded.rows.find((r) => r.no === no);
@@ -103,6 +148,7 @@ export default function PaperSolve({ catId, set, say }) {
     setSheet({ no });
   };
   onPickRef.current = (no, lab) => {
+    if (S.current.teacher) return;
     const st = S.current.state;
     if (st.graded) { setSol(no); return; }
     const it = byNo[no];
@@ -181,15 +227,18 @@ export default function PaperSolve({ catId, set, say }) {
           <span className="cs-gx">문항을 누르면 해설</span>
         </div>
       )}
-      <div ref={boxRef} className="cs-paperbox">
+      <div ref={boxRef} className={"cs-paperbox" + (teacher ? " pb-on" : "")} style={teacher ? { paddingLeft: pads.l, paddingRight: pads.r } : undefined}>
         <div ref={hostRef} className="cs-paperhost" />
       </div>
+      <PaperBoard on={teacher} ready={ready} admin={admin === true} catId={catId} set={set} paperRef={paperRef} hostRef={hostRef} boxRef={boxRef}
+        zm={zm} onZoom={applyZoom} onMode={switchMode} onCfg={onBoardCfg} />
 
-      <div className="cs-pbar2" role="toolbar" aria-label="문제지 도구">
+      <div className={"cs-pbar2" + (teacher ? " pb-out" : "")} role="toolbar" aria-label="문제지 도구" aria-hidden={teacher}>
+        {admin === true && <ModeSwitch mode={teacher ? "teacher" : "student"} onChange={switchMode} />}
         <div className="cs-zoom">
-          <button type="button" className="cs-tb" disabled={zi === 0} onClick={() => setZi((v) => Math.max(0, v - 1))} aria-label="작게">−</button>
-          <button type="button" className="cs-tb cs-zv" onClick={() => setZi(0)} title="폭 맞춤">{zi === 0 ? "맞춤" : `${Math.round(ZOOMS[zi] * 100)}%`}</button>
-          <button type="button" className="cs-tb" disabled={zi === ZOOMS.length - 1} onClick={() => setZi((v) => Math.min(ZOOMS.length - 1, v + 1))} aria-label="크게">＋</button>
+          <button type="button" className="cs-tb" disabled={zm <= 1.001} onClick={() => applyZoom(stepZoom(zm, -1))} aria-label="작게">−</button>
+          <button type="button" className="cs-tb cs-zv" onClick={() => applyZoom(1)} title="폭 맞춤">{zoomLabel(zm)}</button>
+          <button type="button" className="cs-tb" disabled={zm >= 2.999} onClick={() => applyZoom(stepZoom(zm, 1))} aria-label="크게">＋</button>
         </div>
         <button type="button" className="cs-tb" onClick={() => setJump(true)}>번호 {g ? "" : `${nAnswered}/${set.items.length}`}</button>
         <span className="cs-fill" />
