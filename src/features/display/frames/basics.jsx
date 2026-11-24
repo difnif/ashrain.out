@@ -1,15 +1,16 @@
 // ashrain.out — 교실 모니터 「액자」 · 학생앱 시청각 학습 › 문제 풀이 해설: 기본기 해설 (frames/basics.jsx)
 // 초등 · 중등 · 고등 학교급마다 한 액자 — 단원(100문항, 1 ~ 5단계)이나 주차별 회차(20문항)를 골라 문항마다 한 장면으로 끝없이 돌린다.
-// 단원은 학년에 묶지 않고 학년을 넘나든다(span — 초3~초5 처럼). 학생앱에서는 단원 · 유형 · 회차마다 한 항목(#/av/<단원 id> · #/av/e-ten.3 ·
-// #/av/w-e3-07a)이라 그것으로 바로 열리고(pick), 액자 안 「단원」 · 「유형」 · 「회차」(U) 목록으로 옮길 수 있다 —
-// 목록 머리에서 「단원 100제 | 유형 | 주차별 학년」을 바꾼다.
-//   유형 = 단원의 한 단계 20문항(lib/avtypes.js) — 번호 1 ~ 20 · 유형마다 따로 프린트(유형 코드). 단원 100제를 보면 그 문항의 유형에도 본 기록.
+// 단원은 학년에 묶지 않고 학년을 넘나든다(span — 초3~초5 처럼). 학생앱에서는 단원 · 회차마다 한 항목(#/av/<단원 id> · #/av/w-e3-07a)이라
+// 그것으로 바로 열리고(pick), 액자 안 「단원」 · 「회차」(U) 목록으로 옮길 수 있다 — 목록 머리에서 「단원 100제 | 주차별 학년」을 바꾼다.
+//   단원 100제는 프린트 한 장(1 ~ 5단계 100문항) — 단계는 단계 목록(L)으로 고른다. 학생앱 목록 · 듀얼 「전부」에서는 시그니처 프린트와 같은 서열.
+//   유형(단원의 한 단계 20문항 — lib/avtypes.js)은 예전 주소(#/av/e-ten.3)로만 연다 — 목록 · 보기 칩에는 두지 않는다(그 보기로 열렸을 때만 칩).
+//   단원 100제를 보면 그 문항의 유형에도 본 기록(예전 주소로 연 유형의 ✓).
 //   주차별 기초 다지기: 학년마다 주 2회 × 52주 = 104회차(../weeks — public/av-weeks/<학년>/), 목록은 학기 · 방학으로 나누고 이번 주를 표시.
 //   ① 문제 → ② 방침 → ③ 판서(한 줄씩, 빨간 메모) → ④ 답 · 오른쪽 그림은 판서 줄에 맞춰 자란다(그림 DSL — frames/figdsl.jsx).
 // 그리기 · 박자는 일차함수 10단계 액자와 같다(frames/lin10.jsx 의 L10Art · ../lin10.js 의 l10Plan).
 // 조작은 해설 액자 공통 틀(frames/lesson.jsx) — 「보기 단일 | 듀얼」(D) · 「단원」 · 「회차」 목록(U · B 다음) · 빠르기 0.75× ~ 2×(S) ·
 //   번호 · 단계 목록(L — 단계 칩을 고르면 그 단계만) · 두 막대(아래 긴 막대 = 문항 이동, 옆 짧은 막대 = 풀이 이동) · 듀얼 가운데 ⇄(X).
-//   듀얼 판마다 문제 풀이 해설 전부(단원 100제 · 유형 · 주차별 회차 · 해설 액자 — frames/allspec.jsx)에서 따로 고른다(같은 것 둘도 됨).
+//   듀얼 판마다 문제 풀이 해설 전부(단원 100제 프린트 전부 — 시그니처 프린트 포함 · 주차별 회차 — frames/allspec.jsx)에서 따로 고른다(같은 것 둘도 됨).
 //   오른쪽 위 📄 문서(문제지 · 해설지 · 빠른 정답 · OMR — frames/docsmenu.jsx) — 듀얼에서 두 판이 다르면 하나씩. 문항은 고를 때 들여온다(spec.load).
 // 학생앱에서 열면(pick) 본 기록을 기기에 남긴다(lib/avHistory.js — 우물 추천 · 목록의 ✓ · 진행 막대).
 // 문항 자료는 단원마다 따로 늦게 들여온다(../basics/<단원>.js) — 머리 정보는 ../basics/index.js, 목록 그림용 한 문항은 ../basics/thumbs.js.
@@ -131,13 +132,13 @@ export function weeksSpec(gk) {
 }
 
 /* ══════════ 액자 ══════════ */
-/** 목록 머리 — 「📚 단원 100제」 · 「🧩 유형」 · 「🗓 학년」 칩으로 보기를 바꾼다 */
+/** 목록 머리 — 「📚 단원 100제」 · 「🗓 학년」 칩으로 보기를 바꾼다.
+ *  단원 100제는 단계로 쪼개지 않는다(단계는 프린트 안 단계 목록) — 「🧩 유형」 칩은 예전 주소(#/av/e-ten.3)로 유형 보기를 열었을 때만 */
 function ViewChips({ L, view, onView, close }) {
   return (
     <div className="bs-views" role="group" aria-label="보기">
       <button type="button" className={"dsp-chip" + (!view ? " on" : "")} aria-pressed={!view} onClick={() => { onView(null); close(); }}>📚 단원 100제</button>
-      <button type="button" className={"dsp-chip" + (view === "types" ? " on" : "")} aria-pressed={view === "types"}
-        onClick={() => { onView("types"); close(); }}>🧩 유형</button>
+      {view === "types" && <button type="button" className="dsp-chip on" aria-pressed="true" onClick={close}>🧩 유형</button>}
       <span className="bs-views-w">🗓 주차별</span>
       {gradesOfLevel(L.level).map((g) => (
         <button key={g.gk} type="button" className={"dsp-chip" + (view === g.gk ? " on" : "")} aria-pressed={view === g.gk}
@@ -193,7 +194,7 @@ export function BasicsFrame({ lv, pick = null, ...props }) {
     if (pt) return basicOf(pt.id)?.level === L.level ? "types" : null;
     if (pick) return null;
     const v = lsRead(vk);
-    return v === "types" || (typeof v === "string" && gradeOf(v)?.level === L.level) ? v : null;
+    return typeof v === "string" && gradeOf(v)?.level === L.level ? v : null;     // 예전에 기억한 「유형」 보기는 단원 100제로
   });
   useEffect(() => { lsWrite(vk, view); }, [vk, view]);
   const menuExtra = useCallback(({ close }) => <><style>{VIEW_CSS}</style><ViewChips L={L} view={view} onView={setView} close={close} /></>, [L, view]);

@@ -3,18 +3,23 @@
 //   · 수학 호기심 — 수업 장면(도형 · 경우의 수 애니메이션), 하노이의 탑, 실험 액자(몬티홀 · 갈림길 · 갈톤 보드), 장면 묶음(축구 · 서술형 이야기),
 //                  그림 액자 열여섯(축구 · 농구 · 야구 직선, 배드민턴 · 테니스 · 탁구 · 배구 · 족구 · 세팍타크로 · 골프 · 당구 · 볼링,
 //                  주머니 공 꺼내기, 알파벳 카드, 일렬로 세우기, 학년별 뽑기 — frames/curio.jsx)
-//   · 문제 풀이 해설 — 기본기 해설 단원(초등 · 중등 · 고등, frames/basics.jsx — 단원마다 한 항목, 학년을 넘나듦)
-//                  + 해설 액자(일차함수 그래프 그리기 · 10단계 계산 · 그래프와 넓이 · 경우의 수와 확률 100제 — 중등, after 단원 뒤에).
+//   · 문제 풀이 해설 — 단원 100제 = 프린트마다 한 항목, 모두 같은 서열:
+//                  기본기 해설 단원(초등 · 중등 · 고등, frames/basics.jsx — 단원마다 한 장, 1 ~ 5단계 100문항, 학년을 넘나듦)
+//                  + 시그니처 프린트(해설 액자의 세트 하나 = 한 장 — frames/index.js 의 prints: 그래프 그리기 기본 96 · 심화 64,
+//                    10단계 계산 세트 1 · 2, 그래프와 넓이 100 · 240, 경우의 수와 확률 100제 넷 — after 단원 바로 뒤에, key 「액자:세트」).
+//                  단계는 프린트 안에(액자의 단계 목록) — 단계마다 쪼갠 줄(유형)은 목록에 두지 않는다(예전 주소 #/av/e-ten.3 은 그대로 열림).
 //                  학교급(level)으로 나눠 보인다(AV_LEVELS — 학생앱 상단 버튼). 학년 꼬리표 대신 학년 범위(grade = span).
 //   · unit — 콘텐츠의 주요 단원(lib/units.js). 꾹 누르면 우물이 떠서 앞 · 같은 · 다음 단원 콘텐츠를 추천한다(components/WellPick.jsx).
-// 여는 주소: #/av/<key> — key 는 액자 key(frames/index.js) · 기본기 단원 id(basics/index.js) · 유형 「<단원>.<단계>」(lib/avtypes.js)
-//   · 회차 「w-<학년>-<주><A|B>」(weeks/index.js) · scenes-<묶음>(pairs.js 의 GROUPS).
+// 여는 주소: #/av/<key> — key 는 액자 key(frames/index.js) · 기본기 단원 id(basics/index.js) · 시그니처 프린트 「<액자>:<세트>」(cnt100:sel)
+//   · 유형 「<단원>.<단계>」(lib/avtypes.js — 예전 주소) · 회차 「w-<학년>-<주><A|B>」(weeks/index.js) · scenes-<묶음>(pairs.js 의 GROUPS).
+//   해설 액자 key 하나(#/av/cnt100 — 예전 주소)는 목록에 없지만 그대로 열린다(그 액자가 기억한 세트로).
 // 교실 모니터에 액자가 새로 들어오면: frames/index.js 의 lesson 표시를 따라 저절로 갈린다(lesson → 문제 풀이 해설, 나머지 → 수학 호기심).
 import { FRAMES } from "../features/display/frames/index.js";
 import { BASICS, LEVELS } from "../features/display/basics/index.js";
 import { relatedOf } from "./units.js";
 import { parseWeekId, gradeOf, frameOfGrade, weekMetaCached, KIND_ICON, WGRADES } from "../features/display/weeks/index.js";
 import { parseTypeKey, typeMeta, typesOf } from "./avtypes.js";
+import { noteOpen, noteSeen } from "./avHistory.js";
 
 export const AV_CATS = [
   { id: "fun", title: "수학 호기심", icon: "🔭", sub: "도형이 움직이고, 구슬이 떨어지고, 문이 열려요 — 보고 직접 해 보는 수학" },
@@ -35,7 +40,12 @@ const LEVEL_FRAME = Object.fromEntries(LEVELS.map((L) => [L.level, L.frame]));
 /** 기본기 단원 하나 = 학생앱 한 항목 (같은 학교급 액자를 그 단원으로 연다) */
 const basicItem = (b) => ({
   key: b.id, frame: LEVEL_FRAME[b.level], set: b.id, grp: null, cat: "sol", icon: b.icon, kind: "해설",
-  title: b.title, short: b.short, desc: b.desc, grade: b.span, level: b.level, unit: b.unit,
+  title: b.title, short: b.short, desc: b.desc, grade: b.span, level: b.level, unit: b.unit, n: b.n || 100,
+});
+/** 시그니처 프린트 하나 = 학생앱 한 항목 (그 해설 액자를 그 세트로 연다) — 기본기 단원과 같은 서열 */
+const printItem = (f, p) => ({
+  key: `${f.key}:${p.set}`, frame: f.key, set: p.set, sig: true, grp: null, cat: "sol", icon: p.icon || ICON[f.key] || "🎬", kind: "해설",
+  title: p.title, short: p.short, desc: p.desc, grade: p.grade || f.grade, level: p.level || f.level, unit: p.unit || f.unit, n: p.n,
 });
 const frameItem = (f) => ({
   key: f.key, frame: f.key, grp: null, cat: f.lesson ? "sol" : "fun", icon: ICON[f.key] || "🖼",
@@ -43,15 +53,18 @@ const frameItem = (f) => ({
   grade: f.grade || null, level: f.level || null, unit: f.unit || null,
 });
 
-// 문제 풀이 해설 — 기본기 단원 차례대로, 해설 액자는 after 단원 바로 뒤에(학교급 액자 셋 자체는 항목이 아니다)
+// 문제 풀이 해설(단원 100제) — 기본기 단원 차례대로, 시그니처 프린트는 after 단원 바로 뒤에(액자 차례 · 세트 차례).
+// 해설 액자 자체 · 학교급 액자 셋은 항목이 아니다(액자 key 는 예전 주소로만 — FRAME_ONLY).
+const LESSONS = FRAMES.filter((x) => x.lesson && !x.basics);
 const SOL = BASICS.map(basicItem);
-for (const f of FRAMES.filter((x) => x.lesson && !x.basics)) {
-  const it = frameItem(f);
+for (const f of LESSONS) {
+  const its = (f.prints || []).map((p) => printItem(f, p));
   let i = SOL.findIndex((x) => x.key === f.after);
-  if (i < 0) { SOL.push(it); continue; }
-  while (SOL[i + 1] && SOL[i + 1].frame === SOL[i + 1].key && SOL[i + 1].level === it.level) i++;    // 같은 단원 뒤에 이미 붙은 액자 다음
-  SOL.splice(i + 1, 0, it);
+  if (i < 0) { SOL.push(...its); continue; }
+  while (SOL[i + 1]?.sig && SOL[i + 1].level === f.level) i++;    // 같은 단원 뒤에 이미 붙은 프린트 다음
+  SOL.splice(i + 1, 0, ...its);
 }
+const FRAME_ONLY = LESSONS.map(frameItem);
 
 export const AV_ITEMS = [
   ...SCENES.map((s) => ({ ...s, cat: "fun", kind: "애니메이션", frame: null })),
@@ -82,7 +95,22 @@ export function typeItem(key) {
     title: m.title, short: m.short, desc: `${m.short} — ${m.name} 20문항`, grade: m.span, level: m.level, unit: m.unit, base: p.id, st: p.st,
   };
 }
-export const avItem = (key) => weekItem(key) || typeItem(key) || AV_ITEMS.find((x) => x.key === key) || AV_ITEMS.find((x) => x.key === OLD[key]) || null;
+export const avItem = (key) => weekItem(key) || typeItem(key) || AV_ITEMS.find((x) => x.key === key) || FRAME_ONLY.find((x) => x.key === key)
+  || AV_ITEMS.find((x) => x.key === OLD[key]) || null;
+/** 시그니처 프린트 항목 — 액자 key · 세트 key(숫자도) */
+export const printItemOf = (fk, set) => SOL.find((x) => x.sig && x.frame === fk && String(x.set) === String(set)) || null;
+/** 학생앱에서 연 시그니처 프린트의 본 기록(lib/avHistory.js) — 해설 액자 onSeen(set, no) 자리에.
+ *  key 는 프린트 key(「cnt100:sel」), 처음 본 세트는 연 횟수 +1, 장면마다 가장 멀리 본 번호 · 문항 수는 프린트의 n.
+ *  액자 안에서 다른 세트로 옮기면 그 세트의 프린트로 남긴다. */
+export function printSeen(fk, opts) {
+  let opened = null;
+  return (set, no) => {
+    const it = printItemOf(fk, set);
+    if (!it || !no) return;
+    if (opened !== it.key) { opened = it.key; noteOpen(it.key, it.n, opts); }
+    noteSeen(it.key, no, it.n, opts);
+  };
+}
 
 /* ══════════ 우물 추천용 카드(lib/recommend.js 의 pool) ══════════ */
 const GIDX = Object.fromEntries(WGRADES.map((g, i) => [g.grade, i]));
@@ -91,14 +119,15 @@ export const weekCard = (m) => ({
   key: m.id, unit: m.unit, gidx: GIDX[m.grade], week: m.week, kind: m.kind, seq: m.seq || 0, level: m.level,
   title: m.title, short: m.title, icon: KIND_ICON[m.kind] || "🗓", grade: `${m.grade} ${m.week}주${m.slot}`,
 });
-/** 단원 100제 · 해설 액자 → 카드(학년 범위의 첫 학년 · 주는 없음) */
+/** 단원 100제(기본기 단원 · 시그니처 프린트) → 카드(학년 범위의 첫 학년 · 주는 없음) */
 export const unitCard = (it) => ({ ...it, gidx: GIDX[String(it.grade || "").split("~")[0]] ?? null, week: 60, kind: "단원" });
-/** 유형 → 카드(교과서 단원의 학년 · 단원 100제 뒤) — base 는 유형이 든 단원(우물 추천이 서로 품은 것끼리는 고르지 않게) */
+/** 유형 → 카드(교과서 단원의 학년 · 단원 100제 뒤) — base 는 유형이 든 단원(우물 추천이 서로 품은 것끼리는 고르지 않게)
+ *  유형은 예전 주소(#/av/e-ten.3)로만 열린다 — 학생앱 목록 · 우물 추천 더미에는 넣지 않는다(시험이 쓴다) */
 export const typeCard = (m) => ({
   key: m.id, base: m.base, unit: m.unit, gidx: GIDX[m.span] ?? null, week: 60 + m.st, kind: "유형", seq: m.st, level: m.level,
   title: m.title, short: m.short, icon: m.icon, grade: `${m.span} · ${m.st}단계`,
 });
-/** 단원 100제의 유형 전부(학교급) — 목록 · 우물 추천 */
+/** 기본기 단원 100제의 유형 전부(학교급) — 예전 주소 · 시험용(목록에는 두지 않는다) */
 export const typesOfLevel = (lv) => SOL.filter((x) => x.level === lv && x.frame === LEVEL_FRAME[lv]).flatMap((x) => typesOf(x.key));
 export const avOfCat = (cat) => AV_ITEMS.filter((x) => x.cat === cat);
 export const avOfLevel = (lv) => SOL.filter((x) => x.level === lv);

@@ -1,11 +1,12 @@
 // 기본기 해설(초등 · 중등 · 고등 단원 · 주차별 회차) 스모크 — 학생앱 › 시청각 학습 › 문제 풀이 해설 · 꾹 누르기 우물 · 📄 문서 받기
 //   목록: 위 「초등 | 중등 | 고등」 단추 → 학년 칩 → 「🗓 주차별 기초 다지기(104회차) | 📚 단원 100제」
 //     · 주차별: 학기 · 방학으로 접고 펴기 → 펼치면 104회차, 회차를 꾹 누르면 우물 추천 6가지 → 카드 위에서 떼면 그 회차가 열림
-//     · 단원 100제: 단원마다 한 줄(주요 단원 · 학년 범위) + 그 아래 유형 다섯 줄(단원의 한 단계 20문항 — 누르면 #/av/<단원>.<단계>)
-//   꾹 눌러 「📄 프린트」에서 떼면 받기 판 — 유형 · 회차는 [확인] → 인쇄 창(20문항 · 유형 코드), 단원은 [확인] → 개별 | 압축 다운
+//     · 단원 100제: 프린트마다 한 줄 — 기본기 단원 100제와 시그니처 프린트(중등 10장 — 그 단원 바로 뒤)가 같은 서열(유형 줄 없음)
+//       · 시그니처 프린트를 누르면 #/av/<액자>:<세트>(cnt100:sel) — 그 세트로 돌고 본 기록이 프린트 key 로 → 목록에 진행 막대
+//   꾹 눌러 「📄 프린트」에서 떼면 받기 판 — 회차는 [확인] → 인쇄 창(20문항), 단원은 [확인] → 개별 | 압축 다운 · 시그니처 프린트는 📄 없음
 //   꾹 누르기: 우물이 떠서 추천 6가지(기록이 없으면 단원 지도 기본 추천)가 둘레에 → 카드 위에서 떼면 그 콘텐츠가 열림 · 우물에서 떼면 그대로 · 빈 곳에서 떼도 그대로
-//   단원 재생 → 단원 목록(U — 머리에 「단원 100제 | 유형 | 주차별 학년」) → 번호 · 단계 목록 · 「🧩 유형」 보기
-//   듀얼: 판마다 「콘텐츠」 → 문제 풀이 해설 전부(단원 100제 · 유형 · 주차별 · 해설 액자) — 왼쪽 그래프 심화 · 오른쪽 중2 회차
+//   단원 재생 → 단원 목록(U — 머리에 「단원 100제 | 주차별 학년」) → 번호 · 단계 목록 · 예전 유형 주소(#/av/e-ten.3)도 열림
+//   듀얼: 판마다 「콘텐츠」 → 문제 풀이 해설 전부(📚 단원 100제 「전체」 — 시그니처 프린트 포함 · 🗓 주차별) — 왼쪽 그래프 심화 · 오른쪽 중2 회차
 //   📄 문서: 문제지 · 해설지 · 빠른 정답 · OMR 고르기 → 확인 → 개별 다운 | 압축 다운
 //     · PDF 가 아직 없으면(Storage 404) → 「인쇄 창으로 열기」 → 새 창에 같은 문서(코드 · 100문항 · 흑백 그림)
 //     · PDF 가 있으면 → 압축 다운 = 「초등-10만들기.zip」 하나, 개별 다운 = 고른 수만큼 PDF
@@ -17,7 +18,7 @@ import path from "node:path";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { avOfCat, avOfLevel, avItem, typesOfLevel } from "../../src/lib/av.js";
+import { avOfCat, avOfLevel, avItem } from "../../src/lib/av.js";
 import { typeMeta } from "../../src/lib/avtypes.js";
 import { FRAMES } from "../../src/features/display/frames/index.js";
 
@@ -130,12 +131,26 @@ try {
     await page.locator(".st-lv button", { hasText: lv }).click();
     await page.waitForTimeout(150);
     assert.equal(await page.locator(".st-list .st-item").count(), avOfLevel(lv).length, lv);
-    assert.equal(await page.locator(".st-list .st-type").count(), typesOfLevel(lv).length, `${lv} 유형`);
+    assert.equal(await page.locator(".st-list .st-type").count(), 0, `${lv} 유형 줄 없음`);
+    assert.ok((await page.locator(".st-view button", { hasText: "단원 100제" }).textContent()).includes(String(avOfLevel(lv).length)), `${lv} 단원 100제 수`);
   }
+  // 중등: 시그니처 프린트가 그 단원 바로 뒤에 한 줄씩(기본기 단원과 같은 모양)
+  await page.locator(".st-lv button", { hasText: "중등" }).click();
+  await page.waitForTimeout(150);
+  const SIG = avOfLevel("중등").filter((x) => x.sig);
+  assert.equal(SIG.length, 10);
+  const titles = await page.locator(".st-list .st-item .nm b").allTextContents();
+  assert.deepEqual(titles, avOfLevel("중등").map((x) => x.title), "중등 차례");
+  const iLin = titles.indexOf(avItem("m-lin").title);
+  assert.deepEqual(titles.slice(iLin + 1, iLin + 7), SIG.filter((x) => x.unit === "m2-1:일차함수").map((x) => x.title), "일차함수 단원 뒤 프린트 여섯");
+  const selRow = page.locator(".st-item", { hasText: avItem("cnt100:sel").title });
+  assert.ok((await selRow.textContent()).includes("100제") && (await selRow.locator(".unit").textContent()).includes("확률"), "프린트 줄: 교과서 단원 · 문항 수");
+  await selRow.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(SHOTS, "bs-1b-sig.png") });
   await page.locator(".st-lv button", { hasText: "초등" }).click();
   assert.ok(await page.locator(".st-item .unit").first().textContent());
   await page.screenshot({ path: path.join(SHOTS, "bs-1-list.png") });
-  step(`문제 풀이 해설 — 초등 ${avOfLevel("초등").length} · 중등 ${avOfLevel("중등").length} · 고등 ${avOfLevel("고등").length}가지(유형 ${typesOfLevel("초등").length} · ${typesOfLevel("중등").length} · ${typesOfLevel("고등").length}줄), 학교급 단추로`);
+  step(`문제 풀이 해설 — 초등 ${avOfLevel("초등").length} · 중등 ${avOfLevel("중등").length}(시그니처 프린트 ${SIG.length} 포함) · 고등 ${avOfLevel("고등").length}가지, 프린트마다 한 줄(유형 줄 없음)`);
 
   // 꾹 누르기 → 우물 → 카드 위에서 떼면 열림
   const first = avOfLevel("초등").find((x) => x.unit) || avOfLevel("초등")[0];
@@ -208,29 +223,28 @@ try {
     await page.locator(".aps-in button", { hasText: "확인" }).click();
   };
   await go("#/study/av/sol");
-  await page.locator(".st-type").first().waitFor();
-  const grp = page.locator(".st-ugrp", { has: page.locator(".st-item", { hasText: first.title }) });
-  assert.equal(await grp.locator(".st-type").count(), 5, "단원 아래 유형 다섯");
-  const T3 = typeMeta(`${first.key}.3`);
-  await holdPrint(grp.locator(".st-type").nth(2), "bs-2p-well-print.png");
-  assert.equal(await page.evaluate(() => location.hash), "#/study/av/sol", "프린트는 열지 않는다");
-  const sh = await page.locator(".aps-in").textContent();
-  assert.ok(sh.includes("유형 · 프린트 받기") && sh.includes(T3.title) && sh.includes("20문항") && sh.includes(`${T3.code.slice(0, 3)}-${T3.code.slice(3)}`), sh);
-  await page.waitForTimeout(450);                 // 올라오는 움직임이 끝난 뒤
-  await page.screenshot({ path: path.join(SHOTS, "bs-2q-sheet.png") });
-  await sheetAll();
-  await page.locator(".aps-in button", { hasText: "인쇄 창으로 열기" }).waitFor();
-  assert.equal(await page.locator(".aps-in button", { hasText: "개별 다운" }).count(), 0, "유형은 바로 인쇄 창");
-  const [tw] = await Promise.all([ctx.waitForEvent("page"), page.locator(".aps-in button", { hasText: "인쇄 창으로 열기" }).click()]);
-  await tw.waitForFunction(() => document.querySelectorAll(".q").length >= 20, null, { timeout: 30000 });
-  const tdoc = await tw.evaluate(() => ({ q: document.querySelectorAll(".q").length, s: document.querySelectorAll(".s").length, t: document.body.innerText }));
-  assert.equal(tdoc.q, 20); assert.equal(tdoc.s, 20);
-  assert.ok(tdoc.t.includes(`코드 ${T3.code.slice(0, 3)}-${T3.code.slice(3)}`) && tdoc.t.includes("20문항 · 3단계"), "유형 코드 · 머리말");
-  await tw.screenshot({ path: path.join(SHOTS, "bs-2r-type-print.png") });
-  await tw.close();
-  await page.locator(".aps-in .x").click();
-  await page.locator(".aps").waitFor({ state: "detached" });
-  step(`유형 줄을 꾹 눌러 「📄 프린트」에서 떼면 받기 판 → [확인] → 인쇄 창: 「${T3.short}」 20문항 · 유형 코드 ${T3.code}`);
+  await page.locator(".st-item").first().waitFor();
+  // 시그니처 프린트를 꾹 — 우물(추천 6가지)은 뜨고 「📄 프린트」는 없다(앱에 프린트 문서가 없음) · 빈 곳에서 떼면 그대로
+  await page.locator(".st-lv button", { hasText: "중등" }).click();
+  {
+    const r = page.locator(".st-item", { hasText: avItem("cnt100:ball").title });
+    await r.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(150);
+    const a = await center(r);
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.locator(".wpk").waitFor({ timeout: 2000 });
+    await page.waitForTimeout(450);
+    assert.equal(await page.locator(".wpk-card").count(), 6, "시그니처 프린트도 추천 6가지");
+    assert.equal(await page.locator(".wpk-pr").count(), 0, "시그니처 프린트는 📄 없음");
+    await page.screenshot({ path: path.join(SHOTS, "bs-2p-sig-well.png") });
+    await page.mouse.move(12, 300, { steps: 6 });
+    await page.mouse.up();
+    await page.waitForTimeout(250);
+    assert.equal(await page.evaluate(() => location.hash), "#/study/av/sol");
+  }
+  await page.locator(".st-lv button", { hasText: "초등" }).click();
+  step("시그니처 프린트를 꾹 누르면 우물 추천 6가지 · 「📄 프린트」는 없음(앱에 프린트 문서가 없는 프린트)");
 
   await holdPrint(page.locator(".st-item", { hasText: first.title }));
   await sheetAll();
@@ -250,15 +264,33 @@ try {
   step("단원 줄 → 받기 판 → [확인] → 개별 | 압축 다운(PDF 가 없으면 인쇄 창) · 회차 → 받기 판 → 바로 인쇄 창 · Esc · 바깥을 누르면 닫힘");
 
   await page.locator(".st-view button", { hasText: "단원 100제" }).click();
-  await page.locator(".st-type").first().waitFor();
-  await page.locator(".st-ugrp", { has: page.locator(".st-item", { hasText: first.title }) }).locator(".st-type").nth(2).click();
-  await page.waitForFunction((k) => location.hash === `#/av/${k}`, T3.id);
+  await page.locator(".st-lv button", { hasText: "중등" }).click();
+  await page.locator(".st-item", { hasText: avItem("cnt100:sel").title }).click();
+  await page.waitForFunction(() => location.hash === "#/av/cnt100:sel");
+  await page.locator(".dsp-svg").first().waitFor();
+  await page.waitForTimeout(2500);
+  await wake(page);
+  assert.ok(await page.locator('.dsp-seg button[role="radio"][aria-checked="true"]', { hasText: "선발" }).count(), "그 세트(학년별 선발)로");
+  const sh0 = await page.evaluate(() => JSON.parse(localStorage.getItem("ash.av.hist") || "{}")["cnt100:sel"] || null);
+  assert.ok(sh0 && sh0.n === 100 && sh0.v === 1 && sh0.max >= 1, JSON.stringify(sh0));
+  await page.screenshot({ path: path.join(SHOTS, "bs-2s-sig-play.png") });
+  await page.evaluate(() => { const h = JSON.parse(localStorage.getItem("ash.av.hist") || "{}"); h["cnt100:sel"].max = 37; localStorage.setItem("ash.av.hist", JSON.stringify(h)); });
+  await go("#/study/av/sol");
+  await page.locator(".st-item").first().waitFor();
+  const selPg = page.locator(".st-item", { hasText: avItem("cnt100:sel").title }).locator(".pg");
+  assert.equal(await selPg.count(), 1, "본 만큼 진행 막대");
+  assert.equal(await selPg.getAttribute("aria-label"), "37/100");
+  await page.locator(".st-lv button", { hasText: "초등" }).click();
+  step("시그니처 프린트 「학년별 선발 100」을 누르면 #/av/cnt100:sel — 그 세트로 돌고, 본 기록이 프린트 key 로(목록에 진행 막대)");
+
+  // 예전 유형 주소(#/av/e-ten.3)도 그대로 — 그 유형 20문항, 본 기록은 그 유형으로
+  const T3 = typeMeta(`${first.key}.3`);
+  await go(`#/av/${T3.id}`);
   await page.locator(".dsp-svg").first().waitFor();
   await page.waitForTimeout(2500);
   const th = await page.evaluate((k) => JSON.parse(localStorage.getItem("ash.av.hist") || "{}")[k] || null, T3.id);
   assert.ok(th && th.n === 20 && th.max >= 1, JSON.stringify(th));
-  await page.screenshot({ path: path.join(SHOTS, "bs-2s-type-play.png") });
-  step(`유형 줄을 누르면 #/av/${T3.id} — 그 유형 20문항(1 ~ 20번)이 돌고, 본 기록이 그 유형으로 남는다`);
+  step(`예전 유형 주소 #/av/${T3.id} 도 그대로 열림(목록에는 없음)`);
 
   // 단원 재생 — 가로 화면으로
   await page.setViewportSize({ width: 1280, height: 760 });
@@ -271,34 +303,14 @@ try {
   await page.locator(".dsp-chip.lsn-unit").click();
   await page.locator(".lsn-set").first().waitFor();
   assert.equal(await page.locator(".lsn-set").count(), avOfLevel("초등").filter((x) => x.set).length);
-  assert.equal(await page.locator(".bs-views .dsp-chip").count(), 8, "단원 100제 + 유형 + 초1 ~ 초6");
+  assert.equal(await page.locator(".bs-views .dsp-chip").count(), 7, "단원 100제 + 초1 ~ 초6(유형 칩 없음)");
   await page.screenshot({ path: path.join(SHOTS, "bs-5-units.png") });
   await page.keyboard.press("Escape");
   await wake(page);
   await page.locator('button[title^="번호 · 단계 목록"]').click();
   await page.locator(".dsp-list").first().waitFor();
   await page.keyboard.press("Escape");
-  step("단원 목록(같은 학교급 단원 모두 · 머리에 「단원 100제 | 유형 | 주차별 초1 ~ 초6」) · 번호 · 단계 목록이 열린다");
-
-  // 교실 모니터에서 유형으로 — 목록 머리의 「🧩 유형」 → 단원마다 묶은 유형 전부
-  await wake(page);
-  await page.locator(".dsp-chip.lsn-unit").click();
-  await page.locator(".bs-views .dsp-chip", { hasText: "유형" }).click();
-  await page.waitForTimeout(1200);
-  await wake(page);
-  await page.locator(".dsp-chip.lsn-unit").click();
-  await page.locator(".lsn-set").first().waitFor();
-  assert.equal(await page.locator(".lsn-set").count(), typesOfLevel("초등").length);
-  assert.equal(await page.locator(".lsn-grp").count(), typesOfLevel("초등").length / 5);
-  await page.screenshot({ path: path.join(SHOTS, "bs-5-types.png") });
-  await page.locator(".lsn-set").nth(7).click();
-  await page.waitForTimeout(1500);
-  assert.ok((await page.locator(".dsp-chip.lsn-unit").textContent()).includes(typesOfLevel("초등")[7].short), "고른 유형");
-  await wake(page);
-  await page.locator(".dsp-chip.lsn-unit").click();
-  await page.locator(".bs-views .dsp-chip", { hasText: "단원 100제" }).click();
-  await page.waitForTimeout(800);
-  step(`교실 모니터: 목록 머리 「🧩 유형」 → 초등 유형 ${typesOfLevel("초등").length}가지(단원마다 묶음) → 고른 유형이 돈다 → 「단원 100제」로 돌아옴`);
+  step("단원 목록(같은 학교급 단원 모두 · 머리에 「단원 100제 | 주차별 초1 ~ 초6」) · 번호 · 단계 목록이 열린다");
 
   // 교실 모니터에서 주차별로 — 목록 머리의 학년 칩 → 그 학년 104회차(학기 · 방학으로 나눔 · 이번 주 표시)
   await wake(page);
@@ -390,9 +402,11 @@ try {
   await wake(page);
   await page.locator(".lsn-pane-ctl.L .dsp-chip.lsn-unit").click();
   await page.locator(".lsn-pane-list.L .all-tabs").waitFor();
-  assert.equal(await page.locator(".lsn-pane-list.L .all-tabs .dsp-chip").count(), 4, "탭 넷");
+  assert.equal(await page.locator(".lsn-pane-list.L .all-tabs .dsp-chip").count(), 2, "탭 둘(단원 100제 · 주차별)");
+  assert.equal(await page.locator(".lsn-pane-list.L .all-sub .dsp-chip.on").textContent(), "전체", "단원 100제는 전체부터");
+  assert.equal(await page.locator(".lsn-pane-list.L .lsn-set").count(), avOfCat("sol").length, "프린트 목록 전부(단원 · 학교급이 달라도)");
+  assert.equal(await page.locator(".lsn-pane-list.L .lsn-set.sig").count(), 10, "시그니처 프린트도 같은 목록에");
   await page.screenshot({ path: path.join(SHOTS, "bs-9-dual-menu.png") });
-  await page.locator(".lsn-pane-list.L .all-tabs .dsp-chip", { hasText: "해설 액자" }).click();
   await page.locator(".lsn-pane-list.L .lsn-set", { hasText: "심화 64" }).click();
   await page.waitForTimeout(900);
   await wake(page);

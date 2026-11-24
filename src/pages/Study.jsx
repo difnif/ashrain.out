@@ -11,8 +11,7 @@ import { koFilter } from "../lib/koSearch";
 import ItemPicker from "./solve/ItemPicker";
 import { CATEGORIES, loadIndex, readProgress, setProgressUser, pad2 } from "../lib/conceptsets";
 import { supabase } from "../supabaseClient";
-import { AV_CATS, AV_LEVELS, avOfCat, avOfLevel, weekCard, unitCard, typeCard, typesOfLevel } from "../lib/av";
-import { typesOf } from "../lib/avtypes";
+import { AV_CATS, AV_LEVELS, avOfCat, avOfLevel, weekCard, unitCard } from "../lib/av";
 import { hasPrint } from "../lib/avsrc";
 import { WGRADES, gradesOfLevel, loadWeekIndex, weekIndexCached, PERIODS, KIND_ICON, weekOfDate, weekLabel, periodOf } from "../features/display/weeks/index.js";
 import { recommend } from "../lib/recommend";
@@ -147,24 +146,11 @@ const CSS = `
 .st-sess .pg { height: 3px; border-radius: 2px; background: var(--surface3); overflow: hidden; margin-top: 3px; }
 .st-sess .pg i { display: block; height: 100%; background: var(--accent); }
 .st-hold { font-size: 11.5px; color: var(--muted); margin: -2px 2px 10px; line-height: 1.5; }
-.st-ugrp { display: flex; flex-direction: column; gap: 5px; }
-.st-ugrp.has { padding-bottom: 4px; }
 .st-item .tag em { display: block; font-style: normal; font-size: 9.5px; opacity: .8; text-align: center; margin-top: 1px; }
-.st-types { display: grid; grid-template-columns: 1fr; gap: 4px; margin-left: 22px; padding-left: 10px; border-left: 2px solid var(--border); }
-@media (min-width: 560px) { .st-types { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 900px) { .st-types { grid-template-columns: repeat(3, 1fr); } }
-.st-type { position: relative; display: grid; grid-template-columns: 22px 1fr auto; align-items: center; column-gap: 8px; min-width: 0; text-align: left;
-  border: 1px solid var(--border); background: var(--surface); color: inherit; border-radius: 11px; padding: 7px 9px; font: inherit; cursor: pointer; }
-.st-type .n { width: 22px; height: 22px; border-radius: 999px; display: grid; place-items: center; font-size: 11.5px; font-weight: 800;
-  color: var(--accent); border: 1.5px solid var(--accent); }
-.st-type .t { min-width: 0; display: flex; flex-direction: column; }
-.st-type .t b { font-size: 13px; font-weight: 700; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.st-type .t small { font-size: 10.5px; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.st-type .g { font-size: 10.5px; font-weight: 800; color: var(--muted); display: flex; align-items: center; gap: 3px; }
-.st-type .g em { font-style: normal; color: var(--accent); }
-.st-type.done { opacity: .72; }
-.st-type .pg { position: absolute; left: 10px; right: 10px; bottom: 3px; height: 2px; border-radius: 2px; background: var(--surface3); overflow: hidden; }
-.st-type .pg i { display: block; height: 100%; background: var(--accent); }
+.st-print { position: relative; }
+.st-print.done { opacity: .78; }
+.st-print .pg { position: absolute; left: 14px; right: 14px; bottom: 4px; height: 2px; border-radius: 2px; background: var(--surface3); overflow: hidden; }
+.st-print .pg i { display: block; height: 100%; background: var(--accent); }
 `;
 
 function readLastConcept() {
@@ -403,11 +389,10 @@ function SetsSub({ path }) {
 /* ── 시청각 학습: 범주 폴더 → 항목(교실 모니터 무대로 연다) ── */
 const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* 무시 */ } };
-const SOL_UNITS = () => avOfCat("sol").map(unitCard);
-let TYPE_CARDS = null;
-const SOL_TYPES = () => (TYPE_CARDS ||= AV_LEVELS.flatMap((lv) => typesOfLevel(lv)).map(typeCard));
+let SOL_CARDS = null;
+const SOL_UNITS = () => (SOL_CARDS ||= avOfCat("sol").map(unitCard));
 
-/** 우물 추천에 쓸 카드 더미 — 읽어 둔 학년의 회차 전부 + 단원 100제 · 유형 · 해설 액자 */
+/** 우물 추천에 쓸 카드 더미 — 읽어 둔 학년의 회차 전부 + 단원 100제(기본기 단원 · 시그니처 프린트) */
 function usePool(gk) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -419,7 +404,7 @@ function usePool(gk) {
     return () => { live = false; };
   }, [gk]);
   return useMemo(() => {
-    const out = [...SOL_UNITS(), ...SOL_TYPES()];
+    const out = [...SOL_UNITS()];
     for (const g of WGRADES) { const h = weekIndexCached(g.gk); if (h) for (const m of h.sessions) out.push(weekCard(m)); }
     return out;
   }, [gk, tick]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -428,9 +413,11 @@ function usePool(gk) {
 /**
  * 문제 풀이 해설 — 위 「초등 | 중등 | 고등」 → 학년 → 「주차별 기초 다지기(104회차) | 단원 100제」.
  * 주차별: 1학기 · 여름방학 · 2학기 · 겨울방학으로 접고 펴며, 지금 주를 펼쳐 그 자리로. 이어 보기 · 찾기 · 단원 칩.
- * 단원 100제: 단원마다 한 줄(100문항 전부) + 그 아래 유형 다섯 줄(단원의 한 단계 20문항 — #/av/e-ten.3, 교과서 단원 · 학년은 유형마다).
+ * 단원 100제: 프린트마다 한 줄 — 기본기 단원 100제와 시그니처 프린트(그래프 그리기 · 10단계 계산 · 그래프와 넓이 · 경우의 수와 확률 100제 넷)가
+ *   같은 서열로, 교과서 단원 차례(시그니처 프린트는 그 단원 바로 뒤). 단계는 프린트 안에(재생 화면의 단계 목록) — 줄을 단계로 쪼개지 않는다.
+ *   줄마다 교과서 단원 · 학년 · 문항 수 · 다 봤음 ✓ · 본 만큼 진행 막대.
  * 꾹 누르면 우물이 떠서 6가지를 추천한다 — 기록이 넉넉하면 수준 맞춤(lib/recommend.js), 아니면 단원 지도 기본.
- *   프린트가 있으면(단원 100제 · 유형 · 회차) 위에 「📄 프린트」도 — 그 위에서 떼면 문제지 · 해설지 · 빠른 정답 · OMR 받기 판(AvPrintSheet).
+ *   프린트 문서가 있으면(기본기 단원 · 회차) 위에 「📄 프린트」도 — 그 위에서 떼면 문제지 · 해설지 · 빠른 정답 · OMR 받기 판(AvPrintSheet).
  */
 function SolList() {
   const [lv, setLv] = useState(() => { const v = lsGet("ash.study.av.lv", "초등"); return AV_LEVELS.includes(v) ? v : "초등"; });
@@ -448,7 +435,6 @@ function SolList() {
   const [print, setPrint] = useState(null);           // 프린트 받기 판을 연 콘텐츠 key
   const wp = useWellPick({ related: (it) => recommend(it, pool, profile).cards, onGo: go, onPrint: (it) => setPrint(it.key), canPrint: (it) => hasPrint(it.key) });
   const W = profile.watched || {};
-  const nTypes = typesOfLevel(lv).length;
   return (
     <>
       <div className="st-lv" role="tablist" aria-label="학교급">
@@ -465,38 +451,22 @@ function SolList() {
       </div>
       <div className="st-view">
         <button type="button" className={view === "week" ? "on" : ""} onClick={() => pickView("week")}>🗓 주차별 기초 다지기 <small>104회차</small></button>
-        <button type="button" className={view === "unit" ? "on" : ""} onClick={() => pickView("unit")}>📚 단원 100제 <small>{avOfLevel(lv).length} · 유형 {nTypes}</small></button>
+        <button type="button" className={view === "unit" ? "on" : ""} onClick={() => pickView("unit")}>📚 단원 100제 <small>{avOfLevel(lv).length}</small></button>
       </div>
       <p className="st-hold">꾹 누르면 우물이 떠서 6가지를 골라 줘요 — 본 기록 · 푼 기록이 쌓이면 내 수준에 맞춰서. 누른 채 손가락을 옮겨 놓으면 바로 열리고,
         위 「📄 프린트」에서 놓으면 그 문제의 프린트(문제지 · 해설지 · 빠른 정답 · OMR)를 받아요.</p>
       {view === "week" ? <WeekList key={gk} gk={gk} wp={wp} profile={profile} /> : (
         <div className="st-list" role="tabpanel">
           {avOfLevel(lv).map((it) => {
-            const types = typesOf(it.key), r = W[it.key];
+            const r = W[it.key], done = histDone(r), part = r && !done && r.max > 0 && r.n > 0;
             return (
-              <div key={it.key} className={"st-ugrp" + (types.length ? " has" : "")}>
-                <button type="button" className={"st-item wpk-able" + (wp.pressing === it.key ? " wpk-press" : "")} {...wp.bind(unitCard(it), () => go(it))}>
-                  <span className="st-avic" aria-hidden="true">{it.icon}</span>
-                  <span className="nm"><b>{it.title}</b>{it.unit && <small className="unit">{unitLabel(it.unit)}</small>}<small className="wrap">{it.desc}</small></span>
-                  <span className="tag">{it.grade || it.kind}{types.length ? <em>{histDone(r) ? "✓ " : ""}100제</em> : null}</span>
-                </button>
-                {types.length > 0 && (
-                  <div className="st-types" role="group" aria-label={`${it.short || it.title} 유형`}>
-                    {types.map((m) => {
-                      const t = W[m.id], done = histDone(t), part = t && !done && t.max > 0;
-                      return (
-                        <button key={m.id} type="button" className={"st-type wpk-able" + (wp.pressing === m.id ? " wpk-press" : "") + (done ? " done" : "")}
-                          {...wp.bind(typeCard(m), () => go({ key: m.id }))}>
-                          <span className="n" aria-hidden="true">{m.st}</span>
-                          <span className="t"><b>{m.name}</b><small>{unitLabel(m.unit)}</small></span>
-                          <span className="g">{m.span}{done && <em aria-label="다 봤어요">✓</em>}</span>
-                          {part && <span className="pg" aria-label={`${t.max}/${t.n}`}><i style={{ width: `${Math.round((t.max / t.n) * 100)}%` }} /></span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <button key={it.key} type="button" className={"st-item st-print wpk-able" + (wp.pressing === it.key ? " wpk-press" : "") + (done ? " done" : "")}
+                {...wp.bind(unitCard(it), () => go(it))}>
+                <span className="st-avic" aria-hidden="true">{it.icon}</span>
+                <span className="nm"><b>{it.title}</b>{it.unit && <small className="unit">{unitLabel(it.unit)}</small>}<small className="wrap">{it.desc}</small></span>
+                <span className="tag">{it.grade || it.kind}<em>{done ? "✓ " : ""}{it.n ? `${it.n}제` : ""}</em></span>
+                {part && <span className="pg" aria-label={`${r.max}/${r.n}`}><i style={{ width: `${Math.round((r.max / r.n) * 100)}%` }} /></span>}
+              </button>
             );
           })}
         </div>
