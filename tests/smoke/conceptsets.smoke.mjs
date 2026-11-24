@@ -462,6 +462,71 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.locator(".cs-hero").waitFor({ timeout: 10000 });
     ok(/#\/sets\/prob\/01$/.test(page.url()) && /채점한 문제지 보기 · 3\/50/.test(await page.locator(".cs-go").innerText()), "V8 나가기 → 세트 화면(문제지 채점 기록 유지)");
 
+    // W. 해설 영상 = 시청각 해설과 같은 조작 — 둘째 줄(보기 · 세트 · 빠르기) · 단계 목록 · 세트 목록 · 듀얼(판마다) · 자리 바꾸기 · 기억
+    {
+      const poke = async () => { await page.mouse.move(150 + Math.random() * 80, 300); await page.locator(".dsp-ctl.show").waitFor({ timeout: 3000 }); };
+      const store = async () => page.evaluate(() => JSON.parse(localStorage.getItem("ash.cs.video") || "null"));
+      const until = async (fn, ms = 5000) => { for (let i = 0; i < ms / 100; i++) { if (await fn()) return true; await sleep(100); } return false; };
+      await page.evaluate(() => { location.hash = "#/sets/prob/01/video"; });
+      await page.locator(".dsp-svg").waitFor({ timeout: 15000 });
+      ok(/— 2\d\. /.test(await aria()), `W1 같은 세트로 다시 들어오면 보던 자리에서(벽시계) (${await aria()})`);
+      await poke();
+      const row = page.locator(".dsp-pctl.show");
+      const segTxt = async (lab) => (await row.locator(`.dsp-seg[aria-label="${lab}"] button`).allInnerTexts()).join("|");
+      ok((await segTxt("보기")) === "단일|듀얼" && (await segTxt("빠르기")) === "0.75×|1×|1.5×|2×" && /01 야구/.test(await row.locator(".dsp-chip.lsn-unit").innerText()),
+        `W2 둘째 줄: 보기 단일 | 듀얼 · 세트 「01 야구」 · 빠르기 넷 (${await segTxt("빠르기")})`);
+      const no0 = (await aria()).match(/— (\d+)\. /)?.[1];
+      await row.locator('.dsp-seg[aria-label="빠르기"] button', { hasText: "2×" }).click();
+      await sleep(300);
+      ok((await store())?.sp === 2 && (await row.locator('.dsp-seg[aria-label="빠르기"] button[aria-checked="true"]').innerText()) === "2×"
+        && (await aria()).includes(`— ${no0}. `), `W3 빠르기 2× — 같은 문항 같은 순간에서 이어서 · 기억 (${no0})`);
+      await page.keyboard.press("l");
+      await page.locator(".dsp-list .dsp-card").first().waitFor({ timeout: 3000 });
+      const chips = await page.locator(".dsp-list .dsp-chips .dsp-chip").allInnerTexts();
+      ok(chips.join("|") === "전체 50|하 · 기본 15|중 · 발전 25|상 · 심화 10" && (await page.locator(".dsp-list .lsn-tag").count()) === 50,
+        `W4 번호 · 단계 목록: 단계 칩(하 · 중 · 상) · 칸마다 수준 딱지 (${chips.join(" ")})`);
+      await page.locator(".dsp-list .dsp-chip", { hasText: "상 · 심화" }).click();
+      await sleep(300);
+      const n3 = await page.locator(".dsp-list .dsp-card").count();
+      await page.keyboard.press("Escape");
+      ok(n3 === 10 && (await until(async () => /— 41\. /.test(await aria()))), `W5 「상 · 심화」만 — 10문항 · 41번부터 (${n3}, ${await aria()})`);
+      await page.keyboard.press("l");
+      await page.locator(".dsp-list .dsp-chip", { hasText: "전체" }).click();
+      await page.keyboard.press("Escape");
+      ok(await until(async () => /— 2\d\. /.test(await aria())), `W6 전체로 — 보던 자리(벽시계)로 돌아온다 (${await aria()})`);
+      await page.keyboard.press("u");
+      await page.locator(".dsp-list .lsn-set").first().waitFor({ timeout: 3000 });
+      const nSet = await page.locator(".dsp-list .lsn-set").count();
+      ok(nSet >= 140 && /01 야구/.test(await page.locator(".dsp-list .lsn-set.on").innerText()) && (await page.locator(".dsp-list .lsn-grp").count()) >= 14,
+        `W7 세트 목록(U): 경우의 수와 확률 · 일차함수와 그래프 세트 전부 · 범주 · 묶음마다 · 지금 세트 표시 (${nSet})`);
+      await page.locator(".dsp-list .lsn-set", { hasText: "05 테니스" }).click();
+      ok(await until(async () => /^컨셉 문제 해설 영상 · 테니스로[^—]* — \d+\. /.test(await aria())), `W8 세트를 고르면 그 세트로(들여온 뒤 재생) (${await aria()})`);
+      ok(await until(async () => (await page.evaluate(() => location.hash)) === "#/sets/prob/05/video" && /05 테니스/.test(await page.title())),
+        `W9 주소 · 제목도 그 세트로 (${await page.evaluate(() => location.hash)} · ${await page.title()})`);
+      await page.keyboard.press("d");
+      await page.locator(".lsn-pane-ctl").first().waitFor({ state: "attached", timeout: 5000 });
+      const dual = await aria();
+      const nums = (s) => [...s.matchAll(/(\d+)번/g)].map((x) => +x[1]);
+      ok(/듀얼: 왼쪽 테니스로[^,]*\d+번, 오른쪽 테니스로/.test(dual) && (await page.locator(".lsn-pane-ctl").count()) === 2 && (await page.locator(".scb-long.L, .scb-long.R").count()) === 2,
+        `W10 듀얼(D): 두 판 — 판마다 조작 · 두 막대 (${dual})`);
+      await poke();
+      await shot("cs-video-dual");
+      const [l0, r0] = nums(dual);
+      await page.keyboard.press("x");
+      await sleep(300);
+      const [l1, r1] = nums(await aria());
+      ok(l0 < r0 && l1 === r0 && r1 === l0, `W11 ⇄(X) 두 판 자리 바꾸기 (${l0}·${r0} → ${l1}·${r1})`);
+      await page.reload();
+      await page.locator(".dsp-svg").waitFor({ timeout: 15000 });
+      ok(/듀얼: 왼쪽 테니스로/.test(await aria()), `W12 새로고침해도 듀얼 그대로(같은 세트 주소) (${await aria()})`);
+      await page.keyboard.press("d");
+      ok(await until(async () => /^컨셉 문제 해설 영상 · 테니스로[^—]* — \d+\. /.test(await aria())) && (await store())?.sp === 2, `W13 단일로 — 보던 세트 · 빠르기 그대로 (${await aria()})`);
+      await poke();
+      await page.locator(".dsp-ctl .dsp-btn[title^='나가기']").click();
+      await page.locator(".cs-hero").waitFor({ timeout: 10000 });
+      ok(/#\/sets\/prob\/05$/.test(page.url()), "W14 나가기 → 보던 세트(05) 화면");
+    }
+
     // L. 일차함수와 그래프(lin) — 범주 폴더 · 세트 · 한 문제씩(수 · 식 · 점) · 해설 이름표 · 해설지 · 손글씨 한 줄 OMR
     {
       const LDIR = path.join(DIST, "concept-sets/lin");
