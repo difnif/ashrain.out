@@ -368,21 +368,24 @@ export const sheet = (key) => renderToStaticMarkup(<AvPrintSheet itemKey={key} o
     }
   });
 
-  await test("듀얼 판 목록 — 탭 넷(단원 100제 · 유형 · 주차별 · 해설 액자) · 지금 판이 보는 것의 탭 · 학교급 · 학년부터", () => {
+  await test("듀얼 판 목록 — 탭 둘(단원 100제 프린트 전부 · 주차별) · 단원 100제는 「전체」부터(시그니처 프린트도 같은 서열) · 지금 것 표시", () => {
     const A = m.allSpecFor(m.basicsSpec("e"));
+    const ROW = /class="lsn-set( on)?( hot)?( sig)?"/g;
     const u = m.menu(A, "m-lin");
-    for (const w of ["문제 풀이 해설 전부", "📚 단원 100제", "🧩 유형", "🗓 주차별", "🎬 해설 액자", "왼쪽 판"]) assert.ok(u.includes(w), `목록 — ${w}`);
-    assert.ok(u.includes('aria-selected="true"') && u.includes("일차함수"), "단원 탭 · 중등");
-    assert.equal((u.match(/class="lsn-set( on)?( hot)?"/g) || []).length, m.BASICS.filter((b) => b.level === "중등").length, "중등 단원 수");
+    for (const w of ["문제 풀이 해설 전부", "📚 단원 100제", "🗓 주차별", "전체", "초등", "중등", "고등", "왼쪽 판"]) assert.ok(u.includes(w), `목록 — ${w}`);
+    for (const w of ["🧩 유형", "🎬 해설 액자"]) assert.ok(!u.includes(w), `탭 없음 — ${w}`);
+    assert.equal((u.match(ROW) || []).length, m.BASICS.length + 10, "전체 = 기본기 단원 100 + 시그니처 프린트 10");
+    assert.ok(u.includes('class="lsn-set on"') && u.includes("일차함수"), "지금 단원 표시");
+    for (const w of ["학년별 선발 100", "그래프 그리기 심화 64", "10단계 계산 세트 2", "그래프와 넓이 240", "초등 · 단원 100제 36", "중등 · 단원 100제 40"]) assert.ok(u.includes(w), `전체 목록 — ${w}`);
+    const f = m.menu(A, "cnt100:ball");
+    assert.ok(f.includes('class="lsn-set on sig"') && f.includes("주머니 공 100"), "지금 시그니처 프린트 표시");
+    assert.equal((f.match(ROW) || []).length, m.BASICS.length + 10, "시그니처 프린트에서 열어도 전체");
     const t = m.menu(A, "e-ten.3");
-    assert.equal((t.match(/class="lsn-set( on)?( hot)?"/g) || []).length, m.BASICS.filter((b) => b.level === "초등").length * 5, "초등 유형 수");
-    assert.ok(t.includes('class="lsn-set on"') && t.includes("10을 넘는 덧셈"), "지금 유형 표시");
+    assert.ok(t.includes('class="lsn-set on"'), "예전 유형 기억 → 그 단원 줄");
     const w = m.menu(A, "w-e3-07a");
-    assert.equal((w.match(/class="lsn-set( on)?( hot)?"/g) || []).length, 104, "초3 104회차");
+    assert.equal((w.match(ROW) || []).length, 104, "초3 104회차");
     assert.ok(w.includes("1학기") && w.includes("겨울방학"), "학기 · 방학 묶음");
-    const f = m.menu(A, "graph:basic");
-    assert.equal((f.match(/class="lsn-set( on)?( hot)?"/g) || []).length, m.LESSON_FRAMES.reduce((s, F) => s + F.spec.sets.length, 0), "해설 액자 세트 수");
-    for (const h of [u, t, w, f]) assert.ok(!BAD.test(h), bad(h));
+    for (const h of [u, f, t, w]) assert.ok(!BAD.test(h), bad(h));
   });
 
   await test("본 기록 — 유형을 열면 그 유형 key(1 ~ 20) · 단원을 보면 그 문항이 든 유형에도(유형 안 번호) · 회차는 예전 그대로", () => {

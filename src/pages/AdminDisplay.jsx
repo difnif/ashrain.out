@@ -25,7 +25,7 @@
 //       처음부터 그 액자(또는 그 묶음의 수업 장면)로. 액자 목록은 그 범주(수학 호기심 · 문제 풀이 해설)의 항목만, 나가기는 공부하기 목록으로.
 // 장면 설정: 장면이 controls(구슬 수·단계·문 개수 …)를 가지면 조작 막대 아래에 설정 칩이 뜬다. 바꾸면 그 장면을
 //       처음부터 다시 튼다. 장면마다 기기에 기억한다. 장면은 render(mode, t, C, P) 의 P 로 설정을 받는다.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { PAIRS, GROUPS } from "../features/display/pairs";
 import { PALETTE, W, H, SceneTitle, clearMeasureCache } from "../features/display/draw";
@@ -47,7 +47,7 @@ import { CURIO_LABS, CurioThumb } from "../features/display/frames/curio.jsx";
 import { BASIC_LABS, BasicsThumb } from "../features/display/frames/basics.jsx";
 import "../features/display/frames/allspec.jsx";        // 듀얼 모드 판마다 「문제 풀이 해설 전부」에서 고르기(frames/lesson.jsx 에 넣어 둔다)
 import { DSP_CSS, Btn, Ic, FrameIc } from "../features/display/stage-ui.jsx";
-import { avOfCat } from "../lib/av.js";
+import { avOfCat, printSeen } from "../lib/av.js";
 
 const LS = { mode: "ash.display.mode", theme: "ash.display.theme", idx: "ash.display.idx", rep: "ash.display.repeat", grp: "ash.display.group",
   view: "ash.display.view", hanoi: "ash.display.hanoi", prm: "ash.display.params" };
@@ -334,6 +334,10 @@ export function Stage({ av = null }) {
   } else layers.push({ key: "cur-" + mode, pair, mode, t, o: kin, P });
 
   const toggleThm = () => { setThm((v) => (v === "dark" ? "light" : "dark")); poke(); };
+  // 학생앱에서 연 시그니처 프린트(av.sig) — 본 기록을 프린트 key(「액자:세트」)로(lib/av.js 의 printSeen).
+  // 기본기 단원 · 회차는 기본기 액자가 따로 남긴다(그 액자에는 onSeen 을 넘기지 않는다 — 넘기면 액자 것을 덮는다).
+  const sigFk = av?.sig ? av.frame : null;
+  const sigSeen = useMemo(() => (sigFk ? printSeen(sigFk) : null), [sigFk]);
 
   return (
     <div ref={rootRef} className={"dsp-root dsp-" + thm + (ctl ? "" : " dsp-idle")}
@@ -345,7 +349,8 @@ export function Stage({ av = null }) {
         <div className="dsp-paper" />
         {view ? (
           <FrameStage key={view} fkey={view} pick={av?.frame === view ? av.set : null} C={C} ctl={ctl} poke={poke} isFs={isFs} toggleFs={toggleFs}
-            onTheme={toggleThm} onGallery={() => setGal(true)} onExit={closeFrame} inert={gal} mode={mode} onMode={flipMode} />
+            onTheme={toggleThm} onGallery={() => setGal(true)} onExit={closeFrame} inert={gal} mode={mode} onMode={flipMode}
+            {...(sigSeen && sigFk === view ? { onSeen: sigSeen } : {})} />
         ) : (<>
         <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
           role="img" aria-label={`${pair.title[mode]} — 수학 애니메이션`}>
@@ -521,7 +526,7 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
         <p className="dsp-gal-sub">고르면 바로 돌기 시작해요.</p>
         <div className="dsp-gal">
           {items.map((it) => {
-            const f = it.frame && !it.set ? FRAMES.find((x) => x.key === it.frame) : null;      // 기본기 단원(it.set)은 아이콘만
+            const f = it.frame && !it.set ? FRAMES.find((x) => x.key === it.frame) : null;      // 단원 100제(기본기 단원 · 시그니처 프린트 — it.set)는 아이콘만
             return (
               <button key={it.key} type="button" className={"dsp-fcard" + (av.key === it.key ? " on" : "")}
                 onClick={() => { if (it.key === av.key) onClose(); else location.hash = `#/av/${it.key}`; }}>
