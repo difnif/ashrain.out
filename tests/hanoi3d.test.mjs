@@ -4,6 +4,8 @@
 //   3) 로봇 다섯 대: 나르는 동안 손끝(드론은 갈고리)이 판 테두리에 1.5cm 안 — 기둥 3 ~ 5 · 원판 3 ~ 30 · 세 빠르기.
 //      드론은 늘 기둥 끝보다 위, 관절 자리에 NaN 이 없다.
 //   4) 세트 배치 · 카메라: 모든 세트(로봇 포함)가 무대의 안전한 칸에 들어오고 꼭 맞다. 물결 차례 = 화면 왼쪽부터.
+//   5) 로봇 모드 카메라 샷(shots.js): 단추 · 두 손가락 · 휠의 차례, 원샷 = 정면(로봇마다 살짝 위) · 투샷 = 완만한 사선 항공뷰(눈부신 방위 피함) ·
+//      주인공이 안전한 칸 안 · 투샷 둘이 겹치지 않음 · 겹치는 세트는 뺌 · 원샷 < 투샷 < 전체 거리.
 import assert from "node:assert/strict";
 import { HANOI, hanoiTimeline, hanoiAt, setAt, pathPoint, levelY } from "../src/features/display/hanoi.js";
 import {
@@ -11,6 +13,9 @@ import {
 } from "../src/features/display/hanoi3d/plan.js";
 import { KINS, dist3, ik2, footStep } from "../src/features/display/hanoi3d/kin.js";
 import { lookCam, project } from "../src/features/display/sim3d/persp.js";
+import {
+  normShot, sameShot, shotLabel, cycleShot, zoomInShot, zoomOutShot, swipeShot, shotCam, shotPoints, overlap, ONE, TWO, GLARE, ROBOT_NAMES,
+} from "../src/features/display/hanoi3d/shots.js";
 
 let n = 0, failed = 0;
 function test(name, fn) {
@@ -202,6 +207,108 @@ test("카메라: 세트 1 ~ 5 · 기둥 3 ~ 5 · 원판 3 ~ 30 모두 무대의 
 test("2D 와 3D 가 같은 높이 눈금: 쌓인 판의 아랫면 = 받침 + 깔린 수 × 두께", () => {
   const TL = hanoiTimeline(12, "x1", 4), G = dims(TL.L);
   for (let lv = 0; lv < 12; lv++) near(restOf(G, 1, lv, 3).y, BT + (TL.L.yBase - levelY(TL.L, lv)) * U, 1e-12);
+});
+
+
+/* ── 5. 로봇 모드 카메라 샷 ── */
+test("샷 다듬기 · 이름: 전체(null) · 원샷 ① ~ ⑤ · 투샷 ①② ~ ④⑤ — 모르는 값은 전체, 들어온 투샷(p)은 그 원샷이 든 짝만", () => {
+  for (const bad of [null, undefined, 3, "x", {}, { n: 3, i: 0 }, { n: 0 }]) assert.equal(normShot(bad), null);
+  assert.deepEqual(normShot({ n: 1, i: 9 }), { n: 1, i: 4 });
+  assert.deepEqual(normShot({ n: 2, i: 4 }), { n: 2, i: 3 });
+  assert.deepEqual(normShot({ n: 1, i: 2, p: 1 }), { n: 1, i: 2, p: 1 });
+  assert.deepEqual(normShot({ n: 1, i: 2, p: 0 }), { n: 1, i: 2 }, "원샷 ③ 은 투샷 ①② 에 없다");
+  assert.ok(sameShot({ n: 1, i: 2, p: 1 }, { n: 1, i: 2 }) && sameShot(null, undefined) && !sameShot(null, { n: 2, i: 0 }));
+  assert.equal(shotLabel(null).tag, "전체");
+  assert.equal(shotLabel({ n: 1, i: 1 }).tag, "원샷 ② 로봇 개");
+  assert.equal(shotLabel({ n: 2, i: 3 }).tag, "투샷 ④⑤");
+  assert.deepEqual(ROBOT_NAMES, ["산업용 팔", "로봇 개", "휴머노이드", "두 바퀴", "드론"]);
+  assert.equal(ROBOTS.length, ROBOT_NAMES.length);
+});
+test("카메라 단추(C): 전체 → ① → ② → ③ → ④ → ⑤ → 전체 · 거꾸로 · 투샷이면 그 짝의 원샷", () => {
+  const seq = [];
+  let s = null;
+  for (let k = 0; k < 7; k++) { seq.push(s ? s.i + 1 : 0); s = cycleShot(s, 1); }
+  assert.deepEqual(seq, [0, 1, 2, 3, 4, 5, 0]);
+  assert.deepEqual(cycleShot(null, -1), { n: 1, i: 4 });
+  assert.equal(cycleShot({ n: 1, i: 0 }, -1), null);
+  assert.deepEqual(cycleShot({ n: 2, i: 2 }, 1), { n: 1, i: 2, p: 2 });
+  assert.deepEqual(cycleShot({ n: 2, i: 2 }, -1), { n: 1, i: 3, p: 2 });
+});
+test("두 손가락 · 휠: 벌리면 전체 → (손가락 가운데 로봇의) 투샷 → 원샷, 모으면 거꾸로(들어온 짝으로), 옆으로는 한 로봇씩(끝에서 그대로)", () => {
+  const at = (k) => [0, 1, 2, 3, 4].map((i) => Math.abs(i - k) * 100 + (i > k ? 1 : 0));
+  assert.deepEqual(zoomInShot(null, at(0)), { n: 2, i: 0 });
+  assert.deepEqual(zoomInShot(null, at(4)), { n: 2, i: 3 });
+  assert.deepEqual(zoomInShot(null, [300, 200, 50, 40, 400]), { n: 2, i: 2 }, "가장 가까운 ④ 와 그 옆에서 더 가까운 ③");
+  assert.deepEqual(zoomInShot(null, [300, 30, 60, 400, 500]), { n: 2, i: 1 });
+  assert.deepEqual(zoomInShot(null, null), { n: 2, i: 1 }, "모르면 가운데");
+  assert.deepEqual(zoomInShot({ n: 2, i: 1 }, [9, 80, 20, 9, 9]), { n: 1, i: 2, p: 1 });
+  assert.deepEqual(zoomInShot({ n: 2, i: 1 }, null), { n: 1, i: 2, p: 1 }, "모르면 가운데 쪽");
+  assert.deepEqual(zoomInShot({ n: 1, i: 3 }, at(0)), { n: 1, i: 3 }, "원샷이 가장 가깝다");
+  assert.deepEqual(zoomOutShot({ n: 1, i: 2, p: 1 }), { n: 2, i: 1 }, "들어온 투샷으로");
+  assert.deepEqual(zoomOutShot({ n: 1, i: 2 }), { n: 2, i: 2 });
+  assert.deepEqual(zoomOutShot({ n: 1, i: 4 }), { n: 2, i: 3 });
+  assert.equal(zoomOutShot({ n: 2, i: 0 }), null);
+  assert.equal(zoomOutShot(null), null);
+  assert.deepEqual(swipeShot({ n: 1, i: 1 }, 1), { n: 1, i: 2 });
+  assert.deepEqual(swipeShot({ n: 1, i: 4 }, 1), { n: 1, i: 4 });
+  assert.deepEqual(swipeShot({ n: 2, i: 3 }, 1), { n: 2, i: 3 });
+  assert.deepEqual(swipeShot({ n: 2, i: 1 }, -1), { n: 2, i: 0 });
+  assert.equal(swipeShot(null, 1), null);
+});
+test("샷 카메라: 원샷 = 정면(로봇마다 살짝 위) · 투샷 = 완만한 사선 항공뷰(눈부신 방위 피함) · 주인공이 안전한 칸 안 · 투샷 둘이 겹치지 않음 · 원샷 < 투샷 < 전체", () => {
+  const SH = [0, 1, 2, 3, 4].map((i) => ({ n: 1, i })).concat([0, 1, 2, 3].map((i) => ({ n: 2, i })));
+  for (const pegs of HANOI.PEGS) for (const nn of [3, 8, 14, 30]) {
+    const G = dims(hanoiTimeline(nn, "x1", pegs).L), P = layoutSets(G, 5), all = cameraFor(G, 5);
+    for (const sh of SH) {
+      const c = shotCam(G, sh), C = lookCam(c), tag = `원판 ${nn} 기둥 ${pegs} ${sh.n === 1 ? "원샷" : "투샷"} ${sh.i}`;
+      assert.equal(shotCam(G, { ...sh }), c, "같은 샷은 기억해 둔 것");
+      assert.ok(finite(c) && c.d > 0, tag);
+      if (sh.n === 1) {
+        near(c.az, 0, 1e-12, `${tag} 정면`);
+        assert.equal(c.el, ONE.el[ROBOTS[sh.i]]);
+        assert.equal(c.fov, ONE.fov);
+        assert.ok(c.el > 0.15 && c.el < 0.4, `${tag} 살짝 위`);
+      } else {
+        assert.equal(c.el, TWO.el);
+        assert.ok(c.el < all.el && c.el > Math.max(...Object.values(ONE.el)), `${tag} 완만한 항공뷰(전체보다 낮고 원샷보다 높게)`);
+        assert.ok(Math.abs(c.az) >= TWO.az0 - 1e-9 && Math.abs(c.az) <= TWO.az1 + 1e-9, `${tag} 사선 ${c.az}`);
+        assert.ok(Math.abs(c.az - GLARE.az) >= GLARE.half, `${tag} 눈부신 방위 ${c.az}`);
+        assert.ok(c.fov > ONE.fov, `${tag} 원샷보다 넓은 화각`);
+        const box = (i) => {
+          const q = shotPoints(G, P, i).map((p) => project(C, p));
+          return { x0: Math.min(...q.map((v) => v[0])), x1: Math.max(...q.map((v) => v[0])), y0: Math.min(...q.map((v) => v[1])), y1: Math.max(...q.map((v) => v[1])) };
+        };
+        assert.ok(overlap(box(sh.i), box(sh.i + 1)) <= 0.02, `${tag} 두 로봇이 겹친다`);
+      }
+      assert.deepEqual(c.ids, sh.n === 1 ? [sh.i] : [sh.i, sh.i + 1]);
+      assert.ok(c.hide.every((k) => !c.ids.includes(k)), `${tag} 주인공을 뺐다`);
+      for (const i of c.ids) for (const p of shotPoints(G, P, i)) {
+        const s = project(C, p);
+        assert.ok(s && s[0] >= SAFE.x0 - 0.5 && s[0] <= SAFE.x1 + 0.5 && s[1] >= SAFE.y0 - 0.5 && s[1] <= SAFE.y1 + 0.5, `${tag} 주인공이 칸 밖 ${s}`);
+      }
+      assert.ok(c.d < all.d, `${tag} 전체보다 가깝다`);
+    }
+    for (let i = 0; i < 5; i++) {
+      const one = shotCam(G, { n: 1, i });
+      for (const p of [i - 1, i].filter((k) => k >= 0 && k < 4)) assert.ok(one.d < shotCam(G, { n: 2, i: p }).d, `원샷 ${i} 이 투샷 ${p} 보다 가깝다`);
+    }
+    // 바로 앞 세트에 가린 뒷줄 원샷 — 앞 세트는 그 샷 동안 뺀다 · 주인공보다 앞에서 화면에 걸리는 세트는 어느 샷에도 없다
+    for (const [i, k] of [[2, 1], [4, 3]]) {
+      const ahead = P[k].z > P[i].z && Math.abs(P[k].x - P[i].x) < G.W / 2;
+      if (ahead) assert.ok(shotCam(G, { n: 1, i }).hide.includes(k), `원판 ${nn} 기둥 ${pegs} 원샷 ${i}: 앞의 ${k} 를 뺀다`);
+    }
+    for (const sh of SH) {
+      const c = shotCam(G, sh), C = lookCam(c);
+      const zmin = Math.min(...c.ids.flatMap((i) => shotPoints(G, P, i).map((p) => project(C, p)[2])));
+      for (let k = 0; k < 5; k++) {
+        if (c.ids.includes(k) || c.hide.includes(k)) continue;
+        for (const p of shotPoints(G, P, k)) {
+          const q = project(C, p);
+          if (q && q[0] > 0 && q[0] < 1600 && q[1] > 0 && q[1] < 900) assert.ok(q[2] >= zmin, `원판 ${nn} 기둥 ${pegs} ${JSON.stringify(sh)}: 앞에 ${k} 가 보인다`);
+        }
+      }
+    }
+  }
 });
 
 console.log(`\n${n - failed}/${n} 통과`);

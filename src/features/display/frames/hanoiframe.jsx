@@ -4,9 +4,15 @@
 //   세트 2개부터 대각선 위에서 내려다보고, 5개면 로봇 다섯 대가 나른다. 4배속이면 파티(조명 · 콘페티).
 // 보기: 「입체」(three.js 3D, 처음 볼 때 내려받는다 — 그동안은 평면 그림) | 「평면」(SVG). 3D 를 못 쓰면 저절로 평면.
 // 원판 · 기둥 수를 바꾸면 처음부터, 빠르기를 바꾸면 옮기던 그 이동의 같은 진행에서, 세트 수는 그대로 이어진다.
+// 로봇 모드(입체 · 세트 5개)에서는 오른쪽에 카메라 단추 — 원샷(로봇 하나가 옮기는 탑을 정면에서) ① → ⑤ → 전체(C).
+//   두 손가락: 벌리면 가까이(전체 → 투샷 → 원샷, 손가락 가운데의 로봇으로) · 모으면 멀리 · 옆으로 밀면 옆 로봇 — 손짓 한 번에 한 단계,
+//   움직이는 동안은 화면이 손가락을 살짝 따라온다. 휠도 같다(위 가까이 · 아래 멀리 · 가로 옆).
+//   투샷 = 이웃한 로봇 둘을 완만한 사선 항공뷰로(짝마다 사선 방향 · 화각이 다르다). 샷은 방송처럼 「컷」으로 바뀐다(hanoi3d/shots.js).
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HANOI, normSpeed, hanoiTimeline, hanoiAt, remapElapsed, fmtDur, comma, movesOf } from "../hanoi";
 import { HanoiInfo, HanoiSets2D } from "./hanoi.jsx";
+import { ROBOT_SETS } from "../hanoi3d/plan.js";
+import { normShot, sameShot, shotLabel, cycleShot, zoomInShot, zoomOutShot, swipeShot } from "../hanoi3d/shots.js";
 
 const Stage3D = lazy(() => import("../hanoi3d/Stage.jsx"));
 const LSK = "ash.display.hanoi";
@@ -15,8 +21,12 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const lsSet = (k, v) => { try { localStorage.setItem(k, String(v)); } catch { /* 사생활 모드 등 */ } };
 const SP_SHORT = { natural: "자연스럽게", x1: "1배", x2: "2배", x3: "3배", x4: "4배" };
 const SP_TITLE = { natural: "자연스럽게 — 옮기는 길이에 맞춰", x1: "1배속 — 1초에 1개", x2: "2배속 — 1초에 2개", x3: "3배속 — 1초에 3개", x4: "4배속 — 1초에 4개 · 파티" };
+const CAM_IC = "M3.5 7.5h10.5a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5H3.5A1.5 1.5 0 0 1 2 15V9a1.5 1.5 0 0 1 1.5-1.5zM15.5 10.6 21 7.5v9l-5.5-3.1";
+const ALL_IC = "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5";
+const PINCH = 1.32;            // 두 손가락 사이가 이만큼 벌어지면(또는 1/PINCH 로 모이면) 한 단계
+const SWIPE = 110;             // 두 손가락 가운데가 옆으로 이만큼(px) 가면 옆 로봇
 
-/** 저장된 상태: 원판 · 기둥 · 세트 · 빠르기 · 보기 · 시작 시각(벽시계 ms) · 멈춘 경과. 예전 값("fast")도 읽는다 */
+/** 저장된 상태: 원판 · 기둥 · 세트 · 빠르기 · 보기 · 시작 시각(벽시계 ms) · 멈춘 경과 · 로봇 모드 카메라 샷. 예전 값("fast")도 읽는다 */
 export function loadHanoi() {
   try {
     const o = JSON.parse(localStorage.getItem(LSK) || "null");
@@ -24,11 +34,11 @@ export function loadHanoi() {
       return {
         n: o.n, pegs: HANOI.PEGS.includes(o.pegs) ? o.pegs : 3, sets: HANOI.SETS.includes(o.sets) ? o.sets : 1,
         sp: normSpeed(o.sp), view: o.view === "2d" ? "2d" : "3d",
-        t0: o.t0, held: Number.isFinite(o.held) && o.held >= 0 ? o.held : null,
+        t0: o.t0, held: Number.isFinite(o.held) && o.held >= 0 ? o.held : null, shot: normShot(o.shot),
       };
     }
   } catch { /* 처음이거나 망가진 값 */ }
-  return { n: HANOI.DEF, pegs: 3, sets: 1, sp: "x1", view: "3d", t0: Date.now(), held: null };
+  return { n: HANOI.DEF, pegs: 3, sets: 1, sp: "x1", view: "3d", t0: Date.now(), held: null, shot: null };
 }
 
 export function HanoiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, onExit, inert, ui }) {
@@ -40,6 +50,10 @@ export function HanoiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
   const [sets, setSets] = useState(init.current.sets);
   const [sp, setSp] = useState(init.current.sp);
   const [view, setView] = useState(init.current.view);
+  const [shot, setShot] = useState(init.current.shot);
+  const [flash, setFlash] = useState(false);             // 샷을 바꾼 뒤 잠깐 — 단추 옆에 샷 이름
+  const flashT = useRef(0);
+  const eng = useRef(null);
   const [fail3d, setFail3d] = useState(false);
   const [ready3d, setReady3d] = useState(false);
   const [paused, setPaused] = useState(init.current.held != null);
@@ -49,13 +63,13 @@ export function HanoiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
   const TL = useMemo(() => hanoiTimeline(n, sp, pegs), [n, sp, pegs]);
   const natTotal = useMemo(() => hanoiTimeline(n, "natural", pegs).total, [n, pegs]);
   const R = useRef({});
-  R.current = { n, pegs, sets, sp, view, inert };
+  R.current = { n, pegs, sets, sp, view, inert, shot };
 
   const save = () => {
     const c = R.current;
-    lsSet(LSK, JSON.stringify({ n: c.n, pegs: c.pegs, sets: c.sets, sp: c.sp, view: c.view, t0: clk.current.t0, held: clk.current.held }));
+    lsSet(LSK, JSON.stringify({ n: c.n, pegs: c.pegs, sets: c.sets, sp: c.sp, view: c.view, t0: clk.current.t0, held: clk.current.held, shot: c.shot }));
   };
-  useEffect(() => { save(); }, [n, pegs, sets, sp, view, paused, ver]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { save(); }, [n, pegs, sets, sp, view, paused, ver, shot]);   // eslint-disable-line react-hooks/exhaustive-deps
   const elapsedNow = useCallback(() => (clk.current.held != null ? clk.current.held : Date.now() - clk.current.t0), []);
 
   const togglePause = useCallback(() => {
@@ -74,7 +88,23 @@ export function HanoiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
     if (!HANOI.PEGS.includes(k) || k === R.current.pegs) return;
     restartClock(); setPegs(k); setVer((v) => v + 1);
   }, []);
-  const setSetCount = useCallback((k) => { if (HANOI.SETS.includes(k)) setSets(k); }, []);
+  /** 로봇 모드 카메라 샷 바꾸기 — 늘 컷(kick: 컷 뒤 자리 잡기 "in" · "out" · ±1). 같은 샷이면 튕기기만 */
+  const goShot = useCallback((next, kick = null) => {
+    next = normShot(next);
+    if (sameShot(next, R.current.shot)) { eng.current?.bump(kick); return; }
+    R.current.shot = next;                                   // 이어지는 손짓이 다시 그리기 전에도 새 샷에서 이어 가게
+    setShot(next);
+    eng.current?.setShot(next, "cut", kick);
+    setFlash(true);
+    clearTimeout(flashT.current);
+    flashT.current = setTimeout(() => setFlash(false), 1800);
+  }, []);
+  useEffect(() => () => clearTimeout(flashT.current), []);
+  const setSetCount = useCallback((k) => {
+    if (!HANOI.SETS.includes(k)) return;
+    setSets(k);
+    if (k < ROBOT_SETS && R.current.shot) { R.current.shot = null; setShot(null); eng.current?.setShot(null, "glide"); }
+  }, []);
   const setSpeed = useCallback((s2) => {
     const { sp: s1, n: nn, pegs: pp } = R.current;
     s2 = normSpeed(s2);
@@ -89,6 +119,69 @@ export function HanoiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
     setSpeed(L[clamp(i + dir, 0, L.length - 1)]);
   }, [setSpeed]);
   const show3d = view === "3d" && !fail3d;
+  const robotCam = sets >= ROBOT_SETS && show3d && ready3d;   // 로봇 모드 카메라(단추 · 두 손가락 · 휠)
+  R.current.robotCam = robotCam;
+
+  /* ── 로봇 모드 카메라: 두 손가락 · 휠 → 가까이 · 멀리 · 옆 ── */
+  const act = useCallback((kind, at) => {
+    const cur = R.current.shot;
+    if (kind === "in") goShot(zoomInShot(cur, at ? eng.current?.pick(at.x, at.y) : null), "in");
+    else if (kind === "out") goShot(zoomOutShot(cur), "out");
+    else goShot(swipeShot(cur, kind), kind);
+  }, [goShot]);
+  const touch = useRef({ pts: new Map(), base: null, done: false });
+  const two = (pts) => {
+    const [a, b] = [...pts.values()];
+    return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, m: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
+  };
+  const tDown = (e) => {
+    if (e.pointerType === "mouse") return;
+    const T = touch.current;
+    T.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 이미 놓았다 */ }
+    if (T.pts.size === 2) T.base = two(T.pts);
+  };
+  const tMove = (e) => {
+    const T = touch.current;
+    if (!T.pts.has(e.pointerId)) return;
+    T.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (T.pts.size !== 2 || !T.base) return;
+    if (T.done) return;                                       // 손짓 한 번에 한 단계 — 더 가려면 손가락을 떼고 다시
+    const g = two(T.pts), k = g.d / T.base.d, dx = g.m.x - T.base.m.x, dy = g.m.y - T.base.m.y;
+    const fire = (kind) => { T.done = true; eng.current?.setLean(0, 0); act(kind, g.m); };
+    if (k >= PINCH) fire("in");
+    else if (k <= 1 / PINCH) fire("out");
+    else if (Math.abs(dx) >= SWIPE && Math.abs(dx) > 1.4 * Math.abs(dy)) fire(dx < 0 ? 1 : -1);
+    else eng.current?.setLean(clamp(Math.log(k) / Math.log(PINCH), -1, 1), clamp(-dx / SWIPE, -1, 1));
+  };
+  const tUp = (e) => {
+    const T = touch.current;
+    T.pts.delete(e.pointerId);
+    if (T.pts.size < 2) { T.base = null; eng.current?.setLean(0, 0); }
+    if (T.pts.size === 0) T.done = false;
+    if (T.pts.size === 2) T.base = two(T.pts);
+  };
+  const touchEl = useRef(null);
+  useEffect(() => { touch.current = { pts: new Map(), base: null, done: false }; }, [robotCam]);   // 막이 사라지면 남은 손가락 기록도 버린다
+  useEffect(() => {
+    const el = touchEl.current;
+    if (!el || !robotCam) return undefined;
+    const W = { y: 0, x: 0, t: 0, lock: 0 };
+    const onWheel = (e) => {
+      e.preventDefault();                                     // 트랙패드 두 손가락 벌리기(ctrl + 휠)가 화면을 키우지 않게
+      const now = performance.now(), m = e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 600 : 1;
+      if (now - W.t > 260) { W.y = 0; W.x = 0; }
+      W.t = now;
+      if (now < W.lock) return;
+      W.y += e.deltaY * m * (e.ctrlKey ? 4 : 1); W.x += e.deltaX * m;
+      const fire = (kind, at) => { act(kind, at); W.y = 0; W.x = 0; W.lock = now + 420; poke(); };
+      if (W.y <= -90) fire("in", { x: e.clientX, y: e.clientY });
+      else if (W.y >= 90) fire("out");
+      else if (Math.abs(W.x) >= 120 && Math.abs(W.x) > Math.abs(W.y)) fire(W.x > 0 ? 1 : -1);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [robotCam, act, poke]);
 
   /* ── 다시 그리기: 평면은 40fps, 입체는 글자만(8fps — 그림은 엔진이 스스로) · 멈추면 쉰다 ── */
   const drawing3d = show3d && ready3d;
@@ -118,13 +211,14 @@ export function HanoiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
       else if (k === "s" || k === "S") { const L = HANOI.SPEEDS; setSpeed(L[(L.indexOf(R.current.sp) + 1) % L.length]); poke(); }
       else if (k === "p" || k === "P") { const L = HANOI.PEGS; setPegCount(L[(L.indexOf(R.current.pegs) + 1) % L.length]); poke(); }
       else if (/^[1-5]$/.test(k)) { setSetCount(Number(k)); poke(); }
+      else if ((k === "c" || k === "C") && R.current.robotCam) { goShot(cycleShot(R.current.shot, e.shiftKey ? -1 : 1)); poke(); }
       else if (k === "v" || k === "V") { setReady3d(false); setView((v) => (v === "3d" ? "2d" : "3d")); poke(); }
       else if (k === "r" || k === "R") { restart(); poke(); }
       else if (k === "f" || k === "F") toggleFs();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePause, setDisks, stepSpeed, setSpeed, setPegCount, setSetCount, restart, toggleFs, poke]);
+  }, [togglePause, setDisks, stepSpeed, setSpeed, setPegCount, setSetCount, restart, toggleFs, poke, goShot]);
 
   const e = elapsedNow();
   const st = hanoiAt(TL, e);
@@ -146,12 +240,26 @@ export function HanoiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
       {(!show3d || !ready3d) && flat}
       {show3d && (
         <Suspense fallback={null}>
-          <Stage3D cfg={cfg} theme={C.name} clock={elapsedNow} paused={paused} onFail={() => setFail3d(true)} onReady={() => setTimeout(() => setReady3d(true), 760)} />
+          <Stage3D cfg={cfg} theme={C.name} clock={elapsedNow} paused={paused} onFail={() => setFail3d(true)} onReady={() => setTimeout(() => setReady3d(true), 760)}
+            onEngine={(e) => { eng.current = e; if (e) e.setShot(R.current.shot, "cut"); }} />
         </Suspense>
       )}
       <svg className="dsp-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true" style={{ pointerEvents: "none" }}>
         <HanoiInfo L={TL.L} st={st} C={C} info={info} bannerY={show3d || sets > 1 ? 128 : undefined} />
       </svg>
+      {robotCam && (<>
+        <style>{CAM_CSS}</style>
+        <div ref={touchEl} className="hn-touch" aria-hidden="true" onPointerDown={tDown} onPointerMove={tMove} onPointerUp={tUp} onPointerCancel={tUp} />
+        <div className={"hn-cam" + (ctl ? " show" : "") + (flash ? " flash" : "")} onPointerDown={stop}>
+          <div className="hn-cam-row">
+            <span className="hn-cam-lab" aria-live="polite">{shotLabel(shot).long}</span>
+            <button type="button" className={"hn-cam-btn" + (shot ? " on" : "")} aria-label={`카메라 — 지금 ${shotLabel(shot).long}. 누르면 다음 샷 (C)`}
+              title="카메라 (C) — 원샷 ① → ⑤ → 전체" onClick={() => { goShot(cycleShot(shot, 1)); poke(); }}><Ic d={CAM_IC} /></button>
+          </div>
+          {shot && <button type="button" className="hn-cam-all" onClick={() => { goShot(null); poke(); }} title="전체 — 로봇 다섯 대"><Ic d={ALL_IC} />전체</button>}
+          <span className="hn-cam-tip">두 손가락 · 벌리면 가까이 · 모으면 멀리 · 옆으로 밀면 옆 로봇</span>
+        </div>
+      </>)}
 
       <div className={"dsp-ctl" + (ctl ? " show" : "")} onPointerDown={stop}>
         <Btn title="처음부터 (R)" onClick={() => { restart(); poke(); }}><Ic d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4.6h4.6" /></Btn>
@@ -215,8 +323,36 @@ export function HanoiFrame({ C, ctl, poke, isFs, toggleFs, onTheme, onGallery, o
       <div className="dsp-tags">
         {paused && <span className="dsp-tag">멈춤</span>}
         {sets >= 5 && show3d && <span className="dsp-tag robot">로봇 다섯 대</span>}
+        {robotCam && shot && <span className="dsp-tag robot">{shotLabel(shot).tag}</span>}
         {sp === "x4" && show3d && <span className="dsp-tag party">파티 모드</span>}
       </div>
     </>
   );
 }
+
+/* 로봇 모드 카메라 — 오른쪽 가운데 단추(조작이 숨으면 흐리게) · 두 손가락 받는 막(화면 전체, 브라우저 확대 대신) */
+const CAM_CSS = `
+.hn-touch { position: absolute; left: 50%; top: 50%; width: 100vw; height: 100vh; transform: translate(-50%, -50%); z-index: 2; touch-action: none; }
+.hn-cam { position: absolute; right: 2.6cqw; top: 50%; transform: translateY(-50%); z-index: 7; display: flex; flex-direction: column; align-items: flex-end; gap: .8cqw;
+  pointer-events: none; }                    /* 단추만 누른다 — 이름 · 안내 글자 자리는 두 손가락 막으로 */
+.hn-cam-row { display: flex; align-items: center; gap: .9cqw; }
+.hn-cam-btn { width: 5cqw; height: 5cqw; padding: 0; border-radius: 999px; border: 1px solid var(--chipbd); background: var(--chip); color: var(--ink);
+  display: grid; place-items: center; font-size: 2.5cqw; cursor: pointer; opacity: .55; -webkit-tap-highlight-color: transparent; pointer-events: auto;
+  transition: opacity .3s, color .25s, border-color .25s, transform .15s; }
+.hn-cam-btn.on { color: #5fe6ff; border-color: rgba(95,230,255,.5); }
+.dsp-light .hn-cam-btn.on { color: #0f7f8f; border-color: rgba(15,127,143,.45); }
+.hn-cam.show .hn-cam-btn, .hn-cam.flash .hn-cam-btn, .hn-cam-btn:hover { opacity: 1; }
+.hn-cam-btn:hover { color: var(--gold); border-color: var(--gold); }
+.hn-cam-btn:active { transform: scale(.93); }
+.hn-cam-lab { font-size: 1.2cqw; font-weight: 800; color: var(--ink); background: var(--chip); border: 1px solid var(--chipbd); border-radius: 999px;
+  padding: .5cqw 1cqw; white-space: nowrap; opacity: 0; transform: translateX(.8cqw); transition: opacity .3s, transform .3s; pointer-events: none; }
+.hn-cam.show .hn-cam-lab, .hn-cam.flash .hn-cam-lab { opacity: 1; transform: none; }
+.hn-cam-all { display: flex; align-items: center; gap: .4cqw; font: inherit; font-size: 1.1cqw; font-weight: 800; color: var(--ink); background: var(--chip);
+  border: 1px solid var(--chipbd); border-radius: 999px; padding: .45cqw .9cqw; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .3s; }
+.hn-cam-all svg { font-size: 1.2cqw; }
+.hn-cam.show .hn-cam-all { opacity: 1; pointer-events: auto; }
+.hn-cam-tip { font-size: .95cqw; font-weight: 700; color: var(--soft); white-space: nowrap; opacity: 0; transition: opacity .3s; pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.hn-cam.show .hn-cam-tip { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .hn-cam-btn, .hn-cam-lab { transition: none; } }
+`;

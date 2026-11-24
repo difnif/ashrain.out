@@ -13,6 +13,7 @@ import { FXAAPass } from "three/addons/postprocessing/FXAAPass.js";
 import { canvasFov } from "../sim3d/persp.js";
 import { setAt } from "../hanoi.js";
 import { dims, layoutSets, cameraFor, sceneRadius, robotPlan, STYLES, ROBOTS, ROBOT_SETS, PL, smooth } from "./plan.js";
+import { normShot, shotCam } from "./shots.js";
 import { Kit, Station } from "./station.js";
 import { makeRobot } from "./robots.js";
 import { robotMaterials, NOISE_GLSL } from "./materials.js";
@@ -426,8 +427,26 @@ export function createHanoiEngine(canvas, { theme = "dark", getElapsed = () => 0
   }
   function dropRobot(s) { if (s.robot) { s.root.remove(s.robot.root); s.robot.dispose(); s.robot = null; } }
 
-  let camGoal = null;
+  // 카메라: 세트 수에 맞춘 기본(camBase) — 로봇 모드에서는 샷(shots.js: 원샷 · 투샷)으로 바꿀 수 있다(컷 + 살짝 자리 잡기)
+  let camGoal = null, camBase = null, shot = null, hide = new Set();
   const cam = { at: new THREE.Vector3(), d: 6, az: 0, el: 0.2, fov: 28, init: false };
+  const lean = { z: 0, x: 0, gz: 0, gx: 0 };       // 두 손가락이 움직이는 동안 살짝 따라가기(z 가까이 · x 옆으로, −1 ~ 1)
+  const lc = { x: 0, z: 0, init: false };            // 빛 · 그림자 · 파티의 가운데 — 샷이 바뀌어도 무대 전체(기본 카메라)를 따른다
+  const shotOn = () => S >= ROBOT_SETS && !!shot;
+  /** 목표 카메라 다시 잡기. how = "cut" 이면 곧장 그 자리로(kick: 컷 뒤에 자리 잡는 움직임 — "in" 밀며 · "out" 물러나며 · ±1 옆으로) */
+  function aim(how = "glide", kick = null) {
+    if (!G || !camBase) return;
+    const sc = shotOn() ? shotCam(G, shot) : null;
+    camGoal = sc || camBase;
+    hide = new Set(sc ? sc.hide : []);
+    if (how !== "cut" || !cam.init) return;
+    cam.at.set(...camGoal.at); cam.d = camGoal.d; cam.az = camGoal.az; cam.el = camGoal.el; cam.fov = camGoal.fov;
+    if (kick === "in") cam.d *= 1.09;
+    else if (kick === "out") cam.d *= 0.92;
+    else if (kick === 1 || kick === -1) { cam.az -= 0.075 * kick; cam.d *= 1.02; }
+    else cam.d *= 1.05;
+    lean.z = lean.x = lean.gz = lean.gx = 0;
+  }
 
   function applyConfig() {
     if (!cfg) return;
@@ -454,11 +473,13 @@ export function createHanoiEngine(canvas, { theme = "dark", getElapsed = () => 0
       } else s.alive = false;
     }
     rebuildAll = false; quiet = false;
-    camGoal = cameraFor(G, S);
+    camBase = cameraFor(G, S);
+    aim("glide");
     sceneR = sceneRadius(G, S);
     if (!cam.init) {
       cam.at.set(...camGoal.at); cam.d = camGoal.d; cam.az = camGoal.az; cam.el = camGoal.el; cam.fov = camGoal.fov; cam.init = true;
     }
+    if (!lc.init) { lc.x = camBase.at[0]; lc.z = camBase.at[2]; lc.init = true; }
     // 그림자 상자 · 바닥 무늬 · 무대 빛 웅덩이
     const sr = sceneR + 1.2;
     const sc = key.shadow.camera;
@@ -539,7 +560,7 @@ export function createHanoiEngine(canvas, { theme = "dark", getElapsed = () => 0
   }
 
   /* ══════════ 그리기 ══════════ */
-  let raf = 0, last = 0, lastFrame = 0, paused = false, lost = false, dead = false;
+  let raf = 0, last = 0, lastFrame = 0, paused = false, lost = false, dead = false, tiltK = 1;
   const camPos = new THREE.Vector3();
   const _dir = new THREE.Vector3(0.42, 0.86, 0.55).normalize();
   const _rimLd = new THREE.Vector3(-0.7, 0.55, -0.6).normalize(), _rimRd = new THREE.Vector3(0.75, 0.5, -0.55).normalize();
@@ -577,7 +598,7 @@ export function createHanoiEngine(canvas, { theme = "dark", getElapsed = () => 0
       s.x += (s.tx - s.x) * k; s.z += (s.tz - s.z) * k;
       s.k = clamp(s.k + (s.alive ? 1 : -1) * dt / 0.6, 0, 1);
       const sk = s.alive ? 1 - Math.pow(1 - s.k, 3) : s.k * s.k;
-      s.root.visible = s.k > 0.001;
+      s.root.visible = s.k > 0.001 && !hide.has(s.i);          // 샷 동안 주인공 앞을 가리는 세트는 뺀다
       s.root.position.set(s.x, 0, s.z);
       s.root.scale.setScalar(Math.max(0.001, sk));
       if (!s.alive && s.k <= 0 && s.station) { s.root.remove(s.station.root); s.station.dispose(); s.station = null; dropRobot(s); }
@@ -589,23 +610,26 @@ export function createHanoiEngine(canvas, { theme = "dark", getElapsed = () => 0
     const spots = floorMat.uniforms.uSpot.value, boxes = floorMat.uniforms.uBox.value;
     for (let i = 0; i < 5; i++) {
       const s = sets[i];
-      if (s && s.station && s.k > 0.001 && G) {
+      if (s && s.station && s.k > 0.001 && G && !hide.has(s.i)) {
         const sk = s.root.scale.x;
         spots[i].set(s.x, s.z + 0.1, G.W * 0.5 * sk, T.spotK * sk);
         const hw = lift > 0.01 ? G.plinth.w / 2 : G.W / 2 - 0.04, hd = lift > 0.01 ? G.plinth.d / 2 : G.D / 2 - 0.04;
         boxes[i].set(s.x, s.z, hw * sk, hd * sk);
       } else { spots[i].set(0, 0, 1, 0); boxes[i].set(0, 0, 0, 0); }
     }
-    // 카메라(부드럽게 따라가며 아주 천천히 숨쉰다)
+    // 카메라(부드럽게 따라가며 아주 천천히 숨쉰다 · 두 손가락을 살짝 따라간다)
     const pl = party.state.level;
     if (camGoal) {
       const k = 1 - Math.exp(-dt * 2.2);
       cam.at.x += (camGoal.at[0] - cam.at.x) * k; cam.at.y += (camGoal.at[1] - cam.at.y) * k; cam.at.z += (camGoal.at[2] - cam.at.z) * k;
       cam.d += (camGoal.d - cam.d) * k; cam.az += (camGoal.az - cam.az) * k; cam.el += (camGoal.el - cam.el) * k; cam.fov += (camGoal.fov - cam.fov) * k;
     }
-    const az = cam.az + 0.035 * Math.sin(time * 0.11) + pl * 0.15 * Math.sin(time * 0.23);
+    if (camBase) { const k = 1 - Math.exp(-dt * 2.2); lc.x += (camBase.at[0] - lc.x) * k; lc.z += (camBase.at[2] - lc.z) * k; }
+    { const k = 1 - Math.exp(-dt * 9); lean.z += (lean.gz - lean.z) * k; lean.x += (lean.gx - lean.x) * k; }
+    const sway = shotOn() ? 0.6 : 1;                    // 샷에서는 숨쉬기를 조금 줄인다(가까이 보니까)
+    const az = cam.az + sway * 0.035 * Math.sin(time * 0.11) + pl * 0.15 * sway * Math.sin(time * 0.23) + 0.06 * lean.x;
     const el = cam.el + 0.012 * Math.sin(time * 0.13 + 1) + pl * 0.03 * Math.sin(time * 0.31);
-    const d = cam.d * (1 + 0.012 * Math.sin(time * 0.09) - pl * 0.004 * party.state.beat);
+    const d = cam.d * (1 + 0.012 * Math.sin(time * 0.09) - pl * 0.004 * party.state.beat) * (1 - 0.07 * lean.z);
     camPos.set(cam.at.x + d * Math.sin(az) * Math.cos(el), cam.at.y + d * Math.sin(el), cam.at.z + d * Math.cos(az) * Math.cos(el));
     camera.position.copy(camPos);
     camera.up.set(0, 1, 0);
@@ -618,7 +642,7 @@ export function createHanoiEngine(canvas, { theme = "dark", getElapsed = () => 0
     camera.updateMatrixWorld();
     dome.position.copy(camPos);
     // 빛
-    sceneC.x = cam.at.x; sceneC.z = cam.at.z;
+    sceneC.x = lc.x; sceneC.z = lc.z;
     key.position.set(sceneC.x + _dir.x * 24, _dir.y * 24, sceneC.z + _dir.z * 24);
     key.target.position.set(sceneC.x, 0, sceneC.z);
     rimL.position.set(sceneC.x + _rimLd.x * 20, _rimLd.y * 20, sceneC.z + _rimLd.z * 20); rimL.target.position.set(sceneC.x, 0, sceneC.z);
@@ -660,7 +684,9 @@ export function createHanoiEngine(canvas, { theme = "dark", getElapsed = () => 0
     }
     // 그리기
     tiltH.enabled = tiltV.enabled = Q.tilt && S > 1;
-    const amt = 2.2 * pr * (S >= ROBOT_SETS ? 0.8 : 1);
+    const one = shotOn() && shot.n === 1;              // 원샷(정면 · 가까이)은 아래위 흐림을 거의 끈다 — 로봇 머리 · 테이블이 흐려지지 않게
+    tiltK += ((one ? 0.2 : 1) - tiltK) * (1 - Math.exp(-dt * 4));
+    const amt = 2.2 * pr * (S >= ROBOT_SETS ? 0.8 : 1) * tiltK;
     tiltH.uniforms.uAmt.value = amt; tiltV.uniforms.uAmt.value = amt;
     grade.uniforms.uTime.value = time;
     grade.uniforms.uVig.value = T.vig + P.level * 0.12;
@@ -680,11 +706,31 @@ export function createHanoiEngine(canvas, { theme = "dark", getElapsed = () => 0
   floorMat.uniforms.uHasRefl.value = Q.refl ? 1 : 0;
   raf = requestAnimationFrame(frame);
 
+  const _pv = new THREE.Vector3();
   return {
     setConfig,
     setTheme(name) { if (name === themeName) return; try { applyTheme(name); applyConfig(); } catch (e) { fail(e); } },
     setPaused(p) { paused = !!p; },
-    get stats() { return { tier: TIERS[tier].name, pr, gpu: det.gpu, forced: det.forced, calls: renderer.info.render.calls, tris: renderer.info.render.triangles }; },
+    /** 로봇 모드 샷(shots.js) — how "cut"(기본) | "glide" · kick: 컷 뒤 자리 잡기("in" · "out" · ±1). 로봇 모드가 아니면 기억만 */
+    setShot(sh, how = "cut", kick = null) { shot = normShot(sh); try { aim(how, kick); } catch (e) { fail(e); } },
+    get shot() { return shot; },
+    /** 두 손가락을 따라 살짝(z: 가까이 +1 ~ 멀리 −1 · x: 옆) — 손을 떼면 0 */
+    setLean(z = 0, x = 0) { lean.gz = clamp(z, -1, 1); lean.gx = clamp(x, -1, 1); },
+    /** 더 갈 곳이 없을 때 튕기기 */
+    bump(kick) { if (kick === "in") lean.z = 0.7; else if (kick === "out") lean.z = -0.7; else if (kick === 1 || kick === -1) lean.x = 0.8 * kick; },
+    /** 화면 점(clientX · clientY)에서 로봇(세트) 0 ~ 4 까지의 화면 거리(px) — 없는 세트는 Infinity */
+    pick(cx, cy) {
+      const r = canvas.getBoundingClientRect(), out = [];
+      for (let i = 0; i < ROBOT_SETS; i++) {
+        const s = sets[i];
+        if (!s || !s.alive || !G || hide.has(i)) { out.push(Infinity); continue; }
+        _pv.set(s.x, PL * lift + G.top * 0.6, s.z).project(camera);
+        if (_pv.z > 1) { out.push(Infinity); continue; }
+        out.push(Math.hypot(r.left + ((_pv.x + 1) / 2) * r.width - cx, r.top + ((1 - _pv.y) / 2) * r.height - cy));
+      }
+      return out;
+    },
+    get stats() { return { tier: TIERS[tier].name, pr, gpu: det.gpu, forced: det.forced, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, shot, hide: [...hide] }; },
     dispose() {
       dead = true;
       cancelAnimationFrame(raf);
