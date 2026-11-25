@@ -285,7 +285,7 @@ export async function renderSheet(items, layout, cfg, title, sub) {
           const num = String(it.seq);
           pen.text(cx0 + r, y + r + 3.6, num, { size: num.length < 3 ? 9.6 : 8, bold: true, align: "center", color: [1, 1, 1] });
         } else {
-          pen.text(cx0, y + 10.2, `${it.seq}.`, { size: 11, bold: true });
+          pen.text(cx0, y + 10.2, `${it.seq}.`, { size: pen.fit(`${it.seq}.`, 11, GEO.gutter - 1, true, 7), bold: true });   // 100. 이상도 번호 칸 안에
         }
         const w = it.sizes[v][0];
         pen.image(await emb(it, v), cx0 + GEO.gutter, y, cx0 + GEO.gutter + w, y + h);
@@ -452,7 +452,7 @@ export async function buildAnswerPdf(entries, cfg, title, appendPages = []) {
         const c = EL_DOTS[(e.seq - 1) % EL_DOTS.length];
         pen.circle(cx + rr, cy + rr + 0.6, rr, { color: null, fill: c });
         pen.text(cx + rr, cy + rr + 3.6, lab, { size: lab.length < 3 ? 9.6 : lab.length < 4 ? 8 : pen.fit(lab, 7, 2 * rr - 1, true, 5), bold: true, align: "center", color: [1, 1, 1] });
-      } else pen.text(cx, cy + 10.2, `${lab}.`, { size: lab.length < 4 ? 11 : pen.fit(`${lab}.`, 11, gut - 1, true, 7), bold: true });
+      } else pen.text(cx, cy + 10.2, `${lab}.`, { size: pen.fit(`${lab}.`, 11, gut - 1, true, 7), bold: true });   // 100. 이상 · 10-1 같은 번호도 번호 칸 안에
       pen.image(await emb(sol.png), cx + gut, cy, cx + gut + sol.w * s, cy + h);
       cy += need + 5 * MM;
     }
