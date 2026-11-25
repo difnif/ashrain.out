@@ -2,6 +2,7 @@
 // 본질: 기록. 서고(장서고·문서고·기록고) · 사무(행정, 무료) · 서무(코퍼스, 유료) + 공통 광장(하소·방).
 // 내부 해시: #/ 홈 · #/seogo(/:tab) · #/samu(/:id) · #/seomu(/:tab) · #/more
 //           #/haso · #/bang · #/my · #/support · #/fonts(관리자) · #/tt(/…) 강사도구(PC 강사도구의 웹판)
+//           #/games 게임(강사가 해 보며 다듬는 게임 — 굴뚝새 1막 베타, 더보기에서)
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import RoleSwitch from "../../shared/RoleSwitch";
@@ -19,9 +20,10 @@ import Support from "./pages/Support";
 import Fonts from "./pages/Fonts";
 import More from "./pages/More";
 const TeacherTool = lazy(() => import("./TeacherTool"));
+const Games = lazy(() => import("./pages/Games"));
 
 const NAV = [["", "홈"], ["seogo", "서고"], ["samu", "사무"], ["seomu", "서무"], ["tt", "강사도구"], ["more", "더보기"]];
-const MORE_SET = ["haso", "bang", "my", "support", "fonts", "more"];
+const MORE_SET = ["haso", "bang", "my", "support", "fonts", "games", "more"];
 
 export default function SeiroccoApp() {
   const [ms, setMs] = useState(null);
@@ -50,7 +52,7 @@ export default function SeiroccoApp() {
   const allowed = isInstructor || isAssistant;
 
   const PAGES = { "": Home, seogo: Seogo, samu: Samu, seomu: Seomu,
-    haso: Haso, bang: Bang, my: My, support: Support, fonts: Fonts, more: More, tt: TeacherTool };
+    haso: Haso, bang: Bang, my: My, support: Support, fonts: Fonts, more: More, tt: TeacherTool, games: Games };
   // 조교 제한 모드: 광장과 문의만
   const AST = { "": Home, haso: Haso, bang: Bang, support: Support };
   const Cmp = (isAssistant ? AST[page] : PAGES[page]) || Home;
@@ -59,7 +61,7 @@ export default function SeiroccoApp() {
   return (
     <div className="ap-shell">
       <Kit />
-      <div className={"ap-wrap" + (page === "tt" && !isAssistant ? " tt-wide" : "")}>
+      <div className={"ap-wrap" + (page === "tt" && !isAssistant ? " tt-wide" : page === "games" && !isAssistant ? " g-wide" : "")}>
         <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <LogoTrigger handle={<span className="lt-tile">시</span>}
             right={{ tag: "모", label: "학부모앱", go: () => navigatePath("/jongseong") }}
