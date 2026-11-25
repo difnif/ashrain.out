@@ -2,6 +2,7 @@
 // 개념 설명이 예를 드는 단락 안에서, 그 예를 해설 액자(교실 모니터 시청각 콘텐츠)와 같은 판서 재생기로 돌린다 —
 //   문제 → 방침 → 판서(포지티브 · 네거티브 → 식 한 줄씩) → 답, 그림(자리 돌리기 · 짚어 세기 · 뽑기 · 나뭇가지 …)은 판서 줄에 맞춰 움직인다.
 // 예시 · 붙이는 자리: features/display/concept-av.js(CONCEPT_AV) — ConceptViewer 가 단락 끝에 이 카드를 놓는다(React.lazy — 그림 엔진은 이 카드를 열 때만 받는다).
+//   그 밖의 개념은 학기 파일 예시(public/concept-av/<학기>.json · cvgen/) — DB 단락 글줄의 「[[av:m1-1-26-1]]」 자리에서, 그 학기 파일을 처음 쓸 때 한 번 받는다.
 // 판: 카드가 넓으면 넓은 판(1600 폭 — 글자 왼쪽 · 그림 오른쪽), 좁으면(휴대폰) 좁은 판(800 폭 — 그림은 글자 아래). 판은 글자 · 그림 아래에서 잘라 빈 곳을 남기지 않는다.
 // 재생: 화면에 반쯤 들어오면 한 번 저절로 돈다(문제는 바로 보이고 방침부터 써진다) · 화면 밖으로 나가면 멈췄다가 돌아오면 잇는다 ·
 //   판을 누르면 멈춤/이어 보기 · 막대(단계 눈금)를 누르거나 끌면 그때로 · ↺ 처음부터 · 빠르기 1× / 1.5× · 움직임 줄이기 설정이면 다 푼 모습만.
@@ -12,6 +13,7 @@ import { l10Plan } from "../features/display/lin10.js";
 import { L10Art, layoutOf } from "../features/display/frames/lin10.jsx";
 import { stepMarks } from "../features/display/frames/scrub.jsx";
 import { AV_BY_ID } from "../features/display/concept-av.js";
+import { avUnitOf } from "../lib/conceptAv.js";
 
 export const AV_WIDE = { key: "cavw", left: 60, right: 1540, top: 64, bottom: 790, figTop: true };
 export const AV_NARROW = { key: "cavn", left: 40, right: 760, top: 56, bottom: 1900, figTop: true };
@@ -34,8 +36,27 @@ export function avSpan(it) {
 }
 const cloneIt = (it) => JSON.parse(JSON.stringify(it));
 
+// 학기 파일 예시(public/concept-av/<학기>.json — cvgen 생성기) — 그 학기 카드가 처음 쓸 때 한 번 받아 둔다
+const UNIT_DONE = new Map(), UNIT_WAIT = new Map();
+function loadUnit(unit) {
+  if (UNIT_DONE.has(unit)) return Promise.resolve(UNIT_DONE.get(unit));
+  if (!UNIT_WAIT.has(unit)) {
+    UNIT_WAIT.set(unit, fetch(`/concept-av/${unit}.json`, { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { const items = d?.items || {}; UNIT_DONE.set(unit, items); UNIT_WAIT.delete(unit); return items; })
+      .catch(() => { UNIT_WAIT.delete(unit); return {}; }));
+  }
+  return UNIT_WAIT.get(unit);
+}
+/** 시험 · 미리 보기 — 학기 파일을 받아 둔 것으로 넣는다({ items } 또는 items) */
+export function primeAvUnit(unit, data) { UNIT_DONE.set(unit, data?.items || data || {}); }
+/** 예시 id → 예시(코드 안 예시가 먼저, 다음은 받아 둔 학기 파일) */
+export const avItem = (id) => AV_BY_ID.get(id) || UNIT_DONE.get(avUnitOf(id))?.[id] || null;
+const unitsToLoad = (key) => [...new Set(key.split(",").filter((id) => id && !AV_BY_ID.has(id)).map(avUnitOf).filter((u) => u && !UNIT_DONE.has(u)))];
+
 const CSS = `
 .cav { margin: 14px 0 2px; border-radius: 14px; overflow: hidden; border: 1px solid var(--cav-bd); background: var(--cav-bg); }
+.cav-wait { min-height: 120px; }
 .cav-head { display: flex; align-items: baseline; gap: 8px; padding: 9px 12px 6px; }
 .cav-tag { font-size: 11.5px; font-weight: 800; letter-spacing: .4px; color: var(--cav-ac); white-space: nowrap; }
 .cav-title { font-size: 12.5px; font-weight: 700; color: var(--cav-ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -97,7 +118,16 @@ const reducedMotion = () => typeof matchMedia !== "undefined" && matchMedia("(pr
 /** 재생 카드 — ids: 예시 id 목록(둘 이상이면 칩으로 고른다) */
 export default function ConceptAv({ ids, theme = "light" }) {
   const key = (ids || []).join(",");
-  const list = useMemo(() => key.split(",").map((id) => AV_BY_ID.get(id)).filter(Boolean), [key]);
+  const [ver, setVer] = useState(0);            // 학기 파일을 받으면 다시 고른다
+  const pending = unitsToLoad(key).length > 0;
+  useEffect(() => {
+    const units = unitsToLoad(key);
+    if (!units.length) return undefined;
+    let live = true;
+    Promise.all(units.map(loadUnit)).then(() => { if (live) setVer((v) => v + 1); });
+    return () => { live = false; };
+  }, [key]);
+  const list = useMemo(() => key.split(",").map(avItem).filter(Boolean), [key, ver]); // eslint-disable-line react-hooks/exhaustive-deps
   const [sel, setSel] = useState(0);
   const ep = useFontEpoch();
   const base = list[Math.min(sel, list.length - 1)];
@@ -128,6 +158,10 @@ export default function ConceptAv({ ids, theme = "light" }) {
   const [sp, setSp] = useState(1);
   const auto = useRef(false);
   const seek = useCallback((v) => { tRef.current = v; setT(v); }, []);
+  // 예시가 늦게 도착하면(학기 파일) 처음 모습으로 — 문제는 보이고 방침부터
+  useEffect(() => {
+    if (span && tRef.current < span.t0) seek(reduce ? span.t1 : span.t0);
+  }, [span, reduce, seek]);
   // 예시를 바꾸면 처음부터
   const first = useRef(true);
   useEffect(() => {
@@ -185,7 +219,10 @@ export default function ConceptAv({ ids, theme = "light" }) {
   const onBarMove = (e) => { if (drag.current) seek(posT(e.clientX)); };
   const onBarUp = () => { drag.current = false; };
 
-  if (!it || !view || !span) return null;
+  if (!it || !view || !span) {
+    // 학기 파일을 받는 동안은 자리만(뷰포트 · 폭 재기는 이 상자에 붙어 그대로 이어진다)
+    return pending ? <div className="cav cav-wait" ref={wrap} style={VARS[theme === "dark" ? "dark" : "light"]}><style>{CSS}</style></div> : null;
+  }
   const C = PALETTE[theme === "dark" ? "dark" : "light"];
   const ended = t >= span.t1 - 1;
   const playing = want && !ended;
