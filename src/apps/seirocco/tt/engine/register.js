@@ -407,7 +407,8 @@ async function analyze(D, A, manifest, draft) {
     checkManifest(m);
     m.items.forEach((mi, i) => {
       const it = { label: String(mi.no || i + 1), answer: String(mi.answer ?? ""), choice: !!mi.choice, points: mi.points ?? null, topic: mi.topic || "", key: mi.key || "",
-        sol: typeof mi.sol === "string" && /^sols\/[\w.-]+\.png$/.test(mi.sol) ? mi.sol : "" };
+        sol: typeof mi.sol === "string" && /^sols\/[\w.-]+\.png$/.test(mi.sol) ? mi.sol : "",
+        ans: typeof mi.ans === "string" && /^anss\/[\w.-]+\.png$/.test(mi.ans) ? mi.ans : "" };
       if (mi.page && mi.bbox) { it.page = Number(mi.page) - 1; it.rect = mi.bbox.map(Number); }
       items.push(it);
     });
@@ -518,7 +519,7 @@ export async function registerCommit(b, ctx) {
       const src = bySeq.get(Number(e.seq));
       if (!src) continue;
       items.push({ label: String(e.label || src.label), answer: String(e.answer || "").trim(), choice: !!e.choice, png: src.png, hash: src.hash,
-        points: src.points, topic: src.topic || "", answer_png: src.answer_png, bbox: src.bbox, page: src.page, sol: src.sol || "" });
+        points: src.points, topic: src.topic || "", answer_png: src.answer_png, bbox: src.bbox, page: src.page, sol: src.sol || "", ans: src.ans || "" });
     }
   }
   if (!items.length) throw new Error("문항이 하나도 없어요");
@@ -536,6 +537,7 @@ export async function registerCommit(b, ctx) {
     if (it.png) { files.push({ rel: `${code}/items/${n3}.png`, data: draft.files.get(it.png), type: "image/png" }); row.png = `items/${n3}.png`; }
     if (it.answer_png) { files.push({ rel: `${code}/answers/${n3}.png`, data: draft.files.get(it.answer_png), type: "image/png" }); row.answer_png = `answers/${n3}.png`; }
     if (libPid && it.sol) row.sol_png = it.sol;     // 보관함(저장소)이 미리 올려 둔 문항별 해설 그림 — <코드>/sols/NNN.png
+    if (libPid && it.ans && !row.answer_png) row.answer_png = it.ans;     // 〃 정답 그림(분수 · 그림으로 답하는 문항) — <코드>/anss/NNN.png
     return row;
   });
   const sub = String(b.sub || dr.sub || "").trim();
@@ -597,7 +599,7 @@ export async function libraryAuto(pr, ctx) {
       answer: it.choice ? CIRC_NUM[String(it.answer).trim()] || String(it.answer || "").trim() : String(it.answer || "").trim() })),
   }, ctx);
   return { done: true, auto: true, print, n_items: d.items.length, n_answers: d.items.filter((it) => String(it.answer || "").trim()).length,
-    n_sols: d.items.filter((it) => it.sol).length, targets };
+    n_sols: d.items.filter((it) => it.sol).length, n_ans_imgs: d.items.filter((it) => it.ans).length, targets };
 }
 
 // 정답 PDF 붙이기 (프린트 화면) — 이름 지우기 · 빠른정답 채우기 · (매쓰플랫이면) 강사도구 양식 정답해설
