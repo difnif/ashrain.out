@@ -1,7 +1,7 @@
 /* 애쉬레인 강사도구 PC — 화면 (2026-11-10)
    라우트: #/tt/convert · #/tt/register · #/tt/grade[/코드[/학생id]] · #/tt/class · #/tt/students[/id] · #/tt/prints · #/tt/print/코드 · #/tt/log */
 import * as B from "./backend";
-import { importView } from "./importer";
+import { importView, pcAutoSync } from "./importer";
 import { autoJudge, TEMPLATES } from "./logic";
 
 const PH = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
@@ -1491,7 +1491,13 @@ async function viewLog() {
 }
 
 route();
+// PC 강사도구 자료 폴더를 기억해 두었으면(옮겨 오기), 열 때 · 창으로 돌아올 때 PC에서 새로 등록한 것을 더한다
+const pcAuto = () => { pcAutoSync({ view, toast, esc }).catch(() => {}); };
+const onVis = () => { if (document.visibilityState === "visible") pcAuto(); };
+pcAuto();
+document.addEventListener("visibilitychange", onVis);
 return () => {
+  document.removeEventListener("visibilitychange", onVis);
   window.removeEventListener("hashchange", onHash);
   window.removeEventListener("beforeunload", onUnload);
   document.onkeydown = null;
