@@ -3,6 +3,7 @@
 // 내부 해시: #/ 홈 · #/seogo(/:tab) · #/samu(/:id) · #/seomu(/:tab) · #/more
 //           #/haso · #/bang · #/my · #/support · #/fonts(관리자) · #/tt(/…) 강사도구(PC 강사도구의 웹판)
 //           #/games 게임(강사가 해 보며 다듬는 게임 — 굴뚝새 1막 베타, 더보기에서)
+//           #/gyeok 격언 도우미(PRZ-1 코드 → 그달 격언 · 보고서 문장, 격언 1,009개 찾아보기 — 더보기에서)
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import RoleSwitch from "../../shared/RoleSwitch";
@@ -21,9 +22,10 @@ import Fonts from "./pages/Fonts";
 import More from "./pages/More";
 const TeacherTool = lazy(() => import("./TeacherTool"));
 const Games = lazy(() => import("./pages/Games"));
+const Gyeokeon = lazy(() => import("./pages/Gyeokeon"));
 
 const NAV = [["", "홈"], ["seogo", "서고"], ["samu", "사무"], ["seomu", "서무"], ["tt", "강사도구"], ["more", "더보기"]];
-const MORE_SET = ["haso", "bang", "my", "support", "fonts", "games", "more"];
+const MORE_SET = ["haso", "bang", "my", "support", "fonts", "games", "gyeok", "more"];
 
 export default function SeiroccoApp() {
   const [ms, setMs] = useState(null);
@@ -52,7 +54,7 @@ export default function SeiroccoApp() {
   const allowed = isInstructor || isAssistant;
 
   const PAGES = { "": Home, seogo: Seogo, samu: Samu, seomu: Seomu,
-    haso: Haso, bang: Bang, my: My, support: Support, fonts: Fonts, more: More, tt: TeacherTool, games: Games };
+    haso: Haso, bang: Bang, my: My, support: Support, fonts: Fonts, more: More, tt: TeacherTool, games: Games, gyeok: Gyeokeon };
   // 조교 제한 모드: 광장과 문의만
   const AST = { "": Home, haso: Haso, bang: Bang, support: Support };
   const Cmp = (isAssistant ? AST[page] : PAGES[page]) || Home;
