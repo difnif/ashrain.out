@@ -146,3 +146,15 @@ test("정답 고르기: PC에 적은 것 > 해설 묶음 > 빠른정답", () => 
   assert.equal(pickAnswer(null, "", "3"), "3");
   assert.equal(pickAnswer("", "", ""), "");
 });
+
+import { solSig } from "../src/apps/seirocco/tt/pccore.js";
+test("프린트 몫 해설 지문: 묶음이 커져도 이 프린트 몫이 같으면 같음", () => {
+  const mk = (items) => ({ items: new Map(Object.entries(items)) });
+  const a = mk({ h1: { answer: "2", sol: "h1.png", w: 222, h: 70 } });
+  const b = mk({ h1: { answer: "2", sol: "h1.png", w: 222, h: 70 }, h9: { answer: "5", sol: "h9.png", w: 222, h: 40 } });
+  const c = mk({ h1: { answer: "3", sol: "h1.png", w: 222, h: 70 } });
+  assert.equal(solSig(a, ["h1", "h2"]), solSig(b, ["h1", "h2"]));
+  assert.notEqual(solSig(a, ["h1"]), solSig(c, ["h1"]));
+  assert.equal(solSig(a, ["h3"]), "");
+  assert.equal(solSig(null, ["h1"]), "");
+});

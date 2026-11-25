@@ -2,7 +2,7 @@
 // 여러 번 해도 겹치지 않는다 — PC 자료는 새로 생긴 것만 더한다(프린트·학생·채점 차·표시·기록). 파일은 teacher-tool/<uid>/tt/ 에, 기록은 tt_* 표에.
 // PC 자료 폴더는 이 브라우저에 기억해 두고(파일 시스템 접근 · Chrome), 강사도구를 열 때 PC에서 새로 등록한 것을 알아서 반영한다(pcAutoSync).
 import { T as T0, all, must, put, log, nn, uid, bytes as sbBytes } from "./sb";
-import { KST, jparse, applyWal, safeQuery, knownFromPc, cleanPrintMeta, cleanEventDetail, markKey, eventKey, scanKey, onlyNew, sessionPlan, gradingNewer, insidePcTool, pngSize, readSolutions, quickText, pickAnswer } from "./pccore.js";
+import { KST, jparse, applyWal, safeQuery, knownFromPc, cleanPrintMeta, cleanEventDetail, markKey, eventKey, scanKey, onlyNew, sessionPlan, gradingNewer, insidePcTool, pngSize, readSolutions, quickText, pickAnswer, solSig } from "./pccore.js";
 import { guessLevel, stripNames } from "./logic.js";
 // 넣기·고치기 전에 빈 값을 기본값으로
 const T = (name) => {
@@ -375,7 +375,7 @@ async function refreshAnswer(pr, src, ui) {
   if (fails.length) throw new Error(`정답과 해설 파일 ${fails.length}개를 못 올렸어요 (${fails[0]})`);
   for (let k = 0; k < upd.length; k += 200) must(await T("tt_print_items").upsert(upd.slice(k, k + 200), { onConflict: "print_id,seq" }));
   const files = { ...(jparse(pr.files, {}) || {}), answer: `${pr.code}/answer.pdf` };
-  const options = { ...(jparse(pr.options, {}) || {}), answer_tpl: { v: 1, at: new Date().toISOString(), pkg: pkg ? pkg.stamp : null, sols: nSol } };
+  const options = { ...(jparse(pr.options, {}) || {}), answer_tpl: { v: 1, at: new Date().toISOString(), pkg: pkg ? pkg.stamp : null, sig: solSig(pkg, items.map((it) => it.hash)), sols: nSol } };
   if (nSol && pkg && pkg.by) options.solutions = { by: pkg.by, made: pkg.made, n: nSol };
   must(await T("tt_prints").update({ files, options }).eq("id", pr.id));
   return { nSol, filled, pages: built.pages };
@@ -384,7 +384,9 @@ async function refreshAnswer(pr, src, ui) {
 const needsAnswer = (opts, pkg, hashes) => {
   const o = jparse(opts, {}) || {};
   if (!o.answer_tpl) return true;
-  return !!(pkg && o.answer_tpl.pkg !== pkg.stamp && hashes.some((h) => h && pkg.items.has(h)));
+  if (!pkg) return false;
+  const sig = solSig(pkg, hashes);
+  return !!sig && sig !== (o.answer_tpl.sig || "");
 };
 
 // 따로 놓은 해설 묶음: 웹에 있는 프린트 중 같은 문항(지문)이 든 것에 붙이고 정답지를 다시 짠다 (파일은 저장 공간에서)
@@ -397,8 +399,7 @@ async function applySolutions(pkg, ui) {
   let k = 0;
   for (const pr of prs) {
     k++;
-    const o = jparse(pr.options, {}) || {};
-    if (o.answer_tpl && o.answer_tpl.pkg === pkg.stamp) continue;
+    if (!needsAnswer(pr.options, pkg, by.get(pr.id).map((x) => x.hash))) continue;
     ui.status(`해설 붙이기 ${k}/${prs.length} · ${pr.title || pr.code}`);
     try {
       const t = await refreshAnswer(pr, { cropOf: (rel) => sbBytes(`${pr.code}/${rel}`), quick: null, pkg }, ui);

@@ -162,3 +162,18 @@ export function pickAnswer(pcAnswer, pkgAnswer, quick) {
   if (b) return b;
   return String(quick ?? "").trim();
 }
+
+// 프린트 한 장에 닿는 해설 묶음 내용의 지문 — 묶음이 커져도 이 프린트 몫이 그대로면 다시 짜지 않는다
+export function solSig(pkg, hashes) {
+  if (!pkg) return "";
+  const parts = [];
+  for (const h of [...new Set(hashes)].filter(Boolean).sort()) {
+    const s = pkg.items.get(h);
+    if (s) parts.push(`${h}:${s.answer}:${s.sol || ""}:${s.w || ""}x${s.h || ""}`);
+  }
+  if (!parts.length) return "";
+  let x = 0x811c9dc5;
+  const str = parts.join("|");
+  for (let i = 0; i < str.length; i++) { x ^= str.charCodeAt(i); x = Math.imul(x, 0x01000193) >>> 0; }
+  return `${parts.length}:${x.toString(16)}`;
+}
