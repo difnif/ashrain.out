@@ -386,14 +386,16 @@ async function stampCode(bytes, code) {
 const codePrinted = (D, code) => { const t = D.pages[0] ? D.pages[0].sp.map((s) => s.t).join("").replace(/\s/g, "") : ""; return t.includes(fmtCode(code)) || t.includes(code); };
 
 // ── 분석 → 초안
-async function analyze(D, A, manifest, draft) {
+// D · A: 이름을 지운 문서(쪽 그림 · 문항 그림 · 정답 그림을 여기서 오림)
+// T · TA: 지우기 전 문서(글자 읽기 — 이름 있는 쪽은 그림으로 바뀌어 글자가 없으므로 문항 번호 · 제목 · 정답은 여기서)
+async function analyze(D, A, manifest, draft, trust = false, T = D, TA = A) {
   if (!D.pages.length) throw new Error("빈 PDF예요");
-  let m = manifest || (await readManifest(D.doc));
+  let m = manifest || (await readManifest(T.doc));
   const method = m ? "manifest" : "auto";
   let title = (m && m.title) || "";
-  if (!title) { try { title = ((await D.doc.getMetadata()).info || {}).Title || ""; } catch { /* */ } }
+  if (!title) { try { title = ((await T.doc.getMetadata()).info || {}).Title || ""; } catch { /* */ } }
   if (!title) {
-    const big = D.pages[0].lines.filter((l) => l.y < D.pages[0].H * 0.3 && l.text.length >= 3).sort((a, b) => b.size - a.size);
+    const big = T.pages[0].lines.filter((l) => l.y < T.pages[0].H * 0.3 && l.text.length >= 3).sort((a, b) => b.size - a.size);
     title = big.length ? big[0].text.slice(0, 60) : "";
   }
   const pages = [];
@@ -413,13 +415,13 @@ async function analyze(D, A, manifest, draft) {
       items.push(it);
     });
     if (items.some((it) => !it.rect)) {
-      const det = detectItems(D);
-      const rg = new Map(det.map((d, i) => [d.label, regions(D, det)[i]]));
+      const det = detectItems(T);
+      const rg = new Map(det.map((d, i) => [d.label, regions(T, det)[i]]));
       for (const it of items) if (!it.rect && rg.has(it.label)) [it.page, it.rect] = rg.get(it.label);
     }
   } else {
-    const det = detectItems(D);
-    regions(D, det).forEach(([pno, rect], i) => items.push({ label: det[i].label, answer: "", choice: false, points: null, topic: "", key: "", page: pno, rect }));
+    const det = detectItems(T);
+    regions(T, det).forEach(([pno, rect], i) => items.push({ label: det[i].label, answer: "", choice: false, points: null, topic: "", key: "", page: pno, rect }));
   }
   const meth = m ? method : items.length ? "auto" : "pages";
   for (let i = 0; i < items.length; i++) {
@@ -431,7 +433,7 @@ async function analyze(D, A, manifest, draft) {
       draft.files.set(rel, await toPng(im));
       it.png = rel;
       it.hash = it.key ? "key:" + it.key : imgHash(im);
-      if (!m) it.choice = looksChoice(D.pages[it.page], it.rect);
+      if (!m) it.choice = looksChoice(T.pages[it.page], it.rect);
       it.bbox = it.rect.map((v) => Math.round(v * 10) / 10);
       delete it.rect;
     } else {
@@ -441,20 +443,23 @@ async function analyze(D, A, manifest, draft) {
     }
   }
   if (A && items.length) {
+    // 정답지 글자로 정답 짐작하기 — 그림으로 답하는 문항(등록 정보의 정답 그림)과
+    // 보관함 프린트(등록 정보의 정답이 기준 · 정답 칸이 없는 과제도 있음)는 짐작하지 않는다
+    const guess = (it) => !it.answer && !it.ans && !(trust && m);
     try {
-      const quick = await parseQuick(A.doc);
+      const quick = await parseQuick(TA.doc);
       for (const it of items) {
         const q = /^\d+$/.test(it.label) ? quick[Number(it.label)] : null;
         if (!q) continue;
-        const rq = await renderQuick(A.doc, q);
+        const rq = await renderQuick(A.doc, q);           // 그림은 이름 지운 쪽에서
         const rel = `answers/${String(it.seq).padStart(3, "0")}.png`;
         draft.files.set(rel, rq.png);
         it.answer_png = rel;
-        if (!it.answer && (q.choice || q.text)) { it.answer = q.choice || q.text; it.answer_guess = true; }
+        if (guess(it) && (q.choice || q.text)) { it.answer = q.choice || q.text; it.answer_guess = true; }
       }
     } catch { /* 매쓰플랫 빠른정답이 아님 */ }
-    const got = readAnswerLines(A, items.map((it) => it.label));
-    for (const it of items) if (!it.answer && it.label in got) { it.answer = got[it.label]; it.answer_guess = true; }
+    const got = readAnswerLines(TA, items.map((it) => it.label));
+    for (const it of items) if (guess(it) && it.label in got) { it.answer = got[it.label]; it.answer_guess = true; }
   }
   return { method: meth, title, sub: (m && m.sub) || "", label: (m && m.label) || "", code: validCode(m && m.code), items, pages, manifest: m || null };
 }
@@ -477,9 +482,10 @@ async function makeDraft(ctx, { sheet, sheetName, answer, answerName, manifest, 
   const fa = A ? findNames(A, known) : { removed: [], targets: new Map() };
   const sheetClean = await redactPages(sheet, D, fn.targets);
   const ansClean = A ? await redactPages(answer, A, fa.targets) : null;
+  const D0 = D, A0 = A;                       // 지우기 전 글자(문항 번호 · 정답 읽기용)
   if (sheetClean !== sheet) D = await readDoc(sheetClean);
   if (A && ansClean !== answer) A = await readDoc(ansClean);
-  const r = await analyze(D, A, manifest, draft);
+  const r = await analyze(D, A, manifest, draft, !!library, D0, A0);
   const removed = fn.removed.concat(fa.removed);
   const names = new Set([...known, ...removed.map((x) => x.text)]);
   r.sheet_name = ctx.stripNames(ctx.cleanName(sheetName || "시험지.pdf"), names) || "시험지.pdf";
@@ -492,7 +498,9 @@ async function makeDraft(ctx, { sheet, sheetName, answer, answerName, manifest, 
   r.draft = id;
   r.base = `_draft/${id}`;
   if (library) { r.library = library.info; r.code = library.code; r.extras = extras; }
-  draft.data = { ...r, sheet: sheetClean, answer: ansClean, libraryPid: library ? library.pid : null, extrasFiles: extras };
+  // 첫 쪽 글자(지우기 전) — 이름 때문에 첫 쪽이 그림으로 바뀌어도 이미 찍힌 코드를 알아보게(코드 두 번 찍기 막기)
+  const p1 = D0.pages[0] ? D0.pages[0].sp.map((s) => s.t).join("").replace(/\s/g, "") : "";
+  draft.data = { ...r, sheet: sheetClean, answer: ansClean, libraryPid: library ? library.pid : null, extrasFiles: extras, p1 };
   DRAFTS.set(id, draft);
   return r;
 }
@@ -527,7 +535,8 @@ export async function registerCommit(b, ctx) {
   const libPid = dr.libraryPid;
   const code = libPid ? dr.code : await reserveCode(ctx, dr.code);
   const D = await readDoc(dr.sheet);
-  const sheet = codePrinted(D, code) ? dr.sheet : await stampCode(dr.sheet, code);
+  const p1 = dr.p1 || "";
+  const sheet = p1.includes(fmtCode(code)) || p1.includes(code) || codePrinted(D, code) ? dr.sheet : await stampCode(dr.sheet, code);
   const files = [{ rel: `${code}/sheet.pdf`, data: sheet, type: "application/pdf" }];
   if (dr.answer) files.push({ rel: `${code}/answer.pdf`, data: dr.answer, type: "application/pdf" });
   const rows = items.map((it, i) => {
@@ -575,7 +584,8 @@ export async function libraryDraft(pr, ctx) {
   const answer = f.answer ? await ctx.bytes(f.answer) : null;
   const lib = (pr.options && pr.options.library) || {};
   const r = await makeDraft(ctx, { sheet, sheetName: f.sheet_name || pr.title + ".pdf", answer, answerName: f.answer_name || null,
-    manifest: lib.manifest || null, known: await ctx.knownNames(),
+    // 프린트를 만들어 준 학생 이름(for)은 지금 학생 목록에 없어도 지운다(보관 프린트는 이름 없는 판으로)
+    manifest: lib.manifest || null, known: (await ctx.knownNames()).concat((lib.for || []).map(String).filter((x) => x.trim())),
     library: { pid: pr.id, code: pr.code, info: { files: (lib.roles || []).map((role) => ({ role })), made: lib.made || "", level: pr.level || lib.level || "", for: lib.for || [] } },
     extras: f.extras || [] });
   if (lib.title || pr.title) r.title = pr.title || lib.title;
@@ -609,13 +619,14 @@ export async function attachAnswer(pr, up, ctx) {
   let A = await readDoc(up.bytes);
   const fa = findNames(A, known);
   const clean = await redactPages(up.bytes, A, fa.targets);
+  const A0 = A;                               // 지우기 전 글자(빠른정답 읽기용) — 그림은 지운 쪽에서
   if (clean !== up.bytes) A = await readDoc(clean);
   let rel = `${pr.code}/answer_att.pdf`;
   await put(rel, clean, "application/pdf");
   const items = await all(() => T("tt_print_items").select("seq,src,src_no,label,answer,answer_png,choice").eq("print_id", pr.id).order("seq"));
   let n = 0;
   let quick = {};
-  try { quick = await parseQuick(A.doc); } catch { quick = {}; }
+  try { quick = await parseQuick(A0.doc); } catch { quick = {}; }
   const single = new Set(items.map((it) => it.src)).size <= 1;
   if (Object.keys(quick).length && single) {
     for (const it of items) {
