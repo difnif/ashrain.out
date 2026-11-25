@@ -1,7 +1,7 @@
 // 강사도구 엔진 — backend.js 가 부르는 입구 (PDF 일은 모두 이 브라우저 안에서)
 import { openPdf, renderClip, canvas, toBlob, imgToCanvas } from "./base";
 export { convert, wrongMake } from "./print";
-export { registerAnalyze, registerCommit, libraryDraft, draftUrl } from "./register";
+export { registerAnalyze, registerCommit, libraryDraft, libraryAuto, draftUrl } from "./register";
 export { exportPrints, exportTranscribe, exportAnalysis, importTranscripts } from "./exports";
 export { gradingPdf, studentPdf, stampNames, mergeScans } from "./reports";
 import { attachAnswer as attach } from "./register";

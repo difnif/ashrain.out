@@ -345,9 +345,38 @@ export async function buildAnswerPdf(entries, cfg, title, appendPages = []) {
   let y = top + 8 * MM;
   const isCirc = (e) => e.choice && CIRC[e.answer];
   const wide = entries.some((e) => e.answer_png && !isCirc(e) && (e.answer_wh || [0, 0])[0] > 70);
-  const per = wide ? 4 : 5;
+  let per = wide ? 4 : 5;
   const inner0 = x0 + 6 * MM, inner1 = x1 - 6 * MM;
-  const cw = (inner1 - inner0) / per, nw = 9 * MM, rowMin = 7.6 * MM;
+  const nw = 9 * MM, rowMin = 7.6 * MM;
+  // 글자 정답이 긴 프린트(낱말 · 여러 칸 답)는 한 줄 칸 수를 줄이고(5 → 2), 그래도 긴 답은 칸 안에서 줄을 바꾼다
+  const tw = (t, size) => pen.width(t, size, false);
+  const isTxt = (e) => !isCirc(e) && !e.answer_png && String(e.answer || "") !== "";
+  const txts = entries.filter(isTxt).map((e) => String(e.answer));
+  while (txts.length && per > 2 && txts.filter((t) => tw(t, 8) > (inner1 - inner0) / per - nw - 3 * MM).length > txts.length * 0.1) per--;
+  // 그림 정답(글꼴에 없는 글자 등)이 넓으면 칸 수를 줄여 작아지지 않게 (85% 크기까지는 그대로)
+  const aws = entries.filter((e) => e.answer_png && !isCirc(e)).map((e) => (e.answer_wh || [40, 12])[0]);
+  while (aws.length && per > 2 && aws.filter((w) => w * 0.85 > (inner1 - inner0) / per - nw - 3 * MM).length > aws.length * 0.1) per--;
+  const cw = (inner1 - inner0) / per;
+  const aw = cw - nw - 3 * MM;
+  const wrap = (t, size) => {
+    const lines = [];
+    let cur = "";
+    for (const w of t.split(/(\s+)/)) {
+      const nx = cur + w;
+      if (!cur.trim() || tw(nx.trim(), size) <= aw) cur = nx;
+      else { lines.push(cur.trim()); cur = w.trimStart(); }
+    }
+    if (cur.trim()) lines.push(cur.trim());
+    const out = [];
+    for (const l of lines) {
+      if (tw(l, size) <= aw) { out.push(l); continue; }
+      let c = "";
+      for (const ch of l) { if (c && tw(c + ch, size) > aw) { out.push(c); c = ch; } else c += ch; }
+      if (c) out.push(c);
+    }
+    return out;
+  };
+  const ansText = (t) => { const sz = pen.fit(t, 10.5, aw, false, 8); return tw(t, sz) <= aw + 0.5 ? { size: sz, lines: [t] } : { size: 8, lines: wrap(t, 8) }; };
   const embs = new Map();
   const emb = async (bytes) => { if (!embs.has(bytes)) embs.set(bytes, await ctx.doc.embedPng(bytes)); return embs.get(bytes); };
   for (let r0 = 0; r0 < entries.length; r0 += per) {
@@ -357,14 +386,16 @@ export async function buildAnswerPdf(entries, cfg, title, appendPages = []) {
       const s = Math.min(1.25, (cw - nw - 3 * MM) / Math.max(w, 1));
       return h * s + 3 * MM;
     });
-    const rh = Math.max(rowMin, ...hs);
+    const ths = row.filter(isTxt).map((e) => { const a = ansText(String(e.answer)); return a.lines.length * a.size * 1.3 + 2.6 * MM; });
+    const rh = Math.max(rowMin, ...hs, ...ths);
     if (y + rh > y1 - 6 * MM) { pen = newPage(); y = y0 + 8 * MM; }
     for (let i = 0; i < row.length; i++) {
       const e = row[i];
       const cx = inner0 + i * cw;
       pen.rect(cx, y, cx + cw, y + rh, { color: th.line, width: 0.6 });
       pen.rect(cx, y, cx + nw, y + rh, { color: th.line, fill: th.soft, width: 0.6 });
-      pen.text(cx + nw / 2, y + rh / 2 + 3.4, String(e.seq), { size: 10, bold: true, align: "center", color: th.dark });
+      const lab = String(e.label ?? e.seq);     // 문항 번호(시험지에 적힌 대로 — 1(1) · 1(2) 처럼 나뉜 문항)
+      pen.text(cx + nw / 2, y + rh / 2 + 3.4, lab, { size: pen.fit(lab, 10, nw - 1.5, true, 6), bold: true, align: "center", color: th.dark });
       const ans = String(e.answer || "");
       const ax0 = cx + nw + 2 * MM;
       if (isCirc(e)) {
@@ -376,7 +407,9 @@ export async function buildAnswerPdf(entries, cfg, title, appendPages = []) {
         const s = Math.min(1.25, (cw - nw - 3 * MM) / Math.max(w, 1), (rh - 2 * MM) / Math.max(h, 1));
         pen.image(await emb(e.answer_png), ax0, y + (rh - h * s) / 2, ax0 + w * s, y + (rh + h * s) / 2);
       } else if (ans) {
-        pen.text(ax0, y + rh / 2 + 3.6, ans, { size: pen.fit(ans, 10.5, cw - nw - 3 * MM) });
+        const a = ansText(ans), lh = a.size * 1.3;
+        let ty = y + (rh - a.lines.length * lh) / 2 + a.size * 0.98;
+        for (const l of a.lines) { pen.text(ax0, ty, l, { size: a.size }); ty += lh; }
       } else {
         pen.text(ax0, y + rh / 2 + 3.4, "-", { size: 10, color: th.gray });
       }
@@ -390,9 +423,12 @@ export async function buildAnswerPdf(entries, cfg, title, appendPages = []) {
     pen.line(x0 + 6 * MM, y - 2 * MM, x1 - 6 * MM, y - 2 * MM, { color: th.line, width: 0.8 });
     pen.text(x0 + 6 * MM, y + 3.2 * MM, "해설", { size: 12, bold: true, color: th.elem ? th.acc : [0, 0, 0] });
     let colTop = y + 7 * MM;
-    const colw = (x1 - x0) / 2, pad = 4.5 * MM, gut = GEO.gutter;
+    // 해설 단: 기본 2단. cfg.해설_단 = 1 이면 한 단(넓은 해설 그림 — 원래 한 줄 가득 쓴 해설을 줄이지 않고 싣기)
+    const one = Number(cfg.해설_단) === 1;
+    const colw = one ? x1 - x0 : (x1 - x0) / 2, pad = 4.5 * MM, gut = GEO.gutter;
     let side = 0, cy = colTop;
     const midLine = (p, topY) => {
+      if (one) return;
       if (th.elem) p.line((x0 + x1) / 2, topY, (x0 + x1) / 2, y1 - 3 * MM, { color: th.line, width: 0.9, dashes: [3, 3] });
       else p.line((x0 + x1) / 2, topY, (x0 + x1) / 2, y1, { width: 0.9 });
     };
@@ -406,16 +442,17 @@ export async function buildAnswerPdf(entries, cfg, title, appendPages = []) {
       if (h > maxH) { s *= maxH / h; h = maxH; }
       const need = h + 2 * MM;
       if (cy + need > y1 - 4 * MM) {
-        if (side === 0) { side = 1; cy = colTop; }
+        if (side === 0 && !one) { side = 1; cy = colTop; }
         else { pen = newPage(); side = 0; colTop = y0 + 6 * MM; cy = colTop; midLine(pen, y0); }
       }
       const cx = x0 + side * colw + pad;
+      const lab = String(e.label ?? e.seq);
       if (th.elem) {
         const rr = 3.1 * MM;
         const c = EL_DOTS[(e.seq - 1) % EL_DOTS.length];
         pen.circle(cx + rr, cy + rr + 0.6, rr, { color: null, fill: c });
-        pen.text(cx + rr, cy + rr + 3.6, String(e.seq), { size: e.seq < 100 ? 9.6 : 8, bold: true, align: "center", color: [1, 1, 1] });
-      } else pen.text(cx, cy + 10.2, `${e.seq}.`, { size: 11, bold: true });
+        pen.text(cx + rr, cy + rr + 3.6, lab, { size: lab.length < 3 ? 9.6 : lab.length < 4 ? 8 : pen.fit(lab, 7, 2 * rr - 1, true, 5), bold: true, align: "center", color: [1, 1, 1] });
+      } else pen.text(cx, cy + 10.2, `${lab}.`, { size: lab.length < 4 ? 11 : pen.fit(`${lab}.`, 11, gut - 1, true, 7), bold: true });
       pen.image(await emb(sol.png), cx + gut, cy, cx + gut + sol.w * s, cy + h);
       cy += need + 5 * MM;
     }
