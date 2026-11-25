@@ -129,3 +129,36 @@ export function insidePcTool(path, pcBase) {
   const parent = pcBase.replace(/data\/$/, "");
   return path.startsWith(pcBase) || (parent !== pcBase && path.startsWith(parent + "결과/"));
 }
+
+// PNG 크기 (IHDR) — [가로, 세로] 픽셀, PNG가 아니면 null
+export function pngSize(b) {
+  if (!b || b.length < 24 || b[0] !== 0x89 || b[1] !== 0x50 || b[2] !== 0x4e || b[3] !== 0x47) return null;
+  const u = (i) => ((b[i] << 24) >>> 0) + (b[i + 1] << 16) + (b[i + 2] << 8) + b[i + 3];
+  return [u(16), u(20)];
+}
+
+// 해설 묶음(data/웹해설/solutions.json) — 문항 지문(hash)마다 Claude가 쓴 해설 그림과 정답
+//   {kind:"ashrain.tt.solutions", version:1, made:"…", by:"claude", items:{ "<hash>": {answer:"2", sol:"<파일>.png", w:<pt>, h:<pt>} }}
+export function readSolutions(j) {
+  if (!j || j.kind !== "ashrain.tt.solutions" || typeof j.items !== "object" || !j.items) return null;
+  const items = new Map();
+  for (const [hash, v] of Object.entries(j.items)) {
+    if (!hash || !v || typeof v !== "object") continue;
+    const sol = typeof v.sol === "string" && /^[\w.-]+\.png$/i.test(v.sol) ? v.sol : null;
+    const w = Number(v.w), h = Number(v.h);
+    items.set(hash, { answer: typeof v.answer === "string" ? v.answer.trim() : "", sol: sol && w > 0 && h > 0 ? sol : null, w: w > 0 ? w : null, h: h > 0 ? h : null });
+  }
+  return { items, stamp: `${String(j.made || "")}|${items.size}`, by: String(j.by || ""), made: String(j.made || "") };
+}
+
+// 매쓰플랫 빠른정답 한 칸 → 정답 글자 (객관식은 "2", 여러 개는 "1,3")
+export const quickText = (q) => (q ? String(q.choice || q.text || "").trim() : "");
+
+// 정답 글자 고르기: PC에 적어 둔 것(선생님이 넣은 것) > 해설 묶음(Claude가 확인한 것) > 매쓰플랫 빠른정답 읽은 것
+export function pickAnswer(pcAnswer, pkgAnswer, quick) {
+  const a = String(pcAnswer ?? "").trim();
+  if (a) return a;
+  const b = String(pkgAnswer ?? "").trim();
+  if (b) return b;
+  return String(quick ?? "").trim();
+}
