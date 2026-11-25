@@ -4,7 +4,7 @@
 //
 //   const data = await (await fetch("/gyeokeon/gyeokeon.v2.json")).json()
 //   const picks = pickMonths(seed, months, data.entries)   // picks[i] = { label, id, score, entry, ctx }
-//   fillReport(picks[i].entry, "소현", months[i].cum)       // → 보고서 문장
+//   fillReport(picks[i].entry, "하늘", months[i].cum)       // → 보고서 문장
 //
 // 달(month) 하나에 쓰는 값: label, who('P' 박재우 선생님 · 'O' 다른 선생님 · 'AI' AI 문장 · 'E' 코멘트 없음),
 //   S{아홉 유형 몫}(주 유형은 여기서 정한다), dacc(정답률 변화 — 고르는 데만 쓰고 어디에도 보이지 않는다),
@@ -105,7 +105,7 @@ export function nameWithTopic(short) {
   return short + (batchim ? "이는" : "는");
 }
 
-/** 보고서 문장: {N} → '소현이는', {C} → '1,234' */
+/** 보고서 문장: {N} → '하늘이는', {C} → '1,234' */
 export function fillReport(entry, short, cum) {
   return entry.report.replace("{N}", nameWithTopic(short)).replace("{C}", Math.round(cum).toLocaleString("en-US"));
 }

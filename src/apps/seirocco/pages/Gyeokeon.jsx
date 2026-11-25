@@ -2,10 +2,13 @@
 // 데이터: public/gyeokeon/gyeokeon.v2.json(이 화면을 열 때만 받는다) · 고르기: ../gyeokeon/gyPick.js · 코드 읽기: ../gyeokeon/codeline.js
 // 원칙(SPEC-격언그림-항목규칙-v2): 아이에게는 다정하게(아이에게 줄 말), 선생님에게는 정확하게(출전 · 원문 · 판본 표기 · 대조 출처).
 //   정답률은 어디에도 보이지 않는다(오른 달 덤은 고르는 데만). 같은 코드면 같은 격언 — 이름 씨앗은 코드 머리의 이름.
-//   붙여 넣은 코드는 이 화면 안에서만 쓰고 저장하지 않는다. 장면 그림은 아직(부품을 만드는 중).
+//   붙여 넣은 코드는 이 화면 안에서만 쓰고 저장하지 않는다.
+// 그림: ../gyeokeon/gyScene.js가 항목의 scene(원 · 인물 · 소품 · 늘어나는 표시)으로 그린다. 찾아보기는 코드 없는 그림,
+//   코드로 고르기는 그 아이의 첫 달부터 그달까지의 결이 가운데 원에 든다. 시록고 화면은 밝은 바탕뿐이라 한지 · 먹 빛으로 그린다.
 import { useEffect, useMemo, useState } from "react";
 import { pickMonths, fillReport, teacherCard, dominantType } from "../gyeokeon/gyPick";
 import { monthsFromCodes } from "../gyeokeon/codeline";
+import { drawScene } from "../gyeokeon/gyScene";
 import { koMatch } from "../../../lib/koSearch";
 
 const TY = {
@@ -43,12 +46,25 @@ function Copy({ text }) {
   );
 }
 
-/** 항목 하나 — 아이에게 줄 말 · 보고서 문장 · 선생님 카드 */
-function Entry({ e, short, cum }) {
+/** 격언 그림. code = { months(첫 달부터 그달까지), cum, R, name, label, nth } — 없으면 코드 없는 그림 */
+function Scene({ e, code }) {
+  const key = code ? `${code.name}#${code.nth}#${code.months.length}#${code.cum}` : "";
+  const svg = useMemo(() => drawScene(e, code || {}), [e, key]);   // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <figure className="gk-pic">
+      <div role="img" aria-label={`${e.label_eum} 그림`} dangerouslySetInnerHTML={{ __html: svg }} />
+      <figcaption>{code ? `가운데 원: ${code.name}의 ${code.months.length === 1 ? "첫 달" : `${code.months.length}달`} 결 · 둘레 색 표시: 이달 학습량` : "가운데 원에는 그달 코드의 결이 들어가요"}</figcaption>
+    </figure>
+  );
+}
+
+/** 항목 하나 — 그림 · 아이에게 줄 말 · 보고서 문장 · 선생님 카드 */
+function Entry({ e, short, cum, code }) {
   const t = teacherCard(e);
   const report = short ? fillReport(e, short, cum || 0) : e.report.replace("{N}", "○○는").replace("{C}", "1,000");
   return (
     <div className="gk-entry">
+      <Scene e={e} code={code} />
       <div className="gk-title"><b>{e.label}</b><span>{e.label_eum}</span><TypeChip k={e.primary} /></div>
       <p className="gk-src">{e.src}{e.label_kind === "후대 줄임" ? " · 표제는 후대의 줄임말" : ""}</p>
       <p className="gk-story">{e.story}</p>
@@ -90,14 +106,14 @@ function PickTab({ data }) {
         )}
       </div>
       {results.map(({ st, picks }) => {
-        const rows = picks.map((p, i) => ({ p, m: st.months[i] })).reverse();   // 새 달부터
+        const rows = picks.map((p, i) => ({ p, m: st.months[i], i })).reverse();   // 새 달부터
         return (
           <div className="d-card" key={st.short}>
             <p className="d-ct">{st.short} · {st.grade} — {st.months.length}달 ({st.months[0].nth}~{st.months[st.months.length - 1].nth}번째 달)</p>
             {(!st.fromFirst || st.gaps) && (
               <p className="d-note">첫 달부터 빠짐없이 넣으면 2년 안에 같은 격언이 다시 나오지 않고, 첫 달 · 누적 사건 격언도 제 달에 나와요.</p>
             )}
-            {rows.map(({ p, m }, j) => {
+            {rows.map(({ p, m, i }, j) => {
               const key = st.short + "#" + m.nth, on = open[key] ?? j === 0;
               return (
                 <div key={key} className="gk-month">
@@ -108,7 +124,8 @@ function PickTab({ data }) {
                     </div>
                     <span className="d-sp" /><span className="d-chip">{on ? "접기" : "열기"}</span>
                   </div>
-                  {on && <Entry e={p.entry} short={st.short} cum={m.cum} />}
+                  {on && <Entry e={p.entry} short={st.short} cum={m.cum}
+                    code={{ months: st.months.slice(0, i + 1), cum: m.cum, R: m.R, name: st.short, label: m.label, nth: m.nth }} />}
                 </div>
               );
             })}
@@ -187,9 +204,15 @@ function About({ data }) {
         <li>선생님에게는 정확하게: 원문 · 출전을 확인하고, 표제가 후대의 줄임말이면 원문 구절과 함께 적어요.</li>
         <li>정답률은 그림 · 문장 어디에도 넣지 않아요.</li>
       </ul>
+      <p className="d-ct" style={{ marginTop: 14 }}>그림 읽는 법</p>
+      <ul className="gk-ul">
+        <li>격언의 고사를 그대로 그려요. 가운데 원이 아이의 코드예요.</li>
+        <li>원 안의 결: 첫 달부터 그달까지 한 달에 한 겹. 색은 그달 주 유형, 선은 관측(실선 박재우 선생님 · 끊은 선 다른 선생님 · AI, 점선 코멘트 없음), 옅은 겹은 아직 보지 않은 달이에요.</li>
+        <li>원 크기는 누적 문항이에요. 둘레의 유형 색 표시는 이달 학습량이 본인 중앙값보다 많을수록 늘어요(보통 3 · 4 · 5 · 7 · 9개).</li>
+      </ul>
       <p className="d-note" style={{ marginTop: 12 }}>
         격언 {n.toLocaleString("en-US")}개 · {data.books.length}권 · 원문 대조 {n.toLocaleString("en-US")}개(그중 웹 인용 대조 {web}개).
-        사서 · 삼경 · 제자서 · 사서(史書) · 성리학 · 시문 · 몽학서 · 국내 문헌에서 모았어요. 장면 그림은 부품을 만드는 중이에요.
+        사서 · 삼경 · 제자서 · 사서(史書) · 성리학 · 시문 · 몽학서 · 국내 문헌에서 모았어요.
       </p>
     </div>
   );
@@ -227,6 +250,9 @@ const CSS = `
 .gk-month+.gk-month{border-top:1px solid var(--bd)}
 .gk-month .d-row{border-bottom:0}
 .gk-entry{background:var(--in);border-radius:12px;padding:14px;margin:0 0 12px}
+.gk-pic{margin:0 auto 12px;max-width:360px}
+.gk-pic svg{display:block;width:100%;height:auto;border-radius:10px;box-shadow:0 0 0 1px var(--bd)}
+.gk-pic figcaption{font-size:11.5px;color:var(--mut);text-align:center;margin-top:6px}
 .gk-title{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px}
 .gk-title b{font-family:var(--font-serif);font-size:26px;line-height:1.2}
 .gk-title span:not(.gk-ty){font-size:14px;color:var(--mut)}
