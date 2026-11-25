@@ -85,11 +85,10 @@ async function gameChecks(fr, shot) {
   // G. 시작 화면
   await fr.locator("#lobby").waitFor({ timeout: 20000 });
   let s = await S();
-  ok((await fr.locator('#levelSeg [data-level]').count()) === 3 && (await fr.locator('#levelSeg [aria-checked="true"]').getAttribute("data-level")) === "ace", "G1 난이도 3단계(뉴비 · 에이스 · 마스터), 에이스가 골라져 있다");
+  ok((await fr.locator('#levelSeg, [data-level]').count()) === 0 && s.params.dayLen === 20 && !("dayAce" in s.params), "G1 난이도 단계가 없다 — 같은 벌판, 다른 물음(오픈 월드) · 하루 20초 하나");
   ok(s.self.name === "wren" && /굴뚝새/.test(await fr.locator("#selfCard").innerText()), "G2 처음 자아는 가운데 — 굴뚝새");
-  await fr.locator('[data-level="newbie"]').click();
-  ok(/30초/.test(await fr.locator("#lvDesc").innerText()), "G3 뉴비 설명 — 하루 30초 · 친절한 근거");
-  await fr.locator('[data-level="ace"]').click();
+  await fr.waitForTimeout(400);
+  ok(/시계는 멈추지 않는다/.test(await fr.locator("#lvDesc").innerText()) && (await dbg("heroLum")) > 100 && (await fr.locator("#heroLine").innerText()).length > 4, "G3 시작 화면 — 눈벌판 풍경(덤불 위 굴뚝새)과 한 줄");
 
   // N. 새 겨울 — 도움말(시계 멈춤) → 벌판 입구의 첫 물음
   await fr.locator("#btnNew").click();
@@ -100,13 +99,25 @@ async function gameChecks(fr, shot) {
   ok(s.mode === "enc" && s.enc.type === "start" && s.enc.pieces.length === 3
     && new Set(s.enc.pieces.map((p) => p.lens)).size === 3 && new Set(s.enc.pieces.map((p) => p.form)).size === 3, "N2 벌판 입구 — 서로 다른 렌즈 · 형식의 문제 조각 셋");
   const drawn = await fr.evaluate(() => { const c = document.getElementById("map"), g = c.getContext("2d"); const d = g.getImageData(c.width / 2 | 0, c.height / 2 | 0, 1, 1).data; return c.width > 100 && d[3] > 0; });
-  ok(drawn, "N3 지도(스페이스)를 그린다");
+  ok(drawn, "N3 지도(스페이스)를 그린다 — 풍경 · 안개 · 길");
+  // ST. 이야기 — 자막 · 장면 · 일행
+  await fr.waitForFunction(() => document.getElementById("narr").classList.contains("on"), null, { timeout: 8000 }).catch(() => {});
+  s = await S();
+  ok(s.story >= 3 && /벌판|봄 나루/.test(s.narr), "ST1 겨울이 열리면 이야기가 지도 위 자막으로 흐른다");
+  ok((await fr.locator("#panel .scene .crew").count()) === 2 && (await fr.locator("#panel .scene .sc-intro").innerText()).length > 10, "ST2 조우마다 장면 한 줄과 일행 두 사람의 말");
   const d0 = s.day; await fr.waitForTimeout(900); s = await S();
   ok(s.day > d0, `N4 시계는 저절로 흐른다(${d0} → ${s.day}일)`);
   await fr.locator("#btnPause").click(); const dp = (await S()).day; await fr.waitForTimeout(500);
   s = await S();
   ok(s.paused && Math.abs(s.day - dp) < 0.001 && await fr.locator("#pauseCover").isVisible(), "N5 멈추면 시계가 서고 근거 · 문항이 가려진다");
   await fr.locator("#btnResumeClock").click();
+  // 하루의 빛 — 같은 날의 밤과 한낮
+  const dN = Math.floor((await S()).day);
+  await dbg("setDay", dN + 0.92); await fr.waitForTimeout(250);
+  const night = await dbg("lum", 0, 0, 260, 260);
+  await dbg("setDay", dN + 0.4); await fr.waitForTimeout(250);
+  const noon = await dbg("lum", 0, 0, 260, 260);
+  ok(night < noon * 0.85 && (await S()).tod === "day", `V4 밤이 오면 지도가 어두워진다(밝기 ${Math.round(noon)} → ${Math.round(night)})`);
   const iHow = s.enc.pieces.findIndex((p) => p.form === "how"), iBad = s.enc.pieces.findIndex((p) => p.form !== "how");
   await fr.locator(`[data-act="start"][data-i="${iHow}"]`).click();
   await fr.locator("#probOv").waitFor({ state: "visible" });
@@ -140,7 +151,8 @@ async function gameChecks(fr, shot) {
   ok(s.mode === "travel" && s.travel.days >= 1, "T1 지도에서 자리를 누르면 그쪽으로 떠난다");
   await dbg("jump", s.travel.days + 0.05);
   s = await until((x) => x.mode === "enc");
-  ok(s.mode === "enc" && s.enc.type === pick.type && Object.values(s.enc.lenses).every((l) => l.E === 0), `T2 도착 — ${pick.type} 조우, 에이스는 근거가 날것부터`);
+  ok(s.mode === "enc" && s.enc.type === pick.type && Object.values(s.enc.lenses).every((l) => l.E === 0), `T2 도착 — ${pick.type} 조우, 근거는 날것부터`);
+  ok((await fr.locator("#chap.on").count()) === 1 && (await fr.locator("#chapT").innerText()).length > 0 && /마디/.test(await fr.locator("#chapK").innerText()), "ST3 도착하면 마디 제목이 지도 위에 뜬다");
   await shot("gt-enc");
   const L0 = firstLens(s), opt0 = s.enc.opts.find((o) => o.lo < 1 && o.hi - o.lo > 0.1) || s.enc.opts[0];
   ok(opt0.lo <= opt0.p && opt0.p <= opt0.hi, "T3 결정의 성공률은 폭으로 보인다(참값은 그 안)");
@@ -150,6 +162,7 @@ async function gameChecks(fr, shot) {
   s = await S();
   const opt1 = s.enc.opts.find((o) => o.id === opt0.id);
   ok(s.enc.lenses[L0].I > 0 && s.roads >= 1, "T4 맞히면 읽어 낸 만큼 근거가 단단해지고 길이 난다");
+  ok(s.fx.includes("road"), "FX1 길이 나면 금빛 고리가 퍼진다");
   ok(opt1.hi - opt1.lo < w0 - 0.01 || p0 >= 0.96, `T5 근거가 단단해지면 폭이 좁아진다(${Math.round(w0 * 100)} → ${Math.round((opt1.hi - opt1.lo) * 100)}%p)`);
   const L1 = Object.keys(s.enc.lenses)[1];
   const j1 = s.res.jeong;
@@ -161,7 +174,13 @@ async function gameChecks(fr, shot) {
   ok(s.enc.lenses[L1].E === 1, "T7 시간이 지나면 근거가 '정리'로 친절해진다");
   const pBefore = s.enc.opts.find((o) => o.id === opt0.id).p;
   const L2 = Object.keys(s.enc.lenses)[2];
+  await dbg("setRes", "jeong", 6);
   await fr.locator(`[data-act="ask"][data-lens="${L2}"][data-form="what"]`).click();
+  const hb = fr.locator("#pHintBuy");
+  if (await hb.count()) {
+    const j0 = (await S()).res.jeong; await hb.click(); s = await S();
+    ok(await fr.locator("#pHint").isVisible() && s.res.jeong < j0 - 0.4, "H1 실마리 보기 — 정성을 내면 실마리가 보인다");
+  } else ok(false, "H1 실마리 보기 단추가 없다");
   await answer(false);
   s = await S();
   ok(s.weathers.some((w) => w.type === pick.type && w.lens === L2), "T8 틀리면 그 조우 · 렌즈의 날씨(오개념 돌풍)가 생긴다");
@@ -169,6 +188,7 @@ async function gameChecks(fr, shot) {
   await fr.locator(`[data-act="ai"][data-lens="${L2}"]`).click();
   s = await S();
   ok(s.enc.lenses[L2].E === 3 && s.enc.lenses[L2].ai && s.res.unique < u0 - 5 && s.self.C < 0, "T9 독수리 — 가장 친절한 근거를 바로, 대신 고유함이 닳고 자아가 '기대기' 쪽으로");
+  ok(s.fx.includes("eagle") && /독수리/.test(s.lastStory), "FX2 독수리가 그림자를 드리우며 지나가고, 이야기에 남는다");
   await shot("gt-enc2");
   ok(pBefore > 0, "T10 결정 막대가 계속 계산된다");
 
@@ -220,13 +240,14 @@ async function gameChecks(fr, shot) {
   s = await until((x) => x.mode === "route" || x.mode === "busy");
   ok(s.mode === "route" || s.mode === "busy", `D1 정하면 결과가 나고 다음 길로(${s.mode})`);
   if (s.mode === "busy") { await dbg("jump", s.busy.left + 0.1); s = await until((x) => x.mode === "route"); }
+  ok(s.lastStory.length > 8 && (await fr.locator("#panel .tale .tl").count()) >= 1, "ST4 결정의 결과가 이야기로 남는다(방금 지나온 이야기)");
 
   // SG. 징조 — 눌러서 잡는다
   await dbg("spawnSign", "winter");
   const sp = await dbg("signRel");
   await fr.locator("#map").click({ position: sp });
   s = await S();
-  ok(s.winter.warned === true && s.stats.signs >= 1, "SG1 ❄️ 징조를 잡으면 한겨울을 미리 안다(前知)");
+  ok(s.winter.warned === true && s.stats.signs >= 1, "SG1 남쪽으로 가는 까마귀 떼(징조)를 눌러 잡으면 한겨울을 미리 안다(前知)");
 
   // W. 한겨울 — 이동 · 결정이 멈추고 되돌아보기만
   await fr.locator('[data-act="route"]').first().click();
@@ -264,12 +285,15 @@ async function gameChecks(fr, shot) {
   s = await S();
   ok(s.screen === "game" && s.paused && Math.abs(s.day - dayR) < 0.3, "R2 이어 하면 멈춘 채로 그 날에서 다시");
   await fr.locator("#btnResumeClock").click();
+  s = await S();
+  ok(s.narrQ + (s.narr ? 1 : 0) >= 1 && s.story >= 6, "R3 이어 하면 지난 이야기 한 줄이 다시 흐른다");
 
   // E. 겨울 끝내기 → 결산(자아 일지 · 스페이스)
   await fr.locator("#btnLeave").click(); await fr.locator("#leaveEnd").click();
   await fr.locator("#sumOv").waitFor({ state: "visible" });
   ok((await fr.locator(".journal li").count()) >= 4 && /y = /.test(await fr.locator("#spaceNote").innerText()), "E1 결산 — 자아 일지 · 내 스페이스 곡선");
   ok(JSON.parse(await fr.locator("#sumJson").inputValue()).stats.forms.how >= 1, "E2 다듬을 때 쓸 기록(JSON)");
+  ok((await fr.locator("#sumBody .ending").innerText()).length > 10 && (await fr.locator(".story-all .tl").count()) >= 5 && (await fr.locator(".story-all .tl.chap").count()) >= 2, "E5 결산 — 맺음말과 이 겨울의 이야기(마디마다)");
   await shot("gt-summary");
   await fr.locator("#sumAgain").click();
   await fr.locator("#btnLeave").click(); await fr.locator("#leaveEnd").click();
@@ -277,17 +301,17 @@ async function gameChecks(fr, shot) {
   ok(/만나는 점/.test(await fr.locator("#spaceNote").innerText()), "E3 두 번째 겨울부터 지난 곡선과 만나는 점(2막의 문)을 센다");
   await fr.locator("#sumLobby").click();
   s = await S();
-  ok(s.runs >= 2 && (await fr.locator("#runsList .run").count()) >= 2, "E4 지난 겨울들이 시작 화면에 쌓인다");
+  ok(s.runs >= 2 && (await fr.locator("#runsList .run").count()) >= 2 && (await fr.locator("#runsList .rend").count()) >= 2, "E4 지난 겨울들이 맺음말과 함께 시작 화면에 쌓인다");
 
   // TU. 다듬기 패널
   await fr.locator("#btnTune").click();
-  await fr.locator('#tuneBody [data-k="dayAce"]').fill("25");
+  await fr.locator('#tuneBody [data-k="dayLen"]').fill("25");
   await fr.locator("#tApply").click();
   s = await S();
-  ok(s.params.dayAce === 25 && (await fr.locator(".trow.chg").count()) >= 1, "TU1 다듬기 — 값을 바꿔 적용하면 저장되고 금빛으로 표시");
+  ok(s.params.dayLen === 25 && (await fr.locator(".trow.chg").count()) >= 1, "TU1 다듬기 — 하루 길이를 바꿔 적용하면 저장되고 금빛으로 표시");
   await fr.locator("#tReset").click();
   s = await S();
-  ok(s.params.dayAce === 20, "TU2 기본값으로 되돌린다");
+  ok(s.params.dayLen === 20, "TU2 기본값으로 되돌린다");
   await fr.locator("#tClose").click();
 }
 
