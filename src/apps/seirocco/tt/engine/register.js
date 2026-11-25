@@ -386,7 +386,7 @@ async function stampCode(bytes, code) {
 const codePrinted = (D, code) => { const t = D.pages[0] ? D.pages[0].sp.map((s) => s.t).join("").replace(/\s/g, "") : ""; return t.includes(fmtCode(code)) || t.includes(code); };
 
 // ── 분석 → 초안
-async function analyze(D, A, manifest, draft) {
+async function analyze(D, A, manifest, draft, trust = false) {
   if (!D.pages.length) throw new Error("빈 PDF예요");
   let m = manifest || (await readManifest(D.doc));
   const method = m ? "manifest" : "auto";
@@ -441,6 +441,9 @@ async function analyze(D, A, manifest, draft) {
     }
   }
   if (A && items.length) {
+    // 정답지 글자로 정답 짐작하기 — 그림으로 답하는 문항(등록 정보의 정답 그림)과
+    // 보관함 프린트(등록 정보의 정답이 기준 · 정답 칸이 없는 과제도 있음)는 짐작하지 않는다
+    const guess = (it) => !it.answer && !it.ans && !(trust && m);
     try {
       const quick = await parseQuick(A.doc);
       for (const it of items) {
@@ -450,11 +453,11 @@ async function analyze(D, A, manifest, draft) {
         const rel = `answers/${String(it.seq).padStart(3, "0")}.png`;
         draft.files.set(rel, rq.png);
         it.answer_png = rel;
-        if (!it.answer && (q.choice || q.text)) { it.answer = q.choice || q.text; it.answer_guess = true; }
+        if (guess(it) && (q.choice || q.text)) { it.answer = q.choice || q.text; it.answer_guess = true; }
       }
     } catch { /* 매쓰플랫 빠른정답이 아님 */ }
     const got = readAnswerLines(A, items.map((it) => it.label));
-    for (const it of items) if (!it.answer && it.label in got) { it.answer = got[it.label]; it.answer_guess = true; }
+    for (const it of items) if (guess(it) && it.label in got) { it.answer = got[it.label]; it.answer_guess = true; }
   }
   return { method: meth, title, sub: (m && m.sub) || "", label: (m && m.label) || "", code: validCode(m && m.code), items, pages, manifest: m || null };
 }
@@ -479,7 +482,7 @@ async function makeDraft(ctx, { sheet, sheetName, answer, answerName, manifest, 
   const ansClean = A ? await redactPages(answer, A, fa.targets) : null;
   if (sheetClean !== sheet) D = await readDoc(sheetClean);
   if (A && ansClean !== answer) A = await readDoc(ansClean);
-  const r = await analyze(D, A, manifest, draft);
+  const r = await analyze(D, A, manifest, draft, !!library);
   const removed = fn.removed.concat(fa.removed);
   const names = new Set([...known, ...removed.map((x) => x.text)]);
   r.sheet_name = ctx.stripNames(ctx.cleanName(sheetName || "시험지.pdf"), names) || "시험지.pdf";
@@ -575,7 +578,8 @@ export async function libraryDraft(pr, ctx) {
   const answer = f.answer ? await ctx.bytes(f.answer) : null;
   const lib = (pr.options && pr.options.library) || {};
   const r = await makeDraft(ctx, { sheet, sheetName: f.sheet_name || pr.title + ".pdf", answer, answerName: f.answer_name || null,
-    manifest: lib.manifest || null, known: await ctx.knownNames(),
+    // 프린트를 만들어 준 학생 이름(for)은 지금 학생 목록에 없어도 지운다(보관 프린트는 이름 없는 판으로)
+    manifest: lib.manifest || null, known: (await ctx.knownNames()).concat((lib.for || []).map(String).filter((x) => x.trim())),
     library: { pid: pr.id, code: pr.code, info: { files: (lib.roles || []).map((role) => ({ role })), made: lib.made || "", level: pr.level || lib.level || "", for: lib.for || [] } },
     extras: f.extras || [] });
   if (lib.title || pr.title) r.title = pr.title || lib.title;
