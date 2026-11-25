@@ -33,6 +33,9 @@ import { chaptersOf } from "../lib/chapters";
 //   where is_admin() and s.share_wrong_notes order by w.created_at desc $$;
 
 const UNIT_NAMES = {
+  "e1-1": "초1 1학기", "e1-2": "초1 2학기", "e2-1": "초2 1학기", "e2-2": "초2 2학기",
+  "e3-1": "초3 1학기", "e3-2": "초3 2학기", "e4-1": "초4 1학기", "e4-2": "초4 2학기",
+  "e5-1": "초5 1학기", "e5-2": "초5 2학기", "e6-1": "초6 1학기", "e6-2": "초6 2학기",
   "m1-1": "중1 1학기", "m1-2": "중1 2학기", "m2-1": "중2 1학기", "m2-2": "중2 2학기",
   "m3-1": "중3 1학기", "m3-2": "중3 2학기",
   "h1-1": "공통수학1", "h1-2": "공통수학2",
@@ -42,12 +45,13 @@ const UNIT_NAMES = {
 
 // 대단원 구성은 src/lib/chapters.js 한 곳에서 (시험 보기의 단원 범위와 공유)
 
-// 학년·학기 라벨 (m→중, h→고 / 정렬은 중등 먼저, 학년 순)
-const GRADE_PREFIX = { m: "중", h: "고" };
+// 학년·학기 라벨 (e→초, m→중, h→고 / 정렬은 초등 → 중등 → 고등, 학년 순)
+const GRADE_PREFIX = { e: "초", m: "중", h: "고" };
+const SCHOOL_RANK = { e: 0, m: 100, h: 200 };
 const gradeLabel = (g) => (GRADE_PREFIX[g[0]] || "") + g[1];
-const gradeRank = (g) => (g[0] === "m" ? 0 : 100) + Number(g[1]);
-const semLabel = (u) => (u[0] === "m" ? `${u.slice(-1)}학기` : UNIT_NAMES[u] || u);
-const unitShort = (u) => (u[0] === "m" ? u.slice(1) : "고" + u.slice(1));
+const gradeRank = (g) => (SCHOOL_RANK[g[0]] ?? 300) + Number(g[1]);
+const semLabel = (u) => (u[0] === "m" || u[0] === "e" ? `${u.slice(-1)}학기` : UNIT_NAMES[u] || u);
+const unitShort = (u) => (u[0] === "m" ? u.slice(1) : (u[0] === "e" ? "초" : "고") + u.slice(1));
 
 // 즐겨찾기 색상 팔레트 (첫 항목 null = 기본색)
 const PALETTE = [null, "#F472B6", "#F87171", "#F59E0B", "#34D399", "#60A5FA", "#A78BFA"];

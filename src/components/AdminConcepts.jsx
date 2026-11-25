@@ -13,6 +13,9 @@ import { supabase } from "../supabaseClient";
 // - 백업: concepts + concept_qna 전체를 JSON 파일로 내려받기
 
 const UNIT_LABEL = {
+  "e1-1": "초1 1학기", "e1-2": "초1 2학기", "e2-1": "초2 1학기", "e2-2": "초2 2학기",
+  "e3-1": "초3 1학기", "e3-2": "초3 2학기", "e4-1": "초4 1학기", "e4-2": "초4 2학기",
+  "e5-1": "초5 1학기", "e5-2": "초5 2학기", "e6-1": "초6 1학기", "e6-2": "초6 2학기",
   "m1-1": "중1 1학기",
   "m1-2": "중1 2학기",
   "m2-1": "중2 1학기",
@@ -396,6 +399,24 @@ export default function AdminConcepts() {
     load();
   }
 
+  // 기본 제공 초등 개념(public/concepts/elem — elemgen/ 생성기) — 아직 등록되지 않은 id 만 새로 등록한다(이미 있는 개념은 고친 내용을 지키려고 덮어쓰지 않음)
+  async function importBundled() {
+    setErr(""); setMsg("");
+    try {
+      const idx = await fetch("/concepts/elem/index.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null));
+      if (!idx?.units?.length) { setErr("기본 제공 초등 개념 목록(/concepts/elem/index.json)을 찾지 못했어요."); return; }
+      const packs = await Promise.all(idx.units.map((u) =>
+        fetch(`/concepts/elem/${u}.json`, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : []))));
+      const all = packs.flat();
+      const have = new Set(list.map((c) => c.id));
+      const fresh = all.filter((c) => c && !have.has(c.id));
+      if (!fresh.length) { setMsg(`기본 제공 초등 개념 ${all.length}개가 모두 이미 등록되어 있어요.`); return; }
+      await saveItems(fresh);
+    } catch (e) {
+      setErr("기본 제공 초등 개념을 불러오지 못했어요: " + (e?.message || e));
+    }
+  }
+
   async function removeConcept(c) {
     const ok = window.confirm(
       "「" + c.title + "」(" + c.id + ") 개념을 삭제할까요?\n연결된 학생 질문(QnA)도 함께 삭제되고, 되돌릴 수 없습니다."
@@ -508,6 +529,10 @@ export default function AdminConcepts() {
         <div className="acx-row">
           <button className="acx-btn acx-pri" onClick={() => fileRef.current?.click()} disabled={busy}>
             파일에서 불러오기
+          </button>
+          <button className="acx-btn acx-sec" onClick={importBundled} disabled={busy}
+            title="앱에 들어 있는 초등(초1 ~ 초6) 개념 카드 중 아직 등록되지 않은 것만 등록해요 — 이미 있는 개념은 덮어쓰지 않아요">
+            기본 제공 초등 개념 등록
           </button>
         </div>
         <textarea

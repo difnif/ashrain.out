@@ -1,0 +1,947 @@
+[
+ {
+  "id": "e2-2-11",
+  "unitId": "e2-2",
+  "title": "네 자리 수",
+  "subtitle": "천, 그리고 뛰어 세기",
+  "order": 11,
+  "blocks": [
+   {
+    "id": "b1",
+    "icon": {
+     "kind": "emoji",
+     "value": "🔍"
+    },
+    "type": "text",
+    "label": "왜 필요할까?",
+    "lines": [
+     "1000원짜리 지폐, 2026년 — 네 자리 수가 생활 곳곳에 있어요.",
+     "**100이 10개**면 1000 — 또 한 번 묶음이 커져요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b2",
+    "icon": {
+     "kind": "emoji",
+     "value": "📖"
+    },
+    "type": "text",
+    "label": "낱말 풀이",
+    "lines": [
+     "**천(1000)** — 100이 10개인 수 · 千(일천 천) · 예) 100원짜리 10개는 1000원",
+     "**천의 자리** — 네 자리 수의 맨 앞자리 · 예) 3528에서 3은 천의 자리 숫자",
+     "**뛰어 세기** — 일정한 수만큼 건너뛰며 세기 · 예) 1000씩 뛰어 세면 천의 자리만 1씩 커져요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "amber",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b3",
+    "icon": {
+     "kind": "emoji",
+     "value": "🎯"
+    },
+    "type": "definition",
+    "label": "핵심 정의",
+    "term": "네 자리 수",
+    "hanja": "",
+    "text": "1000이 3개, 100이 5개, 10이 2개, 1이 8개면 ==3528==이에요. 3528 = 3000 + 500 + 20 + 8.",
+    "chips": [
+     "3528 = 3000 + 500 + 20 + 8"
+    ],
+    "chipLabel": "읽기: 삼천오백이십팔",
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b4",
+    "icon": {
+     "kind": "emoji",
+     "value": "📢"
+    },
+    "type": "text",
+    "label": "이렇게 해요",
+    "lines": [
+     "① 자리마다 몇 개인지 세요. ② 천 · 백 · 십 · 일 차례로 써요. ③ 비교는 **천의 자리부터**.",
+     "[[av:e2-2-11-1,e2-2-11-2]]",
+     "100씩 뛰어 세면 백의 자리가 1씩 커지다가 9 다음엔 **천의 자리로 올라가요**: 2900 → 3000."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "violet",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b5",
+    "src": "why",
+    "icon": {
+     "kind": "emoji",
+     "value": "💡"
+    },
+    "type": "text",
+    "label": "왜 그럴까?",
+    "lines": [
+     "**왜 10개씩 모이면 새 자리가 생길까?** 한 자리에는 0부터 9까지 열 가지 숫자만 쓸 수 있어요. 10이 되면 ==윗자리 1로 묶어 올려야== 계속 셀 수 있어요.",
+     "**왜 1000씩 뛰어 세면 천의 자리만 변할까?** 1000은 천의 자리 1이에요. 다른 자리에는 0을 더하는 셈이라 그대로예요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    },
+    "figure": null
+   },
+   {
+    "id": "b6",
+    "icon": {
+     "kind": "emoji",
+     "value": "⚠️"
+    },
+    "type": "warning",
+    "label": "꼭 조심할 것",
+    "items": [
+     "오천이십을 '50020'으로 쓰지 않아요 — 5020(천 5 · 백 0 · 십 2 · 일 0).",
+     "3528의 5는 5가 아니라 **500**을 나타내요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "coral",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b7",
+    "icon": {
+     "kind": "emoji",
+     "value": "✅"
+    },
+    "type": "check",
+    "label": "바로 확인",
+    "question": "① 1000이 6개, 100이 0개, 10이 4개, 1이 3개인 수는? ② 4719에서 7이 나타내는 값은? ③ 3175부터 100씩 3번 뛰어 세면?",
+    "answer": [
+     {
+      "group": "①",
+      "nums": "6043",
+      "tone": "teal"
+     },
+     {
+      "group": "②",
+      "nums": "700",
+      "tone": "amber"
+     },
+     {
+      "group": "③",
+      "nums": "3475",
+      "tone": "violet"
+     }
+    ],
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   }
+  ]
+ },
+ {
+  "id": "e2-2-21",
+  "unitId": "e2-2",
+  "title": "곱셈구구",
+  "subtitle": "2단부터 9단까지, 그리고 0과 1의 곱",
+  "order": 21,
+  "blocks": [
+   {
+    "id": "b1",
+    "icon": {
+     "kind": "emoji",
+     "value": "🔍"
+    },
+    "type": "text",
+    "label": "왜 필요할까?",
+    "lines": [
+     "7 × 8을 7을 8번 더해서 구하면 오래 걸려요.",
+     "자주 쓰는 곱을 **외워 두면** 나눗셈, 큰 수의 곱셈까지 빨라져요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b2",
+    "icon": {
+     "kind": "emoji",
+     "value": "📖"
+    },
+    "type": "text",
+    "label": "낱말 풀이",
+    "lines": [
+     "**곱셈구구** — 1부터 9까지 두 수의 곱을 모아 둔 것 · 구구(九九) — 9 × 9까지 · 예) 2단, 3단 …",
+     "**○단** — 같은 수에 1, 2, 3 …을 곱한 곱들 · 예) 3단: 3, 6, 9, 12 …",
+     "**곱셈표** — 가로줄과 세로줄의 수를 곱해 채운 표 · 예) 5 × 6 칸에 30"
+    ],
+    "style": {
+     "size": "md",
+     "tone": "amber",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b3",
+    "icon": {
+     "kind": "emoji",
+     "value": "🎯"
+    },
+    "type": "definition",
+    "label": "핵심 정의",
+    "term": "곱셈구구의 규칙",
+    "hanja": "",
+    "text": "○단에서는 곱하는 수가 1 커질 때마다 곱이 ==○만큼 커져요==. 3 × 4 = 12이면 3 × 5 = 12 + 3 = 15.",
+    "chips": [
+     "1 × (어떤 수) = 어떤 수",
+     "0 × (어떤 수) = 0"
+    ],
+    "chipLabel": "1과 0의 곱",
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b4",
+    "icon": {
+     "kind": "emoji",
+     "value": "📢"
+    },
+    "type": "text",
+    "label": "이렇게 해요",
+    "lines": [
+     "① 모르는 곱은 아는 곱에서 **한 묶음 더하기 · 빼기**: 7 × 8 = 7 × 7 + 7 = 56. ② 순서를 바꿔도 곱은 같아요: 8 × 7 = 7 × 8.",
+     "[[av:e2-2-21-1,e2-2-21-2]]",
+     "곱셈표에서 같은 곱은 **대각선**을 기준으로 마주 보고 있어요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "violet",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b5",
+    "src": "why",
+    "icon": {
+     "kind": "emoji",
+     "value": "💡"
+    },
+    "type": "text",
+    "label": "왜 그럴까?",
+    "lines": [
+     "**왜 0에 곱하면 0일까?** 0 × 5는 '0개씩 5묶음' — 빈 봉지 5개라 아무것도 없어요. 5 × 0도 '5개씩 0묶음'이라 역시 0개예요.",
+     "**왜 한 단씩 올라가면 그 수만큼 커질까?** 3 × 5는 3 × 4에 ==3이 한 묶음 더== 붙은 것이에요. 묶음 하나가 늘면 그 묶음 크기만큼 늘어요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    },
+    "figure": null
+   },
+   {
+    "id": "b6",
+    "icon": {
+     "kind": "emoji",
+     "value": "⚠️"
+    },
+    "type": "warning",
+    "label": "꼭 조심할 것",
+    "items": [
+     "6 × 7 = 42, 7 × 8 = 56, 8 × 7 = 56 — 헷갈리는 곱은 **아는 곱에서 더해** 확인해요.",
+     "1 × 5는 5예요 — 1을 곱해도 0이 되지 않아요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "coral",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b7",
+    "icon": {
+     "kind": "emoji",
+     "value": "✅"
+    },
+    "type": "check",
+    "label": "바로 확인",
+    "question": "① 6 × 8은? ② 9 × 3은? ③ 0 × 7은?",
+    "answer": [
+     {
+      "group": "①",
+      "nums": "48",
+      "tone": "teal"
+     },
+     {
+      "group": "②",
+      "nums": "27",
+      "tone": "amber"
+     },
+     {
+      "group": "③",
+      "nums": "0",
+      "tone": "violet"
+     }
+    ],
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   }
+  ]
+ },
+ {
+  "id": "e2-2-31",
+  "unitId": "e2-2",
+  "title": "길이 재기",
+  "subtitle": "m와 cm, 길이의 합과 차",
+  "order": 31,
+  "blocks": [
+   {
+    "id": "b1",
+    "icon": {
+     "kind": "emoji",
+     "value": "🔍"
+    },
+    "type": "text",
+    "label": "왜 필요할까?",
+    "lines": [
+     "교실 긴 쪽을 cm로 재면 800이 넘는 큰 수가 나와요.",
+     "긴 길이에는 더 큰 단위 **1 m(미터)**를 써요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b2",
+    "icon": {
+     "kind": "emoji",
+     "value": "📖"
+    },
+    "type": "text",
+    "label": "낱말 풀이",
+    "lines": [
+     "**1 m** — 100 cm와 같은 길이 · '일 미터'라고 읽어요 · 예) 어른 한 걸음 반쯤",
+     "**줄자** — 둘둘 말린 긴 자 · 예) 줄자로 칠판의 길이를 재요.",
+     "**몇 m 몇 cm** — m와 cm를 함께 써서 나타낸 길이 · 예) 1 m 30 cm = 130 cm"
+    ],
+    "style": {
+     "size": "md",
+     "tone": "amber",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b3",
+    "icon": {
+     "kind": "emoji",
+     "value": "🎯"
+    },
+    "type": "definition",
+    "label": "핵심 정의",
+    "term": "1 m = 100 cm",
+    "hanja": "",
+    "text": "1 m는 1 cm를 ==100번== 이은 길이예요. 그래서 2 m 45 cm = 200 cm + 45 cm = **245 cm**.",
+    "chips": [
+     "1 m = 100 cm",
+     "245 cm = 2 m 45 cm"
+    ],
+    "chipLabel": "단위 바꾸기",
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b4",
+    "icon": {
+     "kind": "emoji",
+     "value": "📢"
+    },
+    "type": "text",
+    "label": "이렇게 해요",
+    "lines": [
+     "① 같은 단위끼리 계산해요: m는 m끼리, cm는 cm끼리. ② cm끼리 더해 100 이상이면 **100 cm를 1 m로** 올려요.",
+     "[[av:e2-2-31-1,e2-2-31-2]]",
+     "빼기에서 cm끼리 뺄 수 없으면 **1 m를 100 cm로** 바꿔 와요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "violet",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b5",
+    "src": "why",
+    "icon": {
+     "kind": "emoji",
+     "value": "💡"
+    },
+    "type": "text",
+    "label": "왜 그럴까?",
+    "lines": [
+     "**왜 단위를 맞춰 계산할까?** 2 m와 30 cm를 그냥 2 + 30으로 더하면 무엇이 32인지 알 수 없어요. ==같은 크기의 단위끼리== 더해야 뜻이 있어요.",
+     "**왜 100 cm를 1 m로 올릴까?** 1 m = 100 cm라서 cm가 100 모이면 1 m 한 개와 같아요 — 받아올림과 같은 생각이에요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    },
+    "figure": null
+   },
+   {
+    "id": "b6",
+    "icon": {
+     "kind": "emoji",
+     "value": "⚠️"
+    },
+    "type": "warning",
+    "label": "꼭 조심할 것",
+    "items": [
+     "1 m 5 cm를 '1 m 50 cm'로 읽지 않아요 — 105 cm예요.",
+     "답을 쓸 때 **m와 cm를 함께** 쓰는 것을 잊지 않기."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "coral",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b7",
+    "icon": {
+     "kind": "emoji",
+     "value": "✅"
+    },
+    "type": "check",
+    "label": "바로 확인",
+    "question": "① 3 m 20 cm는 몇 cm? ② 1 m 60 cm + 2 m 50 cm는? ③ 4 m 10 cm − 1 m 30 cm는?",
+    "answer": [
+     {
+      "group": "①",
+      "nums": "320 cm",
+      "tone": "teal"
+     },
+     {
+      "group": "②",
+      "nums": "4 m 10 cm",
+      "tone": "amber"
+     },
+     {
+      "group": "③",
+      "nums": "2 m 80 cm",
+      "tone": "violet"
+     }
+    ],
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   }
+  ]
+ },
+ {
+  "id": "e2-2-41",
+  "unitId": "e2-2",
+  "title": "시각과 시간",
+  "subtitle": "몇 시 몇 분, 걸린 시간, 달력",
+  "order": 41,
+  "blocks": [
+   {
+    "id": "b1",
+    "icon": {
+     "kind": "emoji",
+     "value": "🔍"
+    },
+    "type": "text",
+    "label": "왜 필요할까?",
+    "lines": [
+     "'몇 시에 만나?'와 '얼마나 걸려?'는 다른 질문이에요.",
+     "**시각**(한 순간)과 **시간**(두 시각 사이의 길이)을 구별해야 약속을 지킬 수 있어요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b2",
+    "icon": {
+     "kind": "emoji",
+     "value": "📖"
+    },
+    "type": "text",
+    "label": "낱말 풀이",
+    "lines": [
+     "**시각** — 어느 한 순간 · 時(때 시) + 刻(새길 각) · 예) 학교에 도착한 시각은 8시 40분",
+     "**시간** — 한 시각에서 다른 시각까지의 동안 · 時(때 시) + 間(사이 간) · 예) 공부한 시간은 1시간",
+     "**작은 눈금** — 시계에서 숫자 사이의 1분 눈금 · 예) 숫자 사이에 작은 눈금 5칸",
+     "**오전 · 오후** — 밤 12시부터 낮 12시까지 · 낮 12시부터 밤 12시까지 · 午(낮 오) 前(앞 전) · 後(뒤 후) · 예) 오후 3시"
+    ],
+    "style": {
+     "size": "md",
+     "tone": "amber",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b3",
+    "icon": {
+     "kind": "emoji",
+     "value": "🎯"
+    },
+    "type": "definition",
+    "label": "핵심 정의",
+    "term": "1시간 = 60분",
+    "hanja": "",
+    "text": "긴바늘이 한 바퀴 돌면 ==60분 = 1시간==이에요. 숫자 하나 사이가 5분이라 긴바늘이 7을 가리키면 **35분**.",
+    "chips": [
+     "1시간 = 60분",
+     "하루 = 24시간"
+    ],
+    "chipLabel": "시간의 단위",
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b4",
+    "icon": {
+     "kind": "emoji",
+     "value": "📢"
+    },
+    "type": "text",
+    "label": "이렇게 해요",
+    "lines": [
+     "① 긴바늘이 가리키는 숫자 × 5 + 작은 눈금으로 분을 읽어요. ② 걸린 시간은 **시각끼리 빼기** — 시는 시끼리, 분은 분끼리.",
+     "[[av:e2-2-41-1,e2-2-41-2]]",
+     "분끼리 뺄 수 없으면 **1시간을 60분**으로 바꿔 와요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "violet",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b5",
+    "src": "why",
+    "icon": {
+     "kind": "emoji",
+     "value": "💡"
+    },
+    "type": "text",
+    "label": "왜 그럴까?",
+    "lines": [
+     "**왜 숫자 하나가 5분일까?** 시계 한 바퀴(60분)에 숫자가 12개 있어요. 60을 12칸으로 똑같이 나누면 ==한 칸이 5분==이에요.",
+     "**왜 시각과 시간을 구별할까?** 시각은 시계의 한 장면, 시간은 두 장면 사이에 흐른 길이예요. '3시'는 시각, '3시간'은 시간이에요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    },
+    "figure": null
+   },
+   {
+    "id": "b6",
+    "icon": {
+     "kind": "emoji",
+     "value": "⚠️"
+    },
+    "type": "warning",
+    "label": "꼭 조심할 것",
+    "items": [
+     "긴바늘이 4를 가리키면 4분이 아니라 **20분**이에요.",
+     "걸린 시간을 구할 때 60분을 **100분처럼** 빌려 오지 않기 — 1시간은 60분!"
+    ],
+    "style": {
+     "size": "md",
+     "tone": "coral",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b7",
+    "icon": {
+     "kind": "emoji",
+     "value": "✅"
+    },
+    "type": "check",
+    "label": "바로 확인",
+    "question": "① 짧은바늘이 9와 10 사이, 긴바늘이 3이면? ② 2시 10분부터 4시 30분까지 걸린 시간은? ③ 1시간 20분은 몇 분?",
+    "answer": [
+     {
+      "group": "①",
+      "nums": "9시 15분",
+      "tone": "teal"
+     },
+     {
+      "group": "②",
+      "nums": "2시간 20분",
+      "tone": "amber"
+     },
+     {
+      "group": "③",
+      "nums": "80분",
+      "tone": "violet"
+     }
+    ],
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   }
+  ]
+ },
+ {
+  "id": "e2-2-51",
+  "unitId": "e2-2",
+  "title": "표와 그래프",
+  "subtitle": "조사해서 표로, 표를 그래프로",
+  "order": 51,
+  "blocks": [
+   {
+    "id": "b1",
+    "icon": {
+     "kind": "emoji",
+     "value": "🔍"
+    },
+    "type": "text",
+    "label": "왜 필요할까?",
+    "lines": [
+     "반 친구들이 좋아하는 과일을 말로만 들으면 무엇이 가장 인기인지 헷갈려요.",
+     "**표**로 세고 **그래프**로 그리면 한눈에 비교돼요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b2",
+    "icon": {
+     "kind": "emoji",
+     "value": "📖"
+    },
+    "type": "text",
+    "label": "낱말 풀이",
+    "lines": [
+     "**조사** — 알고 싶은 것을 물어보거나 살펴서 모으는 것 · 調(고를 조) + 査(조사할 사) · 예) 좋아하는 색깔을 조사해요.",
+     "**표** — 조사한 것을 칸에 나누어 정리한 것 · 表(겉 표) · 예) 과일별 학생 수를 표로",
+     "**합계** — 모두 더한 수 · 合(합할 합) + 計(셀 계) · 예) 합계 24명",
+     "**그래프** — 수를 ○, ×, / 같은 표시로 쌓아 나타낸 그림 · 영어 graph · 예) ○ 그래프"
+    ],
+    "style": {
+     "size": "md",
+     "tone": "amber",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b3",
+    "icon": {
+     "kind": "emoji",
+     "value": "🎯"
+    },
+    "type": "definition",
+    "label": "핵심 정의",
+    "term": "표와 그래프",
+    "hanja": "",
+    "text": "**표**는 정확한 수와 합계를 알기 좋고, **그래프**는 많고 적음을 한눈에 비교하기 좋아요. 그래프에서는 ==한 칸에 하나씩== 아래부터 채워요.",
+    "chips": [
+     "표: 정확한 수",
+     "그래프: 한눈에 비교"
+    ],
+    "chipLabel": "좋은 점",
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b4",
+    "icon": {
+     "kind": "emoji",
+     "value": "📢"
+    },
+    "type": "text",
+    "label": "이렇게 해요",
+    "lines": [
+     "① 조사한 것을 하나씩 세며 표시(✓)해요. ② 표의 칸을 채우고 **합계**로 확인해요. ③ 그래프는 아래(왼쪽)부터 한 칸에 ○ 하나.",
+     "[[av:e2-2-51-1,e2-2-51-2]]",
+     "가장 많은 것은 그래프에서 **가장 높은 줄**이에요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "violet",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b5",
+    "src": "why",
+    "icon": {
+     "kind": "emoji",
+     "value": "💡"
+    },
+    "type": "text",
+    "label": "왜 그럴까?",
+    "lines": [
+     "**왜 표에 합계 칸을 둘까?** 합계가 조사한 사람 수와 같으면 ==빠뜨리거나 두 번 센 것이 없다==는 증거예요.",
+     "**왜 그래프는 한 칸에 하나씩, 아래부터 채울까?** 칸을 띄우거나 크기를 다르게 하면 높이로 비교할 수 없어요. 같은 크기로 차곡차곡 쌓아야 높이 = 수가 돼요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    },
+    "figure": null
+   },
+   {
+    "id": "b6",
+    "icon": {
+     "kind": "emoji",
+     "value": "⚠️"
+    },
+    "type": "warning",
+    "label": "꼭 조심할 것",
+    "items": [
+     "그래프에서 ○를 **띄엄띄엄** 그리지 않아요 — 아래부터 빈칸 없이.",
+     "표의 합계와 그래프의 ○ 개수 합이 같은지 확인해요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "coral",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b7",
+    "icon": {
+     "kind": "emoji",
+     "value": "✅"
+    },
+    "type": "check",
+    "label": "바로 확인",
+    "question": "① 사과 5명, 배 3명, 귤 7명이면 합계는? ② 가장 많은 학생이 좋아하는 과일은? ③ 그래프에서 ○는 어디부터 그리나요?",
+    "answer": [
+     {
+      "group": "①",
+      "nums": "15명",
+      "tone": "teal"
+     },
+     {
+      "group": "②",
+      "nums": "귤",
+      "tone": "amber"
+     },
+     {
+      "group": "③",
+      "nums": "아래(첫 칸)부터",
+      "tone": "violet"
+     }
+    ],
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   }
+  ]
+ },
+ {
+  "id": "e2-2-61",
+  "unitId": "e2-2",
+  "title": "규칙 찾기",
+  "subtitle": "덧셈표 · 곱셈표 · 무늬 · 달력의 규칙",
+  "order": 61,
+  "blocks": [
+   {
+    "id": "b1",
+    "icon": {
+     "kind": "emoji",
+     "value": "🔍"
+    },
+    "type": "text",
+    "label": "왜 필요할까?",
+    "lines": [
+     "달력에서 같은 요일은 왜 7씩 커질까? — 표와 무늬 속에도 규칙이 숨어 있어요.",
+     "규칙을 찾으면 **보지 않은 칸**도 맞힐 수 있어요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b2",
+    "icon": {
+     "kind": "emoji",
+     "value": "📖"
+    },
+    "type": "text",
+    "label": "낱말 풀이",
+    "lines": [
+     "**덧셈표** — 가로줄과 세로줄의 수를 더해 채운 표 · 예) 3과 4가 만나는 칸에 7",
+     "**요일** — 월 · 화 · 수 · 목 · 금 · 토 · 일, 일주일의 날 · 曜日 · 예) 9일이 목요일이면 16일도 목요일",
+     "**무늬** — 되풀이되는 모양이나 색으로 꾸민 것 · 예) 타일 무늬",
+     "**대각선** — 표에서 비스듬히 이어진 칸들의 줄 · 對角線 · 예) 덧셈표의 대각선"
+    ],
+    "style": {
+     "size": "md",
+     "tone": "amber",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b3",
+    "icon": {
+     "kind": "emoji",
+     "value": "🎯"
+    },
+    "type": "definition",
+    "label": "핵심 정의",
+    "term": "표와 달력의 규칙",
+    "hanja": "",
+    "text": "덧셈표는 오른쪽 · 아래로 갈수록 ==1씩== 커지고, 곱셈표의 ○단 줄은 ==○씩== 커져요. 달력은 아래 칸이 ==7씩== 커져요.",
+    "chips": [
+     "덧셈표: 1씩",
+     "곱셈표 3단: 3씩",
+     "달력 아래 칸: 7씩"
+    ],
+    "chipLabel": "얼마씩 커지나",
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b4",
+    "icon": {
+     "kind": "emoji",
+     "value": "📢"
+    },
+    "type": "text",
+    "label": "이렇게 해요",
+    "lines": [
+     "① 가로로 한 칸, 세로로 한 칸 갈 때 **얼마씩 변하는지** 써 봐요. ② 그 차이로 빈칸을 채워요.",
+     "[[av:e2-2-61-1,e2-2-61-2]]",
+     "달력: 같은 요일은 7일마다 돌아와요 — 9일이 목요일이면 16일, 23일, 30일도 목요일."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "violet",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b5",
+    "src": "why",
+    "icon": {
+     "kind": "emoji",
+     "value": "💡"
+    },
+    "type": "text",
+    "label": "왜 그럴까?",
+    "lines": [
+     "**왜 달력은 아래 칸이 7씩 커질까?** 한 줄은 일주일, 7일이에요. 바로 아래 칸은 ==한 줄(7일)을 다 지나 온 날==이라 7만큼 커요.",
+     "**왜 덧셈표는 대각선으로 같은 수가 나올까?** 오른쪽으로 한 칸 가면 1 커지고 아래로 한 칸 가면 1 커져요. 오른쪽 위 방향 대각선은 하나 커지고 하나 작아져서 그대로예요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "slate",
+     "width": "full"
+    },
+    "figure": null
+   },
+   {
+    "id": "b6",
+    "icon": {
+     "kind": "emoji",
+     "value": "⚠️"
+    },
+    "type": "warning",
+    "label": "꼭 조심할 것",
+    "items": [
+     "달력에서 날짜를 셀 때 **7일 = 일주일** — 1주일 뒤는 +7, 2주일 뒤는 +14.",
+     "규칙은 가로와 세로를 **따로** 확인해요 — 방향마다 다를 수 있어요."
+    ],
+    "style": {
+     "size": "md",
+     "tone": "coral",
+     "width": "full"
+    }
+   },
+   {
+    "id": "b7",
+    "icon": {
+     "kind": "emoji",
+     "value": "✅"
+    },
+    "type": "check",
+    "label": "바로 확인",
+    "question": "① 7, 12, 17, 22, □에서 □는? ② 어느 달 5일이 화요일이면 19일은? ③ 덧셈표에서 오른쪽으로 한 칸 가면 몇씩 커지나요?",
+    "answer": [
+     {
+      "group": "①",
+      "nums": "27",
+      "tone": "teal"
+     },
+     {
+      "group": "②",
+      "nums": "화요일",
+      "tone": "amber"
+     },
+     {
+      "group": "③",
+      "nums": "1씩",
+      "tone": "violet"
+     }
+    ],
+    "style": {
+     "size": "md",
+     "tone": "teal",
+     "width": "full"
+    }
+   }
+  ]
+ }
+]

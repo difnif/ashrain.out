@@ -1,7 +1,8 @@
 // node tests/concept-av.test.mjs — 개념 카드 「▶ 움직이는 예시」의 학기 파일 예시(public/concept-av/*.json · cvgen/) 검산. 실패 시 exit 1.
-// 카드(components/ConceptAv.jsx)는 경우의 수와 확률 예시(features/display/concept-av.js)와 같은 것 — 이 파일은 그 밖의 개념(중1 ~ 고3) 예시를 본다.
-// 자료: 단원 13개(학기마다 한 파일) · 예시 id = <개념 id>-<번호> · 경우의 수와 확률(m2-2-12 ~ 14)은 코드 안 예시라 없다 ·
-//       자리(cvgen/places.json — DB 개념 blocks 에 「[[av:<id>]]」 글줄을 넣을 단락)가 예시와 하나씩 맞는다.
+// 카드(components/ConceptAv.jsx)는 경우의 수와 확률 예시(features/display/concept-av.js)와 같은 것 — 이 파일은 그 밖의 개념(초1 ~ 고3) 예시를 본다.
+// 자료: 학기 25개(중1 ~ 고3 13개 — cvgen/ · 초1 ~ 초6 12개 — elemgen/) · 예시 id = <개념 id>-<번호> · 경우의 수와 확률(m2-2-12 ~ 14)은 코드 안 예시라 없다 ·
+//       중 · 고 자리(cvgen/places.json — DB 개념 blocks 에 「[[av:<id>]]」 글줄을 넣을 단락)가 예시와 하나씩 맞는다.
+//       초등은 개념 카드(public/concepts/elem/*.json)에 표식이 들어 있다 — 그 짝은 tests/elem-concepts.test.mjs 가 본다. 초등 예시는 그림 없이 글만인 것도 있다.
 // 글자: 빈 값 · ASCII 빼기 · 중1 · 중2 개념의 √ 가 없다 · 카드 머리(title) · 칩(tab) · 번호 없음(no ""). 판서 「=」 검산은 생성기(cvgen/cv.py → avgen/core.py chain_check)가 한다.
 // 그림: 요소 좌표가 수이고 그림 칸(660 × 680) 안(여유 40) · 나타나는/사라지는/옮기는 때가 판서 줄 안.
 // 판: 넓은 판(AV_WIDE) · 좁은 판(AV_NARROW) 모두 그림이 들어가고(배율 0.8 이상) 글자 칸과 겹치지 않으며 흐르지 않는다 · 잘라 쓴 판 안에 다 든다.
@@ -22,29 +23,33 @@ function test(name, fn) {
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
-const UNITS = ["m1-1", "m1-2", "m2-1", "m2-2", "m3-1", "m3-2", "h1-1", "h1-2", "h2-1", "h2-2", "h3-1", "h3-2", "h3-3"];
+const MH_UNITS = ["m1-1", "m1-2", "m2-1", "m2-2", "m3-1", "m3-2", "h1-1", "h1-2", "h2-1", "h2-2", "h3-1", "h3-2", "h3-3"];
+const E_UNITS = ["e1-1", "e1-2", "e2-1", "e2-2", "e3-1", "e3-2", "e4-1", "e4-2", "e5-1", "e5-2", "e6-1", "e6-2"];
+const UNITS = [...E_UNITS, ...MH_UNITS];
+const isE = (u) => u[0] === "e";
 const SKIP = new Set(["m2-2-12", "m2-2-13", "m2-2-14"]);
 const DATA = {};
 for (const u of UNITS) DATA[u] = JSON.parse(fs.readFileSync(path.join(ROOT, "public/concept-av", `${u}.json`), "utf8"));
 const PLACES = JSON.parse(fs.readFileSync(path.join(ROOT, "cvgen/places.json"), "utf8"));
 const ALL = UNITS.flatMap((u) => Object.entries(DATA[u].items).map(([k, it]) => ({ u, k, it })));
+const ALL_MH = ALL.filter((x) => !isE(x.u)), ALL_E = ALL.filter((x) => isE(x.u));
 
 /* ══════════ 자료 ══════════ */
-test("단원 13개 · 파일마다 unit · v · items · id = <개념 id>-<번호>(키와 같다) · 개념이 그 단원 · 예시 200개 넘게", () => {
+test("학기 25개(초 12 · 중고 13) · 파일마다 unit · v · items · id = <개념 id>-<번호>(키와 같다) · 개념이 그 단원 · 예시 350개 넘게", () => {
   assert.deepEqual(fs.readdirSync(path.join(ROOT, "public/concept-av")).filter((f) => f.endsWith(".json")).sort(), UNITS.map((u) => `${u}.json`).sort());
   for (const u of UNITS) {
     const d = DATA[u];
     assert.equal(d.unit, u);
     assert.equal(d.v, 1, u);
-    assert.ok(Object.keys(d.items).length >= 10, `${u} 예시 ${Object.keys(d.items).length}`);
+    assert.ok(Object.keys(d.items).length >= (isE(u) ? 8 : 10), `${u} 예시 ${Object.keys(d.items).length}`);
   }
   for (const { u, k, it } of ALL) {
     assert.equal(it.id, k);
-    assert.match(k, /^[mh][1-3]-[1-3]-\d{2}-\d+$/, k);
+    assert.match(k, isE(u) ? /^e[1-6]-[1-2]-\d{2}-\d+$/ : /^[mh][1-3]-[1-3]-\d{2}-\d+$/, k);
     assert.ok(k.startsWith(it.cid + "-"), `${k} 개념 ${it.cid}`);
     assert.ok(it.cid.startsWith(u + "-"), `${k} 단원 ${u}`);
   }
-  assert.ok(ALL.length > 200, `예시 ${ALL.length}`);
+  assert.ok(ALL_MH.length > 200 && ALL_E.length > 120, `예시 중고 ${ALL_MH.length} · 초 ${ALL_E.length}`);
 });
 
 test("카드 머리 · 칩: no 비움(번호 없이) · title(방침을 평문으로) · tab(예제 n) — 수식 꼴({a/b} · ^{} · _{} · √{}) 이 남지 않음", () => {
@@ -62,10 +67,10 @@ test("경우의 수와 확률(m2-2-12 ~ 14)은 코드 안 예시 몫 — 학기 
   for (const [k, p] of Object.entries(PLACES)) assert.ok(!SKIP.has(p.cid), `자리 ${k}`);
 });
 
-test("자리(places.json): 예시마다 꼭 하나 · 개념이 같다 · 단락 id b<n> · after ≥ −1(−1 = 정의 · 주의 단락 끝에 덧붙이기)", () => {
-  const ids = new Set(ALL.map((x) => x.k));
+test("자리(places.json): 중 · 고 예시마다 꼭 하나 · 개념이 같다 · 단락 id b<n> · after ≥ −1(−1 = 정의 · 주의 단락 끝에 덧붙이기)", () => {
+  const ids = new Set(ALL_MH.map((x) => x.k));
   assert.deepEqual(Object.keys(PLACES).sort(), [...ids].sort(), "자리와 예시가 하나씩 맞지 않는다");
-  for (const { k, it } of ALL) {
+  for (const { k, it } of ALL_MH) {
     const p = PLACES[k];
     assert.equal(p.cid, it.cid, k);
     assert.match(p.bid, /^b\d+$/, k);
@@ -73,7 +78,7 @@ test("자리(places.json): 예시마다 꼭 하나 · 개념이 같다 · 단락
   }
 });
 
-test("글자: 문제 · 방침 · 판서 1 ~ 6줄 · 답이 있다 · 빈 값 · ASCII 빼기 없음 · 중1 · 중2 개념에 √ 없음", () => {
+test("글자: 문제 · 방침 · 판서 1 ~ 6줄 · 답이 있다 · 빈 값 · ASCII 빼기 없음 · 초등 · 중1 · 중2 개념에 √ 없음", () => {
   for (const { k, it } of ALL) {
     assert.ok(it.q && it.plan && it.ans, k);
     assert.ok(Array.isArray(it.lines) && it.lines.length >= 1 && it.lines.length <= 6, `${k} 판서 ${it.lines?.length}줄`);
@@ -81,11 +86,11 @@ test("글자: 문제 · 방침 · 판서 1 ~ 6줄 · 답이 있다 · 빈 값 ·
     for (const l of it.lines) assert.ok(typeof l.s === "string" && l.s.length > 0, k);
     assert.ok(!/undefined|NaN|null|\[object/.test(txt), `${k} 빈 값`);
     assert.ok(!/(^|[^\w])-\d/.test(txt), `${k} ASCII 빼기`);
-    if (/^m[12]-/.test(it.cid)) assert.ok(!txt.includes("√") && !JSON.stringify(it.fig || {}).includes("√"), `${k} 중1 · 중2 에 √`);
+    if (/^(m[12]|e\d)-/.test(it.cid)) assert.ok(!txt.includes("√") && !JSON.stringify(it.fig || {}).includes("√"), `${k} 초등 · 중1 · 중2 에 √`);
   }
 });
 
-test("그림: 그림 DSL · 요소 좌표가 수 · 그림 칸(660 × 680) 안(여유 40) · 때(at · un · mv.at)가 판서 줄 안", () => {
+test("그림: 그림 DSL · 요소 좌표가 수 · 그림 칸(660 × 680) 안(여유 40) · 때(at · un · mv.at)가 판서 줄 안 · 중고는 모두 그림 · 초등은 85 % 넘게", () => {
   const NUM = ["x", "y", "x2", "y2", "w", "h", "r"];
   let figs = 0;
   for (const { k, it } of ALL) {
@@ -104,7 +109,10 @@ test("그림: 그림 DSL · 요소 좌표가 수 · 그림 칸(660 × 680) 안(�
       if (el.fr) for (const key of ["dx", "dy", "dl", "ms"]) if (el.fr[key] != null) assert.ok(Number.isFinite(el.fr[key]), `${k} fr.${key}`);
     }
   }
-  assert.equal(figs, ALL.length, `그림 있는 예시 ${figs}/${ALL.length}`);
+  assert.ok(ALL_MH.every((x) => x.it.fig), `중 · 고 예시에 그림이 빠짐: ${ALL_MH.filter((x) => !x.it.fig).map((x) => x.k)}`);
+  const ef = ALL_E.filter((x) => x.it.fig).length;
+  assert.ok(ef >= ALL_E.length * 0.85, `초등 그림 있는 예시 ${ef}/${ALL_E.length}`);
+  assert.equal(figs, ALL_MH.length + ef);
 });
 
 /* ══════════ 붙이는 자리 · 학기 ══════════ */
@@ -146,12 +154,18 @@ export const card = (ids, th) => renderToStaticMarkup(<ConceptAv ids={ids} theme
   const bad = (s) => (s.match(/.{50}(NaN|undefined|Infinity|\[object Object\]).{30}/) || [""])[0];
   const REGIONS = [["넓은 판", m.AV_WIDE], ["좁은 판", m.AV_NARROW]];
 
-  test("판: 넓은 판 · 좁은 판 모두 그림이 들어가고(배율 0.8 이상) 글자 칸과 겹치지 않음 · 흐르지 않음 · 잘라 쓴 판 안 · 좁은 판은 그림이 글자 아래", () => {
+  test("판: 넓은 판 · 좁은 판 모두 그림이 들어가고(배율 0.8 이상) 글자 칸과 겹치지 않음 · 흐르지 않음 · 잘라 쓴 판 안 · 좁은 판은 그림이 글자 아래 · 글만인 초등 예시도 판 안", () => {
     const hit = (a, b) => a[0] < b[2] - 1 && b[0] < a[2] - 1 && a[1] < b[3] - 1 && b[1] < a[3] - 1;
     let lo = 9;
     for (const { k, it } of ALL) {
       for (const [nm, R] of REGIONS) {
         const Lo = m.layoutOf(it, R), v = m.avView(it, R);
+        if (!it.fig) {                                  // 글만인 초등 예시
+          assert.ok(!Lo.fig && !Lo.scroll, `${k} ${nm}: 글만인 예시 판`);
+          const [, y0, , h] = v.vb.split(" ").map(Number);
+          assert.ok(y0 <= R.top - 30 && y0 + h >= Lo.bottom + 30, `${k} ${nm}: 잘라 쓴 판(${v.vb})이 글자를 다 담지 못함`);
+          continue;
+        }
         assert.ok(Lo.fig, `${k} ${nm}: 그림이 빠짐`);
         assert.ok(!Lo.scroll, `${k} ${nm}: 판서가 흐름`);
         assert.ok(Lo.fig.s == null || Lo.fig.s >= 0.8, `${k} ${nm}: 그림 배율 ${Lo.fig.s}`);
@@ -211,6 +225,10 @@ export const card = (ids, th) => renderToStaticMarkup(<ConceptAv ids={ids} theme
       assert.equal(m.card(["m1-1-99-9"], th), "", "받아 둔 학기에 없는 예시는 조용히 비운다");
     }
     for (const { k } of ALL.filter((_, i) => i % 7 === 0)) assert.ok(m.card([k], "light").includes("<svg"), k);
+    for (const { k } of ALL_E.filter((x) => !x.it.fig)) {
+      const s = m.card([k], "dark");
+      assert.ok(s.includes("<svg") && !BAD.test(s), `글만인 초등 예시 카드 ${k}: ${bad(s)}`);
+    }
   });
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { termRank } from "../lib/units";
 
 // ashrain.out — 오답 관리자 화면 (v0.2.1)
 // 이 파일을 src/components/AdminWrongNotes.jsx 로 업로드하세요. WrongNote.jsx가 import 합니다.
@@ -56,7 +57,7 @@ export default function AdminWrongNotes({ unitNames, say }) {
   const [delArm, setDelArm] = useState(null);
   const fileRef = useRef(null);
 
-  const unitIds = Object.keys(unitNames).sort((a, b) => (a[0] === b[0] ? a.localeCompare(b) : a[0] === "m" ? -1 : 1));
+  const unitIds = Object.keys(unitNames).sort((a, b) => (termRank(a) - termRank(b) || a.localeCompare(b)));
 
   useEffect(() => { loadStudents(); loadShared(); }, []); // eslint-disable-line
 

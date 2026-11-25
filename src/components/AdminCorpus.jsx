@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { renderText } from "../lib/mathir";
+import { termRank } from "../lib/units";
 
 const rt = (s) => { try { return renderText(String(s ?? "")); } catch { return String(s ?? ""); } };
 
@@ -387,7 +388,7 @@ export default function AdminCorpus() {
           chunks.push({ tier, unit, idx: c + 1, of,
             pages: pks.slice(c * ESC_CHUNK, (c + 1) * ESC_CHUNK).map((pk) => ({ pk, items: groups[gk][pk] })) });
       }
-      const unitList = [...new Set(chunks.map((c) => c.unit))].sort((a, b) => (a[0] === b[0] ? a.localeCompare(b) : a[0] === "m" ? -1 : 1));
+      const unitList = [...new Set(chunks.map((c) => c.unit))].sort((a, b) => (termRank(a) - termRank(b) || a.localeCompare(b)));
       setEscPlan({ items: use.length, chunks, units: unitList });
       setEscUnits(new Set(unitList)); setEscOne(0);
       say(`계획 — 문항 ${use.length} · 쪽 ${chunks.reduce((a, c) => a + c.pages.length, 0)} · zip ${chunks.length}개. 아래에서 모델·단원 체크 후 받기`);
@@ -478,7 +479,7 @@ export default function AdminCorpus() {
           choices: fi.choices || null, answer: fi.answer ?? null,
           difficulty_est: fi.difficulty_est ?? null,
           has_math: !!fi.has_math, has_figure: !!fi.has_figure, figure: fi.figure || null,
-          unit_id: (String(fi.unit_id || "").match(/^[mh]\d-\d/) || [null])[0],
+          unit_id: (String(fi.unit_id || "").match(/^[emh]\d-\d/) || [null])[0],
           concept_main: cm, concept_subs: (fi.concept_subs || []).slice(0, 2),
           concept_ids: [cm, ...(fi.concept_subs || [])].filter(Boolean),
           pattern_tags: (fi.pattern_tags || []).slice(0, 3),
