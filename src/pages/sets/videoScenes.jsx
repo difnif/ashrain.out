@@ -1,18 +1,21 @@
 // ashrain.out — 컨셉 문제 「해설 영상」: 문항 하나 = 장면 하나 (교실 모니터 장면 형식 · 무대 1600×900)
 //
-// 장면 = { key, dur, title:{e,m}, sub:{e,m}, render(mode, t, C) } — 교실 모니터의 장면 묶음 재생기(frames/player.jsx 의 StoryPlayer)가
-// 그대로 돌린다(자동으로 다음 장면 · 끝나면 처음부터 · 이 장면 반복 · 조작 막대 · 벽시계로 이어 보기).
+// 장면 = { key, no, st, grp, marks, card, dur, title:{e,m}, sub:{e,m}, render(mode, t, C), pane(t, C, uid) } —
+// 해설 액자 공통 틀(features/display/frames/lesson.jsx)이 그대로 돌린다: 단일 | 듀얼 · 빠르기 0.75× ~ 2× · 번호 · 단계 목록(하 · 중 · 상) · 두 막대.
+//   render — 무대 전체(단일 모드) · pane — 듀얼 모드의 반쪽 판(800×900, 머리 줄은 lesson.jsx 가 y 116 에 쓴다).
+//   빠르기 sp 는 박자를 sp 로 나눈 장면(videoScenes(set, sp, st)) — 그릴 때 t × sp 로 1배속 박자표를 그대로 쓴다.
 // 한 장면의 흐름(박자표 — 글자 수로 읽는 시간을 어림한다)
 //   ① 문제   — 발문(+자료 줄 · 보기 · 그림)을 크게
-//   ② 방침   — 포지티브 · 네거티브(일차함수는 주어진 것 · 구할 것) → 전략 (판서). 도식이 오른쪽에 함께 뜬다
+//   ② 방침   — 포지티브 · 네거티브(일차함수는 주어진 것 · 구할 것) → 전략 (판서). 도식이 함께 뜬다(단일: 오른쪽 · 반쪽 판: 판서 아래)
 //   ③ 전개   — 판서 줄이 하나씩, 줄마다 도식(표 · 그림)의 그 부분이 함께 빛난다(생성기가 붙인 애니메이션 큐 그대로)
 //   ④ 확인 · 답
 // 글자는 생성기 HTML(분수 · 강조)을 무대 수식 글자({분자/분모} · ‹강조›)로 바꿔 쓴다. 도식의 표는 무대 표(Table)로 다시 그리고,
-// 그림(SVG)은 종이 카드 위에 그대로 얹어 짚는 부분만 빨갛게 칠한다(그 그림 안에서만 듣는 <style>).
+// 그림(SVG)은 종이 카드 위에 그대로 얹어 짚는 부분만 빨갛게 칠한다(그 그림 안에서만 듣는 <style> — 판마다 id 가 따로).
 // 배치(줄바꿈 · 글자 크기)는 글자 폭을 재서 정하므로 글꼴이 늦게 오면 다시 잰다(bumpFontEpoch). 박자는 글꼴과 상관없다.
 import { MText, Caption, Table, mathWidth } from "../../features/display/draw.jsx";
 import { seg, win, E, clamp } from "../../features/display/core.js";
-import { LEVEL_NAME } from "./labels";
+import { LEVELS, LEVEL_NAME } from "./labels";
+import { LV_COLOR } from "./render";
 
 const EMPTY = new Set();
 
@@ -118,8 +121,8 @@ export function hiCss(id, keys, sw = 0.6) {
     + `${glow.join(",")}{filter:drop-shadow(0 0 ${(sw * 0.8).toFixed(2)}px ${GLOW})}</style>`;
 }
 
-/** 그림 SVG 를 무대 상자에 맞춘 자리 */
-function fitSvg(svg, box, maxScale = 13) {
+/** 그림 SVG 를 무대 상자에 맞춘 자리 — 상자 가운데(top 이면 위에 붙여) */
+function fitSvg(svg, box, maxScale = 13, valign = "middle") {
   const open = String(svg || "").match(/<svg\b[^>]*>/);
   const m = open && open[0].match(/viewBox="([^"]+)"/);
   if (!m) return null;
@@ -128,7 +131,7 @@ function fitSvg(svg, box, maxScale = 13) {
   const s = Math.min(box.w / vb[2], box.h / vb[3], maxScale);
   const w = vb[2] * s, h = vb[3] * s;
   const ff = (open[0].match(/font-family="([^"]*)"/) || [])[1] || "'Noto Serif KR', serif";
-  return { vb, s, w, h, x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, open: open[0], ff };
+  return { vb, s, w, h, x: box.x + (box.w - w) / 2, y: valign === "top" ? box.y : box.y + (box.h - h) / 2, open: open[0], ff };
 }
 /** 무대에 얹을 SVG 글자 — 여는 꼬리표를 무대 자리 · 크기로 바꾸고 강조 규칙을 넣는다 */
 function svgMarkup(svg, f, id, keys) {
@@ -207,9 +210,26 @@ function captions(T, it) {
 }
 
 /* ══════════ 배치(글자 폭을 잰다) ══════════ */
+// 단일 모드 — 무대 전체(1600×900): 위 띠 · 판서(왼쪽) · 도식(오른쪽 칸)
 const BAND = { size: 26, lh: 38, y: 152, w: 1490 };
 const BOARD = { x: 96, wDg: 760, wAll: 1400, bottom: 790, sizes: [34, 32, 30, 28, 26, 24] };
 export const DG_BOX = { x: 900, w: 640, bottom: 790 };
+/** ① 문제(크게)의 자리 — 단일: 그림은 오른쪽 칸 */
+const BIG = { x: 70, y: 196, w: 1460, wFig: 1000, size: 40, min: 30, cap: [8, 5], rs: 26, bs: 30, top: 160, bottom: 800,
+  fig: { x: 1110, y: 200, w: 420, h: 520 } };
+
+// 듀얼 모드의 반쪽 판(800×900) — 머리 줄(세트 · 번호 · 빠르기)은 lesson.jsx 가 y 116 에 쓴다. 판서 아래에 도식, 맨 아래 자막
+export const PANE = {
+  x: 50, w: 710,                                                  // 글자 칸 왼쪽 끝 · 폭(오른쪽 끝 760)
+  band: { size: 21, lh: 30, y: 166, n: 2 },                       // 위 띠(문제를 작게, 두 줄까지)
+  board: { x: 74, w: 686, sizes: [28, 26, 24, 22, 20], lhK: 1.52, gap: 26 },
+  bottom: 838,                                                    // 판서 · 도식 아래 끝(자막 위)
+  dgMin: 150, dgMax: 360,                                         // 도식이 바라는 높이의 범위
+  cap: { y: 878, size: 24, w: 720 },
+};
+/** ① 문제(크게)의 자리 — 반쪽 판: 그림은 글자 아래 */
+const PANE_BIG = { x: PANE.x, y: 194, w: PANE.w, wFig: PANE.w, size: 34, min: 24, cap: [9, 6], rs: 22, bs: 25, top: 156, bottom: 846,
+  fig: "below", figMin: 190 };
 
 /** 판서 줄 — 방침 · 전개 · 확인과 답 (긴 줄은 접어서 여러 줄, 접힌 줄은 같은 시각에 함께 뜬다) */
 function boardLines(T, bw, size) {
@@ -241,20 +261,21 @@ function boardLines(T, bw, size) {
 }
 const lastRow = (lines) => Math.max(0, ...lines.map((L) => L.row));
 
-/** ① 문제를 크게 — 발문 · 자료 줄 · 보기 · 그림의 자리 */
-function bigLayout(T, it, id) {
-  const fig = it.fig ? fitSvg(it.fig, { x: 1110, y: 200, w: 420, h: 520 }, 12) : null;
-  const maxW = fig ? 1000 : 1460;
-  let size = 40;
+/** ① 문제를 크게 — 발문 · 자료 줄 · 보기 · 그림의 자리(G: 단일 BIG · 반쪽 판 PANE_BIG) */
+function bigLayout(T, it, G = BIG) {
+  const below = G.fig === "below";
+  let fig = it.fig && !below ? fitSvg(it.fig, G.fig, 12) : null;
+  const maxW = fig ? G.wFig : G.w;
+  let size = G.size;
   let lines = wrapStage(T.q, size, maxW);
-  const cap = T.rows.length || T.box.length ? 5 : 8;
-  while (lines.length > cap && size > 30) { size -= 2; lines = wrapStage(T.q, size, maxW); }
+  const cap = T.rows.length || T.box.length ? G.cap[1] : G.cap[0];
+  while (lines.length > cap && size > G.min) { size -= 2; lines = wrapStage(T.q, size, maxW); }
   const lh = Math.round(size * 1.55);
-  let y = 196 + (lines.length - 1) * lh + size * 0.4;          // 아래로 쓸 자리(위 끝)
+  let y = G.y + (lines.length - 1) * lh + size * 0.4;          // 아래로 쓸 자리(위 끝)
   // 자료 줄: 이름 · 내용(길면 접는다)
   let rows = null;
   if (T.rows.length) {
-    const rs = 26, rl = Math.round(rs * 1.5);
+    const rs = G.rs, rl = Math.round(rs * 1.5);
     const labW = Math.max(0, ...T.rows.map((r) => (r.length > 1 ? mathWidth(r[0], rs, 700) : 0))) + 34;
     const tw = maxW - labW - 24;
     y += 22;
@@ -273,15 +294,21 @@ function bigLayout(T, it, id) {
   // 보기
   let box = null;
   if (T.box.length) {
-    const bs = 30, bl = Math.round(bs * 1.6);
+    const bs = G.bs, bl = Math.round(bs * 1.6);
     const wrapped = T.box.flatMap((b) => wrapStage(b, bs, maxW - 70, 540));
     y += 26;
     box = { size: bs, lh: bl, top: y, h: wrapped.length * bl + 24, lines: wrapped };
     y += box.h + 10;
   }
+  // 반쪽 판: 그림은 글자 아래 남은 자리에(모자라면 figMin 만큼 잡고 통째로 줄인다)
+  if (it.fig && below) {
+    const top = y + 36;
+    fig = fitSvg(it.fig, { x: G.x, y: top, w: G.w, h: Math.max(G.figMin, G.bottom - 18 - top) }, 12, "top");
+    if (fig) y = fig.y + fig.h + 18;
+  }
   // 넘치면 통째로 줄인다(왼쪽 위 기준)
-  const k = y > 800 ? (800 - 160) / (y - 160) : 1;
-  return { size, lh, lines, rows, box, maxW, k, bottom: y, fig, figHtml: fig ? svgMarkup(it.fig, fig, id + "q", EMPTY) : "" };
+  const k = y > G.bottom ? (G.bottom - G.top) / (y - G.top) : 1;
+  return { x: G.x, y: G.y, top: G.top, size, lh, lines, rows, box, maxW, k, bottom: y, fig, figSrc: it.fig || "" };
 }
 
 /** 도식 표의 자리 — 상자에 들어가게 글자를 줄이고, 그래도 넘치면 통째로 줄인다 */
@@ -300,8 +327,8 @@ function tableLayout(T, box) {
     w: wTot(size, cols) * k, h: hTot(size) * k };
 }
 
-/** 문항 하나의 배치 */
-export function layout(T, it, id) {
+/** 문항 하나의 배치 — 단일 모드(무대 전체) */
+export function layout(T, it) {
   // 위 띠(②~④ 동안 문제를 작게, 세 줄까지)
   const ql = wrapStage(T.q, BAND.size, BAND.w, 540);
   const band = ql.slice(0, 3);
@@ -324,7 +351,57 @@ export function layout(T, it, id) {
     dgL = T.isTbl ? { tbl: tableLayout(T.tbl, box) }
       : { fit: fitSvg(T.dg, { x: box.x + 18, y: box.y + 18, w: box.w - 36, h: box.h - 36 }, 13), cache: new Map() };
   }
-  return { band, topY, bx: BOARD.x, bw, by: pick.y0, size: pick.size, lh: pick.lh, lines: pick.lines, dgL, big: bigLayout(T, it, id), jsx: {} };
+  return { band, topY, bx: BOARD.x, bw, by: pick.y0, size: pick.size, lh: pick.lh, lines: pick.lines, dgL, big: bigLayout(T, it, BIG), jsx: {},
+    caps: T.caps, capY: 846, capSize: 32 };
+}
+
+/** 반쪽 판에서 도식이 바라는 높이 — 그림은 글자가 읽힐 만큼(폭에 맞춘 배율, 9배까지), 표는 글자 22 로 */
+function dgWant(T) {
+  if (T.isTbl) {
+    const t = T.tbl, sz = 22;
+    return clamp(Math.round(sz * 1.75) * (t.rows.length + (t.head.length ? 1 : 0)) + (t.foot ? sz * 1.9 : 0) + 12, PANE.dgMin, PANE.dgMax);
+  }
+  const f = fitSvg(T.dg, { x: 0, y: 0, w: PANE.w - 36, h: 1e6 }, 9);
+  return f ? clamp(f.h + 36, PANE.dgMin, PANE.dgMax) : PANE.dgMin;
+}
+
+/**
+ * 문항 하나의 배치 — 듀얼 모드의 반쪽 판(800×900). 위 띠(두 줄) → 판서(가장 큰 글자부터, 도식이 바라는 높이를 남기며) → 판서 아래 도식 → 자막.
+ * 판서는 방침 · 전개 · 확인이 같은 자리를 번갈아 쓰므로 가장 긴 것에 맞추고, 도식은 장면 내내 한자리.
+ */
+export function paneLayout(T, it) {
+  const B = PANE.board;
+  const ql = wrapStage(T.q, PANE.band.size, PANE.w, 540);
+  const band = ql.slice(0, PANE.band.n);
+  if (ql.length > PANE.band.n) band[PANE.band.n - 1] = withEllipsis(band[PANE.band.n - 1], PANE.band.size, PANE.w, 540);
+  const topY = PANE.band.y + (band.length - 1) * PANE.band.lh + PANE.band.size * 0.35 + 18;
+  const want = T.dg ? dgWant(T) : 0;
+  const room = (bot) => PANE.bottom - bot - (T.dg ? B.gap : 0);
+  let pick = null;
+  for (const sz of B.sizes) {
+    const lines = boardLines(T, B.w, sz);
+    const lh = Math.round(sz * B.lhK), y0 = topY + sz + 4, n = lastRow(lines);
+    pick = { size: sz, lines, lh, y0, n, bot: y0 + n * lh + sz * 0.45 };
+    if (T.dg ? room(pick.bot) >= want : pick.bot <= PANE.bottom) break;
+  }
+  // 가장 작은 글자로도 모자라면 줄 간격을 줄인다(도식은 dgMin 까지 양보)
+  const need = T.dg ? Math.min(want, PANE.dgMin) : 0;
+  if (room(pick.bot) < need) {
+    const lh = Math.max(Math.round(pick.size * 1.22), Math.floor((PANE.bottom - (T.dg ? B.gap : 0) - need - pick.size * 0.45 - pick.y0) / Math.max(1, pick.n)));
+    pick = { ...pick, lh, bot: pick.y0 + pick.n * lh + pick.size * 0.45 };
+  }
+  let dgL = null;
+  if (T.dg) {
+    const y = pick.bot + B.gap;
+    const box = { x: PANE.x, y, w: PANE.w, h: Math.max(60, PANE.bottom - y) };
+    dgL = T.isTbl ? { tbl: tableLayout(T.tbl, box), box }
+      : { fit: fitSvg(T.dg, { x: box.x + 18, y: box.y + 18, w: box.w - 36, h: box.h - 36 }, 13, "top"), cache: new Map(), box };
+  }
+  // 자막 — 판 폭을 넘으면 줄임표
+  const cw = PANE.cap.w - 52;
+  const caps = T.caps.map((c) => (mathWidth(c.s, PANE.cap.size, 560) <= cw ? c : { ...c, s: withEllipsis(c.s, PANE.cap.size, cw, 560) }));
+  return { band, topY, bx: B.x, bw: B.w, by: pick.y0, size: pick.size, lh: pick.lh, lines: pick.lines, dgL, big: bigLayout(T, it, PANE_BIG), jsx: {},
+    caps, capY: PANE.cap.y, capSize: PANE.cap.size, want, pane: true };
 }
 
 /* ══════════ 장면 ══════════ */
@@ -332,95 +409,147 @@ export function layout(T, it, id) {
 let fontEpoch = 0;
 export function bumpFontEpoch() { fontEpoch++; }
 
-export function solutionScene(set, it, idx, total) {
+/** 단계 = 문항 수준(하 · 중 · 상) — lesson.jsx 의 단계 값은 1 · 2 · 3 */
+export const VIDEO_STAGES = LEVELS.map((lv, i) => ({ v: i + 1, lv, lab: `${lv} · ${LEVEL_NAME[lv]}` }));
+export const stageOfLv = (lv) => LEVELS.indexOf(lv) + 1;
+
+/** 풀이 눈금(옆 짧은 막대) — 문제 · 방침 · 전개 줄 · 확인 · 답(장면 시각 = 1배속 시각 ÷ 빠르기) */
+function marksOf(T, sp) {
+  const snip = (s) => { const x = flat(s); return x.length > 18 ? x.slice(0, 17) + "…" : x; };
+  const out = [{ t: 0, lab: "문제" }, { t: (T.tA + 100) / sp, lab: T.labs ? "주어진 것 · 구할 것" : "방침" }];
+  T.board.forEach((b, i) => out.push({ t: T.steps[i].t / sp, lab: `${i + 1}줄 · ${snip(b.h || b.t)}` }));
+  out.push({ t: (T.tC + 100) / sp, lab: "확인" }, { t: T.tAns / sp, lab: "답" });
+  return out;
+}
+
+/** 문항 하나의 몸통 — 박자(1배속) · 배치 두 벌(단일 · 반쪽 판, 처음 그릴 때 잰다). 빠르기 · 단계가 달라도 하나를 같이 쓴다 */
+const BODY = new WeakMap();
+function bodyOf(set, it, idx, total) {
+  let b = BODY.get(it);
+  if (b) return b;
   const T = timing(it);
-  const id = `cvd-${String(set.no ?? "s").replace(/[^0-9A-Za-z_-]/g, "")}-${idx}`;
-  let L = null, epoch = -1;
-  const lay = () => {
-    if (!L || epoch !== fontEpoch) { L = layout(T, it, id); epoch = fontEpoch; }
-    return L;
-  };
+  const id = `cvd-${String(set.cat ?? "")}${String(set.no ?? "s")}`.replace(/[^0-9A-Za-z_-]/g, "") + `-${idx}`;
+  let L = null, Le = -1, P = null, Pe = -1;
+  const lay = () => { if (!L || Le !== fontEpoch) { L = layout(T, it); Le = fontEpoch; } return L; };
+  const paneLay = () => { if (!P || Pe !== fontEpoch) { P = paneLayout(T, it); Pe = fontEpoch; } return P; };
   const title = `${it.no}. ${flat(toStage(it.ty))}`;
   const sub = `${set.short} · ${it.lv}(${LEVEL_NAME[it.lv] || ""}) · ${flat(toStage(it.sp))}`;
+  b = { T, id, lay, paneLay, title, sub, idx, total, st: stageOfLv(it.lv), card: flat(toStage(it.ty)), meta: flat(toStage(it.sp)) };
+  BODY.set(it, b);
+  return b;
+}
+
+function sceneOf(set, it, b, sp) {
+  const T = b.T;
   return {
-    key: `${set.key}-${it.id}`,
-    dur: T.dur,
-    title: { e: title, m: title },
-    sub: { e: sub, m: sub },
-    render: (mode, t, C) => renderScene(T, lay(), it, t, C, idx, total, id),
-    timing: T, layout: lay,                     // 검산 · 목록용
+    key: `${set.key}-${it.id}`, no: it.no, st: b.st, lv: it.lv,
+    dur: Math.round(T.dur / sp),
+    grp: `${it.lv} · ${LEVEL_NAME[it.lv] || ""}`,                       // 긴 막대 눈금 · 판 머리
+    marks: marksOf(T, sp),
+    card: b.card, cardTag: { s: it.lv, bg: LV_COLOR[it.lv] || "#777" }, cardMeta: b.meta,       // 번호 목록 칸
+    title: { e: b.title, m: b.title }, sub: { e: b.sub, m: b.sub },
+    render: (mode, t, C) => renderScene(T, b.lay(), t * sp, C, b.idx, b.total, b.id),
+    pane: (t, C, uid) => renderPane(T, b.paneLay(), t * sp, C, `${b.id}${String(uid ?? "").replace(/[^0-9A-Za-z_-]/g, "")}`),
+    timing: T, layout: b.lay, paneLayout: b.paneLay,                    // 검산용
   };
 }
 
+/** 세트 하나의 장면 목록 — sp 빠르기(0.75 · 1 · 1.5 · 2), st 단계(0 전체 · 1 하 · 2 중 · 3 상). 같은 (세트, sp, st)는 같은 목록 */
+const LISTS = new WeakMap();
+export function videoScenes(set, sp = 1, st = 0) {
+  let m = LISTS.get(set);
+  if (!m) { m = new Map(); LISTS.set(set, m); }
+  const k = `${sp}|${st}`;
+  if (m.has(k)) return m.get(k);
+  const total = set.items.length;
+  const all = set.items.map((it, idx) => ({ it, b: bodyOf(set, it, idx, total) }));
+  const pickd = st ? all.filter((x) => x.b.st === st) : all;
+  const list = (pickd.length ? pickd : all).map(({ it, b }) => sceneOf(set, it, b, sp));
+  m.set(k, list);
+  return list;
+}
+/** 1배속 · 전체(예전 이름) */
 export function solutionScenes(set) {
-  return set.items.map((it, i) => solutionScene(set, it, i, set.items.length));
+  return videoScenes(set, 1, 0);
 }
 
-function renderScene(T, L, it, t, C, idx, total, id) {
+/** 단일 모드 — 무대 전체 */
+function renderScene(T, L, t, C, idx, total, id) {
   const out = [];
   // 오른쪽 위: 몇 번째 문항인지
   out.push(<MText key="cnt" x={1544} y={70} s={`${idx + 1} / ${total}`} size={26} weight={700} anchor="end" fill={C.soft} C={C} />);
+  out.push(...bodyEls(T, L, t, C, id, BAND.size, 56, BAND.y, BAND.lh));
+  return <g>{out}</g>;
+}
 
+/** 듀얼 모드의 반쪽 판 — 머리 줄(세트 · 번호 · 빠르기)은 lesson.jsx 가 쓴다 */
+function renderPane(T, L, t, C, id) {
+  return <g>{bodyEls(T, L, t, C, id, PANE.band.size, PANE.x, PANE.band.y, PANE.band.lh)}</g>;
+}
+
+/** ① 문제(크게) → 위 띠 · 판서 · 도식 → 자막 (단일 · 반쪽 판이 같이 쓴다 — 자리만 L 에서) */
+function bodyEls(T, L, t, C, id, bandSize, bandX, bandY, bandLh) {
+  const out = [];
   /* ① 문제(크게) — 방침이 시작되면 위쪽 띠로 작아진다 */
   const big = 1 - seg(t, T.tA - 500, T.tA + 300, E.sine);
   const small = seg(t, T.tA, T.tA + 700, E.sine);
-  if (big > 0.001) out.push(<g key="qa" opacity={big}>{bigEl(L, C)}</g>);
+  if (big > 0.001) out.push(<g key="qa" opacity={big}>{bigEl(L, C, id)}</g>);
   if (small > 0.001) {
     out.push(<g key="qs" opacity={small * 0.9}>
-      {L.band.map((s, i) => <MText key={i} x={56} y={BAND.y + i * BAND.lh} s={s} size={BAND.size} weight={540} fill={C.soft} C={C} />)}
+      {L.band.map((s, i) => <MText key={i} x={bandX} y={bandY + i * bandLh} s={s} size={bandSize} weight={540} fill={C.soft} C={C} />)}
     </g>);
   }
-
   /* ②③④ 판서 + 도식 */
   if (t >= T.tA) {
     out.push(<SolBoard key="bd" x={L.bx} y={L.by} t={t} lines={L.lines} C={C} size={L.size} lh={L.lh} />);
     if (L.dgL) out.push(<g key="dg" opacity={seg(t, T.tA + 200, T.tA + 1000, E.sine)}>{diagramEl(T, L, t, C, id)}</g>);
   }
-
-  /* 자막 */
-  out.push(<Caption key="cap" t={t} caps={T.caps} C={C} size={32} />);
-  return <g>{out}</g>;
+  /* 자막 — 반쪽 판은 판 가운데(400)로 */
+  const cap = <Caption key="cap" t={t} caps={L.caps} C={C} y={L.capY} size={L.capSize} />;
+  out.push(L.pane ? <g key="capg" transform="translate(-400 0)">{cap}</g> : cap);
+  return out;
 }
 
-/** ① 문제 크게 — 테마마다 한 번 만들어 둔다(매 장면 다시 만들지 않게) */
-function bigEl(L, C) {
-  if (L.jsx[C.name]) return L.jsx[C.name];
-  const B = L.big;
+/** ① 문제 크게 — 테마 · 판(id)마다 한 번 만들어 둔다(매 장면 다시 만들지 않게) */
+function bigEl(L, C, id) {
+  const ck = `${C.name}|${id}`;
+  if (L.jsx[ck]) return L.jsx[ck];
+  const B = L.big, x = B.x;
   const els = [];
-  B.lines.forEach((s, i) => els.push(<MText key={"q" + i} x={70} y={196 + i * B.lh} s={s} size={B.size} weight={560} C={C} />));
+  B.lines.forEach((s, i) => els.push(<MText key={"q" + i} x={x} y={B.y + i * B.lh} s={s} size={B.size} weight={560} C={C} />));
   if (B.rows) {
     const R = B.rows;
-    els.push(<rect key="rbg" x={70} y={R.top} width={R.labW} height={R.bottom - R.top} fill={C.faint} opacity={0.55} />);
+    els.push(<rect key="rbg" x={x} y={R.top} width={R.labW} height={R.bottom - R.top} fill={C.faint} opacity={0.55} />);
     R.items.forEach((r, i) => {
       const base = r.top + 8 + R.size * 0.98;
       els.push(<g key={"r" + i}>
-        <line x1={70} x2={70 + B.maxW} y1={r.top} y2={r.top} stroke={C.soft} strokeWidth={i ? 1.2 : 2.2} opacity={0.7} />
-        {r.lab && <MText x={70 + R.labW / 2} y={base} s={r.lab} size={R.size} weight={700} anchor="middle" fill={C.soft} C={C} />}
-        {r.lines.map((s, j) => <MText key={j} x={70 + R.labW + 22} y={base + j * R.lh} s={s} size={R.size} weight={540} C={C} />)}
+        <line x1={x} x2={x + B.maxW} y1={r.top} y2={r.top} stroke={C.soft} strokeWidth={i ? 1.2 : 2.2} opacity={0.7} />
+        {r.lab && <MText x={x + R.labW / 2} y={base} s={r.lab} size={R.size} weight={700} anchor="middle" fill={C.soft} C={C} />}
+        {r.lines.map((s, j) => <MText key={j} x={x + R.labW + 22} y={base + j * R.lh} s={s} size={R.size} weight={540} C={C} />)}
       </g>);
     });
-    els.push(<line key="rend" x1={70} x2={70 + B.maxW} y1={R.bottom} y2={R.bottom} stroke={C.soft} strokeWidth={2.2} opacity={0.7} />);
+    els.push(<line key="rend" x1={x} x2={x + B.maxW} y1={R.bottom} y2={R.bottom} stroke={C.soft} strokeWidth={2.2} opacity={0.7} />);
   }
   if (B.box) {
     const X = B.box;
     els.push(<g key="box">
-      <rect x={70} y={X.top} width={B.maxW} height={X.h} rx={14} fill="none" stroke={C.soft} strokeWidth={2} />
-      <rect x={70 + B.maxW / 2 - 50} y={X.top - 16} width={100} height={30} rx={8} fill={C.paper} />
-      <MText x={70 + B.maxW / 2} y={X.top + 8} s="보기" size={24} weight={700} anchor="middle" fill={C.soft} C={C} />
-      {X.lines.map((s, i) => <MText key={i} x={100} y={X.top + 44 + i * X.lh} s={s} size={X.size} weight={540} C={C} />)}
+      <rect x={x} y={X.top} width={B.maxW} height={X.h} rx={14} fill="none" stroke={C.soft} strokeWidth={2} />
+      <rect x={x + B.maxW / 2 - 50} y={X.top - 16} width={100} height={30} rx={8} fill={C.paper} />
+      <MText x={x + B.maxW / 2} y={X.top + 8} s="보기" size={24} weight={700} anchor="middle" fill={C.soft} C={C} />
+      {X.lines.map((s, i) => <MText key={i} x={x + 30} y={X.top + 44 + i * X.lh} s={s} size={X.size} weight={540} C={C} />)}
     </g>);
   }
   if (B.fig) {
     const f = B.fig;
     els.push(<g key="fig">
       <rect x={f.x - 18} y={f.y - 18} width={f.w + 36} height={f.h + 36} rx={16} fill="#fbf8ef" stroke="rgba(0,0,0,.08)" />
-      <g dangerouslySetInnerHTML={{ __html: B.figHtml }} />
+      <g dangerouslySetInnerHTML={{ __html: svgMarkup(B.figSrc, f, id + "q", EMPTY) }} />
     </g>);
   }
   const el = B.k < 1
-    ? <g transform={`translate(${(70 * (1 - B.k)).toFixed(1)} ${(160 * (1 - B.k)).toFixed(1)}) scale(${B.k.toFixed(4)})`}>{els}</g>
+    ? <g transform={`translate(${(x * (1 - B.k)).toFixed(1)} ${(B.top * (1 - B.k)).toFixed(1)}) scale(${B.k.toFixed(4)})`}>{els}</g>
     : <g>{els}</g>;
-  L.jsx[C.name] = el;
+  L.jsx[ck] = el;
   return el;
 }
 
@@ -458,14 +587,14 @@ function SolBoard({ x, y, t, lines, C, size, lh, dim = 0.62 }) {
   return <g>{out}</g>;
 }
 
-/** 도식: 표는 무대 표로, 그림은 종이 카드 위에 */
+/** 도식: 표는 무대 표로, 그림은 종이 카드 위에(짚는 키마다 · 판(id)마다 한 번 만든 글자를 다시 쓴다) */
 function diagramEl(T, L, t, C, id) {
   const act = activeKeys(T, t);
   const D = L.dgL;
   if (D.tbl) return tableEl(T.tbl, D.tbl, act, t, C);
   const f = D.fit;
   if (!f) return null;
-  const sig = [...act].sort().join("|");
+  const sig = `${id}|${[...act].sort().join("|")}`;
   let html = D.cache.get(sig);
   if (html == null) { html = svgMarkup(T.dg, f, id, act); D.cache.set(sig, html); }
   return (<g>

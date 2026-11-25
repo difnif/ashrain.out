@@ -15,11 +15,14 @@
 //     ready(set) · load(set) → Promise — 세트 문항을 고를 때 들여오면(기본기 해설) 들여오는 동안 「불러오는 중」,
 //     세트가 아주 많거나 늦게 알게 되면(「전부」 spec) sets 대신 hasSet(key) · setOf(key) · defSet · single0() · Menu(목록 화면) ·
 //     titleOf(set) · colsOf(set) — 세트마다 액자 이름 · 목록 칸 수가 다를 때 }
-//   pick — 처음 열 때 이 세트로(학생앱에서 고른 단원 — 단일 모드로 연다).
+//   pick — 처음 열 때 이 세트로(학생앱에서 고른 단원 — 단일 모드로 연다). pickNo — pick 과 함께, 그 세트의 이 번호부터(단계는 전체로).
+//   ownDual — 듀얼 판도 이 액자의 세트에서만 고른다(「전부」 spec 을 쓰지 않는다 — 컨셉 문제 해설 영상).
 //   menuExtra({ close }) — 세트 목록 머리에 더 놓을 것(기본기 해설: 「단원 100제 | 유형 | 주차별 학년」 바꾸기) · 세트에 grp 가 있으면 목록을 그 이름으로 나눈다.
 //   onSeen(set, no) — 단일 모드에서 장면이 바뀔 때마다(학생앱이 본 기록을 남긴다).
-//   장면 = StoryPlayer 형식(key · no · st · dur · grp · marks · title · sub · render) + pane(t, C, uid) 반쪽 판 그리기 · card 목록 칸 글자 · head 판 머리 글자.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+//   장면 = StoryPlayer 형식(key · no · st · dur · grp · marks · title · sub · render) + pane(t, C, uid) 반쪽 판 그리기 · card 목록 칸 글자 · head 판 머리 글자
+//     · cardTag { s, bg }(목록 칸 둘째 줄 앞 색 딱지) · cardMeta(둘째 줄 글자 — 초 앞).
+//   단계 { v, lab, chip?, short? } — chip 단일 목록 칩 글자 · short 듀얼 판 목록 칩 글자(없으면 「n단계」).
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { W, H, SANS, mathWidth } from "../draw.jsx";
 import { PANE_W, PANE_H } from "../board.js";
 import { StoryPlayer } from "./player.jsx";
@@ -51,19 +54,29 @@ const single0Of = (spec, F) => (spec.single0 ? F.fixSet(spec.single0()) : F.fixS
 /** 듀얼 모드 판마다 고를 「전부」 spec — frames/allspec.jsx 가 넣는다(이 파일이 액자 모듈을 들이면 서로 물리므로 거꾸로) */
 let DUAL_ALL = null;
 export function setDualAll(fn) { DUAL_ALL = fn; }
-const dualSpecOf = (spec) => (DUAL_ALL && !spec.all ? DUAL_ALL(spec) || spec : spec);
+const dualSpecOf = (spec) => (DUAL_ALL && !spec.all && !spec.ownDual ? DUAL_ALL(spec) || spec : spec);
 
-/** 해설 액자 — 단일 | 듀얼. pick(세트 key)을 주면 그 세트로 단일 모드부터 */
-export function LessonFrame({ spec, pick = null, menuExtra = null, onSeen = null, ...props }) {
+/** 목록을 열 때 지금 것(sel)이 가운데 오게 — 목록 상자 안에서만 굴린다(무대 · 바깥 화면은 그대로). 머리(.lsn-head)는 위에 붙어 있으므로 그 아래 가운데 */
+function centerIn(box, sel) {
+  const on = box?.querySelector?.(sel);
+  if (!on || !box.getBoundingClientRect) return;
+  const b = box.getBoundingClientRect(), r = on.getBoundingClientRect();
+  const hd = box.querySelector(".lsn-head")?.getBoundingClientRect?.().height || 0;
+  box.scrollTop += r.top - b.top - hd - (b.height - hd - r.height) / 2;
+}
+
+/** 해설 액자 — 단일 | 듀얼. pick(세트 key)을 주면 그 세트로 단일 모드부터(pickNo — 그 번호부터) */
+export function LessonFrame({ spec, pick = null, pickNo = null, menuExtra = null, onSeen = null, ...props }) {
   const pk = useRef(pick != null && spec.sets.some((s) => s.key === pick) ? pick : null);
+  const pn = useRef(pk.current != null && Number.isInteger(pickNo) ? pickNo : null);
   const [dual, setDual] = useState(() => !pk.current && (lsRead(spec.lsk + ".mode") || "") === "dual");
   useEffect(() => { lsWrite(spec.lsk + ".mode", dual ? "dual" : "single"); }, [dual, spec.lsk]);
-  const pick0 = pk.current;
-  useEffect(() => { pk.current = null; }, []);                   // 처음 한 번만 — 듀얼로 갔다 오면 기억한 자리로
+  const pick0 = pk.current, pickNo0 = pn.current;
+  useEffect(() => { pk.current = null; pn.current = null; }, []);   // 처음 한 번만 — 듀얼로 갔다 오면 기억한 자리로
   const dspec = useMemo(() => dualSpecOf(spec), [spec]);
   return dual
     ? <DualStage spec={dspec} menuExtra={dspec === spec ? menuExtra : null} {...props} onSingle={() => setDual(false)} />
-    : <SingleStage spec={spec} pick={pick0} menuExtra={menuExtra} onSeen={onSeen} {...props} onDual={() => setDual(true)} />;
+    : <SingleStage spec={spec} pick={pick0} pickNo={pickNo0} menuExtra={menuExtra} onSeen={onSeen} {...props} onDual={() => setDual(true)} />;
 }
 
 /** 세트 문항이 아직 없으면 들여온다 — [다 왔나, 오류] */
@@ -110,20 +123,23 @@ function SetPick({ spec, value, onChange, onMenu, menuOn, poke, label = "세트"
 /** 세트(단원) 목록 — 고르면 그 세트 1번부터 */
 export function SetMenu({ spec, cur, onPick, onClose, side = "", extra = null }) {
   const M = spec.setMenu;
+  const box = useRef(null);
+  useLayoutEffect(() => { centerIn(box.current, ".lsn-set.on"); }, []);
   return (
     <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
-      <div className="dsp-list-in" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`${M.word} 목록`}>
-        <div className="dsp-list-h">
-          <b>{side ? `${side} 판 · ` : ""}{M.title}</b>
-          <button type="button" onClick={onClose} aria-label="닫기">✕</button>
+      <div className="dsp-list-in" ref={box} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`${M.word} 목록`}>
+        <div className="lsn-head">
+          <div className="dsp-list-h">
+            <b>{side ? `${side} 판 · ` : ""}{M.title}</b>
+            <button type="button" onClick={onClose} aria-label="닫기">✕</button>
+          </div>
+          {extra && extra({ close: onClose })}
+          {M.hint && <p className="dsp-gal-sub">{M.hint}</p>}
         </div>
-        {extra && extra({ close: onClose })}
-        {M.hint && <p className="dsp-gal-sub">{M.hint}</p>}
         <div className="lsn-sets">
           {spec.sets.map((b, i) => [
             b.grp && b.grp !== spec.sets[i - 1]?.grp ? <div key={"g" + b.key} className="lsn-grp">{b.grp}</div> : null,
-            <button key={b.key} type="button" className={"lsn-set" + (b.key === cur ? " on" : "") + (b.hot ? " hot" : "")} onClick={() => onPick(b.key)}
-              ref={b.key === cur ? (el) => el?.scrollIntoView?.({ block: "center" }) : undefined}>
+            <button key={b.key} type="button" className={"lsn-set" + (b.key === cur ? " on" : "") + (b.hot ? " hot" : "")} onClick={() => onPick(b.key)}>
               <span className="i" aria-hidden="true">{b.icon || "•"}</span>
               <span className="t">{b.short || b.name}{b.note && <small>{b.note}</small>}</span>
               <span className="u">{b.sub || b.name}</span>
@@ -143,15 +159,16 @@ const SpeedSeg = ({ value, onChange, poke, label = "빠르기" }) => (
 );
 
 /* ══════════ 단일 모드 ══════════ */
-function SingleStage({ menuExtra, onSeen, ...props }) {
+function SingleStage({ menuExtra, onSeen, pickNo = null, ...props }) {
   const { spec, ui, poke, inert, onDual, pick, C, onExit } = props;
+  const sa = useRef(pickNo);                                       // 처음 열 때 이 번호부터(한 번)
   const { Btn, Ic } = ui;
   const F = useMemo(() => fixers(spec), [spec]);
   const [cfg, setCfg] = useState(() => {
     const o = lsRead(spec.lsk) || {};
     const saved = o.set ?? o.id;
     const set = F.fixSet(pick ?? saved);
-    return { set, sp: fixSp(o.sp), st: pick != null && pick !== saved ? 0 : F.fixSt(set, o.st ?? o.lv) };
+    return { set, sp: fixSp(o.sp), st: (pick != null && pick !== saved) || sa.current != null ? 0 : F.fixSt(set, o.st ?? o.lv) };
   });
   useEffect(() => { lsWrite(spec.lsk, cfg); }, [cfg, spec.lsk]);
   const [list, setList] = useState(false);
@@ -162,6 +179,9 @@ function SingleStage({ menuExtra, onSeen, ...props }) {
   const [ready, err] = useSetsReady(spec, [cfg.set]);
   const scenes = useMemo(() => (ready ? spec.scenes(cfg.set, cfg.sp, cfg.st) : null), [spec, cfg, ready]);
   const seenNo = scenes?.[cur]?.no;
+  const j0 = scenes && sa.current != null ? scenes.findIndex((x) => x.no === sa.current) : -1;
+  const startAt = j0 >= 0 ? j0 : null;
+  useEffect(() => { if (scenes) sa.current = null; }, [scenes]);   // 재생기가 그 번호로 뜬 뒤에는 기억한 자리로
   useEffect(() => { if (onSeen && seenNo != null) onSeen(cfg.set, seenNo); }, [onSeen, cfg.set, seenNo]);
   const pickSet = useCallback((v) => setCfg((c) => { const set = F.fixSet(v); return set === c.set ? c : { ...c, set, st: F.fixSt(set, c.st) }; }), [F]);
   const pickSt = useCallback((v) => setCfg((c) => ({ ...c, st: F.fixSt(c.set, v) })), [F]);
@@ -210,7 +230,7 @@ function SingleStage({ menuExtra, onSeen, ...props }) {
     <>
       <style>{SET_CSS}</style>
       <StoryPlayer key={`${cfg.set}|${cfg.sp}|${cfg.st}`} list={scenes} lsKey={posKeyOf(spec, cfg.set, cfg.st)} label={label}
-        {...props} inert={inert || list || docs || menu} noMode extra={extra} extraRow={row} topExtra={top} apiRef={api} onIdx={setCur} scrub />
+        {...props} inert={inert || list || docs || menu} noMode extra={extra} extraRow={row} topExtra={top} apiRef={api} onIdx={setCur} scrub startAt={startAt} />
       {list && <NumList spec={spec} set={cfg.set} st={cfg.st} scenes={scenes} cur={cur} onPick={goTo}
         onStage={(v) => { pickSt(v); poke(); }} onClose={() => setList(false)} />}
       {menu && <SetMenu spec={spec} cur={cfg.set} extra={menuExtra} onPick={(v) => { pickSet(v); setMenu(false); poke(); }} onClose={() => setMenu(false)} />}
@@ -458,6 +478,12 @@ const SET_CSS = `
 .lsn-pane-list .lsn-sets { grid-template-columns: repeat(2, 1fr); }
 .lsn-grp { grid-column: 1 / -1; font-weight: 800; font-size: .86em; opacity: .75; margin: .5cqw 0 -.1cqw; padding-left: .3cqw; }
 .lsn-set.hot { border-color: var(--teal, #2a9d8f); }
+/* 목록 머리(이름 · 단계 칩 · 안내)는 위에 붙어 있다 — 긴 목록을 굴려도(지금 것을 가운데로 열어도) 보인다. 상자 위 여백까지 덮는다 */
+.dsp-list-in { --lsn-pad: 1.6cqw; }
+.lsn-pane-list .dsp-list-in { --lsn-pad: 1.2cqw; }
+.lsn-head { position: sticky; top: calc(-1 * var(--lsn-pad)); z-index: 2; background: var(--card); margin-top: calc(-1 * var(--lsn-pad));
+  padding: var(--lsn-pad) 0 .2cqw; }
+.lsn-tag { font-style: normal; color: #fff; font-weight: 800; border-radius: .4em; padding: 0 .45em; margin-right: .45em; line-height: 1.55; }
 .lsn-set.hot .t::after { content: "이번 주"; font-size: .7em; font-weight: 800; color: var(--teal, #2a9d8f); margin-left: .3cqw; }
 `;
 
@@ -492,6 +518,8 @@ export const DUAL_CSS = `
 /** 번호 · 단계 목록 — 단계 칩을 고르면 그 단계만 돌고, 번호를 고르면 그 문항부터 */
 export function NumList({ spec, set, st, scenes, cur, onPick, onStage, onClose, side = "" }) {
   const S = setOfSpec(spec, set) || { name: String(set) };
+  const box = useRef(null);
+  useLayoutEffect(() => { centerIn(box.current, ".dsp-card.on"); }, []);
   const stages = spec.stages(set);
   const title = spec.titleOf ? spec.titleOf(set) : spec.title, cols = (spec.colsOf ? spec.colsOf(set) : spec.cols) || 5;
   const lap = scenes.reduce((a, x) => a + x.dur, 0);
@@ -499,31 +527,36 @@ export function NumList({ spec, set, st, scenes, cur, onPick, onStage, onClose, 
   const now = stages.find((x) => x.v === st);
   return (
     <div className="dsp-list" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
-      <div className="dsp-list-in" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="번호 · 단계 목록">
+      <div className="dsp-list-in" ref={box} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="번호 · 단계 목록">
         <style>{`.lsn-grid { grid-template-columns: repeat(${cols}, 1fr); }`}</style>
-        <div className="dsp-list-h">
-          <b>{side ? `${side} 판 · ` : ""}{title} · {S.name}</b>
-          <button type="button" onClick={onClose} aria-label="닫기">✕</button>
-        </div>
-        {stages.length > 0 && (
-          <div className="dsp-chips">
-            {[{ v: 0 }, ...stages].map((x) => (
-              <button key={x.v} type="button" className={"dsp-chip" + (st === x.v ? " on" : "")} aria-pressed={st === x.v} onClick={() => onStage(x.v)}>
-                {x.v === 0 ? `전체 ${all}` : side ? `${x.v}단계` : x.chip || x.lab}
-              </button>
-            ))}
+        <div className="lsn-head">
+          <div className="dsp-list-h">
+            <b>{side ? `${side} 판 · ` : ""}{title} · {S.name}</b>
+            <button type="button" onClick={onClose} aria-label="닫기">✕</button>
           </div>
-        )}
-        <p className="dsp-gal-sub">
-          {now ? `${now.lab} ${scenes.length}문항만 돌아요` : stages.length ? "첫 단계부터 차례로 돌아요" : "처음부터 차례로 돌아요"}
-          {" "}· 한 바퀴 약 {Math.max(1, Math.round(lap / 60000))}분 · 지금 {scenes[cur]?.no}번 · 번호를 고르면 그 문항부터
-        </p>
+          {stages.length > 0 && (
+            <div className="dsp-chips">
+              {[{ v: 0 }, ...stages].map((x) => (
+                <button key={x.v} type="button" className={"dsp-chip" + (st === x.v ? " on" : "")} aria-pressed={st === x.v} onClick={() => onStage(x.v)}>
+                  {x.v === 0 ? `전체 ${all}` : side ? x.short || `${x.v}단계` : x.chip || x.lab}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="dsp-gal-sub">
+            {now ? `${now.lab} ${scenes.length}문항만 돌아요` : stages.length ? "첫 단계부터 차례로 돌아요" : "처음부터 차례로 돌아요"}
+            {" "}· 한 바퀴 약 {Math.max(1, Math.round(lap / 60000))}분 · 지금 {scenes[cur]?.no}번 · 번호를 고르면 그 문항부터
+          </p>
+        </div>
         <div className="dsp-grid lsn-grid">
           {scenes.map((s, i) => (
             <button key={s.key} type="button" className={"dsp-card" + (i === cur ? " on" : "")} onClick={() => onPick(i)}>
               <span className="n">{s.no}</span>
               <span className="e">{s.card || s.grp || ""}</span>
-              <span className="m">{Math.round(s.dur / 1000)}초</span>
+              <span className="m">
+                {s.cardTag && <i className="lsn-tag" style={{ background: s.cardTag.bg }}>{s.cardTag.s}</i>}
+                {s.cardMeta ? `${s.cardMeta} · ` : ""}{Math.round(s.dur / 1000)}초
+              </span>
             </button>
           ))}
         </div>
