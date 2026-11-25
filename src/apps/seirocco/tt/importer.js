@@ -1,8 +1,8 @@
 // 시록고 강사도구 — 옮겨 오기: ① PC 강사도구 자료(data 폴더: mf.db + prints + scans) ② Claude와 만든 프린트 묶음(print.json 폴더) ③ Claude 프린트 PDF
 // 여러 번 해도 겹치지 않는다 — PC 자료는 새로 생긴 것만 더한다(프린트·학생·채점 차·표시·기록). 파일은 teacher-tool/<uid>/tt/ 에, 기록은 tt_* 표에.
 // PC 자료 폴더는 이 브라우저에 기억해 두고(파일 시스템 접근 · Chrome), 강사도구를 열 때 PC에서 새로 등록한 것을 알아서 반영한다(pcAutoSync).
-import { T as T0, all, must, put, log, nn, uid } from "./sb";
-import { KST, jparse, applyWal, safeQuery, knownFromPc, cleanPrintMeta, cleanEventDetail, markKey, eventKey, scanKey, onlyNew, sessionPlan, gradingNewer, insidePcTool } from "./pccore.js";
+import { T as T0, all, must, put, log, nn, uid, bytes as sbBytes } from "./sb";
+import { KST, jparse, applyWal, safeQuery, knownFromPc, cleanPrintMeta, cleanEventDetail, markKey, eventKey, scanKey, onlyNew, sessionPlan, gradingNewer, insidePcTool, pngSize, readSolutions, quickText, pickAnswer, solSig } from "./pccore.js";
 import { guessLevel, stripNames } from "./logic.js";
 // 넣기·고치기 전에 빈 값을 기본값으로
 const T = (name) => {
@@ -104,6 +104,13 @@ async function scan(files0) {
     const wal = norm.find((f) => f.path === base + "mf.db-wal");
     const fileMap = new Map(norm.filter((f) => f.path.startsWith(base)).map((f) => [f.path.slice(base.length), f.file]));
     res.pc = await pcOpen(dbf.file, wal && wal.file, async (rel) => fileMap.get(rel) || null, base);
+  }
+  // Claude 해설 묶음(solutions.json) — PC data 폴더 안(data/웹해설)이면 PC 자료를 맞출 때 같이 붙고, 따로 놓았으면 웹 프린트에 붙인다
+  for (const f of norm.filter((x) => /(^|\/)solutions\.json$/.test(x.path))) {
+    if (res.pc && f.path.startsWith(res.pc.base)) continue;
+    const base = f.path.replace(/solutions\.json$/, "");
+    const pkg = await readSolPkg(async (rel) => { const x = norm.find((y) => y.path === base + rel); return x ? x.file : null; });
+    if (pkg) { res.sol = pkg; break; }
   }
   // 그 밖의 PDF (PC data 폴더 · 그 옆 「결과」 폴더 · 묶음 안의 것은 빼고) → Claude 프린트 PDF 후보
   const taken = (path) => (res.pc && insidePcTool(path, res.pc.base)) || res.packages.some((p) => path.startsWith(p.base));
@@ -297,6 +304,111 @@ async function importPackages(pkgs, ui) {
 const chunked = async (ids, fn, n = 150) => { const out = []; for (let k = 0; k < ids.length; k += n) out.push(...(await fn(ids.slice(k, k + n)))); return out; };
 const groupBy = (rows, key) => { const m = new Map(); for (const x of rows) { const k = x[key]; if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; };
 
+// ── 정답과 해설: 강사도구 양식(빠른 정답 표 + 해설 2단, layout.buildAnswerPdf)으로 다시 짜기
+// 해설 묶음(data/웹해설 또는 따로 놓은 「웹해설」 폴더): solutions.json + 해설 그림 — 문항 지문(hash)으로 붙인다
+const PC_CROP_DPI = 220;      // PC·웹 빠른정답 그림(renderQuick)은 220dpi
+const SOL_DPI = 200;          // 매쓰플랫 해설 그림(parseSolutions)은 200dpi
+async function readSolPkg(getFile) {
+  try {
+    const f = await getFile("solutions.json");
+    if (!f) return null;
+    const pkg = readSolutions(JSON.parse(new TextDecoder().decode(new Uint8Array(await f.arrayBuffer())).replace(/^﻿/, "")));
+    if (!pkg) return null;
+    pkg.file = async (name) => { const x = await getFile(name); return x ? new Uint8Array(await x.arrayBuffer()) : null; };
+    return pkg;
+  } catch { return null; }
+}
+// 매쓰플랫 빠른정답 쪽 읽기 (원본 PDF — 이름은 그림 자르기에 쓰지 않으므로 지우기 전 것을 읽어도 된다)
+async function quickOfPdf(bytes) {
+  if (!bytes) return null;
+  try {
+    const B = await import("./engine/base.js");
+    const M = await import("./engine/mathflat.js");
+    const doc = await B.openPdf(bytes.slice());
+    try { const q = await M.parseQuick(doc); return Object.keys(q).length ? q : null; } finally { try { doc.destroy(); } catch { /* */ } }
+  } catch { return null; }
+}
+const pad3 = (n) => String(n).padStart(3, "0");
+// pr: 웹 프린트 줄 {id, code, title, sub, template, label, options}
+// src: { cropOf(rel) → 바이트|null (PC 폴더 또는 저장 공간), quick: 번호 → 칸, pkg: 해설 묶음 }
+// 하는 일: 정답 글자 채우기 · 해설 그림 올리기 · answer.pdf 다시 짜서 올리기 · 표 고치기
+async function refreshAnswer(pr, src, ui) {
+  const L = await import("./engine/layout.js");
+  const { settings } = await import("./engine/print.js");
+  const items = must(await T("tt_print_items").select("seq,choice,answer,answer_png,sol_png,hash,src_no").eq("print_id", pr.id).order("seq"));
+  if (!items.length) return null;
+  const pkg = src.pkg || null;
+  const own = !!((jparse(pr.options, {}) || {}).answer_tpl || {}).pkg;     // 전에 묶음 해설을 붙였던 프린트
+  const entries = [], upd = [], jobs = [];
+  let nSol = 0, filled = 0;
+  for (const it of items) {
+    const s = pkg && it.hash ? pkg.items.get(it.hash) : null;
+    const q = src.quick && it.src_no != null ? src.quick[Number(it.src_no)] : null;
+    const answer = pickAnswer(it.answer, s && s.answer, quickText(q));
+    let solPng = it.sol_png || null, sol = null;
+    if (s && s.sol && (!it.sol_png || own)) {     // 매쓰플랫 해설이 이미 있으면 그대로
+      const b = await pkg.file(s.sol);
+      if (b) { solPng = `sols/${pad3(it.seq)}.png`; jobs.push({ rel: `${pr.code}/${solPng}`, file: b, type: "image/png" }); sol = { png: b, w: s.w, h: s.h }; }
+    }
+    if (!sol && solPng) {
+      const b = await src.cropOf(solPng).catch(() => null);
+      const wh = b && pngSize(b);
+      if (wh) sol = { png: b, w: (wh[0] * 72) / SOL_DPI, h: (wh[1] * 72) / SOL_DPI };
+    }
+    let crop = null, cropWh = null;
+    if (it.answer_png) {
+      crop = await src.cropOf(it.answer_png).catch(() => null);
+      const wh = crop && pngSize(crop);
+      if (wh) cropWh = [(wh[0] * 72) / PC_CROP_DPI, (wh[1] * 72) / PC_CROP_DPI]; else crop = null;
+    }
+    if (sol) nSol++;
+    if (answer !== String(it.answer || "")) filled++;
+    if (answer !== String(it.answer || "") || solPng !== (it.sol_png || null)) upd.push({ print_id: pr.id, seq: it.seq, answer, sol_png: solPng });
+    entries.push({ seq: it.seq, choice: !!it.choice, answer, answer_png: crop, answer_wh: cropWh, sol });
+  }
+  ui.status(`${pr.title || pr.code} · 정답과 해설 짜는 중`);
+  const cfg = settings({ template: pr.template || "초등", label: pr.label || "서답형", title: pr.title || "", sub: pr.sub || "" });
+  cfg.코드 = pr.code;
+  const built = await L.buildAnswerPdf(entries, cfg, pr.title || pr.code);
+  jobs.push({ rel: `${pr.code}/answer.pdf`, file: new Uint8Array(built.pdf), type: "application/pdf" });
+  const fails = await putAll(jobs, () => {});
+  if (fails.length) throw new Error(`정답과 해설 파일 ${fails.length}개를 못 올렸어요 (${fails[0]})`);
+  for (let k = 0; k < upd.length; k += 200) must(await T("tt_print_items").upsert(upd.slice(k, k + 200), { onConflict: "print_id,seq" }));
+  const files = { ...(jparse(pr.files, {}) || {}), answer: `${pr.code}/answer.pdf` };
+  const options = { ...(jparse(pr.options, {}) || {}), answer_tpl: { v: 1, at: new Date().toISOString(), pkg: pkg ? pkg.stamp : null, sig: solSig(pkg, items.map((it) => it.hash)), sols: nSol } };
+  if (nSol && pkg && pkg.by) options.solutions = { by: pkg.by, made: pkg.made, n: nSol };
+  must(await T("tt_prints").update({ files, options }).eq("id", pr.id));
+  return { nSol, filled, pages: built.pages };
+}
+// 다시 짜야 하나: PC에서 온 프린트인데 아직 양식 정답지가 아니거나, 이 프린트에 닿는 새 해설 묶음이 왔을 때
+const needsAnswer = (opts, pkg, hashes) => {
+  const o = jparse(opts, {}) || {};
+  if (!o.answer_tpl) return true;
+  if (!pkg) return false;
+  const sig = solSig(pkg, hashes);
+  return !!sig && sig !== (o.answer_tpl.sig || "");
+};
+
+// 따로 놓은 해설 묶음: 웹에 있는 프린트 중 같은 문항(지문)이 든 것에 붙이고 정답지를 다시 짠다 (파일은 저장 공간에서)
+async function applySolutions(pkg, ui) {
+  const r = { answers: 0, sols: 0, filled: 0, prints: 0, errors: [] };
+  const hits = await chunked([...pkg.items.keys()], (hs) => all(() => T("tt_print_items").select("print_id,hash").in("hash", hs)), 100);
+  const by = groupBy(hits, "print_id");
+  if (!by.size) return r;
+  const prs = await chunked([...by.keys()], (ids) => all(() => T("tt_prints").select("id,code,title,sub,template,label,files,options,shelf").in("id", ids)));
+  let k = 0;
+  for (const pr of prs) {
+    k++;
+    if (!needsAnswer(pr.options, pkg, by.get(pr.id).map((x) => x.hash))) continue;
+    ui.status(`해설 붙이기 ${k}/${prs.length} · ${pr.title || pr.code}`);
+    try {
+      const t = await refreshAnswer(pr, { cropOf: (rel) => sbBytes(`${pr.code}/${rel}`), quick: null, pkg }, ui);
+      if (t) { r.prints++; r.answers++; r.sols += t.nSol; r.filled += t.filled; }
+    } catch (e) { r.errors.push(`${pr.title || pr.code}: ${e.message}`); }
+  }
+  return r;
+}
+
 async function pcOnePrint(pc, p, items, ctx) {
   const { code, old, names, E, pCols, ui } = ctx;
   const found = new Set();
@@ -318,8 +430,9 @@ async function pcOnePrint(pc, p, items, ctx) {
   if (!sf) throw new Error("시험지 PDF가 폴더에 없어요");
   ui.status(`${ctx.label} · 이름 지우는 중`);
   jobs.push({ rel: `${code}/sheet.pdf`, file: await prep(sf, true), type: "application/pdf" });
+  // 정답: 매쓰플랫 빠른정답 원본은 올리지 않고, 아래에서 강사도구 양식으로 다시 짠다(안 되면 이름 지운 원본)
   const af = await fileOf(p.answer_pdf);
-  if (af) jobs.push({ rel: `${code}/answer.pdf`, file: await prep(af, false), type: "application/pdf" });
+  const ansOrig = af ? new Uint8Array(await af.arrayBuffer()) : null;
   const extras = [];
   const ex = jparse(pCols.has("extras") ? p.extras : null, []) || [];
   for (const [k, x] of ex.entries()) {
@@ -346,7 +459,7 @@ async function pcOnePrint(pc, p, items, ctx) {
     title: meta.title, sub: meta.sub, kind, template: p.template || "", label: p.label || "서답형",
     level: (pCols.has("level") && p.level) || guessLevel(meta.title, meta.sub, p.template), n_items: p.n_items ?? items.length,
     n_choice: p.n_choice ?? items.filter((x) => x.choice).length, pages: p.pages ?? 0, sources: meta.sources,
-    files: { sheet: `${code}/sheet.pdf`, answer: af ? `${code}/answer.pdf` : null, src: [], extras }, name_boxes: boxes,
+    files: { sheet: `${code}/sheet.pdf`, answer: null, src: [], extras }, name_boxes: boxes,
     options: { ...meta.options, from_pc: true }, shelf: p.deleted ? "deleted" : "active", updated_at: KST(p.updated_at) || undefined,
   };
   let pid = old && old.id;
@@ -356,14 +469,31 @@ async function pcOnePrint(pc, p, items, ctx) {
     hash: it.hash || null, png: it.png || null, answer: it.answer || "", label: it.label ?? null, points: it.points ?? null, topic: it.topic || "", answer_png: it.answer_png || null,
     tag: it.tag || "", rate: it.rate || "", sol_png: it.sol_png || null, scale: it.scale ?? null, origin: it.origin || null }));
   for (let k = 0; k < rows.length; k += 200) must(await T("tt_print_items").upsert(rows.slice(k, k + 200), { onConflict: "print_id,seq", ignoreDuplicates: true }));
-  return { pid, anon: found.size > 0 };
+  // 정답과 해설 — 강사도구 양식으로
+  let tpl = null;
+  try {
+    const quick = await quickOfPdf(ansOrig);
+    const cropOf = async (rel) => { const f = await fileOf(`${code}/${rel}`); return f ? new Uint8Array(await f.arrayBuffer()) : null; };
+    tpl = await refreshAnswer({ id: pid, code, title: meta.title, sub: meta.sub, template: row.template, label: row.label, files: row.files, options: row.options }, { cropOf, quick, pkg: ctx.pkg }, ui);
+  } catch (e) {
+    console.warn("정답과 해설 양식", e);
+    if (ansOrig) {       // 양식으로 못 짜면 이름 지운 원본이라도
+      await put(`${code}/answer.pdf`, await prep({ arrayBuffer: async () => ansOrig.buffer.slice(0) }, false), "application/pdf");
+      must(await T("tt_prints").update({ files: { ...row.files, answer: `${code}/answer.pdf` } }).eq("id", pid));
+    }
+  }
+  return { pid, anon: found.size > 0, tpl };
 }
 
 export async function syncPc(pc, ui, opts = {}) {
   const q = pc.q;
   const errors = [];
-  const r = { students: 0, prints: 0, repaired: 0, skipped: [], anon: 0, deleted: 0, targets: 0, gradings: 0, gradingsUpdated: 0, sessions: 0, marks: 0, scans: 0, classRecs: 0, events: 0, transcripts: 0, errors };
+  const r = { students: 0, prints: 0, repaired: 0, skipped: [], anon: 0, deleted: 0, targets: 0, gradings: 0, gradingsUpdated: 0, sessions: 0, marks: 0, scans: 0, classRecs: 0, events: 0, transcripts: 0,
+    answers: 0, sols: 0, filled: 0, errors };
   const E = await import("./engine/register.js");
+  // 해설 묶음: data/웹해설 (없으면 같이 놓은 것)
+  const pkg = (await readSolPkg((rel) => pc.getFile("웹해설/" + rel))) || opts.pkg || null;
+  const tally = (t) => { if (t) { r.answers++; r.sols += t.nSol; r.filled += t.filled; } };
   const { knownNames } = await import("./backend.js");
   const names = knownFromPc(q, await knownNames().catch(() => []));
   // 학생 (이름으로)
@@ -381,7 +511,7 @@ export async function syncPc(pc, ui, opts = {}) {
     } catch (e) { errors.push(`학생 ${nm}: ${e.message}`); }
   }
   // 프린트 (코드로) — 없으면 넣고, 넣다 만 것(문항이 모자람)은 다시, PC에서 지운 것은 웹에서도 지운 칸으로
-  const web = new Map((await all(() => T("tt_prints").select("id,code,shelf,options"))).map((x) => [x.code, x]));
+  const web = new Map((await all(() => T("tt_prints").select("id,code,shelf,options,title,sub,template,label,files"))).map((x) => [x.code, x]));
   const itemCount = new Map();
   for (const it of await all(() => T("tt_print_items").select("print_id"))) itemCount.set(it.print_id, (itemCount.get(it.print_id) || 0) + 1);
   const pCols = tableCols(q, "prints");
@@ -400,15 +530,25 @@ export async function syncPc(pc, ui, opts = {}) {
       if (p.deleted && old.shelf === "active" && old.options && old.options.from_pc) {
         try { must(await T("tt_prints").update({ shelf: "deleted", updated_at: KST(p.updated_at) || new Date().toISOString() }).eq("id", old.id)); r.deleted++; } catch (e) { errors.push(`${p.title || code}: ${e.message}`); }
       }
+      // 전에 옮긴 PC 프린트: 정답지를 강사도구 양식으로 · 새 해설 묶음 붙이기
+      if (old.options && old.options.from_pc && needsAnswer(old.options, pkg, items.map((it) => it.hash))) {
+        ui.status(`정답과 해설 · ${old.title || code}`);
+        try {
+          const fileOf = async (rel) => { const f = rel ? await pc.getFile("prints/" + rel) : null; return f ? new Uint8Array(await f.arrayBuffer()) : null; };
+          const cropOf = async (rel) => (await fileOf(`${code}/${rel}`)) || sbBytes(`${code}/${rel}`);
+          tally(await refreshAnswer(old, { cropOf, quick: await quickOfPdf(await fileOf(p.answer_pdf)), pkg }, ui));
+        } catch (e) { errors.push(`${old.title || code} 정답과 해설: ${e.message}`); }
+      }
       continue;
     }
     const label = `프린트 ${pi}/${prints.length} · ${p.title || code}`;
     ui.status(label);
     try {
-      const one = await pcOnePrint(pc, p, items, { code, old, names, E, pCols, ui, label });
+      const one = await pcOnePrint(pc, p, items, { code, old, names, E, pCols, ui, label, pkg });
       pMap.set(p.id, { id: one.pid, code, existed: false });
       if (old) r.repaired++; else r.prints++;
       if (one.anon) r.anon++;
+      tally(one.tpl);
     } catch (e) { errors.push(`${p.title || code}: ${e.message}`); }
   }
   const P = (oid) => { const m = pMap.get(oid); return m ? m.id : null; };
@@ -496,8 +636,9 @@ export async function syncPc(pc, ui, opts = {}) {
     corpus_id: t.corpus_id, source: t.source, batch: t.batch, updated_at: KST(t.updated_at) || undefined }));
   for (let k = 0; k < tr.length; k += 300) { try { must(await T("tt_transcripts").upsert(tr.slice(k, k + 300), { onConflict: "owner,item_key", ignoreDuplicates: true })); } catch (e) { errors.push("전사본: " + e.message); break; } }
   r.transcripts = tr.length;
-  r.changed = r.students + r.prints + r.repaired + r.deleted + r.gradings + r.gradingsUpdated + r.sessions + r.marks + r.scans + r.events;
-  if (r.changed) log("pc_import", null, null, { students: r.students, prints: r.prints, repaired: r.repaired, anon: r.anon, deleted: r.deleted, gradings: r.gradings, marks: r.marks, scans: r.scans, events: r.events, errors: errors.length });
+  r.changed = r.students + r.prints + r.repaired + r.deleted + r.gradings + r.gradingsUpdated + r.sessions + r.marks + r.scans + r.events + r.answers;
+  if (r.changed) log("pc_import", null, null, { students: r.students, prints: r.prints, repaired: r.repaired, anon: r.anon, deleted: r.deleted, gradings: r.gradings, marks: r.marks, scans: r.scans, events: r.events,
+    answers: r.answers, sols: r.sols, errors: errors.length });
   try { pc.S.close(); } catch { /* 이미 닫힘 */ }
   return r;
 }
@@ -550,7 +691,10 @@ async function pcPeek(h) {
   const dbFile = await (await data.getFileHandle("mf.db")).getFile();
   const wh = await child(data, "mf.db-wal");
   const walFile = wh ? await wh.getFile() : null;
-  return { data, dbFile, walFile, sig: `${dbFile.size}:${dbFile.lastModified || 0}:${walFile ? walFile.size + ":" + (walFile.lastModified || 0) : "-"}` };
+  const sd = await child(data, "웹해설", true);
+  const sh = sd ? await child(sd, "solutions.json") : null;
+  const sf = sh ? await sh.getFile() : null;
+  return { data, dbFile, walFile, sig: `${dbFile.size}:${dbFile.lastModified || 0}:${walFile ? walFile.size + ":" + (walFile.lastModified || 0) : "-"}${sf ? `|sol:${sf.size}:${sf.lastModified || 0}` : ""}` };
 }
 async function pcFromPeek(pk) {
   const dirs = new Map([["", pk.data]]);
@@ -581,6 +725,8 @@ export function pcSummary(a) {
   if (a.marks) parts.push(`채점 표시 ${a.marks}개`);
   if (a.scans) parts.push(`스캔본 ${a.scans}개`);
   if (a.events) parts.push(`활동 로그 ${a.events}줄`);
+  if (a.answers) parts.push(`정답과 해설을 강사도구 양식으로 ${a.answers}개${a.sols ? ` (해설 ${a.sols}문항)` : ""}`);
+  if (a.filled) parts.push(`정답 글자 ${a.filled}칸 채움`);
   return parts.join(" · ");
 }
 
@@ -663,7 +809,7 @@ export async function pcOpenFolder(h) {
   const pk = await pcPeek(h);
   return pk ? pcFromPeek(pk) : null;
 }
-export { scan as scanFiles };
+export { scan as scanFiles, applySolutions };
 async function rememberPc(handle, pcBase, res) {
   if (!handle || !fsAccessOk()) return false;
   try {
@@ -679,9 +825,10 @@ export async function importView({ view, $, esc, toast, fmtCode }) {
     <div id="imRem"></div>
     <div class="card"><h2>무엇을 옮기나요?</h2>
       <p class="sub small" style="margin:0 0 6px">① <b>PC 강사도구 자료</b> — PC 강사도구 폴더 안의 <b>data</b> 폴더(mf.db · prints · scans)를 통째로. 학생·프린트·채점 기록·스캔본·수업 기록·활동 로그·전사본이 옮겨져요.
-        학생별로 만든 프린트는 <b>학생 이름을 지운 판</b>으로 넣어요. ${fsAccessOk() ? "놓은 폴더는 이 브라우저가 기억해 두었다가, <b>강사도구를 열 때마다 PC에서 새로 등록한 것을 알아서 더해요</b>(SSD가 꽂혀 있을 때)." : ""}</p>
+        학생별로 만든 프린트는 <b>학생 이름을 지운 판</b>으로 넣고, 정답지는 <b>강사도구 양식(빠른 정답 표 + 해설 2단)</b>으로 다시 짜요. ${fsAccessOk() ? "놓은 폴더는 이 브라우저가 기억해 두었다가, <b>강사도구를 열 때마다 PC에서 새로 등록한 것을 알아서 더해요</b>(SSD가 꽂혀 있을 때)." : ""}</p>
       <p class="sub small" style="margin:0">② <b>Claude와 만든 프린트 묶음</b> — 「강사도구로 옮길 프린트」 폴더(프린트마다 print.json, zip 이어도 돼요). 보관함에 들어가고, 쓸 때 코드로 꺼내 등록해요.</p>
       <p class="sub small" style="margin:0">③ <b>Claude와 만든 프린트 PDF</b> — 받아 둔 문제지·정답 PDF를 한 폴더에 모아 통째로. PDF 안의 코드로 묶어 보관함에 넣고(옛 판은 가장 새것만), 코드가 없던 예전 프린트는 새 코드를 찍어요. 매쓰플랫·기출 PDF는 알아서 건너뛰어요.</p>
+      <p class="sub small" style="margin:0">④ <b>Claude 해설 묶음</b> — 「웹해설」 폴더(solutions.json + 해설 그림). PC data 폴더 안에 있으면 같이 붙고, 따로 놓아도 같은 문항이 든 프린트의 정답과 해설에 붙어요.</p>
       <p class="sub small" style="margin:6px 0 0">여러 번 해도 겹치지 않아요 — 이미 있는 것은 건너뛰고 새로 생긴 것만 더해요.</p>
       <div class="drop" id="imDrop" style="margin-top:12px"><b>폴더를 끌어다 놓거나 눌러서 고르기</b><span class="sub small">둘 다 한꺼번에 놓아도 돼요</span>
         <input type="file" id="imPick" webkitdirectory directory multiple hidden></div>
@@ -711,10 +858,11 @@ export async function importView({ view, $, esc, toast, fmtCode }) {
     out.innerHTML = `<div class="card"><span class="busy"></span>폴더를 읽는 중… (파일 ${files.length}개)</div>`;
     let r;
     try { r = await scan(files); } catch (e) { out.innerHTML = `<div class="card" style="border-color:#fca5a5"><b>읽지 못했어요</b><div class="sub">${esc(e.message)}</div></div>`; return; }
-    if (!r.pc && !r.packages.length && !(r.claude && r.claude.groups.length)) { out.innerHTML = `<div class="card" style="border-color:#fca5a5"><b>옮길 것을 찾지 못했어요</b><div class="sub small">mf.db 가 든 data 폴더나, print.json 이 든 프린트 묶음 폴더를 놓아 주세요.</div></div>`; return; }
+    if (!r.pc && !r.sol && !r.packages.length && !(r.claude && r.claude.groups.length)) { out.innerHTML = `<div class="card" style="border-color:#fca5a5"><b>옮길 것을 찾지 못했어요</b><div class="sub small">mf.db 가 든 data 폴더나, print.json 이 든 프린트 묶음 폴더를 놓아 주세요.</div></div>`; return; }
     const n = r.pc && r.pc.n;
     out.innerHTML = `<div class="card"><h2>찾은 것</h2>
       ${r.pc ? `<div>PC 강사도구 자료 — 학생 ${n.students} · 프린트 ${n.prints} · 채점 ${n.gradings} (기록 ${n.marks}) · 스캔본 ${n.scans} · 수업 기록 ${n.class} · 활동 로그 ${n.events} · 전사본 ${n.transcripts}</div>` : ""}
+      ${r.sol ? `<div>Claude 해설 묶음 — ${r.sol.items.size}문항 <span class="sub small">(같은 문항이 든 프린트의 정답과 해설에 붙여요)</span></div>` : ""}
       ${r.packages.length ? `<div>Claude 프린트 묶음 — ${r.packages.length}개 <span class="sub small">(${r.packages.slice(0, 6).map((p) => esc(p.j.print.title || "")).join(", ")}${r.packages.length > 6 ? " …" : ""})</span></div>` : ""}
       ${r.claude && r.claude.groups.length ? `<div>Claude 프린트 PDF — <b>${r.claude.groups.length}개 프린트</b> (코드 있음 ${r.claude.groups.filter((g) => !g.fresh).length} · 코드 없어 새로 줌 ${r.claude.groups.filter((g) => g.fresh).length})
         <details><summary class="small">목록</summary><table class="t small">${r.claude.groups.map((g) => `<tr><td class="code">${g.code ? esc(fmtCode(g.code)) : "<span class='sub'>새 코드</span>"}</td><td>${esc(g.title)}</td><td class="sub">${[...g.use.keys()].map(esc).join(" · ")}${g.old.length ? ` · 옛 판 ${g.old.length}개 건너뜀` : ""}</td></tr>`).join("")}</table></details></div>` : ""}
@@ -729,7 +877,7 @@ export async function importView({ view, $, esc, toast, fmtCode }) {
       pcBusy = true;
       try {
         if (r.pc) {
-          const a = await syncPc(r.pc, ui);
+          const a = await syncPc(r.pc, ui, { pkg: r.sol || null });
           const sum = pcSummary(a);
           lines.push(`<b>PC 자료</b>: ${sum ? esc(sum) : "새로 더할 것이 없었어요"}${a.skipped.length ? ` <span class="sub">(이미 있던 프린트 ${a.skipped.length}개는 건너뜀)</span>` : ""}`);
           a.errors.forEach((e) => lines.push(`<span style="color:#b91c1c">${esc(e)}</span>`));
@@ -737,6 +885,11 @@ export async function importView({ view, $, esc, toast, fmtCode }) {
           const hs = (await Promise.all(handles)).filter((h) => h && h.kind === "directory");
           const h = hs.find((x) => x.name === top) || (hs.length === 1 ? hs[0] : null);
           if (h && (await rememberPc(h, r.pc.base, a))) lines.push(`<span class="sub">이 폴더를 기억해 두었어요 — 이 컴퓨터에서 강사도구를 열 때마다 PC에서 새로 등록한 것을 알아서 더해요.</span>`);
+        }
+        if (r.sol && !r.pc) {
+          const sres = await applySolutions(r.sol, ui);
+          lines.push(`<b>Claude 해설 묶음</b>: ${sres.prints ? `프린트 ${sres.prints}개에 해설 ${sres.sols}문항을 붙였어요${sres.filled ? ` · 정답 글자 ${sres.filled}칸 채움` : ""}` : "붙일 프린트가 없거나 이미 붙어 있어요"}`);
+          sres.errors.forEach((e) => lines.push(`<span style="color:#b91c1c">${esc(e)}</span>`));
         }
         if (r.claude && r.claude.groups.length) {
           const c = await importClaudePdfs(r.claude, ui);

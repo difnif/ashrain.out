@@ -115,3 +115,46 @@ test("WAL: 없거나 이상하면 원래 그대로", () => {
   assert.equal(applyWal(db, null), db);
   assert.equal(applyWal(db, new Uint8Array(40)), db);
 });
+
+import { pngSize, readSolutions, quickText, pickAnswer } from "../src/apps/seirocco/tt/pccore.js";
+
+test("PNG 크기 읽기", () => {
+  const b = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAYAAACddGYaAAAAEUlEQVR42mP8z8DAwMjAwMAAAA4ABQGh7QUAAAAASUVORK5CYII=", "base64"));
+  assert.deepEqual(pngSize(b), [3, 2]);
+  assert.equal(pngSize(new Uint8Array([1, 2, 3])), null);
+});
+
+test("해설 묶음 읽기: 형식이 맞는 것만, 파일 이름은 영문·숫자만", () => {
+  assert.equal(readSolutions({ kind: "x" }), null);
+  const s = readSolutions({ kind: "ashrain.tt.solutions", made: "2026-11-25", items: {
+    abc: { answer: " 2 ", sol: "abc.png", w: 220, h: 80 },
+    bad: { answer: "3", sol: "../x.png", w: 10, h: 10 },
+    nos: { answer: "5" },
+  } });
+  assert.equal(s.items.size, 3);
+  assert.deepEqual(s.items.get("abc"), { answer: "2", sol: "abc.png", w: 220, h: 80 });
+  assert.equal(s.items.get("bad").sol, null);
+  assert.equal(s.items.get("nos").sol, null);
+  assert.equal(s.stamp, "2026-11-25|3");
+});
+
+test("정답 고르기: PC에 적은 것 > 해설 묶음 > 빠른정답", () => {
+  assert.equal(quickText({ choice: "2", text: "" }), "2");
+  assert.equal(quickText({ choice: null, text: "3100 mL" }), "3100 mL");
+  assert.equal(pickAnswer("4", "2", "3"), "4");
+  assert.equal(pickAnswer("", "2", "3"), "2");
+  assert.equal(pickAnswer(null, "", "3"), "3");
+  assert.equal(pickAnswer("", "", ""), "");
+});
+
+import { solSig } from "../src/apps/seirocco/tt/pccore.js";
+test("프린트 몫 해설 지문: 묶음이 커져도 이 프린트 몫이 같으면 같음", () => {
+  const mk = (items) => ({ items: new Map(Object.entries(items)) });
+  const a = mk({ h1: { answer: "2", sol: "h1.png", w: 222, h: 70 } });
+  const b = mk({ h1: { answer: "2", sol: "h1.png", w: 222, h: 70 }, h9: { answer: "5", sol: "h9.png", w: 222, h: 40 } });
+  const c = mk({ h1: { answer: "3", sol: "h1.png", w: 222, h: 70 } });
+  assert.equal(solSig(a, ["h1", "h2"]), solSig(b, ["h1", "h2"]));
+  assert.notEqual(solSig(a, ["h1"]), solSig(c, ["h1"]));
+  assert.equal(solSig(a, ["h3"]), "");
+  assert.equal(solSig(null, ["h1"]), "");
+});
