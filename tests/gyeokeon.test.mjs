@@ -21,7 +21,7 @@ ok(months > 900 && same === months, `고르기 ${same}/${months}달이 pick_gy.p
 
 // 2) 보고서 문장 · 조사
 for (const r of fx.reports) ok(fillReport(data.entries.find((e) => e.id === r.id), r.short, r.cum) === r.expect, "보고서 문장 " + r.id);
-for (const [a, b] of [["소현", "소현이는"], ["러비", "러비는"], ["가원", "가원이는"], ["지후", "지후는"], ["Amy", "Amy는"]]) ok(nameWithTopic(a) === b, "조사 " + a);
+for (const [a, b] of [["하늘", "하늘이는"], ["바다", "바다는"], ["가람", "가람이는"], ["나래", "나래는"], ["Amy", "Amy는"]]) ok(nameWithTopic(a) === b, "조사 " + a);
 
 // 3) 주 유형 — S의 가장 큰 몫, 동점 · 미분화 · 0이면 없음
 const S0 = { rush: 0, shadow: 0, cross: 0, steady: 0, stubborn: 0, cue: 0, evap: 0, shrink: 0, auto: 0 };
