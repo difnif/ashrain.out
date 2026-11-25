@@ -80,7 +80,14 @@ button{font-family:inherit;color:inherit}
 .lb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;max-width:1100px;margin:0 auto}
 .lb-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
 .lb-card h2{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0 0 10px}
-.lv-desc{font-size:13.5px;color:var(--muted);line-height:1.65;margin:10px 0 14px;min-height:44px}
+.lv-desc{font-size:13.5px;color:var(--muted);line-height:1.65;margin:0 0 14px}
+.hero{position:relative;max-width:1100px;height:150px;margin:0 auto 14px;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--field)}
+#hero{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero-line{position:absolute;right:14px;bottom:12px;margin:0;max-width:62%;padding:6px 12px;border-radius:10px;font-family:var(--f-story);font-size:15px;line-height:1.5;color:var(--ink);
+  background:var(--surface);background:color-mix(in srgb,var(--surface) 84%,transparent);border:1px solid var(--line);opacity:0}
+.hero-line.on{animation:hl 7s ease both}
+@keyframes hl{0%{opacity:0;transform:translateY(5px)}12%,84%{opacity:1;transform:none}100%{opacity:0}}
+.run .rend{display:block;font-family:var(--f-story);font-size:12.5px;line-height:1.55;color:var(--muted);margin:2px 0}
 .lb-btns{display:flex;gap:8px;flex-wrap:wrap}
 .lb-story{font-family:var(--f-story);font-size:14.5px;line-height:1.85;color:var(--muted);margin:0 0 12px}
 .run{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
@@ -133,14 +140,40 @@ button{font-family:inherit;color:inherit}
   .mapwrap{flex:0 0 40%;min-height:220px}
   .panel{width:auto;flex:1 1 auto;border-left:0;border-top:1px solid var(--line)}
 }
-.maptoast{position:absolute;left:12px;bottom:12px;max-width:min(420px,80%);font-size:13px;line-height:1.5;padding:8px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);opacity:0;transition:opacity .3s;pointer-events:none}
-.maptoast.on{opacity:1}
+/* 이야기 — 지도 위 자막 · 마디 제목 */
+.narr{position:absolute;left:50%;bottom:14px;transform:translate(-50%,8px);width:max-content;max-width:min(640px,calc(100% - 28px));padding:10px 16px 10px 14px;border-radius:12px;
+  background:var(--surface);background:color-mix(in srgb,var(--surface) 90%,transparent);border:1px solid var(--line);border-left:4px solid var(--accent);
+  font-family:var(--f-story);font-size:15px;line-height:1.65;color:var(--ink);opacity:0;transition:opacity .4s,transform .4s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:2}
+.narr:empty{display:none}
+.narr.on{opacity:1;transform:translate(-50%,0)}
+.narr.t-good{border-left-color:var(--good)} .narr.t-bad{border-left-color:var(--risk)} .narr.t-eagle{border-left-color:var(--eagle)}
+.narr.t-omen,.narr.t-end{border-left-color:var(--gold)} .narr.t-walk{border-left-color:var(--muted)} .narr.t-self{border-left-color:#8E5A9B}
+#chap{position:absolute;left:0;right:0;top:15%;text-align:center;pointer-events:none;opacity:0;z-index:2}
+#chap small{display:block;font-family:var(--f-story);font-size:14px;letter-spacing:.32em;color:var(--muted);margin-bottom:4px}
+#chap b{display:block;font-family:var(--f-display);font-weight:400;font-size:clamp(30px,5vw,48px);line-height:1.1;color:var(--ink);text-shadow:0 2px 0 var(--surface),0 0 22px var(--surface),0 0 8px var(--surface)}
+#chap.on{animation:chapIn 3s ease both}
+@keyframes chapIn{0%{opacity:0;transform:translateY(10px);letter-spacing:.08em}18%{opacity:1;transform:none;letter-spacing:.02em}72%{opacity:1}100%{opacity:0}}
 .winter .mapwrap{filter:saturate(.25) brightness(1.03)}
 
 /* 패널 */
 .ph{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 6px}
 .ph h2{font-family:var(--f-display);font-weight:400;font-size:25px;margin:0}
 .sit{font-family:var(--f-story);font-size:14.5px;line-height:1.8;margin:4px 0 10px}
+.scene{margin:4px 0 10px;padding:10px 12px 8px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+.sc-intro{font-family:var(--f-story);font-size:15px;line-height:1.85;margin:0 0 4px}
+.crew{display:grid;grid-template-columns:auto 1fr;gap:1px 8px;font-size:13.5px;line-height:1.55;margin:7px 0 0}
+.crew b{font-size:12.5px;white-space:nowrap;padding-top:1px}
+.crew span{font-family:var(--f-story)}
+.crew em{grid-column:2;font-style:normal;font-size:11px;color:var(--muted)}
+.tl{font-family:var(--f-story);font-size:13.5px;line-height:1.7;margin:0 0 6px;padding-left:10px;border-left:3px solid var(--line)}
+.tl time{font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-right:6px}
+.tl.t-good{border-left-color:var(--good)} .tl.t-bad{border-left-color:var(--risk)} .tl.t-eagle{border-left-color:var(--eagle)}
+.tl.t-omen,.tl.t-end{border-left-color:var(--gold)} .tl.t-scene{border-left-color:var(--accent)} .tl.t-winter{border-left-color:var(--accent)} .tl.t-self{border-left-color:#8E5A9B}
+.tl.chap{border:0;padding:0;font-family:var(--f-display);font-size:15px;color:var(--accent);margin:12px 0 4px}
+.tl.chap:first-child{margin-top:0}
+.pop{position:fixed;z-index:40;transform:translate(-50%,0);background:var(--surface);border-radius:6px;padding:0 4px;font-family:var(--f-mono);font-size:13px;font-weight:700;pointer-events:none;animation:pop 1.25s ease-out forwards;text-shadow:0 1px 0 var(--surface)}
+.pop.up{color:var(--good)} .pop.dn{color:var(--risk)}
+@keyframes pop{0%{opacity:0;transform:translate(-50%,6px)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-14px)}}
 .clockchip{font-size:12.5px;line-height:1.55;padding:8px 10px;border-radius:10px;background:var(--field);border:1px solid var(--line);margin:0 0 12px}
 .clockchip b{color:var(--accent)}
 .clockchip.urgent b{color:var(--risk)}
@@ -192,6 +225,8 @@ button{font-family:inherit;color:inherit}
 .dialog h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0 0 8px}
 .dialog .sub{font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.6}
 .pq{font-size:17px;line-height:1.7;margin:4px 0 12px;font-weight:600}
+.pwho{font-family:var(--f-story);font-size:14px;line-height:1.6;color:var(--muted);margin:0 0 2px}
+.pwho b{font-family:var(--f-body);font-size:13px}
 .hint{font-size:13px;color:var(--accent);background:var(--accent-soft);border-radius:8px;padding:6px 10px;margin:0 0 12px}
 .ins{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 6px}
 .ins label{font-family:var(--f-mono);font-size:15px;font-weight:600}
@@ -219,13 +254,17 @@ button{font-family:inherit;color:inherit}
 .toast{max-width:min(360px,86vw);font-size:13.5px;line-height:1.5;padding:9px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.12);animation:tin .25s ease-out}
 .toast.good{border-color:var(--good)} .toast.bad{border-color:var(--risk)} .toast.gold{border-color:var(--gold)}
 @keyframes tin{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
-@media (prefers-reduced-motion:reduce){.toast{animation:none}}
+@media (prefers-reduced-motion:reduce){.toast{animation:none}.narr{transition:none}.pop{display:none}}
+@media (max-width:600px){.narr{font-size:13.5px;line-height:1.55;padding:7px 11px 7px 10px;bottom:8px;max-width:calc(100% - 16px)} #chap b{font-size:28px} .hero{height:120px} .hero-line{font-size:13.5px;max-width:80%}}
 
 /* 결산 */
 .sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
 .sumbox{border:1px solid var(--line);border-radius:12px;padding:12px}
 .sumbox h3{font-size:13px;color:var(--muted);margin:0 0 6px}
 .journal{font-family:var(--f-story);font-size:14.5px;line-height:1.9;margin:0;padding-left:18px}
+.ending{font-family:var(--f-story);font-size:17px;line-height:1.8;margin:0 0 12px;padding:12px 14px;border-radius:12px;background:var(--gold-soft);color:var(--ink)}
+.story-box{margin:0 0 12px}
+.story-all{max-height:280px;overflow:auto;padding-right:4px}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13.5px}
 .kv span:nth-child(odd){color:var(--muted)}
 #spaceCv{width:100%;height:220px;display:block;border-radius:10px;background:var(--field)}
@@ -255,15 +294,11 @@ textarea.io{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12px
         <button class="btn ghost js-fs" type="button">전체 화면</button>
       </div>
     </header>
+    <div class="hero" aria-hidden="true"><canvas id="hero"></canvas><p class="hero-line" id="heroLine"></p></div>
     <div class="lb-grid">
       <div class="lb-card">
         <h2>새 겨울</h2>
         <p class="lb-story">바람 부는 벌판, 덤불 아래 작은 굴뚝새 한 마리. 봄 나루까지 일행을 데려가야 한다. 길마다 결정이 기다리고, 결정마다 근거가 필요하다 — 무엇을 물을지는 네가 고른다.</p>
-        <div class="seg" id="levelSeg" role="radiogroup" aria-label="난이도">
-          <button type="button" role="radio" data-level="newbie">뉴비</button>
-          <button type="button" role="radio" data-level="ace">에이스</button>
-          <button type="button" role="radio" data-level="master">마스터</button>
-        </div>
         <p class="lv-desc" id="lvDesc"></p>
         <div class="lb-btns">
           <button class="btn primary" id="btnNew" type="button">새 겨울 시작</button>
@@ -299,7 +334,7 @@ textarea.io{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12px
       </div>
     </header>
     <div class="stage">
-      <div class="mapwrap"><canvas id="map" aria-label="스페이스 지도 — 조우 지점과 길"></canvas><div class="maptoast" id="mapToast"></div></div>
+      <div class="mapwrap"><canvas id="map" aria-label="스페이스 지도 — 조우 지점과 길"></canvas><div class="chap" id="chap" aria-hidden="true"><small id="chapK"></small><b id="chapT"></b></div><div class="narr" id="narr" aria-hidden="true"></div></div>
       <aside class="panel" id="panel" aria-live="polite"></aside>
     </div>
     <div class="cover" id="pauseCover" hidden>
@@ -314,6 +349,7 @@ textarea.io{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12px
       <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pTitle">
         <h2 id="pTitle">문항</h2>
         <div class="pclock" id="pClock"></div>
+        <p class="pwho" id="pWho"></p>
         <div class="pq" id="pQ"></div>
         <div class="hint" id="pHint" hidden></div>
         <div id="pIn"></div>
@@ -349,8 +385,7 @@ textarea.io{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12px
 // 다듬기 패널에서 바꿀 수 있는 값(기본값). 바꾼 값은 저장되어 다음 겨울부터(대부분은 지금 겨울에도) 쓰인다.
 const PARAM_DEFS = [
   ['시계', [
-    ['dayNewbie', '하루 길이 · 뉴비(초)', 30], ['dayAce', '하루 길이 · 에이스(초)', 20], ['dayMaster', '하루 길이 · 마스터(초)', 12],
-    ['seasonDays', '한 계절(일)', 45],
+    ['dayLen', '하루 길이(초)', 20], ['seasonDays', '한 계절(일)', 45], ['hintJeong', '실마리 값(정성)', 0.5],
   ]],
   ['시작 자원', [
     ['startFood', '식량', 30], ['startFuel', '연료', 20], ['startJeong', '정성', 6], ['startMorale', '사기', 10], ['startUnique', '고유함', 100],
@@ -383,14 +418,6 @@ const DEFAULTS = {};
 PARAM_DEFS.forEach(([, rows]) => rows.forEach(([k, , v]) => { DEFAULTS[k] = v; }));
 let PR = Object.assign({}, DEFAULTS);
 
-const LEVELS = {
-  newbie: { name:'뉴비', dayKey:'dayNewbie', startE:1, hint:true,
-    desc:'하루 30초. 근거가 한 단계 친절하게(정리) 시작하고, 계산 문항엔 풀이 실마리가 붙어요.' },
-  ace: { name:'에이스', dayKey:'dayAce', startE:0, hint:false,
-    desc:'하루 20초. 근거는 날것부터. 실마리 없이 값을 직접 넣어요.' },
-  master: { name:'마스터', dayKey:'dayMaster', startE:0, hint:false,
-    desc:'하루 12초. 날것만으로 빨리 읽어 내야 해요 — 배운 만큼 앞서 갑니다.' },
-};
 
 const LENS = {
   math:{ name:'수학', color:'#2C6A8A' }, sci:{ name:'과학', color:'#2E7A55' }, lore:{ name:'고사', color:'#8E5A9B' },
@@ -829,9 +856,81 @@ ENC.fossil = { title:'굳은 자리', sit:'독수리가 먼저 답을 내려 두
 
 const ENC_TYPES = ['mount', 'sea', 'ice', 'village', 'forest'];
 
+/* ---------- 이야기: 일행 · 장면 · 결과 · 마디 · 끝 ----------
+   난이도 단계 대신 열린 벌판 — 같은 세계에서 무엇을 묻고 어디로 가느냐가 이야기를 만든다. */
+const CREW = {
+  guide:{ name:'길잡이', color:'#2C6A8A' },   // 당장의 길 — 어떻게?
+  child:{ name:'아이', color:'#B9472F' },     // 까닭 — 왜?
+  elder:{ name:'할머니', color:'#8E5A9B' },   // 옛이야기 — 고사 · 역사
+  trader:{ name:'장꾼', color:'#A87A1F' },    // 셈과 먹거리 — 수학 · 생활
+};
+const SCENE = {
+  start:{ intro:['바람이 벌판을 쓸고 간다. 가시덤불 아래, 작은 굴뚝새 한 마리가 깃털을 부풀린다.', '봄 나루까지는 멀다. 길마다 무엇을 물을지는 네가 고른다.'],
+    lines:{ child:'우리, 무엇부터 물어볼까?', guide:'물어도 되고, 그냥 떠나도 돼. 다만 시간은 가.', elder:'처음 묻는 것이 그 사람을 닮아 간단다.', trader:'셈은 일찍 할수록 남는 법이지.' } },
+  mount:{ intro:['눈 덮인 고개가 길을 막아선다. 능선 위로 바람이 눈가루를 흩뿌린다.', '고개 아래 무너진 성벽 돌 틈에 누군가 글자를 새겨 두었다.'],
+    lines:{ child:'저 꼭대기는 얼마나 추울까? 올라갈수록 왜 더 추워져?', guide:'넘으면 이틀을 번다. 다만 밤을 저 위에서 보내면 안 돼.', elder:'옛날에도 이 고개 앞에서 돌아선 사람이 많았지. 그런데 말이다…', trader:'위에선 밥물이 잘 안 끓는대. 연료를 더 챙겨야 하나?' } },
+  sea:{ intro:['나루에 닿았다. 잿빛 바다가 낮게 엎드려 숨을 고른다.', '사공이 하늘을 올려다보더니 말없이 밧줄을 한 번 더 감는다.'],
+    lines:{ child:'갈매기들이 왜 자꾸 육지 쪽으로 와?', guide:'건널 거면 지금이야. 아니면 아예 기다리든지.', elder:'큰바람이 바다 위의 배를 통째로 삼킨 이야기를 아니?', trader:'기압계 바늘이 어제보다 또 내려갔어. 하루에 얼마씩이지?' } },
+  ice:{ intro:['강이 얼었다. 가장자리는 하얗고, 한가운데는 검은 물빛이 비친다.', '얼음이 낮게 운다 — 쩡, 하고 멀리까지 소리가 번진다.'],
+    lines:{ child:'얼음은 왜 물 위에 떠? 무겁지 않아?', guide:'어제보다 두꺼워졌어. 하루만 더 기다려 볼까.', elder:'얇은 얼음을 밟듯 하라 — 옛사람들은 그렇게 말했지.', trader:'어제 몇 센티, 오늘 몇 센티… 그럼 모레는?' } },
+  village:{ intro:['굴뚝마다 연기가 오른다. 메밀 널어 말리는 냄새가 골목에 깔렸다.', "마을 어귀 돌에 '驛' 한 글자. 고개 위 돌탑에선 가는 연기가 오른다."],
+    lines:{ child:'김치는 왜 겨울 내내 안 상해?', guide:'묵어 가면 이틀이지만, 몸도 마음도 데울 수 있어.', elder:'역이 있는 마을은 소식이 빨라. 앞길 이야기를 들을 수 있겠지.', trader:'땔감 몇 단이면 메밀 몇 말이지? 셈만 맞으면 남는 장사야.' } },
+  forest:{ intro:['숲이 해를 삼켰다. 나무 사이로 빛이 비스듬히 새어 든다.', '말라 죽은 나무와 눈 맞은 생나무가 뒤섞여 서 있다.'],
+    lines:{ child:'이끼가 많은 쪽이 북쪽이라던데, 진짜야?', guide:'해 지기 전에 빠져나가야 해. 밤의 숲은 길을 지워.', elder:'길을 잃거든 지나온 자리에 표시를 남기렴.', trader:'이 지도, 1센티가 몇 킬로라는 거야?' } },
+  fossil:{ intro:['잿빛 돌이 된 자리. 독수리가 먼저 와서 답을 내려놓고 갔다.', '바람도 여기선 소리를 내지 않는다.'],
+    lines:{ child:'여긴 왜 아무것도 안 움직여?', guide:'답대로 지나가면 안전해. 그게 다지만.', elder:'답만 있고 물음이 없으면 땅이 굳는 법이지.', trader:'공짜 같지만, 남는 게 없어.' } },
+};
+const TOD = (d) => { const f = d - Math.floor(d); return f < 0.15 ? 'dawn' : f < 0.66 ? 'day' : f < 0.8 ? 'dusk' : 'night'; };
+const TOD_LINE = { dawn:'새벽빛이 번진다.', day:'', dusk:'해가 기운다.', night:'달빛 아래,' };
+const OUTCOME = {
+  'start.go':['길을 나섰다. 바람이 등 뒤에서 분다.'],
+  'mount.cross':['바람이 등을 떠밀었다. 고개를 넘자 길이 이틀 줄었다 — 위에서 본 벌판은 생각보다 넓었다.', '고개 위에서 불이 붙지 않았다. 물은 끓다 말았고 쌀은 설익었다. 일행의 발이 무거워졌다.'],
+  'mount.around':['산자락을 따라 돌았다. 느리지만 다친 사람은 없었다.', '돌아가는 길도 쉽지 않았다. 사흘이 더 걸렸고 식량이 줄었다.'],
+  'sea.now':['물결이 잦아든 틈에 노를 저었다. 건너편 모래에 발이 닿았다.', '바다 한가운데서 바람이 뒤집혔다. 짐 일부를 바다에 내주고서야 닿았다.'],
+  'sea.wait':['풍랑이 지나가길 기다렸다. 바다가 숨을 고르자 배가 미끄러지듯 건넜다.', '기다리는 동안 마음이 먼저 지쳤다.'],
+  'sea.coast':['해안을 따라 걸었다. 파도 소리가 나흘 내내 따라왔다.', '해안길은 생각보다 험했다. 발이 젖고 식량이 줄었다.'],
+  'ice.cross':['간격을 두고 한 줄로 건넜다. 얼음이 낮게 울었지만 버텼다.', '쩡 — 얼음이 갈라졌다. 모두 빠져나왔지만 짐과 옷이 젖었다.'],
+  'ice.bridge':['상류의 낡은 다리를 건넜다. 이틀이 더 걸렸다.', '다리마저 미끄러웠다. 하루를 더 잃었다.'],
+  'village.stay':['따뜻한 메밀묵 한 그릇. 이틀 밤을 묵으며 식량과 땔감을 채웠다.', '마을 인심이 차가웠다. 하룻밤 묵는 것도 눈치가 보였다.'],
+  'village.trade':['셈이 맞았다. 땔감이 메밀이 되어 자루가 불룩해졌다.', '흥정에서 밀렸다. 땔감은 나가고 메밀은 조금 들어왔다.'],
+  'village.pass':['마을을 지나쳤다. 굴뚝 연기가 등 뒤로 멀어졌다.'],
+  'forest.through':['해를 등지고 걸었다. 숲을 빠져나오자 이틀 길이 줄었다.', '해가 지자 길이 지워졌다. 같은 나무를 세 번 지나고서야 빠져나왔다.'],
+  'forest.edge':['숲 가장자리를 따라 돌았다. 늦었지만 길을 잃지 않았다.', '가장자리도 어두웠다. 한참을 헤맸다.'],
+};
+const CHAPTER = ['', '첫째 마디', '둘째 마디', '셋째 마디', '넷째 마디', '다섯째 마디', '마지막 마디'];
+const ENDING = {
+  win:'봄 나루에 닿았다. 얼음 풀린 물소리 위로 작은 새가 날아올랐다 — {self}의 날개로.',
+  stuck:'봄은 오지 않았다. 아니, 우리가 닿지 못했다. 다음 겨울엔 무엇을 먼저 물을까.',
+  scatter:'일행이 하나둘 흩어졌다. 마지막까지 남은 건 대답보다 질문이었다.',
+  eagle:'독수리의 그림자가 벌판을 덮었다. 모든 자리가 같은 답으로 굳었다 — 내 것이 하나도 남지 않았다.',
+  quit:'여기서 겨울을 접는다. 지나온 길은 지도에 남는다.',
+};
+const TOD_NAME = { dawn:'새벽', day:'낮', dusk:'해 질 녘', night:'밤' };
+// 일행의 말이 어떤 물음을 귀띔하는지
+const CREW_TAG = { guide:'어떻게? — 당장의 길', child:'왜? — 까닭', elder:'고사 · 역사 — 옛이야기', trader:'수학 · 생활 — 셈과 먹거리' };
+// 길 위의 한 줄 — 하루의 빛마다
+const WALK = {
+  dawn:['새벽빛이 눈 위에 번진다. 발자국이 파랗게 찍힌다.', '덤불 끝에서 굴뚝새가 짧게 운다. 아침이다.'],
+  day:['바람이 등을 민다. 눈가루가 발목에서 흩어진다.', '아이가 돌멩이를 차며 앞서 걷는다.', '길잡이가 이따금 멈춰 하늘을 본다.'],
+  dusk:['해가 기운다. 그림자가 길보다 먼저 간다.', '장꾼이 남은 자루를 다시 센다.'],
+  night:['달빛 아래, 일행은 말이 없다. 눈 밟는 소리만 남는다.', '할머니가 옛이야기를 낮게 웅얼거린다. 별이 차다.'],
+};
+// 갈림길에서
+const FORK = ['갈림길이다. 길잡이가 지도를 펼친다 — 어느 쪽이 봄에 가까울까.', '눈 위에 길이 몇 갈래로 갈라진다. 안개 너머는 아직 아무도 모른다.', '아이가 묻는다. "이쪽이야, 저쪽이야?" — 고르는 건 너다.'];
+// 머무는 동안
+const BUSY = {
+  '풍랑이 지나가길 기다리는 중':['사공의 움막에서 바다 소리를 듣는다. 파도가 문을 두드린다.', '갈매기가 처마 밑에 몸을 웅크린다.'],
+  '마을에서 묵는 중':['아랫목이 따뜻하다. 아이가 메밀묵 쑤는 집 아이와 금세 친해졌다.', '장꾼이 마을 사람들과 셈을 맞춘다. 웃음소리가 담을 넘는다.'],
+  '땔감을 모으는 중':['마른 가지가 똑똑 부러진다. 아이가 솔방울을 주머니 가득 담는다.', '길잡이가 젖은 나무와 마른 나무를 가려 준다.'],
+};
+// 시작 화면의 한 줄들
+const EPIGRAPH = ['바람 부는 벌판, 가시덤불 아래 작은 새 한 마리.', '근거는 불친절하기도, 친절하기도 하다.', '가진 것이 없을 때 줄 수 있는 건 — 질문 하나.', '정답은 길이 되고, 오답은 날씨가 된다.', '무엇을 물었는지가, 어떤 새가 되는지를 정한다.'];
+// 받침에 맞는 조사
+function josa(w, a, b){ const c = String(w).charCodeAt(String(w).length - 1); if (c < 0xAC00 || c > 0xD7A3) return w + b; return w + ((c - 0xAC00) % 28 ? a : b); }
+
 /* =================== 4-engine: 상태 · 자아 · 시계 · 조우 · 문항 · 길과 날씨 · 한겨울 · 독수리 =================== */
 
-let SAVE = { v:1, level:'ace', params:{}, self:{ A:0, B:0, C:0, lens:{}, name:'wren', centerDays:0 }, runs:[], cur:null, seen:{} };
+let SAVE = { v:1, params:{}, self:{ A:0, B:0, C:0, lens:{}, name:'wren', centerDays:0 }, runs:[], cur:null, seen:{} };
 let S = null;            // 지금 겨울
 let R = Math.random;     // 이번 겨울의 난수
 let PB = null;           // 열린 문항
@@ -866,7 +965,8 @@ function nudge(axis, target, alpha){
   const before = s.name; updateName();
   if (s.name !== before && S){
     S.stats.selfChanges.push({ d:r1(S.day), from:before, to:s.name });
-    toast(`자아가 바뀌었다 — ${SELVES[before].name} → ${SELVES[s.name].name}. ${SELVES[s.name].who}.`, 'gold');
+    story(`${SELVES[before].name}의 날개가 ${SELVES[s.name].name}의 날개가 되었다 — ${SELVES[s.name].who}.`, 'self');
+    fx('feather', { color:SELVES[s.name].color });
   }
   dirty.hud = dirty.panel = true;
 }
@@ -919,12 +1019,12 @@ const edgeOf = (a, b) => S.map.edges.find((e) => e.a === a && e.b === b);
 function revealFrom(k){ node(k).known = true; node(k).next.forEach((n) => { node(n).known = true; }); }
 
 /* ---------- 새 겨울 ---------- */
-function newSeason(level){
+function newSeason(){
   const seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
   R = mulberry(seed);
   const winterStart = Math.round(PR.winterMin + R() * Math.max(0, PR.winterMax - PR.winterMin));
   S = {
-    v:1, seed, level, day:0, speed:1,
+    v:1, seed, day:0, speed:1, story:[],
     res:{ food:PR.startFood, fuel:PR.startFuel, jeong:PR.startJeong, morale:PR.startMorale, unique:PR.startUnique },
     map:null, at:null, mode:'enc', enc:null, travel:null, busy:null, prep:null, pendingTravel:0,
     roads:[], weathers:[], known:{}, newsBonus:0, omenBonus:0, stormWarned:false,
@@ -939,8 +1039,16 @@ function newSeason(level){
   S.at = S.map.cols[0][0];
   node(S.at).visited = true; revealFrom(S.at);
   S.enc = makeStart();
-  log('start', { level, seed });
+  chapter('겨울의 시작', ENC.start.title);
+  SCENE.start.intro.forEach((t) => story(t, 'scene'));
+  log('start', { seed });
   dirty.panel = dirty.hud = true;
+}
+function story(t, tone){
+  if (!S) return;
+  S.story.push({ d:r1(S.day), t, tone:tone || '' }); S.storyN = (S.storyN || 0) + 1;
+  if (S.story.length > 60) S.story.splice(0, S.story.length - 60);
+  narrate(t, tone);
 }
 function log(t, o){ S.log.push(Object.assign({ d:r1(S.day), t }, o || {})); if (S.log.length > 90) S.log.splice(0, S.log.length - 90); }
 
@@ -956,10 +1064,10 @@ function makeStart(){
   return { type:'start', P:{}, arrived:S.day, lenses:{}, pieces, seed:Math.floor(R() * 1e6) };
 }
 function makeEnc(k){
-  const n = node(k), def = ENC[n.type], lv = LEVELS[S.level];
+  const n = node(k), def = ENC[n.type];
   const E = { type:n.type, node:k, P:def.params(R), arrived:S.day, lenses:{}, usedAI:false, ups:0, freeUp:false, turn:false, borrowed:null, extraDone:false, seed:Math.floor(R() * 1e6), fossil:n.fossil };
   def.lenses.forEach((L) => {
-    const st = { E:lv.startE, I:0, up:null, asked:{}, ai:false };
+    const st = { E:0, I:0, up:null, asked:{}, ai:false };
     if (hasRoad(n.type, L)){ st.E = Math.max(st.E, 1); st.I += 1; st.asked.what = 'road'; }
     if (S.known[n.type] && S.known[n.type][L]) st.E = Math.max(st.E, 2);
     E.lenses[L] = st;
@@ -1079,7 +1187,9 @@ function eagle(L){
   S.stats.ai++;
   nudge('C', -1, PR.selfAlpha);
   log('ai', { L, type:E.type });
-  toast(`독수리가 ${LENS[L].name}에 가장 친절한 답을 주었다 — 그 자리는 굳었다(고유함 −${fmtN(cost)}).`, 'bad');
+  story(`독수리가 그림자를 드리우며 ${LENS[L].name}의 답을 떨어뜨리고 갔다. 편했지만 — 그 자리는 굳었다.`, 'eagle');
+  toast(`고유함 −${fmtN(cost)}`, 'bad');
+  fx('eagle', { at:S.at });
   dirty.panel = true; save();
 }
 function decide(id){
@@ -1091,7 +1201,7 @@ function decide(id){
   const ok = c.p >= 1 || R() < c.p;
   const eff = Object.assign({}, ok ? opt.ok : opt.ng);
   if (!ok && c.n) eff.morale = r1((eff.morale || 0) - sig('kkachi') * penScale());
-  const raw = c.n ? Object.values(E.lenses).every((st) => st.I === 0 && st.E <= LEVELS[S.level].startE && !st.ai) : false;
+  const raw = c.n ? Object.values(E.lenses).every((st) => st.I === 0 && st.E === 0 && !st.ai) : false;
   if (E.type !== 'start'){
     S.stats.decisions.push({ type:E.type, opt:id, ok, q:r2(c.avgQ), raw, p:r2(c.p) });
     if (c.n){
@@ -1100,11 +1210,13 @@ function decide(id){
     }
   }
   log('dec', { type:E.type, opt:id, ok, p:r2(c.p) });
-  const say = `${opt.label} — ${ok ? '잘 됐다' : '뜻대로 되지 않았다'}.${effText(eff) ? ' ' + effText(eff) : ''}`;
-  if (opt.base(E, S) < 1 || c.n) toast(say, ok ? 'good' : 'bad');
+  const tale = OUTCOME[E.type + '.' + id];
+  if (!opt.busy) story(tale ? tale[ok || tale.length === 1 ? 0 : 1] : `${opt.label} — ${ok ? '잘 됐다' : '뜻대로 되지 않았다'}.`, ok ? 'good' : 'bad');
+  if ((opt.base(E, S) < 1 || c.n) && effText(eff)) toast(`${ok ? '잘 됐다' : '뜻대로 되지 않았다'} · ${effText(eff)}`, ok ? 'good' : 'bad');
+  if (opt.base(E, S) < 1 || c.n) fx(ok ? 'spark' : 'puff', { at:S.at });
   if (opt.busy){
     const days = opt.busy(E, S);
-    S.busy = { until:S.day + days, len:days, text:opt.busyText || '머무는 중', eff, ok };
+    S.busy = { until:S.day + days, len:days, text:opt.busyText || '머무는 중', eff, ok, tale:tale ? tale[ok || tale.length === 1 ? 0 : 1] : '' };
     S.mode = 'busy';
   } else { applyEff(eff); toRoute(); }
   dirty.panel = dirty.hud = true; save();
@@ -1162,6 +1274,8 @@ function goTo(to){
   const days = routeDays(to);
   S.travel = { from:S.at, to, days, done:0 };
   S.pendingTravel = 0; S.mode = 'travel';
+  const tn = node(to);
+  story(tn.type === 'goal' ? '봄 나루 쪽으로 발을 옮긴다. 바람 끝이 조금 무뎌졌다.' : `${josa(ENC[tn.type].name, '을', '를')} 향해 걷는다. ${fmtN(days)}일 길.`, 'walk');
   log('go', { to:node(to).type, days });
   dirty.panel = true; save();
 }
@@ -1171,6 +1285,9 @@ function arrive(){
   if (n.type === 'goal'){ S.mode = 'goal'; return endSeason('win'); }
   if (n.fossil){ S.enc = { type:n.type, node:to, fossil:true, P:ENC[n.type].params(R), arrived:S.day, lenses:{}, seed:Math.floor(R() * 1e6) }; S.mode = 'enc'; }
   else { S.enc = makeEnc(to); S.mode = 'enc'; }
+  chapter(CHAPTER[n.col] || '', n.fossil ? '굳은 자리' : ENC[n.type].title);
+  const sc = SCENE[n.fossil ? 'fossil' : n.type];
+  if (sc){ const tl = TOD_LINE[TOD(S.day)]; story((tl ? tl + ' ' : '') + sc.intro[S.enc.seed % sc.intro.length], 'scene'); }
   log('arrive', { type:n.type, fossil:n.fossil });
   dirty.panel = true; save();
 }
@@ -1179,7 +1296,8 @@ function fossilChoice(id){
   if (id === 'pass'){
     S.res.unique = Math.max(0, S.res.unique - PR.fossilUnique);
     S.stats.fossilsPassed++; nudge('C', -1, PR.selfAlpha / 2);
-    toast(`독수리의 답대로 지나갔다 — 아무 일도, 아무 배움도 없었다(고유함 −${PR.fossilUnique}).`, 'bad');
+    story('독수리의 답대로 지나갔다. 아무 일도, 아무 배움도 없었다.', 'eagle');
+    toast(`고유함 −${PR.fossilUnique}`, 'bad');
     log('fossil', { pass:true }); toRoute(); save();
   } else if (id === 'awaken'){
     const L = pickR(R, ENC[E.type].lenses);
@@ -1284,10 +1402,10 @@ function resolveProblem(ok){
         S.weathers = S.weathers.filter((x) => x !== w); S.stats.wxCleared++;
         S.res.morale = Math.min(10, S.res.morale + 1);
         if (S.winter.on){ S.res.fuel += 1; S.res.morale = Math.min(10, S.res.morale + 0.5); }
-        toast(`날씨가 걷혔다 — ${ENC[w.type].name} · ${LENS[w.lens].name}.`, 'good');
+        story(`다시 물었다. ${ENC[w.type].name}의 ${LENS[w.lens].name} 돌풍이 걷혔다.`, 'good');
       } else {
         w.str += 1; w.prob = genProblem(w.type, w.lens, w.form, ENC[w.type].params(R), 1 + Math.floor(R() * 3));
-        toast('같은 오개념이 더 세게 분다 — 날씨가 한 겹 짙어졌다.', 'bad');
+        story('같은 착각이 더 세게 분다 — 날씨가 한 겹 짙어졌다.', 'bad');
       }
     }
   } else if (ctx.kind === 'reflect'){
@@ -1297,10 +1415,16 @@ function resolveProblem(ok){
     if (ok){
       const n = node(S.enc.node); n.fossil = false; S.stats.awakened++;
       S.enc = makeEnc(S.enc.node); S.mode = 'enc';
-      toast('왜?가 화석을 깨웠다 — 이 자리가 다시 자란다.', 'good');
+      story('왜?가 굳은 돌에 금을 냈다. 잿빛이 걷히고, 이 자리가 다시 자란다.', 'good');
       nudge('C', 1, PR.selfAlpha);
     } else makeWeather(S.enc.type, L, 'why');
   }
+  if (ctx.kind === 'enc' || ctx.kind === 'start'){
+    const ln = L ? LENS[L].name : '';
+    if (ok) story(ctx.form === 'why' ? `${josa(ln, '으로', '로')} 까닭을 찾았다. 다음에 같은 곳을 만나면 처음부터 보일 것이다.`
+      : ctx.form === 'how' ? `${josa(ln, '으로', '로')} 당장의 길을 셈했다. 일행의 발걸음이 가벼워졌다.` : `${ln}의 날것을 읽어 냈다. 낯선 것이 하나 줄었다.`, 'good');
+  }
+  if (ok) fx('road', { at:S.at });
   log('q', { k:ctx.kind, L, f:ctx.form, ok });
   dirty.panel = dirty.hud = true; save();
 }
@@ -1315,7 +1439,8 @@ function makeWeather(type, L, form){
   if (ex){ ex.str += 1; ex.prob = prob; ex.form = form; }
   else S.weathers.push({ id:'w' + (++S.wxSeq), type, lens:L, form, str:1, prob, made:r1(S.day) });
   S.stats.wxMade++;
-  toast(`오답이 날씨가 되었다 — ${ENC[type].name}마다 ${LENS[L].name} 오개념 돌풍. 다시 물으면 걷힌다.`, 'bad');
+  story(`${josa(LENS[L].name, '을', '를')} 잘못 읽었다. 그 착각이 바람이 되어 ${ENC[type].name}마다 불 것이다.`, 'bad');
+  fx('gust', { at:S.at });
 }
 function polyaOpen(id){
   if (S.polya.points <= 0 || S.polya.open.includes(id)) return;
@@ -1352,13 +1477,13 @@ function catchSign(sg){
   SIGNS = SIGNS.filter((x) => x !== sg); S.stats.signs++;
   if (sg.kind === 'winter'){
     S.winter.warned = true; S.stats.winterWarned = true;
-    toast(`까마귀 떼가 남쪽으로 날아간다 — 한겨울이 ${Math.max(1, Math.ceil(S.winter.start - S.day))}일 뒤 온다(前知). 미리 알면 연료가 덜 든다.`, 'gold');
+    story(`까마귀 떼가 남쪽으로 날아간다. 할머니가 중얼거린다 — "큰 추위가 오겠구나." 한겨울까지 ${Math.max(1, Math.ceil(S.winter.start - S.day))}일.`, 'omen');
   } else if (sg.kind === 'storm'){
     if (S.enc && S.enc.type === 'sea') S.enc.stormKnown = true; else S.stormWarned = true;
-    toast('갈매기가 내륙으로 — 나루의 풍랑 날짜를 읽었다.', 'gold');
+    story('갈매기가 육지로 몰려든다. 바다가 감춘 날짜를 읽었다 — 풍랑이 언제 오는지 안다.', 'omen');
   } else {
-    if (R() < 0.5){ S.res.jeong = Math.min(10, S.res.jeong + 1); toast('까치가 운다 — 길조. 정성 +1', 'gold'); }
-    else { S.omenBonus++; toast('까치가 운다 — 길조. 다음 조우에서 근거 하나가 친절해진다.', 'gold'); }
+    if (R() < 0.5){ S.res.jeong = Math.min(10, S.res.jeong + 1); story('까치가 운다. 반가운 소식이 오려나 — 마음이 한결 고와졌다(정성 +1).', 'omen'); }
+    else { S.omenBonus++; story('까치가 운다. 다음 길목에서 무언가 하나가 더 잘 보일 것 같다.', 'omen'); }
   }
   log('sign', { k:sg.kind });
   dirty.panel = dirty.hud = true;
@@ -1369,7 +1494,8 @@ function fossilize(){
   const cand = Object.values(S.map.nodes).filter((n) => n.col > curCol && n.col <= 5 && !n.fossil && !n.visited && !(S.travel && S.travel.to === n.id));
   if (!cand.length) return;
   const n = pickR(R, cand); n.fossil = true; n.known = true;
-  toast(`독수리가 ${ENC[n.type].name}에 먼저 답을 내렸다 — 그 자리는 굳었다. 지나가면 안전하지만 아무것도 자라지 않는다.`, 'bad');
+  story(`독수리가 ${ENC[n.type].name} 위를 맴돌다 답을 내려놓았다. 그 자리가 잿빛 돌로 굳었다.`, 'eagle');
+  fx('eagle', { at:n.id });
   log('fossilize', { type:n.type, col:n.col });
   dirty.panel = true;
 }
@@ -1378,11 +1504,13 @@ function winterCheck(){
   if (!W.on && !W.done && S.day >= W.start){
     W.on = true; S.reflect = null;
     banner('In the bleak midwinter — 땅은 쇠처럼, 물은 돌처럼 굳었다.', `한겨울 ${W.len}일. 이동 · 결정 · 새 근거가 멈춘다. 가진 것이 없을 때 줄 수 있는 건 질문 — 지난 오답과 근거를 다시 물어 버티자.${W.warned ? ' (미리 알아 연료가 덜 든다)' : ''}`, 5200);
+    story('한겨울. 땅은 쇠처럼, 물은 돌처럼 굳었다. 가진 것이 없을 때 줄 수 있는 건 — 질문뿐.', 'winter');
     log('winter', { on:true, warned:W.warned });
     dirty.panel = dirty.hud = true;
   } else if (W.on && S.day >= W.start + W.len){
     W.on = false; W.done = true;
     banner('한겨울이 지나갔다.', '다시 길을 갈 수 있다.', 2600);
+    story('얼음 밑으로 물소리가 돌아왔다. 다시 걸을 수 있다.', 'good');
     log('winter', { on:false });
     dirty.panel = dirty.hud = true;
   }
@@ -1434,8 +1562,8 @@ function tick(dt){
   if (S.mode === 'busy' && S.busy && S.day >= S.busy.until){
     const b = S.busy; S.busy = null;
     applyEff(b.eff);
-    if (b.back){ S.mode = 'enc'; toast(`땔감을 모았다 — 연료 +${fmtN(b.eff.fuel)}.`, 'good'); }
-    else toRoute();
+    if (b.back){ S.mode = 'enc'; story(`마른 가지를 한 아름씩 모았다. 연료 +${fmtN(b.eff.fuel)}.`, 'good'); }
+    else { if (b.tale) story(b.tale, b.ok ? 'good' : 'bad'); toRoute(); }
     dirty.panel = dirty.hud = true; save();
   }
   if (!S.winter.on && S.day >= S.nextSign){ spawnSign(); S.nextSign = S.day + PR.signEvery * (0.6 + R() * 0.8); }
@@ -1468,13 +1596,732 @@ function endSeason(kind){
   S.over = { kind, day:r1(S.day) };
   const coef = spaceCoef();
   S.over.coef = coef;
-  const rec = { t:Date.now(), level:S.level, kind, days:r1(S.day), coef, self:SELF().name, label:selfLabel(), roads:S.roads.length, wx:S.weathers.length, ai:S.stats.ai };
+  story(ENDING[kind].replace('{self}', SELVES[SELF().name].name), 'end');
+  const rec = { t:Date.now(), kind, days:r1(S.day), coef, self:SELF().name, label:selfLabel(), roads:S.roads.length, wx:S.weathers.length, ai:S.stats.ai };
   SAVE.runs.unshift(rec); SAVE.runs = SAVE.runs.slice(0, 12);
   SAVE.cur = null;
   log('end', { kind });
   save(true);
   showSummary();
   dirty.lobby = true;
+}
+
+/* =================== 4b-art: 풍경 · 안개 · 길 · 일행 · 새 떼 · 효과 · 하루의 빛 ===================
+   그림은 모두 캔버스 벡터 — 기기마다 그림 글자(이모지)가 달라 보이지 않게.
+   움직이지 않는 풍경(BG) · 안개(FOG) · 성에(FROST)는 한 번 그려 두고, 크기 · 테마 · 밝혀진 자리가 바뀔 때만 다시 그린다. */
+
+const REDUCE = (() => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e){ return false; } })();
+const PAL_L = {
+  sky0:'#D7E3EA', sky1:'#EEF0EC', field:'#F2F0EA',
+  hillFar:'#C4D2DB', hillNear:'#D6E0E6', crest:'#FFFFFF',
+  drift:'rgba(255,255,255,.9)', driftSh:'rgba(96,124,146,.13)', streak:'rgba(255,255,255,.75)',
+  gorse:'#3E6838', gorse2:'#5A8249', bloom:'#E3AE24',
+  rock:'#8D9BA7', rock2:'#71808D', cap:'#FFFFFF',
+  water:'#6C98B3', water2:'#94BCD1', foam:'rgba(255,255,255,.8)', sand:'rgba(206,186,148,.85)',
+  ice:'#D1E7F0', ice2:'#A6CEDF', crack:'rgba(255,255,255,.95)',
+  wall:'#EADFCB', roof:'#9C4E2C', win:'#F6CF6E', smoke:'#AEB9C1',
+  pine:'#2E5B44', pine2:'#3E7457', trunk:'#6B4F37',
+  blossom:'#E897B3', blossom2:'#F4C0D1', spring:'rgba(128,176,104,.32)',
+  stone:'#9C978F', stone2:'#7B766E',
+  fog:'rgba(236,240,243,', fogHi:'rgba(255,255,255,.5)', fogLo:'rgba(196,208,217,.4)',
+  snow:'#FFFFFF', snowEdge:'rgba(105,130,150,.38)',
+  wren:'#8C5B31', wrenD:'#5B3A1D', brow:'#F3E8D4',
+  crow:'#1D2227', crowEdge:'rgba(255,255,255,0)', gull:'#FFFFFF', gullEdge:'#5D6A74', eagle:'#5A5048',
+  night:'#2C3F66', warm:'255,168,108', frost:'rgba(255,255,255,', shadow:'rgba(30,42,54,.14)',
+  sun:'#F0B23A', moon:'#F5F1E4', vig:'rgba(70,92,112,.13)',
+};
+const PAL_D = {
+  sky0:'#0A1118', sky1:'#141E28', field:'#131B23',
+  hillFar:'#182431', hillNear:'#1D2A37', crest:'#3B4C5B',
+  drift:'rgba(190,212,228,.08)', driftSh:'rgba(0,0,0,.3)', streak:'rgba(190,212,228,.10)',
+  gorse:'#284628', gorse2:'#355933', bloom:'#B38A28',
+  rock:'#3A4A59', rock2:'#2D3A47', cap:'#C6D4DE',
+  water:'#284F69', water2:'#356581', foam:'rgba(200,226,242,.5)', sand:'rgba(120,104,80,.7)',
+  ice:'#28434F', ice2:'#365A6C', crack:'rgba(200,232,246,.75)',
+  wall:'#3D372F', roof:'#7A4024', win:'#F2C14E', smoke:'#58656F',
+  pine:'#1E3C32', pine2:'#294F41', trunk:'#4B3A2B',
+  blossom:'#B66E8A', blossom2:'#D491AA', spring:'rgba(90,140,80,.22)',
+  stone:'#66625C', stone2:'#4E4A45',
+  fog:'rgba(15,22,29,', fogHi:'rgba(44,58,72,.5)', fogLo:'rgba(6,10,14,.5)',
+  snow:'#E2ECF3', snowEdge:'rgba(0,0,0,0)',
+  wren:'#A0703F', wrenD:'#6A4527', brow:'#ECDDC6',
+  crow:'#06080A', crowEdge:'rgba(214,226,236,.6)', gull:'#E9EEF2', gullEdge:'#8C99A3', eagle:'#9A8F80',
+  night:'#33446A', warm:'255,148,88', frost:'rgba(186,212,234,', shadow:'rgba(0,0,0,.36)',
+  sun:'#E6A53A', moon:'#ECE7D5', vig:'rgba(0,0,0,.32)',
+};
+let PAL = PAL_L;
+const TCOL_L = { mount:'#5C6F80', sea:'#2C6A8A', ice:'#3E8FB4', village:'#9C4E2C', forest:'#2E6B4A', start:'#B9472F', goal:'#C95B86' };
+const TCOL_D = { mount:'#A2B5C4', sea:'#7DB6D3', ice:'#8FD0EA', village:'#E0946A', forest:'#74C394', start:'#E2795E', goal:'#F29CBE' };
+const CREW_IDS = ['guide', 'child', 'elder', 'trader'];
+const CREW_D = { guide:'#7DB6D3', child:'#E2795E', elder:'#C9A0D6', trader:'#E0B456' };
+const isDark = () => PAL === PAL_D;
+const tcol = (t) => (isDark() ? TCOL_D : TCOL_L)[t] || '#888';
+const crewCol = (k) => (isDark() ? CREW_D[k] : CREW[k].color);
+function hexA(h, a){ const n = parseInt(String(h).slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; }
+function hashS(s){ let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
+const easeOut = (p) => 1 - (1 - p) * (1 - p);
+const TAU = Math.PI * 2;
+
+/* ---------- 지도 기하 ---------- */
+let MW = 0, MH = 0, DPR = 1, R0 = 18;
+function nxy(n){
+  const x = MW * (0.07 + 0.86 * (n.col / 6));
+  const y = MH * (0.14 + 0.72 * ((n.row + 0.5) / n.n) + (n.col % 6 ? n.jy : 0));
+  return [x, y];
+}
+// 길은 살짝 휘어진다 — 굽은 정도는 길마다 정해져 있다
+function edgeGeo(e){
+  const [x1, y1] = nxy(node(e.a)), [x2, y2] = nxy(node(e.b));
+  const dx = x2 - x1, dy = y2 - y1, k = (hashS(e.a + '>' + e.b) - 0.5) * 0.34;
+  return { x1, y1, x2, y2, cx:(x1 + x2) / 2 - dy * k, cy:(y1 + y2) / 2 + dx * k, len:Math.hypot(dx, dy) };
+}
+const qp = (G, t) => { const u = 1 - t; return [u * u * G.x1 + 2 * u * t * G.cx + t * t * G.x2, u * u * G.y1 + 2 * u * t * G.cy + t * t * G.y2]; };
+const qd = (G, t) => [2 * (1 - t) * (G.cx - G.x1) + 2 * t * (G.x2 - G.cx), 2 * (1 - t) * (G.cy - G.y1) + 2 * t * (G.y2 - G.cy)];
+function travelGeo(){
+  if (!S || S.mode !== 'travel' || !S.travel) return null;
+  const e = edgeOf(S.travel.from, S.travel.to); if (!e) return null;
+  return { G:edgeGeo(e), t:clamp(S.travel.done / S.travel.days, 0, 1) };
+}
+function bandXY(){ const tg = travelGeo(); return tg ? qp(tg.G, tg.t) : nxy(node(S.at)); }
+function rrect(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function pill(g, text, x, y, col, strong){
+  g.font = `${strong ? 700 : 600} 11px ${CV.font}`;
+  const w = g.measureText(text).width + 12, h = 18;
+  g.globalAlpha = 0.93; g.fillStyle = CV.surface; rrect(g, x - w / 2, y - h / 2, w, h, 9); g.fill(); g.globalAlpha = 1;
+  g.strokeStyle = strong ? col : CV.line; g.lineWidth = 1; g.stroke();
+  g.fillStyle = col; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, x, y + 0.5);
+}
+
+/* ---------- 땅: 하늘 · 먼 능선 · 눈 더미 · 바람결 ---------- */
+function ridge(g, rnd, W, topY, depth, col, amp){
+  const ph = rnd() * TAU, f1 = 1.1 + rnd() * 1.3, f2 = 3.4 + rnd() * 3, f3 = 9 + rnd() * 6;
+  const yAt = (x) => { const t = x / W; return topY - depth * 0.6 * amp * (0.55 * Math.sin(t * f1 * TAU + ph) + 0.3 * Math.sin(t * f2 * TAU + ph * 1.7) + 0.15 * Math.sin(t * f3 * TAU + ph * 2.3)); };
+  const gr = g.createLinearGradient(0, topY - depth * 0.6, 0, topY + depth);
+  gr.addColorStop(0, col); gr.addColorStop(0.5, col); gr.addColorStop(1, hexA(col, 0));
+  g.fillStyle = gr; g.beginPath(); g.moveTo(0, topY + depth);
+  for (let x = 0; x <= W + 8; x += 8) g.lineTo(x, yAt(x));
+  g.lineTo(W + 8, topY + depth); g.closePath(); g.fill();
+  g.strokeStyle = PAL.crest; g.globalAlpha = 0.65; g.lineWidth = 1.4; g.beginPath();
+  for (let x = 0; x <= W + 8; x += 8){ const y = yAt(x) + 1; x ? g.lineTo(x, y) : g.moveTo(x, y); }
+  g.stroke(); g.globalAlpha = 1;
+}
+function paintLand(g, W, H, rnd, horizon){
+  g.fillStyle = PAL.field; g.fillRect(0, 0, W, H);
+  const sky = g.createLinearGradient(0, 0, 0, H * horizon * 1.1);
+  sky.addColorStop(0, PAL.sky0); sky.addColorStop(1, PAL.sky1);
+  g.fillStyle = sky; g.fillRect(0, 0, W, H * horizon * 1.1);
+  ridge(g, rnd, W, H * horizon * 0.6, H * horizon * 0.55, PAL.hillFar, 0.9);
+  ridge(g, rnd, W, H * horizon * 0.88, H * horizon * 0.5, PAL.hillNear, 0.7);
+  const fl = g.createLinearGradient(0, H * horizon * 1.15, 0, H);
+  fl.addColorStop(0, hexA(PAL.sky1, 0)); fl.addColorStop(1, hexA(PAL.field, 1));
+  g.fillStyle = fl; g.fillRect(0, H * horizon * 1.15, W, H);
+  for (let i = 0; i < Math.round(W * H / 9000); i++){
+    const x = rnd() * W, y = H * (horizon + 0.04 + rnd() * (0.98 - horizon)), w = 26 + rnd() * 80, h = 4 + rnd() * 7;
+    g.fillStyle = PAL.driftSh; g.beginPath(); g.ellipse(x + 2, y + h * 0.55, w * 0.52, h * 0.6, 0, 0, TAU); g.fill();
+    g.fillStyle = PAL.drift; g.beginPath(); g.ellipse(x, y, w * 0.5, h * 0.5, 0, 0, TAU); g.fill();
+  }
+  g.strokeStyle = PAL.streak; g.lineWidth = 1.2; g.lineCap = 'round';
+  for (let i = 0; i < Math.round(W / 60); i++){
+    const x = rnd() * W, y = H * (horizon + 0.05 + rnd() * (0.95 - horizon)), L = 50 + rnd() * 130;
+    g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + L * 0.5, y - 5 - rnd() * 6, x + L, y + rnd() * 4); g.stroke();
+  }
+  g.lineCap = 'butt';
+}
+function vignette(g, W, H){
+  const gr = g.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.35, W / 2, H * 0.55, Math.max(W, H) * 0.75);
+  gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, PAL.vig);
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+}
+
+/* ---------- 풍경 조각 ---------- */
+function drawGorse(g, x, y, s, rnd, grey){
+  // 가시덤불(gorse) — 굴뚝새가 숨는 곳. 한겨울에도 노란 꽃이 몇 송이 핀다.
+  g.fillStyle = PAL.shadow; g.beginPath(); g.ellipse(x, y + s * 0.16, s * 1.05, s * 0.26, 0, 0, TAU); g.fill();
+  const c1 = grey ? PAL.stone2 : PAL.gorse, c2 = grey ? PAL.stone : PAL.gorse2;
+  for (let i = 0; i < 8; i++){ const a = Math.PI * (1 + i / 7), d = s * (0.5 + rnd() * 0.15); g.fillStyle = i % 2 ? c1 : c2; g.beginPath(); g.arc(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.7, s * (0.32 + rnd() * 0.16), 0, TAU); g.fill(); }
+  g.fillStyle = c1; g.beginPath(); g.arc(x, y - s * 0.25, s * 0.42, 0, TAU); g.fill();
+  g.strokeStyle = c1; g.lineWidth = 1;
+  for (let i = 0; i < 10; i++){ const a = Math.PI * (1 + rnd()), d = s * (0.78 + rnd() * 0.2), px = x + Math.cos(a) * d, py = y + Math.sin(a) * d * 0.72; g.beginPath(); g.moveTo(px, py); g.lineTo(px + Math.cos(a) * 3, py + Math.sin(a) * 3); g.stroke(); }
+  if (!grey){ g.fillStyle = PAL.bloom; for (let i = 0; i < 7; i++){ const a = Math.PI * (1.05 + rnd() * 0.9), d = s * (0.3 + rnd() * 0.5); g.beginPath(); g.arc(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.75, 1.2 + rnd() * 1.1, 0, TAU); g.fill(); } }
+  g.globalAlpha = 0.85; g.fillStyle = PAL.cap; g.beginPath(); g.ellipse(x - s * 0.1, y - s * 0.62, s * 0.5, s * 0.13, -0.1, 0, TAU); g.fill(); g.globalAlpha = 1;
+}
+function peak(g, x, baseY, apexY, hw, c1, c2, cap){
+  g.fillStyle = c1; g.beginPath(); g.moveTo(x - hw, baseY); g.lineTo(x, apexY); g.lineTo(x + hw, baseY); g.closePath(); g.fill();
+  g.fillStyle = c2; g.beginPath(); g.moveTo(x, apexY); g.lineTo(x + hw, baseY); g.lineTo(x + hw * 0.12, baseY); g.closePath(); g.fill();
+  const ch = (baseY - apexY) * 0.32;
+  g.fillStyle = cap; g.beginPath(); g.moveTo(x, apexY); g.lineTo(x - hw * 0.32, apexY + ch); g.lineTo(x - hw * 0.12, apexY + ch * 0.76); g.lineTo(x + hw * 0.02, apexY + ch * 1.02);
+  g.lineTo(x + hw * 0.18, apexY + ch * 0.8); g.lineTo(x + hw * 0.32, apexY + ch); g.closePath(); g.fill();
+}
+function drawMount(g, x, y, grey){
+  const s = R0, c1 = grey ? PAL.stone : PAL.rock, c2 = grey ? PAL.stone2 : PAL.rock2, cap = grey ? PAL.stone2 : PAL.cap;
+  peak(g, x - 1.15 * s, y + 0.35 * s, y - 1.3 * s, 1.0 * s, c1, c2, cap);
+  peak(g, x + 1.12 * s, y + 0.35 * s, y - 1.45 * s, 1.05 * s, c1, c2, cap);
+  peak(g, x, y + 0.35 * s, y - 2.1 * s, 1.45 * s, c1, c2, cap);
+}
+const seaOf = (x, y) => ({ x:x + 0.5 * R0, y:y + 0.55 * R0, rx:1.95 * R0, ry:1.02 * R0 });
+function drawSea(g, x, y, grey){
+  const o = seaOf(x, y);
+  g.strokeStyle = grey ? PAL.stone2 : PAL.sand; g.lineWidth = 3; g.beginPath(); g.ellipse(o.x, o.y, o.rx + 2.5, o.ry + 2.5, -0.08, 0, TAU); g.stroke();
+  g.fillStyle = grey ? PAL.stone : PAL.water; g.beginPath(); g.ellipse(o.x, o.y, o.rx, o.ry, -0.08, 0, TAU); g.fill();
+  g.fillStyle = grey ? PAL.stone2 : PAL.water2; g.beginPath(); g.ellipse(o.x - o.rx * 0.08, o.y - o.ry * 0.14, o.rx * 0.76, o.ry * 0.6, -0.08, 0, TAU); g.fill();
+  if (grey) return;
+  const bx = o.x + o.rx * 0.48, by = o.y + o.ry * 0.3;
+  g.fillStyle = PAL.trunk; g.beginPath(); g.moveTo(bx - 7, by); g.lineTo(bx + 7, by); g.lineTo(bx + 4, by + 3.5); g.lineTo(bx - 4, by + 3.5); g.closePath(); g.fill();
+  g.strokeStyle = PAL.trunk; g.lineWidth = 1; g.beginPath(); g.moveTo(bx, by); g.lineTo(bx, by - 9); g.stroke();
+  g.fillStyle = PAL.wall; g.beginPath(); g.moveTo(bx + 0.6, by - 9); g.lineTo(bx + 6, by - 2); g.lineTo(bx + 0.6, by - 2); g.closePath(); g.fill();
+}
+function bez(a, b, c, d, t){ const u = 1 - t; return u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d; }
+function drawIce(g, x, y, grey){
+  const s = R0, w = 1.05 * s;
+  const X = [x - 0.5 * s, x + 0.9 * s, x - 0.9 * s, x + 0.45 * s], Y = [y - 2.5 * s, y - 1.2 * s, y + 1.0 * s, y + 2.5 * s];
+  const path = () => { g.beginPath(); g.moveTo(X[0], Y[0]); g.bezierCurveTo(X[1], Y[1], X[2], Y[2], X[3], Y[3]); };
+  g.lineCap = 'round';
+  g.strokeStyle = grey ? PAL.stone2 : PAL.ice2; g.lineWidth = w + 6; path(); g.stroke();
+  g.strokeStyle = grey ? PAL.stone : PAL.ice; g.lineWidth = w; path(); g.stroke();
+  g.globalAlpha = 0.3; g.strokeStyle = grey ? PAL.stone2 : PAL.water; g.lineWidth = w * 0.22; path(); g.stroke(); g.globalAlpha = 1;
+  g.strokeStyle = PAL.crack; g.lineWidth = 1;
+  for (let i = 0; i < 5; i++){
+    const t = 0.1 + i * 0.2, cx0 = bez(X[0], X[1], X[2], X[3], t), cy = bez(Y[0], Y[1], Y[2], Y[3], t), k = i % 2 ? 1 : -1;
+    g.beginPath(); g.moveTo(cx0 - s * 0.34, cy); g.lineTo(cx0 - s * 0.1, cy + s * 0.12 * k); g.lineTo(cx0 + s * 0.08, cy - s * 0.06 * k); g.lineTo(cx0 + s * 0.32, cy + s * 0.1 * k); g.stroke();
+  }
+  g.lineCap = 'butt';
+}
+const housesOf = (x, y) => [[-1.45, -0.25, 0.8], [1.38, -0.55, 0.72], [1.22, 0.98, 0.62]].map(([dx, dy, k]) => ({ x:x + dx * R0, y:y + dy * R0, w:k * R0, h:k * R0 * 0.62 }));
+function drawHouse(g, h, grey){
+  const { x, y, w } = h, hh = h.h;
+  g.fillStyle = PAL.shadow; g.beginPath(); g.ellipse(x + 2, y + hh * 0.55, w * 0.64, hh * 0.24, 0, 0, TAU); g.fill();
+  g.fillStyle = grey ? PAL.stone : PAL.wall; g.fillRect(x - w / 2, y - hh / 2, w, hh);
+  g.fillStyle = grey ? PAL.stone2 : PAL.trunk; g.fillRect(x + w * 0.2, y - hh * 1.25, w * 0.14, hh * 0.5);
+  g.fillStyle = grey ? PAL.stone2 : PAL.roof; g.beginPath(); g.moveTo(x - w * 0.64, y - hh / 2 + 1); g.lineTo(x, y - hh * 1.22); g.lineTo(x + w * 0.64, y - hh / 2 + 1); g.closePath(); g.fill();
+  g.globalAlpha = grey ? 0.3 : 0.92; g.fillStyle = PAL.cap; g.beginPath(); g.moveTo(x - w * 0.46, y - hh * 0.66); g.lineTo(x, y - hh * 1.2); g.lineTo(x + w * 0.46, y - hh * 0.66); g.lineTo(x, y - hh * 0.98); g.closePath(); g.fill(); g.globalAlpha = 1;
+  g.fillStyle = grey ? PAL.stone2 : 'rgba(58,48,38,.6)'; g.fillRect(x - w * 0.1, y - hh * 0.12, w * 0.2, hh * 0.34);
+}
+const chimneyOf = (h) => [h.x + h.w * 0.27, h.y - h.h * 1.25];
+function pinesOf(n){
+  const [x, y] = nxy(n), r = mulberry(Math.floor(hashS(n.id + 'pine') * 4294967295) >>> 0), out = [];
+  for (let i = 0; i < 8; i++){ const a = Math.PI * (0.95 + 1.1 * (i / 7)) + (r() - 0.5) * 0.25, d = R0 * (1.35 + r() * 0.6); out.push({ x:x + Math.cos(a) * d, y:y + Math.sin(a) * d * 0.8 + R0 * 0.25, h:R0 * (0.85 + r() * 0.55) }); }
+  return out.sort((p, q) => p.y - q.y);
+}
+function drawPine(g, x, y, h, grey){
+  g.fillStyle = PAL.shadow; g.beginPath(); g.ellipse(x + 2, y + 1, h * 0.34, h * 0.09, 0, 0, TAU); g.fill();
+  g.fillStyle = grey ? PAL.stone2 : PAL.trunk; g.fillRect(x - h * 0.05, y - h * 0.18, h * 0.1, h * 0.2);
+  const c1 = grey ? PAL.stone : PAL.pine, c2 = grey ? PAL.stone2 : PAL.pine2;
+  [[0.15, 0.42, 0.55], [0.45, 0.34, 0.42], [0.72, 0.24, 0.28]].forEach(([b, w, ht], i) => { const by = y - h * b; g.fillStyle = i % 2 ? c2 : c1; g.beginPath(); g.moveTo(x - h * w, by); g.lineTo(x, by - h * ht); g.lineTo(x + h * w, by); g.closePath(); g.fill(); });
+  g.globalAlpha = 0.85; g.fillStyle = PAL.cap; g.beginPath(); g.moveTo(x, y - h * 1.0); g.lineTo(x - h * 0.09, y - h * 0.86); g.lineTo(x + h * 0.09, y - h * 0.86); g.closePath(); g.fill(); g.globalAlpha = 1;
+}
+const treeOf = (x, y) => [x + 1.25 * R0, y - 0.1 * R0];
+function drawGoal(g, x, y){
+  const s = R0;
+  g.fillStyle = PAL.spring; g.beginPath(); g.ellipse(x, y + 0.2 * s, 1.95 * s, 1.25 * s, 0, 0, TAU); g.fill();
+  g.globalAlpha = 0.75; g.fillStyle = PAL.water2; g.beginPath(); g.ellipse(x + 0.2 * s, y + 1.4 * s, 1.6 * s, 0.42 * s, 0, 0, TAU); g.fill(); g.globalAlpha = 1;
+  const [tx, ty] = treeOf(x, y);
+  g.strokeStyle = PAL.trunk; g.lineWidth = 3; g.lineCap = 'round'; g.beginPath(); g.moveTo(tx, ty + 0.9 * s); g.lineTo(tx, ty - 0.3 * s); g.moveTo(tx, ty); g.lineTo(tx - 0.4 * s, ty - 0.5 * s); g.moveTo(tx, ty - 0.1 * s); g.lineTo(tx + 0.35 * s, ty - 0.55 * s); g.stroke(); g.lineCap = 'butt';
+  [[-0.45, -0.7, 0.42], [0.35, -0.75, 0.4], [0, -0.95, 0.46], [-0.1, -0.45, 0.36], [0.42, -0.36, 0.3]].forEach(([dx, dy, r], i) => { g.fillStyle = i % 2 ? PAL.blossom : PAL.blossom2; g.beginPath(); g.arc(tx + dx * s, ty + dy * s, r * s, 0, TAU); g.fill(); });
+}
+function landmark(g, n, rnd){
+  const [x, y] = nxy(n), gr = n.fossil;
+  if (n.type === 'mount') drawMount(g, x, y, gr);
+  else if (n.type === 'sea') drawSea(g, x, y, gr);
+  else if (n.type === 'ice') drawIce(g, x, y, gr);
+  else if (n.type === 'village') housesOf(x, y).forEach((h) => drawHouse(g, h, gr));
+  else if (n.type === 'forest') pinesOf(n).forEach((p) => drawPine(g, p.x, p.y, p.h, gr));
+  else if (n.type === 'start') drawGorse(g, x - 1.2 * R0, y + 0.5 * R0, R0 * 0.85, rnd, false);
+  else if (n.type === 'goal') drawGoal(g, x, y);
+}
+
+/* ---------- 미리 그려 두는 판: 풍경 · 안개 · 성에 ---------- */
+let BG = null, bgKey = '', FOG = null, fogKey = '', FROST = null, frostKey = '';
+function buildBG(){
+  const key = [MW, MH, DPR, isDark() ? 'd' : 'l', S.seed, Object.values(S.map.nodes).map((n) => (n.fossil ? 1 : 0)).join('')].join('|');
+  if (BG && key === bgKey) return;
+  bgKey = key; if (!BG) BG = document.createElement('canvas');
+  BG.width = Math.max(2, Math.round(MW * DPR)); BG.height = Math.max(2, Math.round(MH * DPR));
+  const g = BG.getContext('2d'); g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const rnd = mulberry((S.seed ^ 0x5bd1e995) >>> 0);
+  paintLand(g, MW, MH, rnd, 0.17);
+  const pts = Object.values(S.map.nodes).map(nxy);
+  for (let i = 0, k = 0; i < 90 && k < 14; i++){
+    const x = rnd() * MW, y = MH * (0.22 + rnd() * 0.76);
+    if (pts.some(([px, py]) => Math.hypot(px - x, py - y) < R0 * 3.1)) continue;
+    drawGorse(g, x, y, R0 * (0.4 + rnd() * 0.35), rnd, false); k++;
+  }
+  Object.values(S.map.nodes).slice().sort((a, b) => nxy(a)[1] - nxy(b)[1]).forEach((n) => landmark(g, n, rnd));
+  vignette(g, MW, MH);
+}
+function buildFog(){
+  const ns = Object.values(S.map.nodes);
+  const key = [MW, MH, isDark() ? 'd' : 'l', ns.map((n) => (n.visited ? 2 : n.known ? 1 : 0)).join('')].join('|');
+  if (FOG && key === fogKey) return;
+  fogKey = key; if (!FOG) FOG = document.createElement('canvas');
+  const sc = 0.5; FOG.width = Math.max(4, Math.round(MW * sc)); FOG.height = Math.max(4, Math.round(MH * sc));
+  const g = FOG.getContext('2d'); g.setTransform(sc, 0, 0, sc, 0, 0);
+  g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, MW, MH);
+  g.fillStyle = PAL.fog + '0.86)'; g.fillRect(0, 0, MW, MH);
+  const rnd = mulberry((S.seed ^ 0x9e3779b9) >>> 0);
+  for (let i = 0; i < 30; i++){ const x = rnd() * MW, y = MH * (0.1 + rnd() * 0.9), r = 40 + rnd() * 120, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, i % 3 ? PAL.fogHi : PAL.fogLo); gr.addColorStop(1, PAL.fog + '0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+  g.globalCompositeOperation = 'destination-out';
+  const top = g.createLinearGradient(0, 0, 0, MH * 0.2); top.addColorStop(0, 'rgba(0,0,0,1)'); top.addColorStop(0.55, 'rgba(0,0,0,.7)'); top.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = top; g.fillRect(0, 0, MW, MH * 0.2);
+  const hole = (x, y, r, a) => { const gr = g.createRadialGradient(x, y, r * 0.3, x, y, r); gr.addColorStop(0, `rgba(0,0,0,${a})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); };
+  ns.forEach((n) => { const [x, y] = nxy(n); if (n.visited) hole(x, y, R0 * 4.3, 1); else if (n.known) hole(x, y, R0 * 3.3, 1); else if (n.type === 'goal') hole(x, y, R0 * 2.6, 0.5); });
+  S.map.edges.forEach((e) => { const a = node(e.a), b = node(e.b); if (!(a.visited && (b.known || b.visited))) return; const G = edgeGeo(e); for (let i = 1; i < 10; i++){ const [x, y] = qp(G, i / 10); hole(x, y, R0 * 2.2, 1); } });
+  g.globalCompositeOperation = 'source-over';
+}
+function frostBranch(g, x, y, a, len, depth){
+  const x2 = x + Math.cos(a) * len, y2 = y + Math.sin(a) * len;
+  g.beginPath(); g.moveTo(x, y); g.lineTo(x2, y2); g.stroke();
+  if (depth <= 0) return;
+  for (let i = 1; i <= 2; i++){ const t = i / 3, bx = x + (x2 - x) * t, by = y + (y2 - y) * t; frostBranch(g, bx, by, a + 0.95, len * 0.42, depth - 1); frostBranch(g, bx, by, a - 0.95, len * 0.42, depth - 1); }
+}
+function buildFrost(){
+  const key = [MW, MH, DPR, isDark() ? 'd' : 'l'].join('|');
+  if (FROST && key === frostKey) return;
+  frostKey = key; if (!FROST) FROST = document.createElement('canvas');
+  FROST.width = Math.max(2, Math.round(MW * DPR)); FROST.height = Math.max(2, Math.round(MH * DPR));
+  const g = FROST.getContext('2d'); g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, MW, MH);
+  const gr = g.createRadialGradient(MW / 2, MH / 2, Math.min(MW, MH) * 0.28, MW / 2, MH / 2, Math.max(MW, MH) * 0.74);
+  gr.addColorStop(0, PAL.frost + '0)'); gr.addColorStop(1, PAL.frost + '0.8)');
+  g.fillStyle = gr; g.fillRect(0, 0, MW, MH);
+  const rnd = mulberry(20261125);
+  g.strokeStyle = PAL.frost + '0.7)'; g.lineWidth = 1; g.lineCap = 'round';
+  [[0, 0, 0.75], [MW, 0, 2.4], [0, MH, -0.75], [MW, MH, 3.9]].forEach(([x0, y0, ang]) => { for (let i = 0; i < 6; i++) frostBranch(g, x0, y0, ang + (rnd() - 0.5) * 1.2, 34 + rnd() * 70, 3); });
+}
+
+/* ---------- 움직이는 풍경: 물결 · 연기 · 꽃잎 · 능선의 눈가루 ---------- */
+function seaAgitation(n){
+  const E = S.enc;
+  if (E && E.type === 'sea' && E.node === n.id && (S.mode === 'enc' || S.mode === 'busy') && isFinite(E.stormAt)){
+    const d = E.stormAt - S.day;
+    if (d <= 0) return S.day < E.stormAt + 2 ? 1 : 0.15;
+    return clamp(1 - d / Math.max(1, (E.P && E.P.k) || 3), 0.25, 0.92);   // 근거 정보 — 바다가 먼저 거칠어진다
+  }
+  return 0.22;
+}
+function drawLive(g, now){
+  Object.values(S.map.nodes).forEach((n) => {
+    if (n.fossil) return;
+    const [x, y] = nxy(n);
+    if (n.type === 'sea'){
+      const o = seaOf(x, y), ag = seaAgitation(n), sp = REDUCE ? 0 : now / (900 - ag * 620);
+      g.save(); g.beginPath(); g.ellipse(o.x, o.y, o.rx, o.ry, -0.08, 0, TAU); g.clip();
+      g.strokeStyle = PAL.foam; g.lineWidth = 1.1 + ag * 1.4;
+      for (let i = 0; i < 4; i++){
+        const yy = o.y - o.ry * 0.55 + i * o.ry * 0.36, amp = 1 + ag * 3.6;
+        g.globalAlpha = 0.45 + ag * 0.35; g.beginPath();
+        for (let k = 0; k <= 26; k++){ const xx = o.x - o.rx + (k / 26) * o.rx * 2, v = yy + Math.sin(k * 0.95 + sp * (i % 2 ? 1 : -1.2) + i * 1.7) * amp; k ? g.lineTo(xx, v) : g.moveTo(xx, v); }
+        g.stroke();
+      }
+      g.restore(); g.globalAlpha = 1;
+    } else if (n.type === 'village'){
+      housesOf(x, y).forEach((h, i) => { const [sx, sy] = chimneyOf(h); smoke(g, sx, sy, now + i * 870); });
+    } else if (n.type === 'goal'){
+      const [tx, ty] = treeOf(x, y); petals(g, tx, ty - 0.7 * R0, now);
+    } else if (n.type === 'mount' && !REDUCE){
+      const ax = x, ay = y - 2.1 * R0;
+      g.strokeStyle = PAL.cap; g.lineWidth = 1.2; g.lineCap = 'round';
+      for (let i = 0; i < 3; i++){ const p = ((now / 1700) + i / 3) % 1; g.globalAlpha = (1 - p) * 0.7; g.beginPath(); g.moveTo(ax + p * 34, ay + p * 7 + i * 2); g.lineTo(ax + p * 34 + 9, ay + p * 7 + i * 2 + 1); g.stroke(); }
+      g.globalAlpha = 1; g.lineCap = 'butt';
+    }
+  });
+}
+function smoke(g, x, y, now){
+  g.fillStyle = PAL.smoke;
+  for (let i = 0; i < 4; i++){ const p = ((now / 2600) + i / 4) % 1; g.globalAlpha = (1 - p) * 0.42; g.beginPath(); g.arc(x + Math.sin(p * 5 + i) * 3 + p * 9, y - p * 22, 1.8 + p * 5, 0, TAU); g.fill(); }
+  g.globalAlpha = 1;
+}
+function petals(g, x, y, now){
+  for (let i = 0; i < 5; i++){
+    const p = ((now / 4200) + i / 5) % 1, px = x + (i - 2) * 5 + p * 26 + Math.sin(p * 9 + i) * 5, py = y + p * 2.2 * R0;
+    g.globalAlpha = Math.sin(p * Math.PI) * 0.9; g.fillStyle = i % 2 ? PAL.blossom : PAL.blossom2;
+    g.beginPath(); g.ellipse(px, py, 2.6, 1.5, p * 6 + i, 0, TAU); g.fill();
+  }
+  g.globalAlpha = 1;
+}
+
+/* ---------- 자리 그림(벡터 아이콘) ---------- */
+function glyph(g, t, x, y, s, grey){
+  const col = grey ? PAL.stone2 : tcol(t);
+  g.save(); g.translate(x, y); g.fillStyle = col; g.strokeStyle = col; g.lineWidth = Math.max(1.6, s * 0.15); g.lineJoin = 'round'; g.lineCap = 'round';
+  if (t === 'mount'){
+    g.beginPath(); g.moveTo(-s, s * 0.7); g.lineTo(-s * 0.25, -s * 0.78); g.lineTo(s * 0.12, -s * 0.06); g.lineTo(s * 0.45, -s * 0.46); g.lineTo(s, s * 0.7); g.closePath(); g.fill();
+    g.fillStyle = grey ? PAL.stone : CV.surface; g.beginPath(); g.moveTo(-s * 0.25, -s * 0.78); g.lineTo(-s * 0.5, -s * 0.3); g.lineTo(-s * 0.32, -s * 0.38); g.lineTo(-s * 0.2, -s * 0.24); g.lineTo(-s * 0.04, -s * 0.36); g.closePath(); g.fill();
+  } else if (t === 'sea'){
+    for (let i = 0; i < 3; i++){ const yy = -s * 0.42 + i * s * 0.42; g.beginPath(); for (let k = 0; k <= 16; k++){ const xx = -s * 0.9 + k * s * 0.1125, v = yy + Math.sin(k / 16 * Math.PI * 4) * s * 0.13; k ? g.lineTo(xx, v) : g.moveTo(xx, v); } g.stroke(); }
+  } else if (t === 'ice'){
+    g.beginPath(); for (let k = 0; k < 6; k++){ const a = Math.PI / 6 + k * Math.PI / 3, px = Math.cos(a) * s * 0.9, py = Math.sin(a) * s * 0.9; k ? g.lineTo(px, py) : g.moveTo(px, py); } g.closePath();
+    g.globalAlpha = 0.22; g.fill(); g.globalAlpha = 1; g.stroke();
+    g.beginPath(); g.moveTo(-s * 0.5, -s * 0.18); g.lineTo(-s * 0.12, s * 0.06); g.lineTo(s * 0.1, -s * 0.24); g.lineTo(s * 0.5, s * 0.2); g.stroke();
+  } else if (t === 'village'){
+    g.fillRect(s * 0.3, -s * 0.74, s * 0.18, s * 0.42);
+    g.beginPath(); g.moveTo(-s * 0.8, -s * 0.02); g.lineTo(0, -s * 0.78); g.lineTo(s * 0.8, -s * 0.02); g.closePath(); g.fill();
+    g.globalAlpha = 0.8; g.fillRect(-s * 0.58, -s * 0.04, s * 1.16, s * 0.76); g.globalAlpha = 1;
+    g.fillStyle = grey ? PAL.stone : PAL.win; g.fillRect(-s * 0.12, s * 0.24, s * 0.24, s * 0.48);
+  } else if (t === 'forest'){
+    const pine = (px, py, h) => { g.beginPath(); g.moveTo(px, py - h); g.lineTo(px + h * 0.42, py - h * 0.25); g.lineTo(px - h * 0.42, py - h * 0.25); g.closePath(); g.fill(); g.beginPath(); g.moveTo(px, py - h * 0.62); g.lineTo(px + h * 0.52, py + h * 0.12); g.lineTo(px - h * 0.52, py + h * 0.12); g.closePath(); g.fill(); g.fillRect(px - h * 0.06, py + h * 0.1, h * 0.12, h * 0.2); };
+    pine(-s * 0.36, s * 0.42, s * 1.08); pine(s * 0.42, s * 0.55, s * 0.86);
+  } else if (t === 'start'){
+    g.beginPath(); g.moveTo(-s * 0.38, s * 0.82); g.lineTo(-s * 0.38, -s * 0.82); g.stroke();
+    g.beginPath(); g.moveTo(-s * 0.32, -s * 0.82); g.quadraticCurveTo(s * 0.25, -s * 0.98, s * 0.78, -s * 0.55); g.quadraticCurveTo(s * 0.22, -s * 0.34, -s * 0.32, -s * 0.2); g.closePath(); g.fill();
+  } else if (t === 'goal'){
+    for (let k = 0; k < 5; k++){ const a = -Math.PI / 2 + k * TAU / 5; g.beginPath(); g.ellipse(Math.cos(a) * s * 0.46, Math.sin(a) * s * 0.46, s * 0.37, s * 0.26, a, 0, TAU); g.fill(); }
+    g.fillStyle = '#F2C14E'; g.beginPath(); g.arc(0, 0, s * 0.23, 0, TAU); g.fill();
+  } else {
+    g.font = `${Math.round(s * 1.55)}px ${CV.display}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = CV.muted; g.fillText('?', 0, s * 0.1);
+  }
+  g.restore();
+}
+function cloud(g, x, y, s, col){
+  g.fillStyle = col; g.beginPath(); g.arc(x - s * 0.45, y + s * 0.1, s * 0.42, 0, TAU); g.arc(x, y - s * 0.15, s * 0.55, 0, TAU); g.arc(x + s * 0.5, y + s * 0.12, s * 0.4, 0, TAU); g.fill();
+  g.fillRect(x - s * 0.45, y + s * 0.08, s * 0.95, s * 0.44);
+}
+// 오답이 만든 돌풍 — 그 자리를 감도는 소용돌이
+function gust(g, x, y, k, now, alpha){
+  g.strokeStyle = CV.risk; g.lineWidth = 1.6; g.lineCap = 'round';
+  for (let i = 0; i < Math.min(3, k); i++){
+    const a0 = (REDUCE ? 0 : now / 650) + i * 2.1;
+    g.globalAlpha = alpha; g.beginPath();
+    for (let j = 0; j <= 22; j++){ const tt = j / 22, a = a0 + tt * 2.5, rr = R0 * (1.25 + 0.22 * i) * (0.72 + 0.38 * tt); const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr * 0.72; j ? g.lineTo(px, py) : g.moveTo(px, py); }
+    g.stroke();
+  }
+  g.globalAlpha = 0.9; cloud(g, x - R0 * 1.05, y - R0 * 0.98, R0 * 0.4, CV.risk); g.globalAlpha = 1; g.lineCap = 'butt';
+  g.font = `700 10px ${CV.font}`; g.fillStyle = CV.risk; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText('×' + k, x - R0 * 0.6, y - R0 * 0.7);
+}
+function drawNode(g, n, now, known, isCur){
+  const [x, y] = nxy(n), r = R0;
+  g.fillStyle = PAL.shadow; g.beginPath(); g.ellipse(x + 1, y + r * 0.95, r * 0.86, r * 0.22, 0, 0, TAU); g.fill();
+  g.beginPath(); g.arc(x, y, r, 0, TAU);
+  g.fillStyle = n.fossil ? PAL.stone : n.visited ? CV.accentSoft : CV.surface; g.fill();
+  if (n.fossil){ g.save(); g.clip(); g.strokeStyle = PAL.stone2; g.lineWidth = 1.3; g.beginPath(); g.moveTo(x - r * 0.75, y - r * 0.25); g.lineTo(x - r * 0.15, y + r * 0.08); g.lineTo(x + r * 0.12, y - r * 0.38); g.lineTo(x + r * 0.8, y + r * 0.12); g.moveTo(x + r * 0.12, y - r * 0.38); g.lineTo(x + r * 0.05, y - r * 0.9); g.stroke(); g.restore(); }
+  g.beginPath(); g.arc(x, y, r, 0, TAU);
+  g.lineWidth = isCur ? 3.2 : 1.4; g.strokeStyle = isCur ? SELVES[SELF().name].color : n.visited ? CV.accent : CV.line; g.stroke();
+  g.globalAlpha = 0.7; g.beginPath(); g.arc(x, y, r - 3.5, 0, TAU); g.lineWidth = 0.8; g.strokeStyle = CV.line; g.stroke(); g.globalAlpha = 1;
+  if (isCur && !REDUCE){ g.setLineDash([3, 6]); g.lineDashOffset = -now / 60; g.strokeStyle = SELVES[SELF().name].color; g.lineWidth = 1.4; g.beginPath(); g.arc(x, y, r + 6, 0, TAU); g.stroke(); g.setLineDash([]); g.lineDashOffset = 0; }
+  glyph(g, known ? n.type : '?', x, y, r * 0.6, n.fossil);
+  const label = n.fossil ? '굳은 자리' : known ? ENC[n.type].name : '';
+  if (label) pill(g, label, x, y + r + 11, n.fossil ? PAL.stone2 : CV.muted);
+}
+function footprints(g, G, upto){
+  // 깡충 뛰는 굴뚝새의 자국 — 나란한 두 점이 길을 따라
+  g.fillStyle = CV.ink; g.globalAlpha = 0.28;
+  const n = Math.max(3, Math.floor(G.len / 13));
+  for (let i = 1; i < n; i++){
+    const t = i / n; if (t > upto) break;
+    const [x, y] = qp(G, t), [dx, dy] = qd(G, t), L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, a = Math.atan2(uy, ux);
+    for (const sd of [-1, 1]){ g.beginPath(); g.ellipse(x - uy * 2.4 * sd, y + ux * 2.4 * sd, 1.7, 1.05, a, 0, TAU); g.fill(); }
+  }
+  g.globalAlpha = 1;
+}
+function drawEdges(g, now){
+  S.map.edges.forEach((e) => {
+    const a = node(e.a), b = node(e.b), G = edgeGeo(e);
+    const walked = a.visited && b.visited;
+    const going = S.mode === 'travel' && S.travel && S.travel.from === e.a && S.travel.to === e.b;
+    const choose = S.mode === 'route' && e.a === S.at;
+    const road = b.known && !b.visited && b.type !== 'goal' && S.roads.some((r) => r.type === b.type);
+    const path = () => { g.beginPath(); g.moveTo(G.x1, G.y1); g.quadraticCurveTo(G.cx, G.cy, G.x2, G.y2); };
+    g.lineCap = 'round';
+    if (road){ g.strokeStyle = CV.gold; g.globalAlpha = 0.26 + (REDUCE ? 0 : 0.1 * Math.sin(now / 480)); g.lineWidth = 9; path(); g.stroke(); g.globalAlpha = 1; }
+    if (walked){ g.strokeStyle = CV.accent; g.globalAlpha = 0.45; g.lineWidth = 2.6; path(); g.stroke(); g.globalAlpha = 1; footprints(g, G, 1); }
+    else if (choose || going){ g.strokeStyle = CV.accent; g.lineWidth = 2.2; g.setLineDash([7, 7]); g.lineDashOffset = REDUCE ? 0 : -now / 45; path(); g.stroke(); g.setLineDash([]); g.lineDashOffset = 0; }
+    else { g.strokeStyle = CV.muted; g.globalAlpha = 0.45; g.lineWidth = 1.6; g.setLineDash([1, 7]); path(); g.stroke(); g.setLineDash([]); g.globalAlpha = 1; }
+    if (going){
+      const t = clamp(S.travel.done / S.travel.days, 0, 1);
+      g.strokeStyle = CV.accent; g.globalAlpha = 0.55; g.lineWidth = 2.6; g.beginPath(); g.moveTo(G.x1, G.y1);
+      for (let i = 1; i <= 24; i++){ const [x, y] = qp(G, t * i / 24); g.lineTo(x, y); }
+      g.stroke(); g.globalAlpha = 1; footprints(g, G, t);
+    }
+    g.lineCap = 'butt';
+    if (choose){ const [mx, my] = qp(G, 0.5); pill(g, `${fmtN(routeDays(e.b))}일`, mx, my, CV.accent, true); }
+  });
+}
+function drawNodes(g, now){
+  const cur = node(S.at);
+  Object.values(S.map.nodes).forEach((n) => {
+    const [x, y] = nxy(n), known = n.known || n.type === 'goal' || n.type === 'start';
+    const isCur = n.id === S.at && S.mode !== 'travel';
+    const plain = known && n.type !== 'start' && n.type !== 'goal' && !n.fossil;
+    const rd = plain ? S.roads.filter((r) => r.type === n.type).length : 0;
+    if (rd && !n.visited){
+      const gr = g.createRadialGradient(x, y, R0 * 0.8, x, y, R0 * 2.1);
+      gr.addColorStop(0, hexA(CV.gold.length === 7 ? CV.gold : '#A87A1F', 0.4)); gr.addColorStop(1, hexA(CV.gold.length === 7 ? CV.gold : '#A87A1F', 0));
+      g.fillStyle = gr; g.beginPath(); g.arc(x, y, R0 * 2.1, 0, TAU); g.fill();
+    }
+    if (plain){ const k = wxOn(n.type).reduce((t, w) => t + w.str, 0); if (k && (!n.visited || isCur)) gust(g, x, y, k, now, isCur ? 0.4 : 0.72); }
+    drawNode(g, n, now, known, isCur);
+    if (rd && !n.visited) pill(g, '길 ' + rd, x + R0 * 0.95, y - R0 - 7, CV.gold, true);
+    if (S.mode === 'route' && cur.next.includes(n.id)){
+      const p = REDUCE ? 0.5 : (now / 1400) % 1;
+      g.strokeStyle = CV.accent; g.lineWidth = 2; g.globalAlpha = 1 - p; g.beginPath(); g.arc(x, y, R0 + 4 + p * 14, 0, TAU); g.stroke(); g.globalAlpha = 1;
+    }
+  });
+}
+
+/* ---------- 일행: 굴뚝새 + 넷 ---------- */
+function drawWren(g, x, y, s, selfCol, now, walking){
+  g.globalAlpha = 0.24; g.fillStyle = selfCol; g.beginPath(); g.arc(x, y, s * 0.8, 0, TAU); g.fill(); g.globalAlpha = 1;
+  g.strokeStyle = selfCol; g.lineWidth = 2; g.beginPath(); g.arc(x, y, s * 0.8, 0, TAU); g.stroke();
+  g.fillStyle = PAL.wrenD; g.save(); g.translate(x - s * 0.28, y - s * 0.04); g.rotate(-1.0 + (walking && !REDUCE ? Math.sin(now / 150) * 0.14 : 0));
+  g.beginPath(); g.ellipse(0, -s * 0.22, s * 0.09, s * 0.27, 0, 0, TAU); g.fill(); g.restore();          // 치켜든 꼬리
+  g.fillStyle = PAL.wren; g.beginPath(); g.ellipse(x, y + s * 0.05, s * 0.35, s * 0.28, 0, 0, TAU); g.fill();
+  g.beginPath(); g.arc(x + s * 0.25, y - s * 0.14, s * 0.18, 0, TAU); g.fill();
+  g.strokeStyle = PAL.wrenD; g.lineWidth = 1.2; g.beginPath(); g.arc(x - s * 0.02, y + s * 0.03, s * 0.18, Math.PI * 0.9, Math.PI * 1.7); g.stroke();
+  g.strokeStyle = PAL.brow; g.lineWidth = 1.1; g.beginPath(); g.moveTo(x + s * 0.17, y - s * 0.21); g.lineTo(x + s * 0.38, y - s * 0.2); g.stroke();   // 흰 눈썹
+  g.fillStyle = '#111'; g.beginPath(); g.arc(x + s * 0.3, y - s * 0.14, s * 0.035 + 0.7, 0, TAU); g.fill();
+  g.fillStyle = '#4A3420'; g.beginPath(); g.moveTo(x + s * 0.4, y - s * 0.16); g.lineTo(x + s * 0.56, y - s * 0.12); g.lineTo(x + s * 0.4, y - s * 0.08); g.closePath(); g.fill();
+  g.strokeStyle = '#4A3420'; g.lineWidth = 1; g.beginPath(); g.moveTo(x - s * 0.05, y + s * 0.3); g.lineTo(x - s * 0.08, y + s * 0.44); g.moveTo(x + s * 0.08, y + s * 0.3); g.lineTo(x + s * 0.1, y + s * 0.44); g.stroke();
+}
+function partySpots(now){
+  const tg = travelGeo(), cold = S.winter.on, me = SELVES[SELF().name], crew = [];
+  let wx, wy;
+  if (tg){
+    const [x, y] = qp(tg.G, tg.t); wx = x; wy = y - R0 * 0.6;
+    if (!REDUCE && !cold) wy -= Math.abs(Math.sin(now / 150)) * 5;
+    CREW_IDS.forEach((k, i) => { const [px, py] = qp(tg.G, clamp(tg.t - (i + 1) * 0.05, 0, 1)); crew.push([px, py + 2 + (REDUCE || cold ? 0 : Math.sin(now / 190 + i) * 1.3), crewCol(k)]); });
+  } else {
+    const [x, y] = nxy(node(S.at)); wx = x + R0 * 0.95; wy = y - R0 * 1.02;
+    CREW_IDS.forEach((k, i) => { const a = Math.PI * (1.02 + i * 0.16); crew.push([x + Math.cos(a) * R0 * (cold ? 1.2 : 1.5), y + Math.sin(a) * R0 * (cold ? 1.05 : 1.3) + (REDUCE ? 0 : Math.sin(now / 420 + i) * 0.8), crewCol(k)]); });
+  }
+  return { wx, wy, crew, me, cold, walking:!!tg };
+}
+function drawParty(g, now){
+  const P = partySpots(now);
+  P.crew.forEach(([x, y, c]) => {
+    g.fillStyle = PAL.shadow; g.beginPath(); g.ellipse(x, y + 4.5, 4.2, 1.6, 0, 0, TAU); g.fill();
+    g.fillStyle = c; g.beginPath(); g.arc(x, y, 3.8, 0, TAU); g.fill(); g.strokeStyle = CV.surface; g.lineWidth = 1.3; g.stroke();
+  });
+  const shiver = P.cold && !REDUCE ? Math.sin(now / 28) * 0.9 : 0;
+  drawWren(g, P.wx + shiver, P.wy, R0 * 0.95, P.me.color, now, P.walking);
+}
+
+/* ---------- 새 떼(징조) — 눌러서 잡는다 ---------- */
+function signPos(sg, t){
+  const p = clamp((t - sg.born) / sg.life, 0, 1);
+  const D = sg.kind === 'winter' ? [-0.1, 0.07] : sg.kind === 'storm' ? [-0.13, -0.015] : [0.03, -0.02];
+  const wx = sg.kind === 'good' ? Math.sin(t / 260) * 0.012 : Math.sin(t / 420 + sg.x * 9) * 0.006;
+  const wy = sg.kind === 'good' ? Math.cos(t / 300) * 0.01 : Math.sin(t / 380 + sg.y * 7) * 0.006;
+  return [clamp(sg.x + D[0] * (p - 0.5) + wx, 0.04, 0.96) * MW, clamp(sg.y + D[1] * (p - 0.5) + wy, 0.06, 0.94) * MH];
+}
+function birdM(g, x, y, s, flap, col, edge){
+  const h = s * (0.25 + 0.5 * flap);
+  const path = () => { g.beginPath(); g.moveTo(x - s, y - h * 0.15); g.quadraticCurveTo(x - s * 0.5, y - h, x, y); g.quadraticCurveTo(x + s * 0.5, y - h, x + s, y - h * 0.15); };
+  if (edge){ g.strokeStyle = edge; g.lineWidth = Math.max(2.6, s * 0.42); path(); g.stroke(); }
+  g.strokeStyle = col; g.lineWidth = Math.max(1.6, s * 0.26); path(); g.stroke();
+}
+function flock(g, x, y, t, n, col, edge){
+  const pos = [[0, 0], [9, -6], [9, 6], [18, -12], [18, 12]];
+  g.lineCap = 'round';
+  for (let i = 0; i < n; i++){ const [ox, oy] = pos[i], flap = REDUCE ? 0.5 : (Math.sin(t / 105 + i * 1.3) + 1) / 2; birdM(g, x - 8 + ox, y + oy, 6.5, flap, col, edge); }
+  g.lineCap = 'butt';
+}
+function star(g, x, y, r, col){ g.fillStyle = col; g.beginPath(); for (let i = 0; i < 8; i++){ const a = i * Math.PI / 4, rr = i % 2 ? r * 0.38 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.closePath(); g.fill(); }
+function magpie(g, x, y, t){
+  const yy = y + 4 - (REDUCE ? 0 : Math.abs(Math.sin(t / 220)) * 3);
+  if (PAL.crowEdge !== 'rgba(255,255,255,0)'){ g.strokeStyle = PAL.crowEdge; g.lineWidth = 2; g.beginPath(); g.ellipse(x, yy, 7.6, 5, -0.2, 0, TAU); g.stroke(); }
+  g.fillStyle = PAL.crow; g.beginPath(); g.ellipse(x, yy, 7, 4.5, -0.2, 0, TAU); g.fill();
+  g.beginPath(); g.arc(x + 6, yy - 4, 3.2, 0, TAU); g.fill();
+  g.beginPath(); g.moveTo(x - 5, yy); g.lineTo(x - 16, yy - 5); g.lineTo(x - 15, yy - 1.5); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(x + 9, yy - 4.6); g.lineTo(x + 12.5, yy - 3.8); g.lineTo(x + 9, yy - 3); g.fill();
+  g.fillStyle = '#FFFFFF'; g.beginPath(); g.ellipse(x + 1, yy + 1.5, 3.6, 2.2, -0.2, 0, TAU); g.fill();
+  g.beginPath(); g.ellipse(x - 3, yy - 2.2, 2.6, 1.2, -0.3, 0, TAU); g.fill();
+  star(g, x + 11, y - 13, 3.4 + (REDUCE ? 0 : Math.sin(t / 150) * 1.2), CV.gold);
+}
+function drawSigns(g, t, dtMs, frozen){
+  SIGNS = SIGNS.filter((sg) => { const alive = t - sg.born < sg.life; if (!alive && S && !frozen) S.stats.signsMissed++; return alive || frozen; });
+  SIGNS.forEach((sg) => {
+    if (frozen) sg.born += dtMs;
+    const [x, y] = signPos(sg, t), p = clamp((t - sg.born) / sg.life, 0, 1), left = 1 - p;
+    const a = clamp(Math.min((t - sg.born) / 300, left * 5), 0, 1);
+    const col = sg.kind === 'good' ? CV.gold : sg.kind === 'winter' ? CV.accent : CV.risk;
+    g.globalAlpha = a * (0.13 + (REDUCE ? 0 : 0.06 * Math.sin(t / 160))); g.fillStyle = col; g.beginPath(); g.arc(x, y, 25, 0, TAU); g.fill();
+    g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = 2.6; g.lineCap = 'round';
+    g.beginPath(); g.arc(x, y, 27, -Math.PI / 2, -Math.PI / 2 + TAU * left); g.stroke(); g.lineCap = 'butt';   // 남은 시간
+    if (sg.kind === 'winter') flock(g, x, y, t, 5, PAL.crow, PAL.crowEdge === 'rgba(255,255,255,0)' ? null : PAL.crowEdge);
+    else if (sg.kind === 'storm') flock(g, x, y, t, 3, PAL.gull, PAL.gullEdge);
+    else magpie(g, x, y, t);
+    g.globalAlpha = 1;
+  });
+}
+
+/* ---------- 효과 ---------- */
+let FX = [];
+const FX_LIFE = { spark:1100, puff:1300, road:1700, gust:1500, eagle:2600, feather:3200, ripple:1300 };
+function fx(kind, o){
+  FX.push(Object.assign({ kind, born:nowMs(), life:FX_LIFE[kind] || 1200, seed:Math.random() * 100 }, o || {}));
+  if (FX.length > 24) FX.splice(0, FX.length - 24);
+}
+function eagleShape(g, x, y, s, flap, col){
+  const w = s, lift = (flap - 0.5) * s * 0.35;
+  g.fillStyle = col; g.beginPath();
+  g.moveTo(x - w, y - lift); g.quadraticCurveTo(x - w * 0.55, y - s * 0.28 - lift * 0.5, x - w * 0.18, y - s * 0.08);
+  g.lineTo(x - w * 0.1, y - s * 0.2); g.lineTo(x + w * 0.02, y - s * 0.24); g.lineTo(x + w * 0.1, y - s * 0.18);   // 머리
+  g.lineTo(x + w * 0.18, y - s * 0.08); g.quadraticCurveTo(x + w * 0.55, y - s * 0.28 - lift * 0.5, x + w, y - lift);
+  g.quadraticCurveTo(x + w * 0.5, y + s * 0.02, x + w * 0.12, y + s * 0.1); g.lineTo(x + w * 0.16, y + s * 0.3); g.lineTo(x - w * 0.16, y + s * 0.3);   // 꽁지
+  g.lineTo(x - w * 0.12, y + s * 0.1); g.quadraticCurveTo(x - w * 0.5, y + s * 0.02, x - w, y - lift); g.closePath(); g.fill();
+}
+function feather(g, x, y, s, rot, col){
+  g.save(); g.translate(x, y); g.rotate(rot);
+  g.fillStyle = col; g.beginPath(); g.moveTo(0, -s); g.quadraticCurveTo(s * 0.42, -s * 0.2, 0, s * 0.8); g.quadraticCurveTo(-s * 0.42, -s * 0.2, 0, -s); g.fill();
+  g.strokeStyle = CV.surface; g.lineWidth = 1; g.beginPath(); g.moveTo(0, -s * 0.9); g.lineTo(0, s); g.stroke();
+  g.restore();
+}
+function drawFX(g, t){
+  FX = FX.filter((f) => t - f.born < f.life);
+  FX.forEach((f) => {
+    const p = clamp((t - f.born) / f.life, 0, 1), e = easeOut(p);
+    const [x, y] = f.x !== undefined ? [f.x, f.y] : f.at && S.map.nodes[f.at] ? nxy(node(f.at)) : bandXY();
+    if (f.kind === 'ripple'){
+      g.strokeStyle = CV.accent; g.lineWidth = 2;
+      for (let i = 0; i < 2; i++){ const q = clamp(p * 1.3 - i * 0.3, 0, 1); if (q <= 0 || q >= 1) continue; g.globalAlpha = 1 - q; g.beginPath(); g.arc(x, y, R0 * (1 + q * 1.8), 0, TAU); g.stroke(); }
+    } else if (f.kind === 'spark'){
+      g.globalAlpha = (1 - p) * 0.8; g.strokeStyle = CV.gold; g.lineWidth = 2.4; g.beginPath(); g.arc(x, y, R0 * (1 + e * 1.3), 0, TAU); g.stroke();
+      g.globalAlpha = 1 - p;
+      for (let i = 0; i < 14; i++){ const a = i / 14 * TAU + f.seed, d = R0 * (0.8 + e * 1.7); star(g, x + Math.cos(a) * d, y + Math.sin(a) * d - e * 6, 3.2 * (1 - p) + 0.6, CV.gold); }
+    } else if (f.kind === 'puff'){
+      g.fillStyle = CV.muted;
+      for (let i = 0; i < 9; i++){ const a = i / 9 * TAU + f.seed, d = R0 * (0.55 + e * 1.0); g.globalAlpha = (1 - p) * 0.32; g.beginPath(); g.arc(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.7 - e * 16, 4 + e * 7, 0, TAU); g.fill(); }
+    } else if (f.kind === 'road'){
+      g.globalAlpha = 1 - p; g.strokeStyle = CV.gold; g.lineWidth = 3; g.beginPath(); g.arc(x, y, R0 * (1 + e * 2.2), 0, TAU); g.stroke();
+      const from = f.at && S.map.nodes[f.at] ? node(f.at) : null;
+      if (from) from.next.forEach((k) => { const ed = edgeOf(from.id, k); if (!ed) return; const G = edgeGeo(ed); const [px, py] = qp(G, e * 0.9); g.fillStyle = CV.gold; g.beginPath(); g.arc(px, py, 4 * (1 - p) + 1.5, 0, TAU); g.fill(); });
+    } else if (f.kind === 'gust'){
+      g.strokeStyle = CV.risk; g.lineWidth = 2; g.lineCap = 'round';
+      for (let i = 0; i < 3; i++){
+        g.globalAlpha = 1 - p; g.beginPath();
+        for (let j = 0; j <= 20; j++){ const tt = j / 20, a = f.seed + i * 2.1 + p * 5 + tt * 2.6, rr = R0 * (0.6 + e * 2.0) * (0.6 + 0.4 * tt); const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr * 0.7; j ? g.lineTo(px, py) : g.moveTo(px, py); }
+        g.stroke();
+      }
+      g.lineCap = 'butt';
+    } else if (f.kind === 'eagle'){
+      // 독수리가 그림자를 드리우며 지나간다
+      const sx = -0.12 * MW, sy = 0.1 * MH, ex = 1.12 * MW, ey = 0.04 * MH, cxp = x, cyp = y - R0 * 3.2;
+      const u = 1 - p, ax = u * u * sx + 2 * u * p * cxp + p * p * ex, ay = u * u * sy + 2 * u * p * cyp + p * p * ey;
+      const s = clamp(R0 * 2.1, 30, 58), flap = (Math.sin(t / 260) + 1) / 2;
+      g.globalAlpha = 0.16; g.fillStyle = '#000'; g.beginPath(); g.ellipse(ax + 26, ay + R0 * 3, s * 0.95, s * 0.2, 0, 0, TAU); g.fill();
+      g.globalAlpha = 0.92; eagleShape(g, ax, ay, s, flap, PAL.eagle);
+      if (p > 0.42 && p < 0.75){ const q = (p - 0.42) / 0.33; g.globalAlpha = 1 - q; g.strokeStyle = PAL.stone2; g.lineWidth = 3; g.beginPath(); g.arc(x, y, R0 * (1 + q * 1.6), 0, TAU); g.stroke(); }
+    } else if (f.kind === 'feather'){
+      const [bx, by] = bandXY(), x0 = bx + 70, y0 = -14, fxp = x0 + (bx - x0) * e + Math.sin(p * 9) * 16, fyp = y0 + (by - R0 - y0) * e;
+      g.globalAlpha = p < 0.85 ? 1 : (1 - p) / 0.15; feather(g, fxp, fyp, 11, Math.sin(p * 8) * 0.7, f.color || CV.accent);
+      if (p > 0.8){ const q = (p - 0.8) / 0.2; g.globalAlpha = 1 - q; g.strokeStyle = f.color || CV.accent; g.lineWidth = 3; g.beginPath(); g.arc(bx, by - R0, R0 * (0.8 + q * 1.4), 0, TAU); g.stroke(); }
+    }
+    g.globalAlpha = 1;
+  });
+}
+
+/* ---------- 눈 · 하루의 빛 · 밤 불빛 · 해와 달 ---------- */
+function snowStep(arr, dt, W, H, heavy){
+  const want = REDUCE ? 20 : heavy ? 170 : Math.round(clamp(W * H / 7000, 40, 95));
+  while (arr.length < want) arr.push({ x:Math.random() * W, y:Math.random() * H, r:0.8 + Math.random() * 1.9, v:12 + Math.random() * 22, ph:Math.random() * TAU });
+  if (arr.length > want) arr.length = want;
+  const wind = heavy ? 42 : 9;
+  arr.forEach((f) => { f.y += f.v * (heavy ? 1.7 : 1) * dt; f.x += (wind + Math.sin(f.ph + f.y * 0.02) * 8) * dt; if (f.y > H + 4){ f.y = -4; f.x = Math.random() * W; } if (f.x > W + 4) f.x = -4; });
+}
+function snowDraw(g, arr){
+  const edge = PAL.snowEdge !== 'rgba(0,0,0,0)';
+  arr.forEach((f) => {
+    g.globalAlpha = 0.55 + f.r * 0.18; g.beginPath(); g.arc(f.x, f.y, f.r, 0, TAU); g.fillStyle = PAL.snow; g.fill();
+    if (edge && f.r > 1.3){ g.strokeStyle = PAL.snowEdge; g.lineWidth = 0.6; g.stroke(); }
+  });
+  g.globalAlpha = 1;
+}
+function todK(f){
+  const night = f < 0.15 ? 0.62 * (1 - f / 0.15) : f < 0.62 ? 0 : f < 0.8 ? 0.62 * (f - 0.62) / 0.18 : 0.62;
+  const warm = f < 0.15 ? Math.sin(Math.PI * f / 0.15) * 0.75 : f >= 0.6 && f < 0.82 ? Math.sin(Math.PI * (f - 0.6) / 0.22) : 0;
+  return { night, warm };
+}
+function todTint(g, f, W, H){
+  const k = todK(f);
+  if (k.warm > 0.01){ const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, `rgba(${PAL.warm},${0.3 * k.warm})`); gr.addColorStop(0.6, `rgba(${PAL.warm},${0.1 * k.warm})`); gr.addColorStop(1, `rgba(${PAL.warm},0)`); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+  if (k.night > 0.01){ g.save(); g.globalCompositeOperation = 'multiply'; g.globalAlpha = k.night * (isDark() ? 0.8 : 1); g.fillStyle = PAL.night; g.fillRect(0, 0, W, H); g.restore(); }
+  return k;
+}
+function glow(g, x, y, r, rgb, a){ const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${rgb},${a})`); gr.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+function nightLights(g, now, k){
+  if (k.night < 0.12) return;
+  const a = clamp((k.night - 0.12) / 0.4, 0, 1);
+  Object.values(S.map.nodes).forEach((n) => {
+    if (n.type !== 'village' || n.fossil) return;
+    const [x, y] = nxy(n), seen = n.known || n.visited;
+    housesOf(x, y).forEach((h, i) => {
+      const fl = REDUCE ? 1 : 0.85 + 0.15 * Math.sin(now / 230 + i * 2 + x);
+      glow(g, h.x, h.y - h.h * 0.05, 13, '255,196,110', 0.55 * a * fl * (seen ? 1 : 0.4));
+      g.globalAlpha = a * (seen ? 1 : 0.5); g.fillStyle = PAL.win; g.fillRect(h.x - h.w * 0.1, h.y - h.h * 0.12, h.w * 0.2, h.h * 0.34); g.globalAlpha = 1;
+    });
+  });
+  // 머무는 자리의 모닥불 — 연료가 있어야 핀다
+  if ((S.mode === 'enc' || S.mode === 'busy') && S.res.fuel > 0.5 && node(S.at).type !== 'village'){
+    const [x, y] = nxy(node(S.at)), fx0 = x - R0 * 1.55, fy0 = y + R0 * 0.2, fl = REDUCE ? 1 : 0.8 + 0.2 * Math.sin(now / 70) * Math.sin(now / 113);
+    glow(g, fx0, fy0, 26 * fl, '255,150,70', 0.5 * a);
+    g.fillStyle = '#F28A2E'; g.globalAlpha = a; g.beginPath(); g.moveTo(fx0 - 4, fy0 + 3); g.quadraticCurveTo(fx0, fy0 - 10 * fl, fx0 + 4, fy0 + 3); g.closePath(); g.fill();
+    g.fillStyle = '#FFD36B'; g.beginPath(); g.moveTo(fx0 - 2, fy0 + 3); g.quadraticCurveTo(fx0, fy0 - 5 * fl, fx0 + 2, fy0 + 3); g.closePath(); g.fill(); g.globalAlpha = 1;
+  }
+}
+function drawSky(g, f, W, top, bottom){
+  const arc = (p) => [W * (0.05 + 0.9 * p), top + (bottom - top) * (1 - Math.sin(Math.PI * clamp(p, 0, 1)))];
+  const sp = (f - 0.04) / 0.76;
+  if (sp > 0 && sp < 1){ const [x, y] = arc(sp); glow(g, x, y, 22, '242,180,60', 0.45); g.fillStyle = PAL.sun; g.beginPath(); g.arc(x, y, 7.5, 0, TAU); g.fill(); }
+  const mp = f >= 0.68 ? (f - 0.68) / 0.46 : f < 0.14 ? (f + 0.32) / 0.46 : -1;
+  if (mp > 0 && mp < 1){
+    const [x, y] = arc(mp); glow(g, x, y, 18, '235,232,215', 0.35);
+    g.fillStyle = PAL.moon; g.beginPath(); g.arc(x, y, 6.5, 0, TAU); g.fill();
+    g.fillStyle = hexA(PAL.night, 0.85); g.beginPath(); g.arc(x + 2.8, y - 1.6, 5.4, 0, TAU); g.fill();
+  }
+}
+
+/* ---------- 지도 한 장 ---------- */
+let SNOW = [], lastDraw = 0;
+function drawWorld(g, now, frozenSigns, frozenSnow){
+  const dtMs = clamp(now - (lastDraw || now), 0, 120); lastDraw = now;
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  buildBG(); g.drawImage(BG, 0, 0, MW, MH);
+  drawLive(g, now);
+  drawEdges(g, now);
+  drawNodes(g, now);
+  buildFog(); g.drawImage(FOG, REDUCE ? 0 : Math.sin(now / 3200) * 2, 0, MW, MH);
+  drawParty(g, now);
+  drawSigns(g, now, dtMs, frozenSigns);
+  snowStep(SNOW, frozenSnow ? 0 : dtMs / 1000, MW, MH, S.winter.on); snowDraw(g, SNOW);
+  const f = S.day - Math.floor(S.day), k = todTint(g, f, MW, MH);
+  nightLights(g, now, k);
+  drawFX(g, now);
+  drawSky(g, f, MW, 12, MH * 0.11);
+  if (S.winter.on){ buildFrost(); g.drawImage(FROST, 0, 0, MW, MH); }
+}
+
+/* ---------- 시작 화면의 풍경 ---------- */
+let HERO = null, heroKey = '', HSNOW = [], heroLast = 0;
+function drawHero(hc, now){
+  const g = hc.getContext('2d'), r = hc.getBoundingClientRect();
+  if (r.width < 10 || r.height < 10) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), W = r.width, H = r.height;
+  if (hc.width !== Math.round(W * dpr) || hc.height !== Math.round(H * dpr)){ hc.width = Math.round(W * dpr); hc.height = Math.round(H * dpr); heroKey = ''; }
+  const key = [W, H, dpr, isDark() ? 'd' : 'l'].join('|');
+  const bx = W * 0.16, by = H * 0.8, bs = Math.min(42, H * 0.26);
+  if (key !== heroKey){
+    heroKey = key; if (!HERO) HERO = document.createElement('canvas');
+    HERO.width = Math.round(W * dpr); HERO.height = Math.round(H * dpr);
+    const h = HERO.getContext('2d'); h.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const rnd = mulberry(1636);
+    paintLand(h, W, H, rnd, 0.42);
+    for (let i = 0; i < 6; i++) drawGorse(h, W * (0.32 + rnd() * 0.5), H * (0.6 + rnd() * 0.3), bs * (0.3 + rnd() * 0.25), rnd, false);
+    // 봄 나루 — 아득히
+    h.globalAlpha = 0.55; h.fillStyle = PAL.blossom2; [[0, 0, 7], [6, -4, 6], [-5, -5, 5], [2, -9, 6]].forEach(([dx, dy, rr]) => { h.beginPath(); h.arc(W * 0.9 + dx, H * 0.6 + dy, rr, 0, TAU); h.fill(); }); h.globalAlpha = 1;
+    // 덤불에서 봄 쪽으로 난 발자국
+    const G = { x1:bx + bs * 0.9, y1:by + 2, cx:W * 0.55, cy:H * 0.98, x2:W * 0.88, y2:H * 0.68, len:W * 0.75 };
+    footprints(h, G, 1);
+    drawGorse(h, bx, by, bs, rnd, false);
+  }
+  const dt = clamp(now - (heroLast || now), 0, 120) / 1000; heroLast = now;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.drawImage(HERO, 0, 0, W, H);
+  const f = ((now / 1000 + 14) % 48) / 48;      // 48초에 하루 — 낮에서 시작
+  snowStep(HSNOW, dt, W, H, false); snowDraw(g, HSNOW);
+  const k = todTint(g, f, W, H);
+  drawSky(g, f, W, 10, H * 0.32);
+  // 덤불 위의 굴뚝새 — 이따금 깡충
+  const hopP = (now % 3400) / 3400, hop = REDUCE ? 0 : (hopP < 0.12 ? Math.sin(hopP / 0.12 * Math.PI) * 7 : 0);
+  drawWren(g, bx + bs * 0.1, by - bs * 0.95 - hop, Math.min(26, bs * 0.7), SELVES[SELF().name].color, now, false);
+  if (k.night > 0.3){ glow(g, bx + bs * 1.6, by + 2, 20, '255,150,70', 0.4 * (k.night - 0.2)); }
 }
 
 /* =================== 5-ui: 화면 · 지도 · 문항 · 결산 · 다듬기 · 저장 · 시험 갈고리 =================== */
@@ -1497,7 +2344,9 @@ function readColors(){
   const cs = getComputedStyle(document.documentElement), g = (k) => cs.getPropertyValue(k).trim();
   CV = { bg:g('--bg'), surface:g('--surface'), field:g('--field'), ink:g('--ink'), muted:g('--muted'), line:g('--line'), accent:g('--accent'),
     accentSoft:g('--accent-soft'), gold:g('--gold'), risk:g('--risk'), good:g('--good'), eagle:g('--eagle'), grid:g('--grid'), snow:g('--snow'),
-    font:getComputedStyle(document.body).fontFamily };
+    font:getComputedStyle(document.body).fontFamily, display:g('--f-display') };
+  PAL = document.documentElement.dataset.theme === 'dark' ? PAL_D : PAL_L;
+  bgKey = fogKey = frostKey = heroKey = '';
 }
 
 /* ---------- 알림 ---------- */
@@ -1514,7 +2363,6 @@ function banner(t, s, ms){
   $('banner').hidden = false; clearTimeout(bannerT);
   bannerT = setTimeout(() => { $('banner').hidden = true; }, ms || 2600);
 }
-function mapToast(msg){ const el = $('mapToast'); el.textContent = msg; el.classList.add('on'); clearTimeout(mapToast.t); mapToast.t = setTimeout(() => el.classList.remove('on'), 2600); }
 
 /* ---------- 저장 ---------- */
 let saveTimer = 0;
@@ -1523,7 +2371,7 @@ function snapshot(){
   out.cur = S && !S.over ? JSON.parse(JSON.stringify(S)) : null;
   SAVE.cur = out.cur;
   let s = JSON.stringify(out);
-  if (s.length > 19500 && out.cur){ out.cur.log = out.cur.log.slice(-20); s = JSON.stringify(out); }
+  if (s.length > 19500 && out.cur){ out.cur.log = out.cur.log.slice(-20); out.cur.story = (out.cur.story || []).slice(-20); s = JSON.stringify(out); }
   if (s.length > 19500){ out.runs = out.runs.slice(0, 5); s = JSON.stringify(out); }
   if (s.length > 19500){ out.cur = null; s = JSON.stringify(out); }
   return s;
@@ -1543,8 +2391,11 @@ function mergeSave(d){
   SAVE.self = Object.assign({ A:0, B:0, C:0, lens:{}, name:'wren', centerDays:0 }, d.self || {});
   SAVE.runs = Array.isArray(d.runs) ? d.runs : [];
   SAVE.seen = d.seen || {};
-  PR = Object.assign({}, DEFAULTS, d.params || {});
-  if (!LEVELS[SAVE.level]) SAVE.level = 'ace';
+  const p0 = Object.assign({}, d.params || {});
+  if (p0.dayAce !== undefined && p0.dayLen === undefined) p0.dayLen = p0.dayAce;
+  SAVE.params = Object.fromEntries(Object.entries(p0).filter(([k, v]) => k in DEFAULTS && isFinite(Number(v)) && Number(v) !== DEFAULTS[k]));
+  PR = Object.assign({}, DEFAULTS, SAVE.params);
+  delete SAVE.level;
   dirty.lobby = true;
 }
 function loadSave(){
@@ -1579,15 +2430,15 @@ function measureHud(){ const h = $('hud').getBoundingClientRect().height; docume
 /* ---------- 시작 화면 ---------- */
 function renderLobby(){
   dirty.lobby = false;
-  $('levelSeg').querySelectorAll('[data-level]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.level === SAVE.level)));
-  $('lvDesc').textContent = LEVELS[SAVE.level].desc;
+  $('lvDesc').textContent = `봄까지 ${PR.seasonDays}일 · 하루 ${fmtN(PR.dayLen)}초 · 시계는 멈추지 않는다. 같은 벌판, 다른 물음 — 무엇을 묻고 어디로 가느냐가 이 겨울의 이야기가 된다.`;
   $('btnResume').hidden = !SAVE.cur;
   $('selfCard').innerHTML = selfCardHtml(true);
   const runs = SAVE.runs;
   $('runsList').innerHTML = runs.length ? runs.slice(0, 8).map((r) => {
     const d = new Date(r.t);
     return `<div class="run"><span class="chip ${r.kind === 'win' ? 'good' : r.kind === 'stuck' ? 'mute' : 'risk'}">${esc(RESULT[r.kind] ? RESULT[r.kind].t : r.kind)}</span>
-      <div><b>${esc(r.label || (SELVES[r.self] || SELVES.wren).name)}</b> · ${LEVELS[r.level] ? LEVELS[r.level].name : ''} · ${fmtN(r.days)}일
+      <div><b>${esc(r.label || (SELVES[r.self] || SELVES.wren).name)}</b> · ${fmtN(r.days)}일
+      ${ENDING[r.kind] ? `<span class="rend">${esc(ENDING[r.kind].replace('{self}', (SELVES[r.self] || SELVES.wren).name))}</span>` : ''}
       <div class="rmeta">${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} · 길 ${r.roads} · 날씨 ${r.wx} · 독수리 ${r.ai}</div></div></div>`;
   }).join('') : '<p class="empty">아직 지나온 겨울이 없어요. 첫 겨울의 물음들이 자아의 씨앗이 됩니다.</p>';
 }
@@ -1611,12 +2462,21 @@ function selfMapSvg(sz){
     ${q(sz * 0.25, sz * 0.2, 'durumi')}${q(sz * 0.75, sz * 0.2, 'olppaemi')}${q(sz * 0.25, sz * 0.88, 'jebi')}${q(sz * 0.75, sz * 0.88, 'kkachi')}
     <circle cx="${x}" cy="${y}" r="5" fill="${SELVES[s.name].color}"/></svg>`;
 }
-$('levelSeg').addEventListener('click', (e) => { const b = e.target.closest('[data-level]'); if (!b) return; SAVE.level = b.dataset.level; save(); renderLobby(); });
-$('btnNew').onclick = () => { newSeason(SAVE.level); paused = false; $('pauseCover').hidden = true; show('game'); save(true); if (!SAVE.seen.help){ SAVE.seen.help = true; openHelp(); } };
+function resetScene(){ narrClear(); $('chap').classList.remove('on'); FX = []; SIGNS = []; SNOW = []; lastRes = null; bgKey = fogKey = ''; }
+function startSeason(){
+  resetScene();
+  newSeason(); paused = false; $('pauseCover').hidden = true; show('game'); save(true);
+  if (!SAVE.seen.help){ SAVE.seen.help = true; openHelp(); }
+}
+$('btnNew').onclick = () => startSeason();
 $('btnResume').onclick = () => {
   if (!SAVE.cur) return;
-  S = SAVE.cur; R = mulberry((S.seed ^ Math.floor(S.day * 997)) >>> 0); SIGNS = []; PB = null;
+  S = SAVE.cur; R = mulberry((S.seed ^ Math.floor(S.day * 997)) >>> 0); PB = null;
+  if (!Array.isArray(S.story)) S.story = [];
+  resetScene();
   show('game'); setPaused(true);
+  chapter(`${Math.floor(S.day) + 1}일째`, '다시, 겨울 속으로', true);
+  const last = S.story.filter((x) => x.tone !== 'chap').slice(-1)[0]; if (last) narrate(last.t, last.tone);
 };
 $('btnHelp').onclick = () => openHelp();
 $('btnTune').onclick = () => openTune();
@@ -1628,11 +2488,11 @@ function renderHud(){
   const res = S.res, dayN = Math.floor(S.day) + 1;
   $('hDayBar').style.width = ((S.day % 1) * 100).toFixed(1) + '%';
   const sigNow = [dayN, Math.floor(res.food), Math.floor(res.fuel), r1(res.jeong), r1(res.morale), Math.round(res.unique), SELF().name, aiPrefix(), S.winter.on, S.winter.warned, S.speed, paused,
-    S.enc && S.enc.type === 'sea' && S.enc.stormKnown ? Math.ceil(S.enc.stormAt - S.day) : '', Math.ceil(S.winter.start - S.day)].join('|');
+    S.enc && S.enc.type === 'sea' && S.enc.stormKnown ? Math.ceil(S.enc.stormAt - S.day) : '', Math.ceil(S.winter.start - S.day), TOD(S.day)].join('|');
   if (sigNow === hudSig) return;
   hudSig = sigNow;
   $('hDay').textContent = `${dayN}일째`;
-  $('hSeason').textContent = `/ ${PR.seasonDays}일 · ${LEVELS[S.level].name}`;
+  $('hSeason').textContent = `/ ${PR.seasonDays}일 · ${TOD_NAME[TOD(S.day)]}`;
   const cell = (cls, l, v, frac, low) => `<div class="res ${cls}"><span class="rl">${l}</span><span class="rv${low ? ' low' : ''}">${v}</span><span class="rb"><i style="width:${clamp(frac, 0, 1) * 100}%"></i></span></div>`;
   $('hRes').innerHTML = cell('', '식량', Math.floor(res.food), res.food / 40, res.food < 5) + cell('', '연료', Math.floor(res.fuel), res.fuel / 30, res.fuel < 4)
     + cell('', '정성', fmtN(r1(res.jeong)), res.jeong / 10, res.jeong < 1) + cell('', '사기', fmtN(r1(res.morale)), res.morale / 10, res.morale < 3)
@@ -1659,7 +2519,7 @@ $('btnResumeClock').onclick = () => setPaused(false);
 document.addEventListener('visibilitychange', () => { if (document.hidden && screen === 'game' && S && !S.over && !paused){ setPaused(true); hiddenPause = true; } });
 $('btnLeave').onclick = () => { if (!S) return; setPaused(true); $('leaveOv').hidden = false; };
 $('leaveNo').onclick = () => { $('leaveOv').hidden = true; setPaused(false); };
-$('leaveYes').onclick = () => { $('leaveOv').hidden = true; closeProblem(true); save(true); show('lobby'); };
+$('leaveYes').onclick = () => { $('leaveOv').hidden = true; closeProblem(true); save(true); narrClear(); show('lobby'); };
 $('leaveEnd').onclick = () => { $('leaveOv').hidden = true; setPaused(false); endSeason('quit'); };
 
 /* ---------- 패널 ---------- */
@@ -1745,6 +2605,20 @@ function winterBlock(){
     <div class="acts">${pc.done ? `<span class="chip ${pc.done === 'ok' ? 'good' : 'risk'}">${pc.done === 'ok' ? '버텼다' : '흔들렸다'}</span>` : `<button class="btn xs" data-act="reflect" data-i="${i}" ${PB ? 'disabled' : ''}>되돌아본다</button>`}</div></div>`).join('');
   return `<div class="sec"><div class="clockchip urgent"><b>한겨울</b> — ${Math.max(0, Math.ceil(S.winter.start + S.winter.len - S.day))}일 남음. 이동 · 결정 · 새 근거가 멈췄다. 남은 동사는 질문 하나 — 날씨를 다시 묻거나 지난 물음을 되돌아보자.</div>${items}</div>`;
 }
+function crewPick(seed, n){ return shuffleR(mulberry((seed * 2654435761) >>> 0), CREW_IDS).slice(0, n); }
+function sceneHtml(key, seed){
+  const sc = SCENE[key]; if (!sc) return '';
+  const who = crewPick(seed, 2);
+  return `<div class="scene"><p class="sc-intro">${esc(sc.intro[seed % sc.intro.length])}</p>`
+    + who.map((k) => `<p class="crew"><b style="color:${crewCol(k)}">${CREW[k].name}</b><span>“${esc(sc.lines[k])}”</span><em>${esc(CREW_TAG[k])}</em></p>`).join('') + '</div>';
+}
+function taleHtml(n, title){
+  const items = (S.story || []).slice(-n);
+  if (!items.length) return '';
+  return `<div class="sec tale"><h3>${title || '지나온 이야기'}</h3>` + items.map((x) => x.tone === 'chap'
+    ? `<p class="tl chap">${esc(x.t)}</p>`
+    : `<p class="tl t-${x.tone || 'plain'}"><time>${Math.floor(x.d) + 1}일</time>${esc(x.t)}</p>`).join('') + '</div>';
+}
 function renderPanel(){
   const P = $('panel'), sc = P.scrollTop;
   let h = '';
@@ -1752,56 +2626,63 @@ function renderPanel(){
   if (m === 'enc' && S.enc){
     const E = S.enc;
     if (E.type === 'start'){
-      h += `<div class="ph"><span class="chip">${ENC.start.icon} 출발</span><h2>${ENC.start.title}</h2></div><p class="sit">${ENC.start.sit}</p>${clockHtml()}`;
+      h += `<div class="ph"><span class="chip">출발</span><h2>${ENC.start.title}</h2></div>${sceneHtml('start', E.seed)}<p class="sit">${ENC.start.sit}</p>${clockHtml()}`;
       h += '<div class="sec"><h3>떠 있는 문제 조각</h3>' + E.pieces.map((pc, i) => `<div class="card"><b style="color:${LENS[pc.lens].color}">${LENS[pc.lens].name}</b> · ${FORMS[pc.form].name} <span class="chip mute">${ENC[pc.type].name}</span>
         <p>${pc.form === 'how' ? '당장 풀어 보는 물음 — 자아가 \'어떻게\' 쪽으로' : pc.form === 'why' ? '이유를 캐는 물음 — 자아가 \'왜\' 쪽으로' : '무엇인지 알아보는 물음'}</p>
         <div class="acts">${pc.done ? `<span class="chip ${pc.done === 'ok' ? 'good' : 'risk'}">${pc.done === 'ok' ? '씨앗이 되었다' : '첫 날씨가 되었다'}</span>` : `<button class="btn xs" data-act="start" data-i="${i}" ${PB ? 'disabled' : ''}>풀어 본다</button>`}</div></div>`).join('') + '</div>';
       h += `<div class="sec"><h3>결정</h3>${optCard(ENC.start.opts[0])}</div>`;
-      h += selfSection();
+      h += selfSection() + taleHtml(5);
     } else if (E.fossil){
-      h += `<div class="ph"><span class="chip mute">${ENC[E.type].icon} ${ENC[E.type].name} · 화석</span><h2>${ENC.fossil.title}</h2></div><p class="sit">${ENC.fossil.sit}</p>`;
+      h += `<div class="ph"><span class="chip mute">${ENC[E.type].name} · 화석</span><h2>${ENC.fossil.title}</h2></div>${sceneHtml('fossil', E.seed)}<p class="sit">${ENC.fossil.sit}</p>`;
       h += `<div class="sec"><h3>결정</h3><div class="opt"><div class="opt-top"><b>독수리의 답대로 지나간다</b><span class="est">확실</span></div><p class="oeff">고유함 −${PR.fossilUnique} · 아무것도 자라지 않는다</p><button class="btn sm" data-act="decide" data-opt="pass" ${busyNow() ? 'disabled' : ''}>지나간다</button></div>
         <div class="opt"><div class="opt-top"><b>깨운다 — 왜?</b></div><p class="oeff">왜? 한 문항. 맞히면 이 자리가 다시 자라 보통의 조우가 된다. 틀리면 날씨가 남는다.</p><button class="btn primary sm" data-act="decide" data-opt="awaken" ${busyNow() ? 'disabled' : ''}>왜? 묻기</button></div></div>`;
+      h += taleHtml(5);
     } else {
       const def = ENC[E.type];
-      h += `<div class="ph"><span class="chip">${def.icon} ${def.name}</span><h2>${def.title}</h2></div><p class="sit">${def.sit}</p>${clockHtml()}`;
+      h += `<div class="ph"><span class="chip">${def.name}</span><h2>${def.title}</h2><span class="chip mute">${TOD_NAME[TOD(S.day)]}</span></div>${sceneHtml(E.type, E.seed)}<p class="sit">${def.sit}</p>${clockHtml()}`;
       h += winterBlock();
       if (S.prep) h += `<div class="clockchip">천천히 물음을 고르는 중… <div class="prog"><i data-live="prep" style="width:${pct(S.prep.done / S.prep.days)}%"></i></div></div>`;
       h += '<div class="sec"><h3>근거 — 렌즈마다 (날것은 늘 보이고, 다듬을수록 설명이 붙는다)</h3>' + def.lenses.map(lensCard).join('') + '</div>';
       h += '<div class="sec"><h3>결정 — 막대 폭이 좁을수록 근거가 단단하다</h3>' + def.opts.map(optCard).join('');
       if (def.extra && !E.extraDone) h += `<div class="opt"><div class="opt-top"><b>${def.extra.label}</b></div><p class="oeff">생활 렌즈를 읽은 만큼 연료가 더 모인다(지금 +${fmtN(r1(2 + 4 * lensQ('life')))})</p><button class="btn sm" data-act="extra" ${busyNow() ? 'disabled' : ''}>모은다</button></div>`;
       h += '</div>';
-      h += wxSection() + polyaSection() + selfSection();
+      h += wxSection() + polyaSection() + selfSection() + taleHtml(5);
     }
   } else if (m === 'route'){
     const from = node(S.at);
-    h += `<div class="ph"><h2>어디로 갈까</h2></div><p class="sit">지도에서 다음 자리를 누르거나 아래에서 고른다. ${S.pendingTravel ? `(지난 결정으로 이동 ${S.pendingTravel > 0 ? '+' : ''}${S.pendingTravel}일)` : ''}</p>`;
+    h += `<div class="ph"><h2>어디로 갈까</h2><span class="chip mute">${TOD_NAME[TOD(S.day)]}</span></div><p class="sit">${esc(FORK[Math.floor(hashS(S.at + S.seed) * FORK.length)])} ${S.pendingTravel ? `<span class="note">(지난 결정으로 이동 ${S.pendingTravel > 0 ? '+' : ''}${S.pendingTravel}일)</span>` : ''}</p>`;
+    h += taleHtml(3, '방금 지나온 이야기');
     h += winterBlock();
-    h += '<div class="sec">' + from.next.map((k) => {
+    h += '<div class="sec"><h3>갈 수 있는 곳 — 지도에서 눌러도 된다</h3>' + from.next.map((k) => {
       const n = node(k), known = n.known || n.type === 'goal';
       const info = [];
       if (n.fossil) info.push('독수리가 굳힌 자리');
       if (known && n.type !== 'goal'){ const rd = S.roads.filter((r) => r.type === n.type).length; if (rd) info.push(`길 ${rd}`); const w = wxOn(n.type).length; if (w) info.push(`날씨 ${w}겹`); }
       if (n.type === 'goal') info.push('여기 닿으면 겨울을 건넌다');
       const def = ENC[n.type];
-      return `<button class="route" data-act="route" data-to="${k}" ${S.winter.on ? 'disabled' : ''}><span class="ri">${known ? def.icon : '❔'}</span><span class="rm">${known ? def.name : '알 수 없는 곳'}${info.length ? `<small>${info.join(' · ')}</small>` : ''}</span><span class="rd">${fmtN(routeDays(k))}일</span></button>`;
+      const main = known ? (n.fossil ? `${def.name} — 잿빛 돌` : def.title) : '안개 너머';
+      const sub = known ? (n.fossil ? '' : def.name) : '알 수 없는 곳';
+      return `<button class="route" data-act="route" data-to="${k}" ${S.winter.on ? 'disabled' : ''}><span class="ri" style="color:${known ? tcol(n.type) : 'var(--muted)'}">${known ? def.icon : '❔'}</span><span class="rm">${main}<small>${[sub].concat(info).filter(Boolean).join(' · ')}</small></span><span class="rd">${fmtN(routeDays(k))}일</span></button>`;
     }).join('') + '</div>';
     h += wxSection() + polyaSection() + selfSection();
   } else if (m === 'travel'){
-    const to = node(S.travel.to), def = ENC[to.type];
-    h += `<div class="ph"><h2>가는 중</h2></div><div class="travel"><span class="big">${def.icon}</span> ${def.name}까지 <b data-live="travel">${fmtN(r1(Math.max(0, S.travel.days - S.travel.done)))}</b>일<div class="prog"><i data-live="travelbar" style="width:${pct(S.travel.done / S.travel.days)}%"></i></div></div>`;
-    h += '<p class="note">길 위에서도 시계는 흐른다 — 지도 위 징조를 잡거나, 날씨를 다시 물어 걷어 내자.</p>';
-    h += winterBlock() + wxSection() + polyaSection() + selfSection();
+    const to = node(S.travel.to), def = ENC[to.type], tod = TOD(S.day), wl = WALK[tod];
+    h += `<div class="ph"><h2>가는 중</h2><span class="chip mute">${TOD_NAME[tod]}</span></div><p class="sit">${esc(wl[Math.floor(S.day * 2) % wl.length])}</p>`;
+    h += `<div class="travel">${to.type === 'goal' ? '봄 나루' : def.title}까지 <b data-live="travel">${fmtN(r1(Math.max(0, S.travel.days - S.travel.done)))}</b>일<div class="prog"><i data-live="travelbar" style="width:${pct(S.travel.done / S.travel.days)}%"></i></div></div>`;
+    h += '<p class="note">길 위에서도 시계는 흐른다 — 지도 위를 지나는 새 떼를 잡거나, 날씨를 다시 물어 걷어 내자.</p>';
+    h += taleHtml(4) + winterBlock() + wxSection() + polyaSection() + selfSection();
   } else if (m === 'busy' && S.busy){
-    h += `<div class="ph"><h2>${esc(S.busy.text)}</h2></div><div class="prog"><i data-live="busy" style="width:${pct(1 - (S.busy.until - S.day) / S.busy.len)}%"></i></div><p class="note">끝나면 ${S.busy.back ? '조우로 돌아온다' : '다음 길을 고른다'}.</p>`;
-    h += winterBlock() + wxSection() + polyaSection() + selfSection();
+    const bl = BUSY[S.busy.text];
+    h += `<div class="ph"><h2>${esc(S.busy.text)}</h2><span class="chip mute">${TOD_NAME[TOD(S.day)]}</span></div>${bl ? `<p class="sit">${esc(bl[Math.floor(S.day * 2) % bl.length])}</p>` : ''}<div class="prog"><i data-live="busy" style="width:${pct(1 - (S.busy.until - S.day) / S.busy.len)}%"></i></div><p class="note">끝나면 ${S.busy.back ? '조우로 돌아온다' : '다음 길을 고른다'}.</p>`;
+    h += taleHtml(4) + winterBlock() + wxSection() + polyaSection() + selfSection();
   }
   P.innerHTML = h; P.scrollTop = sc;
   dirty.panel = false;
 }
 function computePanelSig(){
   if (!S) return '';
-  const a = [S.mode, S.at, Math.floor(S.day), !!PB, !!S.prep, S.winter.on, S.weathers.map((w) => w.id + w.str).join(','), S.polya.points, S.polya.open.join(','), SELF().name, aiPrefix(), S.sichungUsed];
+  const a = [S.mode, S.at, Math.floor(S.day), !!PB, !!S.prep, S.winter.on, S.weathers.map((w) => w.id + w.str).join(','), S.polya.points, S.polya.open.join(','), SELF().name, aiPrefix(), S.sichungUsed,
+    S.storyN || S.story.length, TOD(S.day), Math.floor(S.day * 2), isDark()];
   const E = S.enc;
   if (E && S.mode === 'enc'){
     a.push(E.type, E.fossil, E.freeUp, E.turn, E.borrowed, E.extraDone, E.stormKnown, E.type === 'sea' ? Math.ceil(E.stormAt - S.day) + (S.day >= E.stormAt ? 's' : '') + (S.day >= E.stormAt + 2 ? 'p' : '') : '', E.type === 'forest' ? (S.day >= E.duskAt) + String(r1(E.duskAt - S.day)) : '');
@@ -1851,8 +2732,9 @@ function showProblem(){
   const typeName = ctx.type && ENC[ctx.type] ? ENC[ctx.type].name : '';
   const titles = { weather:'날씨 다시 묻기', start:'첫 물음', reflect:'되돌아보기', awaken:'화석 깨우기 — 왜?' };
   $('pTitle').textContent = (titles[ctx.kind] || `${LENS[ctx.lens].name} · ${FORMS[ctx.form].name}`) + (typeName ? ` · ${typeName}` : '');
+  $('pWho').innerHTML = askerHtml(ctx);
   $('pQ').textContent = prob.prompt;
-  const hintOn = LEVELS[S.level].hint || S.polya.open.includes('unknown');
+  const hintOn = S.polya.open.includes('unknown');
   $('pHint').hidden = !(hintOn && prob.hint); $('pHint').textContent = prob.hint ? '실마리 — ' + prob.hint : '';
   let inp = '';
   if (prob.kind === 'num') inp = '<div class="ins"><label for="pA">답</label><input id="pA" inputmode="text" autocomplete="off" enterkeyhint="done" placeholder="예: 7.5 · −6 · 2/3"></div>';
@@ -1862,7 +2744,14 @@ function showProblem(){
     inp = '<div class="choices" id="pCh">' + prob.options.map((o, i) => `<button type="button" data-i="${i}" aria-pressed="false" class="${i === gone ? 'gone' : ''}">${esc(o)}</button>`).join('') + '</div>';
   }
   $('pIn').innerHTML = inp; $('pErr').textContent = ''; $('pFb').innerHTML = '';
-  $('pActs').innerHTML = '<button class="btn" id="pQuit" type="button">그만두기</button><button class="btn primary" id="pOk" type="button">확인</button>';
+  const buyHint = !hintOn && prob.hint;
+  $('pActs').innerHTML = (buyHint ? `<button class="btn ghost" id="pHintBuy" type="button" ${S.res.jeong >= PR.hintJeong ? '' : 'disabled'}>실마리 보기 · 정성 ${fmtN(PR.hintJeong)}</button><span style="flex:1"></span>` : '')
+    + '<button class="btn" id="pQuit" type="button">그만두기</button><button class="btn primary" id="pOk" type="button">확인</button>';
+  if (buyHint) $('pHintBuy').onclick = () => {
+    if (S.res.jeong < PR.hintJeong || PB.done) return;
+    S.res.jeong -= PR.hintJeong; S.stats.hints = (S.stats.hints || 0) + 1;
+    $('pHint').hidden = false; $('pHintBuy').remove(); hudSig = '';
+  };
   $('pQuit').onclick = () => quitProblem();
   $('pOk').onclick = () => submitProblem();
   const ch = $('pCh');
@@ -1873,6 +2762,15 @@ function showProblem(){
   });
   const first = $('pA'); if (first) setTimeout(() => first.focus(), 30);
   updateProbClock();
+}
+// 누가 묻는가 — 문항도 이야기 속에서 나온다
+function askerHtml(ctx){
+  const say = (k, tail) => `<b style="color:${crewCol(k)}">${CREW[k].name}</b>${josa(CREW[k].name, '이', '가').slice(CREW[k].name.length)} ${tail}`;
+  if (ctx.kind === 'weather') return '돌풍 속에서 같은 물음이 모양을 바꿔 다시 들린다.';
+  if (ctx.kind === 'reflect') return '한겨울 밤, 모닥불 곁에서 지난 물음을 되짚는다.';
+  if (ctx.kind === 'awaken') return `굳은 돌 앞에서 ${say('child', '묻는다 — 왜?')}`;
+  const k = ctx.form === 'why' ? 'child' : ctx.form === 'how' ? 'guide' : (ctx.lens === 'lore' || ctx.lens === 'hist') ? 'elder' : (ctx.lens === 'math' || ctx.lens === 'life') ? 'trader' : 'child';
+  return say(k, ctx.form === 'what' ? '묻는다.' : ctx.form === 'how' ? '셈을 청한다.' : '까닭을 묻는다.');
 }
 function updateProbClock(){
   if (!PB || $('probOv').hidden) return;
@@ -1921,102 +2819,93 @@ function closeProblem(){
 
 /* ---------- 지도 ---------- */
 const cv = $('map'), cx = cv.getContext('2d');
-let MW = 0, MH = 0, DPR = 1;
 function layoutMap(){
   const r = cv.getBoundingClientRect(); DPR = Math.min(2, window.devicePixelRatio || 1);
   MW = Math.max(10, r.width); MH = Math.max(10, r.height);
+  R0 = clamp(Math.min(MW, MH) * 0.055, 15, 26);
   cv.width = Math.round(MW * DPR); cv.height = Math.round(MH * DPR);
 }
 window.addEventListener('resize', () => { if (screen === 'game'){ layoutMap(); measureHud(); } });
 if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => { if (screen === 'game') layoutMap(); }).observe(cv.parentElement);
-function nxy(n){
-  const x = MW * (0.07 + 0.86 * (n.col / 6));
-  const y = MH * (0.14 + 0.72 * ((n.row + 0.5) / n.n) + (n.col % 6 ? n.jy : 0));
-  return [x, y];
-}
-function bandXY(){
-  if (S.mode === 'travel' && S.travel){
-    const [x1, y1] = nxy(node(S.travel.from)), [x2, y2] = nxy(node(S.travel.to)), t = clamp(S.travel.done / S.travel.days, 0, 1);
-    return [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t];
-  }
-  return nxy(node(S.at));
-}
+function frozenNow(){ return paused || !$('probOv').hidden; }
 function drawMap(now){
-  if (!S || screen !== 'game') return;
-  const g = cx; g.setTransform(DPR, 0, 0, DPR, 0, 0);
-  g.fillStyle = CV.field; g.fillRect(0, 0, MW, MH);
-  g.strokeStyle = CV.grid; g.lineWidth = 1;
-  for (let x = 0; x < MW; x += 36){ g.beginPath(); g.moveTo(x + 0.5, 0); g.lineTo(x + 0.5, MH); g.stroke(); }
-  for (let y = 0; y < MH; y += 36){ g.beginPath(); g.moveTo(0, y + 0.5); g.lineTo(MW, y + 0.5); g.stroke(); }
-  const R0 = clamp(Math.min(MW, MH) * 0.055, 15, 26);
-  const nodes = S.map.nodes, cur = node(S.at);
-  // 길(선)
-  S.map.edges.forEach((e) => {
-    const a = nodes[e.a], b = nodes[e.b], [x1, y1] = nxy(a), [x2, y2] = nxy(b);
-    const walked = a.visited && b.visited && (S.at === e.b || b.col <= cur.col) && pathHas(e.a, e.b);
-    const choose = S.mode === 'route' && e.a === S.at;
-    const roadGlow = b.known && S.roads.some((r) => r.type === b.type);
-    g.setLineDash(choose ? [6, 5] : []);
-    if (roadGlow && !walked){ g.strokeStyle = CV.gold; g.globalAlpha = 0.35; g.lineWidth = 7; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.globalAlpha = 1; }
-    g.strokeStyle = walked ? CV.accent : choose ? CV.accent : CV.line; g.lineWidth = walked ? 3 : choose ? 2.2 : 1.4;
-    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
-  });
-  g.setLineDash([]);
-  // 자리
-  Object.values(nodes).forEach((n) => {
-    const [x, y] = nxy(n), known = n.known || n.type === 'goal' || n.type === 'start';
-    const isCur = n.id === S.at && S.mode !== 'travel';
-    g.beginPath(); g.arc(x, y, R0, 0, Math.PI * 2);
-    g.fillStyle = n.fossil ? CV.eagle : n.visited ? CV.accentSoft : CV.surface; g.globalAlpha = n.fossil ? 0.55 : 1; g.fill(); g.globalAlpha = 1;
-    g.lineWidth = isCur ? 3.5 : 1.2; g.strokeStyle = isCur ? CV.accent : CV.line; g.stroke();
-    if (S.mode === 'route' && cur.next.includes(n.id)){ g.beginPath(); g.arc(x, y, R0 + 5 + Math.sin(now / 300) * 2, 0, Math.PI * 2); g.strokeStyle = CV.accent; g.lineWidth = 1.5; g.stroke(); }
-    g.font = `${Math.round(R0 * 0.95)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = CV.ink; g.fillText(known ? ENC[n.type].icon : '?', x, y + 1);
-    g.font = '600 11px ' + CV.font; g.fillStyle = CV.muted; g.textBaseline = 'top';
-    const label = n.fossil ? '화석' : known ? ENC[n.type].name : '';
-    if (label) g.fillText(label, x, y + R0 + 4);
-    if (known && n.type !== 'start' && n.type !== 'goal'){
-      const rd = S.roads.filter((r) => r.type === n.type).length;
-      if (rd){ g.fillStyle = CV.gold; g.font = '700 10px sans-serif'; g.fillText('길 ' + rd, x + R0 * 0.9, y - R0 - 12); }
-      const wx = wxOn(n.type);
-      if (wx.length && !n.visited){
-        const k = wx.reduce((t, w) => t + w.str, 0), dx = Math.sin(now / 900 + n.col) * 4;
-        g.font = `${Math.round(R0 * 0.8)}px system-ui, sans-serif`; g.textBaseline = 'middle'; g.fillStyle = CV.risk;
-        g.fillText('☁', x - R0 * 1.05 + dx, y - R0 * 0.95); g.font = '700 10px sans-serif'; g.fillText('×' + k, x - R0 * 1.05 + dx + 12, y - R0 * 0.95 + 8);
-      }
-    }
-  });
-  // 굴뚝새(일행)
-  const [bx, by] = bandXY(), bob = Math.sin(now / 240) * (S.mode === 'travel' && !S.winter.on ? 2 : 0.6);
-  g.font = `${Math.round(R0 * 0.9)}px system-ui, "Apple Color Emoji", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.beginPath(); g.arc(bx, by - R0 - 10 + bob, R0 * 0.62, 0, Math.PI * 2); g.fillStyle = CV.surface; g.fill(); g.strokeStyle = SELVES[SELF().name].color; g.lineWidth = 2; g.stroke();
-  g.fillText('🐦', bx, by - R0 - 9 + bob);
-  // 징조
-  const t = nowMs();
-  SIGNS = SIGNS.filter((sg) => { const alive = t - sg.born < sg.life; if (!alive && S && !paused) S.stats.signsMissed++; return alive || paused; });
-  SIGNS.forEach((sg) => {
-    if (paused) sg.born += 16;
-    const x = sg.x * MW, y = sg.y * MH, left = 1 - (t - sg.born) / sg.life, pulse = 1 + Math.sin(t / 160) * 0.12;
-    g.globalAlpha = clamp(left * 1.6, 0.15, 1);
-    g.beginPath(); g.arc(x, y, 20 * pulse, 0, Math.PI * 2);
-    g.fillStyle = sg.kind === 'good' ? CV.gold : sg.kind === 'winter' ? CV.accent : CV.risk; g.globalAlpha *= 0.25; g.fill();
-    g.globalAlpha = clamp(left * 1.6, 0.15, 1);
-    g.lineWidth = 2; g.strokeStyle = sg.kind === 'good' ? CV.gold : sg.kind === 'winter' ? CV.accent : CV.risk; g.stroke();
-    g.font = '18px system-ui, "Apple Color Emoji", sans-serif'; g.fillStyle = CV.ink;
-    g.fillText(sg.kind === 'good' ? '✨' : sg.kind === 'winter' ? '❄️' : '🌀', x, y + 1);
-    g.globalAlpha = 1;
-  });
+  if (!S || screen !== 'game' || MW < 20) return;
+  drawWorld(cx, now, frozenNow(), paused);
 }
-function pathHas(a, b){ return S.log.some((l) => l.t === 'go') && node(a).visited && node(b).visited; }
 cv.addEventListener('pointerdown', (e) => {
   if (!S || paused || S.over) return;
-  const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-  for (const sg of SIGNS.slice().reverse()){ if (Math.hypot(sg.x * MW - x, sg.y * MH - y) < 30){ catchSign(sg); return; } }
+  const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, t = nowMs();
+  for (const sg of SIGNS.slice().reverse()){ const [sx, sy] = signPos(sg, t); if (Math.hypot(sx - x, sy - y) < 34){ catchSign(sg); fx('spark', { x:sx, y:sy }); return; } }
   if (S.mode === 'route'){
-    const R0 = clamp(Math.min(MW, MH) * 0.055, 15, 26);
     for (const k of node(S.at).next){ const [nx, ny] = nxy(node(k)); if (Math.hypot(nx - x, ny - y) < R0 + 10){ goTo(k); return; } }
   }
 });
+
+/* ---------- 이야기: 자막 · 마디 ---------- */
+let NQ = [], NC = null;
+// 장면(도착) · 한겨울 · 끝맺음은 밀린 자막을 걷어 내고 바로 — 자막이 지도보다 늦지 않게
+const NARR_LEAD = { scene:1, winter:1, end:1 };
+function narrate(t, tone){
+  if (!t) return;
+  const now = nowMs();
+  if (NARR_LEAD[tone]){ NQ = NQ.filter((x) => now - x.at < 1000); if (NC && now - NC.pushed > 1000) NC.cut = true; }
+  NQ.push({ t:String(t), tone:tone || '', at:now });
+  if (NQ.length > 4) NQ.splice(0, NQ.length - 4);
+}
+function narrClear(){ NQ = []; NC = null; const el = $('narr'); el.className = 'narr'; el.textContent = ''; }
+function narrStep(now, dtMs){
+  if (screen !== 'game') return;
+  const el = $('narr');
+  if (NC && frozenNow()){ NC.at += dtMs; if (NC.out) NC.out += dtMs; return; }
+  if (NC){
+    const age = now - NC.at, len = NC.t.length;
+    if (NC.n < len){ const k = REDUCE ? len : Math.min(len, Math.floor(age / 24)); if (k !== NC.n){ NC.n = k; NC.span.textContent = NC.t.slice(0, k); } }
+    const hold = NC.cut ? 0 : clamp(2000 + len * 45, 2600, 6000) * (NQ.length ? 0.5 : 1);
+    if (!NC.out && age > hold){ NC.out = now; el.classList.remove('on'); }
+    if (NC.out && now - NC.out > 420) NC = null;
+    return;
+  }
+  if (!NQ.length || frozenNow()) return;
+  const it = NQ.shift();
+  el.className = 'narr t-' + (it.tone || 'plain');
+  el.innerHTML = '<span class="nt"></span>';
+  NC = { t:it.t, tone:it.tone, pushed:it.at || now, at:now, n:0, span:el.firstChild, out:0 };
+  void el.offsetWidth; el.classList.add('on');
+}
+function chapter(k, t, quiet){
+  if (S && !quiet){ S.story.push({ d:r1(S.day), t:(k ? k + ' · ' : '') + t, tone:'chap' }); S.storyN = (S.storyN || 0) + 1; if (S.story.length > 60) S.story.splice(0, S.story.length - 60); }
+  const el = $('chap');
+  $('chapK').textContent = k || ''; $('chapT').textContent = t || '';
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  if (S && S.at && S.map) fx('ripple', { at:S.at });
+}
+
+/* ---------- 시작 화면의 풍경 · 한 줄 ---------- */
+let epiAt = -1e9, epiI = -1;
+function heroStep(now){
+  const hc = $('hero'); if (!hc) return;
+  drawHero(hc, now);
+  if (now - epiAt > 7000){ epiAt = now; epiI = (epiI + 1) % EPIGRAPH.length; const el = $('heroLine'); el.classList.remove('on'); el.textContent = EPIGRAPH[epiI]; void el.offsetWidth; el.classList.add('on'); }
+}
+
+/* ---------- 자원이 바뀌면 숫자가 뜬다 ---------- */
+let lastRes = null;
+function resPops(){
+  if (!S || screen !== 'game'){ lastRes = null; return; }
+  const keys = ['food', 'fuel', 'jeong', 'morale', 'unique'], cur = keys.map((k) => S.res[k]);
+  if (!lastRes){ lastRes = cur; return; }
+  const cells = $('hRes').children;
+  keys.forEach((k, i) => {
+    const d = cur[i] - lastRes[i];
+    if (Math.abs(d) >= (k === 'unique' ? 0.9 : 0.45) && cells[i]){
+      const r = cells[i].getBoundingClientRect(), el = document.createElement('div');
+      el.className = 'pop ' + (d > 0 ? 'up' : 'dn'); el.textContent = (d > 0 ? '+' : '−') + fmtN(r1(Math.abs(d)));
+      el.style.left = (r.left + r.width * 0.8) + 'px'; el.style.top = (r.top + r.height - 18) + 'px';
+      document.body.appendChild(el); setTimeout(() => el.remove(), 1300);
+    }
+  });
+  lastRes = cur;
+}
 
 /* ---------- 결산 ---------- */
 function journal(){
@@ -2041,8 +2930,12 @@ function journal(){
 }
 function showSummary(){
   const o = S.over, res = RESULT[o.kind], [a, b, c] = o.coef;
-  const rec = { result:o.kind, days:o.day, level:S.level, coef:o.coef, self:{ name:SELF().name, A:r2(SELF().A), B:r2(SELF().B), C:r2(SELF().C) }, stats:S.stats, res:S.res, seed:S.seed, params:PR };
-  $('sumBody').innerHTML = `<h2>${res.t}</h2><p class="sub">${res.s} · ${fmtN(o.day)}일 · ${LEVELS[S.level].name}</p>
+  const rec = { result:o.kind, days:o.day, coef:o.coef, self:{ name:SELF().name, A:r2(SELF().A), B:r2(SELF().B), C:r2(SELF().C) }, stats:S.stats, res:S.res, seed:S.seed, params:PR };
+  const endLine = (S.story.filter((x) => x.tone === 'end').slice(-1)[0] || {}).t || ENDING[o.kind].replace('{self}', SELVES[SELF().name].name);
+  const tale = S.story.filter((x) => x.tone !== 'end').map((x) => x.tone === 'chap' ? `<p class="tl chap">${esc(x.t)}</p>` : `<p class="tl t-${x.tone || 'plain'}"><time>${Math.floor(x.d) + 1}일</time>${esc(x.t)}</p>`).join('');
+  $('sumBody').innerHTML = `<h2>${res.t}</h2><p class="sub">${res.s} · ${fmtN(o.day)}일</p>
+    <p class="ending">${esc(endLine)}</p>
+    <div class="sumbox story-box"><h3>이 겨울의 이야기</h3><div class="story-all">${tale || '<p class="empty">이야기가 아직 없다.</p>'}</div></div>
     <div class="sumgrid">
       <div class="sumbox"><h3>자아 일지</h3><ul class="journal">${journal().map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
       <div class="sumbox"><h3>내 스페이스</h3><canvas id="spaceCv"></canvas><p class="note" id="spaceNote"></p></div>
@@ -2053,7 +2946,7 @@ function showSummary(){
   $('sumJson').value = JSON.stringify(rec);
   $('sumOv').hidden = false; $('toasts').innerHTML = '';
   $('sumLobby').onclick = () => { $('sumOv').hidden = true; S = null; show('lobby'); };
-  $('sumAgain').onclick = () => { $('sumOv').hidden = true; newSeason(SAVE.level); paused = false; $('pauseCover').hidden = true; show('game'); save(true); };
+  $('sumAgain').onclick = () => { $('sumOv').hidden = true; startSeason(); };
   drawSpace([a, b, c]);
 }
 function drawSpace(coef){
@@ -2105,7 +2998,7 @@ function openTune(){
   $('tImport').onclick = () => {
     try { const p = JSON.parse($('tIO').value || '{}'); if (typeof p !== 'object' || Array.isArray(p)) throw 0;
       const clean = {}; Object.keys(p).forEach((k) => { if (k in DEFAULTS && isFinite(Number(p[k]))) clean[k] = Number(p[k]); }); apply(clean);
-    } catch (e){ $('tErr').textContent = 'JSON으로 넣어 주세요 — 예: {"dayAce": 25}'; }
+    } catch (e){ $('tErr').textContent = 'JSON으로 넣어 주세요 — 예: {"dayLen": 25}'; }
   };
   $('tSelf').onclick = () => { const s = SELF(); s.A = clamp(Number($('tA').value) || 0, -1, 1); s.B = clamp(Number($('tB').value) || 0, -1, 1); s.C = clamp(Number($('tC').value) || 0, -1, 1); updateName(); save(true); openTune(); dirty.lobby = dirty.panel = true; hudSig = ''; };
   $('tSelf0').onclick = () => { SAVE.self = { A:0, B:0, C:0, lens:{}, name:'wren', centerDays:0 }; save(true); openTune(); dirty.lobby = dirty.panel = true; hudSig = ''; };
@@ -2115,14 +3008,15 @@ function openTune(){
 function openHelp(){
   $('helpBody').innerHTML = `<h2>굴뚝새 — 이렇게 건넌다</h2>
     <div class="sumgrid">
-      <div class="sumbox"><h3>한 판 = 한 계절</h3><p class="note">벌판 입구에서 봄 나루까지. 길마다 조우(산 · 나루 · 강 · 마을 · 숲)가 있고, 조우마다 결정이 있다. 계절(${PR.seasonDays}일)이 끝나기 전에 닿으면 이긴다.</p></div>
-      <div class="sumbox"><h3>시계는 멈추지 않는다</h3><p class="note">하루 = 1턴, 실시간으로 흐른다(1× · 2× · 4×). 하루마다 식량 · 연료가 줄고 사건이 다가온다. 멈추면 근거와 문항이 가려진다.</p></div>
+      <div class="sumbox"><h3>한 판 = 한 계절</h3><p class="note">벌판 입구에서 봄 나루까지. 난이도는 따로 없다 — 같은 벌판에서 무엇을 묻느냐가 길을 바꾼다. 길마다 조우(산 · 나루 · 강 · 마을 · 숲)가 있고, 조우마다 결정이 있다. 안개 너머는 가 봐야 보인다. 계절(${PR.seasonDays}일)이 끝나기 전에 닿으면 이긴다.</p></div>
+      <div class="sumbox"><h3>시계는 멈추지 않는다</h3><p class="note">하루 = 1턴, 실시간으로 흐른다(1× · 2× · 4×). 지도 위로 새벽 · 낮 · 해 질 녘 · 밤이 지나가고, 해와 달이 시계다. 하루마다 식량 · 연료가 줄고 사건이 다가온다. 멈추면 근거와 문항이 가려진다.</p></div>
       <div class="sumbox"><h3>근거는 친절해질 수 있다</h3><p class="note">날것 → 정리 → 해설 → 방대. 다듬을수록 시간과 정성이 든다. 대신 문항을 풀어 날것을 직접 읽어 내면 시간을 아낀다 — 실력이 친절도를 대신한다.</p></div>
       <div class="sumbox"><h3>무엇을 물을지 고른다</h3><p class="note">렌즈(수학 · 과학 · 고사 · 역사 · 생활) × 형식(무엇? · 어떻게? · 왜?). 어떻게?는 지금을, 왜?는 다음을 바꾼다(그 렌즈는 다음부터 해설로 시작). 답은 직접 넣는다.</p></div>
       <div class="sumbox"><h3>정답은 길, 오답은 날씨</h3><p class="note">맞히면 그 렌즈에 길이 나 다음 같은 조우에서 처음부터 읽힌다. 틀리면 오개념 돌풍이 되어 같은 조우의 성공률을 깎는다 — 다시 물으면 걷힌다.</p></div>
       <div class="sumbox"><h3>결정의 막대</h3><p class="note">성공률은 폭으로 보인다. 근거가 단단할수록 폭이 좁아지고 성공률도 오른다. 언제 정할지가 타이밍이다.</p></div>
       <div class="sumbox"><h3>독수리(AI)</h3><p class="note">언제나 가장 친절한 근거를 바로 준다. 대신 고유함이 닳고 그 렌즈는 굳는다. 독수리는 가끔 앞의 자리를 먼저 굳혀 버린다 — 깨우려면 왜?를 물어야 한다.</p></div>
-      <div class="sumbox"><h3>징조와 한겨울</h3><p class="note">지도 위에 잠깐 뜨는 징조를 눌러 잡는다. ❄️는 한겨울의 예고(미리 알면 연료가 덜 든다), 🌀는 풍랑, ✨는 길조. 한겨울엔 모든 것이 멈추고 질문만 남는다.</p></div>
+      <div class="sumbox"><h3>새 떼 — 징조</h3><p class="note">지도 위를 지나가는 새 떼를 눌러 잡는다. 남쪽으로 가는 까마귀 떼는 한겨울의 예고(미리 알면 연료가 덜 든다), 육지로 몰려드는 갈매기는 풍랑, 우는 까치는 길조. 둘레의 테가 다 닳기 전에. 한겨울엔 모든 것이 멈추고 질문만 남는다.</p></div>
+      <div class="sumbox"><h3>일행</h3><p class="note">길잡이는 어떻게?, 아이는 왜?, 할머니는 고사 · 역사, 장꾼은 수학 · 생활 — 조우마다 두 사람이 말을 건넨다. 그 말이 무엇을 물을지 귀띔한다.</p></div>
       <div class="sumbox"><h3>자아</h3><p class="note">묻는 방식(어떻게 ↔ 왜)과 근거 태도(결단 ↔ 신중)가 플레이로 쌓여 제비 · 올빼미 · 까치 · 두루미 · 굴뚝새가 된다. 자아마다 질문 값을 치르는 자원과 소모 속도가 다르다. 자아는 겨울을 넘어 이어진다.</p></div>
     </div>
     <div class="dlg-acts"><button class="btn primary" id="hClose" type="button">알겠다</button></div>`;
@@ -2144,11 +3038,12 @@ let lastT = nowMs(), lastPanel = 0;
 function frame(){
   const t = nowMs(), dtMs = Math.min(250, t - lastT); lastT = t;
   if (screen === 'game' && S && !S.over && !paused){
-    const dayMs = PR[LEVELS[S.level].dayKey] * 1000;
+    const dayMs = PR.dayLen * 1000;
     tick(dtMs / dayMs * S.speed * DBG_MUL);
   }
-  if (screen === 'lobby' && dirty.lobby) renderLobby();
+  if (screen === 'lobby'){ if (dirty.lobby) renderLobby(); heroStep(t); }
   if (screen === 'game' && S){
+    resPops();
     renderHud();
     if (t - lastPanel > 120){
       const sg = computePanelSig();
@@ -2156,7 +3051,7 @@ function frame(){
       lastPanel = t;
     }
     livePanel(); updateProbClock();
-    drawMap(t);
+    drawMap(t); narrStep(t, dtMs);
   }
   requestAnimationFrame(frame);
 }
@@ -2166,14 +3061,15 @@ themeObs.observe(document.documentElement, { attributes:true, attributeFilter:['
 
 /* ---------- 시험 갈고리 ---------- */
 window.__gulttuksae = () => {
-  const out = { screen, paused, level:SAVE.level, self:Object.assign({}, SELF(), { label:selfLabel(), sig:Object.fromEntries(QUADS.map((q) => [q, r2(sigRaw(q))])) }),
+  const out = { screen, paused, self:Object.assign({}, SELF(), { label:selfLabel(), sig:Object.fromEntries(QUADS.map((q) => [q, r2(sigRaw(q))])) }),
     runs:SAVE.runs.length, resume:!!SAVE.cur, params:Object.assign({}, PR), signs:SIGNS.length };
   if (!S) return out;
   Object.assign(out, { day:r2(S.day), speed:S.speed, mode:S.mode, at:{ col:node(S.at).col, type:node(S.at).type }, res:Object.fromEntries(Object.entries(S.res).map(([k, v]) => [k, r2(v)])),
     roads:S.roads.length, weathers:S.weathers.map((w) => ({ id:w.id, type:w.type, lens:w.lens, str:w.str })), winter:Object.assign({}, S.winter), polya:JSON.parse(JSON.stringify(S.polya)),
     over:S.over, next:S.mode === 'route' ? node(S.at).next.map((k) => ({ id:k, type:node(k).type, fossil:node(k).fossil, days:routeDays(k) })) : null,
     travel:S.travel ? { to:node(S.travel.to).type, days:S.travel.days, done:r2(S.travel.done) } : null, busy:S.busy ? { text:S.busy.text, left:r2(S.busy.until - S.day) } : null, stats:S.stats, prep:!!S.prep,
-    rates:Object.fromEntries(Object.entries(rates()).map(([k, v]) => [k, r2(v)])) });
+    rates:Object.fromEntries(Object.entries(rates()).map(([k, v]) => [k, r2(v)])),
+    story:S.story.length, lastStory:(S.story[S.story.length - 1] || {}).t || '', tod:TOD(S.day), fx:FX.map((f) => f.kind), narr:NC ? NC.t : '', narrQ:NQ.length });
   if (S.enc){
     const E = S.enc;
     out.enc = { type:E.type, fossil:!!E.fossil, stormKnown:!!E.stormKnown, pieces:E.pieces ? E.pieces.map((p) => ({ lens:p.lens, form:p.form, done:p.done })) : null,
@@ -2200,7 +3096,10 @@ window.__gtDebug = {
   jump(days){ if (!S) return; let left = days; while (left > 0 && !S.over){ const d = Math.min(0.05, left); tick(d); left -= d; } dirty.panel = true; },
   spawnSign(kind){ if (S) spawnSign(kind); return SIGNS.length; },
   catchSign(){ const sg = SIGNS[SIGNS.length - 1]; if (sg) catchSign(sg); return !!sg; },
-  signRel(){ const sg = SIGNS[SIGNS.length - 1]; return sg ? { x:Math.round(sg.x * MW), y:Math.round(sg.y * MH) } : null; },
+  signRel(){ const sg = SIGNS[SIGNS.length - 1]; if (!sg) return null; const [x, y] = signPos(sg, nowMs()); return { x:Math.round(x), y:Math.round(y) }; },
+  lum(x0, y0, x1, y1){ const c = $('map'), g = c.getContext('2d'), d = DPR, w = Math.max(1, Math.round((x1 - x0) * d)), h = Math.max(1, Math.round((y1 - y0) * d));
+    const px = g.getImageData(Math.round(x0 * d), Math.round(y0 * d), w, h).data; let t = 0, n = 0; for (let i = 0; i < px.length; i += 16){ t += 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]; n++; } return n ? t / n : 0; },
+  heroLum(){ const c = $('hero'), g = c.getContext('2d'), px = g.getImageData(0, 0, c.width, c.height).data; let a = 0; for (let i = 3; i < px.length; i += 40) a += px[i]; return a / (px.length / 40); },
   nodeRel(id){ const [x, y] = nxy(node(id)); return { x:Math.round(x), y:Math.round(y) }; },
   parse(s){ return parseNum(s); },
   forceWinter(){ if (S){ S.winter.start = S.day + 0.01; } },
