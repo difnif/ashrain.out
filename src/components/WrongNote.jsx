@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import AdminWrongNotes from "./AdminWrongNotes";
+import { termRank } from "../lib/units";
 import { isItemNote, itemIdOf } from "../lib/wrongnotes";
 import { fetchItemsByIds } from "../lib/items";
 import { mcLabel, isMcCode } from "../lib/misconceptions";
@@ -111,7 +112,7 @@ export default function WrongNote({ uid, isAdmin, unitNames, say }) {
   const dragRef = useRef(-1);
   const fileRef = useRef(null);
 
-  const unitIds = Object.keys(unitNames).sort((a, b) => (a[0] === b[0] ? a.localeCompare(b) : a[0] === "m" ? -1 : 1));
+  const unitIds = Object.keys(unitNames).sort((a, b) => (termRank(a) - termRank(b) || a.localeCompare(b)));
 
   useEffect(() => { loadNotes(); loadShared(); }, [uid]); // eslint-disable-line
 

@@ -10,9 +10,29 @@ function test(name, fn) {
 }
 
 const UNITS = ["m1-1", "m1-2", "m2-1", "m2-2", "m3-1", "m3-2", "h1-1", "h1-2", "h2-1", "h2-2", "h3-1", "h3-2", "h3-3"];
+const E_UNITS = ["e1-1", "e1-2", "e2-1", "e2-2", "e3-1", "e3-2", "e4-1", "e4-2", "e5-1", "e5-2", "e6-1", "e6-2"];
 
-test("CHAPTERS: 13개 학기 전부, 구간이 1부터 빈틈·겹침 없이 이어진다", () => {
-  assert.deepEqual(Object.keys(CHAPTERS).sort(), UNITS.slice().sort());
+test("CHAPTERS: 초등 12 · 중등 · 고등 13개 학기 전부", () => {
+  assert.deepEqual(Object.keys(CHAPTERS).sort(), [...E_UNITS, ...UNITS].sort());
+});
+
+test("초등 학기: 교과서 단원 하나가 대단원 하나 — 단원 k 는 sort_order 10k ~ 10k + 9", () => {
+  let total = 0;
+  for (const u of E_UNITS) {
+    const chs = CHAPTERS[u];
+    assert.ok(chs.length >= 4 && chs.length <= 6, `${u} 단원 ${chs.length}개`);
+    chs.forEach(([title, from, to], i) => {
+      assert.ok(typeof title === "string" && title.length, `${u} 제목`);
+      assert.deepEqual([from, to], [(i + 1) * 10, (i + 1) * 10 + 9], `${u} ${title}`);
+    });
+    total += chs.length;
+  }
+  assert.equal(total, 69);
+  assert.deepEqual(parseChapterId("e3-2~4"), { unitId: "e3-2", idx: 4, title: "들이와 무게", range: [50, 59] });
+  assert.equal(parseChapterId("e1-2~4"), null);      // 초1-2 는 단원 4개
+});
+
+test("중등 · 고등 학기: 구간이 1부터 빈틈·겹침 없이 이어진다", () => {
   for (const u of UNITS) {
     const chs = CHAPTERS[u];
     assert.ok(chs.length >= 2, u);

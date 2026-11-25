@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { termRank } from "../lib/units";
 
 // ashrain.out — 힌트 (v0.4.0)
 // [v0.4.0] 힌트 결과에서 바로 오답노트 등록 (확인 → 단원·이유 선택 → 저장, 전부 선택사항)
@@ -77,7 +78,7 @@ export default function Hint({ uid, isAdmin, unitNames, say }) {
   const [drag, setDrag] = useState(false);
   const [wn, setWn] = useState(null);             // null | form | saving | done — 오답노트 등록 단계
   const [wnMeta, setWnMeta] = useState({ unit: "", reason: "" });
-  const wnUnitIds = Object.keys(unitNames || {}).sort((a, b) => (a[0] === b[0] ? a.localeCompare(b) : a[0] === "m" ? -1 : 1));
+  const wnUnitIds = Object.keys(unitNames || {}).sort((a, b) => (termRank(a) - termRank(b) || a.localeCompare(b)));
 
   useEffect(() => {                                 // 빗나간 드롭이 페이지를 덮지 않게
     const stop = (e) => e.preventDefault();

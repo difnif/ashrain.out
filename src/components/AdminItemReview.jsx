@@ -57,9 +57,9 @@ const D_NAME = { 1: "하", 2: "중하", 3: "중", 4: "중상", 5: "상" };
 
 function unitLabel(u) {
   if (!u) return u;
-  const m = u.match(/^([mh])(\d)-(\d)$/);
+  const m = u.match(/^([emh])(\d)-(\d)$/);
   if (!m) return u;
-  return (m[1] === "m" ? "중" : "고") + m[2] + "-" + m[3];
+  return ({ e: "초", m: "중", h: "고" })[m[1]] + m[2] + "-" + m[3];
 }
 
 export default function AdminItemReview() {
