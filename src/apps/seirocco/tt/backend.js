@@ -578,7 +578,7 @@ export async function api(path, body) {
   if (p === "register/analyze") return (await engine()).registerAnalyze(body, ctx());
   if (p === "register/commit") return (await engine()).registerCommit(body, ctx());
   if (p === "library") return libraryIndex();
-  if (p === "library/register") return libraryRegister(body.code);
+  if (p === "library/register") return libraryRegister(body.code, body);
   if (p === "export/prints") return (await engine()).exportPrints(q, ctx());
   if (p === "export/transcribe") return (await engine()).exportTranscribe(body, ctx());
   if (p === "export/analysis") return (await engine()).exportAnalysis(body, ctx());
@@ -597,7 +597,7 @@ async function libraryIndex() {
     roles: (r.options?.library?.roles || []), n_files: (r.options?.library?.roles || []).length,
     registered: r.shelf === "active", deleted: r.shelf === "deleted" })) };
 }
-async function libraryRegister(code) {
+async function libraryRegister(code, opts = {}) {
   const pr = await printRow(code);
   if (!pr) throw new Error(`보관함에 ${fmtCode(normCode(code))} 코드가 없어요`);
   if (pr.shelf === "active") throw new Error("이미 등록한 코드예요");
@@ -609,7 +609,11 @@ async function libraryRegister(code) {
     log("library_register", null, pr.id, { code: pr.code });
     return { done: true, print: await printBrief(pr.id) };
   }
-  return (await engine()).libraryDraft(pr, ctx());
+  // 등록 정보로 문항 자리를 다 찾으면 확인 화면 없이 바로 등록 (코드만 넣으면 끝) — opts.review 면 확인 화면
+  if (opts.review) return (await engine()).libraryDraft(pr, ctx());
+  const r = await (await engine()).libraryAuto(pr, ctx());
+  if (!r.done) return r.draft;
+  return { done: true, auto: true, print: r.print, n_items: r.n_items, n_answers: r.n_answers, n_sols: r.n_sols, targets: r.targets };
 }
 
 // 쪽 그림 (정답해설 보기 · 쪽 단위 시험지) — 「@page:<pdf rel>:<쪽>」 를 화면이 그림으로 바꿈

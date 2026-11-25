@@ -429,8 +429,10 @@ async function viewRegister(sub, libCode) {
     out.scrollIntoView({ block: "start", behavior: "smooth" });
     try {
       const d = await api("library/register", { code });
-      if (d.done) {    // 옮겨 올 때 문항을 이미 나눠 둔 보관함 프린트 → 바로 꺼냄
-        out.innerHTML = `<h2 style="margin-top:18px">보관함에서 꺼냈어요</h2>` + printCard(d.print);
+      if (d.done) {    // 문항을 이미 나눠 둔 것이거나, 등록 정보로 바로 등록한 것
+        out.innerHTML = `<h2 style="margin-top:18px">${d.auto ? "보관함에서 바로 등록했어요" : "보관함에서 꺼냈어요"}</h2>`
+          + (d.auto ? `<p class="sub small">문항 ${d.n_items}개 · 정답 ${d.n_answers}개${d.n_sols ? ` · 해설 그림 ${d.n_sols}개` : ""}${(d.targets || []).length ? ` · 대상 ${d.targets.map(esc).join(", ")}` : ""} — 학생 이름은 지운 판으로 넣었어요.</p>` : "")
+          + printCard(d.print);
         bindPrintCards(out);
         toast(fmtCode(code) + " 등록했어요");
         return;
@@ -583,10 +585,23 @@ async function viewGrade(code, sid) {
   let p;
   try { p = await api("prints/" + code); } catch (e) {
     if (!/없어요/.test(e.message) || code.length !== 6) throw e;
-    view.innerHTML = `<div class="card"><h2><span class="code">${esc(fmtCode(code))}</span> — 아직 등록하지 않은 코드예요</h2>
-      <p class="sub">Claude와 만든 프린트라면 보관함에 있을 수 있어요. 보관함에서 받아 등록하면 바로 채점할 수 있어요.</p>
-      <div class="row"><a class="btn" href="#/tt/register/lib/${code}">보관함에서 등록</a><a class="btn ghost" href="#/tt/prints">프린트함에서 찾기</a><a class="btn ghost" href="#/tt/grade">돌아가기</a></div></div>`;
-    return;
+    // 보관함에 있는 코드면 그 자리에서 바로 등록하고 채점으로 (등록 정보가 모자라면 확인 화면으로 보냄)
+    view.innerHTML = `<div class="card"><span class="busy"></span>보관함에서 <span class="code">${esc(fmtCode(code))}</span>를 찾아 등록하는 중…</div>`;
+    let lib = null, why = "";
+    try { lib = await api("library/register", { code }); } catch (e2) { why = e2.message; }
+    if (lib && lib.done) {
+      toast(`${fmtCode(code)} 보관함에서 등록했어요${lib.auto ? ` (문항 ${lib.n_items}개)` : ""}`);
+      p = await api("prints/" + code);
+    } else if (lib) {
+      location.hash = "#/tt/register/lib/" + code;     // 문항 확인이 필요한 보관함 프린트
+      return;
+    } else {
+      const inLib = !/보관함에 .* 코드가 없어요/.test(why);
+      view.innerHTML = `<div class="card"><h2><span class="code">${esc(fmtCode(code))}</span> — ${inLib ? "보관함에서 등록하지 못했어요" : "아직 등록하지 않은 코드예요"}</h2>
+        <p class="sub">${inLib ? esc(why) : "보관함에도 없는 코드예요. 시험지에 적힌 코드를 다시 확인하거나, 프린트 등록에서 PDF를 올려 주세요."}</p>
+        <div class="row"><a class="btn" href="#/tt/register/lib">보관함 보기</a><a class="btn ghost" href="#/tt/prints">프린트함에서 찾기</a><a class="btn ghost" href="#/tt/grade">돌아가기</a></div></div>`;
+      return;
+    }
   }
   if (!sid || sid === "pick") return gradePick(p, sid === "pick");
   return gradeRun(p, +sid);

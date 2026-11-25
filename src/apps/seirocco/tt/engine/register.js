@@ -406,7 +406,8 @@ async function analyze(D, A, manifest, draft) {
   if (m) {
     checkManifest(m);
     m.items.forEach((mi, i) => {
-      const it = { label: String(mi.no || i + 1), answer: String(mi.answer ?? ""), choice: !!mi.choice, points: mi.points ?? null, topic: mi.topic || "", key: mi.key || "" };
+      const it = { label: String(mi.no || i + 1), answer: String(mi.answer ?? ""), choice: !!mi.choice, points: mi.points ?? null, topic: mi.topic || "", key: mi.key || "",
+        sol: typeof mi.sol === "string" && /^sols\/[\w.-]+\.png$/.test(mi.sol) ? mi.sol : "" };
       if (mi.page && mi.bbox) { it.page = Number(mi.page) - 1; it.rect = mi.bbox.map(Number); }
       items.push(it);
     });
@@ -517,7 +518,7 @@ export async function registerCommit(b, ctx) {
       const src = bySeq.get(Number(e.seq));
       if (!src) continue;
       items.push({ label: String(e.label || src.label), answer: String(e.answer || "").trim(), choice: !!e.choice, png: src.png, hash: src.hash,
-        points: src.points, topic: src.topic || "", answer_png: src.answer_png, bbox: src.bbox, page: src.page });
+        points: src.points, topic: src.topic || "", answer_png: src.answer_png, bbox: src.bbox, page: src.page, sol: src.sol || "" });
     }
   }
   if (!items.length) throw new Error("문항이 하나도 없어요");
@@ -534,6 +535,7 @@ export async function registerCommit(b, ctx) {
       points: it.points ?? null, topic: it.topic || "", answer_png: null, page: it.page != null ? it.page + 1 : null, bbox: it.bbox || null, scale: it.png ? 72 / 150 : null };
     if (it.png) { files.push({ rel: `${code}/items/${n3}.png`, data: draft.files.get(it.png), type: "image/png" }); row.png = `items/${n3}.png`; }
     if (it.answer_png) { files.push({ rel: `${code}/answers/${n3}.png`, data: draft.files.get(it.answer_png), type: "image/png" }); row.answer_png = `answers/${n3}.png`; }
+    if (libPid && it.sol) row.sol_png = it.sol;     // 보관함(저장소)이 미리 올려 둔 문항별 해설 그림 — <코드>/sols/NNN.png
     return row;
   });
   const sub = String(b.sub || dr.sub || "").trim();
@@ -577,6 +579,25 @@ export async function libraryDraft(pr, ctx) {
   if (lib.title || pr.title) r.title = pr.title || lib.title;
   if (pr.sub) r.sub = pr.sub;
   return r;
+}
+
+// 보관함 프린트를 코드만으로 바로 등록 — 등록 정보(ashrain-print.json · 저장소 print.json)로 문항 자리를 모두 찾았으면
+// 확인 화면 없이 문항 나누기 · 이름 지우기 · 정답 · 해설 그림까지 넣는다. 못 찾은 문항이 있으면 확인 화면(초안)으로.
+const CIRC_NUM = { "①": "1", "②": "2", "③": "3", "④": "4", "⑤": "5" };
+export async function libraryAuto(pr, ctx) {
+  const d = await libraryDraft(pr, ctx);
+  const ready = d.method === "manifest" && d.items.length > 0 && d.items.every((it) => it.png);
+  if (!ready) return { done: false, draft: d };
+  const lib = (pr.options && pr.options.library) || {};
+  const active = new Set((await ctx.all(() => ctx.T("tt_students").select("name,active"))).filter((s) => s.active).map((s) => s.name));
+  const targets = (lib.for || []).filter((n) => active.has(n));     // 있는 학생만 (새로 만들지 않음)
+  const print = await registerCommit({
+    draft: d.draft, title: d.title, sub: d.sub, label: d.label || "서답형", level: pr.level || lib.level || "", targets, mode: "items",
+    items: d.items.map((it) => ({ seq: it.seq, keep: true, label: it.label, choice: it.choice,
+      answer: it.choice ? CIRC_NUM[String(it.answer).trim()] || String(it.answer || "").trim() : String(it.answer || "").trim() })),
+  }, ctx);
+  return { done: true, auto: true, print, n_items: d.items.length, n_answers: d.items.filter((it) => String(it.answer || "").trim()).length,
+    n_sols: d.items.filter((it) => it.sol).length, targets };
 }
 
 // 정답 PDF 붙이기 (프린트 화면) — 이름 지우기 · 빠른정답 채우기 · (매쓰플랫이면) 강사도구 양식 정답해설
