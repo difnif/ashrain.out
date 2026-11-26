@@ -928,7 +928,7 @@ async function poChecks(fr, shot) {
       await page.goto(base + "#/admin/games");
       await page.getByText("관리자만 들어올 수 있는 곳이에요.").waitFor({ timeout: 20000 });
       ok((await page.locator("iframe").count()) === 0, "A1 비관리자 — 안내만, iframe 없음");
-      ok(!urls.some((u) => /slope-shot|po-minjok/.test(u)), "A2 비관리자 — 게임 파일을 받지 않는다");
+      ok(!urls.some((u) => /slope-shot|po-minjok|sbstars/.test(u)), "A2 비관리자 — 게임 파일을 받지 않는다");
 
       // B. 관리자 — 상단 관리자 줄의 「🎱 게임」 → 샌드박스 iframe
       ROLE = "admin";
@@ -941,8 +941,8 @@ async function poChecks(fr, shot) {
       const el = page.locator("iframe.ag-frame");
       await el.waitFor({ timeout: 20000 });
       ok((await el.getAttribute("sandbox")) === "allow-scripts" && /fullscreen/.test(await el.getAttribute("allow") || ""), "B2 iframe — sandbox=allow-scripts(앱 저장소 · 세션 접근 불가) · 전체 화면 허용");
-      ok(urls.some((u) => /slope-shot/.test(u)) && !urls.some((u) => /po-minjok/.test(u)), "B3 관리자 — 그때 고른 게임 파일만 받는다(따로 나뉜 파일)");
-      ok((await page.locator(".fb-act").count()) === 2 && /기울기 샷/.test(await page.locator(".fb-act.pri").innerText()), "B4 상단 바에 게임 고르기 — 기울기 샷 · 포의 민족");
+      ok(urls.some((u) => /slope-shot/.test(u)) && !urls.some((u) => /po-minjok|sbstars/.test(u)), "B3 관리자 — 그때 고른 게임 파일만 받는다(따로 나뉜 파일)");
+      ok((await page.locator(".fb-act").count()) === 3 && /기울기 샷/.test(await page.locator(".fb-act.pri").innerText()), "B4 상단 바에 게임 고르기 — 기울기 샷 · 포의 민족 · 선빵스타즈");
       const fr = await (await el.elementHandle()).contentFrame();
       await fr.locator("#lobby").waitFor({ timeout: 20000 });
       ok((await fr.evaluate(() => document.documentElement.dataset.theme)) === "light", "B5 앱 테마(라이트)를 문서에 심어 연다");

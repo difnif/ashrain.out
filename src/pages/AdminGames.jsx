@@ -1,7 +1,8 @@
-// 관리자 — 게임 (#/admin/games · #/admin/games/po)
-// 학생 공개 전까지 관리자 전용 게임 두 가지:
+// 관리자 — 게임 (#/admin/games · #/admin/games/po · #/admin/games/sb)
+// 학생 공개 전까지 관리자 전용 게임 세 가지:
 //   · 기울기 샷(#/admin/games) — 일차함수 당구(포켓볼 · 사구 · 컬링, 혼자 · 둘이 번갈아) — src/features/games/slope-shot.html
 //   · 포의 민족(#/admin/games/po) — 이차함수 포격전(스토리 12장 · 2인 대전 · 프리 모드) — src/features/games/po-minjok.html
+//   · 선빵스타즈(#/admin/games/sb) — 가진 직선 y = ax + b 위로만 달리는 3대3 난투(문제를 많이 푼 상태로 시작) — src/features/games/sbstars.html
 // 게임은 HTML 한 장이다. 관리자 확인이 끝난 뒤에만 내려받고(따로 나뉜 파일),
 // 샌드박스 iframe(allow-scripts — 앱의 저장소 · 로그인 세션에 닿지 않는다)에 띄운다. 전체 화면 · 소리를 위해 allow="fullscreen; autoplay".
 // 테마: 처음엔 문서에 data-theme 으로 심고(번쩍임 없음), 앱 테마가 바뀌면 postMessage 로 넘긴다(판이 새로 시작되지 않는다).
@@ -15,6 +16,7 @@ import FeatureBar, { FbAct } from "../components/FeatureBar";
 const GAMES = {
   slope: { title: "기울기 샷", hash: "#/admin/games", load: () => import("../features/games/slope-shot.html?raw") },
   po: { title: "포의 민족", hash: "#/admin/games/po", load: () => import("../features/games/po-minjok.html?raw") },
+  sb: { title: "선빵스타즈", hash: "#/admin/games/sb", load: () => import("../features/games/sbstars.html?raw") },
 };
 const STORE_PREFIX = "ashrain.games.";
 const themeMsg = (theme) => ({ type: "ash-theme", theme: theme === "light" ? "light" : "dark" });
