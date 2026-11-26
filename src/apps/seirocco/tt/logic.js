@@ -32,10 +32,13 @@ export function roundOfSession(sessions) {
   for (const s of sessions) m.set(s.no, s.round || 1);
   return m;
 }
+// 문항의 한 차 결과 = 그 차의 마지막 기록, 지금(최종) 결과 = 기록이 있는 가장 늦은 차의 결과.
+// 앞 차를 고친 기록(2차를 시작한 뒤 1차를 고침)은 id 가 더 커도 늦은 차 결과를 덮지 않는다 — SQL tt_current 와 같은 차례.
 export function currentMarks(marks, sessions) {
   const rs = roundOfSession(sessions);
+  const rd = (m) => rs.get(m.session_no) || 1;
   const out = new Map();
-  for (const m of [...marks].sort((a, b) => a.id - b.id)) out.set(m.seq, { ...m, round: rs.get(m.session_no) || 1 });
+  for (const m of [...marks].sort((a, b) => rd(a) - rd(b) || a.id - b.id)) out.set(m.seq, { ...m, round: rd(m) });
   return out;
 }
 export function roundMarks(marks, sessions) {
@@ -77,9 +80,17 @@ export function gradingStats(marks, sessions, nItems) {
   const nr = Math.max(1, ...sessions.map((s) => s.round || 1));
   return { summary: fin, summary1: s1, n_rounds: nr, n_retry: fin.X + fin.U };
 }
-// 어느 차에서든 X였던 문항(2차에서 고쳤어도 그 채점에서 한 번 틀린 것)
-export function everWrong(marks) {
-  return new Set(marks.filter((m) => m.result === "X").map((m) => m.seq));
+// 어느 차에서든 그 차 결과가 X였던 문항(2차에서 고쳤어도 그 채점에서 한 번 틀린 것).
+// 차 결과 = 그 차의 마지막 기록 — X를 잘못 눌렀다가 고친 것 · 앞 차 결과를 고친 것은 고친 결과로 본다.
+export function everWrong(marks, sessions = []) {
+  const out = new Set();
+  for (const byRound of roundMarks(marks, sessions).values()) for (const [seq, m] of byRound) if (m.result === "X") out.add(seq);
+  return out;
+}
+// 이번 차(round)보다 앞 차까지의 결과 — 기록이 있는 가장 늦은 앞 차의 결과(없으면 "")
+export function resultBefore(rounds, round) {
+  const prev = (rounds || []).filter((x) => x.round < round && x.result).sort((a, b) => a.round - b.round);
+  return prev.length ? prev[prev.length - 1].result : "";
 }
 
 const CIRCLED = { "①": "1", "②": "2", "③": "3", "④": "4", "⑤": "5", "⑥": "6", "⑦": "7", "⑧": "8", "⑨": "9", "⑩": "10" };

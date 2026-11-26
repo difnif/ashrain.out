@@ -2,7 +2,7 @@
    라우트: #/tt/convert · #/tt/register · #/tt/grade[/코드[/학생id]] · #/tt/class · #/tt/students[/id] · #/tt/prints · #/tt/print/코드 · #/tt/log */
 import * as B from "./backend";
 import { importView, pcAutoSync } from "./importer";
-import { autoJudge, judge, TEMPLATES } from "./logic";
+import { autoJudge, judge, resultBefore, TEMPLATES } from "./logic";
 import * as S from "./share";
 import { splitLabel, partLabel } from "./parts";
 
@@ -658,7 +658,7 @@ function regReview(d, students) {
 const norm1 = (v) => { const t = String(v).trim(); const k = Object.keys(CIRC).find((n) => CIRC[n] === t); return k || t; };
 
 /* ───────────────────────── 2. 채점 */
-async function viewGrade(code, sid) {
+async function viewGrade(code, sid, extra) {
   if (!code) return gradeHome();
   code = normCode(code);
   let p;
@@ -683,7 +683,7 @@ async function viewGrade(code, sid) {
     }
   }
   if (!sid || sid === "pick") return gradePick(p, sid === "pick");
-  return gradeRun(p, +sid);
+  return gradeRun(p, +sid, extra);
 }
 
 async function gradeHome() {
@@ -730,7 +730,7 @@ async function gradePick(p, manual) {
   $("#newName").onkeydown = (e) => { if (e.key === "Enter" && !e.isComposing) go(); };
 }
 
-async function gradeRun(p, sid) {
+async function gradeRun(p, sid, extra) {
   let mode = store.get("gradeMode", "ox");
   let d = await api("gradings", { code: p.code, student_id: sid });
   let focus = -1;
@@ -738,17 +738,27 @@ async function gradeRun(p, sid) {
   const cur = d.cur || { round: 1, kind: "solve", targets: null, no: 1 };
   const sessNo = cur.no || (d.sessions.length ? d.sessions[d.sessions.length - 1].no : 1);
   const retry = cur.kind === "retry";                  // 2차·3차: 틀리거나 안 푼 문항만 다시 매김
-  const tset = new Set(retry ? cur.targets || [] : []);
+  let tset = new Set(retry ? cur.targets || [] : []);
+  const syncT = () => { tset = new Set(retry ? (d.cur && d.cur.targets) || [] : []); };      // 앞 차를 고치면 이번 차 다시 풀 문항이 바뀔 수 있음
   const sameRound = d.sessions.filter((s) => (s.round || 1) === cur.round);
   const prevSess = sameRound.length > 1 ? sameRound[sameRound.length - 2] : null;     // 같은 차의 지난 회차(이어서 채점)
   const REASON = { done: "다 채점함", unsolved: "아이가 덜 풂", ungraded: "채점을 덜 함" };
   let showAll = false;
+  // 앞 차 고치기 — 2차(다시 풀기)를 시작한 뒤에도 1차 … 결과를 바꾼다. edRound < cur.round 이면 그 차를 보여 주고 그 차에 매긴다.
+  const fixAsk = /^fix(\d+)$/.exec(extra || "");
+  let edRound = fixAsk && +fixAsk[1] >= 1 && +fixAsk[1] < cur.round ? +fixAsk[1] : cur.round;
+  const past = () => edRound < cur.round;
+  const edInfo = () => (d.rounds || []).find((x) => x.round === edRound) || null;
+  const edSet = () => { const ri = edInfo(); return ri && ri.kind === "retry" && ri.targets ? new Set(ri.targets) : null; };   // null = 모든 문항(1차)
 
-  const roundMark = (it) => (it.rounds || []).find((x) => x.round === cur.round);
-  const res = (it) => (retry ? (roundMark(it) || {}).result || "" : (it.mark && it.mark.result) || "");
-  const isTarget = (it) => !retry || tset.has(it.seq);
-  // 할 일 = 아직 안 매긴 문항 + 지난 회차에 '안 풂'으로 남은 문항 (다시 풀기 차에서는 이번 차에 아직 안 매긴 다시 풀 문항)
-  const isTodo = (it) => (retry ? tset.has(it.seq) && !res(it) : !it.mark || !it.mark.result || (it.mark.result === "U" && it.mark.session_no < sessNo));
+  const roundMark = (it, r = cur.round) => (it.rounds || []).find((x) => x.round === r);
+  const resCur = (it) => (retry ? (roundMark(it) || {}).result || "" : (it.mark && it.mark.result) || "");      // 이번 차 결과
+  const res = (it) => (past() ? (roundMark(it, edRound) || {}).result || "" : resCur(it));                 // 보고 있는 차 결과
+  const isTarget = (it) => (past() ? !edSet() || edSet().has(it.seq) : !retry || tset.has(it.seq));
+  // 앞 차를 틀림 · 안 풂으로 고쳐 이번 차 다시 풀기에 넣을 수 있는 문항(넣기는 선생님이 고름)
+  const canAdd = (it) => retry && !tset.has(it.seq) && ["X", "U"].includes(resultBefore(it.rounds, cur.round));
+  // 할 일 = 아직 안 매긴 문항 + 지난 회차에 '안 풂'으로 남은 문항 (다시 풀기 차에서는 이번 차에 아직 안 매긴 다시 풀 문항) — 늘 이번 차 기준
+  const isTodo = (it) => (retry ? tset.has(it.seq) && !resCur(it) : !it.mark || !it.mark.result || (it.mark.result === "U" && it.mark.session_no < sessNo));
   const blanks = () => d.items.filter(isTodo).length;
   const marked = () => d.items.filter((it) => it.mark && it.mark.result && it.mark.session_no === sessNo).length;
   const visible = () => d.items.map((it, i) => i).filter((i) => isTarget(d.items[i]) || showAll);
@@ -768,9 +778,7 @@ async function gradeRun(p, sid) {
       </div>
       <div class="gsum" style="margin-top:8px" id="gsum"></div>
     </div></div>
-    ${retry ? `<div class="card roundbar"><b>${cur.round}차 채점 · 다시 풀기</b> — 지난번에 틀리거나 안 푼 <b>${tset.size}문항</b>만 매겨요.
-      여기서 매긴 결과가 최종이 되고, ${cur.round - 1}차까지의 결과는 그대로 남아요.
-      <label class="small" style="margin-left:6px;white-space:nowrap"><input type="checkbox" id="showAll"> 다른 문항도 보기</label></div>` : ""}
+    ${retry ? `<div class="card roundbar" id="roundbar"></div>` : ""}
     ${prevSess && prevSess.end_reason !== "done" ? `<div class="card" style="background:#eef2ff;border-color:#c7d2fe"><b>${cur.round > 1 ? cur.round + "차 " : ""}이어서 채점 (${sameRound.length}회차)</b> · 지난번(${shortWhen(prevSess.ended_at || prevSess.started_at)}): ${esc(REASON[prevSess.end_reason] || "닫지 않음")}.
       <span class="sub small">지난번에 매긴 기록은 그대로 남고, 이번에 매기는 것은 따로 저장돼요.</span></div>` : ""}
     ${!p.n_answers ? `<div class="card" style="background:#fffbeb;border-color:#fde68a">정답이 아직 없어요. O/X로 바로 매기거나, <a href="#/tt/print/${p.code}">정답 입력</a>에서 빠른정답을 넣으면 답 입력 자동 채점을 쓸 수 있어요.</div>` : ""}
@@ -778,12 +786,45 @@ async function gradeRun(p, sid) {
     <div class="items" id="items"></div>
     <p class="sub small" style="margin-top:14px">단축키: ↑↓ 문항 이동 · <b>O</b> 맞음 · <b>X</b> 틀림 · <b>U</b> 안 풂 (한글 입력 상태여도 됨) · 켜진 O/X 버튼을 한 번 더 누르면 이번에 매긴 것이 지워져요</p>`;
 
-  seg($("#modeSeg"), [["ox", "O/X로 매기기"], ["input", "OMR 카드 → 자동 채점"]], mode, (v) => { mode = v; store.set("gradeMode", v); drawOmr(true); drawItems(); });
-  if ($("#showAll")) $("#showAll").onchange = (e) => { showAll = e.target.checked; e.target.blur(); drawItems(); setFocus(focus, false); };
+  seg($("#modeSeg"), [["ox", "O/X로 매기기"], ["input", "OMR 카드 → 자동 채점"]], mode, (v) => { mode = v; store.set("gradeMode", v); drawBar(); drawOmr(true); drawItems(); });
+
+  // 2차부터: 위 띠에서 매길 차를 고른다 — 이번 차(다시 풀기) / 앞 차 고치기
+  function drawBar() {
+    const bar = $("#roundbar");
+    if (!bar) return;
+    const ri = edInfo();
+    const opts = [];
+    for (let r = 1; r <= cur.round; r++) opts.push([String(r), r === cur.round ? `${r}차 · 이번 차` : `${r}차 고치기`]);
+    bar.classList.toggle("fixing", past());
+    bar.innerHTML = `<div class="rbrow"><div class="rbtext">${past()
+      ? `<b>${edRound}차 결과 고치기</b> — ${edRound}차에 매긴 결과를 O · X · 안 풂으로 바꿔요${ri && ri.kind === "retry" ? ` (${edRound}차에 다시 푼 ${(ri.targets || []).length}문항)` : ""}.
+        <span class="sub small">${cur.round}차에서 이미 매긴 문항은 ${cur.round}차 결과가 최종이에요. 맞음으로 고친 문항은 ${cur.round}차에서 아직 안 매겼으면 ${cur.round}차 다시 풀기에서 빠지고,
+        틀림 · 안 풂으로 고친 문항은 「${cur.round}차에도 넣기」로 ${cur.round}차에서 다시 풀게 할 수 있어요.${mode === "input" ? " OMR 카드는 이번 차에서만 써요." : ""}</span>`
+      : `<b>${cur.round}차 채점 · 다시 풀기</b> — 지난번에 틀리거나 안 푼 <b>${tset.size}문항</b>만 매겨요.
+        여기서 매긴 결과가 최종이 되고, ${cur.round - 1}차까지의 결과는 그대로 남아요. ${cur.round - 1}차 결과를 바꾸려면 오른쪽 「${cur.round - 1}차 고치기」.`}
+      ${!past() || (ri && ri.kind === "retry") ? `<label class="small" style="margin-left:6px;white-space:nowrap"><input type="checkbox" id="showAll"${showAll ? " checked" : ""}> 다른 문항도 보기</label>` : ""}</div>
+      <div id="roundSeg"></div></div>`;
+    seg($("#roundSeg"), opts, String(edRound), (v) => setRound(+v));
+    if ($("#showAll")) $("#showAll").onchange = (e) => { showAll = e.target.checked; e.target.blur(); drawItems(); setFocus(focus, false); };
+  }
+  function setRound(r) {
+    if (r === edRound) return;
+    edRound = r;
+    drawBar();
+    drawItems();
+    const todo = d.items.findIndex(isTodo);
+    setFocus(!past() && todo >= 0 ? todo : Math.max(0, d.items.findIndex(isTarget)));
+  }
 
   function drawSum() {
     const s = d.summary;
-    if (retry) {
+    if (past()) {
+      const tg = d.items.filter(isTarget);
+      const c = (r) => tg.filter((it) => res(it) === r).length;
+      const none = tg.filter((it) => !res(it)).length;
+      $("#gsum").innerHTML = `<span class="sub small" style="font-weight:700">${edRound}차 고치는 중</span><span class="n o">O ${c("O")}</span><span class="n x">X ${c("X")}</span><span class="n u">안 풂 ${c("U")}</span>${none ? `<span class="n">안 매김 ${none}</span>` : ""}
+        <span class="sub small">/ ${edRound}차 ${tg.length}문항 · 최종 O ${s.O} · X ${s.X}${s.U ? " · 안 풂 " + s.U : ""} (전체 ${s.total}문항) · ${cur.round}차 다시 풀 ${tset.size}문항</span>`;
+    } else if (retry) {
       const tg = d.items.filter(isTarget);
       const c = (r) => tg.filter((it) => res(it) === r).length;
       const left = tg.filter((it) => !res(it)).length;
@@ -800,7 +841,10 @@ async function gradeRun(p, sid) {
   function itemHtml(it, i, cont = false) {
     const r = res(it);
     const lastSess = it.mark && it.mark.session_no;
-    const hist = (it.rounds || []).filter((x) => x.round < cur.round).map((x) => `<span class="tag ${x.result === "O" ? "o" : x.result === "X" ? "x" : "u"}">${x.round}차 ${RK[x.result] || x.result}</span>`).join("");
+    const hist = (it.rounds || []).filter((x) => (past() ? x.round !== edRound : x.round < cur.round)).map((x) => `<span class="tag ${x.result === "O" ? "o" : x.result === "X" ? "x" : "u"}">${x.round}차 ${RK[x.result] || x.result}</span>`).join("");
+    // 앞 차를 틀림 · 안 풂으로 고친 문항 → 이번 차에도 넣기
+    const addUi = canAdd(it) ? `<div class="addr"><span class="small sub">${cur.round - 1 > 1 ? "앞 차까지" : "1차"} ${RK[resultBefore(it.rounds, cur.round)]} — ${cur.round}차 다시 풀 문항이 아니에요</span>
+      <button class="btn ghost small" data-add="${it.seq}">${cur.round}차에도 넣기</button></div>` : "";
     const badges = [
       it.choice ? `<span class="tag">객관식</span>` : `<span class="tag">${esc(p.label || "서답형")}</span>`,
       it.repeat ? `<span class="tag rep">반복 오답</span>` : it.wrong_before ? `<span class="tag prev">전에 ${it.wrong_before}번 틀림</span>` : "",
@@ -813,21 +857,24 @@ async function gradeRun(p, sid) {
       : it.png ? `<img loading="lazy" src="${fileUrl(p.code + "/" + it.png)}" alt="${esc(nob(it))}">` : `<div class="noimg">${esc(nob(it))} — 그림 없이 등록 (위 '시험지 보기')</div>`;
     const key = `<div class="key">${it.answer ? `정답 <b>${esc(CIRC[it.answer] && (it.choice || it.answer_png) ? CIRC[it.answer] : it.answer)}</b>` : it.answer_png ? (cont ? `<span class="muted">정답은 위 그림</span>` : "정답") : `<span class="muted">정답 미입력</span>`}
           ${it.answer_png && !cont ? `<img class="ansimg" src="${fileUrl(p.code + "/" + it.answer_png)}" alt="정답">` : ""}</div>`;
+    const f = (it.mark && it.mark.result) || "";
     if (!isTarget(it)) {
-      const f = (it.mark && it.mark.result) || "";
-      return `<div class="item off${cont ? " cont" : ""}" data-i="${i}"><div class="no ${/^\d+$/.test(nolab(it)) ? "" : "lab"}">${esc(nolab(it))}</div><div>${img}</div>
-        <div class="side">${key}<div class="badges">${badges}</div><div class="small sub">이번 차에 다시 풀 문항이 아니에요 · 최종 <b>${RK[f] || "안 매김"}</b></div></div></div>`;
+      return `<div class="item off${cont ? " cont" : ""}${addUi ? " canadd" : ""}" data-i="${i}"><div class="no ${/^\d+$/.test(nolab(it)) ? "" : "lab"}">${esc(nolab(it))}</div><div>${img}</div>
+        <div class="side">${key}<div class="badges">${badges}</div><div class="small sub">${past() ? `${edRound}차에 다시 푼 문항이 아니에요` : "이번 차에 다시 풀 문항이 아니에요"} · 최종 <b>${RK[f] || "안 매김"}</b></div>${addUi}</div></div>`;
     }
-    const rm = retry ? roundMark(it) : it.mark;
+    const rm = past() ? roundMark(it, edRound) : retry ? roundMark(it) : it.mark;
     const given = rm && rm.answer ? `<div class="small sub">적은 답: <b>${esc(rm.answer)}</b></div>` : "";
     const inputUi = "";              // 답 입력은 위 OMR 카드에서
+    // 앞 차를 고칠 때: 최종 결과가 어느 차 것인지
+    const fin = past() ? `<div class="small sub">최종 <b>${RK[f] || "안 매김"}</b>${it.mark && it.mark.round && it.mark.round !== edRound ? ` · ${it.mark.round}차 결과` : ""}</div>` : "";
     return `<div class="item ${r} ${i === focus ? "focus" : ""}${cont ? " cont" : ""}" data-i="${i}">
       <div class="no ${/^\d+$/.test(nolab(it)) ? "" : "lab"}">${esc(nolab(it))}</div>
       <div>${img}</div>
       <div class="side">${key}
         <div class="badges">${badges}</div>
-        ${inputUi}${given}
+        ${inputUi}${given}${fin}
         <div class="marks"><button class="mo ${r === "O" ? "on" : ""}" data-r="O">O</button><button class="mx ${r === "X" ? "on" : ""}" data-r="X">X</button><button class="mu ${r === "U" ? "on" : ""}" data-r="U">안 풂</button></div>
+        ${past() ? addUi : ""}
       </div></div>`;
   }
   function drawItems() {
@@ -843,6 +890,7 @@ async function gradeRun(p, sid) {
       el.onclick = (e) => { if (!e.target.closest("button,input,img")) setFocus(i, false); };
       if ($("img", el)) $("img", el).onclick = (e) => zoom(e.target.src);
       $$(".marks button", el).forEach((b) => (b.onclick = () => mark(i, res(it) === b.dataset.r ? "" : b.dataset.r)));
+      $$("[data-add]", el).forEach((b) => (b.onclick = () => addTarget(i)));
       $$("[data-ans]", el).forEach((b) => (b.onclick = () => mark(i, "auto", b.dataset.ans)));
       const f = $("form.ansin", el);
       if (f) f.onsubmit = (e) => { e.preventDefault(); const v = $("input", f).value.trim(); if (v) mark(i, "auto", v); };
@@ -885,7 +933,7 @@ async function gradeRun(p, sid) {
   function drawOmr(full = false) {
     const box = $("#omr");
     if (!box) return;
-    if (mode !== "input") { box.hidden = true; box.innerHTML = ""; return; }
+    if (mode !== "input" || past()) { box.hidden = true; box.innerHTML = ""; return; }      // 앞 차를 고칠 때는 O/X로
     box.hidden = false;
     if (!full && $(".omr-grid", box)) {          // 결과만 고침(입력 중인 칸은 그대로)
       $$(".orow", box).forEach((row) => { const it = d.items[+row.dataset.i]; const r = res(it); row.className = `orow ${r}`; $(".ores", row).textContent = r ? RK[r] : ""; });
@@ -980,6 +1028,7 @@ async function gradeRun(p, sid) {
     d.summary = s;
   }
   let sentMode = null;
+  const removedNow = [];          // 앞 차를 맞음으로 고쳐 이번 차 다시 풀기에서 빠진 문항(다 보낸 뒤 알림)
   function flushMarks() {
     if (flushing) return flushing;
     flushing = (async () => {
@@ -988,25 +1037,66 @@ async function gradeRun(p, sid) {
           while (queue.length) {
             const job = { ...queue[0], light: true };
             if (job.mode === sentMode) delete job.mode;
-            try { await api(`gradings/${gid}/mark`, job); }
-            catch (e) {
+            try {
+              if (job.fix) {           // 앞 차 고치기
+                const r = await api(`gradings/${gid}/fix`, { round: job.fix, seq: job.seq, result: job.result, light: true });
+                if (r && r.removed) removedNow.push(job.seq);
+              } else await api(`gradings/${gid}/mark`, job);
+            } catch (e) {
               queue.length = 0;
               toast(e.message, 4000);
-              try { d = await api("gradings/" + gid); } catch { /* 다음에 */ }
-              drawItems(); setFocus(focus, false);
+              try { d = await api("gradings/" + gid); syncT(); } catch { /* 다음에 */ }
+              drawBar(); drawItems(); setFocus(focus, false);
               return;
             }
             if (job.mode) sentMode = job.mode;
             queue.shift();
           }
           const r = await api("gradings/" + gid);
-          if (!queue.length) { d = r; drawItems(); setFocus(focus, false); break; }
+          if (!queue.length) {
+            d = r; syncT(); drawBar(); drawItems(); setFocus(focus, false);
+            if (removedNow.length) {
+              const labs = removedNow.splice(0).map((s) => nob(d.items.find((x) => x.seq === s) || { seq: s })).join(", ");
+              toast(`${cur.round}차 다시 풀기에서 뺐어요 — ${labs} (앞 차를 맞음으로 고쳐서)`, 4500);
+            }
+            break;
+          }
         }
       } catch (e) { toast(e.message, 4000); } finally { flushing = null; }
     })();
     return flushing;
   }
+  // 앞 차 고치기: 화면에 먼저 적고 차례로 보낸다(다 보낸 뒤 서버 기록으로 맞춤 — 이번 차 다시 풀 문항도)
+  function fixMark(i, result) {
+    const it = d.items[i];
+    if (!["O", "X", "U"].includes(result)) return toast(`${edRound}차 결과는 지우지 않아요 — O · X · 안 풂 중에서 골라 바꿔 주세요`);
+    if (!isTarget(it)) return;
+    const vis = visible().filter((k) => isTarget(d.items[k]));
+    const goNext = () => { const at = vis.indexOf(i); setFocus(at >= 0 && at + 1 < vis.length ? vis[at + 1] : i); };
+    const pm = roundMark(it, edRound);
+    if (pm && pm.result === result) return goNext();
+    const ans = (pm && pm.answer) || "";
+    it.rounds = (it.rounds || []).filter((x) => x.round !== edRound).concat([{ round: edRound, result, answer: ans }]).sort((a, b) => a.round - b.round);
+    const top = it.rounds[it.rounds.length - 1];          // 최종 = 기록이 있는 가장 늦은 차의 결과
+    if (top.round === edRound) it.mark = { ...(it.mark || {}), seq: it.seq, result, answer: ans, round: edRound, session_no: null };
+    sumLocal();
+    drawItems();
+    goNext();
+    queue.push({ fix: edRound, seq: it.seq, result });
+    flushMarks();
+  }
+  // 앞 차를 틀림 · 안 풂으로 고친 문항을 이번 차 다시 풀기에도 넣기
+  async function addTarget(i) {
+    const it = d.items[i];
+    await flushMarks();
+    try {
+      const r = await api(`gradings/${gid}/retry-add`, { seq: it.seq });
+      d = r; syncT(); drawBar(); drawItems(); setFocus(i, false);
+      toast(r.added ? `${cur.round}차 다시 풀 문항에 넣었어요 — ${nob(it)}` : `이미 ${cur.round}차 다시 풀 문항이에요 — ${nob(it)}`);
+    } catch (e) { toast(e.message, 4000); }
+  }
   async function mark(i, result, answer) {
+    if (past()) return fixMark(i, result);
     const it = d.items[i];
     const rm = retry ? roundMark(it) : it.mark;
     const ans = answer ?? (rm ? rm.answer : "");
@@ -1085,9 +1175,11 @@ async function gradeRun(p, sid) {
     rounds: Math.max(cur.round || 1, ...d.sessions.map((s) => s.round || 1)), scans: d.scans || [], meta: { title: p.title, student: d.student.name },
     onChange: (sc) => { d.scans = sc; if ($("#scanBtn")) $("#scanBtn").textContent = scanLabel(sc); } });
   if ($("#showSheet")) $("#showSheet").onclick = () => modal(`<h2>시험지</h2><div class="ansimgs">${p.sheet_pages.map((s) => `<img src="${fileUrl(s)}" alt="">`).join("")}</div>`);
+  drawBar();
   drawItems();
   const firstBlank = d.items.findIndex(isTodo);
-  setFocus(firstBlank >= 0 ? firstBlank : 0, firstBlank > 0);
+  if (past()) setFocus(Math.max(0, d.items.findIndex(isTarget)), false);
+  else setFocus(firstBlank >= 0 ? firstBlank : 0, firstBlank > 0);
 }
 
 /* 다음 차(2차·3차) 채점 시작: 틀리거나 안 푼 문항만 다시 매김 */
@@ -1109,7 +1201,7 @@ const roundsLine = (it) => (it.rounds || []).map((x) => `${x.round}차 ${{ O: "O
 /* 채점 끝난 뒤 요약 (#/tt/grade/코드/학생/done) */
 const _viewGrade = viewGrade;
 viewGrade = async function (code, sid, extra) {
-  if (extra !== "done") return _viewGrade(code, sid);
+  if (extra !== "done") return _viewGrade(code, sid, extra);
   const gs = await api("gradings?student=" + sid);
   const g = gs.find((x) => x.code === normCode(code));
   if (!g) return _viewGrade(code, sid);
@@ -1131,7 +1223,8 @@ viewGrade = async function (code, sid, extra) {
       <div class="row" style="margin-top:12px">
         ${!done ? `<a class="btn" href="#/tt/grade/${d.print.code}/${sid}">${last.round > 1 ? last.round + "차 " : ""}이어서 채점</a>` : ""}
         ${done && nextN ? `<button class="btn" id="retryGo" title="틀리거나 안 푼 문항만 다시 풀게 한 뒤 매겨요">${last.round + 1}차 채점 시작 — 틀린·안 푼 ${nextN}문항</button>` : ""}
-        <a class="btn ghost" href="#/tt/grade/${d.print.code}/${sid}" title="${last.round}차에 매긴 것을 고쳐요">다시 열기 / 고치기</a>
+        <a class="btn ghost" href="#/tt/grade/${d.print.code}/${sid}" title="${last.round}차에 매긴 것을 고쳐요">${R.length > 1 ? `${last.round}차 ` : ""}다시 열기 / 고치기</a>
+        ${R.length > 1 ? `<a class="btn ghost" id="fixPrev" href="#/tt/grade/${d.print.code}/${sid}/fix${last.round - 1}" title="${last.round}차를 시작한 뒤에도 앞 차에 매긴 결과를 바꿔요">${last.round === 2 ? "1차" : `앞 차(1~${last.round - 1}차)`} 결과 고치기</a>` : ""}
         <a class="btn ghost" href="#/tt/students/${sid}">학생 기록</a><a class="btn ghost" href="#/tt/grade">다른 프린트 채점</a></div>
       <div class="row" style="margin-top:8px"><span class="sub small">받기</span>
         <a class="btn ghost small" href="/dl/grading/${g.id}.pdf?view=1" target="_blank">채점 결과 PDF</a>

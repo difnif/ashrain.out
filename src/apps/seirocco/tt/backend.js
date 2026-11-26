@@ -107,11 +107,17 @@ async function wrongHistory(sid, hashes, excludeGid = null) {
   const others = gs.filter((g) => g.id !== excludeGid);
   if (!others.length) return new Map();
   const xs = await all(() => T("tt_marks").select("grading_id,seq").in("grading_id", others.map((g) => g.id)).eq("result", "X"));
+  if (!xs.length) return new Map();
+  // X 기록이 있는 문항만 그 채점의 기록을 다 읽어 차마다 마지막 기록으로 본다 — 잘못 눌렀다 고친 X · 앞 차를 고친 X는 빼고
+  const xg = [...new Set(xs.map((m) => m.grading_id))], xseq = [...new Set(xs.map((m) => m.seq))];
+  const [ms, ss] = await Promise.all([
+    all(() => T("tt_marks").select("id,grading_id,session_no,seq,result").in("grading_id", xg).in("seq", xseq).order("id")), sessionsOf(xg)]);
   const items = await all(() => T("tt_print_items").select("print_id,seq,hash").in("print_id", [...new Set(others.map((g) => g.print_id))]));
   const hm = new Map(items.map((i) => [i.print_id + ":" + i.seq, i.hash]));
   const res = new Map();
   for (const g of others) {
-    const seqs = new Set(xs.filter((m) => m.grading_id === g.id).map((m) => m.seq));
+    if (!xg.includes(g.id)) continue;
+    const seqs = everWrong(ms.filter((m) => m.grading_id === g.id), ss.filter((s) => s.grading_id === g.id));
     for (const s of seqs) {
       const h = hm.get(g.print_id + ":" + s);
       if (h && hashes.has(h)) res.set(h, (res.get(h) || 0) + 1);
@@ -202,7 +208,7 @@ async function studentDetail(sid) {
   for (const g of gs) {
     const p = apm.get(g.print_id);
     if (!p || p.shelf === "deleted") continue;
-    for (const seq of [...everWrong(marks.filter((m) => m.grading_id === g.id))].sort((a, b) => a - b)) {
+    for (const seq of [...everWrong(marks.filter((m) => m.grading_id === g.id), sessions.filter((s) => s.grading_id === g.id))].sort((a, b) => a - b)) {
       const it = items.find((i) => i.print_id === g.print_id && i.seq === seq);
       if (!it || !it.hash) continue;
       if (!wrong.has(it.hash)) wrong.set(it.hash, { hash: it.hash, count: 0, png: it.png ? `${p.code}/${it.png}` : null, where: [] });
@@ -564,6 +570,20 @@ export async function api(path, body) {
     if (body.light) return { ok: true };            // 화면이 먼저 적어 두고 차례로 보내는 경우 — 다 보낸 뒤 한 번만 다시 읽는다
     return gradingDetail(gid);
   }
+  // 앞 차(1차 …) 결과 고치기 — 다음 차를 시작한 뒤에도 (supabase/2026-11_tt_round_fix.sql 의 tt_mark_round · tt_retry_add)
+  if ((m = /^gradings\/(\d+)\/fix$/.exec(p))) {
+    const gid = Number(m[1]);
+    const result = String(body.result || "");
+    if (!["O", "X", "U"].includes(result)) throw new Error("앞 차 결과는 O · X · 안 풂 중에서 골라 바꿔요");
+    const r = await roundFn(() => rpc("tt_mark_round", { p_grading: gid, p_round: Number(body.round), p_seq: Number(body.seq), p_result: result, p_answer: body.answer ?? null }));
+    if (body.light) return r;
+    return { ...(await gradingDetail(gid)), fix: r };
+  }
+  if ((m = /^gradings\/(\d+)\/retry-add$/.exec(p))) {
+    const gid = Number(m[1]);
+    const r = await roundFn(() => rpc("tt_retry_add", { p_grading: gid, p_seq: Number(body.seq) }));
+    return { ...(await gradingDetail(gid)), added: !!(r && r.added) };
+  }
   if ((m = /^gradings\/(\d+)\/close$/.exec(p))) {
     const st = await rpc("tt_close_grading", { p_grading: Number(m[1]), p_reason: body.reason || "done", p_untouched: !!body.untouched });
     return { status: st };
@@ -615,6 +635,16 @@ export async function api(path, body) {
   if (p === "export/import") return (await engine()).importTranscripts(body, ctx());
   if (p === "inbox") return [];
   throw new Error("없는 요청: " + p);
+}
+
+// 앞 차 고치기 함수(tt_mark_round · tt_retry_add)가 운영 DB에 아직 없으면 알아듣게
+async function roundFn(call) {
+  try { return await call(); } catch (e) {
+    if (/tt_mark_round|tt_retry_add/.test(e.message || "") && /function|schema cache/i.test(e.message || "")) {
+      throw new Error("DB에 「앞 차 고치기」 함수가 아직 없어요 — supabase/2026-11_tt_round_fix.sql 을 한 번 실행해야 해요");
+    }
+    throw e;
+  }
 }
 
 // ── 하위 문제 (1)(2)(3) 따로 채점 — 이미 있는 프린트의 문항 줄 나누기 · 다시 묶기 (supabase/2026-11_tt_item_parts.sql 의 tt_relayout_items)
