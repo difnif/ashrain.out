@@ -1,6 +1,6 @@
 // ashrain.out — 듀얼 모드 「문제 풀이 해설 전부」 (frames/allspec.jsx)
 // 해설 액자(공통 틀 frames/lesson.jsx)를 듀얼로 나누면 판마다 이 액자의 세트가 아니라 문제 풀이 해설 전부에서 고른다:
-//   📚 단원 100제 — 프린트 목록 전부(학생앱 단원 100제와 같은 차례 — lib/av.js): 기본기 단원 100제(초등 · 중등 · 고등 — e-ten)와
+//   📚 유형별 문제 세트 — 프린트 목록 전부(학생앱 유형별 문제 세트와 같은 차례 — lib/av.js): 기본기 단원(초등 · 중등 · 고등 — e-ten)와
 //     시그니처 프린트(해설 액자의 세트 하나 = 한 장 — 그래프 그리기 「graph:basic」 · 10단계 계산 「lin10:1」 · 그래프와 넓이 「area:A」 ·
 //     경우의 수와 확률 100제 「cnt100:sel」 …)가 같은 서열로, 단원이 달라도 · 학교급이 달라도(처음엔 「전체」) — 단계는 프린트 안에(단계 목록).
 //   · 🗓 주차별 회차(학년마다 104 — w-e3-07a).
@@ -15,6 +15,7 @@ import { GD_SPEC } from "./graphdraw.jsx";
 import { L10_SPEC } from "./lin10.jsx";
 import { AREA_SPEC } from "./area.jsx";
 import { C100_SPEC } from "./cnt100.jsx";
+import { LIN2_SPEC, MEET_SPEC } from "./prints.jsx";
 import { basicScenes, TYPE_NO } from "./basics.jsx";
 import { DocsMenu } from "./docsmenu.jsx";
 import { setDualAll } from "./lesson.jsx";
@@ -26,11 +27,13 @@ import { typeMeta } from "../../../lib/avtypes.js";
 import { unitLabel } from "../../../lib/units.js";
 import { AV_LEVELS, avOfCat, printItemOf } from "../../../lib/av.js";
 
-/** 해설 액자 넷 — 세트 key 앞에 액자 key 를 붙인다(「graph:basic」) */
+/** 해설 액자 여섯 — 세트 key 앞에 액자 key 를 붙인다(「graph:basic」) · 차례는 frames/index.js 와 같게 */
 export const LESSON_FRAMES = [
   { fk: "graph", spec: GD_SPEC, icon: "📈", short: "그래프 그리기" },
   { fk: "lin10", spec: L10_SPEC, icon: "🔢", short: "10단계 계산" },
   { fk: "area", spec: AREA_SPEC, icon: "📐", short: "그래프와 넓이" },
+  { fk: "lin2", spec: LIN2_SPEC, icon: "✏️", short: "두 점 → 식" },
+  { fk: "meet", spec: MEET_SPEC, icon: "⚡", short: "교점 · 만날 조건" },
   { fk: "cnt100", spec: C100_SPEC, icon: "🎯", short: "경우의 수 100제" },
 ];
 const FRAME_RE = new RegExp(`^(${LESSON_FRAMES.map((f) => f.fk).join("|")}):(.+)$`);
@@ -126,24 +129,24 @@ export function allSpecFor(origin) {
 }
 setDualAll(allSpecFor);
 
-/* ══════════ 목록 — 단원 100제(프린트 전부) · 주차별 ══════════ */
+/* ══════════ 목록 — 유형별 문제 세트(프린트 전부) · 주차별 ══════════ */
 const TABS = [
-  { k: "unit", lab: "📚 단원 100제", hint: "프린트 목록 전부 — 기본기 단원 100제와 시그니처 프린트가 같은 차례로 · 단원 · 학교급이 달라도 골라요 · 단계는 프린트 안에서(단계 목록)" },
+  { k: "unit", lab: "📚 유형별 문제 세트", hint: "프린트 목록 전부 — 기본기 단원과 시그니처 프린트가 같은 차례로 · 단원 · 학교급이 달라도 골라요 · 단계는 프린트 안에서(단계 목록)" },
   { k: "week", lab: "🗓 주차별", hint: "학년마다 주 2회(A · B) × 52주 = 104회차 · 회차마다 20문항" },
 ];
 const ALL_LV = "전체";
 const LVS = [ALL_LV, ...AV_LEVELS];
 let PRINTS = null;
-/** 단원 100제 목록 줄 — 학생앱과 같은 차례(기본기 단원 · 그 단원 뒤에 시그니처 프린트) · 「전체」면 학교급마다 묶음 */
+/** 유형별 문제 세트 목록 줄 — 학생앱과 같은 차례(기본기 단원 · 그 단원 뒤에 시그니처 프린트) · 「전체」면 학교급마다 묶음 */
 const printRows = (lv) => {
   PRINTS ||= avOfCat("sol").map((it) => ({ key: it.sig ? it.key : it.set, icon: it.icon, short: it.short, note: it.grade, sub: unitLabel(it.unit), level: it.level,
     sig: !!it.sig }));
   if (lv !== ALL_LV) return PRINTS.filter((x) => x.level === lv);
   const n = Object.fromEntries(AV_LEVELS.map((l) => [l, PRINTS.filter((x) => x.level === l).length]));
-  return PRINTS.map((x) => ({ ...x, grp: `${x.level} · 단원 100제 ${n[x.level]}` }));
+  return PRINTS.map((x) => ({ ...x, grp: `${x.level} · 유형별 문제 세트 ${n[x.level]}` }));
 };
 
-/** 지금 판이 보는 것으로 처음 탭 · 학교급 · 학년 — 단원 100제는 늘 「전체」부터(지금 것은 목록 가운데로) */
+/** 지금 판이 보는 것으로 처음 탭 · 학교급 · 학년 — 유형별 문제 세트는 늘 「전체」부터(지금 것은 목록 가운데로) */
 function startOf(cur) {
   const r = allSource(cur);
   const p = r?.kind === "week" ? parseWeekId(cur) : null;

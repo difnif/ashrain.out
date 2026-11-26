@@ -42,6 +42,7 @@ import { GraphFrame, GraphThumb } from "../features/display/frames/graphdraw.jsx
 import { Lin10Frame, Lin10Thumb } from "../features/display/frames/lin10.jsx";
 import { AreaFrame, AreaThumb } from "../features/display/frames/area.jsx";
 import { Cnt100Frame, Cnt100Thumb } from "../features/display/frames/cnt100.jsx";
+import { Lin2Frame, Lin2Thumb, MeetFrame, MeetThumb } from "../features/display/frames/prints.jsx";
 import { hanoiTimeline } from "../features/display/hanoi";
 import { CURIO_LABS, CurioThumb } from "../features/display/frames/curio.jsx";
 import { BASIC_LABS, BasicsThumb } from "../features/display/frames/basics.jsx";
@@ -488,6 +489,8 @@ function FrameGallery({ C, mode, view, onPick, onClose, onScenes }) {
                 {f.key === "graph" && <GraphThumb C={C} />}
                 {f.key === "lin10" && <Lin10Thumb C={C} />}
                 {f.key === "area" && <AreaThumb C={C} />}
+                {f.key === "lin2" && <Lin2Thumb C={C} />}
+                {f.key === "meet" && <MeetThumb C={C} />}
                 {f.key === "cnt100" && <Cnt100Thumb C={C} />}
                 {BASIC_LABS[f.key] && <BasicsThumb fkey={f.key} C={C} />}
                 {CURIO_LABS[f.key] && <CurioThumb fkey={f.key} C={C} mode={mode} />}
@@ -526,7 +529,7 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
         <p className="dsp-gal-sub">고르면 바로 돌기 시작해요.</p>
         <div className="dsp-gal">
           {items.map((it) => {
-            const f = it.frame && !it.set ? FRAMES.find((x) => x.key === it.frame) : null;      // 단원 100제(기본기 단원 · 시그니처 프린트 — it.set)는 아이콘만
+            const f = it.frame && !it.set ? FRAMES.find((x) => x.key === it.frame) : null;      // 유형별 문제 세트(기본기 단원 · 시그니처 프린트 — it.set)는 아이콘만
             return (
               <button key={it.key} type="button" className={"dsp-fcard" + (av.key === it.key ? " on" : "")}
                 onClick={() => { if (it.key === av.key) onClose(); else location.hash = `#/av/${it.key}`; }}>
@@ -539,6 +542,8 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
                   {it.key === "graph" && <GraphThumb C={C} />}
                   {it.key === "lin10" && <Lin10Thumb C={C} />}
                   {it.key === "area" && <AreaThumb C={C} />}
+                  {it.key === "lin2" && <Lin2Thumb C={C} />}
+                  {it.key === "meet" && <MeetThumb C={C} />}
                   {it.key === "cnt100" && <Cnt100Thumb C={C} />}
                   {CURIO_LABS[it.key] && <CurioThumb fkey={it.key} C={C} mode={mode} />}
                   {(!f || it.set) && <text x={W / 2} y={560} textAnchor="middle" fontSize="220">{it.icon}</text>}
@@ -560,7 +565,8 @@ function AvGallery({ C, mode, av, onClose, onExit }) {
 
 /* ══════════ 액자 무대 ══════════ */
 const UI = { Btn, Ic, FrameIc };
-const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame, lin10: Lin10Frame, area: AreaFrame, cnt100: Cnt100Frame, ...BASIC_LABS, ...CURIO_LABS };
+const LABS = { monty: MontyFrame, branch: BranchFrame, galton: GaltonFrame, graph: GraphFrame, lin10: Lin10Frame, area: AreaFrame,
+  lin2: Lin2Frame, meet: MeetFrame, cnt100: Cnt100Frame, ...BASIC_LABS, ...CURIO_LABS };
 function FrameStage({ fkey, ...rest }) {
   if (fkey === "hanoi") return <HanoiFrame ui={UI} {...rest} />;
   if (LABS[fkey]) { const Lab = LABS[fkey]; return <Lab ui={UI} {...rest} />; }

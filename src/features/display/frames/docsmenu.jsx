@@ -5,7 +5,7 @@
 //   받은 파일 이름은 앱이 붙인다(blob + a.download): 「초1-10만들기-문제지.pdf」 · ZIP 「초1-10만들기.zip」(압축 없는 ZIP, 한글 이름 UTF-8).
 //   PDF 가 아직 없으면(머지 전 · 미리보기) 같은 문서를 그 자리에서 만들어 인쇄 창으로 연다 — 문제지 · 해설지 · 빠른 정답은
 //   frames/avprint.js(그림은 frames/avfig.jsx 가 흑백 SVG 로), OMR 카드는 grid.js(손글씨 한 줄 칸). 인쇄 창에서 「PDF로 저장」하면 된다.
-//   유형(e-ten.3) · 주차별 회차는 PDF 를 미리 찍어 두지 않는다(워크플로는 단원 100제만) — [확인] 다음이 바로 「인쇄 창으로 열기」.
+//   유형(e-ten.3) · 주차별 회차는 PDF 를 미리 찍어 두지 않는다(워크플로는 유형별 문제 세트만) — [확인] 다음이 바로 「인쇄 창으로 열기」.
 // 받기 흐름(고르기 → 확인 → 받기 | 인쇄 창)은 useDocsFlow 하나 — 액자 오른쪽 위 📄(DocsMenu)와
 //   학생앱 목록에서 꾹 눌러 「📄 프린트」(components/AvPrintSheet.jsx)가 같이 쓴다.
 import { useEffect, useState } from "react";
@@ -39,7 +39,7 @@ export function readPick() {
   return ["problems", "solutions"];
 }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-/** PDF 를 미리 찍어 두는 세트인가 — 단원 100제(유형은 base, 회차는 week 가 있다) */
+/** PDF 를 미리 찍어 두는 세트인가 — 유형별 문제 세트(유형은 base, 회차는 week 가 있다) */
 export const prerendered = (meta) => !!meta && !meta.base && meta.week == null;
 function saveBlob(blob, name) {
   const url = URL.createObjectURL(blob);
@@ -93,7 +93,7 @@ export function useDocsFlow({ meta, set, open, loadSet = null }) {
   });
   const info = (id) => files?.sets?.[meta?.id]?.[id] || null;
   const order = AV_DOCS.map((d) => d.id).filter((id) => picks.includes(id));
-  // PDF 를 미리 찍어 올려 두는 것은 단원 100제뿐(워크플로 push-av-files) — 유형 · 회차는 [확인] 다음이 바로 인쇄 창.
+  // PDF 를 미리 찍어 올려 두는 것은 유형별 문제 세트뿐(워크플로 push-av-files) — 유형 · 회차는 [확인] 다음이 바로 인쇄 창.
   //   단원도 아직 안 올라갔으면(머지 전 · 미리보기) 받아 보다가 404 일 때 인쇄 창으로(nofile)
   const hasPdf = prerendered(meta) || !!files?.sets?.[meta?.id];
   const confirm = () => setStep(hasPdf ? "how" : "print");

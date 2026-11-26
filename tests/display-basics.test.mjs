@@ -228,7 +228,7 @@ export const docsMenu = (meta, set) => renderToStaticMarkup(<DocsMenu meta={meta
   const BAD = /NaN|undefined|Infinity|\[object Object\]/;
   const bad = (s) => (s.match(/.{50}(NaN|undefined|Infinity|\[object Object\]).{30}/) || [""])[0];
 
-  test("목록: 학교급 액자 셋이 해설(lesson · basics)로 · 액자 무대에 셋 · 학생앱 문제 풀이 해설 = 단원 100 + 시그니처 프린트 10(같은 서열)", () => {
+  test("목록: 학교급 액자 셋이 해설(lesson · basics)로 · 액자 무대에 셋 · 학생앱 유형별 문제 세트 = 단원 100 + 시그니처 프린트 21(같은 서열)", () => {
     for (const L of LEVELS) {
       const f = m.FRAMES.find((x) => x.key === L.frame);
       assert.ok(f && f.lesson && f.basics && f.level === L.level, L.frame);
@@ -236,17 +236,18 @@ export const docsMenu = (meta, set) => renderToStaticMarkup(<DocsMenu meta={meta
     }
     assert.deepEqual(m.AV_LEVELS, ["초등", "중등", "고등"]);
     const sol = m.avOfCat("sol");
-    assert.equal(sol.length, 110);
-    assert.equal(new Set(sol.map((x) => x.key)).size, 110, "항목 key 겹침");
+    assert.equal(sol.length, 121);
+    assert.equal(new Set(sol.map((x) => x.key)).size, 121, "항목 key 겹침");
     for (const x of sol) assert.ok(x.level && x.grade && x.unit && x.title && x.n > 0, `${x.key} 학교급 · 학년 범위 · 단원 · 문항 수`);
-    assert.deepEqual(m.AV_LEVELS.map((lv) => m.avOfLevel(lv).length), [36, 40, 34]);
+    assert.deepEqual(m.AV_LEVELS.map((lv) => m.avOfLevel(lv).length), [36, 51, 34]);
     // 학교급 안에서는 등록표 차례, 시그니처 프린트(해설 액자의 세트 하나 = 한 줄)는 after 단원 바로 뒤에 — 같은 서열
     const keys = sol.map((x) => x.key);
     const i = keys.indexOf("m-lin");
-    assert.deepEqual(keys.slice(i, i + 8), ["m-lin", "graph:basic", "graph:hard", "lin10:1", "lin10:2", "area:A", "area:B", "m-iso"]);
+    assert.deepEqual(keys.slice(i, i + 19), ["m-lin", "graph:basic", "graph:hard", "lin10:1", "lin10:2", "area:A", "area:B", "area:C", "area:D",
+      "lin2:1", "lin2:2", "lin2:3", "lin2:4", "lin2:5", "meet:ix", "meet:mE", "meet:mH", "meet:tri", "m-iso"]);
     const j = keys.indexOf("m-prob");
     assert.deepEqual(keys.slice(j, j + 6), ["m-prob", "cnt100:sel", "cnt100:ball", "cnt100:lex", "cnt100:line", "m-root"]);
-    for (const k of ["graph", "lin10", "area", "cnt100"]) { assert.ok(!keys.includes(k), `${k} 액자 자체는 목록에 없음`); assert.equal(m.avItem(k).frame, k, `#/av/${k} 예전 주소`); }
+    for (const k of ["graph", "lin10", "area", "lin2", "meet", "cnt100"]) { assert.ok(!keys.includes(k), `${k} 액자 자체는 목록에 없음`); assert.equal(m.avItem(k).frame, k, `#/av/${k} 예전 주소`); }
     assert.deepEqual(keys.filter((k) => BASICS.some((b) => b.id === k)), BASICS.map((b) => b.id));
     // 단원 항목은 그 학교급 액자로 그 단원을 연다 · 예전 주소(#/av/e1 … h3)는 그 학년 첫 단원으로
     for (const b of BASICS) { const it = m.avItem(b.id); assert.equal(it.frame, `basic-${b.id[0]}`); assert.equal(it.set, b.id); }

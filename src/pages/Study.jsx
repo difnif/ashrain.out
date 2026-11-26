@@ -420,7 +420,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* 무시 
 let SOL_CARDS = null;
 const SOL_UNITS = () => (SOL_CARDS ||= avOfCat("sol").map(unitCard));
 
-/** 우물 추천에 쓸 카드 더미 — 읽어 둔 학년의 회차 전부 + 단원 100제(기본기 단원 · 시그니처 프린트) */
+/** 우물 추천에 쓸 카드 더미 — 읽어 둔 학년의 회차 전부 + 유형별 문제 세트(기본기 단원 · 시그니처 프린트) */
 function usePool(gk) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -439,9 +439,9 @@ function usePool(gk) {
 }
 
 /**
- * 문제 풀이 해설 — 위 「초등 | 중등 | 고등」 → 학년 → 「주차별 기초 다지기(104회차) | 단원 100제」.
+ * 문제 풀이 해설 — 위 「초등 | 중등 | 고등」 → 학년 → 「주차별 기초 다지기(104회차) | 유형별 문제 세트」.
  * 주차별: 1학기 · 여름방학 · 2학기 · 겨울방학으로 접고 펴며, 지금 주를 펼쳐 그 자리로. 이어 보기 · 찾기 · 단원 칩.
- * 단원 100제: 프린트마다 한 줄 — 기본기 단원 100제와 시그니처 프린트(그래프 그리기 · 10단계 계산 · 그래프와 넓이 · 경우의 수와 확률 100제 넷)가
+ * 유형별 문제 세트: 프린트마다 한 줄 — 기본기 단원과 시그니처 프린트(그래프 그리기 · 10단계 계산 · 그래프와 넓이 · 경우의 수와 확률 100제 넷)가
  *   같은 서열로, 교과서 단원 차례(시그니처 프린트는 그 단원 바로 뒤). 단계는 프린트 안에(재생 화면의 단계 목록) — 줄을 단계로 쪼개지 않는다.
  *   줄마다 교과서 단원 · 학년 · 문항 수 · 다 봤음 ✓ · 본 만큼 진행 막대.
  * 꾹 누르면 우물이 떠서 6가지를 추천한다 — 기록이 넉넉하면 수준 맞춤(lib/recommend.js), 아니면 단원 지도 기본.
@@ -479,7 +479,7 @@ function SolList() {
       </div>
       <div className="st-view">
         <button type="button" className={view === "week" ? "on" : ""} onClick={() => pickView("week")}>🗓 주차별 기초 다지기 <small>104회차</small></button>
-        <button type="button" className={view === "unit" ? "on" : ""} onClick={() => pickView("unit")}>📚 단원 100제 <small>{avOfLevel(lv).length}</small></button>
+        <button type="button" className={view === "unit" ? "on" : ""} onClick={() => pickView("unit")}>📚 유형별 문제 세트 <small>{avOfLevel(lv).length}</small></button>
       </div>
       <p className="st-hold">꾹 누르면 우물이 떠서 6가지를 골라 줘요 — 본 기록 · 푼 기록이 쌓이면 내 수준에 맞춰서. 누른 채 손가락을 옮겨 놓으면 바로 열리고,
         위 「📄 프린트」에서 놓으면 그 문제의 프린트(문제지 · 해설지 · 빠른 정답 · OMR)를 받아요.</p>

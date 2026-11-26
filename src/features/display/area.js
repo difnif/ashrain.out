@@ -1,13 +1,18 @@
 // ashrain.out — 교실 모니터 「일차함수 그래프와 넓이 해설」 계산 (area.js) — JSX 없음
-// 프린트 직선 1개 100제 · 직선 2개 이상 240제(area-items.js)의 문항마다 박자표:
+// 프린트 직선 1개 100제 · 직선 2개 이상 240제(area-items.js) · 넓이 이등분 100제 · 넓이로 미지수 100제(area-items-cd.js)의 문항마다 박자표:
 //   ① 문제 → ② 방침 → ③ 풀이 줄이 하나씩(그 줄의 그림 — 점 · 밑변 · 높이 · 나눈 조각 — 이 같이 나타남) → ④ 답.
 // 읽는 시간은 글자 수로 어림한다(분수 덩어리는 두 글자쯤). 그리기는 frames/area.jsx.
 import { AREA_SET_A, AREA_SET_B, AREA_LEVEL } from "./area-items.js";
+import { AREA_SET_C, AREA_SET_D, AREA_LEVEL_C, AREA_LEVEL_D } from "./area-items-cd.js";
 
+// stage — 단계 이름(240제 1 ~ 10단계 · 넓이 이등분 · 넓이로 미지수 1 ~ 5단계). 100제는 단계 없이 유형(it.sub)만.
 export const AREA_SETS = {
   A: { key: "A", name: "직선 1개 100제", short: "100제", code: "W7X-PY3", items: AREA_SET_A },
-  B: { key: "B", name: "직선 2개 이상 240제", short: "240제", code: "6MF-CQ5", items: AREA_SET_B },
+  B: { key: "B", name: "직선 2개 이상 240제", short: "240제", code: "6MF-CQ5", items: AREA_SET_B, stage: AREA_LEVEL },
+  C: { key: "C", name: "넓이를 이등분하는 직선의 식 100제", short: "이등분", code: "ZTB-XJB", items: AREA_SET_C, stage: AREA_LEVEL_C },
+  D: { key: "D", name: "넓이가 주어질 때 미지수 구하기 100제", short: "넓이로 미지수", code: "ZKK-MJK", items: AREA_SET_D, stage: AREA_LEVEL_D },
 };
+export const AREA_KEYS = ["A", "B", "C", "D"];
 export const AREA_SPEEDS = [1, 1.5];
 export { AREA_LEVEL };
 
@@ -70,7 +75,7 @@ export function polyArea(pts) {
 }
 /** 문항의 그림에 나오는 모든 점(범위 잡기용) */
 export function figPoints(it) {
-  const out = [[0, 0], ...it.fig.poly, ...it.fig.pts.map((p) => p.p)];
+  const out = [[0, 0], ...it.fig.poly, ...(it.fig.poly2 || []), ...it.fig.pts.map((p) => p.p)];
   for (const ln of it.lines) for (const o of ln.ops) {
     if (o.p) out.push(o.p);
     if (o.a && Array.isArray(o.a)) out.push(o.a, o.b);

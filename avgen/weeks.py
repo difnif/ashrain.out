@@ -1,7 +1,7 @@
 # 주차별 기초 다지기 — 학년마다 52주 × 주 2회 = 104회차(회차마다 20문항: 5단계 × 4문항)
 #   python3 weeks.py              모든 학년
 #   python3 weeks.py e3 m2        몇 학년만
-# 회차 문항은 단원 생성기(g_*.py)를 SEED_SHIFT 를 바꿔 다시 돌려 새로 뽑는다 — 단원 100제(SEED_SHIFT 0)와 겹치지 않고, 학년 안에서도 발문이 겹치지 않는다.
+# 회차 문항은 단원 생성기(g_*.py)를 SEED_SHIFT 를 바꿔 다시 돌려 새로 뽑는다 — 유형별 문제 세트(SEED_SHIFT 0)와 겹치지 않고, 학년 안에서도 발문이 겹치지 않는다.
 # 학년 달력: 1 ~ 20주 1학기 · 21 ~ 25주 여름방학(복습 6 · 예습 4) · 26 ~ 45주 2학기 · 46 ~ 52주 겨울방학(복습 8 · 예습 6). 1주 = 3월 첫 주.
 import json, os, sys, importlib, secrets, re, math
 sys.path.insert(0, os.path.dirname(__file__))

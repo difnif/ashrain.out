@@ -1,4 +1,4 @@
-// ashrain.out — 단원 100제의 유형(단계) 하나를 콘텐츠 하나로 (lib/avtypes.js)
+// ashrain.out — 유형별 문제 세트의 유형(단계) 하나를 콘텐츠 하나로 (lib/avtypes.js)
 // 유형 = 단원의 한 단계(20문항). key 는 「<단원 id>.<단계>」(예: e-ten.3) — 학생앱 목록에 유형마다 한 줄(#/av/e-ten.3),
 //   액자에서는 그 단원을 그 단계만 돌리고(frames/basics.jsx), 프린트(문제지 · 해설지 · 빠른 정답 · OMR)는 유형마다 따로 — 번호 1 ~ 20 · 유형 코드.
 //   교과서 단원 · 코드: ../features/display/basics/typetags.js(생성기 avgen/typetags.py).

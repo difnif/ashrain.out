@@ -110,7 +110,7 @@ try {
     step("나가기 → 공부하기 › 시청각 학습 › 수학 호기심");
     await go("#/study/av/sol");
     await page.locator(".st-view button").first().waitFor();
-    await page.locator(".st-view button", { hasText: "단원 100제" }).click();
+    await page.locator(".st-view button", { hasText: "유형별 문제 세트" }).click();
     await page.locator(".st-lv button", { hasText: "중등" }).click();
     await page.locator(".st-item").first().waitFor();
     assert.equal(await page.locator(".st-item").count(), avOfLevel("중등").length);
@@ -119,7 +119,7 @@ try {
     await page.locator(".dsp-root").waitFor();
     await page.waitForTimeout(900);
     await page.screenshot({ path: path.join(SHOTS, "av-5-cnt100.png") });
-    step(`문제 풀이 해설 › 단원 100제 중등 ${avOfLevel("중등").length}가지 · 「${avItem("cnt100:sel").short}」 해설 재생(#/av/cnt100:sel)`);
+    step(`문제 풀이 해설 › 유형별 문제 세트 중등 ${avOfLevel("중등").length}가지 · 「${avItem("cnt100:sel").short}」 해설 재생(#/av/cnt100:sel)`);
     assert.deepEqual(errs, []);
     await go("#/sets/prob/01");
     await page.locator(".cs-go").first().waitFor();

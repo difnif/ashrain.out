@@ -38,15 +38,17 @@ import { C100_SPEC } from ${F("frames/cnt100.jsx")};
 import { AREA_SPEC } from ${F("frames/area.jsx")};
 import { GD_SPEC } from ${F("frames/graphdraw.jsx")};
 import { basicsSpec } from ${F("frames/basics.jsx")};
+import { LIN2_SPEC, MEET_SPEC } from ${F("frames/prints.jsx")};
+import { PRINT_FRAMES, printCached, loadPrintFrame } from ${F("prints/index.js")};
 import { LEVELS, BASICS, loadBasic, basicCached } from ${F("basics/index.js")};
 import { l10Plan } from ${F("lin10.js")};
 import { arPlan, AREA_SETS } from ${F("area.js")};
 import { L10_SETS } from ${F("lin10.js")};
 import { C100_SETS } from ${F("cnt100.js")};
 export { FRAMES, boardLayout, boardScroll, STAGE_REGION, PANE_REGION, BOARD_TYPE, FIG_AREA, FIG_MIN, wrapMath, LESSON_SPEEDS, paneLoad, l10Plan, arPlan };
-export const SPECS = { lin10: L10_SPEC, cnt100: C100_SPEC, area: AREA_SPEC, graph: GD_SPEC,
+export const SPECS = { lin10: L10_SPEC, cnt100: C100_SPEC, area: AREA_SPEC, graph: GD_SPEC, lin2: LIN2_SPEC, meet: MEET_SPEC,
   ...Object.fromEntries(LEVELS.map((L) => [L.frame, basicsSpec(L.key)])) };
-export const loadAll = () => Promise.all(BASICS.map((b) => loadBasic(b.id)));
+export const loadAll = () => Promise.all([...BASICS.map((b) => loadBasic(b.id)), loadPrintFrame("lin2"), loadPrintFrame("meet")]);
 export const loadOne = (id) => loadBasic(id);
 export const basicReady = (id) => !!basicCached(id);
 /** 글자 판 가족 — [이름, 문항들, 배치(문항, 판), 박자표] (기본기 단원은 들여온 뒤에) */
@@ -55,6 +57,7 @@ export const fams = () => [
   ["cnt100", Object.values(C100_SETS).flatMap((s) => s.items), l10Layout, l10Plan],
   ["area", Object.values(AREA_SETS).flatMap((s) => s.items), areaLayout, arPlan],
   ["basics", BASICS.flatMap((b) => basicCached(b.id).items), l10Layout, l10Plan],
+  ["prints", ["lin2", "meet"].flatMap((fk) => PRINT_FRAMES[fk].keys.flatMap((k) => printCached(fk, k))), l10Layout, l10Plan],
 ];
 const props = (th) => ({ C: PALETTE[th], ui: { Btn, Ic, FrameIc }, ctl: true, poke: () => {}, inert: false, isFs: false, toggleFs: () => {},
   onTheme: () => {}, onGallery: () => {}, onExit: () => {}, mode: "m", onMode: () => {} });
@@ -91,8 +94,8 @@ export const framePick = (spec, pick, th) => renderToStaticMarkup(<LessonFrame s
   await m.loadAll();
   const FAMS = m.fams();
 
-  test("해설 액자 일곱이 모두 공통 틀 — 세트 · 단계 · 장면(반쪽 판 그리기 · 풀이 눈금 · 목록 글자 · 큰 제목)", () => {
-    assert.equal(LESSONS.length, 7);
+  test("해설 액자 아홉이 모두 공통 틀 — 세트 · 단계 · 장면(반쪽 판 그리기 · 풀이 눈금 · 목록 글자 · 큰 제목)", () => {
+    assert.equal(LESSONS.length, 9);
     assert.deepEqual(m.LESSON_SPEEDS, [0.75, 1, 1.5, 2]);
     const lsks = new Set();
     for (const k of LESSONS) {
@@ -119,7 +122,7 @@ export const framePick = (spec, pick, th) => renderToStaticMarkup(<LessonFrame s
     }
   });
 
-  test("단일 · 듀얼 그리기: 일곱 액자 모두 같은 단추(보기 · 세트/단원 · 빠르기 넷 · 목록 · 두 막대 · 듀얼은 판마다 · ⇄) — 두 테마 오류 없음", () => {
+  test("단일 · 듀얼 그리기: 아홉 액자 모두 같은 단추(보기 · 세트/단원 · 빠르기 넷 · 목록 · 두 막대 · 듀얼은 판마다 · ⇄) — 두 테마 오류 없음", () => {
     let cnt = 0;
     for (const k of LESSONS) {
       const S = m.SPECS[k];
@@ -204,13 +207,16 @@ export const framePick = (spec, pick, th) => renderToStaticMarkup(<LessonFrame s
         if (S) assert.ok(fb[1] >= S.bottom - 1 || fb[0] >= textR - 1, `${tag} 흐르는 글자 칸과 그림이 겹침`);
         else for (const b of boxes) assert.ok(fb[0] >= b[2] - 1 || fb[2] <= b[0] + 1 || fb[1] >= b[3] - 1 || fb[3] <= b[1] + 1, `${tag} 그림이 글자와 겹침`);
         assert.ok(f.w * f.h <= m.FIG_AREA * screen + 1, `${tag} 그림이 화면의 25%를 넘음 (${Math.round((100 * f.w * f.h) / screen)}%)`);
-        assert.ok(f.s >= m.FIG_MIN - 1e-9 && f.s <= 1 + 1e-9, `${tag} 배율 ${f.s}`);
+        // 꼭 보여야 하는 그림(fig.must — 「다음 그래프 · 표」를 읽는 문항)은 반쪽 판에서 더 줄어도 된다(0.4 까지)
+        assert.ok(f.s >= (it.fig.must ? 0.4 : m.FIG_MIN) - 1e-9 && f.s <= 1 + 1e-9, `${tag} 배율 ${f.s}`);
         assert.ok(!L.two, `${tag} 두 단인 판에 그림`);
-        if (L.scroll) assert.ok(fam === "cnt100" && it.fig.kind === "tree", `${tag} 흐르는 판에 그림(꼭 보여야 하는 사전식 카드만)`);
+        if (L.scroll) assert.ok(it.fig.must || (fam === "cnt100" && it.fig.kind === "tree"), `${tag} 흐르는 판에 그림(꼭 보여야 하는 그림만 — 사전식 카드 · 읽어야 하는 그래프 · 표)`);
         areaSum += (f.w * f.h) / screen;
       }
       if (want) rep.push(`${fam} ${R.key} ${has}/${want}(평균 ${Math.round((100 * areaSum) / Math.max(1, has))}%)`);
       if (R.key === "stage" && want) assert.ok(has >= want * 0.9, `${fam} 단일 모드에서 그림이 빠진 문항이 많다 ${want - has}`);
+      // 읽어야 하는 그래프 · 표(fig.must)는 단일 무대에서 꼭 — 듀얼 반쪽은 발문이 길어 자리가 없으면 판서만(판서 줄에 읽은 값이 다 있다)
+      if (fam === "prints" && R.key === "stage") assert.ok(items.filter((it) => it.fig?.must).every((it) => lay(it, R).fig), `읽어야 하는 그래프 · 표가 빠진 문항 (${R.key})`);
       if (fam === "cnt100") {                        // 사전식 카드는 꼭 — 단일 · 반쪽 모두
         const lex = items.filter((it) => it.fig?.kind === "tree");
         assert.ok(lex.every((it) => lay(it, R).fig), `사전식 카드 그림이 빠진 문항 (${R.key})`);

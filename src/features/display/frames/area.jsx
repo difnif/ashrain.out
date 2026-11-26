@@ -1,5 +1,7 @@
 // ashrain.out — 교실 모니터 「액자」: 일차함수 그래프와 넓이 해설 (frames/area.jsx)
-// 학원 프린트 「일차함수 그래프와 넓이 · 직선 1개 100제 · 직선 2개 이상 240제」를 문항마다 한 장면으로 끝없이 돌린다.
+// 학원 프린트 「일차함수 그래프와 넓이 · 직선 1개 100제 · 직선 2개 이상 240제」 · 「넓이를 이등분하는 직선의 식 100제」 ·
+//   「넓이가 주어질 때 미지수 구하기 100제」(세트 C · D — 1 ~ 5단계)를 문항마다 한 장면으로 끝없이 돌린다.
+//   fig.poly2(둘째 직사각형) · fig.edge(도형 테두리 — 꼭짓점으로 준 삼각형 · 두 직사각형)도 그린다.
 //   ① 문제 → ② 방침(한 줄) → ③ 풀이를 한 줄씩(지금 줄에 금빛 막대) — 오른쪽 그림이 그 줄대로 움직인다:
 //      절편 · 교점은 직선을 따라 미끄러져 와 축(다른 직선)에 닿고, 밑변(금빛) · 높이(빨강)는 한 끝에서 자라고, 치수선은 펴지고,
 //      나눈 조각은 칠이 번지며 들어오고, 둘러싼 직사각형 · 이등분하는 직선은 그어진다 → ④ 답. 처음에는 축 → 직선 → 색칠할 곳 차례로 그린다.
@@ -10,7 +12,7 @@
 import { memo } from "react";
 import { MText, Arrow, Path, Draw, mathWidth, SANS, SERIF } from "../draw.jsx";
 import { seg, E, clamp } from "../core.js";
-import { AREA_SETS, AREA_LEVEL, arPlan, lineAt, figPoints, onLine } from "../area.js";
+import { AREA_SETS, AREA_KEYS, arPlan, lineAt, figPoints, onLine } from "../area.js";
 import { stepMarks } from "./scrub.jsx";
 import { LessonFrame } from "./lesson.jsx";
 import { boardLayout, wrapMath as wrapMath0, STAGE_REGION, PANE_REGION } from "../board.js";
@@ -104,7 +106,7 @@ export function figGeom(it, box = FIG) {
   const ins = 14 / s;
   const xr = [(FIG.x0 - cxp) / s + mx + ins, (FIG.x1 - cxp) / s + mx - ins];
   const yr = [(cyp - FIG.y1) / s + my + ins, (cyp - FIG.y0) / s + my - ins];
-  const polyS = f.poly.map(S);
+  const polyS = f.poly.map(S), poly2S = f.poly2 ? f.poly2.map(S) : null;
   const cen = polyS.reduce((a, p) => [a[0] + p[0] / polyS.length, a[1] + p[1] / polyS.length], [0, 0]);
 
   // 선(장애물): 축 · 직선 · 본디 직선 · 그림 연산의 선분
@@ -260,7 +262,7 @@ export function figGeom(it, box = FIG) {
     }
     G.names[k] = { m, ...pick(cands, null, 20) };
   });
-  Object.assign(G, { s, X, Y, S, xr, yr, lines, ghost, axX, axY, polyS, cen, box });
+  Object.assign(G, { s, X, Y, S, xr, yr, lines, ghost, axX, axY, polyS, poly2S, cen, box });
   cache.set(bk, G);
   return G;
 }
@@ -399,6 +401,9 @@ function Figure({ it, t, cur, C, box = FIG }) {
   return (
     <g opacity={o0}>
       <Path pts={G.polyS} closed fill={C.gold} fo={(fullOn ? 0.22 + 0.16 * fv : 0.22) * regK} stroke="none" />
+      {G.poly2S && <Path pts={G.poly2S} closed fill={C.gold} fo={0.22 * regK} stroke="none" />}
+      {it.fig.edge && <Path pts={G.polyS} closed stroke={C.ink} sw={3} o={0.75 * regK} />}
+      {it.fig.edge && G.poly2S && <Path pts={G.poly2S} closed stroke={C.ink} sw={3} o={0.75 * regK} />}
       {els}
       {axK > 0.05 && <Arrow p={ax(G.axX)[0]} q={ax(G.axX)[1]} stroke={C.ink} sw={3} h={18} />}
       {axK > 0.05 && <Arrow p={ax(G.axY)[0]} q={ax(G.axY)[1]} stroke={C.ink} sw={3} h={18} />}
@@ -450,7 +455,7 @@ export function areaScenes(setKey, sp = 1, lv = 0) {
   const S = AREA_SETS[setKey];
   const list = S.items.filter((it) => !lv || it.lv === lv).map((it) => {
     const title = `일차함수 그래프와 넓이 · ${S.name}`;
-    const sub = it.lv ? `${it.lv}단계 ${AREA_LEVEL[it.lv]} · ${it.no}번` : `${it.no}번 · ${it.sub}`;
+    const sub = it.lv ? `${it.lv}단계 ${S.stage[it.lv]} · ${it.no}번` : `${it.no}번 · ${it.sub}`;
     return {
       key: `area-${setKey}-${it.no}`, no: it.no, lv: it.lv || 0, st: it.lv || 0, sub0: it.sub, dur: Math.round(arPlan(it).dur / sp),
       grp: it.lv ? `${it.lv}단계` : null, marks: stepMarks(arPlan(it), it.lines, sp), card: `${it.lv ? `${it.lv}단계 · ` : ""}${it.sub}`,
@@ -466,9 +471,9 @@ export function areaScenes(setKey, sp = 1, lv = 0) {
 /* ══════════ 액자 — 조작은 해설 액자 공통 틀(frames/lesson.jsx) ══════════ */
 export const AREA_SPEC = {
   lsk: "ash.display.area", title: "일차함수 그래프와 넓이 해설", defSet: "A", cols: 5,
-  sets: [{ key: "A", name: AREA_SETS.A.name, short: "100제" }, { key: "B", name: AREA_SETS.B.name, short: "240제" }],
-  stages: (set) => (set === "B" ? Array.from({ length: 10 }, (_, i) => i + 1).map((v) => ({ v, lab: `${v}단계 ${AREA_LEVEL[v]}`, chip: `${v}단계` })) : []),
-  scenes: (set, sp, st) => areaScenes(set, sp, set === "B" ? st : 0),
+  sets: AREA_KEYS.map((k) => ({ key: k, name: AREA_SETS[k].name, short: AREA_SETS[k].short })),
+  stages: (set) => { const st = AREA_SETS[set]?.stage; return st ? Object.keys(st).map(Number).map((v) => ({ v, lab: `${v}단계 ${st[v]}`, chip: `${v}단계` })) : []; },
+  scenes: (set, sp, st) => areaScenes(set, sp, AREA_SETS[set]?.stage ? st : 0),
 };
 export function AreaFrame(props) {
   return <LessonFrame spec={AREA_SPEC} {...props} />;

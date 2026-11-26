@@ -257,45 +257,60 @@ function figSpot(lay, fig, R) {
 }
 
 /**
- * 꼭 보여야 하는 그림(fig.must — 사전식 카드로 순번 찾기처럼 그림이 풀이의 몸통인 것) — 남은 빈자리가 모자라면 자리를 먼저 떼어 둔다.
+ * 꼭 보여야 하는 그림(fig.must — 사전식 카드로 순번 찾기처럼 그림이 풀이의 몸통인 것 · 「다음 그래프 · 표」를 읽는 문항의 그림 DSL) —
+ *   남은 빈자리가 모자라면 자리를 먼저 떼어 둔다.
  *   넓은 판(무대): 글자 칸 오른쪽에 그림 칸(글자 칸은 넘치면 흐른다).
  *   좁은 판(듀얼 반쪽): 아래에 그림 칸, 위 글자 칸이 흐른다.
+ *   제 크기가 정해진 그림({ w, h, must })은 비율을 지켜 배율 s 로 줄인다(넓이 상한 25% · 제 크기보다 크게는 안).
  */
 function mustLayout(it, R, fig) {
   const W0 = R.right - R.left;
   const capA = FIG_AREA * screenOf(R);
   const last = BOARD_TYPE[BOARD_TYPE.length - 1];
+  const fix = !fig.flex;
   const fit = (w, h) => {                      // 칸 넓이 상한(화면의 25%) — 높이부터 줄인다
+    if (fix) { const s = Math.min(figCap(fig, R), w / fig.w, h / fig.h); return [fig.w * s, fig.h * s, s]; }
     let bw = Math.min(w, fig.maxW), bh = Math.min(h, fig.maxH);
     if (bw * bh > capA) bh = Math.max(fig.minH, capA / bw);
     if (bw * bh > capA) bw = Math.max(fig.minW, capA / bh);
-    return [bw, bh];
+    return [bw, bh, 1];
   };
-  const sideW = Math.min(fig.maxW, Math.max(fig.minW, W0 * 0.42));
+  const sideW = fix ? Math.min(W0 * 0.42, fig.w * figCap(fig, R)) : Math.min(fig.maxW, Math.max(fig.minW, W0 * 0.42));
   const colR = R.right - sideW - GAP_FIG;
   if (colR - R.left >= 520) {
     const pick = (lay, T, scroll) => {
       const x0 = colR + GAP_FIG, y0 = lay.qBottom + 18;
-      const [w, h] = fit(R.right - x0, R.bottom - y0);
-      const spot = { x: x0 + (R.right - x0 - w) / 2, y: y0 + (R.bottom - y0 - h) / 2, w, h, s: 1, room: [x0, y0, R.right, R.bottom] };
+      const [w, h, s] = fit(R.right - x0, R.bottom - y0);
+      const spot = { x: x0 + (R.right - x0 - w) / 2, y: y0 + (R.bottom - y0 - h) / 2, w, h, s, room: [x0, y0, R.right, R.bottom] };
       return { ...lay, type: T.key, fig: spot, scroll };
     };
     for (const T of BOARD_TYPE) {
       const lay = layOnce(it, T, R, colR);
       if (lay.over <= 2 && lay.bottom <= R.bottom) return pick(lay, T, null);
     }
-    const lay = layOnce(it, last, R, colR);
-    if (lay.over <= 2) return pick(lay, last, { top: lay.qBottom + last.q * 0.3, bottom: R.bottom + 2, pinQ: true });
+    // 그래도 넘치면 흐르는 판 — 폭이 맞는 글자 크기 가운데 덜 넘치는 것(촘촘이 폭을 넘으면 기본 크기로)
+    let best = null;
+    for (const T of [last, ...BOARD_TYPE.filter((x) => x !== last)]) {
+      const lay = layOnce(it, T, R, colR);
+      if (lay.over <= 2 && (!best || lay.bottom < best.lay.bottom)) best = { lay, T };
+    }
+    if (best) return pick(best.lay, best.T, { top: best.lay.qBottom + best.T.q * 0.3, bottom: R.bottom + 2, pinQ: true });
     return null;
   }
   // 좁은 판 — 그림은 아래, 글자는 위에서 흐른다
   for (const T of [...BOARD_TYPE].reverse()) {
     const lay = layOnce(it, T, R, R.right);
     if (lay.over > 2) continue;
-    const [w, h] = fit(W0, fig.minH);
-    const figTop = R.bottom - h;
-    if (figTop - lay.qBottom < 110) return null;               // 글자 칸이 두 줄도 못 되면 그림을 접는다
-    const spot = { x: R.left + (W0 - w) / 2, y: figTop, w, h, s: 1, room: [R.left, figTop, R.right, R.bottom] };
+    let [w, h, s] = fit(W0, fix ? (R.bottom - lay.qBottom) * 0.55 : fig.minH);
+    let figTop = R.bottom - h;
+    if (fix) {                                                 // 가장 긴 판서 줄도 흐르는 칸에 다 보이게 — 모자라면 그림을 줄인다
+      const maxRow = Math.max(0, ...lay.rows.map((r) => r.bot - r.top));
+      const need = lay.qBottom + T.q * 0.3 + maxRow + 8 + 16;
+      if (figTop < need) { [w, h, s] = fit(W0, R.bottom - need); figTop = R.bottom - h; }
+      if (s < 0.4) continue;                                   // 너무 작아지면 이 크기는 그림 없이
+    }
+    if (figTop - lay.qBottom < 110) { if (fix) continue; return null; }   // 글자 칸이 두 줄도 못 되면 그림을 접는다
+    const spot = { x: R.left + (W0 - w) / 2, y: figTop, w, h, s, room: [R.left, figTop, R.right, R.bottom] };
     const scroll = lay.bottom > figTop - 16 ? { top: lay.qBottom + T.q * 0.3, bottom: figTop - 16, pinQ: true } : null;
     return { ...lay, type: T.key, fig: spot, scroll };
   }
@@ -312,7 +327,7 @@ const CACHE = new WeakMap();
 export function boardLayout(it, region = STAGE_REGION, fig = null) {
   let m = CACHE.get(it);
   if (!m) { m = new Map(); CACHE.set(it, m); }
-  const key = `${region.key}|${fig ? (fig.flex ? `flex${fig.minW}x${fig.minH}${fig.must ? "!" : ""}` : `${Math.round(fig.w)}x${Math.round(fig.h)}`) : "-"}`;
+  const key = `${region.key}|${fig ? (fig.flex ? `flex${fig.minW}x${fig.minH}${fig.must ? "!" : ""}` : `${Math.round(fig.w)}x${Math.round(fig.h)}${fig.must ? "!" : ""}`) : "-"}`;
   if (m.has(key)) return m.get(key);
   const R = region, W0 = R.right - R.left;
   const fitsH = (lay) => lay.bottom <= R.bottom && lay.over <= 2;

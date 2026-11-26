@@ -1,9 +1,9 @@
-// 시청각 해설 — 단원 100제 = 프린트마다 한 줄(기본기 단원 100제 · 시그니처 프린트가 같은 서열) 시험.  node tests/display-prints.test.mjs
-// ① 시그니처 프린트(frames/index.js 의 prints) — 해설 액자의 세트와 하나씩(같은 key · 차례) · 문항 수 n = 장면 수 · 번호 1 ~ n.
+// 시청각 해설 — 유형별 문제 세트 = 프린트마다 한 줄(기본기 단원 · 시그니처 프린트가 같은 서열) 시험.  node tests/display-prints.test.mjs
+// ① 시그니처 프린트(frames/index.js 의 prints — 21장) — 해설 액자 여섯의 세트와 하나씩(같은 key · 차례) · 문항 수 n = 장면 수 · 번호 1 ~ n.
 // ② 학생앱 항목(lib/av.js) — 프린트마다 #/av/<액자>:<세트> · cat sol · 해설 · 교과서 단원 · 학년 · n · 그 단원 바로 뒤 · 예전 액자 주소 · 우물 카드.
 // ③ 재생 — 고른 프린트로 단일 모드(숫자 세트 lin10:2 도) · 본 기록은 프린트 key 로(printSeen: 처음 연 횟수 · 가장 멀리 · 다 봤음).
 // ④ 듀얼 「전부」 — 프린트 key 풀이 · 이름표는 학생앱과 같은 이름 · 단계(1 ~ 5 · 10 · 없음) · 반쪽 판 장면 수 · 📄 없음.
-// ⑤ 기본기 해설 보기 칩 — 「🧩 유형」은 그 보기로 열렸을 때만(예전 주소) · 예전에 기억한 유형 보기는 단원 100제로.
+// ⑤ 기본기 해설 보기 칩 — 「🧩 유형」은 그 보기로 열렸을 때만(예전 주소) · 예전에 기억한 유형 보기는 유형별 문제 세트로.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -71,22 +71,24 @@ export const menu = (spec, cur, side = "왼쪽") => { const M = spec.Menu; retur
   const PR = LESSONS.flatMap((f) => f.prints.map((p) => ({ f, p, key: `${f.key}:${p.set}` })));
   const specOf = (fk) => m.LESSON_FRAMES.find((F) => F.fk === fk).spec;
 
-  await test("시그니처 프린트 — 해설 액자 넷의 세트와 하나씩(같은 key · 차례) · 모두 10장 · 문항 수 n = 장면 수 · 번호 1 ~ n · 이름 겹침 없음", () => {
-    assert.deepEqual(LESSONS.map((f) => f.key), m.LESSON_FRAMES.map((F) => F.fk), "해설 액자 넷 = 듀얼 「전부」의 액자 넷");
+  await test("시그니처 프린트 — 해설 액자 여섯의 세트와 하나씩(같은 key · 차례) · 모두 21장 · 문항 수 n = 장면 수 · 번호 1 ~ n · 이름 겹침 없음", async () => {
+    assert.deepEqual(LESSONS.map((f) => f.key), m.LESSON_FRAMES.map((F) => F.fk), "해설 액자 여섯 = 듀얼 「전부」의 액자 여섯");
     for (const f of LESSONS) {
       assert.deepEqual(f.prints.map((p) => p.set), specOf(f.key).sets.map((S) => S.key), `${f.key} 세트 key(숫자는 숫자로)`);
       for (const p of f.prints) {
         assert.ok(p.title && p.short && p.icon && p.desc && p.n > 0, `${f.key}:${p.set} 이름 · 그림 · 설명 · 문항 수`);
-        const sc = specOf(f.key).scenes(p.set, 1, 0);
+        const S = specOf(f.key);
+        if (S.ready && !S.ready(p.set)) await S.load(p.set);               // 세트 문항을 고를 때 들여오는 액자(두 점 → 식 · 교점 · 만날 조건)
+        const sc = S.scenes(p.set, 1, 0);
         assert.equal(sc.length, p.n, `${f.key}:${p.set} 장면 수`);
         assert.deepEqual(sc.map((x) => x.no).sort((a, b) => a - b), Array.from({ length: p.n }, (_, i) => i + 1), `${f.key}:${p.set} 번호 1 ~ n`);
         assert.equal(m.printOf(f.key, String(p.set)), p, `${f.key}:${p.set} printOf`);
         assert.ok(!/순열|조합|여사건|배반|√|\d!/.test(p.title + p.desc), `${f.key}:${p.set} 중2 용어`);
       }
     }
-    assert.equal(PR.length, 10);
+    assert.equal(PR.length, 21);
     const sol = m.avOfCat("sol");
-    assert.equal(new Set(sol.map((x) => x.title)).size, sol.length, "단원 100제 이름 겹침");
+    assert.equal(new Set(sol.map((x) => x.title)).size, sol.length, "유형별 문제 세트 이름 겹침");
     for (const { key } of PR) { const it = m.avItem(key); assert.equal(sol.filter((x) => x.short === it.short).length, 1, `${key} 짧은 이름 겹침`); }
   });
 
@@ -115,7 +117,7 @@ export const menu = (spec, cur, side = "왼쪽") => { const M = spec.Menu; retur
     }
   });
 
-  await test("우물 카드 · 추천 — 프린트도 단원 100제 카드(중2 · kind 단원) · 프린트를 누르면 같은 · 앞 · 다음 단원 6가지(자기 빼고)", () => {
+  await test("우물 카드 · 추천 — 프린트도 유형별 문제 세트 카드(중2 · kind 단원) · 프린트를 누르면 같은 · 앞 · 다음 단원 6가지(자기 빼고)", () => {
     const pool = m.avOfCat("sol").map(m.unitCard);
     const g = m.WGRADES.findIndex((x) => x.grade === "중2");
     const none = { mastery: {}, watched: {} };
@@ -129,7 +131,7 @@ export const menu = (spec, cur, side = "왼쪽") => { const M = spec.Menu; retur
       const rel = m.avRelated(m.avItem(key), 6);
       assert.ok(rel.length >= 1 && rel.every((x) => x.key !== key), `${key} 단원 지도 추천`);
     }
-    // 같은 단원의 기본기 단원 100제를 누르면 시그니처 프린트도 추천에 든다
+    // 같은 단원의 기본기 단원을 누르면 시그니처 프린트도 추천에 든다
     const r = m.recommend(m.unitCard(m.avItem("m-prob")), pool, none).cards.map((x) => x.key);
     assert.ok(r.some((k) => k.startsWith("cnt100:")), `확률 단원 → 경우의 수와 확률 100제: ${r.join(" ")}`);
   });
@@ -184,7 +186,7 @@ export const menu = (spec, cur, side = "왼쪽") => { const M = spec.Menu; retur
     assert.deepEqual(A.stages("cnt100:sel").map((x) => x.v), [1, 2, 3, 4, 5]);
     assert.equal(A.stages("lin10:1").length, 10);
     assert.deepEqual(A.stages("graph:hard"), []);
-    // 목록: 어느 액자에서 나눠도 같은 「전체」 목록 — 기본기 단원 100제 · 시그니처 프린트 한 차례
+    // 목록: 어느 액자에서 나눠도 같은 「전체」 목록 — 기본기 단원 · 시그니처 프린트 한 차례
     const ROW = /class="lsn-set( on)?( hot)?( sig)?"/g;
     const want = m.avOfCat("sol").length;
     for (const F of m.LESSON_FRAMES) {
@@ -195,14 +197,14 @@ export const menu = (spec, cur, side = "왼쪽") => { const M = spec.Menu; retur
       assert.ok(!BAD.test(h), bad(h));
     }
     const sig = (m.menu(A, "m-lin").match(/class="lsn-set( on)?( hot)? sig"/g) || []).length;
-    assert.equal(sig, 10, "시그니처 프린트 줄 10");
+    assert.equal(sig, 21, "시그니처 프린트 줄 21");
   });
 
-  await test("기본기 해설 보기 칩 — 「🧩 유형」은 유형 보기로 열렸을 때만 · 예전에 기억한 유형 보기는 단원 100제로 · 주차별 학년은 그대로", async () => {
+  await test("기본기 해설 보기 칩 — 「🧩 유형」은 유형 보기로 열렸을 때만 · 예전에 기억한 유형 보기는 유형별 문제 세트로 · 주차별 학년은 그대로", async () => {
     await m.loadBasic("e-ten"); await m.loadType("e-ten.3");
     store["ash.display.basic.e.view"] = JSON.stringify("types");
     const h = m.basics("basic-e", "dark");
-    assert.ok(h.includes('title="단원 목록 (U)"') && !h.includes('title="유형 목록 (U)"'), "기억한 유형 보기 → 단원 100제 " + (h.match(/title="[^"]*목록 \(U\)"/g) || []).join(","));
+    assert.ok(h.includes('title="단원 목록 (U)"') && !h.includes('title="유형 목록 (U)"'), "기억한 유형 보기 → 유형별 문제 세트 " + (h.match(/title="[^"]*목록 \(U\)"/g) || []).join(","));
     const t = m.basics("basic-e", "dark", "e-ten.3");
     assert.ok(t.includes('title="유형 목록 (U)"'), "예전 주소(#/av/e-ten.3) → 유형 보기");
     store["ash.display.basic.e.view"] = JSON.stringify("e3");

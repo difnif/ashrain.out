@@ -59,7 +59,7 @@ export const L10_REGION = { stage: STAGE_REGION, pane: PANE_REGION };
  */
 export function layoutOf(it, region = STAGE_REGION) {
   const F = figOf(it), nb = figNatural(it);
-  const Lo = boardLayout(it, region, F?.flex ? F.flex : nb ? { w: nb.x1 - nb.x0, h: nb.y1 - nb.y0 } : null);
+  const Lo = boardLayout(it, region, F?.flex ? F.flex : nb ? { w: nb.x1 - nb.x0, h: nb.y1 - nb.y0, must: !!it.fig.must } : null);
   return Lo.noFig != null ? Lo : Object.assign(Lo, { noFig: !Lo.fig });
 }
 
