@@ -7,8 +7,8 @@
 //       이어서 볼 회차(안 본 다음 회차) · 다시 볼 때(14일 넘게 지난 것, 숙달도가 낮으면 더) · 다음 단원 도전(숙달도 ≥ 0.75) —
 //       한 단원에서 셋까지, 이유(rel)를 카드에 붙인다. 방금(3일 안) 본 것은 뒤로.
 //   넉넉함의 기준: 단원을 아는 풀이 15개 이상 또는 절반 넘게 본 해설 5개 이상.
-// pool 항목 모양: { key, unit, gidx(학년 차례 0 ~ 11), week?, kind?, seq?, base?, title, short?, icon, grade } — 회차 · 단원 100제 · 유형이 섞여도 된다.
-//   유형(base = 든 단원)은 그 단원 100제와 서로 품는 사이라 둘은 서로 추천하지 않는다(같은 단원의 다른 유형은 추천한다).
+// pool 항목 모양: { key, unit, gidx(학년 차례 0 ~ 11), week?, kind?, seq?, base?, title, short?, icon, grade } — 회차 · 유형별 문제 세트 · 유형이 섞여도 된다.
+//   유형(base = 든 단원)은 그 유형별 문제 세트와 서로 품는 사이라 둘은 서로 추천하지 않는다(같은 단원의 다른 유형은 추천한다).
 import { prevUnits, nextUnits, termRank } from "./units.js";
 import { CHAPTERS } from "./chapters.js";
 
@@ -51,10 +51,10 @@ export function defaultPicks(item, pool, max = MAX) {
   const out = [], used = new Set([item.key]);
   const push = (c, rel) => { if (c && !used.has(c.key) && out.length < max) { used.add(c.key); out.push(card(c, rel)); } };
   const sameUnit = others.filter((c) => c.unit === item.unit).sort(order);
-  // ① 이어서 — 같은 단원에서 이 뒤(같은 학년이면 다음 주, 단원 100제는 회차 뒤에)
+  // ① 이어서 — 같은 단원에서 이 뒤(같은 학년이면 다음 주, 유형별 문제 세트는 회차 뒤에)
   const after = sameUnit.filter((c) => (c.gidx ?? 99) > (item.gidx ?? 99) || ((c.gidx ?? 99) === (item.gidx ?? 99) && (c.week ?? 99) > (item.week ?? -1)));
   after.slice(0, 2).forEach((c) => push(c, "이어서"));
-  // ② 앞 단원 — 가까운 앞 단원의 마무리 · 개념(없으면 아무 회차 · 단원 100제)
+  // ② 앞 단원 — 가까운 앞 단원의 마무리 · 개념(없으면 아무 회차 · 유형별 문제 세트)
   const pick1 = (units, prefer) => {
     const got = [];
     for (const { u } of units) {
@@ -128,7 +128,7 @@ export function personalPicks(item, pool, profile, { now = Date.now(), max = MAX
   return out;
 }
 
-/** 서로 품은 사이(단원 100제 ↔ 그 단원의 유형)는 빼고 */
+/** 서로 품은 사이(유형별 문제 세트 ↔ 그 단원의 유형)는 빼고 */
 const notNested = (item, pool) => pool.filter((c) => !(c.base && c.base === item?.key) && !(item?.base && c.key === item.base));
 
 /** 우물 추천 — { mode: "personal" | "default", cards } */

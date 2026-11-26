@@ -3,10 +3,11 @@
 //   · 수학 호기심 — 수업 장면(도형 · 경우의 수 애니메이션), 하노이의 탑, 실험 액자(몬티홀 · 갈림길 · 갈톤 보드), 장면 묶음(축구 · 서술형 이야기),
 //                  그림 액자 열여섯(축구 · 농구 · 야구 직선, 배드민턴 · 테니스 · 탁구 · 배구 · 족구 · 세팍타크로 · 골프 · 당구 · 볼링,
 //                  주머니 공 꺼내기, 알파벳 카드, 일렬로 세우기, 학년별 뽑기 — frames/curio.jsx)
-//   · 문제 풀이 해설 — 단원 100제 = 프린트마다 한 항목, 모두 같은 서열:
+//   · 문제 풀이 해설 — 유형별 문제 세트 = 프린트마다 한 항목, 모두 같은 서열:
 //                  기본기 해설 단원(초등 · 중등 · 고등, frames/basics.jsx — 단원마다 한 장, 1 ~ 5단계 100문항, 학년을 넘나듦)
 //                  + 시그니처 프린트(해설 액자의 세트 하나 = 한 장 — frames/index.js 의 prints: 그래프 그리기 기본 96 · 심화 64,
-//                    10단계 계산 세트 1 · 2, 그래프와 넓이 100 · 240, 경우의 수와 확률 100제 넷 — after 단원 바로 뒤에, key 「액자:세트」).
+//                    10단계 계산 세트 1 · 2, 그래프와 넓이 100 · 240 · 넓이 이등분 · 넓이로 미지수, 두 점 → 식 1 ~ 5세트,
+//                    교점 활용 · 만날 조건 쉬운 판 · 중~상 판 · 삼각형 조건, 경우의 수와 확률 100제 넷 — after 단원 바로 뒤에, key 「액자:세트」).
 //                  단계는 프린트 안에(액자의 단계 목록) — 단계마다 쪼갠 줄(유형)은 목록에 두지 않는다(예전 주소 #/av/e-ten.3 은 그대로 열림).
 //                  학교급(level)으로 나눠 보인다(AV_LEVELS — 학생앱 상단 버튼). 학년 꼬리표 대신 학년 범위(grade = span).
 //   · unit — 콘텐츠의 주요 단원(lib/units.js). 꾹 누르면 우물이 떠서 앞 · 같은 · 다음 단원 콘텐츠를 추천한다(components/WellPick.jsx).
@@ -23,7 +24,7 @@ import { noteOpen, noteSeen } from "./avHistory.js";
 
 export const AV_CATS = [
   { id: "fun", title: "수학 호기심", icon: "🔭", sub: "도형이 움직이고, 구슬이 떨어지고, 문이 열려요 — 보고 직접 해 보는 수학" },
-  { id: "sol", title: "문제 풀이 해설", icon: "🎬", sub: "단원마다 100문항을 한 문항씩 — 문제 → 방침 → 한 줄씩 → 답" },
+  { id: "sol", title: "문제 풀이 해설", icon: "🎬", sub: "유형별 문제 세트 · 주차별 회차를 한 문항씩 — 문제 → 방침 → 한 줄씩 → 답" },
 ];
 export const AV_LEVELS = ["초등", "중등", "고등"];
 
@@ -32,7 +33,7 @@ const SCENES = [
   { key: "scenes-geo", grp: "geo", icon: "🔷", title: "도형 애니메이션", desc: "도형이 접히고 펼쳐지고 돌아가요. 오른쪽 위 「초등 | 중등」을 누르면 같은 장면이 짝 장면으로 겹쳐 넘어가요." },
   { key: "scenes-data", grp: "data", icon: "🎲", title: "경우의 수 · 확률 애니메이션", desc: "줄 세우기 · 뽑기 · 확률을 움직이는 그림으로. 「초등 | 중등」으로 같은 장면을 두 학년 눈높이로 봐요." },
 ];
-const ICON = { hanoi: "🗼", monty: "🚪", branch: "🔀", galton: "⚪", soccer: "⚽", essay: "📖", graph: "📈", lin10: "🔢", area: "📐", cnt100: "🎯",
+const ICON = { hanoi: "🗼", monty: "🚪", branch: "🔀", galton: "⚪", soccer: "⚽", essay: "📖", graph: "📈", lin10: "🔢", area: "📐", lin2: "✏️", meet: "⚡", cnt100: "🎯",
   soccerfn: "🥅", hoopfn: "🏀", batfn: "⚾", badminton: "🏸", tennis: "🎾", tabletennis: "🏓", volleyball: "🏐", jokgu: "🦶", sepak: "🦵",
   golf: "⛳", cue: "🎱", bowl: "🎳", pouch: "👝", lexi: "🔤", lineup: "🧍", crowd: "🔍" };
 const LEVEL_FRAME = Object.fromEntries(LEVELS.map((L) => [L.level, L.frame]));
@@ -53,7 +54,7 @@ const frameItem = (f) => ({
   grade: f.grade || null, level: f.level || null, unit: f.unit || null,
 });
 
-// 문제 풀이 해설(단원 100제) — 기본기 단원 차례대로, 시그니처 프린트는 after 단원 바로 뒤에(액자 차례 · 세트 차례).
+// 문제 풀이 해설(유형별 문제 세트) — 기본기 단원 차례대로, 시그니처 프린트는 after 단원 바로 뒤에(액자 차례 · 세트 차례).
 // 해설 액자 자체 · 학교급 액자 셋은 항목이 아니다(액자 key 는 예전 주소로만 — FRAME_ONLY).
 const LESSONS = FRAMES.filter((x) => x.lesson && !x.basics);
 const SOL = BASICS.map(basicItem);
@@ -85,7 +86,7 @@ export function weekItem(id) {
     grade: g.grade, level: g.level, unit: m ? m.unit : null, week: p.week, slot: p.slot,
   };
 }
-/** 단원 100제의 유형 하나(#/av/e-ten.3) — 그 단원 액자를 그 단계만(20문항) */
+/** 유형별 문제 세트의 유형 하나(#/av/e-ten.3) — 그 단원 액자를 그 단계만(20문항) */
 export function typeItem(key) {
   const p = parseTypeKey(key);
   if (!p) return null;
@@ -119,15 +120,15 @@ export const weekCard = (m) => ({
   key: m.id, unit: m.unit, gidx: GIDX[m.grade], week: m.week, kind: m.kind, seq: m.seq || 0, level: m.level,
   title: m.title, short: m.title, icon: KIND_ICON[m.kind] || "🗓", grade: `${m.grade} ${m.week}주${m.slot}`,
 });
-/** 단원 100제(기본기 단원 · 시그니처 프린트) → 카드(학년 범위의 첫 학년 · 주는 없음) */
+/** 유형별 문제 세트(기본기 단원 · 시그니처 프린트) → 카드(학년 범위의 첫 학년 · 주는 없음) */
 export const unitCard = (it) => ({ ...it, gidx: GIDX[String(it.grade || "").split("~")[0]] ?? null, week: 60, kind: "단원" });
-/** 유형 → 카드(교과서 단원의 학년 · 단원 100제 뒤) — base 는 유형이 든 단원(우물 추천이 서로 품은 것끼리는 고르지 않게)
+/** 유형 → 카드(교과서 단원의 학년 · 유형별 문제 세트 뒤) — base 는 유형이 든 단원(우물 추천이 서로 품은 것끼리는 고르지 않게)
  *  유형은 예전 주소(#/av/e-ten.3)로만 열린다 — 학생앱 목록 · 우물 추천 더미에는 넣지 않는다(시험이 쓴다) */
 export const typeCard = (m) => ({
   key: m.id, base: m.base, unit: m.unit, gidx: GIDX[m.span] ?? null, week: 60 + m.st, kind: "유형", seq: m.st, level: m.level,
   title: m.title, short: m.short, icon: m.icon, grade: `${m.span} · ${m.st}단계`,
 });
-/** 기본기 단원 100제의 유형 전부(학교급) — 예전 주소 · 시험용(목록에는 두지 않는다) */
+/** 기본기 단원의 유형 전부(학교급) — 예전 주소 · 시험용(목록에는 두지 않는다) */
 export const typesOfLevel = (lv) => SOL.filter((x) => x.level === lv && x.frame === LEVEL_FRAME[lv]).flatMap((x) => typesOf(x.key));
 export const avOfCat = (cat) => AV_ITEMS.filter((x) => x.cat === cat);
 export const avOfLevel = (lv) => SOL.filter((x) => x.level === lv);

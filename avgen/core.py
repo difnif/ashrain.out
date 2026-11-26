@@ -361,7 +361,7 @@ def plain(s):
     s = s.replace("‹", "").replace("›", "").replace("`", "").replace("⟦", "(").replace("⟧", ")")
     return s
 
-SEED_SHIFT = 0          # 회차(주차별 기초 다지기)를 만들 때 같은 생성기에서 새 문항을 뽑으려고 바꾼다 — 0 이면 단원 100제 그대로
+SEED_SHIFT = 0          # 회차(주차별 기초 다지기)를 만들 때 같은 생성기에서 새 문항을 뽑으려고 바꾼다 — 0 이면 유형별 문제 세트 그대로
 
 def rng(seed):
     return random.Random(seed + 7919 * SEED_SHIFT)

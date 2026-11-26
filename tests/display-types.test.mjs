@@ -1,10 +1,10 @@
-// node tests/display-types.test.mjs — 단원 100제의 유형 · 꾹 눌러 프린트 받기 · 듀얼 「문제 풀이 해설 전부」 검산. 실패 시 exit 1.
+// node tests/display-types.test.mjs — 유형별 문제 세트의 유형 · 꾹 눌러 프린트 받기 · 듀얼 「문제 풀이 해설 전부」 검산. 실패 시 exit 1.
 // ① 유형 = 단원의 한 단계 20문항(lib/avtypes.js): 단원 100가지 × 5 = 500 · 유형마다 교과서 단원 · 학년 · 프린트 코드(6글자 — 단원 · 회차 · 유형끼리 겹치지 않음)
 //    · 번호 1 ~ 20(원래 번호는 src) · 학생앱 주소 #/av/<단원>.<단계> · 문제지 · 해설지 · 빠른 정답 · OMR 에 유형 코드 · 「20문항 · n단계」.
 // ② 프린트 받기: 프린트가 있는 것(단원 · 유형 · 회차)만 「📄 프린트」 · 단원은 PDF 받기, 유형 · 회차는 바로 인쇄 창 · 받기 판 첫 그림.
-// ③ 우물 추천: 유형도 카드로 섞이고, 단원 100제 ↔ 그 단원의 유형(서로 품은 사이)은 서로 추천하지 않는다 · 자리(키 낮은 화면에서 위 · 아래 띠 비우기).
+// ③ 우물 추천: 유형도 카드로 섞이고, 유형별 문제 세트 ↔ 그 단원의 유형(서로 품은 사이)은 서로 추천하지 않는다 · 자리(키 낮은 화면에서 위 · 아래 띠 비우기).
 // ④ 기본기 해설 「🧩 유형」 보기(typesSpec) · 학생앱에서 고른 유형으로 열기 · 본 기록(단원을 보면 그 문항의 유형에도).
-// ⑤ 듀얼 모드 「문제 풀이 해설 전부」(frames/allspec.jsx): 어느 해설 액자에서 나눠도 판마다 단원 100제 · 유형 · 주차별 회차 · 해설 액자 세트 —
+// ⑤ 듀얼 모드 「문제 풀이 해설 전부」(frames/allspec.jsx): 어느 해설 액자에서 나눠도 판마다 유형별 문제 세트 · 유형 · 주차별 회차 · 해설 액자 세트 —
 //    key 풀이 · 이름표 · 단계 · 장면 · 들여오기 · 📄(단원 · 유형 · 회차만) · 목록(탭 넷 · 학교급 · 학년) · 예전 듀얼 기억 옮기기 · 그리기 오류 없음.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -184,7 +184,7 @@ export const sheet = (key) => renderToStaticMarkup(<AvPrintSheet itemKey={key} o
 
   /* ══════════ ② 프린트 받기 ══════════ */
   await m.loadWeekIndex("e3"); await m.loadWeek("w-e3-07a");
-  await test("프린트가 있는 것: 단원 · 유형 · 회차(해설 액자는 없음) · PDF 를 미리 찍는 것은 단원 100제뿐", () => {
+  await test("프린트가 있는 것: 단원 · 유형 · 회차(해설 액자는 없음) · PDF 를 미리 찍는 것은 유형별 문제 세트뿐", () => {
     const u = m.avSource("e-ten"), t = m.avSource("e-ten.3"), w = m.avSource("w-e3-07a");
     assert.deepEqual([u.kind, t.kind, w.kind], ["unit", "type", "week"]);
     assert.ok(u.ready() && t.ready() && w.ready(), "들여온 뒤 ready");
@@ -210,7 +210,7 @@ export const sheet = (key) => renderToStaticMarkup(<AvPrintSheet itemKey={key} o
   });
 
   /* ══════════ ③ 우물 ══════════ */
-  await test("우물 추천: 유형이 섞인 더미에서 6가지 · 단원 100제 ↔ 그 단원의 유형은 서로 추천하지 않음(같은 단원 다른 유형은 됨)", () => {
+  await test("우물 추천: 유형이 섞인 더미에서 6가지 · 유형별 문제 세트 ↔ 그 단원의 유형은 서로 추천하지 않음(같은 단원 다른 유형은 됨)", () => {
     const pool = [...m.BASICS.map((b) => m.unitCard(m.avItem(b.id))), ...TYPES.map(m.typeCard)];
     const none = { mastery: {}, watched: {} };
     for (const b of m.BASICS.slice(0, 40)) {
@@ -368,18 +368,18 @@ export const sheet = (key) => renderToStaticMarkup(<AvPrintSheet itemKey={key} o
     }
   });
 
-  await test("듀얼 판 목록 — 탭 둘(단원 100제 프린트 전부 · 주차별) · 단원 100제는 「전체」부터(시그니처 프린트도 같은 서열) · 지금 것 표시", () => {
+  await test("듀얼 판 목록 — 탭 둘(유형별 문제 세트 프린트 전부 · 주차별) · 유형별 문제 세트는 「전체」부터(시그니처 프린트도 같은 서열) · 지금 것 표시", () => {
     const A = m.allSpecFor(m.basicsSpec("e"));
     const ROW = /class="lsn-set( on)?( hot)?( sig)?"/g;
     const u = m.menu(A, "m-lin");
-    for (const w of ["문제 풀이 해설 전부", "📚 단원 100제", "🗓 주차별", "전체", "초등", "중등", "고등", "왼쪽 판"]) assert.ok(u.includes(w), `목록 — ${w}`);
+    for (const w of ["문제 풀이 해설 전부", "📚 유형별 문제 세트", "🗓 주차별", "전체", "초등", "중등", "고등", "왼쪽 판"]) assert.ok(u.includes(w), `목록 — ${w}`);
     for (const w of ["🧩 유형", "🎬 해설 액자"]) assert.ok(!u.includes(w), `탭 없음 — ${w}`);
-    assert.equal((u.match(ROW) || []).length, m.BASICS.length + 10, "전체 = 기본기 단원 100 + 시그니처 프린트 10");
+    assert.equal((u.match(ROW) || []).length, m.BASICS.length + 21, "전체 = 기본기 단원 100 + 시그니처 프린트 21");
     assert.ok(u.includes('class="lsn-set on"') && u.includes("일차함수"), "지금 단원 표시");
-    for (const w of ["학년별 선발 100", "그래프 그리기 심화 64", "10단계 계산 세트 2", "그래프와 넓이 240", "초등 · 단원 100제 36", "중등 · 단원 100제 40"]) assert.ok(u.includes(w), `전체 목록 — ${w}`);
+    for (const w of ["학년별 선발 100", "그래프 그리기 심화 64", "10단계 계산 세트 2", "그래프와 넓이 240", "초등 · 유형별 문제 세트 36", "중등 · 유형별 문제 세트 51"]) assert.ok(u.includes(w), `전체 목록 — ${w}`);
     const f = m.menu(A, "cnt100:ball");
     assert.ok(f.includes('class="lsn-set on sig"') && f.includes("주머니 공 100"), "지금 시그니처 프린트 표시");
-    assert.equal((f.match(ROW) || []).length, m.BASICS.length + 10, "시그니처 프린트에서 열어도 전체");
+    assert.equal((f.match(ROW) || []).length, m.BASICS.length + 21, "시그니처 프린트에서 열어도 전체");
     const t = m.menu(A, "e-ten.3");
     assert.ok(t.includes('class="lsn-set on"'), "예전 유형 기억 → 그 단원 줄");
     const w = m.menu(A, "w-e3-07a");

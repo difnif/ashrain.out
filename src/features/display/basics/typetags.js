@@ -1,4 +1,4 @@
-// ashrain.out — 단원 100제의 유형(단계)마다 교과서 단원 · 프린트 코드 (basics/typetags.js) — 생성기(avgen/typetags.py)가 만든 파일(손으로 고치지 말 것)
+// ashrain.out — 유형별 문제 세트의 유형(단계)마다 교과서 단원 · 프린트 코드 (basics/typetags.js) — 생성기(avgen/typetags.py)가 만든 파일(손으로 고치지 말 것)
 // 유형 = 단원의 한 단계(20문항) — 학생앱 목록에 유형마다 한 줄(#/av/<단원>.<단계>) · 유형마다 따로 프린트(코드는 단원 코드와 다르다).
 //   TYPE_TAGS[단원][단계] = [교과서 단원("<학기>:<이름>", lib/units.js), 프린트 코드 6글자]
 export const TYPE_TAGS = {

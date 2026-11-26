@@ -1,6 +1,6 @@
 // node tests/display-weeks.test.mjs — 주차별 기초 다지기(학년마다 52주 × 주 2회 = 104회차, public/av-weeks) · 우물 추천(lib/recommend.js) 검산. 실패 시 exit 1.
 // 자료: 학년 12 · 초등 624 · 중등 312 · 고등 312회차 · 회차마다 20문항(1 ~ 5단계 4문항씩) · 회차 id · 주 · 회차(A · B) · 학기 · 종류 ·
-//       교과서 단원(빈 단원 없음) · 프린트 코드(6글자, 회차끼리도 단원 100제와도 겹치지 않음) · 학년 안에서 같은 문항 없음 · 중2 이하 √ 없음.
+//       교과서 단원(빈 단원 없음) · 프린트 코드(6글자, 회차끼리도 유형별 문제 세트와도 겹치지 않음) · 학년 안에서 같은 문항 없음 · 중2 이하 √ 없음.
 // 판서: 수만 있는 「=」 줄을 이 파일의 분수 계산기로 다시 계산한다(생성기의 sympy 검산과 다른 두 번째 계산).
 // 그리기: 그림이 빠지지 않는지(글자 판) · 그림 좌표 · 넷 중 하나는 다 푼 순간으로 그려 오류 · NaN 이 없는지.
 // 문서: 학년마다 몇 회차씩 문제지 · 해설지 · 빠른 정답 HTML · 등록 정보 · OMR.
@@ -91,13 +91,13 @@ test("교과서 단원: 빈 단원 없음 · 학년의 학기 단원이 모두 �
   const mains = new Set(ALL.filter((x) => x.meta.period.endsWith("학기")).map((x) => x.meta.unit));
   assert.ok(mains.size >= 110, `학기 중 주요 단원 ${mains.size}가지`);
 });
-test("프린트 코드: 6글자(헷갈리는 글자 없음) · 1248회차가 서로 겹치지 않고 단원 100제 코드와도 겹치지 않는다", () => {
+test("프린트 코드: 6글자(헷갈리는 글자 없음) · 1248회차가 서로 겹치지 않고 유형별 문제 세트 코드와도 겹치지 않는다", () => {
   const unit = new Set(BASICS.map((b) => b.code));
   const seen = new Set();
   for (const { meta } of ALL) {
     assert.match(meta.code, /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/, meta.id);
     assert.ok(!seen.has(meta.code), `${meta.id} 코드 겹침`);
-    assert.ok(!unit.has(meta.code), `${meta.id} 단원 100제 코드와 겹침`);
+    assert.ok(!unit.has(meta.code), `${meta.id} 유형별 문제 세트 코드와 겹침`);
     seen.add(meta.code);
   }
   assert.equal(seen.size, 1248);
@@ -392,7 +392,7 @@ export const figPrint = (it, when) => { const P = l10Plan(it); const t = when ==
     assert.equal(c.icon, KIND_ICON[meta.kind]);
   });
 
-  // 우물 추천 — 모든 회차 + 단원 100제를 한 바구니에
+  // 우물 추천 — 모든 회차 + 유형별 문제 세트를 한 바구니에
   const POOL = [...ALL.map((x) => m.weekCard(x.meta)), ...m.avOfCat("sol").filter((x) => x.unit).map(m.unitCard)];
   const RELS = new Set(["이어서", "앞 단원", "다음 단원", "같은 단원", "같은 주", "같은 학년", "약한 앞 단원", "지금 수준", "다음 단원 도전", "다시 볼 때"]);
   const sane = (item, cards, tag) => {
@@ -401,7 +401,7 @@ export const figPrint = (it, when) => { const P = l10Plan(it); const t = when ==
     assert.equal(new Set(cards.map((c) => c.key)).size, cards.length, `${tag} 겹침`);
   };
 
-  test("우물 추천(기본 — 기록 없음): 모든 회차 · 단원 100제에 6가지 · 자기 빼고 · 겹침 없음 · 앞 · 다음 단원이 섞인다", () => {
+  test("우물 추천(기본 — 기록 없음): 모든 회차 · 유형별 문제 세트에 6가지 · 자기 빼고 · 겹침 없음 · 앞 · 다음 단원이 섞인다", () => {
     assert.equal(m.MAX, 6);
     let six = 0, prev = 0, next = 0;
     for (const item of POOL) {

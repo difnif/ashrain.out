@@ -1,12 +1,12 @@
 // 기본기 해설(초등 · 중등 · 고등 단원 · 주차별 회차) 스모크 — 학생앱 › 시청각 학습 › 문제 풀이 해설 · 꾹 누르기 우물 · 📄 문서 받기
-//   목록: 위 「초등 | 중등 | 고등」 단추 → 학년 칩 → 「🗓 주차별 기초 다지기(104회차) | 📚 단원 100제」
+//   목록: 위 「초등 | 중등 | 고등」 단추 → 학년 칩 → 「🗓 주차별 기초 다지기(104회차) | 📚 유형별 문제 세트」
 //     · 주차별: 학기 · 방학으로 접고 펴기 → 펼치면 104회차, 회차를 꾹 누르면 우물 추천 6가지 → 카드 위에서 떼면 그 회차가 열림
-//     · 단원 100제: 프린트마다 한 줄 — 기본기 단원 100제와 시그니처 프린트(중등 10장 — 그 단원 바로 뒤)가 같은 서열(유형 줄 없음)
+//     · 유형별 문제 세트: 프린트마다 한 줄 — 기본기 단원과 시그니처 프린트(중등 21장 — 그 단원 바로 뒤)가 같은 서열(유형 줄 없음)
 //       · 시그니처 프린트를 누르면 #/av/<액자>:<세트>(cnt100:sel) — 그 세트로 돌고 본 기록이 프린트 key 로 → 목록에 진행 막대
 //   꾹 눌러 「📄 프린트」에서 떼면 받기 판 — 회차는 [확인] → 인쇄 창(20문항), 단원은 [확인] → 개별 | 압축 다운 · 시그니처 프린트는 📄 없음
 //   꾹 누르기: 우물이 떠서 추천 6가지(기록이 없으면 단원 지도 기본 추천)가 둘레에 → 카드 위에서 떼면 그 콘텐츠가 열림 · 우물에서 떼면 그대로 · 빈 곳에서 떼도 그대로
-//   단원 재생 → 단원 목록(U — 머리에 「단원 100제 | 주차별 학년」) → 번호 · 단계 목록 · 예전 유형 주소(#/av/e-ten.3)도 열림
-//   듀얼: 판마다 「콘텐츠」 → 문제 풀이 해설 전부(📚 단원 100제 「전체」 — 시그니처 프린트 포함 · 🗓 주차별) — 왼쪽 그래프 심화 · 오른쪽 중2 회차
+//   단원 재생 → 단원 목록(U — 머리에 「유형별 문제 세트 | 주차별 학년」) → 번호 · 단계 목록 · 예전 유형 주소(#/av/e-ten.3)도 열림
+//   듀얼: 판마다 「콘텐츠」 → 문제 풀이 해설 전부(📚 유형별 문제 세트 「전체」 — 시그니처 프린트 포함 · 🗓 주차별) — 왼쪽 그래프 심화 · 오른쪽 중2 회차
 //   📄 문서: 문제지 · 해설지 · 빠른 정답 · OMR 고르기 → 확인 → 개별 다운 | 압축 다운
 //     · PDF 가 아직 없으면(Storage 404) → 「인쇄 창으로 열기」 → 새 창에 같은 문서(코드 · 100문항 · 흑백 그림)
 //     · PDF 가 있으면 → 압축 다운 = 「초등-10만들기.zip」 하나, 개별 다운 = 고른 수만큼 PDF
@@ -126,23 +126,25 @@ try {
   step(`회차를 꾹 눌러 우물(추천 6가지) → 카드 위에서 떼면 「${wk}」이 열린다`);
   await go("#/study/av/sol");
   await page.locator(".st-view button").first().waitFor();
-  await page.locator(".st-view button", { hasText: "단원 100제" }).click();
+  await page.locator(".st-view button", { hasText: "유형별 문제 세트" }).click();
   for (const lv of ["초등", "중등", "고등"]) {
     await page.locator(".st-lv button", { hasText: lv }).click();
     await page.waitForTimeout(150);
     assert.equal(await page.locator(".st-list .st-item").count(), avOfLevel(lv).length, lv);
     assert.equal(await page.locator(".st-list .st-type").count(), 0, `${lv} 유형 줄 없음`);
-    assert.ok((await page.locator(".st-view button", { hasText: "단원 100제" }).textContent()).includes(String(avOfLevel(lv).length)), `${lv} 단원 100제 수`);
+    assert.ok((await page.locator(".st-view button", { hasText: "유형별 문제 세트" }).textContent()).includes(String(avOfLevel(lv).length)), `${lv} 유형별 문제 세트 수`);
   }
   // 중등: 시그니처 프린트가 그 단원 바로 뒤에 한 줄씩(기본기 단원과 같은 모양)
   await page.locator(".st-lv button", { hasText: "중등" }).click();
   await page.waitForTimeout(150);
   const SIG = avOfLevel("중등").filter((x) => x.sig);
-  assert.equal(SIG.length, 10);
+  assert.equal(SIG.length, 21);
   const titles = await page.locator(".st-list .st-item .nm b").allTextContents();
   assert.deepEqual(titles, avOfLevel("중등").map((x) => x.title), "중등 차례");
   const iLin = titles.indexOf(avItem("m-lin").title);
-  assert.deepEqual(titles.slice(iLin + 1, iLin + 7), SIG.filter((x) => x.unit === "m2-1:일차함수").map((x) => x.title), "일차함수 단원 뒤 프린트 여섯");
+  const LIN = SIG.filter((x) => x.unit === "m2-1:일차함수");
+  assert.equal(LIN.length, 17, "일차함수 프린트 열일곱(그래프 그리기 2 · 10단계 2 · 그래프와 넓이 4 · 두 점 → 식 5 · 교점 · 만날 조건 4)");
+  assert.deepEqual(titles.slice(iLin + 1, iLin + 1 + LIN.length), LIN.map((x) => x.title), "일차함수 단원 뒤 프린트 열일곱");
   const selRow = page.locator(".st-item", { hasText: avItem("cnt100:sel").title });
   assert.ok((await selRow.textContent()).includes("100제") && (await selRow.locator(".unit").textContent()).includes("확률"), "프린트 줄: 교과서 단원 · 문항 수");
   await selRow.scrollIntoViewIfNeeded();
@@ -263,7 +265,7 @@ try {
   await page.locator(".aps").waitFor({ state: "detached" });
   step("단원 줄 → 받기 판 → [확인] → 개별 | 압축 다운(PDF 가 없으면 인쇄 창) · 회차 → 받기 판 → 바로 인쇄 창 · Esc · 바깥을 누르면 닫힘");
 
-  await page.locator(".st-view button", { hasText: "단원 100제" }).click();
+  await page.locator(".st-view button", { hasText: "유형별 문제 세트" }).click();
   await page.locator(".st-lv button", { hasText: "중등" }).click();
   await page.locator(".st-item", { hasText: avItem("cnt100:sel").title }).click();
   await page.waitForFunction(() => location.hash === "#/av/cnt100:sel");
@@ -282,6 +284,20 @@ try {
   assert.equal(await selPg.getAttribute("aria-label"), "37/100");
   await page.locator(".st-lv button", { hasText: "초등" }).click();
   step("시그니처 프린트 「학년별 선발 100」을 누르면 #/av/cnt100:sel — 그 세트로 돌고, 본 기록이 프린트 key 로(목록에 진행 막대)");
+
+  // 세트 문항을 고를 때 들여오는 프린트(두 점 → 식 · 교점 · 만날 조건) — 따로 나뉜 꾸러미를 받아 그 세트로 돈다
+  for (const [key, chip] of [["lin2:3", "3세트"], ["meet:tri", "삼각형 조건"], ["area:C", "이등분"]]) {
+    await go(`#/av/${key}`);
+    await page.locator(".dsp-svg").first().waitFor();
+    await page.waitForFunction(() => !document.body.textContent.includes("불러오는 중"), null, { timeout: 15000 });
+    await page.waitForTimeout(2200);
+    await wake(page);
+    assert.ok(await page.locator('.dsp-seg button[role="radio"][aria-checked="true"]', { hasText: chip }).count(), `${key} 그 세트(${chip})로`);
+    const hk = await page.evaluate((k) => JSON.parse(localStorage.getItem("ash.av.hist") || "{}")[k] || null, key);
+    assert.ok(hk && hk.n === 100 && hk.max >= 1, `${key} 본 기록 ${JSON.stringify(hk)}`);
+    await page.screenshot({ path: path.join(SHOTS, `bs-2t-${key.replace(":", "-")}.png`) });
+  }
+  step("새 시그니처 프린트 #/av/lin2:3 · meet:tri · area:C — 세트 꾸러미를 받아 그 세트로 돌고 본 기록이 남는다");
 
   // 예전 유형 주소(#/av/e-ten.3)도 그대로 — 그 유형 20문항, 본 기록은 그 유형으로
   const T3 = typeMeta(`${first.key}.3`);
@@ -303,14 +319,14 @@ try {
   await page.locator(".dsp-chip.lsn-unit").click();
   await page.locator(".lsn-set").first().waitFor();
   assert.equal(await page.locator(".lsn-set").count(), avOfLevel("초등").filter((x) => x.set).length);
-  assert.equal(await page.locator(".bs-views .dsp-chip").count(), 7, "단원 100제 + 초1 ~ 초6(유형 칩 없음)");
+  assert.equal(await page.locator(".bs-views .dsp-chip").count(), 7, "유형별 문제 세트 + 초1 ~ 초6(유형 칩 없음)");
   await page.screenshot({ path: path.join(SHOTS, "bs-5-units.png") });
   await page.keyboard.press("Escape");
   await wake(page);
   await page.locator('button[title^="번호 · 단계 목록"]').click();
   await page.locator(".dsp-list").first().waitFor();
   await page.keyboard.press("Escape");
-  step("단원 목록(같은 학교급 단원 모두 · 머리에 「단원 100제 | 주차별 초1 ~ 초6」) · 번호 · 단계 목록이 열린다");
+  step("단원 목록(같은 학교급 단원 모두 · 머리에 「유형별 문제 세트 | 주차별 초1 ~ 초6」) · 번호 · 단계 목록이 열린다");
 
   // 교실 모니터에서 주차별로 — 목록 머리의 학년 칩 → 그 학년 104회차(학기 · 방학으로 나눔 · 이번 주 표시)
   await wake(page);
@@ -331,9 +347,9 @@ try {
   await page.screenshot({ path: path.join(SHOTS, "bs-5-week-play.png") });
   await wake(page);
   await page.locator(".dsp-chip.lsn-unit").click();
-  await page.locator(".bs-views .dsp-chip", { hasText: "단원 100제" }).click();
+  await page.locator(".bs-views .dsp-chip", { hasText: "유형별 문제 세트" }).click();
   await page.waitForTimeout(800);
-  step("교실 모니터: 목록 머리 「초3」 → 104회차(학기 · 방학 넷 · 이번 주 둘) → 「7주 B」가 돈다 → 「단원 100제」로 돌아옴");
+  step("교실 모니터: 목록 머리 「초3」 → 104회차(학기 · 방학 넷 · 이번 주 둘) → 「7주 B」가 돈다 → 「유형별 문제 세트」로 돌아옴");
 
   // 학생앱에서 회차를 열면 본 기록이 기기에 남는다(우물 추천 · ✓ · 진행 막대)
   await go("#/av/w-e3-07a");
@@ -402,10 +418,10 @@ try {
   await wake(page);
   await page.locator(".lsn-pane-ctl.L .dsp-chip.lsn-unit").click();
   await page.locator(".lsn-pane-list.L .all-tabs").waitFor();
-  assert.equal(await page.locator(".lsn-pane-list.L .all-tabs .dsp-chip").count(), 2, "탭 둘(단원 100제 · 주차별)");
-  assert.equal(await page.locator(".lsn-pane-list.L .all-sub .dsp-chip.on").textContent(), "전체", "단원 100제는 전체부터");
+  assert.equal(await page.locator(".lsn-pane-list.L .all-tabs .dsp-chip").count(), 2, "탭 둘(유형별 문제 세트 · 주차별)");
+  assert.equal(await page.locator(".lsn-pane-list.L .all-sub .dsp-chip.on").textContent(), "전체", "유형별 문제 세트는 전체부터");
   assert.equal(await page.locator(".lsn-pane-list.L .lsn-set").count(), avOfCat("sol").length, "프린트 목록 전부(단원 · 학교급이 달라도)");
-  assert.equal(await page.locator(".lsn-pane-list.L .lsn-set.sig").count(), 10, "시그니처 프린트도 같은 목록에");
+  assert.equal(await page.locator(".lsn-pane-list.L .lsn-set.sig").count(), 21, "시그니처 프린트도 같은 목록에");
   await page.screenshot({ path: path.join(SHOTS, "bs-9-dual-menu.png") });
   await page.locator(".lsn-pane-list.L .lsn-set", { hasText: "심화 64" }).click();
   await page.waitForTimeout(900);

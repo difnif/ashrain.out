@@ -1,6 +1,6 @@
 // 학생앱 › 시청각 학습 › 문제 풀이 해설 — 목록에서 꾹 눌러 「📄 프린트」에서 뗐을 때 아래에서 올라오는 프린트 받기 판
-// 그 콘텐츠(단원 100제 · 유형 · 주차별 회차)의 ☐ 문제지 · ☐ 해설지 · ☐ 빠른 정답 · ☐ OMR → [확인] →
-//   PDF 가 올라가 있으면(단원 100제) [개별 다운] | [압축 다운] · 없으면(유형 · 회차 — 미리 찍어 두지 않음) [인쇄 창으로 열기]
+// 그 콘텐츠(유형별 문제 세트 · 유형 · 주차별 회차)의 ☐ 문제지 · ☐ 해설지 · ☐ 빠른 정답 · ☐ OMR → [확인] →
+//   PDF 가 올라가 있으면(유형별 문제 세트) [개별 다운] | [압축 다운] · 없으면(유형 · 회차 — 미리 찍어 두지 않음) [인쇄 창으로 열기]
 //   (인쇄 창에서 「PDF로 저장」). 받기 흐름은 액자 오른쪽 위 📄 문서와 같다(frames/docsmenu.jsx 의 useDocsFlow) — 코드 · 문항 · 그림도 같다.
 // pages/Study.jsx 가 늦게 들여온다(React.lazy) — 인쇄 문서 · 그림 모듈이 목록 화면을 무겁게 하지 않게.
 import { useEffect, useState } from "react";
@@ -8,7 +8,7 @@ import { avSource } from "../lib/avsrc";
 import { unitLabel } from "../lib/units";
 import { AV_DOCS, useDocsFlow, fmtBytes, fmtCode } from "../features/display/frames/docsmenu.jsx";
 
-const KIND = { unit: "단원 100제", type: "유형", week: "주차별 회차" };
+const KIND = { unit: "유형별 문제 세트", type: "유형", week: "주차별 회차" };
 
 export default function AvPrintSheet({ itemKey, onClose }) {
   const src = avSource(itemKey);
