@@ -328,6 +328,16 @@ function iconLantern(g, x, y, s, k){
 }
 function iconPerson(g, x, y, s){ drawFigure(g, x, y + s * 0.45, s * 0.9, PAL.ink); }
 function drawSun(g, x, y, r){ glow(g, x, y, r * 3, '242,182,64', 0.4); g.fillStyle = '#F0B13A'; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); }
+// 달 — 실제 위상(0 그믐 → 0.5 보름 → 1), 남반구면 좌우가 바뀐다
+function drawMoonPhase(g, x, y, r, age, mirror){
+  const c = Math.cos(age * TAU), right = (age < 0.5) !== !!mirror;
+  glow(g, x, y, r * 2.6, '236,232,214', 0.08 + 0.25 * (1 - c) / 2);
+  g.fillStyle = 'rgba(150,160,182,.22)'; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+  g.fillStyle = '#F3EEDD'; g.beginPath();
+  if (right){ g.arc(x, y, r, -Math.PI / 2, Math.PI / 2, false); g.ellipse(x, y, r * Math.abs(c), r, 0, Math.PI / 2, c > 0 ? -Math.PI / 2 : Math.PI * 1.5, c > 0); }
+  else { g.arc(x, y, r, -Math.PI / 2, Math.PI / 2, true); g.ellipse(x, y, r * Math.abs(c), r, 0, Math.PI / 2, c > 0 ? Math.PI * 1.5 : -Math.PI / 2, c <= 0); }
+  g.closePath(); g.fill();
+}
 function drawMoon(g, x, y, r, bg){ glow(g, x, y, r * 2.6, '236,232,214', 0.3); g.fillStyle = '#F3EEDD'; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); g.fillStyle = bg; g.beginPath(); g.arc(x + r * 0.42, y - r * 0.25, r * 0.85, 0, TAU); g.fill(); }
 // 시험용이 아닌, 학생을 위한 '손' — 몸짓만 보여 준다
 function drawHand(g, x, y, s, a){
@@ -418,7 +428,7 @@ function sndAmbient(now, mood){
 /* =================== 4-world: 세상 · 시간 · 살림 · 길 · 둥지 · 떠돌이 · 징조 · 독수리 · 자아 =================== */
 // 숫자는 모두 여기 — 다듬기 패널이 그대로 보여 준다(학생 화면엔 나오지 않는다)
 const PARAM_DEFS = [
-  ['시간', [['dayLen', '하루 길이(초, 1×)', 15], ['seasonDays', '겨울 길이(일) — 넘기면 봄', 30]]],
+  ['시간', [['dayLen', '날짜 하루 길이(초, 1×) — 밤낮은 실제 시각', 15], ['seasonDays', '겨울 길이(일) — 넘기면 봄', 30]]],
   ['살림', [['startWood', '처음 땔감', 6], ['startFood', '처음 양식', 8], ['startHope', '처음 희망(0~10)', 6], ['startPeople', '처음 사람', 3],
     ['eat', '한 사람이 하루에 먹는 양식', 0.25], ['burn', '둥지 하나가 하루에 태우는 땔감', 0.45], ['leeBurn', '바람 그늘 둥지의 땔감 배율', 0.6],
     ['nestWood', '둥지 하나 짓는 땔감', 3], ['nestCap', '둥지 하나에 사는 사람', 3]]],
@@ -439,8 +449,44 @@ const HOME = { u:0.36, v:0.6 };
 let S = null;
 let SAVE = { v:3, params:{}, self:{ A:0, B:0, C:0, name:'wren', center:0 }, runs:[], cur:null, seen:{}, mute:false };
 const SELF = () => SAVE.self;
-const TOD = (d) => { const f = d - Math.floor(d); return f < 0.15 ? 'dawn' : f < 0.66 ? 'day' : f < 0.8 ? 'dusk' : 'night'; };
-const dayFrac = (d) => d - Math.floor(d);
+/* ---------- 세상의 시각 — 밤낮은 실제 시각, 날짜는 노는 동안만 ----------
+   세상이 생길 때 씨앗으로 실제 자리(위도 · 경도) 하나를 정하고 — 화면 어디에도 나오지 않는다 —, 그 자리의 지금 해 · 달로 빛을 정한다.
+   날짜(S.day — 책갈피 끈 · 살림 · 한겨울)는 책을 펼쳐 노는 동안에만 흐른다(하루 15초, 장치 속에선 손을 쓸 때만). */
+const RAD = Math.PI / 180;
+let CLOCK_FAKE = null;            // 시험용 — 붙박은 시각(ms)
+let LIGHT_FIX = null;             // 끝 장 그림처럼 빛을 붙박을 때 { alt, ha }
+const realNow = () => (CLOCK_FAKE != null ? CLOCK_FAKE : Date.now());
+function geoOf(seed){
+  // 넓이가 고르게, 위도 −56° ~ 64°(극지의 백야 · 극야는 뺀다)
+  const R = mulberry(hashS('geo' + seed)), s0 = Math.sin(-56 * RAD), s1 = Math.sin(64 * RAD);
+  return { lat:r2(Math.asin(s0 + (s1 - s0) * R()) / RAD), lon:r2(-180 + 360 * R()) };
+}
+// 해의 시간각(°, 0 = 그 자리의 한낮 · − 오전 · + 오후)과 적위(rad) — NOAA 근사식
+function solarAt(lon, t){
+  const d = new Date(t), y0 = Date.UTC(d.getUTCFullYear(), 0, 1), gm = TAU / 365 * ((t - y0) / 864e5 - 0.5);
+  const eqt = 229.18 * (0.000075 + 0.001868 * Math.cos(gm) - 0.032077 * Math.sin(gm) - 0.014615 * Math.cos(2 * gm) - 0.040849 * Math.sin(2 * gm));
+  const decl = 0.006918 - 0.399912 * Math.cos(gm) + 0.070257 * Math.sin(gm) - 0.006758 * Math.cos(2 * gm) + 0.000907 * Math.sin(2 * gm) - 0.002697 * Math.cos(3 * gm) + 0.00148 * Math.sin(3 * gm);
+  const mins = (t - Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())) / 6e4;
+  return { ha:((((mins + eqt + 4 * lon) / 4) % 360) + 360) % 360 - 180, decl };
+}
+const altOf = (lat, decl, ha) => Math.asin(clamp(Math.sin(lat * RAD) * Math.sin(decl) + Math.cos(lat * RAD) * Math.cos(decl) * Math.cos(ha * RAD), -1, 1)) / RAD;
+const moonAge = (t) => ((((t / 864e5 + 2440587.5 - 2451550.1) / 29.530588853) % 1) + 1) % 1;   // 0 그믐 → 0.5 보름
+const smooth01 = (x) => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+let LIGHT = null;
+function light(){
+  const t = realNow(), geo = S && S.geo ? S.geo : { lat:45, lon:0 }, key = geo.lat + ',' + geo.lon + (LIGHT_FIX ? ',' + LIGHT_FIX.alt + ',' + LIGHT_FIX.ha : '');
+  if (LIGHT && LIGHT.key === key && Math.abs(t - LIGHT.t) < 1000) return LIGHT;
+  const so = solarAt(geo.lon, t), alt = LIGHT_FIX ? LIGHT_FIX.alt : altOf(geo.lat, so.decl, so.ha), ha = LIGHT_FIX ? LIGHT_FIX.ha : so.ha;
+  // 달 — 해보다 위상만큼 늦게 뜨고, 보름달은 해와 반대쪽 높이로
+  const age = moonAge(t), mha = ((so.ha - age * 360) % 360 + 540) % 360 - 180, mdecl = so.decl * Math.cos(age * TAU);
+  LIGHT = { key, t, alt, ha, lat:geo.lat, decl:so.decl,
+    phase:alt >= 8 ? 'day' : alt <= -8 ? 'night' : ha < 0 ? 'dawn' : 'dusk',
+    nk:0.62 * smooth01((4 - alt) / 16),                 // 밤의 짙기 0 ~ 0.62 — 해가 지평선 4° 위에서 −12° 아래로 내려가는 동안
+    warm:clamp(1 - Math.abs(alt - 2) / 9, 0, 1),        // 새벽빛 · 노을빛
+    moon:{ ha:mha, alt:altOf(geo.lat, mdecl, mha), age, decl:mdecl } };
+  return LIGHT;
+}
+const tod = () => light().phase;
 let FX = [];
 function fx(kind, o){ FX.push(Object.assign({ kind, born:nowMs(), life:({ star:2400, eagle:3200, dive:1800, link:1600, pop:1100, catch:900, feather:3000, crack:1400, ring:1200, stone:1600 })[kind] || 1200 }, o || {})); if (FX.length > 40) FX.splice(0, FX.length - 40); }
 
@@ -503,7 +549,7 @@ function buildWorld(seed){
 /* ---------- 새 겨울 ---------- */
 function newSeason(){
   const seed = (Math.random() * 2147483647) | 0;
-  S = { v:3, seed, day:0.2, speed:1, over:null,
+  S = { v:3, seed, geo:geoOf(seed), day:0, speed:1, over:null,
     res:{ wood:PR.startWood, food:PR.startFood, hope:PR.startHope }, people:PR.startPeople, hungry:0, cold:false,
     nests:[], stones:[], stars:{}, paths:[], walk:null, blocked:null, reveal:[], riverCrossed:false,
     signs:[], nextSign:2 + Math.random(), eagleNext:PR.eagleEvery ? PR.eagleEvery * (0.9 + Math.random() * 0.3) : 1e9,
@@ -569,7 +615,7 @@ function discover(key){
 function tick(dt){
   if (!S || S.over || dt <= 0) return;
   S.day += dt;
-  const R = rates(), night = TOD(S.day) === 'night';
+  const R = rates(), night = tod() === 'night';
   mwCheck();
   S.res.food -= S.people * PR.eat * dt;
   const units = S.nests.reduce((t, n) => t + (n.lee ? PR.leeBurn : 1), 0);
@@ -763,9 +809,9 @@ function buildNest(p){
   return true;
 }
 
-/* ---------- 떠돌이 — 해 질 녘에 불빛을 보고 온다 ---------- */
+/* ---------- 떠돌이 — 날짜마다 한 번쯤, 둥지 불빛을 보고 온다 ---------- */
 function wanderStep(dt){
-  const f = dayFrac(S.day), dn = Math.floor(S.day);
+  const f = S.day - Math.floor(S.day), dn = Math.floor(S.day);
   if (f > 0.66 && f < 0.8 && S.lastWander !== dn && !S.mw.on){
     S.lastWander = dn;
     const waiting = S.wand.filter((w) => w.st !== 'leave').length;
@@ -847,7 +893,7 @@ function endSeason(kind){
   SAVE.runs.push({ t:Date.now(), kind, days:r1(S.day), self:s.name, people:S.people, stars, stones:S.stones.length,
     found:Object.values(S.sites).filter((x) => x.found).length,
     coef:{ a:r2(-1.5 + s.A), b:r2(4 + 2 * s.B), c:r2(clamp(stars.length * 0.6 + S.people * 0.15 - S.stones.length * 0.3, -2, 6)) },
-    stats:S.stats });
+    geo:S.geo ? { lat:r1(S.geo.lat), lon:r1(S.geo.lon) } : null, stats:S.stats });
   if (SAVE.runs.length > 12) SAVE.runs.splice(0, SAVE.runs.length - 12);
   SAVE.cur = null;
   onEnd(kind);
@@ -867,7 +913,7 @@ function pack(){
 }
 function unpack(o){
   if (!o || o.v !== 3) return null;
-  S = { v:3, seed:o.seed, day:o.day, speed:o.speed || 1, over:null, res:o.res, people:o.people, hungry:o.hungry || 0, cold:false, stars:o.stars || {},
+  S = { v:3, seed:o.seed, geo:geoOf(o.seed), day:o.day, speed:o.speed || 1, over:null, res:o.res, people:o.people, hungry:o.hungry || 0, cold:false, stars:o.stars || {},
     paths:[], walk:o.walk, blocked:o.blocked, reveal:[], riverCrossed:o.riverCrossed, signs:[], nextSign:o.nextSign, eagleNext:o.eagleNext,
     wand:[], lastWander:o.lastWander, flows:[], forming:1, maskN:0, mw:o.mw, stats:o.stats, seen:o.seen || {} };
   buildWorld(o.seed);
@@ -1277,13 +1323,14 @@ const DEV_SHORE = {
 };
 
 /* ======================= 장터 — 머신 =======================
-   숨은 규칙: 첫째 칸은 당길 때마다 한 칸씩, 둘째 칸은 두 칸씩 돈다(세 번째마다 둘이 맞는다 — 3, 6, 9번째). 셋째 칸은 하루의 때(새벽 · 낮 · 저녁)를 따른다.
-   편법: 둘이 맞는 차례를, 셋째 칸이 같은 그림이 되는 때에 당기면 세 칸이 같다. */
+   숨은 규칙: 첫째 칸은 당길 때마다 한 칸씩, 둘째 칸은 두 칸씩 돈다(세 번째마다 둘이 맞는다 — 3, 6, 9번째).
+   셋째 칸은 넣은 것을 따른다 — 하나(장작이나 곡식)를 넣으면 늘 둘이 맞을 때의 그림, 다른 하나를 넣으면 늘 다른 그림.
+   편법: 둘이 맞는 차례에 맞는 것을 넣고 당기면 세 칸이 같다. */
 const SYMS = ['log', 'grain', 'lantern'];
 const DEV_VILLAGE = {
-  init(st){ const d = st.data; if (d.perm === undefined){ const R = mulberry(st.seed); d.perm = shuffleR(R, SYMS); d.pm = shuffleR(R, [0, 1, 2]); d.n = 0; d.ledger = []; d.paid = null; d.reels = null; d.jack = 0; } },
-  phase(){ const t = TOD(S.day); return t === 'dawn' ? 0 : t === 'day' ? 1 : 2; },
-  result(d, n, ph){ return [d.perm[n % 3], d.perm[(2 * n + 1) % 3], d.perm[d.pm[ph]]]; },
+  init(st){ const d = st.data; if (d.perm === undefined){ const R = mulberry(st.seed); d.perm = shuffleR(R, SYMS); d.n = 0; d.ledger = []; d.paid = null; d.reels = null; d.jack = 0; }
+    if (d.jk === undefined){ const R = mulberry(st.seed + 31); d.jk = R() < 0.5 ? 'log' : 'grain'; d.ok = R() < 0.5 ? 0 : 1; } },
+  result(d, n, paid){ return [d.perm[n % 3], d.perm[(2 * n + 1) % 3], d.perm[paid === d.jk ? 2 : d.ok]]; },
   geo(L){ const A = L.A, bw = Math.min(A.w * 0.5, 360), bh = Math.min(A.h * 0.34, 190); return { box:{ x:A.x + A.w * 0.46 - bw / 2, y:A.y + A.h * 0.26, w:bw, h:bh }, slot:{ x:A.x + A.w * 0.46, y:A.y + A.h * 0.26 - 8 }, lever:{ x:A.x + A.w * 0.46 + bw / 2 + 26, y0:A.y + A.h * 0.24, len:Math.min(A.h * 0.3, 160) }, trays:{ y:A.y + A.h * 0.86, lx:A.x + A.w * 0.2, rx:A.x + A.w * 0.72 } }; },
   sym(g, k, x, y, s){
     if (k === 'log') iconLogs(g, x, y, s * 0.8);
@@ -1350,14 +1397,14 @@ const DEV_VILLAGE = {
       if (dr.k < 0.7) return;
       if (!d.paid){ d.shake = nowMs(); SFX.clunk(); return; }
       SFX.clunk();
-      const ph = this.phase(), res = this.result(d, d.n, ph);
-      d.reels = { res, ph, t0:nowMs(), stop:[700, 1000, 1300], jack:res[0] === res[1] && res[1] === res[2], done:false };
+      const res = this.result(d, d.n, d.paid);
+      d.reels = { res, pay:d.paid, t0:nowMs(), stop:[700, 1000, 1300], jack:res[0] === res[1] && res[1] === res[2], done:false };
       ghostDone('village');
     }
   },
   settle(st){
     const d = st.data, rl = d.reels; rl.done = true;
-    d.ledger.push({ r:rl.res, ph:rl.ph }); if (d.ledger.length > 14) d.ledger.shift();
+    d.ledger.push({ r:rl.res, pay:rl.pay }); if (d.ledger.length > 14) d.ledger.shift();
     d.n++; d.paid = null; S.stats.slot++;
     const g = PR.symGain * (st.stone ? 0.5 : 1);
     if (rl.jack){
@@ -1374,9 +1421,10 @@ const DEV_VILLAGE = {
   },
   margin(g, M, st, now){
     const d = st.data, rows = d.ledger.slice(-Math.max(3, Math.floor((M.h - 20) / 26) - (d.eagle ? 3 : 0))), s = 15;
-    const todGlyph = (ph, x, y) => { if (ph === 0){ g.fillStyle = '#E8913A'; g.beginPath(); g.arc(x, y + 4, 6.5, Math.PI, TAU); g.fill(); g.strokeStyle = PAL.ink; g.lineWidth = 1; g.beginPath(); g.moveTo(x - 9, y + 4); g.lineTo(x + 9, y + 4); g.stroke(); } else if (ph === 1) drawSun(g, x, y, 5.5); else { g.fillStyle = isDark() ? '#C9C2B0' : '#3A4466'; g.beginPath(); g.arc(x, y, 6, 0, TAU); g.fill(); g.fillStyle = isDark() ? '#20262D' : '#F3EDE1'; g.beginPath(); g.arc(x + 2.8, y - 1.6, 5, 0, TAU); g.fill(); } };
-    rows.forEach((row, i) => { const y = M.y + 18 + i * 26; todGlyph(row.ph, M.x + 30, y); row.r.forEach((k, j) => this.sym(g, k, M.x + 62 + j * 34, y, s)); });
-    if (d.eagle){ const ph = this.phase(); for (let i = 0; i < 3; i++){ const y = M.y + 18 + (rows.length + i) * 26, r = this.result(d, d.n + i, ph); g.globalAlpha = 0.4; todGlyph(ph, M.x + 30, y); r.forEach((k, j) => this.sym(g, k, M.x + 62 + j * 34, y, s)); g.globalAlpha = 1; } }
+    // 줄마다 — 넣은 것(동그란 패 안) | 나온 그림 셋
+    const payGlyph = (k, x, y) => { g.strokeStyle = hexA(isDark() ? '#E0D8C8' : '#2F2924', 0.45); g.lineWidth = 1; g.beginPath(); g.arc(x, y, 9.5, 0, TAU); g.stroke(); if (k) this.sym(g, k, x, y, 10); g.beginPath(); g.moveTo(x + 17, y - 9); g.lineTo(x + 17, y + 9); g.stroke(); };
+    rows.forEach((row, i) => { const y = M.y + 18 + i * 26; payGlyph(row.pay, M.x + 26, y); row.r.forEach((k, j) => this.sym(g, k, M.x + 62 + j * 34, y, s)); });
+    if (d.eagle){ for (let i = 0; i < 3; i++){ const y = M.y + 18 + (rows.length + i) * 26, r = this.result(d, d.n + i, d.jk); g.globalAlpha = 0.4; payGlyph(d.jk, M.x + 26, y); r.forEach((k, j) => this.sym(g, k, M.x + 62 + j * 34, y, s)); g.globalAlpha = 1; } }
   },
   ghost(L, st, t){
     const G = this.geo(L), k = ease(clamp(t * 1.5, 0, 1));
@@ -1402,11 +1450,8 @@ function drawDevice(g, now){
   g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 24; g.shadowOffsetY = 8;
   g.fillStyle = PAL.paper; g.fillRect(D.x, D.y, D.w, D.h); g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
   g.drawImage(DEVPAPER, D.x, D.y, D.w, D.h);
-  // 머리 — 하루의 해(시간이 흐르면 움직인다)
-  const f = dayFrac(S.day), hx0 = D.x + D.w * 0.3, hx1 = D.x + D.w * 0.7, hy = D.y + 30;
-  g.strokeStyle = PAL.ink; g.globalAlpha = 0.25; g.lineWidth = 1; g.beginPath(); g.moveTo(hx0, hy); g.quadraticCurveTo((hx0 + hx1) / 2, hy - 30, hx1, hy); g.stroke(); g.globalAlpha = 1;
-  const sxp = lerp(hx0, hx1, f), syp = hy - Math.sin(f * Math.PI) * 15;
-  if (f < 0.75) drawSun(g, sxp, syp, now - DV.sunAt < 600 ? 8 : 6); else drawMoon(g, sxp, syp, 6, PAL.paper);
+  // 머리 — 책갈피 끈(손을 쓰면 날짜가 조금 흐른다)
+  drawRibbon(g, D.x + D.w * 0.32, D.x + D.w * 0.68, D.y + 24, now - DV.sunAt < 700 ? 1 - (now - DV.sunAt) / 700 : 0);
   // 깃털(독수리) · 닫기
   const fe = L.feather; g.strokeStyle = hexA(isDark() ? '#E0D8C8' : '#2F2924', 0.25); g.lineWidth = 1; g.beginPath(); g.arc(fe.x + 23, fe.y + 20, 17, 0, TAU); g.stroke(); drawFeather(g, fe.x + 23, fe.y + 20, 14, -0.6, st.data.eagle ? PAL.stone : (isDark() ? '#B8AE9E' : '#5B5047'));
   const cl = L.close; inkLine(g, [{ x:cl.x + 14, y:cl.y + 10 }, { x:cl.x + 32, y:cl.y + 28 }], 2, PAL.ink, null, 0.8); inkLine(g, [{ x:cl.x + 32, y:cl.y + 10 }, { x:cl.x + 14, y:cl.y + 28 }], 2, PAL.ink, null, 0.8);
@@ -1615,7 +1660,7 @@ function drawPaths(g, now){
   // 흐르는 살림 — 장작 · 곡식이 길을 따라 집으로
   S.flows.forEach((f) => { const st = S.sites[f.site]; if (!st || !st.route) return; const cum = st.routeCum || (st.routeCum = polyCum(st.route)); const q = ptAt(st.route, cum, f.s); g.fillStyle = f.kind === 'wood' ? PAL.wood : PAL.grain; g.beginPath(); g.arc(X(q.u), Y(q.v), su() * 0.0045 + 1, 0, TAU); g.fill(); });
 }
-function nightK(){ const f = dayFrac(S.day); return f < 0.15 ? 0.62 * (1 - f / 0.15) : f < 0.62 ? 0 : f < 0.8 ? 0.62 * (f - 0.62) / 0.18 : 0.62; }
+function nightK(){ return light().nk; }
 function drawHome(g, now){
   const nk = nightK(), wn = windNow(), s0 = su() * 0.022;
   // 장작더미 · 곡식 자루 — 가진 만큼
@@ -1677,9 +1722,9 @@ function drawSnow(g, dtMs, heavy){
   g.globalAlpha = 1;
 }
 function drawTint(g){
-  const f = dayFrac(S.day), nk = nightK(), warm = f < 0.15 ? Math.sin(Math.PI * f / 0.15) * 0.7 : f >= 0.6 && f < 0.82 ? Math.sin(Math.PI * (f - 0.6) / 0.22) : 0;
+  const L = light(), nk = L.nk, warm = L.warm;
   g.save(); g.beginPath(); g.rect(P.x, P.y, P.w, P.h); g.clip();
-  if (warm > 0.01){ const rgb = f < 0.3 ? PAL.dawn : PAL.dusk, gr = g.createLinearGradient(0, P.y, 0, P.y + P.h); gr.addColorStop(0, `rgba(${rgb},${0.28 * warm})`); gr.addColorStop(0.7, `rgba(${rgb},${0.08 * warm})`); gr.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = gr; g.fillRect(P.x, P.y, P.w, P.h); }
+  if (warm > 0.01){ const rgb = L.ha < 0 ? PAL.dawn : PAL.dusk, gr = g.createLinearGradient(0, P.y, 0, P.y + P.h); gr.addColorStop(0, `rgba(${rgb},${0.28 * warm})`); gr.addColorStop(0.7, `rgba(${rgb},${0.08 * warm})`); gr.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = gr; g.fillRect(P.x, P.y, P.w, P.h); }
   if (nk > 0.01){ g.globalCompositeOperation = 'multiply'; g.globalAlpha = nk * (isDark() ? 0.75 : 1); g.fillStyle = PAL.night; g.fillRect(P.x, P.y, P.w, P.h); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; }
   if (S.mw.on){ g.fillStyle = isDark() ? 'rgba(120,160,200,.08)' : 'rgba(200,225,245,.22)'; g.fillRect(P.x, P.y, P.w, P.h); }
   g.restore();
@@ -1693,12 +1738,13 @@ function drawNightLights(g, now, nk){
   if (vs.found){ for (let i = 0; i < 5; i++){ const x = X(vs.u) + [-1.6, 1.4, -2.1, 0.2, 1.9][i] * su() * 0.028, y = Y(vs.v) + [-0.9, -1.1, 0.6, -1.8, 0.5][i] * su() * 0.028; glow(g, x, y, s0 * 1.2, '255,200,110', 0.5 * a * (0.85 + 0.15 * Math.sin(now / 300 + i))); } }
   S.wand.forEach((w) => glow(g, X(w.u) + su() * 0.006, Y(w.v) - su() * 0.006, s0 * 1.4, PAL.glow, 0.45 * a));
 }
+// 하늘 — 이 세상이 놓인 자리의 지금 해와 달(실제 시각이라 거의 움직이지 않는다)
 function drawSkyClock(g, now){
-  const f = dayFrac(S.day), x0 = Wr.x + Wr.w * 0.06, x1 = Wr.x + Wr.w * 0.94, top = Wr.y + 10, low = Wr.y + Wr.h * 0.09;
-  const arc = (p) => [lerp(x0, x1, p), low - (low - top) * Math.sin(Math.PI * clamp(p, 0, 1))];
-  const sp = (f - 0.04) / 0.76; if (sp > 0 && sp < 1){ const [x, y] = arc(sp); drawSun(g, x, y, 8); }
-  const mp = f >= 0.7 ? (f - 0.7) / 0.44 : f < 0.14 ? (f + 0.3) / 0.44 : -1;
-  if (mp > 0 && mp < 1){ const [x, y] = arc(mp); drawMoon(g, x, y, 7, mixHex(PAL.paper.length === 7 ? PAL.paper : '#F3EDE1', PAL.night, nightK())); }
+  const L = light(), x0 = Wr.x + Wr.w * 0.06, x1 = Wr.x + Wr.w * 0.94, top = Wr.y + 10, low = Wr.y + Wr.h * 0.09, south = L.lat < 0;
+  const pos = (ha, alt, decl) => { const peak = Math.max(6, 90 - Math.abs(L.lat - decl / RAD)); let p = clamp((ha + 110) / 220, 0, 1); if (south) p = 1 - p; return [lerp(x0, x1, p), low - (low - top) * clamp(alt / peak, 0, 1)]; };
+  if (L.alt > -3){ const [x, y] = pos(L.ha, Math.max(0, L.alt), L.decl); g.globalAlpha = clamp((L.alt + 3) / 5, 0, 1); drawSun(g, x, y, 8); g.globalAlpha = 1; }
+  const m = L.moon, lit = (1 - Math.cos(m.age * TAU)) / 2;
+  if (m.alt > -3 && lit > 0.04){ const [x, y] = pos(m.ha, Math.max(0, m.alt), m.decl); g.globalAlpha = clamp((m.alt + 3) / 5, 0, 1) * (L.nk > 0.2 ? 1 : 0.5); drawMoonPhase(g, x, y, 7, m.age, south); g.globalAlpha = 1; }
 }
 function drawFrost(g){
   const key = [Math.round(P.w), Math.round(P.h), isDark() ? 'd' : 'l'].join('|');
@@ -1787,12 +1833,18 @@ function drawHud(g, now, paused){
   addR('sound', 34, (bx, by) => { g.fillStyle = ink; g.beginPath(); g.moveTo(bx + 8, by + 14); g.lineTo(bx + 13, by + 14); g.lineTo(bx + 19, by + 9); g.lineTo(bx + 19, by + 27); g.lineTo(bx + 13, by + 22); g.lineTo(bx + 8, by + 22); g.closePath(); g.fill(); g.strokeStyle = ink; g.lineWidth = 1.5; if (SND.on){ g.beginPath(); g.arc(bx + 19, by + 18, 6, -0.8, 0.8); g.stroke(); g.beginPath(); g.arc(bx + 19, by + 18, 10, -0.8, 0.8); g.stroke(); } else { g.beginPath(); g.moveTo(bx + 23, by + 13); g.lineTo(bx + 31, by + 23); g.moveTo(bx + 31, by + 13); g.lineTo(bx + 23, by + 23); g.stroke(); } });
   addR('full', 34, (bx, by) => { g.strokeStyle = ink; g.lineWidth = 1.6; g.beginPath(); g.moveTo(bx + 8, by + 14); g.lineTo(bx + 8, by + 9); g.lineTo(bx + 13, by + 9); g.moveTo(bx + 26, by + 14); g.lineTo(bx + 26, by + 9); g.lineTo(bx + 21, by + 9); g.moveTo(bx + 8, by + 22); g.lineTo(bx + 8, by + 27); g.lineTo(bx + 13, by + 27); g.moveTo(bx + 26, by + 22); g.lineTo(bx + 26, by + 27); g.lineTo(bx + 21, by + 27); g.stroke(); });
   // 책갈피 끈 — 봄까지(한겨울을 미리 알면 푸른 띠)
-  const bx0 = compact ? P.x + 18 + stars * 13 : Math.max(x + 6, P.x + P.w * 0.3), bx1 = compact ? Math.max(bx0 + 40, rx - 14) : Math.max(bx0 + 40, Math.min(rx, rx1) - 10), by = (compact ? y2 : y) + 17, prog = clamp(S.day / PR.seasonDays, 0, 1);
+  const bx0 = compact ? P.x + 18 + stars * 13 : Math.max(x + 6, P.x + P.w * 0.3), bx1 = compact ? Math.max(bx0 + 40, rx - 14) : Math.max(bx0 + 40, Math.min(rx, rx1) - 10), by = (compact ? y2 : y) + 17;
+  drawRibbon(g, bx0, bx1, by, 0);
+}
+// 책갈피 끈 — 봄까지 남은 날(한겨울을 미리 알면 푸른 띠). pulse: 방금 날짜가 흐른 만큼 끝이 빛난다
+function drawRibbon(g, bx0, bx1, by, pulse){
+  const prog = clamp(S.day / PR.seasonDays, 0, 1), px = bx0 + (bx1 - bx0) * prog;
   g.strokeStyle = hexA(isDark() ? '#E0D8C8' : '#2F2924', 0.22); g.lineWidth = 3; g.lineCap = 'round'; g.beginPath(); g.moveTo(bx0, by); g.lineTo(bx1, by); g.stroke();
   if (S.mw.known || S.mw.on || S.mw.done){ const a = bx0 + (bx1 - bx0) * S.mw.start / PR.seasonDays, b = bx0 + (bx1 - bx0) * (S.mw.start + S.mw.len) / PR.seasonDays; g.strokeStyle = '#7FB0CF'; g.lineWidth = 6; g.beginPath(); g.moveTo(a, by); g.lineTo(b, by); g.stroke(); }
-  g.strokeStyle = '#A43E2E'; g.lineWidth = 3; g.beginPath(); g.moveTo(bx0, by); g.lineTo(bx0 + (bx1 - bx0) * prog, by); g.stroke(); g.lineCap = 'butt';
+  g.strokeStyle = '#A43E2E'; g.lineWidth = 3; g.beginPath(); g.moveTo(bx0, by); g.lineTo(px, by); g.stroke(); g.lineCap = 'butt';
   g.fillStyle = PAL.blossom; for (let i = 0; i < 5; i++){ const a = i / 5 * TAU; g.beginPath(); g.arc(bx1 + 8 + Math.cos(a) * 3.2, by + Math.sin(a) * 3.2, 2.6, 0, TAU); g.fill(); } g.fillStyle = PAL.bloom; g.beginPath(); g.arc(bx1 + 8, by, 1.6, 0, TAU); g.fill();
-  if (S.mw.on){ g.fillStyle = '#7FB0CF'; g.beginPath(); g.arc(bx0 + (bx1 - bx0) * prog, by, 4.5, 0, TAU); g.fill(); }
+  if (S.mw.on){ g.fillStyle = '#7FB0CF'; g.beginPath(); g.arc(px, by, 4.5, 0, TAU); g.fill(); }
+  if (pulse > 0) glow(g, px, by, 14, '164,62,46', 0.55 * pulse);
 }
 
 /* ---------- 책장 넘기기 ---------- */
@@ -2046,11 +2098,11 @@ function leaveToCover(){
 function snapWorld(){
   const big = document.createElement('canvas'); big.width = CV.width; big.height = CV.height;
   const g = big.getContext('2d'); g.setTransform(DPR, 0, 0, DPR, 0, 0);
-  const d0 = S.day; S.day = Math.floor(S.day) + 0.42;
+  LIGHT_FIX = { alt:40, ha:0 };   // 끝 장 그림은 한낮의 빛으로
   drawDesk(g); drawPage(g); buildRev(nowMs(), true); g.drawImage(C.rev, Wr.x, Wr.y, Wr.w, Wr.h);
   drawPaths(g, nowMs()); Object.values(S.sites).forEach((st) => { if (st.type === 'river' && !st.placed) return; if (st.found || st.linked) siteToken(g, st, nowMs()); }); drawHome(g, nowMs());
   if (S.over && S.over.kind === 'spring'){ const e0 = endAt; endAt = nowMs() - 3000; drawEnding(g, nowMs()); endAt = e0; }
-  S.day = d0;
+  LIGHT_FIX = null;
   const snap = document.createElement('canvas'); snap.width = Math.round(Wr.w * CDPR); snap.height = Math.round(Wr.h * CDPR);
   snap.getContext('2d').drawImage(big, Wr.x * DPR, Wr.y * DPR, Wr.w * DPR, Wr.h * DPR, 0, 0, snap.width, snap.height);
   return snap;
@@ -2208,15 +2260,16 @@ window.addEventListener('message', (e) => {
 
 /* ---------- 다듬기(강사용) ---------- */
 const MEMO = `<p><b>숨은 규칙 — 학생 화면엔 글이 없다. 해 보면서 찾는다.</b></p>
+<p><b>밤낮과 날짜</b> — 밤낮은 실제 시각을 따른다. 세상이 생길 때 씨앗으로 지구 위 실제 자리(위도 · 경도) 하나를 정하고, 그 자리의 지금 해 높이로 새벽 · 낮 · 노을 · 밤이 된다(달은 실제 위상). 자리는 화면 어디에도 나오지 않는다 — 내 시계와 이 세상의 하늘이 다르다는 것부터가 수수께끼. 날짜(책갈피 끈 · 살림 · 한겨울)는 책을 펼쳐 노는 동안에만 흐른다(하루 15초, 장치 속에선 손을 쓸 때만). 밤엔 장작이 조금 더 든다.</p>
 <p><b>숲 · 가지 뽑기</b> — 두 통의 좋은 가지 비율이 다르다(약 0.78과 0.42). 몇 개 뽑아 보면 공책의 셈 막대와 비율 막대로 어느 통이 나은지 어림한다. 편법: 썩은 가지는 끝이 아주 조금 이끼빛이다. 비율이 낮은 통에서 다섯 번 연달아 좋은 가지를 뽑으면 → 별.</p>
 <p><b>강 · 얼음 재기</b> — 두께 = 처음 두께 + 하루에 느는 만큼 × 날(일차함수). 두 날 이상 재면 공책에 줄이 그어지고, 썰매 줄(필요한 두께)과 만나는 점이 건너는 날. 그 날로부터 0.75일 안에 건너면 → 별. 너무 일찍 건너면 빠진다(양식 · 희망을 잃음). 한겨울엔 물이 돌처럼 얼어 아무 데서나 건넌다.</p>
 <p><b>바다 · 돌림판</b> — 칸의 넓이가 곧 확률. 폭풍 칸은 며칠 주기로 커졌다 작아진다(갈매기가 뭍으로 몰리면 커지는 중). 배를 띄우지 않고 돌리면 시험 — 셈 막대와 원그림이 쌓여 실제 넓이에 다가간다(큰 수의 법칙). 편법: 돌림판은 늘 같은 자리에서 출발하고, 같은 세기로 튕기면 같은 칸에 선다(살살 튕기면 겨눌 수 있다). 잔잔한 칸이 절반보다 작을 때 배를 띄워 세 번 연달아 잔잔하면 → 별. 같은 날 여러 번 나가면 잡는 양이 0.6배씩 준다.</p>
-<p><b>장터 · 머신</b> — 장작이나 곡식 하나를 넣고 손잡이를 당긴다. 첫째 칸은 당길 때마다 한 칸, 둘째 칸은 두 칸씩 돈다(세 번째마다 둘이 맞는다). 셋째 칸은 하루의 때(새벽 · 낮 · 저녁과 밤)를 따른다. 공책 줄(해 · 달 표시 + 그림 셋)에서 규칙을 찾아 세 칸을 맞추면 → 별. 같은 날 큰 몫을 거듭 받으면 반씩 준다.</p>
+<p><b>장터 · 머신</b> — 장작이나 곡식 하나를 넣고 손잡이를 당긴다. 첫째 칸은 당길 때마다 한 칸, 둘째 칸은 두 칸씩 돈다(세 번째마다 둘이 맞는다). 셋째 칸은 넣은 것을 따른다 — 둘 중 하나를 넣으면 늘 둘이 맞을 때의 그림, 다른 하나를 넣으면 늘 다른 그림. 공책 줄(넣은 것 | 그림 셋)에서 규칙을 찾아, 둘이 맞는 차례에 맞는 것을 넣으면 세 칸이 같다 → 별. 같은 날 큰 몫을 거듭 받으면 반씩 준다.</p>
 <p><b>둥지 · 바람 그늘</b> — 집을 누르면 둥지가 나온다(땔감 3). 바람이 불어 가는 쪽, 덤불 뒤(눈 꼬리가 생기는 쪽)에 지으면 땔감을 덜 쓴다 — 연기가 곧게 오르는 것이 표시. 그늘 둥지 둘이면 → 별.</p>
 <p><b>산 · 기울기</b> — 산에서는 곧장 오르면 느리고(0.42배), 옆으로 갈수록 덜 느리다. 갈지자로 30~40° 기울여 오르면 곧장 오를 때보다 3할쯤 빠르다. 오른 높이를 곧장 올랐을 때보다 넉넉히(15% 넘게) 빨리 꼭대기에 닿으면 → 별. 꼭대기에 서면 세상이 넓게 그려진다.</p>
-<p><b>살림</b> — 사람은 양식을, 둥지는 땔감을 쓴다. 숲 · 바다에 길이 닿으면 살림이 길을 따라 흘러온다. 해 질 녘 떠돌이가 오면 눌러 맞아들인다(사람이 늘면 거두는 것도 늘지만 먹는 것도 는다). 춥거나 굶으면 희망(등불)이 줄고, 0이면 흩어진다. 겨울 끝(기본 30일)까지 버티면 봄.</p>
+<p><b>살림</b> — 사람은 양식을, 둥지는 땔감을 쓴다. 숲 · 바다에 길이 닿으면 살림이 길을 따라 흘러온다. 날짜마다 한 번쯤 떠돌이가 둥지 불빛을 보고 오면 눌러 맞아들인다(사람이 늘면 거두는 것도 늘지만 먹는 것도 는다). 춥거나 굶으면 희망(등불)이 줄고, 0이면 흩어진다. 겨울 끝(기본 30일)까지 버티면 봄.</p>
 <p><b>자아</b> — 살펴보기(재기 · 시험 돌리기 · 갈매기 · 징조) ↔ 해 보기(건너기 · 배 · 당기기 · 길 · 둥지), 해 보기 전에 두 번 이상 살폈나(신중 ↔ 결단), 독수리에 기대나(기대기 ↔ 맞서기). 올빼미(살핌 · 신중) · 까치(살핌 · 결단) · 제비(해 봄 · 결단) · 두루미(해 봄 · 신중) · 굴뚝새(가운데). 이름은 끝 장에만 나온다.</p>
-<p><b>독수리</b> — 장치 왼쪽 위 깃털을 누르면 답(실제 비율 · 줄 · 넓이 · 다음 줄)이 바로 보이지만 터전의 덤불 하나가 돌이 되고 그 장치의 별은 받을 수 없다. 며칠마다 아직 닿지 않은 자리를 먼저 굳힌다(거기서는 절반만 나온다). 돌이 여섯이면 독수리의 겨울.</p>
+<p><b>독수리</b> — 장치 왼쪽 위 깃털을 누르면 답(실제 비율 · 줄 · 넓이 · 다음 줄과 넣을 것)이 바로 보이지만 터전의 덤불 하나가 돌이 되고 그 장치의 별은 받을 수 없다. 며칠마다 아직 닿지 않은 자리를 먼저 굳힌다(거기서는 절반만 나온다). 돌이 여섯이면 독수리의 겨울.</p>
 <p><b>징조</b> — 남쪽으로 가는 까마귀 떼(한겨울을 미리 앎 — 땔감 배율이 줄고 책갈피에 푸른 띠), 뭍으로 오는 갈매기(바다 돌림판의 안개가 걷힘), 까치(희망). 둘레의 테가 남은 시간.</p>`;
 function openTune(){
   const box = $('tuneBody'); box.innerHTML = '';
@@ -2225,7 +2278,7 @@ function openTune(){
     rows.forEach(([k, label]) => { const r = document.createElement('label'); r.className = 'trow' + (PR[k] !== DEFAULTS[k] ? ' chg' : ''); r.innerHTML = `<span>${label}</span><input inputmode="decimal" data-k="${k}" value="${PR[k]}">`; box.appendChild(r); });
   });
   $('tuneMemo').innerHTML = MEMO;
-  $('tuneJson').value = JSON.stringify(SAVE.runs.slice(-3), null, 1);
+  $('tuneJson').value = JSON.stringify(SAVE.runs.slice(-3).map(({ geo, ...r }) => r), null, 1);   // 세상의 자리는 보이지 않게
   $('tuneErr').textContent = '';
   $('tuneOv').hidden = false;
 }
@@ -2259,7 +2312,7 @@ requestAnimationFrame(frame);
 window.__gulttuksae = () => {
   const out = { v:3, scene, turning:TURN.on, keepMeets:KEEP ? KEEP.meets : null, paused, theme:document.documentElement.dataset.theme, mute:!SND.on, runs:SAVE.runs.length, cur:!!SAVE.cur, self:Object.assign({}, SAVE.self), params:Object.assign({}, PR), hud:HUDR.map((h) => h.id) };
   if (!S) return out;
-  return Object.assign(out, { day:r2(S.day), tod:TOD(S.day), speed:S.speed, forming:S.forming, over:S.over, res:{ wood:r2(S.res.wood), food:r2(S.res.food), hope:r2(S.res.hope) }, people:S.people,
+  return Object.assign(out, { day:r2(S.day), tod:tod(), speed:S.speed, forming:S.forming, over:S.over, res:{ wood:r2(S.res.wood), food:r2(S.res.food), hope:r2(S.res.hope) }, people:S.people,
     nests:S.nests.length, lee:S.nests.filter((n) => !n.home && n.lee).length, stones:S.stones.length, stars:Object.keys(S.stars), paths:S.paths.length, walking:!!S.walk, blocked:!!S.blocked, riverCrossed:S.riverCrossed,
     reveal:S.reveal.length, signs:S.signs.length, wand:S.wand.map((w) => w.st), flows:S.flows.length, fx:FX.map((f) => f.kind), dev:DV.id, nestTok:!!S.nestTok, mw:Object.assign({}, S.mw),
     sites:Object.fromEntries(Object.entries(S.sites).map(([k, v]) => [k, { found:v.found, linked:v.linked, stone:v.stone, placed:v.placed }])), stats:Object.assign({}, S.stats) });
@@ -2289,7 +2342,10 @@ window.__gtDebug = {
   landing(w){ const tot = w * w / (2 * PR.wheelDecel); return DEV_SHORE.sectorAt(-tot); },
   pay(kind){ const st = devSt(); if (st.data.paid) return false; st.data.paid = kind; if (kind === 'log') S.res.wood -= 1; else S.res.food -= 1; return true; },
   lever(){ const st = devSt(), L = devLayout(); DV.drag = { what:'lever', k:1 }; DEV_VILLAGE.up(L, st); if (st.data.reels && !st.data.reels.done) DEV_VILLAGE.settle(st); return st.data.ledger.slice(-1)[0]; },
-  slot(){ const st = devSt(); return { n:st.data.n, perm:st.data.perm, pm:st.data.pm, phase:DEV_VILLAGE.phase(), next:DEV_VILLAGE.result(st.data, st.data.n, DEV_VILLAGE.phase()), jack:st.data.jack }; },
+  slot(){ const d = devSt().data, other = d.jk === 'log' ? 'grain' : 'log'; return { n:d.n, perm:d.perm, jk:d.jk, next:DEV_VILLAGE.result(d, d.n, d.jk), nextOther:DEV_VILLAGE.result(d, d.n, other), jack:d.jack }; },
+  // 시험용 시계 — 이 세상 자리의 해시(시, 0 ~ 24)로 붙박는다. null 이면 실제 시각으로
+  solar(h){ if (h == null){ CLOCK_FAKE = null; LIGHT = null; return null; } const d0 = new Date(), mid = Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth(), d0.getUTCDate()); CLOCK_FAKE = mid + (h - S.geo.lon / 15) * 3600e3; LIGHT = null; return r1(light().alt); },
+  geo(lat, lon){ S.geo = { lat, lon }; LIGHT = null; return r1(light().alt); },
   eagle(){ const st = devSt(), L = devLayout(); return deviceDown(L.feather.x + 10, L.feather.y + 10); },
   nest(u, v){ return buildNest({ u, v }); }, leeSpot(){ const ok = (p) => nestSpotOk(p) && leeOf(p); for (let i = 0; i < 6000; i++){ const a = Math.random() * TAU, d = 0.04 + Math.random() * 0.12, p = { u:HOME.u + Math.cos(a) * d, v:HOME.v + Math.sin(a) * d * WA }; if (ok(p) && [[0.006, 0], [-0.006, 0], [0, 0.008], [0, -0.008]].every(([du, dv]) => ok({ u:p.u + du, v:p.v + dv }))) return p; } return null; },
   openSpot(){ for (let i = 0; i < 4000; i++){ const a = Math.random() * TAU, d = 0.04 + Math.random() * 0.12, p = { u:HOME.u + Math.cos(a) * d, v:HOME.v + Math.sin(a) * d * WA }; if (nestSpotOk(p) && !leeOf(p)) return p; } return null; },

@@ -116,13 +116,19 @@ async function gameChecks(fr, shot, page, off) {
   s = await S();
   ok(!s.paused, "N7 다시 누르면 흐른다");
 
-  // V. 하루의 빛
+  // V. 밤낮은 실제 시각(이 세상이 놓인 비밀의 자리), 날짜는 노는 동안만
+  const geo = await st(() => window.__gtDebug.state().geo);
+  ok(geo && geo.lat >= -56 && geo.lat <= 64 && geo.lon >= -180 && geo.lon < 180 && !(await fr.evaluate(() => /\d/.test(document.body.innerText))), `V0 세상이 생길 때 실제 위도 · 경도가 정해진다 — 화면엔 어디에도 없다`);
   const Wr = (await dbg("layout")).Wr, box = [Wr.x, Wr.y, Wr.x + Wr.w, Wr.y + Wr.h];
-  const dN = Math.floor(s.day);
-  await dbg("setDay", dN + 0.92); await fr.waitForTimeout(250); const night = await dbg("lum", ...box);
-  await dbg("setDay", dN + 0.4); await fr.waitForTimeout(250); const noon = await dbg("lum", ...box);
-  ok(night < noon * 0.85 && (await S()).tod === "day", `V1 밤이 오면 그림이 어두워진다(밝기 ${Math.round(noon)} → ${Math.round(night)})`);
-  await dbg("setDay", dN + 0.3);
+  await dbg("geo", 37.5, 127);   // 시험은 늘 같은 자리에서
+  await dbg("solar", 0); await fr.waitForTimeout(250); const night = await dbg("lum", ...box); const todN = (await S()).tod;
+  await dbg("solar", 12.3); await fr.waitForTimeout(250); const noon = await dbg("lum", ...box);
+  ok(night < noon * 0.85 && todN === "night" && (await S()).tod === "day", `V1 그 자리가 밤이면 그림이 어둡고 한낮이면 밝다(밝기 ${Math.round(noon)} · ${Math.round(night)})`);
+  const dV = (await S()).day; await dbg("jump", 0.6); await fr.waitForTimeout(250); const noon2 = await dbg("lum", ...box); s = await S();
+  ok(Math.abs(noon2 - noon) < noon * 0.04 && s.tod === "day" && s.day >= dV + 0.6, `V2 날짜가 흘러도 해는 실제 시각대로 — 빛은 그대로(${Math.round(noon)} → ${Math.round(noon2)})`);
+  await dbg("solar", 6.6); await fr.waitForTimeout(150); const dawn = (await S()).tod; await dbg("solar", 17.2); const dusk = (await S()).tod;
+  ok(dawn === "dawn" && dusk === "dusk", `V3 해 뜰 무렵 · 질 무렵은 새벽빛 · 노을빛(${dawn} · ${dusk})`);
+  await dbg("solar", 12.3);
 
   // P. 길 — 손가락으로 선을 긋는다
   const hp = await dbg("homePx"), fp = await dbg("sitePx", "forestA");
@@ -195,19 +201,21 @@ async function gameChecks(fr, shot, page, off) {
   ok((await dbg("slot")).n === sl.n, "D18 값을 넣지 않으면 손잡이가 덜컥 — 돌지 않는다");
   await dbg("pay", "log"); const row = await dbg("lever");
   ok(row && row.r.length === 3 && (await dbg("slot")).n === sl.n + 1, "D19 장작 하나를 넣고 손잡이를 당기면 세 칸이 돈다 — 장부(여백)에 남는다");
-  for (let i = 0; i < 3 && (await dbg("slot")).n % 3 !== 2; i++) { await dbg("pay", "grain"); await dbg("lever"); }
+  const other = sl.jk === "log" ? "grain" : "log";
+  for (const k of ["log", "grain", "log", "grain"]) { if ((await dbg("slot")).n % 3 === 2) break; await dbg("pay", k); await dbg("lever"); }
+  const led = await st(() => window.__gtDebug.state().sites.village.data.ledger);
+  const third = {}; let same = true; led.forEach((r) => { if (!r.pay) return; if (third[r.pay] && third[r.pay] !== r.r[2]) same = false; third[r.pay] = r.r[2]; });
+  ok(same && led.every((r) => r.pay), "D20 셋째 칸은 넣은 것을 따른다 — 장부엔 넣은 것 | 그림 셋");
+  for (let i = 0; i < 3 && (await dbg("slot")).n % 3 !== 2; i++) { await dbg("pay", other); await dbg("lever"); }
   sl = await dbg("slot");
-  const phDay = Math.floor((await S()).day), ph = sl.pm.indexOf(2);
-  await dbg("setDay", phDay + 1 + [0.07, 0.4, 0.9][ph]);
-  sl = await dbg("slot");
-  ok(sl.next[0] === sl.next[1] && sl.next[1] === sl.next[2], `D20 맞는 때 · 맞는 차례를 알면 다음 판이 보인다(${sl.next.join(",")})`);
-  await dbg("pay", "log"); await dbg("lever");
+  ok(sl.next[0] === sl.next[1] && sl.next[1] === sl.next[2] && !(sl.nextOther[1] === sl.nextOther[2]), `D20b 둘이 맞는 차례에 맞는 것을 넣으면 세 칸이 같다(${sl.next.join(",")}) — 다른 것이면 아니다`);
+  await dbg("pay", sl.jk); await dbg("lever");
   s = await S();
   ok((await dbg("slot")).jack >= 1 && s.stars.includes("village"), "D21 숨은 규칙 — 세 칸이 맞으면 큰 몫 · 별");
   // 독수리 깃털 — 답을 바로 보여 주는 대신 덤불 하나가 돌이 된다
   const c0 = (await S()).self.C, stones0 = (await S()).stones;
   await dbg("eagle"); s = await S();
-  ok(s.stones === stones0 + 1 && s.self.C < c0 && await st(() => !!window.__gtDebug.state().sites.village.data.eagle), "D22 독수리 깃털 — 다음 판을 바로 보여 주고, 덤불이 돌로 굳고, 나는 '기대기' 쪽으로");
+  ok(s.stones === stones0 + 1 && s.self.C < c0 && await st(() => !!window.__gtDebug.state().sites.village.data.eagle), "D22 독수리 깃털 — 다음 판과 넣을 것을 바로 보여 주고, 덤불이 돌로 굳고, 나는 '기대기' 쪽으로");
   await shot("gt-village");
   await dbg("close");
 
@@ -253,6 +261,8 @@ async function gameChecks(fr, shot, page, off) {
   await click(await dbg("hudPx", "leave"));
   s = await until((x) => x.scene === "cover" && !x.turning, 4000);
   ok(s.scene === "cover" && s.cur, "R2 덮으면 표지에 책갈피 끈이 걸린다");
+  const dC = s.day; await fr.waitForTimeout(1500);
+  ok((await S()).day === dC, "R2b 덮어 둔 동안엔 날짜가 흐르지 않는다(노는 동안만)");
   await click(await dbg("ribbonPx"));
   s = await until((x) => x.scene === "world" && !x.turning, 4000);
   ok(s.scene === "world" && Math.abs(s.day - dayR) < 0.3 && s.lee >= 2 && s.stars.length >= 4, "R3 끈을 당기면 그 날 그 자리에서 다시");
@@ -285,7 +295,7 @@ async function gameChecks(fr, shot, page, off) {
 
   // TU. 다듬기(강사용)
   await fr.locator("#btnTune").click();
-  ok(/숨은 규칙|규칙/.test(await fr.locator("#tuneMemo").innerText()), "TU1 다듬기 — 강사에게만 숨은 규칙 메모");
+  ok(/숨은 규칙|규칙/.test(await fr.locator("#tuneMemo").innerText()) && !/"geo"|"lat"|"lon"/.test(await fr.locator("#tuneJson").inputValue()), "TU1 다듬기 — 강사에게만 숨은 규칙 메모(세상의 자리는 기록에도 보이지 않는다)");
   await fr.locator('#tuneBody [data-k="dayLen"]').fill("20");
   await fr.locator("#tApply").click();
   s = await S();
@@ -295,6 +305,7 @@ async function gameChecks(fr, shot, page, off) {
   ok(s.params.dayLen === 15, "TU3 기본값으로 되돌린다");
   await fr.locator("#tClose").click();
   await dbg("setSelf", 0, 0, 0);
+  await dbg("solar", null);   // 시험 시계를 풀어 실제 시각으로
 }
 
 (async () => {
