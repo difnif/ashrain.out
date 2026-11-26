@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "../../../lib/theme";
 
-const GAME = { key: "gulttuksae", title: "굴뚝새", sub: "질문으로 건너는 겨울 · 1막 스페이스 · 베타",
+const GAME = { key: "gulttuksae", title: "굴뚝새", sub: "그림책 — 터전에서 나는 겨울 · 1막 · 베타",
   load: () => import("../../../features/games/gulttuksae.html?raw") };
 const STORE_PREFIX = "ashrain.games.";
 const themeOf = (t) => (t === "light" ? "light" : "dark");
