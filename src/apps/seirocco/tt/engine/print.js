@@ -5,6 +5,7 @@ import { DEFAULTS, GEO, colBox, plan, renderSheet, buildAnswerPdf, dividerPage, 
 import { variants, info } from "./partsplit";
 import { parse, titleOf, isAnswerOnly, answerPages, parseQuick, renderQuick, solutionPages, parseSolutions, pageImageNoNames } from "./mathflat";
 import { twoPass, A4W, A4H } from "./base";
+import { partsFromAnswer, expandParts, splitLabel, baseHash, partLabel } from "../parts";
 
 export function settings(opts = {}) {
   const cfg = { ...DEFAULTS };
@@ -170,6 +171,8 @@ async function buildMathflat(group, pair, cfg0, opts, ctx, known, sids) {
       it.sol = sols[it.no] ? { img: sols[it.no].img, w: sols[it.no].w, h: sols[it.no].h } : null;
       if (q) {
         it.answer = q.choice || q.text || "";
+        // 하위 문제 (1)(2)…: 정답 글자로, 정답이 그림이면 정답 줄의 표시로 — 하위 문제마다 따로 채점
+        if (!q.choice) it.parts = partsFromAnswer(q.text) || partsFromAnswer(String(q.marks || "").replace(/^[^(（⑴-⒇]*/, ""));
         try { const rq = await renderQuick(qdoc, q); it.answer_png = rq.png; it.answer_wh = rq.wh; } catch { /* */ }
       }
     }
@@ -220,24 +223,26 @@ async function buildMathflat(group, pair, cfg0, opts, ctx, known, sids) {
   // 저장
   const files = [{ rel: `${code}/sheet.pdf`, data: sheet.pdf, type: "application/pdf" }];
   if (answerPdf) files.push({ rel: `${code}/answer.pdf`, data: answerPdf, type: "application/pdf" });
-  const rows = [];
+  const probs = [];
   for (const it of items) {
     const n3 = String(it.seq).padStart(3, "0");
     files.push({ rel: `${code}/items/${n3}.png`, data: it.raw || (await toPng(it.img)), type: "image/png" });
     if (it.answer_png) files.push({ rel: `${code}/answers/${n3}.png`, data: it.answer_png, type: "image/png" });
     if (it.sol) files.push({ rel: `${code}/sols/${n3}.png`, data: it.sol.png, type: "image/png" });
-    rows.push({ seq: it.seq, src: strip(ctx, it.src, names), src_no: String(it.no), choice: !!it.choice, hash: it.hash, png: `items/${n3}.png`,
-      answer: it.answer || "", answer_png: it.answer_png ? `answers/${n3}.png` : null, sol_png: it.sol ? `sols/${n3}.png` : null,
-      tag: it.tag || "", rate: String(it.rate || "").replace("정답률", "").trim() });
+    probs.push({ no: String(it.seq), parts: it.choice ? null : it.parts || null,
+      row: { seq: it.seq, src: strip(ctx, it.src, names), src_no: String(it.no), choice: !!it.choice, hash: it.hash, png: `items/${n3}.png`,
+        answer: it.answer || "", answer_png: it.answer_png ? `answers/${n3}.png` : null, sol_png: it.sol ? `sols/${n3}.png` : null,
+        tag: it.tag || "", rate: String(it.rate || "").replace("정답률", "").trim() } });
   }
+  const rows = expandParts(probs);                 // 하위 문제가 있는 문항은 하위 문제마다 한 줄(label 「3 (1)」)
   const srcNames = group.map((u) => strip(ctx, u.name, names) || "학습지.pdf");
-  const nch = items.filter((it) => it.choice).length;
+  const nch = rows.filter((r) => r.choice).length;
   const brief = await storePrint(ctx, {
     code, items: rows, files, targets: sids,
-    row: { title, sub, kind: "mathflat", template: cfg.양식, label: cfg.주관식_이름, level: ctx.guessLevel(title, sub, cfg.양식), n_items: items.length, n_choice: nch,
+    row: { title, sub, kind: "mathflat", template: cfg.양식, label: cfg.주관식_이름, level: ctx.guessLevel(title, sub, cfg.양식), n_items: rows.length, n_choice: nch,
       pages: sheet.layout.P, sources: srcNames, files: { sheet: `${code}/sheet.pdf`, answer: answerPdf ? `${code}/answer.pdf` : null, src: [], extras: [] },
       name_boxes: sheet.name_boxes, options: Object.fromEntries(Object.entries(opts).filter(([k]) => k !== "targets")), shelf: "active" },
-    logKind: "convert", logDetail: { title, items: items.length, pages: sheet.layout.P, template: cfg.양식, files: srcNames, anon: found.size, solutions: items.filter((it) => it.sol).length },
+    logKind: "convert", logDetail: { title, items: items.length, parts: rows.length - items.length, pages: sheet.layout.P, template: cfg.양식, files: srcNames, anon: found.size, solutions: items.filter((it) => it.sol).length },
   });
   brief.anon_removed = found.size;
   return brief;
@@ -272,12 +277,23 @@ export async function wrongMake(b, ctx) {
   const sids = (b.targets || []).map(Number).filter(Boolean);
   const code = await reserveCode(ctx);
   cfg.코드 = code;
-  const items = [];
+  // 하위 문제(「3 (2)」)는 그 문제 그림을 한 번만 싣고, 고른 하위 문제마다 채점 줄을 만든다
+  const groups = [];
   for (const [pr, it] of got) {
+    const last = groups[groups.length - 1];
+    const part = splitLabel(it.label).part;
+    if (part && last && last.pr === pr && last.parts && last.its[0].png === it.png && splitLabel(last.its[0].label).base === splitLabel(it.label).base) { last.its.push(it); continue; }
+    groups.push({ pr, its: [it], parts: part > 0 });
+  }
+  const items = [];
+  for (const { pr, its, parts } of groups) {
+    const it = its[0];
     const raw = await bytes(`${pr.code}/${it.png}`);
-    const e = { img: await pngToImg(raw), raw, no: it.seq, src: `${pr.title} ${fmtCode(pr.code)}`, choice: !!it.choice, hash: it.hash || `${pr.code}:${it.seq}`,
-      answer: it.answer || "", answer_png: null, answer_wh: null, sol: null, tag: it.tag || "", rate: it.rate || "",
-      k: it.scale || (pr.kind === "registered" ? 72 / 150 : null), from: [pr, it] };
+    const e = { img: await pngToImg(raw), raw, no: it.seq, src: `${pr.title} ${fmtCode(pr.code)}`, choice: parts ? false : !!it.choice,
+      hash: (parts ? baseHash(it.hash) : it.hash) || `${pr.code}:${it.seq}`,
+      answer: parts ? its.map((x) => `${partLabel(splitLabel(x.label).part)} ${x.answer || ""}`.trim()).join(" ") : it.answer || "",
+      answer_png: null, answer_wh: null, sol: null, tag: it.tag || "", rate: it.rate || "",
+      k: it.scale || (pr.kind === "registered" ? 72 / 150 : null), from: [pr, it], parts: parts ? its : null };
     if (it.answer_png) {
       try { e.answer_png = await bytes(`${pr.code}/${it.answer_png}`); const im = await pngToImg(e.answer_png); e.answer_wh = [(im.w * 72) / 220, (im.h * 72) / 220]; } catch { /* */ }
     }
@@ -302,14 +318,20 @@ export async function wrongMake(b, ctx) {
     files.push({ rel: `${code}/items/${n3}.png`, data: it.raw, type: "image/png" });
     if (it.answer_png) files.push({ rel: `${code}/answers/${n3}.png`, data: it.answer_png, type: "image/png" });
     if (it.sol) files.push({ rel: `${code}/sols/${n3}.png`, data: it.sol.png, type: "image/png" });
-    rows.push({ seq: it.seq, src: it.src, src_no: String(pr.kind === "registered" ? src.label || src.seq : src.seq), choice: !!it.choice, hash: it.hash, png: `items/${n3}.png`,
-      answer: it.answer, answer_png: it.answer_png ? `answers/${n3}.png` : null, sol_png: it.sol ? `sols/${n3}.png` : null, tag: it.tag, rate: it.rate,
-      label: String(it.seq), points: src.points ?? null, topic: src.topic || "", scale: it.k, origin: `${pr.code}:${src.seq}:${src.label || src.seq}` });
+    const base = { src: it.src, png: `items/${n3}.png`, answer_png: it.answer_png ? `answers/${n3}.png` : null, sol_png: it.sol ? `sols/${n3}.png` : null,
+      tag: it.tag, rate: it.rate, topic: src.topic || "", scale: it.k };
+    if (it.parts) {
+      for (const x of it.parts) rows.push({ ...base, seq: rows.length + 1, label: `${it.seq} ${partLabel(splitLabel(x.label).part)}`, src_no: x.label || String(x.seq),
+        choice: false, hash: x.hash || `${pr.code}:${x.seq}`, answer: x.answer || "", points: x.points ?? null, origin: `${pr.code}:${x.seq}:${x.label || x.seq}` });
+      continue;
+    }
+    rows.push({ ...base, seq: rows.length + 1, src_no: String(src.label || src.seq), choice: !!it.choice, hash: it.hash,
+      answer: it.answer, label: String(it.seq), points: src.points ?? null, origin: `${pr.code}:${src.seq}:${src.label || src.seq}` });
   }
   const lvl = got.map(([pr]) => pr.level).find(Boolean) || ctx.guessLevel(title, sub, cfg.양식);
   const brief = await storePrint(ctx, {
     code, items: rows, files, targets: sids,
-    row: { title, sub, kind: "wrong", template: cfg.양식, label: cfg.주관식_이름, level: lvl, n_items: items.length, n_choice: items.filter((it) => it.choice).length,
+    row: { title, sub, kind: "wrong", template: cfg.양식, label: cfg.주관식_이름, level: lvl, n_items: rows.length, n_choice: rows.filter((r) => r.choice).length,
       pages: sheet.layout.P, sources: srcs, files: { sheet: `${code}/sheet.pdf`, answer: answerPdf ? `${code}/answer.pdf` : null, src: [], extras: [] },
       name_boxes: sheet.name_boxes, options: { wrong_from: got.map(([pr, it]) => `${pr.code}:${it.seq}`), which: b.which || "" }, shelf: "active" },
     logKind: "wrongset_make", logDetail: { title, items: items.length, skipped, sources: srcs.length, targets: sids.length },

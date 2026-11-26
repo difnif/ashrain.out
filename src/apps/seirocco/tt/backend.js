@@ -5,6 +5,7 @@ import {
   fmtCode, normCode, newCode, nowIso, todayStr, normName, summarize, currentMarks, roundMarks, roundsInfo, gradingStats,
   everWrong, autoJudge, guessLevel, safeName, cleanName, stripNames,
 } from "./logic";
+import { groupProblems, relayout, partsFromAnswer, splitLabel, partLabel, baseHash } from "./parts";
 
 const engine = () => import("./engine/index.js");
 const CLASS_KINDS = ["used", "graded", "reviewed", "homework"];
@@ -194,7 +195,7 @@ async function studentDetail(sid) {
   }
   // 반복 오답: 같은 문항(해시)을 두 번 넘게(채점마다 1번, 어느 차든 X) 틀린 것
   const allPids = [...new Set(gs.map((g) => g.print_id))];
-  const items = allPids.length ? await all(() => T("tt_print_items").select("print_id,seq,hash,png").in("print_id", allPids)) : [];
+  const items = allPids.length ? await all(() => T("tt_print_items").select("print_id,seq,hash,png,label").in("print_id", allPids)) : [];
   const allPrints = allPids.length ? must(await T("tt_prints").select("id,code,title,shelf").in("id", allPids)) : [];
   const apm = new Map(allPrints.map((p) => [p.id, p]));
   const wrong = new Map();
@@ -207,7 +208,7 @@ async function studentDetail(sid) {
       if (!wrong.has(it.hash)) wrong.set(it.hash, { hash: it.hash, count: 0, png: it.png ? `${p.code}/${it.png}` : null, where: [] });
       const w = wrong.get(it.hash);
       w.count += 1;
-      w.where.push({ code: fmtCode(p.code), title: p.title, seq });
+      w.where.push({ code: fmtCode(p.code), title: p.title, seq, label: it.label || "" });
     }
   }
   const rep = [...wrong.values()].filter((w) => w.count >= 2).sort((a, b) => b.count - a.count);
@@ -290,7 +291,7 @@ async function transcriptsOf(keys) {
   const rows = await all(() => T("tt_transcripts").select("item_key,question,solution").in("item_key", keys));
   return new Map(rows.filter((r) => r.question || r.solution).map((r) => [r.item_key, r]));
 }
-const itemKey = (code, it) => it.hash || `${code}:${it.seq}`;
+const itemKey = (code, it) => baseHash(it.hash) || `${code}:${it.seq}`;      // 하위 문제(「…#2」)는 문제 하나의 전사본을 같이 씀
 export async function wrongCandidates(f) {
   const sids = (f.students || []).map(Number).filter(Boolean);
   const codes = (f.codes || []).map(normCode).filter((c) => c.length === 6);
@@ -329,7 +330,7 @@ export async function wrongCandidates(f) {
         : which === "ever" ? ever || (withU && fin === "U")
         : !!it.hash && (hist.get(g.student_id)?.get(it.hash) || 0) >= 2;
       if (!hit) continue;
-      const key = itemKey(p.code, it);
+      const key = it.hash || `${p.code}:${it.seq}`;          // 하위 문제마다 따로(「…#2」)
       if (!out.has(key)) {
         out.set(key, { key, code: p.code, code_fmt: fmtCode(p.code), title: p.title, level: p.level || "", kind: p.kind,
           seq: it.seq, label: it.label || String(it.src_no || it.seq), png: it.png ? `${p.code}/${it.png}` : null,
@@ -343,9 +344,9 @@ export async function wrongCandidates(f) {
       e.n_wrong += seqR.filter((x) => x.result === "X").length;
     }
   }
-  const tr = await transcriptsOf(order);
+  const tr = await transcriptsOf([...new Set(order.map((k) => baseHash(k) || k))]);
   for (const k of order) {
-    const t = tr.get(k);
+    const t = tr.get(baseHash(k) || k);
     if (t) Object.assign(out.get(k), { question: t.question, solution: t.solution });
   }
   return { items: order.map((k) => out.get(k)), n_gradings: gs.length,
@@ -375,7 +376,7 @@ export async function printData(code) {
       const key = itemKey(pr.code, it), t = tr.get(key);
       return { no: it.seq, label: it.label || String(it.src_no || it.seq), choice: !!it.choice, answer: ansText(it), points: it.points,
         topic: it.topic || "", tag: it.tag || "", rate: it.rate || "", key, origin: it.origin || null,
-        image: it.png ? `시험지 ${it.seq}번` : null, answer_image: !!it.answer_png, solution_image: !!it.sol_png,
+        image: it.png ? `시험지 ${splitLabel(it.label || String(it.seq)).base}번` : null, answer_image: !!it.answer_png, solution_image: !!it.sol_png,
         results: { graded: res.filter(Boolean).length, O: res.filter((x) => x === "O").length, X: res.filter((x) => x === "X").length, U: res.filter((x) => x === "U").length },
         ...(t ? { question: t.question, solution: t.solution } : {}) };
     }),
@@ -483,6 +484,7 @@ export async function api(path, body) {
     }
     return printBriefs(prints);
   }
+  if ((m = /^prints\/([A-Za-z0-9-]+)\/parts$/.exec(p))) return printParts(m[1], post ? body : null);
   if ((m = /^prints\/([A-Za-z0-9-]+)\/(restore|purge|unshelve)$/.exec(p))) {
     const pr = await printRow(m[1]);
     if (!pr) throw new Error("그런 코드의 프린트가 없어요");
@@ -613,6 +615,43 @@ export async function api(path, body) {
   if (p === "export/import") return (await engine()).importTranscripts(body, ctx());
   if (p === "inbox") return [];
   throw new Error("없는 요청: " + p);
+}
+
+// ── 하위 문제 (1)(2)(3) 따로 채점 — 이미 있는 프린트의 문항 줄 나누기 · 다시 묶기 (supabase/2026-11_tt_item_parts.sql 의 tt_relayout_items)
+async function printParts(code, body) {
+  const pr = await printRow(code);
+  if (!pr || pr.shelf !== "active") throw new Error("그런 코드의 프린트가 없어요");
+  const rows = await itemsOf(pr.id);
+  if (!body) {
+    // 문제마다 지금 하위 문제 + 찾은 하위 문제(정답 글자 「(1) … (2) …」 · 문제지 글자의 줄머리 (1) (2))
+    let inSheet = {};
+    if (pr.files && pr.files.sheet && rows.some((r) => r.page && r.bbox && !splitLabel(r.label).part)) {
+      try { inSheet = await (await engine()).partsInSheet(await bytes(pr.files.sheet), rows.filter((r) => r.page && r.bbox)); } catch { inSheet = {}; }
+    }
+    const gs = must(await T("tt_gradings").select("id").eq("print_id", pr.id));
+    return {
+      print: await printBrief(pr.id), n_gradings: gs.length,
+      groups: groupProblems(rows).map((g) => {
+        const r0 = g.rows[0];
+        const a = g.parts || r0.choice ? null : partsFromAnswer(r0.answer);
+        const found = r0.choice ? 0 : Math.max(a ? a.length : 0, inSheet[r0.seq] || 0);
+        return { base: g.base, seq: r0.seq, png: r0.png, choice: !!r0.choice, answer: g.parts ? "" : r0.answer || "", answer_png: r0.answer_png,
+          parts: g.parts ? g.rows.map((r) => ({ seq: r.seq, label: partLabel(splitLabel(r.label).part), answer: r.answer || "" })) : null,
+          found: found >= 2 ? found : 0, found_answers: a ? a.map((x) => x.answer) : [] };
+      }),
+    };
+  }
+  // body.plan: [[문제 첫 줄 seq, [{answer}, …](둘 이상) | null(나누지 않음)], …] — 적지 않은 문제는 그대로
+  const plan = new Map((body.plan || []).map(([sq, v]) => [Number(sq), Array.isArray(v) && v.length >= 2
+    ? v.map((x, k) => ({ label: partLabel(k + 1), answer: String((x && x.answer) || "").trim() })) : null]));
+  const layout = relayout(rows, plan);
+  try {
+    const r = await rpc("tt_relayout_items", { p_print: pr.id, p_layout: layout });
+    return { ok: true, items: r.items, marks: r.marks, parts: layout.filter((x) => splitLabel(x.label).part).length };
+  } catch (e) {
+    if (/tt_relayout_items|function|schema cache/i.test(e.message)) throw new Error("DB에 「문항 나누기」 함수가 아직 없어요 — supabase/2026-11_tt_item_parts.sql 을 한 번 실행해야 해요");
+    throw e;
+  }
 }
 
 // ── 보관함 (= shelf 'library' 인 프린트 — 옮겨 오기로 들어온 Claude 프린트 원본)

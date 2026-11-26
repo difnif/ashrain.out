@@ -171,7 +171,8 @@ export async function parseQuick(doc, pages = null) {
         for (const r of [...parts].sort((a, b) => a[0] - b[0])) labs.push(await classifyChoice(pg.page, r));
         if (labs.every(Boolean)) choice = labs.join(",");
       }
-      res[n] = { page: pno, rect: u, choice, text: texts.length && !parts.length ? texts.map((w) => w.t).join(" ") : "" };
+      // marks: 정답 줄의 글자(그림 정답이어도) — 「(1) [그림] (2) [그림]」 이면 하위 문제가 둘
+      res[n] = { page: pno, rect: u, choice, text: texts.length && !parts.length ? texts.map((w) => w.t).join(" ") : "", marks: texts.map((w) => w.t).join(" ") };
     }
   }
   return res;

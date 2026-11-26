@@ -2,8 +2,9 @@
    라우트: #/tt/convert · #/tt/register · #/tt/grade[/코드[/학생id]] · #/tt/class · #/tt/students[/id] · #/tt/prints · #/tt/print/코드 · #/tt/log */
 import * as B from "./backend";
 import { importView, pcAutoSync } from "./importer";
-import { autoJudge, TEMPLATES } from "./logic";
+import { autoJudge, judge, TEMPLATES } from "./logic";
 import * as S from "./share";
+import { splitLabel, partLabel } from "./parts";
 
 const PH = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
@@ -261,13 +262,13 @@ window.addEventListener("beforeunload", onUnload);
 function route() {
   curHash = location.hash;
   const parts = (location.hash.replace(/^#\/?(tt\/?)?/, "") || "grade").split("/").map(decodeURIComponent);
-  const tab = { print: "prints", wrong: "students" }[parts[0]] || parts[0];
+  const tab = { print: "prints", wrong: "students", parts: "prints" }[parts[0]] || parts[0];
   $$("#tt-tabs a").forEach((a) => a.classList.toggle("on", a.dataset.tab === tab));
   window.scrollTo(0, 0);
   document.onkeydown = null;
   if (!location.hash.startsWith("#/tt")) return;
   const R = { convert: viewConvert, register: viewRegister, grade: viewGrade, class: viewClass, students: viewStudents, prints: viewPrints, print: viewPrint, log: viewLog,
-    export: viewExport, account: viewAccount, wrong: viewWrong, inbox: viewInbox,
+    export: viewExport, account: viewAccount, wrong: viewWrong, inbox: viewInbox, parts: viewParts,
     import: (...a) => importView({ view, $, $$, esc, toast, modal, api, fmtCode }, ...a) }[parts[0]];
   view.innerHTML = `<div class="card"><span class="busy"></span>불러오는 중…</div>`;
   refreshInboxTab();
@@ -773,10 +774,11 @@ async function gradeRun(p, sid) {
     ${prevSess && prevSess.end_reason !== "done" ? `<div class="card" style="background:#eef2ff;border-color:#c7d2fe"><b>${cur.round > 1 ? cur.round + "차 " : ""}이어서 채점 (${sameRound.length}회차)</b> · 지난번(${shortWhen(prevSess.ended_at || prevSess.started_at)}): ${esc(REASON[prevSess.end_reason] || "닫지 않음")}.
       <span class="sub small">지난번에 매긴 기록은 그대로 남고, 이번에 매기는 것은 따로 저장돼요.</span></div>` : ""}
     ${!p.n_answers ? `<div class="card" style="background:#fffbeb;border-color:#fde68a">정답이 아직 없어요. O/X로 바로 매기거나, <a href="#/tt/print/${p.code}">정답 입력</a>에서 빠른정답을 넣으면 답 입력 자동 채점을 쓸 수 있어요.</div>` : ""}
+    <div id="omr" hidden></div>
     <div class="items" id="items"></div>
     <p class="sub small" style="margin-top:14px">단축키: ↑↓ 문항 이동 · <b>O</b> 맞음 · <b>X</b> 틀림 · <b>U</b> 안 풂 (한글 입력 상태여도 됨) · 켜진 O/X 버튼을 한 번 더 누르면 이번에 매긴 것이 지워져요</p>`;
 
-  seg($("#modeSeg"), [["ox", "O/X로 매기기"], ["input", "답 입력 → 자동"]], mode, (v) => { mode = v; store.set("gradeMode", v); drawItems(); });
+  seg($("#modeSeg"), [["ox", "O/X로 매기기"], ["input", "OMR 카드 → 자동 채점"]], mode, (v) => { mode = v; store.set("gradeMode", v); drawOmr(true); drawItems(); });
   if ($("#showAll")) $("#showAll").onchange = (e) => { showAll = e.target.checked; e.target.blur(); drawItems(); setFocus(focus, false); };
 
   function drawSum() {
@@ -795,7 +797,7 @@ async function gradeRun(p, sid) {
     $("#stTag").innerHTML = statusTag(d.grading.status);
   }
   const RK = { O: "O", X: "X", U: "안 풂" };
-  function itemHtml(it, i) {
+  function itemHtml(it, i, cont = false) {
     const r = res(it);
     const lastSess = it.mark && it.mark.session_no;
     const hist = (it.rounds || []).filter((x) => x.round < cur.round).map((x) => `<span class="tag ${x.result === "O" ? "o" : x.result === "X" ? "x" : "u"}">${x.round}차 ${RK[x.result] || x.result}</span>`).join("");
@@ -806,20 +808,20 @@ async function gradeRun(p, sid) {
       !retry && prevSess && lastSess && lastSess < sessNo && r === "U" ? `<span class="tag u">지난번 안 풂</span>` : "",
       !retry && prevSess && lastSess === sessNo ? `<span class="tag ses">이번 회차</span>` : "",
     ].join("");
-    const img = it.png ? `<img loading="lazy" src="${fileUrl(p.code + "/" + it.png)}" alt="${esc(nob(it))}">` : `<div class="noimg">${esc(nob(it))} — 그림 없이 등록 (위 '시험지 보기')</div>`;
-    const key = `<div class="key">${it.answer ? `정답 <b>${esc(CIRC[it.answer] && (it.choice || it.answer_png) ? CIRC[it.answer] : it.answer)}</b>` : it.answer_png ? "정답" : `<span class="muted">정답 미입력</span>`}
-          ${it.answer_png ? `<img class="ansimg" src="${fileUrl(p.code + "/" + it.answer_png)}" alt="정답">` : ""}</div>`;
+    const sl = splitLabel(it.label);
+    const img = cont ? `<div class="pcont">${esc(sl.base)}번 문제의 하위 문제 ${esc(partLabel(sl.part))} — 문제 그림은 위에</div>`
+      : it.png ? `<img loading="lazy" src="${fileUrl(p.code + "/" + it.png)}" alt="${esc(nob(it))}">` : `<div class="noimg">${esc(nob(it))} — 그림 없이 등록 (위 '시험지 보기')</div>`;
+    const key = `<div class="key">${it.answer ? `정답 <b>${esc(CIRC[it.answer] && (it.choice || it.answer_png) ? CIRC[it.answer] : it.answer)}</b>` : it.answer_png ? (cont ? `<span class="muted">정답은 위 그림</span>` : "정답") : `<span class="muted">정답 미입력</span>`}
+          ${it.answer_png && !cont ? `<img class="ansimg" src="${fileUrl(p.code + "/" + it.answer_png)}" alt="정답">` : ""}</div>`;
     if (!isTarget(it)) {
       const f = (it.mark && it.mark.result) || "";
-      return `<div class="item off" data-i="${i}"><div class="no ${/^\d+$/.test(nolab(it)) ? "" : "lab"}">${esc(nolab(it))}</div><div>${img}</div>
+      return `<div class="item off${cont ? " cont" : ""}" data-i="${i}"><div class="no ${/^\d+$/.test(nolab(it)) ? "" : "lab"}">${esc(nolab(it))}</div><div>${img}</div>
         <div class="side">${key}<div class="badges">${badges}</div><div class="small sub">이번 차에 다시 풀 문항이 아니에요 · 최종 <b>${RK[f] || "안 매김"}</b></div></div></div>`;
     }
     const rm = retry ? roundMark(it) : it.mark;
     const given = rm && rm.answer ? `<div class="small sub">적은 답: <b>${esc(rm.answer)}</b></div>` : "";
-    const inputUi = mode !== "input" ? "" : it.choice
-      ? `<div class="cbtns" style="gap:4px">${["①", "②", "③", "④", "⑤"].map((c, k) => `<button class="btn ghost small" data-ans="${k + 1}" style="flex:1">${c}</button>`).join("")}</div>`
-      : `<form class="ansin"><input class="tin" placeholder="학생 답" value="${esc((rm && rm.answer) || "")}"><button class="btn small">확인</button></form>`;
-    return `<div class="item ${r} ${i === focus ? "focus" : ""}" data-i="${i}">
+    const inputUi = "";              // 답 입력은 위 OMR 카드에서
+    return `<div class="item ${r} ${i === focus ? "focus" : ""}${cont ? " cont" : ""}" data-i="${i}">
       <div class="no ${/^\d+$/.test(nolab(it)) ? "" : "lab"}">${esc(nolab(it))}</div>
       <div>${img}</div>
       <div class="side">${key}
@@ -830,8 +832,12 @@ async function gradeRun(p, sid) {
   }
   function drawItems() {
     const vis = visible();
-    $("#items").innerHTML = vis.map((i) => itemHtml(d.items[i], i)).join("") || `<div class="empty">매길 문항이 없어요</div>`;
+    // 하위 문제(「3 (2)」)는 바로 위가 같은 문제면 그림을 다시 싣지 않음
+    const cont = (k) => { if (k <= 0) return false; const a = d.items[vis[k - 1]], b = d.items[vis[k]], sa = splitLabel(a.label), sb = splitLabel(b.label);
+      return sb.part > 1 && sa.part > 0 && sa.base === sb.base && (a.png || null) === (b.png || null); };
+    $("#items").innerHTML = vis.map((i, k) => itemHtml(d.items[i], i, cont(k))).join("") || `<div class="empty">매길 문항이 없어요</div>`;
     drawSum();
+    drawOmr();
     $$("#items .item").forEach((el) => {
       const i = +el.dataset.i, it = d.items[i];
       el.onclick = (e) => { if (!e.target.closest("button,input,img")) setFocus(i, false); };
@@ -860,6 +866,114 @@ async function gradeRun(p, sid) {
   // 웹판: 누르면 화면에 바로 적고 다음 문항으로 — 서버에는 차례로 보낸다(다 보낸 뒤 서버 기록으로 맞춤)
   const queue = [];
   let flushing = null;
+  // ── OMR 카드 (OMR 카드 → 자동 채점): 선생님이 아이가 적은 답을 칸에 넣고 「채점하기」.
+  //    객관식은 ①~⑤를 칠하고 단답은 칸에 적는다. 단위만 다른 답은 맞다 · 틀리다 정하지 않고 묻는다(정답 인정 / 오답 처리).
+  const omrKey = `omr:${gid}:${cur.round}`;
+  const omr = store.get(omrKey, {}) || {};                 // seq → 적은 답 (이 기기에 잠깐 둠 — 새로고침해도 남게)
+  const omrIdx = () => d.items.map((it, k) => k).filter((k) => isTarget(d.items[k]));
+  const omrSave = () => store.set(omrKey, omr);
+  const curMark = (it) => (retry ? roundMark(it) : it.mark);
+  function omrRow(it, i) {
+    const cm = curMark(it);
+    const v = omr[it.seq] ?? (cm && cm.answer) ?? "";
+    const r = res(it);
+    return `<div class="orow ${r}" data-i="${i}" data-seq="${it.seq}"><span class="ono" title="${it.png ? "문제 보기" : ""}">${esc(nolab(it))}</span>
+      ${it.choice ? `<span class="obubs" tabindex="0">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="obub${String(v) === String(n) ? " on" : ""}" data-n="${n}" tabindex="-1">${CIRC[n]}</button>`).join("")}</span>`
+        : `<input class="oin" value="${esc(v)}" placeholder="답" autocomplete="off" spellcheck="false">`}
+      <span class="ores">${r ? esc(RK[r]) : ""}</span></div>`;
+  }
+  function drawOmr(full = false) {
+    const box = $("#omr");
+    if (!box) return;
+    if (mode !== "input") { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    if (!full && $(".omr-grid", box)) {          // 결과만 고침(입력 중인 칸은 그대로)
+      $$(".orow", box).forEach((row) => { const it = d.items[+row.dataset.i]; const r = res(it); row.className = `orow ${r}`; $(".ores", row).textContent = r ? RK[r] : ""; });
+      return;
+    }
+    const idx = omrIdx();
+    box.innerHTML = `<div class="card omr"><div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">OMR 카드 <span class="sub small">아이가 적은 답을 넣고 「채점하기」 · 객관식은 번호를 누르고 단답은 칸에 적어요 (Enter = 다음 칸)</span></h2>
+        <div class="row"><button class="btn ghost small" id="omrClear" title="이 카드에 넣은 답 지우기(매긴 결과는 그대로)">비우기</button><button class="btn" id="omrGo">채점하기</button></div></div>
+      <div class="omr-grid">${idx.map((k) => omrRow(d.items[k], k)).join("") || `<div class="empty">매길 문항이 없어요</div>`}</div>
+      <p class="sub small" id="omrNote" style="margin:8px 0 0">빈칸은 매기지 않아요. 단위만 다른 답(「12」 ↔ 「12 cm」)은 정답으로 인정할지 물어요.</p></div>`;
+    const rows = $$(".orow", box);
+    const next = (row) => { const k = rows.indexOf(row); const nx = rows[k + 1]; if (nx) ($(".oin", nx) || $(".obubs", nx)).focus(); };
+    for (const row of rows) {
+      const it = d.items[+row.dataset.i];
+      const inp = $(".oin", row), bubs = $(".obubs", row);
+      $(".ono", row).onclick = () => { if (it.png) zoom(fileUrl(p.code + "/" + it.png)); };
+      if (inp) {
+        inp.oninput = () => { omr[it.seq] = inp.value; omrSave(); };
+        inp.onkeydown = (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); next(row); } };
+      }
+      if (bubs) {
+        const pickN = (n) => { omr[it.seq] = String(omr[it.seq] ?? "") === String(n) ? "" : String(n); omrSave(); $$(".obub", bubs).forEach((b) => b.classList.toggle("on", b.dataset.n === omr[it.seq])); };
+        $$(".obub", bubs).forEach((b) => (b.onclick = () => { pickN(b.dataset.n); if (omr[it.seq]) next(row); }));
+        bubs.onkeydown = (e) => {
+          if (/^[1-5]$/.test(e.key)) { e.preventDefault(); e.stopPropagation(); pickN(e.key); next(row); }
+          else if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); next(row); }
+          else if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); e.stopPropagation(); omr[it.seq] = ""; omrSave(); $$(".obub", bubs).forEach((b) => b.classList.remove("on")); }
+          else if (e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); const pv = rows[rows.indexOf(row) - 1]; if (pv) ($(".oin", pv) || $(".obubs", pv)).focus(); }
+          else if (e.key !== "Tab") e.stopPropagation();          // O · X · U 단축키가 아래 문항 카드로 가지 않게
+        };
+      }
+    }
+    $("#omrGo").onclick = () => omrGrade();
+    $("#omrClear").onclick = () => { for (const k of Object.keys(omr)) delete omr[k]; omrSave(); drawOmr(true); };
+  }
+  // 단위만 다른 답: 문항마다 「정답 인정 / 오답 처리」 — 다 고르면 매김
+  function unitAsk(list) {
+    const pick = new Map();
+    return modal(`<h2>단위가 달라요 — 정답으로 인정할까요?</h2>
+      <p class="sub small" style="margin-top:0">숫자는 맞는데 단위가 빠졌거나 다르게 적은 답이에요. 문항마다 골라 주세요.</p>
+      <div class="ulist">${list.map((u, k) => `<div class="urow"><b>${esc(nob(u.it))}</b><span>정답 <b>${esc(u.it.answer)}</b> · 적은 답 <b>${esc(u.v)}</b><br><span class="sub small">${esc(u.why || "")}</span></span><span data-useg="${k}"></span></div>`).join("")}</div>
+      <div class="row" style="margin-top:10px"><button class="btn ghost small" id="uAllO">모두 정답 인정</button><button class="btn ghost small" id="uAllX">모두 오답 처리</button></div>`,
+      [{ label: "그만두기", value: null, cls: "ghost" }, { label: "고른 대로 매기기", value: 1 }],
+      { cls: "umodal", onOpen: (box, done) => {
+        const segAll = () => list.forEach((u, k) => seg($(`[data-useg="${k}"]`, box), [["O", "정답 인정"], ["X", "오답 처리"]], pick.get(k) || "", (v) => pick.set(k, v)));
+        segAll();
+        $("#uAllO", box).onclick = () => { list.forEach((u, k) => pick.set(k, "O")); segAll(); };
+        $("#uAllX", box).onclick = () => { list.forEach((u, k) => pick.set(k, "X")); segAll(); };
+        $('.modal-actions button[data-i="1"]', box).onclick = () => { if (pick.size < list.length) return toast(`${list.length - pick.size}문항을 더 골라 주세요`); done(1); };
+      } }).then((v) => (v ? pick : null));
+  }
+  async function omrGrade() {
+    const todo = [], unk = [], nokey = [];
+    for (const k of omrIdx()) {
+      const it = d.items[k];
+      const v = String(omr[it.seq] ?? "").trim();
+      if (!v) continue;
+      const cm = curMark(it);
+      if (cm && cm.result && cm.round === cur.round && String(cm.answer || "") === v) continue;     // 이미 같은 답으로 매김
+      const j = judge(it.answer, v);
+      if (!j.result) { nokey.push(it); continue; }
+      if (j.result === "?") unk.push({ k, it, v, why: j.why });
+      else todo.push({ i: k, result: j.result, answer: v });
+    }
+    if (unk.length) {
+      const pick = await unitAsk(unk);
+      if (!pick) return toast("매기지 않았어요");
+      unk.forEach((u, n) => todo.push({ i: u.k, result: pick.get(n), answer: u.v }));
+    }
+    if (todo.length) markMany(todo);
+    const msg = (todo.length ? `${todo.length}문항을 매겼어요 (O ${todo.filter((x) => x.result === "O").length} · X ${todo.filter((x) => x.result === "X").length})` : "새로 매길 답이 없어요")
+      + (nokey.length ? ` · 정답이 없어 못 매긴 ${nokey.length}문항(${nokey.slice(0, 6).map((x) => nolab(x)).join(", ")}${nokey.length > 6 ? " …" : ""}) — 아래에서 O/X로 매겨 주세요` : "");
+    if ($("#omrNote")) $("#omrNote").textContent = msg;
+    toast(msg, 4000);
+  }
+  function markMany(list) {
+    for (const { i, result, answer } of list) {
+      const it = d.items[i];
+      it.mark = { ...(it.mark || {}), seq: it.seq, result, answer, session_no: sessNo, round: cur.round };
+      it.rounds = (it.rounds || []).filter((x) => x.round !== cur.round).concat([{ round: cur.round, result, answer }]).sort((a, b) => a.round - b.round);
+      queue.push({ seq: it.seq, result, answer, mode });
+    }
+    sumLocal();
+    drawItems();
+    flushMarks();
+  }
+
   function sumLocal() {
     const s = { O: 0, X: 0, U: 0, none: 0, total: d.items.length };
     for (const it of d.items) { const r = (it.mark && it.mark.result) || ""; s[["O", "X", "U"].includes(r) ? r : "none"]++; }
@@ -1028,8 +1142,8 @@ viewGrade = async function (code, sid, extra) {
         ${R.length > 1 ? `<button class="btn ghost small" id="delRound" title="${last.round}차 기록만 지워요">${last.round}차 지우기</button>` : ""}
         <button class="btn ghost small warn-t" id="delAll">채점 기록 지우기</button></div></div>
     <div class="card"><h2>스캔본 <span class="sub small">학생이 푼 종이를 스캔해 올려 두면 언제든 받고, 분석용 내보내기에 같이 들어가요</span></h2><div id="scanBox"></div></div>
-    ${wrong.length ? `<div class="card"><h2>틀린 문항 ${wrong.length}개</h2><div class="wrongs">${wrong.map((it) => `<div class="wrong"><b>${esc(nob(it))}</b> ${it.repeat ? `<span class="tag rep">반복 오답</span>` : ""}${R.length > 1 ? ` <span class="small sub">${esc(roundsLine(it))}</span>` : ""}${it.mark.answer ? ` <span class="small sub">적은 답 ${esc(it.mark.answer)}</span>` : ""}
-      ${it.png ? `<img src="${fileUrl(d.print.code + "/" + it.png)}" alt="">` : ""}</div>`).join("")}</div></div>` : ""}
+    ${wrong.length ? `<div class="card"><h2>틀린 문항 ${wrong.length}개</h2><div class="wrongs">${wrong.map((it, k) => `<div class="wrong"><b>${esc(nob(it))}</b> ${it.repeat ? `<span class="tag rep">반복 오답</span>` : ""}${R.length > 1 ? ` <span class="small sub">${esc(roundsLine(it))}</span>` : ""}${it.mark.answer ? ` <span class="small sub">적은 답 ${esc(it.mark.answer)}</span>` : ""}
+      ${it.png && !(k > 0 && wrong[k - 1].png === it.png) ? `<img src="${fileUrl(d.print.code + "/" + it.png)}" alt="">` : it.png ? `<div class="small sub">↑ 같은 문제</div>` : ""}</div>`).join("")}</div></div>` : ""}
     ${fixed.length ? `<div class="card"><h2>다시 풀어 고친 문항 ${fixed.length}개</h2>${fixed.map((it) => `<span class="tag o" title="${esc(roundsLine(it))}">${esc(nob(it))} · ${esc(roundsLine(it))}</span>`).join(" ")}</div>` : ""}
     ${uns.length ? `<div class="card"><h2>안 푼 문항</h2>${uns.map((it) => `<span class="tag u">${esc(nob(it))}</span>`).join(" ")}</div>` : ""}`;
   $$(".wrong img").forEach((im) => (im.onclick = () => zoom(im.src)));
@@ -1171,7 +1285,7 @@ async function studentDetail(id) {
         <button class="btn ghost small" id="dPdf">학습 기록 PDF</button><button class="btn ghost small" id="dJson">학습 기록 JSON</button></div>
       <p class="sub small" style="margin:6px 0 0">JSON에는 프린트별·문항별 결과(1차·2차·3차), 틀린 적 있는 문항의 정답·유형·정답률·전사본(있으면)이 들어가요 — 유사 문항을 만들 때 Claude에게 같이 주세요.</p></div>
     <div class="card"><h2>반복 오답 <span class="sub small">같은 문항을 두 번 이상 틀린 것</span></h2>${d.repeat_wrong.length ? `<div class="wrongs">${d.repeat_wrong.map((w) => `<div class="wrong">
-      <span class="tag rep">${w.count}번 틀림</span> <span class="small sub">${w.where.map((x) => `${esc(x.title)} ${x.seq}번`).join(" · ")}</span>
+      <span class="tag rep">${w.count}번 틀림</span> <span class="small sub">${w.where.map((x) => `${esc(x.title)} ${esc(x.label && !/^\d+$/.test(x.label) ? x.label : (x.label || x.seq) + "번")}`).join(" · ")}</span>
       ${w.png ? `<img src="${fileUrl(w.png)}" alt="">` : ""}</div>`).join("")}</div>` : `<div class="empty">아직 없어요</div>`}</div>
     <div class="card"><h2>받은 프린트</h2>${d.prints.length ? `<table class="t"><tr><th>출제일</th><th>코드</th><th>제목</th><th>채점</th><th>결과</th><th></th></tr>
       ${d.prints.map((p) => `<tr><td class="sub small">${shortWhen(p.issued_at)}</td><td class="code">${esc(p.code_fmt)}</td><td>${esc(p.title)}</td>
@@ -1388,7 +1502,8 @@ async function viewPrint(code) {
         <textarea class="tin" id="ansBulk" placeholder="예) 1) ③  2) 5  3) 12cm …  또는 그냥 순서대로: 3 5 12 …"></textarea>
         <div class="row" style="margin-top:6px"><button class="btn small ghost" id="ansFill">칸에 채우기</button><span class="sub small">채운 뒤 '정답 저장'을 눌러야 저장돼요</span></div></details>
       <div class="keygrid" id="kg" style="margin-top:10px"></div></div>
-    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">문항</h2><button class="btn small warn" id="pDel">프린트 지우기</button></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">문항 ${p.items.some((it) => splitLabel(it.label).part) ? `<span class="sub small">하위 문제로 나눈 문제 ${new Set(p.items.filter((it) => splitLabel(it.label).part).map((it) => splitLabel(it.label).base)).size}개 · 채점 칸 ${p.items.length}개</span>` : ""}</h2>
+      <div class="row"><a class="btn small ghost" href="#/tt/parts/${p.code}" title="(1)·(2)·(3) 하위 문제가 있는 문제를 하위 문제마다 따로 채점">하위 문제 나누기</a><button class="btn small warn" id="pDel">프린트 지우기</button></div></div>
       <div class="wrongs" style="margin-top:10px">${p.items.map((it) => `<div class="wrong" style="border-color:var(--line)"><b>${esc(nob(it))}</b> <span class="small muted">${p.kind === "registered" ? "" : p.kind === "wrong" ? `← ${esc(it.src)} ${esc(/^\d+$/.test(String(it.src_no)) ? it.src_no + "번" : it.src_no)}` : `${esc(it.src)} ${esc(it.src_no)}번`}${it.choice ? " · 객관식" : ""}</span>${it.png ? `<img src="${fileUrl(p.code + "/" + it.png)}" alt="">` : ""}</div>`).join("")}</div></div>`;
   bindPrintCards(view);
   bindRows(view);
@@ -1433,6 +1548,69 @@ async function viewPrint(code) {
   };
 }
 
+
+/* ───────────────────────── 하위 문제 나누기 (#/tt/parts/코드) — (1)·(2)·(3) 하위 문제를 따로 채점 */
+async function viewParts(code) {
+  const d = await api(`prints/${normCode(code)}/parts`);
+  const p = d.print;
+  const G = d.groups;
+  const NS = [["0", "나누지 않음"], ["2", "2개"], ["3", "3개"], ["4", "4개"], ["5", "5개"], ["6", "6개"]];
+  const cur = new Map(G.map((g) => [g.seq, g.parts ? g.parts.length : 0]));
+  const want = new Map(cur);
+  const ans = new Map(G.map((g) => [g.seq, g.parts ? g.parts.map((x) => x.answer) : g.found_answers.slice()]));
+  const ans0 = new Map([...ans].map(([k, v]) => [k, v.join("\u0001")]));
+  const nFound = G.filter((g) => g.found && !g.parts).length;
+  view.innerHTML = `<h1>하위 문제 나누기 <span class="code sub">${esc(p.code_fmt)}</span> <span class="sub small">${esc(p.title)}</span></h1>
+    <div class="card"><p style="margin:0 0 6px">하위 문제 <b>(1) · (2) · (3)</b> 가 있는 문제는 하위 문제마다 따로 O · X를 매겨요. 시험지와 정답지는 그대로이고 채점 칸만 나눠요.</p>
+      ${d.n_gradings ? `<p class="small" style="margin:0 0 6px;color:var(--warn)">이 프린트의 채점 기록 ${d.n_gradings}건: 나누는 문제에 이미 매긴 결과는 하위 문제마다 같은 결과로 옮겨 둬요. 틀린 문제는 채점 화면(다시 열기)에서 하위 문제별로 고쳐 주세요.</p>` : ""}
+      <div class="row">${nFound ? `<button class="btn" id="pAuto">찾은 대로 고르기 — ${nFound}문제</button><span class="sub small">정답 「(1) … (2) …」 · 문제지 줄머리 (1) (2) 로 찾았어요</span>` : `<span class="sub small">저절로 찾은 하위 문제가 없어요 — 문제 그림을 보고 골라 주세요.</span>`}</div></div>
+    <div class="card"><div class="plist" id="pList"></div></div>
+    <div class="stickybar bottom"><div class="card row" style="margin:0;justify-content:space-between"><span id="pNote" class="sub"></span>
+      <div class="row"><a class="btn ghost" href="#/tt/print/${p.code}">돌아가기</a><button class="btn" id="pSave">저장</button></div></div></div>`;
+  const changed = () => G.filter((g) => want.get(g.seq) !== cur.get(g.seq) || (want.get(g.seq) >= 2 && ans.get(g.seq).slice(0, want.get(g.seq)).join("\u0001") !== (ans0.get(g.seq) || "")));
+  const note = () => {
+    const n = G.reduce((a, g) => a + Math.max(1, want.get(g.seq) || 0), 0);
+    const c = changed().length;
+    $("#pNote").textContent = `문제 ${G.length}개 → 채점 칸 ${n}개${c ? ` · 바꾼 문제 ${c}개` : ""}`;
+    $("#pSave").disabled = !c;
+  };
+  const drawOne = (g) => {
+    const box = $(`.pg[data-s="${g.seq}"]`);
+    const n = want.get(g.seq) || 0;
+    const a = ans.get(g.seq);
+    $(".pans", box).innerHTML = n >= 2 ? Array.from({ length: n }, (_, k) => `<label class="small">${partLabel(k + 1)} <input class="tin" data-k="${k}" value="${esc(a[k] || "")}" placeholder="정답(없으면 비워 둠)"></label>`).join("") : "";
+    $$(".pans input", box).forEach((inp) => (inp.oninput = () => { a[+inp.dataset.k] = inp.value; note(); }));
+    box.classList.toggle("on", n >= 2);
+  };
+  $("#pList").innerHTML = G.map((g) => `<div class="pg" data-s="${g.seq}">
+      <div class="pimg">${g.png ? `<img src="${fileUrl(p.code + "/" + g.png)}" alt="">` : `<div class="noimg">그림 없음</div>`}</div>
+      <div class="pbody"><div class="row"><b>${esc(/^\d+$/.test(g.base) ? g.base + "번" : g.base)}</b>
+        ${g.choice ? `<span class="tag">객관식 — 나누지 않음</span>` : ""}${g.parts ? `<span class="tag ses">지금 ${g.parts.length}개로 나뉨</span>` : ""}${g.found && !g.parts ? `<span class="tag u">찾음 ${g.found}개</span>` : ""}
+        ${g.answer && !g.parts ? `<span class="small sub">정답 ${esc(g.answer)}</span>` : ""}</div>
+        ${g.choice ? "" : `<div data-seg="${g.seq}" style="margin-top:6px"></div>`}<div class="pans"></div></div></div>`).join("");
+  for (const g of G) {
+    if (!g.choice) seg($(`[data-seg="${g.seq}"]`), NS, String(want.get(g.seq) || 0), (v) => { want.set(g.seq, Number(v)); drawOne(g); note(); });
+    drawOne(g);
+  }
+  $$("#pList img").forEach((im) => (im.onclick = () => zoom(im.src)));
+  if ($("#pAuto")) $("#pAuto").onclick = () => {
+    for (const g of G) if (g.found && !g.parts) { want.set(g.seq, g.found); if (!ans.get(g.seq).length) ans.set(g.seq, g.found_answers.slice()); }
+    for (const g of G) { if (!g.choice) seg($(`[data-seg="${g.seq}"]`), NS, String(want.get(g.seq) || 0), (v) => { want.set(g.seq, Number(v)); drawOne(g); note(); }); drawOne(g); }
+    note();
+    toast(`${nFound}문제를 찾은 대로 골랐어요 — 확인한 뒤 「저장」`);
+  };
+  $("#pSave").onclick = async () => {
+    const ch = changed();
+    if (!ch.length) return;
+    const b = $("#pSave"); b.disabled = true;
+    try {
+      const r = await api(`prints/${p.code}/parts`, { plan: ch.map((g) => [g.seq, want.get(g.seq) >= 2 ? Array.from({ length: want.get(g.seq) }, (_, k) => ({ answer: ans.get(g.seq)[k] || "" })) : null]) });
+      toast(`저장했어요 — 채점 칸 ${r.items}개${r.marks ? ` · 채점 기록 ${r.marks}개 옮김` : ""}`, 4000);
+      location.hash = "#/tt/print/" + p.code;
+    } catch (e) { toast(e.message, 6000); b.disabled = false; }
+  };
+  note();
+}
 
 /* ───────────────────────── 7. 내보내기 (전사용 Gemini · 분석용 Claude) */
 async function viewExport() {

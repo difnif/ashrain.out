@@ -111,6 +111,77 @@ export function autoJudge(key, given) {
   return "X";
 }
 
+// ── 자동 채점(OMR 카드) — 단위만 다른 답은 맞다 · 틀리다 정하지 않고 「?」로 돌려 선생님께 묻는다
+// judge(정답, 적은 답) → { result: "O" | "X" | "?" | "", why } ("" = 정답이나 답이 비어 못 매김)
+const U_ALIAS = [
+  [/㎝/g, "cm"], [/㎜/g, "mm"], [/㎞/g, "km"], [/㎏/g, "kg"], [/㎎/g, "mg"], [/㎖/g, "mL"], [/㎗/g, "dL"], [/㎘/g, "kL"], [/ℓ/g, "L"],
+  [/㎠/g, "cm²"], [/㎡/g, "m²"], [/㎢/g, "km²"], [/㎟/g, "mm²"], [/㎤/g, "cm³"], [/㎥/g, "m³"], [/℃/g, "°C"],
+  [/(cm|mm|km|m)\^?2(?![\d.])/g, "$1²"], [/(cm|mm|km|m)\^?3(?![\d.])/g, "$1³"],
+];
+const UNIT_LIST = ["cm²", "mm²", "km²", "m²", "cm³", "m³", "°C", "km", "cm", "mm", "kg", "mg", "kL", "mL", "dL", "ml", "dl", "kl", "m", "g", "t", "L", "l", "°", "%",
+  "시간", "분", "초", "일", "주", "개월", "달", "년", "원", "개", "명", "번째", "번", "장", "권", "마리", "자루", "송이", "대", "살", "가지", "쪽", "점", "배", "도", "세트",
+  "상자", "컵", "병", "봉지", "줄", "칸", "층", "회", "개씩", "씩", "km/h", "m/s", "m/분", "km/시"].sort((a, b) => b.length - a.length);
+const U_CANON = { ml: "mL", dl: "dL", kl: "kL", l: "L", 도: "°" };
+const U_FAMILY = {
+  mm: ["길이", 0.1], cm: ["길이", 1], m: ["길이", 100], km: ["길이", 100000],
+  mg: ["무게", 0.001], g: ["무게", 1], kg: ["무게", 1000], t: ["무게", 1000000],
+  mL: ["들이", 1], dL: ["들이", 100], L: ["들이", 1000], kL: ["들이", 1000000], "cm³": ["들이", 1], "m³": ["들이", 1000000],
+  "mm²": ["넓이", 0.01], "cm²": ["넓이", 1], "m²": ["넓이", 10000], "km²": ["넓이", 1e10],
+  초: ["시간", 1], 분: ["시간", 60], 시간: ["시간", 3600], 일: ["시간", 86400],
+};
+function normJ(s) {
+  s = String(s || "").trim();
+  for (const [k, v] of Object.entries(CIRCLED)) s = s.split(k).join(v);
+  for (const [re, to] of U_ALIAS) s = s.replace(re, to);
+  s = s.replace(/−/g, "-").replace(/–/g, "-").replace(/，/g, ",").replace(/÷/g, "/");
+  s = s.replace(/\[\[\s*-?frac\((\d+)\s*,\s*(\d+)\)\s*\]\]/g, (_, a, b) => `${a}/${b}`);
+  return s.replace(/\s+/g, "");
+}
+// 끝의 단위 떼기: "12cm" → {v:"12", u:"cm"} (값이 숫자 · 분수 · 소수로 끝날 때만)
+export function splitUnit(s) {
+  for (const u of UNIT_LIST) {
+    if (s.length > u.length && s.endsWith(u)) {
+      const v = s.slice(0, -u.length);
+      if (/[\d)]$/.test(v)) return { v, u: U_CANON[u] || u };
+    }
+  }
+  return { v: s, u: "" };
+}
+const numOf = (v) => { const f = frac(v.toLowerCase()); return f !== null && Number.isFinite(f) ? f : null; };
+const sameVal = (a, b) => a.toLowerCase() === b.toLowerCase() || (numOf(a) !== null && numOf(b) !== null && Math.abs(numOf(a) - numOf(b)) < 1e-9);
+function judgeOne(k, g) {
+  if (k.toLowerCase() === g.toLowerCase()) return { result: "O" };
+  const a = splitUnit(k), b = splitUnit(g);
+  if (sameVal(a.v, b.v)) {
+    if (a.u === b.u) return { result: "O" };
+    if (!b.u) return { result: "?", why: `단위가 빠졌어요 (정답 ${a.u})` };
+    if (!a.u) return { result: "?", why: `정답에 없는 단위를 붙였어요 (${b.u})` };
+    return { result: "?", why: `단위가 달라요 (정답 ${a.u} · 적은 답 ${b.u})` };
+  }
+  const fa = U_FAMILY[a.u], fb = U_FAMILY[b.u];
+  if (fa && fb && fa[0] === fb[0] && a.u !== b.u && numOf(a.v) !== null && numOf(b.v) !== null && Math.abs(numOf(a.v) * fa[1] - numOf(b.v) * fb[1]) < 1e-6 * Math.max(1, Math.abs(numOf(a.v) * fa[1])))
+    return { result: "?", why: `단위를 바꿔 적었어요 — 값은 같아요 (정답 ${a.u} · 적은 답 ${b.u})` };
+  return { result: "X" };
+}
+export function judge(key, given) {
+  if (!String(key || "").trim() || !String(given || "").trim()) return { result: "" };
+  const k = normJ(key), g = normJ(given);
+  const one = judgeOne(k, g);
+  if (one.result !== "X" || !/[,/]|또는/.test(k)) return one;
+  // 여러 개 답(「3, 5」): 차례 상관없이 하나하나 맞대기
+  const ka = k.split(/,|또는/).filter(Boolean), ga = g.split(",").filter(Boolean);
+  if (ka.length < 2 || ka.length !== ga.length) return one;
+  const left = [...ga];
+  let unit = null;
+  for (const x of ka) {
+    let hit = left.findIndex((y) => judgeOne(x, y).result === "O");
+    if (hit < 0) { hit = left.findIndex((y) => judgeOne(x, y).result === "?"); if (hit >= 0) unit = unit || judgeOne(x, left[hit]).why; }
+    if (hit < 0) return one;
+    left.splice(hit, 1);
+  }
+  return unit ? { result: "?", why: unit } : { result: "O" };
+}
+
 export const LEVELS = ["초등", "중등", "고등"];
 // 프린트 양식 [값, 보이는 이름] — 「초등 크리스마스」는 초등 양식 + 장식(전구 줄·도장 화환·아래 눈밭 띠)
 export const TEMPLATES = [["문정중", "문정중 (중등)"], ["초등", "초등 (귀여운)"], ["초등 크리스마스", "초등 크리스마스"]];

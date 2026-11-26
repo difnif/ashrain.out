@@ -170,6 +170,32 @@
 .tt-root .tabs a.tt-inbox{background:#fef3c7;color:#92400e}
 .tt-root .tabs a.tt-inbox.on{background:#92400e;color:#fff}
 .tt-root tr.sel td{background:#f0fdfa}
+.tt-root .stickybar.bottom{top:auto;bottom:0;padding:10px 0 8px;margin-top:10px}
+.tt-root .item.cont{margin-top:-6px;border-top-style:dashed;padding-top:6px}
+.tt-root .pcont{color:var(--sub);font-size:13px;padding:8px 2px}
+.tt-root .plist{display:flex;flex-direction:column;gap:10px}
+.tt-root .pg{display:grid;grid-template-columns:minmax(160px,340px) minmax(0,1fr);gap:14px;align-items:start;padding:10px;border:1.5px solid var(--line);border-radius:12px}
+.tt-root .pg.on{border-color:#a5b4fc;background:#f5f7ff}
+.tt-root .pg .pimg img{max-width:100%;max-height:230px;object-fit:contain;cursor:zoom-in;display:block;border-radius:6px}
+.tt-root .pg .pans{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px}
+.tt-root .pg .pans .tin{min-width:0;width:150px}
+@media (max-width:700px){.tt-root .pg{grid-template-columns:1fr}}
+.tt-root .omr{border:2px solid #cbd5e1;background:#fcfcfd}
+.tt-root .omr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:5px 16px;margin-top:10px}
+.tt-root .orow{display:flex;align-items:center;gap:8px;padding:4px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;min-height:38px}
+.tt-root .orow .ono{min-width:46px;font-weight:800;cursor:pointer;white-space:nowrap}
+.tt-root .orow .obubs{display:flex;gap:5px;border-radius:8px;padding:2px;outline:none}
+.tt-root .orow .obubs:focus{box-shadow:0 0 0 2px #99f6e4}
+.tt-root .orow .obub{width:28px;height:28px;border-radius:50%;border:1.5px solid #94a3b8;background:#fff;font-size:15px;line-height:1;padding:0;color:#334155}
+.tt-root .orow .obub.on{background:#0f172a;border-color:#0f172a;color:#fff}
+.tt-root .orow .oin{flex:1;min-width:0;padding:5px 8px;border:1.5px solid var(--line);border-radius:8px}
+.tt-root .orow .oin:focus{outline:none;border-color:var(--acc)}
+.tt-root .orow .ores{min-width:34px;text-align:center;font-weight:800;margin-left:auto}
+.tt-root .orow.O{background:#f0fdf4;border-color:#86efac}.tt-root .orow.O .ores{color:var(--o)}
+.tt-root .orow.X{background:#fef2f2;border-color:#fca5a5}.tt-root .orow.X .ores{color:var(--x)}
+.tt-root .orow.U{background:#fffbeb;border-color:#fcd34d}.tt-root .orow.U .ores{color:var(--u)}
+.tt-root .ulist{display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow:auto}
+.tt-root .urow{display:grid;grid-template-columns:60px 1fr auto;gap:10px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:10px}
 .tt-root .prog{height:8px;border-radius:99px;background:#e2e8f0;overflow:hidden;margin-top:12px}
 .tt-root .prog i{display:block;height:100%;background:var(--acc)}
 .tt-root .exptbl td input{width:18px;height:18px}
