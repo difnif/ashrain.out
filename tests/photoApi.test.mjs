@@ -11,7 +11,7 @@ let pass = 0, fail = 0;
 const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else { fail++; console.log("FAIL -", name); } };
 
 // ── 가짜 서버 상태 ────────────────────────────────────────────────────────────
-const state = { profile: { role: "student", member_code: "X" }, calls: {}, settings: {}, labels: [], answers: [], labelsTableMissing: false, ai: [] };
+const state = { profile: { role: "student", member_code: "X" }, calls: {}, settings: {}, labels: [], answers: [], labelsTableMissing: false, ai: [], grant: false, grantTableMissing: false };
 const Q = "둘레가 54cm인 직사각형의 가로의 길이가 세로의 길이보다 3cm 길 때, 이 직사각형의 넓이를 구하시오.";
 
 function aiReply(system, userText) {
@@ -44,6 +44,11 @@ globalThis.fetch = async (url, init = {}) => {
   if (u.includes("/auth/v1/user")) return hdr(init, "authorization") === "Bearer good"
     ? json({ id: "u1", aud: "authenticated", role: "authenticated", email: "t@x" }) : json({ message: "bad jwt" }, 401);
   if (u.includes("/rest/v1/profiles")) { const row = { role: state.profile.role, member_code: state.profile.member_code }; return json(wantObj ? row : [row]); }
+  if (u.includes("/rest/v1/learn_grants")) {   // 운영자 학습 허용 — maybeSingle(GET)은 배열로 받는다
+    if (state.grantTableMissing) return json({ code: "PGRST205", message: "Could not find the table 'public.learn_grants'" }, 404);
+    const rows = state.grant ? [{ user_id: "u1" }] : [];
+    return json(wantObj ? (rows[0] ?? null) : rows);
+  }
   if (u.includes("/rest/v1/ai_calls")) {   // task 별로 센다 (HEAD: ?task=eq.<x> · POST: body.task)
     if (method === "HEAD") { const t = decodeURIComponent((u.match(/task=eq\.([^&]+)/) || [])[1] || ""); return new Response("", { status: 200, headers: { "content-range": `*/${state.calls[t] || 0}` } }); }
     const t = JSON.parse(init.body).task; state.calls[t] = (state.calls[t] || 0) + 1; return json([], 201);
@@ -78,6 +83,17 @@ const IMG = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8
   state.profile = { role: "student", member_code: null };
   r = await call({ task: "approach", question: Q });
   ok(r.code === 403 && /고유번호/.test(r.body.error), "고유번호 없음 → 403");
+  state.grant = true;
+  r = await call({ task: "approach", question: Q });
+  ok(r.code === 200, "고유번호 없음 + 운영자 학습 허용 → 통과");
+  state.grantTableMissing = true;
+  r = await call({ task: "approach", question: Q });
+  ok(r.code === 403 && /고유번호/.test(r.body.error), "허용 표가 아직 없으면 → 기존처럼 403");
+  state.grant = false; state.grantTableMissing = false;
+  state.profile = { role: "trial", member_code: null }; state.grant = true;
+  r = await call({ task: "approach", question: Q });
+  ok(r.code === 403 && /체험/.test(r.body.error), "체험 계정은 허용 행이 있어도 → 403");
+  state.grant = false; state.calls = {};
   state.profile = { role: "student", member_code: "X" };
   state.calls = { photo_approach: 20 };
   r = await call({ task: "approach", question: Q });

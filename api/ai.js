@@ -28,6 +28,14 @@ function svcClient() {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
+// ── 운영자 학습 허용(learn_grants) — 행이 있으면 고유번호 없이도 연다. 표가 없거나 조회가 실패하면 허용 안 함(기존 동작) ──
+async function hasLearnGrant(sb, uid) {
+  try {
+    const { data, error } = await sb.from("learn_grants").select("user_id").eq("user_id", uid).maybeSingle();
+    return !error && !!data;
+  } catch { return false; }
+}
+
 // ── 일일 한도 (KST 자정 기준 리셋) ──
 function kstDayStartISO() {
   const kst = Date.now() + 9 * 3600 * 1000;
@@ -119,7 +127,7 @@ export default async function handler(req, res) {
       if (prof?.role !== "admin") {
         if (prof?.role === "trial")
           return res.status(403).json({ error: "체험 계정은 개념 열람만 가능해요 — 정식 가입 후 이용할 수 있어요" });
-        if (!prof?.member_code)
+        if (!prof?.member_code && !(await hasLearnGrant(sb, userData.user.id)))
           return res.status(403).json({ error: "AI 기능은 학원 고유번호 등록 후 열려요 — 학원에서 고유번호를 받아 등록해주세요" });
       }
     }

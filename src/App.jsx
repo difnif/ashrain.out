@@ -205,6 +205,7 @@ function AppRoutes() {
   const [aalOk, setAalOk] = useState(undefined);     // undefined = 확인 중
   const [gOk, setGOk] = useState(undefined);         // 미성년 보호자 동의: true 활성 | false 미완 | null 해당없음
   const [gStarted, setGStarted] = useState(false);   // 보호자 동의 신청 이력
+  const [granted, setGranted] = useState(false);     // 운영자 학습 허용(learn_grants) — 동의·인증 기록과 별개
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null));
@@ -214,7 +215,7 @@ function AppRoutes() {
 
   // 로그인 시 프로필 + 간편인증 수준 조회 (+ 가입 확정, 미성년 보호자 동의 상태)
   useEffect(() => {
-    if (!session) { setProf(undefined); setAalOk(undefined); setGOk(undefined); return; }
+    if (!session) { setProf(undefined); setAalOk(undefined); setGOk(undefined); setGranted(false); return; }
     let alive = true;
     (async () => {
       // 가입 예약 확정 — 이메일 인증 후 첫 로그인 1회 (예약된 전화·고유번호를 프로필에 반영)
@@ -229,13 +230,16 @@ function AppRoutes() {
           await supabase.auth.updateUser({ data: { signup_token: null } });
         } catch { /* 실패 시 다음 로그인에서 재시도 */ }
       }
-      const [{ data: p }, { data: aal }] = await Promise.all([
+      const [{ data: p }, { data: aal }, { data: lg }] = await Promise.all([
         supabase.from("profiles")
           .select("role, member_code, trial_expires_at, merged_into, phone_verified, is_minor, birth_date")
           .eq("id", session.user.id).maybeSingle(),
         supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        // 표가 없거나 조회가 실패하면 data 가 null → 허용 없음(기존 동작)
+        supabase.from("learn_grants").select("user_id").eq("user_id", session.user.id).maybeSingle(),
       ]);
       if (!alive) return;
+      setGranted(!!lg);
       setProf(p ?? null);
       setAalOk(!(aal && aal.nextLevel === "aal2" && aal.currentLevel !== "aal2"));
       if (p?.is_minor && p?.role !== "admin") {
@@ -276,6 +280,7 @@ function AppRoutes() {
   //  · 만 14세 미만: 보호자 동의(활성) 전까지 개념 열람만
   //  · 만 14세 이상: 전화 인증 또는 이메일 가입 확인 전까지 개념 열람만
   //  · 체험(trial): 개념 열람만
+  //  · 운영자 학습 허용(learn_grants 행): 위 확인 없이 학습 기능을 연다(관리자 화면은 그대로 관리자만)
   if (prof?.is_minor && prof?.role !== "admin" && gOk === undefined) return null;
   const provider = session.user.app_metadata?.provider || "email";
 
@@ -290,6 +295,7 @@ function AppRoutes() {
   const verified =
     prof?.role === "admin" ? true
     : prof?.role === "trial" ? false
+    : granted ? true
     : prof?.is_minor ? gOk === true
     : (prof?.phone_verified || provider === "email");
 
