@@ -1,5 +1,5 @@
 // 시록고 — 게임 (#/games) · 강사(와 관리자)가 직접 해 보며 다듬는 게임 자리. 조교 모드에서는 열리지 않는다(SeiroccoApp 의 AST).
-// 지금은 굴뚝새(1막 · 베타) 하나 — src/features/games/gulttuksae.html. 설계 문서는 BG-보드게임 프로젝트의 claude/굴뚝새.md.
+// 지금은 무제(예전 굴뚝새 · 1막 · 베타) 하나 — src/features/games/gulttuksae.html. 설계 문서는 BG-보드게임 프로젝트의 claude/굴뚝새.md.
 // 게임은 HTML 한 장이다. 이 화면이 열릴 때만 내려받고(따로 나뉜 파일), 샌드박스 iframe(allow-scripts — 앱의 저장소 · 로그인 세션에 닿지 않는다)에 띄운다.
 // 관리자 게임(src/pages/AdminGames.jsx)과 같은 약속을 쓴다:
 //   테마 — 처음엔 문서에 data-theme 으로 심고, 앱 테마가 바뀌면 { type: "ash-theme", theme } 을 넘긴다(판이 새로 시작되지 않는다).
@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "../../../lib/theme";
 
-const GAME = { key: "gulttuksae", title: "굴뚝새", sub: "그림책 — 터전에서 나는 겨울 · 1막 · 베타",
+const GAME = { key: "gulttuksae", title: "무제", sub: "나 혼자인 땅의 겨울 · 1막 · 베타",
   load: () => import("../../../features/games/gulttuksae.html?raw") };
 const STORE_PREFIX = "ashrain.games.";
 const themeOf = (t) => (t === "light" ? "light" : "dark");
