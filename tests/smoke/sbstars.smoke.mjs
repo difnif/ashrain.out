@@ -153,7 +153,35 @@ async function sbChecks(fr, shot, app) {
   await sleep(200);
   ok(await fr.locator("#lobby").isVisible(), "G12 로비로 돌아온다");
   if (app) ok((await app.page.locator(".ag-root.ag-imm").count()) === 0, "G12 로비에서는 앱 상단 바가 다시 보인다");
-  return fr.evaluate(() => __sbstars.S.ammo);
+
+  // T. 훈련장 — 과녁 셋, 자원은 줄지 않고, 캐릭터 바꾸기 · 반격
+  await fr.locator("#train").click();
+  await fr.waitForFunction(() => __sbstars.B.on && __sbstars.B.mode === "train" && __sbstars.B.cd <= 0, null, { timeout: 8000 });
+  const res = () => fr.evaluate(() => ({ ammo: __sbstars.S.ammo, fuel: __sbstars.S.lines.reduce((s, L) => s + L.fuel, 0), lobs: __sbstars.S.lobs.length, shocks: __sbstars.S.shocks }));
+  const t0 = await res();
+  const tu = await fr.evaluate(() => ({ n: __sbstars.U.length, kinds: __sbstars.U.filter((u) => u.dummy).map((u) => u.dk).join(","), hud: document.getElementById("hud").classList.contains("train"), btn: getComputedStyle(document.getElementById("chBtn")).display !== "none" }));
+  ok(tu.n === 4 && tu.kinds === "still,move,shoot" && tu.hud && tu.btn, "T1 훈련장 — 나 + 과녁 셋(가만히 · 직선 따라 움직이는 · 쏘는), 캐릭터 바꾸기 · 반격 단추");
+  await touch(fr, "pointerdown", 21, mx, my); await touch(fr, "pointermove", 21, mx + 60, my - 45); await sleep(700); await touch(fr, "pointerup", 21, mx + 60, my - 45);
+  const moved = await fr.evaluate(() => __sbstars.B.stats.dist);
+  await fr.evaluate(() => { const P = __sbstars.P; P.x = -5; P.y = -1; P.line = null; P.snap = null; });
+  const hp0 = await fr.evaluate(() => __sbstars.U.find((u) => u.dk === "still").hp);
+  await touch(fr, "pointerdown", 22, W - 130, H - 140); await touch(fr, "pointerup", 22, W - 130, H - 140);
+  await sleep(900);
+  const t1 = await fr.evaluate(() => ({ hp: __sbstars.U.find((u) => u.dk === "still").hp, anim: __sbstars.B.t - __sbstars.P.atkT, score: document.getElementById("score").textContent }));
+  ok(t1.hp < hp0 && t1.anim < 1.2 && /초당 피해/.test(t1.score), `T2 톡 치면 가까운 과녁을 자동 조준(체력 ${hp0} → ${t1.hp}) · 공격 동작 · 초당 피해 표시`);
+  await drag(fr, 23, bp.bra.x, bp.bra.y, 0, -60);
+  await touch(fr, "pointerdown", 24, bp.shk.x, bp.shk.y); await touch(fr, "pointerup", 24, bp.shk.x, bp.shk.y);
+  const t2 = await res();
+  ok(moved > 1 && t2.ammo === t0.ammo && Math.abs(t2.fuel - t0.fuel) < 1e-6 && t2.lobs === t0.lobs && t2.shocks === t0.shocks,
+    `T3 훈련장에서는 달리고(${moved.toFixed(1)}칸) 쏘고 던져도 길 · 탄환 · 투척 · 충격파가 그대로`);
+  await sleep(400); await shot("sbstars-train");
+  const c0 = await fr.evaluate(() => __sbstars.P.ch.name);
+  await fr.locator("#chBtn").click(); await fr.locator("#fbBtn").click();
+  const t3 = await fr.evaluate(() => ({ ch: __sbstars.P.ch.name, fire: __sbstars.B.train.fire, label: document.getElementById("fbBtn").textContent }));
+  ok(t3.ch !== c0 && t3.fire && /켬/.test(t3.label), `T4 캐릭터 바꾸기(${c0} → ${t3.ch}) · 반격 켜기`);
+  await fr.locator("#exitBtn").click(); await fr.locator("#quitYes").click(); await sleep(200);
+  ok(await fr.locator("#lobby").isVisible(), "T5 훈련장에서 나가면 로비");
+  return fr.evaluate(() => ({ ammo: __sbstars.S.ammo, ch: __sbstars.S.ch }));
 }
 
 (async () => {
@@ -195,9 +223,9 @@ async function sbChecks(fr, shot, app) {
       await fr.waitForFunction(() => !!window.__sbstars, null, { timeout: 20000 });
       const h = await fr.evaluate(() => __sbstars.host());
       ok(h.inFrame && !h.canLocal, "B3 게임 안에서는 앱 저장소에 닿지 않는다 — 저장은 부모에게 맡긴다");
-      const ammo = await sbChecks(fr, shot, { page });
+      const end = await sbChecks(fr, shot, { page }), ammo = end.ammo;
       const saved = await page.evaluate(() => { const t = localStorage.getItem("ashrain.games.sbstars"); return t ? { len: t.length, d: JSON.parse(t) } : null; });
-      ok(saved && saved.len < 20000 && Array.isArray(saved.d.L) && saved.d.L.length > 400 && saved.d.ammo === ammo && saved.d.help === true && saved.d.ch === 1,
+      ok(saved && saved.len < 20000 && Array.isArray(saved.d.L) && saved.d.L.length > 400 && saved.d.ammo === ammo && saved.d.help === true && saved.d.ch === end.ch,
         `S1 진행은 앱이 이 기기에 맡아 둔다(ashrain.games.sbstars · ${saved && saved.len}자 · 직선 ${saved && saved.d.L.length}개 · 탄환 ${saved && saved.d.ammo})`);
       await page.reload();
       const el2 = page.locator('iframe.ag-frame[title="선빵스타즈"]');
@@ -207,7 +235,7 @@ async function sbChecks(fr, shot, app) {
       await fr2.waitForFunction((a) => window.__sbstars && __sbstars.S.ammo === a, ammo, { timeout: 5000 }).catch(() => {});
       await sleep(1000);
       const back = await fr2.evaluate(() => ({ ammo: __sbstars.S.ammo, ch: __sbstars.S.ch, help: document.getElementById("help").classList.contains("open") }));
-      ok(back.ammo === ammo && back.ch === 1 && !back.help, "S2 새로고침해도 자원 · 고른 캐릭터가 돌아오고, 게임 방법은 다시 뜨지 않는다");
+      ok(back.ammo === ammo && back.ch === end.ch && !back.help, "S2 새로고침해도 자원 · 고른 캐릭터가 돌아오고, 게임 방법은 다시 뜨지 않는다");
     }
     ok(errors.length === 0, "E1 콘솔 오류 없음" + (errors.length ? " — " + errors.slice(0, 3).join(" | ") : ""));
   } catch (e) {
