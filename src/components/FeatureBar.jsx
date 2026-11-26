@@ -1,5 +1,5 @@
 // 기능 페이지 상단 바 — 셸(탭바·서브탭)이 사라진 화면의 유일한 이동 수단.
-// ⌂(대시보드 복귀, 앱 전환 토글 없음) · ←(뒤로) · 제목 · 기능별 컨텍스트 버튼(actions).
+// ⌂(대시보드 복귀, 앱 전환 토글 없음) · ←(뒤로) · 제목 · 기능별 컨텍스트 버튼(actions) · 다크/라이트 단추(맨 오른쪽, 모든 기능 화면 공통).
 // props
 //   theme    'light' | 'dark'
 //   title    문자열 (필수) · sub: 제목 옆 작은 보조 텍스트
@@ -7,6 +7,8 @@
 //   actions  ReactNode — <button className="fb-act">…</button> 나 <FbAct> 를 나열
 // 사용: <FeatureBar theme={theme} title="정수와 유리수" back="#/study/concept"
 //         actions={<FbAct pri onClick={…}>🔁 복습</FbAct>} />
+import ThemeToggle from "./ThemeToggle";
+
 export default function FeatureBar({ theme = "light", title, sub, back, actions }) {
   const goBack = () => {
     if (typeof back === "function") return back();
@@ -22,6 +24,7 @@ export default function FeatureBar({ theme = "light", title, sub, back, actions 
         <button className="fb-ic" title="뒤로" aria-label="뒤로" onClick={goBack}>←</button>
         <span className="fb-title">{title}{sub && <span className="fb-sub"> · {sub}</span>}</span>
         {actions}
+        <ThemeToggle className="fb-ic" />
       </div>
     </div>
   );

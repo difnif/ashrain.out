@@ -1,6 +1,7 @@
 // src/pages/Duty.jsx — 조교 (학생앱 신규 · 데모)
 // 보직 6방 = 아바타 직업(수평) · 좌수·별감 = 향임 트랙(수직) · 1층 상주
 import { Kit, Page, Card, Row, Chip } from "../shared/demo";
+import ThemeToggle from "../components/ThemeToggle";
 import { navigatePath } from "../shared/roles";
 
 const DUTIES = [
@@ -17,7 +18,7 @@ export default function Duty() {
     <div className="ap-shell">
       <Kit />
       <div className="ap-wrap">
-        <Page title="조교">
+        <Page title="조교" right={<ThemeToggle className="d-btn d-thm" />}>
           <Card title="보직 — 자유 선택 (포인트로 변경)">
             {DUTIES.map(([n, r, c, open], i) => (
               <Row key={i} main={n + " · " + r} sub={open ? "해금됨 — 선택 가능" : c}

@@ -22,7 +22,7 @@ import {
 import "../pages/solve/solve.css";
 
 const CSS = `
-.rv-root { position: relative; }
+.rv-root { position: relative; min-width: 0; overflow-wrap: break-word; }
 .rv-root.rv-light { --text:#1F2937; --muted:#6B7480; --surface2:#F1F2F4; --surface3:#E4E7EB; --border:#D9DEE4; --accent:#0D9488; --good:#16A34A; --bad:#DC2626; }
 .rv-root.rv-dark  { --text:#E2E8F0; --muted:#8A929C; --surface2:#1C1F26; --surface3:#23262D; --border:#2B2E36; --accent:#14B8A6; --good:#4ADE80; --bad:#F87171; }
 .rv-kit { color: var(--text); font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
@@ -40,18 +40,20 @@ const CSS = `
 .rv-stat.warn { color: var(--bad); }
 .rv-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 .rv-actions .sv-btn { flex: 1 1 45%; }
-.rv-blocks { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.rv-blocks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.rv-blocks > * { min-width: 0; }
 .rv-blk { animation: rv-in .35s ease both; }
 .rv-sentinel { height: 1px; }
 .rv-more { text-align: center; font-size: 12.5px; color: var(--muted); padding: 8px 0 0; margin: 0; }
 .rv-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--surface); border-top: 1px solid var(--border);
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -6px 20px rgba(0,0,0,.08); }
+  padding: 10px max(14px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+  box-shadow: 0 -6px 20px rgba(0,0,0,.08); }
 .rv-bar-in { max-width: 768px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
 .rv-prog { flex: 1; min-width: 0; }
 .rv-prog .sv-bar { margin-top: 5px; }
 .rv-prog .lab { font-size: 12.5px; font-weight: 800; }
 .rv-prog .hint { font-size: 11.5px; color: var(--muted); margin-left: 6px; font-weight: 600; }
-.rv-bar .sv-btn { flex: none; min-width: 108px; }
+.rv-bar .sv-btn { flex: none; min-width: 96px; }
 .rv-quiz-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: var(--muted); }
 .rv-quiz-top b { color: var(--text); font-size: 14px; }
 .rv-dots { display: flex; gap: 6px; }

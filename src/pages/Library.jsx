@@ -2,6 +2,7 @@
 // #/library 서가(소장|저작) · #/library/write 독후감 · #/library/book/:id 책 상세
 import { useState } from "react";
 import { Kit, Page, Card, Row, Chip, Tabs } from "../shared/demo";
+import ThemeToggle from "../components/ThemeToggle";
 
 const BOOKS = [
   { id: 1, t: "수학이 필요한 순간", a: "김민형", st: ["서가", ""] },
@@ -85,7 +86,10 @@ export default function Library({ hash }) {
       <Kit />
       <div className="ap-wrap">
         <Page title={sub === "write" ? "독후감 쓰기" : sub === "book" ? "책" : "서재"}
-          right={sub === "" ? <button className="d-btn pri" onClick={() => (location.hash = "#/library/write")}>독후감 쓰기</button> : null}>
+          right={<>
+            {sub === "" && <button className="d-btn pri" onClick={() => (location.hash = "#/library/write")}>독후감 쓰기</button>}
+            <ThemeToggle className="d-btn d-thm" />
+          </>}>
           {sub === "write" ? <Write /> : sub === "book" ? <Book /> : <Shelf />}
         </Page>
       </div>

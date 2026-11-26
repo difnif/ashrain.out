@@ -11,9 +11,10 @@ const CSS = `
 .qch-dim { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 60; }
 .qch-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 61; max-width: 640px; margin: 0 auto;
   background: var(--card); border: 1px solid var(--bd); border-bottom: none; border-radius: 18px 18px 0 0;
-  display: flex; flex-direction: column; max-height: 74vh;
+  display: flex; flex-direction: column; max-height: 74vh; max-height: 74dvh; overflow-wrap: anywhere;
   animation: qchUp .22s ease-out; box-shadow: 0 -8px 30px rgba(0,0,0,.18);
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
+@media (max-height: 520px) { .qch-sheet { max-height: 92vh; max-height: 92dvh; } }   /* 휴대폰 가로 — 키 낮은 화면에선 거의 다 쓴다 */
 @keyframes qchUp { from { transform: translateY(40px); opacity: .4; } to { transform: translateY(0); opacity: 1; } }
 .qch-light { --card:#fff; --bd:#DFE3E8; --ink:#1F2937; --mut:#8A929C; --ac:#0DA95F; --in:#F4F6F8; --inbd:#D3D9DF; --me:#E7F7EF; }
 .qch-dark  { --card:#15171C; --bd:#23262D; --ink:#E2E8F0; --mut:#6B7280; --ac:#FFE03C; --in:#101116; --inbd:#2B2E36; --me:#1E2A22; }
@@ -42,7 +43,7 @@ const CSS = `
 .qch-think { color: var(--mut); font-size: 12.5px; margin: 2px 0 10px; }
 .qch-inbar { display: flex; gap: 8px; align-items: flex-end; padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--bd); }
-.qch-ta { flex: 1; min-height: 42px; max-height: 120px; background: var(--in); border: 1px solid var(--inbd);
+.qch-ta { flex: 1; min-width: 0; min-height: 42px; max-height: 120px; background: var(--in); border: 1px solid var(--inbd);
   border-radius: 12px; color: var(--ink); font-size: 14.5px; padding: 10px 12px; outline: none; resize: none; box-sizing: border-box; }
 .qch-send { background: var(--ac); border: none; border-radius: 12px; font-weight: 800; font-size: 14px;
   padding: 11px 15px; cursor: pointer; flex-shrink: 0; }
@@ -59,7 +60,7 @@ const CSS = `
 .qch-fin { border-top: 1px solid var(--bd); padding: 12px 14px; background: var(--card); }
 .qch-fin-t { font-size: 12.5px; font-weight: 800; color: var(--ink); margin: 0 0 8px; }
 .qch-fin-row { display: flex; gap: 8px; }
-.qch-fin-in { flex: 1; background: var(--in); border: 1px solid var(--inbd); border-radius: 10px;
+.qch-fin-in { flex: 1; min-width: 0; background: var(--in); border: 1px solid var(--inbd); border-radius: 10px;
   color: var(--ink); font-size: 14px; padding: 10px 12px; outline: none; box-sizing: border-box; }
 .qch-sug { margin-top: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--mut); }
 .qch-sug-chip { background: transparent; border: 1px solid var(--ac); color: var(--ac); border-radius: 999px;

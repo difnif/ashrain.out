@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { idToEmail } from "../lib/auth";
 import { api, getLastLoginMethod, recordLoginMethod } from "../lib/authx";
+import { useThemeHost } from "../lib/theme";
 
 // ASH RAIN 스플래시 + 로그인 (듀얼 테마)
 // props: theme('light'|'dark'), onToggleTheme(), onSuccess(session)
@@ -97,7 +98,7 @@ const CSS = `
   background: rgba(0,0,0,.14); padding: 2px 7px; border-radius: 999px; vertical-align: 1px; }
 .ar-last-inv { background: rgba(255,255,255,.28); }
 .ar-ver { position: absolute; bottom: 18px; right: 22px; font-size: 11px; color: var(--muted); font-style: italic; }
-.ar-ctrl, .ar-themebtn { position: absolute; top: 16px; background: var(--ctrl-bg); border: 1px solid var(--card-bd);
+.ar-ctrl, .ar-themebtn { position: absolute; z-index: 5; top: 16px; background: var(--ctrl-bg); border: 1px solid var(--card-bd);   /* 키 낮은 화면(가로 · 320 폰)에서 로고가 내려와 단추를 덮지 않게 */
   color: var(--ctrl-tx); font-size: 12px; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
 .ar-ctrl { right: 18px; } .ar-themebtn { left: 18px; }
 .ar-done .ar-logobox, .ar-done .ar-l1, .ar-done .ar-l2, .ar-done .ar-l3, .ar-done .ar-l4,
@@ -129,6 +130,7 @@ function LogoLayers() {
 }
 
 export default function SplashAuth({ theme = "light", onToggleTheme, onSuccess }) {
+  useThemeHost();   // 왼쪽 위에 제 테마 단추(🌙 다크 / 🌧 라이트)가 있다 — 떠 있는 단추는 숨긴다
   const [id, setId] = useState("");
   const [pw, setPw] = useState("");
   const [msg, setMsg] = useState("");
@@ -185,7 +187,7 @@ export default function SplashAuth({ theme = "light", onToggleTheme, onSuccess }
         <span key={i} className="ar-drop"
           style={{ left, height: h, opacity: o, "--d": `${d}s`, animationDuration: `${d}s`, animationDelay: `${delay}s` }} />
       ))}
-      <button className="ar-themebtn" onClick={onToggleTheme}>{theme === "light" ? "🌙 다크" : "🌧 라이트"}</button>
+      <button className="ar-themebtn" onClick={onToggleTheme} data-theme-toggle={theme}>{theme === "light" ? "🌙 다크" : "🌧 라이트"}</button>
       <button className="ar-ctrl" onClick={() => (done ? setRun((r) => r + 1) : setDone(true))}>
         {done ? "↻ 인트로 다시보기" : "건너뛰기 »"}
       </button>
