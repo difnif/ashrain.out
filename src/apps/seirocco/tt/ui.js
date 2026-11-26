@@ -28,7 +28,7 @@ const store = {
 };
 const api = (path, body) => B.api(path, body);
 const upload = (file) => B.upload(file);
-const uploadScan = (gid, file) => B.uploadScan(gid, file);
+const uploadScan = (gid, file, round = null) => B.uploadScan(gid, file, round);
 
 // PC가 내려 주던 /dl · /out · /scan 주소와 저장 공간 파일 열기·받기
 async function openLink(href, download = false) {
@@ -81,34 +81,93 @@ async function resolveFiles() {
 const mo = new MutationObserver(() => { clearTimeout(mo.t); mo.t = setTimeout(resolveFiles, 30); });
 mo.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ["src", "href"] });
 
-/* 스캔본 칸: 채점 하나의 학생 풀이 스캔본 올리기·보기·내려받기·지우기 */
-function scanPanel(el, gid, scans, onChange = () => {}) {
+/* 스캔본 칸: 채점 하나의 학생 풀이 스캔본 올리기·보기·내려받기·지우기
+   + 언제 스캔한 것인지(1차 채점 때 · 2차 채점 때 · 확실하지 않음) — 안 고르고 파일을 놓으면 잡아 두었다가 고르면 올림.
+   opts.rounds = 그 채점의 차 수(3차까지 했으면 3차도 고를 수 있게) */
+const whenText = (r) => (r ? `${r}차 채점 때` : "확실하지 않음");
+function scanPanel(el, gid, scans, onChange = () => {}, opts = {}) {
+  let pick = "";                 // "1" · "2" · … · "u"(확실하지 않음)
+  let pending = [], busy = false;
+  const nR = () => Math.max(2, opts.rounds || 1, ...scans.map((x) => x.round || 0));
+  const choices = () => [...Array.from({ length: nR() }, (_, i) => [String(i + 1), whenText(i + 1)]), ["u", "확실하지 않음"]];
+  const roundOf = (v) => (v && v !== "u" ? Number(v) : null);
+  const counts = () => {
+    const c = new Map();
+    for (const x of scans) c.set(x.round || 0, (c.get(x.round || 0) || 0) + 1);
+    return [...c.entries()].sort((a, b) => (a[0] || 99) - (b[0] || 99)).map(([r, n]) => `${r ? r + "차" : "확실하지 않음"} ${n}`).join(" · ");
+  };
+  const add = async (files) => {
+    if (!files.length) return;
+    if (busy) return toast("올리는 중이에요. 끝난 뒤에 다시 놓아 주세요");
+    const ok = B.scanRoundOk();
+    if (ok && !pick) { pending = files; draw(); return; }         // 언제 스캔한 것인지부터
+    busy = true; pending = []; draw();
+    const rd = ok ? roundOf(pick) : null;
+    let n = 0;
+    for (const f of files) {
+      try { const r = await uploadScan(gid, f, rd); scans = r.scans; n++; } catch (e) { toast(f.name + ": " + e.message, 4000); }
+    }
+    busy = false;
+    if (n) toast(`${n === 1 ? files[0].name : `스캔본 ${n}개`} 올렸어요${ok ? ` · ${whenText(rd)}` : ""}`);
+    if (el.isConnected) draw();
+    onChange(scans);
+  };
   const draw = () => {
-    el.innerHTML = `<div class="drop small-drop" data-sdrop><b>스캔본(PDF·사진)을 끌어다 놓거나 눌러서 고르기</b><span class="sub small">여러 개 가능 · 나중에 분석용 내보내기에 같이 들어가요</span>
-      <input type="file" accept=".pdf,image/*" multiple hidden></div>
+    const ok = B.scanRoundOk(), wait = pending.length && !pick;
+    el.innerHTML = `${ok ? `<div class="scanwhen${wait ? " need" : ""}"><b>언제 스캔한 것인가요?</b><span data-sseg></span>
+        ${wait ? `<span class="small"><b>파일 ${pending.length}개를 골랐어요.</b> 언제 스캔한 것인지 고르면 바로 올라가요.</span><button class="btn ghost small" data-scancel>그만두기</button>`
+          : `<span class="sub small">${pick ? `지금 올리는 것: <b>${esc(whenText(roundOf(pick)))}</b>` : "먼저 고른 뒤 파일을 놓아도, 파일을 놓은 뒤 골라도 돼요"}</span>`}</div>`
+        : `<p class="sub small" style="margin:0 0 8px">1차·2차 표시는 DB에 칸을 하나 더하면 켜져요 (supabase/2026-11_tt_scans_round.sql)</p>`}
+      <div class="drop small-drop" data-sdrop>${busy ? `<b><span class="busy"></span>올리는 중…</b>` : `<b>스캔본(PDF·사진)을 끌어다 놓거나 눌러서 고르기</b><span class="sub small">여러 개 가능 · 나중에 분석용 내보내기에 같이 들어가요</span>`}
+        <input type="file" accept=".pdf,image/*" multiple hidden></div>
       ${scans.length ? `<div class="scanlist">${scans.map((x) => `<div class="file">${x.kind === "pdf" ? "📄" : "🖼"} <a href="/scan/${x.id}" target="_blank">${esc(x.name)}</a>
         <span class="muted small">${x.pages}쪽 · ${(x.size / 1048576).toFixed(1)}MB · ${shortWhen(x.created_at)}</span>
-        <a class="btn ghost small" style="margin-left:auto" href="/scan/${x.id}?dl=1">받기</a><button class="x" data-sdel="${x.id}" title="지우기">×</button></div>`).join("")}</div>
-        <div class="row" style="margin-top:8px"><a class="btn ghost small" href="/scan/all/${gid}.pdf" target="_blank">한 PDF로 보기</a><a class="btn ghost small" href="/scan/all/${gid}.pdf?dl=1">한 PDF로 받기</a></div>` : ""}`;
+        ${ok ? `<select class="tin sround${x.round ? "" : " unk"}" data-sround="${x.id}" title="언제 스캔한 것인지">${choices().map(([v, t]) => `<option value="${v}"${String(x.round || "u") === v ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>` : ""}
+        <a class="btn ghost small"${ok ? "" : ` style="margin-left:auto"`} href="/scan/${x.id}?dl=1">받기</a><button class="x" data-sdel="${x.id}" title="지우기">×</button></div>`).join("")}</div>
+        <div class="row" style="margin-top:8px">${ok ? `<span class="sub small">${esc(counts())}</span>` : ""}<a class="btn ghost small" href="/scan/all/${gid}.pdf" target="_blank" title="1차 → 2차 → 확실하지 않음 차례">한 PDF로 보기</a><a class="btn ghost small" href="/scan/all/${gid}.pdf?dl=1">한 PDF로 받기</a></div>` : ""}`;
+    if (ok) seg($("[data-sseg]", el), choices(), pick, (v) => { pick = v; if (pending.length) add(pending); else draw(); });
+    if ($("[data-scancel]", el)) $("[data-scancel]", el).onclick = () => { pending = []; draw(); };
     const dz = $("[data-sdrop]", el), fin = $("input", dz);
-    const add = async (files) => {
-      for (const f of files) {
-        try { const r = await uploadScan(gid, f); scans = r.scans; toast(f.name + " 올렸어요"); } catch (e) { toast(e.message, 4000); }
-      }
-      draw(); onChange(scans);
-    };
-    dz.onclick = () => fin.click();
+    dz.onclick = () => { if (!busy) fin.click(); };
     fin.onchange = () => { add([...fin.files]); fin.value = ""; };
     ["dragenter", "dragover"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("over"); }));
     ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("over"); }));
     dz.addEventListener("drop", (e) => add([...e.dataTransfer.files]));
+    $$("[data-sround]", el).forEach((s) => (s.onchange = async () => {
+      try { const r = await api("scans/" + s.dataset.sround, { round: roundOf(s.value) }); scans = r.scans; toast(`${whenText(roundOf(s.value))}(으)로 바꿨어요`); }
+      catch (e) { toast(e.message, 5000); }
+      draw(); onChange(scans);
+    }));
     $$("[data-sdel]", el).forEach((b) => (b.onclick = async () => {
-      const v = await modal(`<h2>이 스캔본을 지울까요?</h2>`, [{ label: "그만두기", value: null, cls: "ghost" }, { label: "지우기", value: 1, cls: "warn" }]);
-      if (!v) return;
-      const r = await api("scans/" + b.dataset.sdel, { delete: true }); scans = r.scans; draw(); onChange(scans);
+      const x = scans.find((s) => String(s.id) === b.dataset.sdel);
+      if (!confirmInline(b)) return;
+      try { const r = await api("scans/" + b.dataset.sdel, { delete: true }); scans = r.scans; toast(`${x ? x.name : "스캔본"} 지웠어요`); } catch (e) { toast(e.message); }
+      draw(); onChange(scans);
     }));
   };
   draw();
+}
+// 창 안에서는 창을 하나 더 띄울 수 없어서(창이 하나뿐) 지우기 확인은 그 자리에서: 한 번 누르면 「지울까요?」, 3초 안에 한 번 더 누르면 지움
+function confirmInline(b) {
+  if (b.dataset.armed === "1") return true;
+  b.dataset.armed = "1"; const t = b.textContent; b.textContent = "지울까요?"; b.classList.add("armed");
+  setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = t; b.classList.remove("armed"); } }, 3000);
+  return false;
+}
+const scanLabel = (scans) => (scans && scans.length ? `스캔본 ${scans.length}` : "스캔본 올리기");
+// [data-scan=채점id] 단추 (data-r = 차 수, data-t = 프린트 제목, data-n = 학생 이름) → 스캔본 창, 닫으면 단추 글자를 개수로
+function bindScanButtons(el, nameOf = (b) => b.dataset.n || "") {
+  $$("[data-scan]", el).forEach((b) => (b.onclick = (e) => {
+    e.stopPropagation();
+    scanModal(+b.dataset.scan, `${esc(nameOf(b))} · ${esc(b.dataset.t || "")} · 스캔본`, { rounds: +b.dataset.r || 1, onChange: (sc) => { b.textContent = scanLabel(sc); } });
+  }));
+}
+// 스캔본 창 — 채점 화면·학생 기록·프린트 채점 기록에서 같이 씀
+async function scanModal(gid, titleHtml, { rounds = 1, scans = null, onChange = () => {} } = {}) {
+  if (!scans) { try { scans = await api(`gradings/${gid}/scans`); } catch (e) { toast(e.message); return null; } }
+  await modal(`<h2>${titleHtml}</h2><div id="scanBox"></div>`, [{ label: "닫기", value: null, cls: "ghost" }],
+    { cls: "scanmodal", onOpen: (box) => scanPanel($("#scanBox", box), gid, scans, (sc) => { scans = sc; onChange(sc); }, { rounds }) });
+  return scans;
 }
 
 let toastT = 0;
@@ -683,7 +742,7 @@ async function gradeRun(p, sid) {
           ${p.sheet_pages && p.sheet_pages.length ? `<button class="btn ghost small" id="showSheet">시험지 보기</button>` : ""}
           ${p.answer_pages.length ? `<button class="btn ghost small" id="showAns">정답해설 보기</button>` : ""}
           <a class="btn ghost small" href="#/tt/print/${p.code}">정답 입력</a>
-          <button class="btn ghost small" id="scanBtn">스캔본${d.scans && d.scans.length ? " " + d.scans.length : ""}</button>
+          <button class="btn ghost small" id="scanBtn" title="학생이 푼 종이 스캔본 올리기 · 1차·2차 표시">${scanLabel(d.scans)}</button>
           <a class="btn ghost small" href="#/tt/grade/${p.code}/pick">다른 학생</a>
           <button class="btn" id="finish">채점 끝내기</button></div>
       </div>
@@ -889,8 +948,9 @@ async function gradeRun(p, sid) {
     if (ok) location.hash = "#/tt/grade/" + p.code + "/" + sid + "/done";
   };
   if ($("#showAns")) $("#showAns").onclick = () => modal(`<h2>정답해설</h2><div class="ansimgs">${p.answer_pages.map((s) => `<img src="${fileUrl(s)}" alt="">`).join("")}</div>`);
-  $("#scanBtn").onclick = () => modal(`<h2>${esc(d.student.name)} · 스캔본</h2><div id="scanBox"></div>`, [{ label: "닫기", value: null, cls: "ghost" }],
-    { onOpen: (box) => scanPanel($("#scanBox", box), gid, d.scans || [], (sc) => { d.scans = sc; $("#scanBtn").textContent = "스캔본" + (sc.length ? " " + sc.length : ""); }) });
+  $("#scanBtn").onclick = () => scanModal(gid, `${esc(d.student.name)} · 스캔본`, {
+    rounds: Math.max(cur.round || 1, ...d.sessions.map((s) => s.round || 1)), scans: d.scans || [],
+    onChange: (sc) => { d.scans = sc; if ($("#scanBtn")) $("#scanBtn").textContent = scanLabel(sc); } });
   if ($("#showSheet")) $("#showSheet").onclick = () => modal(`<h2>시험지</h2><div class="ansimgs">${p.sheet_pages.map((s) => `<img src="${fileUrl(s)}" alt="">`).join("")}</div>`);
   drawItems();
   const firstBlank = d.items.findIndex(isTodo);
@@ -948,13 +1008,13 @@ viewGrade = async function (code, sid, extra) {
         <span style="flex:1"></span>
         ${R.length > 1 ? `<button class="btn ghost small" id="delRound" title="${last.round}차 기록만 지워요">${last.round}차 지우기</button>` : ""}
         <button class="btn ghost small warn-t" id="delAll">채점 기록 지우기</button></div></div>
+    <div class="card"><h2>스캔본 <span class="sub small">학생이 푼 종이를 스캔해 올려 두면 언제든 받고, 분석용 내보내기에 같이 들어가요</span></h2><div id="scanBox"></div></div>
     ${wrong.length ? `<div class="card"><h2>틀린 문항 ${wrong.length}개</h2><div class="wrongs">${wrong.map((it) => `<div class="wrong"><b>${esc(nob(it))}</b> ${it.repeat ? `<span class="tag rep">반복 오답</span>` : ""}${R.length > 1 ? ` <span class="small sub">${esc(roundsLine(it))}</span>` : ""}${it.mark.answer ? ` <span class="small sub">적은 답 ${esc(it.mark.answer)}</span>` : ""}
       ${it.png ? `<img src="${fileUrl(d.print.code + "/" + it.png)}" alt="">` : ""}</div>`).join("")}</div></div>` : ""}
     ${fixed.length ? `<div class="card"><h2>다시 풀어 고친 문항 ${fixed.length}개</h2>${fixed.map((it) => `<span class="tag o" title="${esc(roundsLine(it))}">${esc(nob(it))} · ${esc(roundsLine(it))}</span>`).join(" ")}</div>` : ""}
-    ${uns.length ? `<div class="card"><h2>안 푼 문항</h2>${uns.map((it) => `<span class="tag u">${esc(nob(it))}</span>`).join(" ")}</div>` : ""}
-    <div class="card"><h2>스캔본 <span class="sub small">학생 풀이를 스캔해 올려 두면 언제든 받고, 분석용 내보내기에 같이 들어가요</span></h2><div id="scanBox"></div></div>`;
+    ${uns.length ? `<div class="card"><h2>안 푼 문항</h2>${uns.map((it) => `<span class="tag u">${esc(nob(it))}</span>`).join(" ")}</div>` : ""}`;
   $$(".wrong img").forEach((im) => (im.onclick = () => zoom(im.src)));
-  scanPanel($("#scanBox"), g.id, d.scans || []);
+  scanPanel($("#scanBox"), g.id, d.scans || [], (sc) => { d.scans = sc; }, { rounds: last.round || 1 });
   if ($("#retryGo")) $("#retryGo").onclick = () => startRetry(d.print.code, sid, d);
   if ($("#delRound")) $("#delRound").onclick = async () => {
     const v = await modal(`<h2>${last.round}차 기록을 지울까요?</h2><p>${last.round}차에 매긴 ${last.summary.total - last.summary.none}문항의 기록이 지워지고, ${last.round - 1}차까지의 결과가 최종이 돼요.</p><p class="sub small">되돌릴 수 없어요.</p>`,
@@ -1096,9 +1156,11 @@ async function studentDetail(id) {
       ${w.png ? `<img src="${fileUrl(w.png)}" alt="">` : ""}</div>`).join("")}</div>` : `<div class="empty">아직 없어요</div>`}</div>
     <div class="card"><h2>받은 프린트</h2>${d.prints.length ? `<table class="t"><tr><th>출제일</th><th>코드</th><th>제목</th><th>채점</th><th>결과</th><th></th></tr>
       ${d.prints.map((p) => `<tr><td class="sub small">${shortWhen(p.issued_at)}</td><td class="code">${esc(p.code_fmt)}</td><td>${esc(p.title)}</td>
-        <td>${p.grading ? statusTag(p.grading.status) : `<span class="muted small">안 함</span>`}${p.n_rounds > 1 ? ` <span class="tag ses">${p.n_rounds}차</span>` : ""}</td><td>${sumText(p.summary)}${p.n_scans ? ` <span class="tag" title="스캔본">스캔 ${p.n_scans}</span>` : ""}${roundNote(p)}</td>
+        <td>${p.grading ? statusTag(p.grading.status) : `<span class="muted small">안 함</span>`}${p.n_rounds > 1 ? ` <span class="tag ses">${p.n_rounds}차</span>` : ""}</td><td>${sumText(p.summary)}${roundNote(p)}</td>
         <td class="row" style="gap:4px;flex-wrap:nowrap"><button class="btn small ghost" data-pout="${p.code}" title="${esc(s.name)} 이름을 넣은 시험지">출력</button>
-          <a class="btn small ${p.grading && p.grading.status === "done" ? "ghost" : ""}" href="#/tt/grade/${p.code}/${s.id}${p.grading && p.grading.status === "done" ? "/done" : ""}">${p.grading ? (p.grading.status === "done" ? "보기" : "이어서") : "채점"}</a></td></tr>`).join("")}</table>` : `<div class="empty">아직 없어요</div>`}</div>
+          ${p.grading ? `<button class="btn small ghost" data-scan="${p.grading.id}" data-r="${p.n_rounds || 1}" data-t="${esc(p.title)}" title="학생이 푼 종이 스캔본 올리기 · 1차·2차 표시">${scanLabel({ length: p.n_scans || 0 })}</button>` : ""}
+          <a class="btn small ${p.grading && p.grading.status === "done" ? "ghost" : ""}" href="#/tt/grade/${p.code}/${s.id}${p.grading && p.grading.status === "done" ? "/done" : ""}">${p.grading ? (p.grading.status === "done" ? "보기" : "이어서") : "채점"}</a></td></tr>`).join("")}</table>
+      <p class="sub small" style="margin:6px 0 0">스캔본은 채점을 시작한 프린트에 올려요. 아직 채점하지 않았으면 「채점」을 먼저 눌러 주세요.</p>` : `<div class="empty">아직 없어요</div>`}</div>
     <div class="card"><h2>수업 기록</h2>${Object.keys(recByDate).length ? `<table class="t"><tr><th>날짜</th>${Object.keys(KIND).map((k) => `<th>${KIND[k][0].replace(" 프린트", "").replace("오늘 ", "")}</th>`).join("")}</tr>
       ${Object.entries(recByDate).map(([dte, r]) => `<tr><td><b>${dte}</b></td>${Object.keys(KIND).map((k) => `<td class="small">${(r[k] || []).map((x) => esc(x.title)).join("<br>") || "<span class='muted'>-</span>"}</td>`).join("")}</tr>`).join("")}</table>
       <p class="sub small">고치려면 수업 기록 탭에서 그 날짜와 이 학생을 불러와 다시 확인하세요.</p>` : `<div class="empty">아직 없어요</div>`}</div>`;
@@ -1110,6 +1172,7 @@ async function studentDetail(id) {
   };
   $$(".wrong img").forEach((im) => (im.onclick = () => zoom(im.src)));
   $$("[data-pout]").forEach((b) => (b.onclick = () => printOut(b.dataset.pout, id)));
+  bindScanButtons(view, () => s.name);
   const per = () => { const q = new URLSearchParams(); if ($("#dFrom").value) q.set("from", $("#dFrom").value); if ($("#dTo").value) q.set("to", $("#dTo").value); return q.toString(); };
   $("#dPdf").onclick = () => openLink(`/dl/student/${id}.pdf?view=1&${per()}`);
   $("#dJson").onclick = () => openLink(`/dl/student/${id}.json?${per()}`, true);
@@ -1297,7 +1360,8 @@ async function viewPrint(code) {
       <div class="card" style="margin:0"><div class="row" style="justify-content:space-between"><h2 style="margin:0">채점 기록</h2>
           ${p.gradings.some((g) => g.summary && (g.summary.X || g.summary.U)) ? `<a class="btn ghost small" href="#/tt/wrong/p/${p.code}" title="이 프린트를 푼 학생들의 틀린 문항을 모아 새 프린트로">오답 출제</a>` : ""}</div>
         ${p.gradings.length ? `<table class="t" style="margin-top:8px">${p.gradings.map((g) => `<tr class="click" data-href="#/tt/grade/${p.code}/${g.student_id}${g.status === "done" ? "/done" : ""}"><td style="white-space:nowrap"><b>${esc(g.name)}</b></td>
-          <td>${statusTag(g.status)}${g.n_rounds > 1 ? ` <span class="tag ses">${g.n_rounds}차</span>` : ""}</td><td>${sumText(g.summary)}${roundNote(g)}</td><td class="sub small">${shortWhen(g.updated_at)}</td></tr>`).join("")}</table>` : `<div class="empty">아직 없어요</div>`}</div>
+          <td>${statusTag(g.status)}${g.n_rounds > 1 ? ` <span class="tag ses">${g.n_rounds}차</span>` : ""}</td><td>${sumText(g.summary)}${roundNote(g)}</td><td class="sub small">${shortWhen(g.updated_at)}</td>
+          <td><button class="btn small ghost" style="white-space:nowrap" data-scan="${g.id}" data-r="${g.n_rounds || 1}" data-t="${esc(p.title)}" data-n="${esc(g.name)}" title="학생이 푼 종이 스캔본 올리기 · 1차·2차 표시">${scanLabel({ length: g.n_scans || 0 })}</button></td></tr>`).join("")}</table>` : `<div class="empty">아직 없어요</div>`}</div>
     </div>
     <div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><h2 style="margin:0">정답 (빠른정답) <span class="sub small" id="nAns"></span></h2>
       <div class="row"><label class="btn ghost small" style="cursor:pointer">정답 PDF 첨부<input type="file" accept=".pdf" id="ansPdf" hidden></label>${p.answer_pages.length ? `<button class="btn ghost small" id="ansView">정답해설 보기</button>` : ""}<button class="btn" id="ansSave">정답 저장</button></div></div>
@@ -1309,6 +1373,7 @@ async function viewPrint(code) {
       <div class="wrongs" style="margin-top:10px">${p.items.map((it) => `<div class="wrong" style="border-color:var(--line)"><b>${esc(nob(it))}</b> <span class="small muted">${p.kind === "registered" ? "" : p.kind === "wrong" ? `← ${esc(it.src)} ${esc(/^\d+$/.test(String(it.src_no)) ? it.src_no + "번" : it.src_no)}` : `${esc(it.src)} ${esc(it.src_no)}번`}${it.choice ? " · 객관식" : ""}</span>${it.png ? `<img src="${fileUrl(p.code + "/" + it.png)}" alt="">` : ""}</div>`).join("")}</div></div>`;
   bindPrintCards(view);
   bindRows(view);
+  bindScanButtons(view);
   seg($("#pLevel"), [["초등", "초등"], ["중등", "중등"], ["고등", "고등"]], p.level || "중등", async (v) => { await api("prints/" + p.code, { level: v }); toast("학교급: " + v); });
   const drawKeys = () => {
     $("#kg").innerHTML = p.items.map((it) => `<div class="keycell ${it.choice ? "ch" : ""}"><b title="${esc(nob(it))}">${esc(nolab(it).replace(/^(서답형|서술형|주관식|단답형)\s*/, "서"))}</b><input data-seq="${it.seq}" value="${esc(ans[it.seq])}" placeholder="${it.choice ? "1~5" : "답"}">${it.answer_png ? `<img class="kimg" src="${fileUrl(p.code + "/" + it.answer_png)}" alt="" title="빠른정답 그림">` : ""}
@@ -1457,7 +1522,7 @@ const EV = {
   convert: "변환", register: "프린트 등록", student_add: "학생 추가", student_edit: "학생 수정", grading_start: "채점 시작", grading_resume: "채점 이어서",
   grading_close: "채점 닫음", answers_edit: "정답 입력", answer_attach: "정답 PDF 첨부", targets_add: "대상 추가", print_delete: "프린트 지움",
   class_used: "수업 사용", class_graded: "채점 기록", class_reviewed: "오답 풀이", class_homework: "숙제",
-  print_out: "출력", scan_add: "스캔본 올림", scan_upload: "스캔본 올림", scan_delete: "스캔본 지움", export_transcribe: "전사용 내보내기", export_analysis: "분석용 내보내기",
+  print_out: "출력", scan_add: "스캔본 올림", scan_upload: "스캔본 올림", scan_round: "스캔본 차수 바꿈", scan_delete: "스캔본 지움", export_transcribe: "전사용 내보내기", export_analysis: "분석용 내보내기",
   import_transcripts: "전사 결과 가져옴", anon_backfill: "예전 프린트 이름 지움", cloud_conflict: "기록 충돌 보관",
   grading_reopen: "채점 다시 엶", retry_start: "다음 차 채점 시작", round_delete: "마지막 차 지움", grading_delete: "채점 기록 지움",
   print_purge: "프린트 완전히 지움", print_restore: "프린트 되살림", wrongset_make: "오답 프린트 만듦", library_register: "보관함에서 등록",
@@ -1471,6 +1536,8 @@ function evDetail(e) {
     case "grading_close": return `${{ done: "다 채점", unsolved: "아이가 덜 풂", ungraded: "채점 덜 함" }[d.reason] || ""} · ${d.session}회차 · O ${d.O} / X ${d.X} / 안 풂 ${d.U}${d.none ? " / 남음 " + d.none : ""}`;
     case "grading_resume": return `이전 상태: ${(STATUS[d.was] || [d.was])[0]}`;
     case "answers_edit": return `${d.n}칸`;
+    case "scan_upload": case "scan_round": case "scan_delete":
+      return [esc(d.name || ""), "round" in d ? esc(whenText(d.round)) : "", d.pages ? `${d.pages}쪽` : ""].filter(Boolean).join(" · ");
     case "grading_start": case "student_add": return "";
     default:
       if (e.kind.startsWith("class_")) return `${d.date} · ${d.prints ? d.prints.length : 0}개${d.edited ? " (수정)" : ""}`;
