@@ -15,6 +15,7 @@
 //   omr     (로그인 유저) : 손글씨 답안지 사진 → 번호별 답 자동 인식
 
 import { createClient } from "@supabase/supabase-js";
+import { learnGate, GATE_MSG } from "../src/lib/learnAccess.js";
 
 const VISION_MODEL = process.env.CALC_GEN_MODEL || "claude-sonnet-4-6";
 const FIND_MODEL = "claude-haiku-4-5";                 // 개념 라우팅은 하이쿠로 충분 (호출당 ~0.1원)
@@ -26,14 +27,6 @@ function svcClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-}
-
-// ── 운영자 학습 허용(learn_grants) — 행이 있으면 고유번호 없이도 연다. 표가 없거나 조회가 실패하면 허용 안 함(기존 동작) ──
-async function hasLearnGrant(sb, uid) {
-  try {
-    const { data, error } = await sb.from("learn_grants").select("user_id").eq("user_id", uid).maybeSingle();
-    return !error && !!data;
-  } catch { return false; }
 }
 
 // ── 일일 한도 (KST 자정 기준 리셋) ──
@@ -120,16 +113,10 @@ export default async function handler(req, res) {
       if (prof?.role !== "admin") return res.status(403).json({ error: "관리자만 사용할 수 있어요" });
     }
 
-    // ── 2.5) 학생 태스크: 이용 자격 게이트 ──
+    // ── 2.5) 학생 태스크: 이용 자격 게이트 — 가입을 끝까지 마쳤으면 연다 (src/lib/learnAccess.js) ──
     if (task === "hint" || task === "find" || task === "omr" || task === "ask") {
-      const { data: prof } = await sb.from("profiles")
-        .select("role, member_code").eq("id", userData.user.id).single();
-      if (prof?.role !== "admin") {
-        if (prof?.role === "trial")
-          return res.status(403).json({ error: "체험 계정은 개념 열람만 가능해요 — 정식 가입 후 이용할 수 있어요" });
-        if (!prof?.member_code && !(await hasLearnGrant(sb, userData.user.id)))
-          return res.status(403).json({ error: "AI 기능은 학원 고유번호 등록 후 열려요 — 학원에서 고유번호를 받아 등록해주세요" });
-      }
+      const gate = await learnGate(sb, userData.user);
+      if (!gate.ok) return res.status(403).json({ error: GATE_MSG[gate.why] || GATE_MSG.need_verify });
     }
 
     // ══════════ title — 대화 제목 자동 제안 (관리자, Haiku) ══════════

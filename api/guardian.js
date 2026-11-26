@@ -1,8 +1,11 @@
-// api/guardian.js — 법정대리인(보호자) 동의 제출 (v1.0)
+// api/guardian.js — 법정대리인(보호자) 동의 제출 (v1.1)
 // POST { action: 'submit', phone_token, guardian_name, relation, guardian_birth_year }
 //   · 로그인(학생) JWT 필요. phone_token은 /api/otp (purpose: 'guardian') 인증으로 발급.
 //   · 보호자 정보는 인증+동의가 완료된 이 시점에만 저장 → 미동의 개인정보를 보관하지 않음.
-//   · 저장 상태는 'pending'(강사 확인 대기). 승인·반려는 관리자 화면에서 RLS로 직접.
+//   · v1.1(2026-11-26 원장님: 가입을 다 마치면 승인 절차 없이): 제출 즉시 'active'.
+//     같은 (학생, 보호자 번호)가 관리자에게 반려된 적이 있으면 그때만 'pending'(관리자 확인).
+//     DB 트리거 guardian_consent_auto_active 도 같은 규칙이다(supabase/2026-11_signup_open.sql).
+//     관리자는 「🛡 보호자」 화면에서 활성 건을 「연결 해제(반려)」할 수 있다.
 //   · 반려(rejected) 후 5일 경과 건은 호출 시마다 자동 파기(동의 미확인 정보 파기 의무).
 // 조회·철회는 클라이언트가 guardian_consents에 RLS로 직접 수행하므로 API가 필요 없음.
 
@@ -50,8 +53,9 @@ export default async function handler(req, res) {
     if (ex?.status === 'active')
       return json(res, 200, { consent: ex, already: true });
 
-    // 5) 저장 (재제출이면 pending으로 갱신)
+    // 5) 저장 — 바로 활성. 반려됐던 같은 번호로 다시 낸 경우만 관리자 확인(pending)
     const now = new Date().toISOString();
+    const status = ex?.status === 'rejected' ? 'pending' : 'active';
     const row = {
       student_id: user.id,
       guardian_name: name,
@@ -60,10 +64,10 @@ export default async function handler(req, res) {
       relation,
       consent_version: CONSENT_VERSION,
       consented_at: now,
-      status: 'pending',
+      status,
       age_gap_warn,
       approved_by: null,
-      approved_at: null,
+      approved_at: status === 'active' ? now : null,
       reject_reason: null,
       updated_at: now,
     };

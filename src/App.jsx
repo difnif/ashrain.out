@@ -6,6 +6,7 @@ import HomeDash from "./components/HomeDash";
 // P0 셸 — 관문·경로층 라우터
 import Gate from "./gate/Gate";
 import { rolePath } from "./shared/roles";
+import { learnAccess } from "./lib/learnAccess";
 // 학생앱 베타 — 문제풀이 허브(#/solve/*, 내부에서 화면별 분할)
 import SolveRouter from "./pages/solve/SolveRouter";
 // ui-v3 셸 — 하단 탭바 4개(대시보드·공부하기·학습 도구·게시판) + 상단 서브탭, 기능 화면은 FeatureBar
@@ -50,6 +51,7 @@ const AdminCorpus = lazy(() => import("./components/AdminCorpus"));
 const AdminMonitor = lazy(() => import("./components/AdminMonitor"));
 const AdminSchemas = lazy(() => import("./components/AdminSchemas"));
 const AdminGuardians = lazy(() => import("./components/AdminGuardians"));
+const AdminSignups = lazy(() => import("./components/AdminSignups"));
 const AdminCalendar = lazy(() => import("./components/AdminCalendar"));
 const AdminWell = lazy(() => import("./pages/AdminWell"));
 const AdminDisplay = lazy(() => import("./pages/AdminDisplay"));   // 교실 모니터(가로 화면 도형 애니메이션)
@@ -276,8 +278,8 @@ function AppRoutes() {
     return <TrialExpired theme={theme} />;
   }
 
-  // v2: 고유번호는 선택 — 온보딩 강제 없음. 대신 인증 상태에 따라 기능을 잠근다.
-  //  · 만 14세 미만: 보호자 동의(활성) 전까지 개념 열람만
+  // 가입을 끝까지 마쳤으면 승인 없이 전부 연다 — 규칙은 src/lib/learnAccess.js 한 곳 (AI 관문·가입 로그와 같음)
+  //  · 만 14세 미만: 보호자 동의(문자 인증 + 제출 = 즉시 활성) 전까지 개념 열람만
   //  · 만 14세 이상: 전화 인증 또는 이메일 가입 확인 전까지 개념 열람만
   //  · 체험(trial): 개념 열람만
   //  · 운영자 학습 허용(learn_grants 행): 위 확인 없이 학습 기능을 연다(관리자 화면은 그대로 관리자만)
@@ -292,12 +294,7 @@ function AppRoutes() {
     sessionStorage.setItem("ob_nudged", "1");
     location.hash = "#/onboarding";
   }
-  const verified =
-    prof?.role === "admin" ? true
-    : prof?.role === "trial" ? false
-    : granted ? true
-    : prof?.is_minor ? gOk === true
-    : (prof?.phone_verified || provider === "email");
+  const verified = learnAccess({ ...prof, provider, granted, guardianActive: gOk === true }).ok;
 
   // 미성년이 보호자 동의를 아직 시작하지 않았으면 동의 화면으로 안내
   if (prof?.is_minor && prof?.role !== "admin" && !verified && !gStarted
@@ -351,6 +348,7 @@ function AppRoutes() {
   if (hash === "#/admin/monitor") return <Rx theme={theme}><AdminMonitor /></Rx>;
   if (hash === "#/admin/schemas") return <Rx theme={theme}><AdminSchemas /></Rx>;
   if (hash === "#/admin/guardians") return <Rx theme={theme}><AdminGuardians /></Rx>;
+  if (hash === "#/admin/signups") return <Rx theme={theme}><AdminSignups /></Rx>;
   if (hash.startsWith("#/guardian")) return <Rx theme={theme}><GuardianConsent /></Rx>;
   if (hash === "#/admin/calendar") return <Rx theme={theme}><AdminCalendar theme={theme} /></Rx>;
   if (hash === "#/admin/well") return <Rx theme={theme}><AdminWell theme={theme} /></Rx>;

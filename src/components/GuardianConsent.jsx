@@ -1,7 +1,8 @@
-// ashrain.out — 보호자(법정대리인) 동의 화면 (v1.1, #/guardian)
+// ashrain.out — 보호자(법정대리인) 동의 화면 (v1.2, #/guardian)
 // v1.1: 인증번호 입력 제한시간(5:00) 타이머 — 초과 시 확인 비활성(서버도 만료 무효 처리)
+// v1.2(2026-11-26): 제출하면 바로 활성 — 강사 승인 단계 없음. 반려됐던 번호로 다시 낸 경우만 강사 확인.
 // 흐름: 보호자 정보 입력 → 보호자 휴대폰으로 인증번호 발송(/api/otp, purpose 'guardian')
-//       → 인증 확인 → 고지문·동의 체크 → 제출(/api/guardian) → 강사 확인 후 활성화.
+//       → 인증 확인 → 고지문·동의 체크 → 제출(/api/guardian) → 바로 활성화.
 // 조회·철회는 guardian_consents RLS로 직접. 새 환경변수 불필요(기존 SMS 인프라 재사용).
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
@@ -22,6 +23,7 @@ export default function GuardianConsent() {
   const [ag2, setAg2] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [done, setDone] = useState(false);   // 제출 즉시 활성 → 「학습하러 가기」
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -98,8 +100,11 @@ export default function GuardianConsent() {
         action: "submit", phone_token: token,
         guardian_name: f.name.trim(), relation: f.relation, guardian_birth_year: +f.birth,
       });
-      if (j.already) setMsg("이미 활성화된 보호자예요.");
-      else setMsg("제출 완료 — 강사 확인 후 활성화됩니다." + (j.age_gap_warn ? " (확인이 조금 더 걸릴 수 있어요)" : ""));
+      const active = !!(j.already || j.consent?.status === "active");
+      if (j.already) setMsg("이미 활성화된 보호자예요 — 모든 기능을 쓸 수 있어요.");
+      else if (active) setMsg("동의가 확인됐어요 — 이제 모든 기능을 쓸 수 있어요.");
+      else setMsg("제출 완료 — 예전에 반려된 번호라 강사 확인 후 활성화됩니다.");
+      setDone(active);
       setF({ name: "", relation: "모", birth: "", phone: "" });
       setCode(""); setToken(null); setOtp("idle"); setAg1(false); setAg2(false);
       load();
@@ -133,7 +138,7 @@ export default function GuardianConsent() {
 
       <div className="gc-card">
         <p className="gc-desc"><b>진행 순서</b> — ① 보호자 정보 입력 → ② 보호자님 휴대폰으로 인증번호 발송,
-          보호자님이 직접 확인·입력 → ③ 동의 항목 체크 → ④ 제출. 이후 강사 확인을 거쳐 활성화됩니다.</p>
+          보호자님이 직접 확인·입력 → ③ 동의 항목 체크 → ④ 제출하면 바로 모든 기능이 열려요.</p>
 
         <div className="gc-row">
           <input className="gc-inp" style={{ flex: 2, minWidth: 120 }} placeholder="보호자 성명"
@@ -191,6 +196,12 @@ export default function GuardianConsent() {
           <button className="gc-btn gc-pri" disabled={busy} onClick={submit}>동의 제출</button>
         </div>
         {msg && <p className="gc-msg">{msg}</p>}
+        {done && (
+          <div className="gc-row">
+            {/* 앱이 동의 상태를 다시 읽도록 새로고침 */}
+            <button className="gc-btn gc-pri" onClick={() => { location.hash = ""; location.reload(); }}>학습하러 가기 →</button>
+          </div>
+        )}
         {err && <p className="gc-msg gc-err">{err}</p>}
       </div>
 
