@@ -207,6 +207,12 @@
 .tt-root .tabs a{padding:7px 10px}
 .tt-root .item.off{opacity:.55;background:#f8fafc}
 .tt-root .roundbar{background:#ecfeff;border-color:#a5f3fc}
+/* 2차부터: 매길 차 고르기 · 앞 차 고치기 */
+.tt-root .roundbar .rbrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.tt-root .roundbar .rbtext{flex:1 1 380px;min-width:0;line-height:1.55}
+.tt-root .roundbar.fixing{background:#fff7ed;border-color:#fdba74}
+.tt-root .item .addr{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#fff7ed;border:1px dashed #fdba74;border-radius:10px;padding:6px 8px}
+.tt-root .item.off.canadd{opacity:.9}
 .tt-root .btn.ghost.warn-t{color:#b91c1c}
 .tt-root .btn.ghost.warn-t:hover{border-color:#fca5a5}
 .tt-root #pTrash.on{border-color:var(--acc);color:var(--acc)}
