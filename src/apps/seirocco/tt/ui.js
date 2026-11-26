@@ -3,6 +3,7 @@
 import * as B from "./backend";
 import { importView, pcAutoSync } from "./importer";
 import { autoJudge, TEMPLATES } from "./logic";
+import * as S from "./share";
 
 const PH = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
@@ -83,11 +84,13 @@ mo.observe(root, { subtree: true, childList: true, attributes: true, attributeFi
 
 /* 스캔본 칸: 채점 하나의 학생 풀이 스캔본 올리기·보기·내려받기·지우기
    + 언제 스캔한 것인지(1차 채점 때 · 2차 채점 때 · 확실하지 않음) — 안 고르고 파일을 놓으면 잡아 두었다가 고르면 올림.
-   opts.rounds = 그 채점의 차 수(3차까지 했으면 3차도 고를 수 있게) */
+   opts.rounds = 그 채점의 차 수(3차까지 했으면 3차도 고를 수 있게) · opts.meta = {title, student}(vFlat 공유로 받을 때 파일 이름)
+   안드로이드: 「vFlat으로 스캔」 → vFlat에서 「공유 → 강사도구」(앱으로 설치했을 때) → 이 채점 · 고른 차수로 저절로 올라감(#/tt/inbox) */
 const whenText = (r) => (r ? `${r}차 채점 때` : "확실하지 않음");
 function scanPanel(el, gid, scans, onChange = () => {}, opts = {}) {
   let pick = "";                 // "1" · "2" · … · "u"(확실하지 않음)
-  let pending = [], busy = false;
+  let pending = [], busy = false, vwant = false;
+  const android = S.isAndroid() && B.scanRoundOk();
   const nR = () => Math.max(2, opts.rounds || 1, ...scans.map((x) => x.round || 0));
   const choices = () => [...Array.from({ length: nR() }, (_, i) => [String(i + 1), whenText(i + 1)]), ["u", "확실하지 않음"]];
   const roundOf = (v) => (v && v !== "u" ? Number(v) : null);
@@ -113,11 +116,18 @@ function scanPanel(el, gid, scans, onChange = () => {}, opts = {}) {
     onChange(scans);
   };
   const draw = () => {
-    const ok = B.scanRoundOk(), wait = pending.length && !pick;
+    const ok = B.scanRoundOk(), wait = (pending.length || vwant) && !pick;
+    const sw = S.getScanWait(), waiting = sw && sw.gid === gid;
     el.innerHTML = `${ok ? `<div class="scanwhen${wait ? " need" : ""}"><b>언제 스캔한 것인가요?</b><span data-sseg></span>
-        ${wait ? `<span class="small"><b>파일 ${pending.length}개를 골랐어요.</b> 언제 스캔한 것인지 고르면 바로 올라가요.</span><button class="btn ghost small" data-scancel>그만두기</button>`
+        ${pending.length && !pick ? `<span class="small"><b>파일 ${pending.length}개를 골랐어요.</b> 언제 스캔한 것인지 고르면 바로 올라가요.</span><button class="btn ghost small" data-scancel>그만두기</button>`
+          : vwant && !pick ? `<span class="small"><b>먼저 언제 스캔한 것인지 골라 주세요.</b> 그다음 「vFlat으로 스캔」</span>`
           : `<span class="sub small">${pick ? `지금 올리는 것: <b>${esc(whenText(roundOf(pick)))}</b>` : "먼저 고른 뒤 파일을 놓아도, 파일을 놓은 뒤 골라도 돼요"}</span>`}</div>`
         : `<p class="sub small" style="margin:0 0 8px">1차·2차 표시는 DB에 칸을 하나 더하면 켜져요 (supabase/2026-11_tt_scans_round.sql)</p>`}
+      ${android ? `<div class="vflat"><a class="btn" data-vflat href="${esc(S.vflatHref())}">📷 vFlat으로 스캔</a>
+        ${waiting ? `<span class="small"><b>vFlat에서 「공유 → 강사도구」를 기다리는 중</b> · ${esc(whenText(sw.round))} <button class="btn ghost small" data-vstop>그만두기</button></span>`
+          : `<span class="sub small">스캔한 뒤 vFlat에서 「공유 → 강사도구」를 누르면 이 채점에 프린트 이름으로 올라와요</span>`}
+        ${S.isStandalone() ? "" : S.canPromptInstall() ? `<button class="btn ghost small" data-install>강사도구를 이 기기에 앱으로 설치</button>`
+          : `<span class="sub small">처음 한 번: Chrome 메뉴 ⋮ → 「앱 설치」(또는 「홈 화면에 추가」)를 해야 공유 목록에 「강사도구」가 생겨요</span>`}</div>` : ""}
       <div class="drop small-drop" data-sdrop>${busy ? `<b><span class="busy"></span>올리는 중…</b>` : `<b>스캔본(PDF·사진)을 끌어다 놓거나 눌러서 고르기</b><span class="sub small">여러 개 가능 · 나중에 분석용 내보내기에 같이 들어가요</span>`}
         <input type="file" accept=".pdf,image/*" multiple hidden></div>
       ${scans.length ? `<div class="scanlist">${scans.map((x) => `<div class="file">${x.kind === "pdf" ? "📄" : "🖼"} <a href="/scan/${x.id}" target="_blank">${esc(x.name)}</a>
@@ -125,8 +135,15 @@ function scanPanel(el, gid, scans, onChange = () => {}, opts = {}) {
         ${ok ? `<select class="tin sround${x.round ? "" : " unk"}" data-sround="${x.id}" title="언제 스캔한 것인지">${choices().map(([v, t]) => `<option value="${v}"${String(x.round || "u") === v ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>` : ""}
         <a class="btn ghost small"${ok ? "" : ` style="margin-left:auto"`} href="/scan/${x.id}?dl=1">받기</a><button class="x" data-sdel="${x.id}" title="지우기">×</button></div>`).join("")}</div>
         <div class="row" style="margin-top:8px">${ok ? `<span class="sub small">${esc(counts())}</span>` : ""}<a class="btn ghost small" href="/scan/all/${gid}.pdf" target="_blank" title="1차 → 2차 → 확실하지 않음 차례">한 PDF로 보기</a><a class="btn ghost small" href="/scan/all/${gid}.pdf?dl=1">한 PDF로 받기</a></div>` : ""}`;
-    if (ok) seg($("[data-sseg]", el), choices(), pick, (v) => { pick = v; if (pending.length) add(pending); else draw(); });
+    if (ok) seg($("[data-sseg]", el), choices(), pick, (v) => { pick = v; vwant = false; if (pending.length) add(pending); else draw(); });
     if ($("[data-scancel]", el)) $("[data-scancel]", el).onclick = () => { pending = []; draw(); };
+    if ($("[data-vflat]", el)) $("[data-vflat]", el).onclick = (e) => {
+      if (!pick) { e.preventDefault(); vwant = true; draw(); return; }          // 언제 스캔한 것인지부터
+      S.setScanWait({ gid, round: roundOf(pick), title: (opts.meta || {}).title || "", student: (opts.meta || {}).student || "" });
+      setTimeout(() => { if (el.isConnected) draw(); }, 300);                   // 기다리는 중 표시 (vFlat이 열리는 동안)
+    };
+    if ($("[data-vstop]", el)) $("[data-vstop]", el).onclick = () => { S.clearScanWait(); draw(); };
+    if ($("[data-install]", el)) $("[data-install]", el).onclick = async () => { const okI = await S.promptInstall(); toast(okI ? "앱으로 설치했어요. 이제 vFlat 공유 목록에 「강사도구」가 보여요" : "설치하지 않았어요"); draw(); };
     const dz = $("[data-sdrop]", el), fin = $("input", dz);
     dz.onclick = () => { if (!busy) fin.click(); };
     fin.onchange = () => { add([...fin.files]); fin.value = ""; };
@@ -159,14 +176,15 @@ const scanLabel = (scans) => (scans && scans.length ? `스캔본 ${scans.length}
 function bindScanButtons(el, nameOf = (b) => b.dataset.n || "") {
   $$("[data-scan]", el).forEach((b) => (b.onclick = (e) => {
     e.stopPropagation();
-    scanModal(+b.dataset.scan, `${esc(nameOf(b))} · ${esc(b.dataset.t || "")} · 스캔본`, { rounds: +b.dataset.r || 1, onChange: (sc) => { b.textContent = scanLabel(sc); } });
+    scanModal(+b.dataset.scan, `${esc(nameOf(b))} · ${esc(b.dataset.t || "")} · 스캔본`, { rounds: +b.dataset.r || 1, meta: { title: b.dataset.t || "", student: nameOf(b) },
+      onChange: (sc) => { b.textContent = scanLabel(sc); } });
   }));
 }
 // 스캔본 창 — 채점 화면·학생 기록·프린트 채점 기록에서 같이 씀
-async function scanModal(gid, titleHtml, { rounds = 1, scans = null, onChange = () => {} } = {}) {
+async function scanModal(gid, titleHtml, { rounds = 1, scans = null, meta = null, onChange = () => {} } = {}) {
   if (!scans) { try { scans = await api(`gradings/${gid}/scans`); } catch (e) { toast(e.message); return null; } }
   await modal(`<h2>${titleHtml}</h2><div id="scanBox"></div>`, [{ label: "닫기", value: null, cls: "ghost" }],
-    { cls: "scanmodal", onOpen: (box) => scanPanel($("#scanBox", box), gid, scans, (sc) => { scans = sc; onChange(sc); }, { rounds }) });
+    { cls: "scanmodal", onOpen: (box) => scanPanel($("#scanBox", box), gid, scans, (sc) => { scans = sc; onChange(sc); }, { rounds, meta }) });
   return scans;
 }
 
@@ -249,9 +267,10 @@ function route() {
   document.onkeydown = null;
   if (!location.hash.startsWith("#/tt")) return;
   const R = { convert: viewConvert, register: viewRegister, grade: viewGrade, class: viewClass, students: viewStudents, prints: viewPrints, print: viewPrint, log: viewLog,
-    export: viewExport, account: viewAccount, wrong: viewWrong,
+    export: viewExport, account: viewAccount, wrong: viewWrong, inbox: viewInbox,
     import: (...a) => importView({ view, $, $$, esc, toast, modal, api, fmtCode }, ...a) }[parts[0]];
   view.innerHTML = `<div class="card"><span class="busy"></span>불러오는 중…</div>`;
+  refreshInboxTab();
   (R || viewConvert)(...parts.slice(1)).catch((e) => { view.innerHTML = `<div class="card"><h2>문제가 생겼어요</h2><p class="sub">${esc(e.message)}</p></div>`; });
 }
 
@@ -949,7 +968,7 @@ async function gradeRun(p, sid) {
   };
   if ($("#showAns")) $("#showAns").onclick = () => modal(`<h2>정답해설</h2><div class="ansimgs">${p.answer_pages.map((s) => `<img src="${fileUrl(s)}" alt="">`).join("")}</div>`);
   $("#scanBtn").onclick = () => scanModal(gid, `${esc(d.student.name)} · 스캔본`, {
-    rounds: Math.max(cur.round || 1, ...d.sessions.map((s) => s.round || 1)), scans: d.scans || [],
+    rounds: Math.max(cur.round || 1, ...d.sessions.map((s) => s.round || 1)), scans: d.scans || [], meta: { title: p.title, student: d.student.name },
     onChange: (sc) => { d.scans = sc; if ($("#scanBtn")) $("#scanBtn").textContent = scanLabel(sc); } });
   if ($("#showSheet")) $("#showSheet").onclick = () => modal(`<h2>시험지</h2><div class="ansimgs">${p.sheet_pages.map((s) => `<img src="${fileUrl(s)}" alt="">`).join("")}</div>`);
   drawItems();
@@ -1014,7 +1033,7 @@ viewGrade = async function (code, sid, extra) {
     ${fixed.length ? `<div class="card"><h2>다시 풀어 고친 문항 ${fixed.length}개</h2>${fixed.map((it) => `<span class="tag o" title="${esc(roundsLine(it))}">${esc(nob(it))} · ${esc(roundsLine(it))}</span>`).join(" ")}</div>` : ""}
     ${uns.length ? `<div class="card"><h2>안 푼 문항</h2>${uns.map((it) => `<span class="tag u">${esc(nob(it))}</span>`).join(" ")}</div>` : ""}`;
   $$(".wrong img").forEach((im) => (im.onclick = () => zoom(im.src)));
-  scanPanel($("#scanBox"), g.id, d.scans || [], (sc) => { d.scans = sc; }, { rounds: last.round || 1 });
+  scanPanel($("#scanBox"), g.id, d.scans || [], (sc) => { d.scans = sc; }, { rounds: last.round || 1, meta: { title: d.print.title, student: d.student.name } });
   if ($("#retryGo")) $("#retryGo").onclick = () => startRetry(d.print.code, sid, d);
   if ($("#delRound")) $("#delRound").onclick = async () => {
     const v = await modal(`<h2>${last.round}차 기록을 지울까요?</h2><p>${last.round}차에 매긴 ${last.summary.total - last.summary.none}문항의 기록이 지워지고, ${last.round - 1}차까지의 결과가 최종이 돼요.</p><p class="sub small">되돌릴 수 없어요.</p>`,
@@ -1518,6 +1537,107 @@ async function viewExport() {
 
 async function viewAccount() { location.hash = "#/tt/grade"; }
 
+/* ───────────────────────── 공유받은 스캔본 (#/tt/inbox) — vFlat 등에서 「공유 → 강사도구」 (안드로이드에서 앱으로 설치했을 때) */
+async function refreshInboxTab() {
+  const a = $("#tt-inboxTab");
+  if (!a) return;
+  const n = await S.inboxCount();
+  a.hidden = !n;
+  a.textContent = `받은 스캔본 ${n}`;
+}
+const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "방금" : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
+const shareHowto = () => `<div class="card"><h2>vFlat에서 바로 올리기 <span class="sub small">갤럭시탭 · 안드로이드</span></h2>
+  <ol class="small" style="margin:0;padding-left:20px;line-height:1.9">
+    <li>Chrome에서 강사도구를 연 채로 메뉴 ⋮ → <b>「앱 설치」</b>(또는 「홈 화면에 추가」) — 처음 한 번만${S.isStandalone() ? ` <span class="tag done">이 창은 앱</span>` : S.canPromptInstall() ? ` <button class="btn ghost small" id="ibInstall">지금 설치</button>` : ""}</li>
+    <li>학생 기록 · 프린트 채점 기록 · 채점 결과에서 <b>스캔본 올리기</b> → 언제 스캔한 것인지 고르고 → <b>「vFlat으로 스캔」</b></li>
+    <li>vFlat에서 스캔한 뒤 <b>공유 → 강사도구</b> → 그 채점에 「프린트 제목_학생_1차.pdf」로 저절로 올라가요</li>
+  </ol>
+  <p class="sub small" style="margin:8px 0 0">「vFlat으로 스캔」을 누르지 않고 vFlat에서 바로 공유해도 돼요 — 여기서 어느 채점인지 골라 올려요.</p></div>`;
+const bindInstall = () => { if ($("#ibInstall")) $("#ibInstall").onclick = async () => { toast((await S.promptInstall()) ? "앱으로 설치했어요" : "설치하지 않았어요"); route(); }; };
+async function viewInbox() {
+  const files = await S.inboxList();
+  if (!files.length) {
+    view.innerHTML = `<h1>공유받은 스캔본</h1><div class="card"><div class="empty">받은 파일이 없어요</div></div>${shareHowto()}`;
+    bindInstall();
+    return;
+  }
+  const wait = S.getScanWait();
+  return wait ? inboxUpload(files, wait) : inboxPick(files);
+}
+// 받은 파일을 채점 하나에 올림 — 이름은 「프린트 제목_학생_1차.pdf」, 올린 것은 받은 목록에서 지움
+async function inboxUpload(files, target) {
+  S.clearScanWait();          // 한 번 쓰면 지움 — 다음 공유는 다시 묻는다(다른 학생 것이 잘못 들어가지 않게)
+  let d;
+  try { d = await api("gradings/" + target.gid); } catch (e) { toast(e.message, 5000); return inboxPick(files); }
+  const rd = target.round ?? null;
+  const head = `${esc(d.student.name)} · ${esc(d.print.title)} <span class="code sub">${esc(d.print.code_fmt)}</span> · ${esc(whenText(rd))}`;
+  const taken = new Set((d.scans || []).map((x) => x.name));
+  const done = [], fail = [];
+  for (let i = 0; i < files.length; i++) {
+    view.innerHTML = `<h1>공유받은 스캔본</h1><div class="card"><span class="busy"></span>${head}에 올리는 중… (${i + 1}/${files.length})</div>`;
+    const f = files[i];
+    const name = S.sharedName({ title: d.print.title, student: d.student.name, round: rd }, f, taken);
+    try {
+      await uploadScan(target.gid, new File([f.blob], name, { type: f.type || f.blob.type || "" }), rd);
+      await S.inboxDelete([f.id]);
+      done.push(name);
+    } catch (e) { fail.push(`${f.name}: ${e.message}`); }
+  }
+  store.set("shareLast", { gid: target.gid, round: rd });
+  refreshInboxTab();
+  view.innerHTML = `<h1>공유받은 스캔본</h1>
+    <div class="card" style="${done.length ? "background:#f0fdf4;border-color:#bbf7d0" : ""}"><h2>${done.length ? `올렸어요 — ${head}` : "올리지 못했어요"}</h2>
+      ${done.length ? `<div class="files">${done.map((n) => `<div class="file">${/\.pdf$/i.test(n) ? "📄" : "🖼"} ${esc(n)}</div>`).join("")}</div>` : ""}
+      ${fail.length ? `<p class="small" style="color:var(--x)">${fail.map(esc).join("<br>")}</p>` : ""}
+      <div class="row" style="margin-top:10px"><a class="btn" href="#/tt/grade/${d.print.code}/${d.student.id}/done">이 채점의 스캔본 보기</a>
+        ${fail.length ? `<button class="btn ghost" id="ibAgain">남은 것 다시</button>` : ""}<a class="btn ghost" href="#/tt/grade">채점으로</a></div></div>`;
+  if ($("#ibAgain")) $("#ibAgain").onclick = () => route();
+}
+// 기다리는 채점이 없을 때: 어느 채점 · 몇 차인지 골라 올림
+async function inboxPick(files) {
+  const gs = await api("gradings");
+  const last = store.get("shareLast", null);
+  let sel = last && gs.some((g) => g.id === last.gid) ? last.gid : null, pick = "";
+  const total = files.reduce((a, f) => a + (f.size || 0), 0);
+  view.innerHTML = `<h1>공유받은 스캔본</h1>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">받은 파일 ${files.length}개 <span class="sub small">${(total / 1048576).toFixed(1)}MB</span></h2>
+        <button class="btn ghost small warn-t" id="ibDrop" title="올리지 않고 버리기">버리기</button></div>
+      <div class="files">${files.map((f) => `<div class="file">${/pdf/.test(f.type) || /\.pdf$/i.test(f.name) ? "📄" : "🖼"} ${esc(f.name)} <span class="muted small">${(f.size / 1048576).toFixed(1)}MB · ${ago(f.at)}</span></div>`).join("")}</div></div>
+    <div class="card"><h2>어느 채점에 올릴까요? <span class="sub small">이름은 「프린트 제목_학생_1차.pdf」처럼 붙여요</span></h2>
+      <input class="tin" id="ibQ" placeholder="학생 이름 · 프린트 제목 · 코드로 찾기" style="width:100%;max-width:420px" autocomplete="off">
+      <div id="ibList" style="margin-top:8px;max-height:46vh;overflow:auto"></div>
+      <div class="scanwhen" style="margin-top:12px"><b>언제 스캔한 것인가요?</b><span id="ibSeg"></span></div>
+      <div class="row"><button class="btn" id="ibGo" disabled>올리기</button><span class="sub small" id="ibNote"></span></div></div>`;
+  const upd = () => {
+    $("#ibGo").disabled = !(sel && pick);
+    $("#ibNote").textContent = !sel ? "채점을 골라 주세요" : !pick ? "언제 스캔한 것인지 골라 주세요" : "";
+  };
+  const drawSeg = () => {
+    const g = gs.find((x) => x.id === sel);
+    const n = Math.max(2, (g && g.n_rounds) || 1);
+    seg($("#ibSeg"), [...Array.from({ length: n }, (_, i) => [String(i + 1), whenText(i + 1)]), ["u", "확실하지 않음"]], pick, (v) => { pick = v; upd(); });
+    upd();
+  };
+  const drawList = () => {
+    const q = $("#ibQ").value.trim().toLowerCase().replace(/-/g, "");
+    const rows = gs.filter((g) => !q || `${g.name} ${g.title} ${g.code}`.toLowerCase().replace(/-/g, "").includes(q));
+    $("#ibList").innerHTML = rows.length ? `<table class="t">${rows.slice(0, 60).map((g) => `<tr class="click${g.id === sel ? " sel" : ""}" data-g="${g.id}">
+      <td style="width:28px"><input type="radio" name="ibg" ${g.id === sel ? "checked" : ""}></td><td><b>${esc(g.name)}</b></td><td>${esc(g.title)}</td><td class="code">${esc(g.code_fmt)}</td>
+      <td>${statusTag(g.status)}${g.n_rounds > 1 ? ` <span class="tag ses">${g.n_rounds}차</span>` : ""}</td><td class="sub small">${shortWhen(g.updated_at)}</td></tr>`).join("")}</table>`
+      : `<div class="empty">맞는 채점이 없어요</div>`;
+    $$("#ibList tr[data-g]").forEach((tr) => (tr.onclick = () => { sel = +tr.dataset.g; drawList(); drawSeg(); }));
+  };
+  $("#ibQ").oninput = drawList;
+  $("#ibGo").onclick = () => inboxUpload(files, { gid: sel, round: pick === "u" ? null : Number(pick) });
+  $("#ibDrop").onclick = async (e) => {
+    if (!confirmInline(e.currentTarget)) return;
+    await S.inboxDelete(files.map((f) => f.id));
+    toast("받은 파일을 버렸어요");
+    route();
+  };
+  drawList(); drawSeg();
+}
+
 const EV = {
   convert: "변환", register: "프린트 등록", student_add: "학생 추가", student_edit: "학생 수정", grading_start: "채점 시작", grading_resume: "채점 이어서",
   grading_close: "채점 닫음", answers_edit: "정답 입력", answer_attach: "정답 PDF 첨부", targets_add: "대상 추가", print_delete: "프린트 지움",
@@ -1578,8 +1698,12 @@ const pcAuto = () => { pcAutoSync({ view, toast, esc }).catch(() => {}); };
 const onVis = () => { if (document.visibilityState === "visible") pcAuto(); };
 pcAuto();
 document.addEventListener("visibilitychange", onVis);
+S.registerShareWorker();
+const onVisInbox = () => { if (document.visibilityState === "visible") refreshInboxTab(); };
+document.addEventListener("visibilitychange", onVisInbox);
 return () => {
   document.removeEventListener("visibilitychange", onVis);
+  document.removeEventListener("visibilitychange", onVisInbox);
   window.removeEventListener("hashchange", onHash);
   window.removeEventListener("beforeunload", onUnload);
   document.onkeydown = null;

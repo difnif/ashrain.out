@@ -1,6 +1,7 @@
 // 시록고 「강사도구」 — PC 강사도구를 웹으로 옮긴 것 (2026-11-23)
 // 화면은 tt/ui.js(PC 화면 그대로), 자료는 Supabase(tt_* 표 · teacher-tool 저장 공간의 <uid>/tt/), PDF 일은 tt/engine (브라우저 안).
 // 해시: #/tt/grade[/코드[/학생]] · #/tt/convert · #/tt/register · #/tt/class · #/tt/students · #/tt/prints · #/tt/print/코드 · #/tt/export · #/tt/log · #/tt/import
+//       #/tt/inbox (vFlat 등에서 「공유 → 강사도구」로 받은 스캔본 — public/tt-sw.js 가 연다)
 import { useEffect, useRef } from "react";
 import "./tt/tt.css";
 
@@ -17,6 +18,7 @@ const SKELETON = `
     <a href="#/tt/export" data-tab="export">내보내기</a>
     <a href="#/tt/log" data-tab="log">활동 로그</a>
     <a href="#/tt/import" data-tab="import" class="tt-mig">옮겨 오기</a>
+    <a href="#/tt/inbox" data-tab="inbox" id="tt-inboxTab" class="tt-inbox" hidden>받은 스캔본</a>
   </nav>
   <form class="codebox" id="tt-codeForm" autocomplete="off">
     <input id="tt-codeInput" placeholder="프린트 코드" maxlength="9" aria-label="프린트 코드">
