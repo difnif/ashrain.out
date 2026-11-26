@@ -165,6 +165,11 @@
 .tt-root .scanlist .file .x{margin-left:0}
 .tt-root .scanlist .file .x.armed{color:#b91c1c;font-size:13px;font-weight:700;white-space:nowrap}
 .tt-root .modal-box.scanmodal{width:min(760px,96vw)}
+.tt-root .vflat{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 10px;padding:8px 10px;border:1.5px dashed #c7d2fe;border-radius:12px;background:#eef2ff}
+.tt-root .vflat .btn:not(.ghost){background:#4338ca;text-decoration:none}
+.tt-root .tabs a.tt-inbox{background:#fef3c7;color:#92400e}
+.tt-root .tabs a.tt-inbox.on{background:#92400e;color:#fff}
+.tt-root tr.sel td{background:#f0fdfa}
 .tt-root .prog{height:8px;border-radius:99px;background:#e2e8f0;overflow:hidden;margin-top:12px}
 .tt-root .prog i{display:block;height:100%;background:var(--acc)}
 .tt-root .exptbl td input{width:18px;height:18px}

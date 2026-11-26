@@ -9,6 +9,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
     <title>ASH RAIN. Out</title>
+    <script>
+      // 시록고(강사도구)에서만: 안드로이드에서 앱으로 설치하면 vFlat 같은 앱의 「공유 → 강사도구」로 스캔본을 받는다 (public/tt.webmanifest · tt-sw.js)
+      if (location.pathname.indexOf("/seirocco") === 0) {
+        var ttm = document.createElement("link"); ttm.rel = "manifest"; ttm.href = "/tt.webmanifest"; document.head.appendChild(ttm);
+        window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); window.__ttInstallPrompt = e; });
+      }
+    </script>
   </head>
   <body style="margin:0">
     <div id="root"></div>

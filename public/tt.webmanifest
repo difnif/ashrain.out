@@ -1,0 +1,30 @@
+{
+  "name": "애쉬레인 강사도구",
+  "short_name": "강사도구",
+  "description": "채점 · 스캔본 — vFlat 등에서 「공유 → 강사도구」로 스캔본을 바로 올려요",
+  "id": "/seirocco-tt",
+  "start_url": "/seirocco#/tt/grade",
+  "scope": "/seirocco",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "ko",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "/tt-icons/tt-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/tt-icons/tt-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/tt-icons/tt-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "share_target": {
+    "action": "/seirocco/tt-share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "files": [
+        { "name": "scan", "accept": ["application/pdf", ".pdf", "image/jpeg", ".jpg", ".jpeg", "image/png", ".png", "image/webp", ".webp", "image/*"] }
+      ]
+    }
+  }
+}
