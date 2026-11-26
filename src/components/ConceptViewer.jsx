@@ -42,23 +42,27 @@ const CSS = `
 .cv-fm { border: 1px solid var(--bd,#DFE3E8); background: var(--card,#fff); color: var(--mut,#8A929C);
   border-radius: 999px; font-size: 12.5px; font-weight: 800; padding: 6px 13px; cursor: pointer; min-width: 36px; }
 .cv-fm.on { color: var(--ac,#0DA95F); border-color: var(--ac,#0DA95F); }
-.cv-root { min-height: 100vh; padding: 24px 12px; box-sizing: border-box;
+.cv-root { min-height: 100vh; padding: 24px 12px; box-sizing: border-box; overflow-wrap: break-word;
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
+/* 휴대폰 폭 지키기 — 넓은 표 · 긴 낱말(영어 낱말 묶음 · 긴 수 · 식) · 긴 칩이 열 폭을 화면 밖으로 밀지 않게.
+   격자 열은 minmax(0, 1fr) 로(1fr 은 내용의 최소 폭 아래로 줄지 않아 표 하나가 모든 단락을 화면 밖으로 민다),
+   글은 넘칠 때만 아무 데서나 끊고(anywhere — 한글 줄바꿈은 그대로), 표는 표 칸 안에서만 옆으로 민다. */
 .cv-root.cv-review { padding-bottom: 110px; }   /* 복습 모드 고정 하단 바가 꼬리를 가리지 않게 */
 .cv-root * { box-sizing: border-box; }
 .cv-light { background: #EDEFF2; --surface: #F8FAFC; --surface-bd: #E2E8F0; --ink: #1F2937; --mut: #94A3B8;
   --head-bg: linear-gradient(135deg, #115E59, #0F766E 55%, #134E4A); --bubble: #1E293B; --bubble-tx: #F1F5F9; }
 .cv-dark { background: #0B0C0F; --surface: #111318; --surface-bd: #23262D; --ink: #E2E8F0; --mut: #6B7280;
   --head-bg: linear-gradient(135deg, #0D2B28, #123B36 55%, #0A1F1C); --bubble: #262B33; --bubble-tx: #E5E9F0; }
-.cv-wrap { max-width: 768px; margin: 0 auto; }
+.cv-wrap { max-width: 768px; margin: 0 auto; min-width: 0; }
 .cv-cover { position: relative; border-radius: 16px 16px 0 0; overflow: hidden; background: var(--head-bg); }
-.cv-cover-body { position: relative; padding: 22px 20px; color: #fff; }
+.cv-cover-body { position: relative; padding: 22px 20px; color: #fff; overflow-wrap: anywhere; }
 .cv-eyebrow { font-size: 11px; letter-spacing: 2px; color: #99F6E4; font-weight: 700; margin: 0; }
 .cv-crumb { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .cv-backlist { position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,.16);
   border: 1px solid rgba(255,255,255,.4); color: #fff; border-radius: 999px; font-size: 12px;
   font-weight: 700; padding: 6px 12px; cursor: pointer; }
-.cv-pn { display: flex; border: 1px solid rgba(127,127,127,.3); border-radius: 12px; overflow: hidden; }
+.cv-pn { display: flex; border: 1px solid rgba(127,127,127,.3); border-radius: 12px; overflow: hidden;
+  max-width: 768px; margin-left: auto; margin-right: auto; }
 .cv-pnbtn { flex: 1; background: transparent; border: none; padding: 13px 12px; font-size: 12.5px;
   color: var(--ink); cursor: pointer; text-align: left; min-width: 0; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; }
@@ -68,21 +72,23 @@ const CSS = `
 .cv-title { font-size: 25px; font-weight: 800; margin: 4px 0 0; }
 .cv-subtitle { font-size: 13px; color: rgba(240,253,250,.85); margin: 4px 0 0; }
 .cv-main { background: var(--surface); border: 1px solid var(--surface-bd); border-top: none;
-  border-radius: 0 0 16px 16px; padding: 20px 16px; display: grid; grid-template-columns: 1fr; gap: 16px; }
+  border-radius: 0 0 16px 16px; padding: 20px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.cv-main > * { min-width: 0; }
 /* 1행 1박스 원칙 — 반쪽 배치 제거 */
 .cv-bh { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .cv-bh-l { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .cv-icon { width: 28px; height: 28px; border-radius: 9999px; display: flex; align-items: center; justify-content: center;
   font-size: 15px; flex-shrink: 0; border: 1px solid; }
 .cv-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cv-card { overflow: hidden; border-radius: 12px; border: 1px solid; }
+.cv-card { overflow: hidden; border-radius: 12px; border: 1px solid; overflow-wrap: break-word; overflow-wrap: anywhere; }
 .cv-p { line-height: 1.65; margin: 0 0 8px; } .cv-p:last-child { margin-bottom: 0; }
 .cv-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.cv-chip { min-width: 32px; height: 30px; padding: 0 10px; border-radius: 6px; color: #fff;
+.cv-chip { min-width: 32px; min-height: 30px; padding: 5px 10px; border-radius: 6px; color: #fff; box-sizing: border-box;
   font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
-  white-space: nowrap; max-width: 100%; }
+  line-height: 1.35; text-align: center; max-width: 100%; }   /* 긴 칩은 칩 안에서 줄을 바꾼다(전엔 한 줄 고정이라 오른쪽으로 삐져나왔다) */
 .cv-chiplab { margin: 12px 0 0; font-size: 11px; color: var(--mut); }
 .cv-warn { display: flex; gap: 10px; margin-bottom: 10px; } .cv-warn:last-child { margin-bottom: 0; }
+.cv-warn > .cv-p { flex: 1; min-width: 0; }
 .cv-bang { margin-top: 3px; flex-shrink: 0; width: 20px; height: 20px; border-radius: 9999px; color: #fff;
   font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .cv-avwait { margin: 14px 0 2px; height: 120px; border-radius: 14px; background: rgba(127,127,127,.08); }
@@ -107,12 +113,13 @@ const CSS = `
 .cv-plinks { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
 .cv-plink { background: var(--card); border: 1.5px solid var(--ac); border-radius: 10px; color: var(--ac);
   font-size: 12.5px; font-weight: 800; padding: 8px 12px; cursor: pointer; }
-.cv-extwrap { margin-top: 18px; }
-.cv-twrap { overflow-x: auto; margin-top: 8px; }
-.cv-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.cv-extwrap { margin: 18px auto 0; max-width: 768px; }
+.cv-twrap { overflow-x: auto; margin-top: 8px; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.cv-table { width: 100%; border-collapse: collapse; font-size: 12.5px; overflow-wrap: break-word; }
 .cv-table th, .cv-table td { border: 1px solid var(--bd); padding: 5px 9px; color: var(--ink); text-align: left; line-height: 1.5; }
-.cv-table th { background: rgba(127,127,127,.07); font-weight: 800; white-space: nowrap; }
-.cv-table td:first-child { white-space: nowrap; }
+/* 머리줄 · 첫 열(용어)은 낱말을 쪼개지 않는다 — 전엔 한 줄 고정(nowrap)이라 47자짜리 첫 칸이 표를 600px 로 늘렸다 */
+.cv-table th { background: rgba(127,127,127,.07); font-weight: 800; word-break: keep-all; }
+.cv-table td:first-child { word-break: keep-all; min-width: 3.2em; }
 .cv-sp { height: 10px; }
 .cv-qcode { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; color: var(--mut);
   opacity: .8; align-self: center; margin-right: 7px; white-space: nowrap; }
@@ -130,15 +137,15 @@ const CSS = `
 .cv-close { background: none; border: none; color: #94A3B8; cursor: pointer; font-size: 14px; padding: 2px 4px; }
 .cv-q { font-weight: 700; font-size: 14px; margin: 0; } .cv-a { margin: 4px 0 12px; font-size: 13.5px; line-height: 1.6; opacity: .88; }
 .cv-ask { display: flex; gap: 6px; margin-top: 10px; }
-.cv-ask input { flex: 1; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
+.cv-ask input { flex: 1; min-width: 0; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
   border-radius: 8px; color: inherit; font-size: 13px; padding: 8px 10px; outline: none; }
 .cv-ask button { background: #0D9488; color: #fff; border: none; border-radius: 8px; font-size: 12.5px;
   font-weight: 700; padding: 8px 12px; cursor: pointer; }
 .cv-btn { margin-top: 12px; padding: 8px 16px; border-radius: 8px; border: none; color: #fff;
   font-size: 13px; font-weight: 700; cursor: pointer; }
 .cv-anschips { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
-.cv-anschip { padding: 8px 12px; border-radius: 8px; border: 1px solid; font-size: 13.5px; }
-.cv-footer { display: flex; justify-content: space-between; font-size: 11px; color: var(--mut); padding-top: 4px; }
+.cv-anschip { padding: 8px 12px; border-radius: 8px; border: 1px solid; font-size: 13.5px; max-width: 100%; box-sizing: border-box; }
+.cv-footer { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: var(--mut); padding-top: 4px; overflow-wrap: anywhere; }
 mark.cv-hl { border-radius: 4px; padding: 1px 4px; }
 `;
 

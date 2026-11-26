@@ -1,0 +1,112 @@
+{
+  "note": "개념 화면 레이아웃 점검용 — DB에서 폭이 가장 넓게 그려지던 실제 글(긴 낱말 · 긴 칩 · 넓은 표 · 무대 씬 · 움직이는 예시)을 한 개념에 모았다. tests/smoke/concept-layout.smoke.mjs 가 쓴다.",
+  "concept": {
+    "id": "m1-1-90",
+    "unit_id": "m1-1",
+    "title": "레이아웃 점검 — 긴 낱말·넓은 표·긴 칩이 한꺼번에 있는 개념 (Science·Technology·Engineering·Math)",
+    "subtitle": "정사면체(3개씩)·정팔면체(4개씩)·정이십면체(5개씩) · combinations_with_replacement · 3602879701896397/36028797018963968",
+    "sort_order": 90,
+    "cover": null,
+    "ext_figure": null,
+    "ext_panels": [
+      { "id": "e1", "title": "🧭 더 보기 — 신호어 표", "tone": "teal", "kind": "table", "lines": ["**표가 넓으면** 표만 옆으로 밀어 볼 수 있어야 해요 — combinations_with_replacement"],
+        "table": { "headers": ["문장 속 신호어", "판별", "이유 한 줄"], "rows": [
+          ["**가장 작은** 수를 ○와 △로 나누면 모두 떨어짐", "**L**", "나눠지는 쪽 = 배수"],
+          ["n/8, n/12가 **모두 자연수** (n이 분자)", "**L**", "n은 공배수"]
+        ] } }
+    ],
+    "blocks": [
+      { "id": "b1", "type": "text", "label": "왜 필요할까? — 아주 긴 낱말이 섞인 글", "icon": { "kind": "emoji", "value": "🔍" },
+        "style": { "size": "md", "tone": "slate", "width": "full" },
+        "lines": [
+          "**stem**(줄기): 요즘 뉴스의 **stem cell**이 바로 \"**줄기**세포\" — 무엇으로든 자랄 수 있는 뿌리 줄기! \"STEM 교육\"의 STEM은 Science·Technology·Engineering·Math의 약자로 소리만 같은 남남이에요.",
+          "정삼각형 면: **정사면체(3개씩)·정팔면체(4개씩)·정이십면체(5개씩)** / 정사각형 면: **정육면체** / ==정오각형 면: 정십이면체==!",
+          "전 문항 **3중 교차 검산** 통과 — combinations_with_replacement 전수 열거 · 정수해 브루트 포스 · sympy 전개 항 실측이 전부 일치.",
+          "정의(|a||b|cosθ)와 성분(a₁b₁ + a₂b₂)이 **같은 값** — 그래서 **cos θ = (a₁b₁+a₂b₂)/(|a⃗||b⃗|)**: 각도 계산기 완성!",
+          "y = 3602879701896397/36028797018963968x · 0.142857142857142857142857142857… · https://ashrainout.com/walking#/c/m1-1-07?review=1&from=%2Fstudy%2Fconcept",
+          "[[av:m1-1-01-1,m1-1-02-1]]",
+          "**(x−1)(x²+x+1)(x+1)(x²−x+1)** = [(x+y)+(x−y)][(x+y)−(x−y)]"
+        ],
+        "panels": [
+          { "id": "p1", "title": "🧭 신호어 총정리 표", "tone": "amber", "kind": "table", "lines": [],
+            "table": { "headers": ["문장 속 신호어", "판별", "이유 한 줄"], "rows": [
+              ["되도록 **많은** 사람에게 똑같이", "**G**", "사람 수가 두 수를 나눠야 함"],
+              ["**가능한 큰** 정사각형 타일로 채우기", "**G**", "변을 나누는 길이"],
+              ["**동시에** 출발/점멸, **다시 만나는**", "**L**", "주기가 겹치는 순간"],
+              ["**가장 작은** 수를 ○와 △로 나누면 모두 떨어짐", "**L**", "나눠지는 쪽 = 배수"],
+              ["n/8, n/12가 **모두 자연수** (n이 분자)", "**L**", "n은 공배수"]
+            ] } },
+          { "id": "p2", "title": "🧺 판별 50연발 — 신호어 사격 훈련", "tone": "teal", "kind": "table", "lines": ["표가 길면 표만 옆으로 밀려야 해요."],
+            "table": { "headers": ["상황", "신호어", "판별", "답"], "rows": [
+              ["사탕 36개·초콜릿 48개를 남김없이 똑같이 — 최대 몇 명?", "똑같이 · 최대", "G", "**12**"],
+              ["가로 48cm·세로 36cm 종이를 가장 큰 정사각형으로 빈틈없이 자르면 한 변은?", "가장 큰 ~로 자른다", "G", "**12**"],
+              ["톱니 8개·12개의 두 톱니바퀴 — 처음 맞물린 톱니가 다시 만나려면 몇 톱니 뒤?", "처음으로 다시", "L", "**24**"],
+              ["n/8 과 n/12 이 모두 자연수 — 가장 작은 자연수 n은?", "분자에 n → 배수!", "L", "**24**"]
+            ] } },
+          { "id": "p3", "title": "🔍 복습 Ⅰ", "tone": "coral", "kind": "table", "lines": [],
+            "table": { "headers": ["24 = 2³×3 · 36 = 2²×3²", "2의 지수", "3의 지수", "합"], "rows": [
+              ["G(min) + L(max)", "2 + 3", "1 + 2", "= 원래 지수의 합!"],
+              ["그래서", "G×L", "= 2⁵×3³", "= 24×36 ✓"]
+            ] } },
+          { "id": "p4", "title": "🧺 정비례 50연발 — 판정 · 계산 · 결정 · 그래프 · 실생활", "tone": "slate", "kind": "table", "lines": [],
+            "table": { "headers": ["유형", "문제", "열쇠", "답"], "rows": [
+              ["그래프", "y = −2/3x", "a < 0 · |a| = 2/3", "**원점 지나는 직선 — 2 · 4사분면 · 완만함**"],
+              ["그래프", "y = 3602879701896397/36028797018963968x", "a > 0 · |a| = 3602879701896397/36028797018963968", "**원점 지나는 직선 — 1 · 3사분면 · 완만함**"]
+            ] } },
+          { "id": "p5", "title": "🧩 낱말 묶음", "tone": "amber", "kind": "grid", "lines": [],
+            "items": ["**composition**(구성·작문·작곡)", "great-grandfather(증조부)", "**perpendiculum(다림줄!)**:", "combinations_with_replacement", "얼(All)·싸(Sin)·안(TAn)·코(COs)!"] },
+          { "id": "p6", "title": "🔗 이어 보기", "tone": "teal", "lines": ["**단어 가족(품사 변형)** — compose(구성하다·작곡하다) → **composer**(작곡가!) → **composition**(구성·작문·작곡) → **component**(부품) → **composite**(합성의)."],
+            "links": [{ "id": "m1-1-07", "label": "07 최대공약수와 최소공배수의 활용 — 신호어로 판별하기" }, { "id": "m1-1-32", "label": "32 정비례 관계와 그래프" }] }
+        ] },
+      { "id": "b2", "type": "definition", "label": "핵심 정의 — 긴 칩", "icon": { "kind": "emoji", "value": "🎯" },
+        "style": { "size": "md", "tone": "teal", "width": "full" },
+        "term": "항등식", "hanja": "恒等式",
+        "text": "문자에 **어떤 값을 넣어도** 항상 참인 등식 — ax+b = 0 이 x에 대한 항등식이면 a = 0, b = 0 (계수비교법·수치대입법·combinations_with_replacement)",
+        "chipLabel": "이렇게 읽어요",
+        "chips": ["ax+b = 0 이 x에 대한 항등식 → a = 0, b = 0", "1a⃗ = a⃗ · 0a⃗ = 0⃗ · (−1)a⃗ = −a⃗", "반지름 r 인 원이면 sinθ = y/r, cosθ = x/r", "a+bi = c+di ⇔ a = c 이고 b = d (상등)", "3602879701896397/36028797018963968", "하나 1", "둘 2"] },
+      { "id": "b3", "type": "text", "label": "움직이는 그림 — 무대 씬", "icon": { "kind": "emoji", "value": "🎬" },
+        "style": { "size": "md", "tone": "violet", "width": "full" },
+        "lines": ["버스가 시간표 t를 따라 움직여요 — 무대를 누르면 재생돼요.", "[[fig:t]]", "x도 y도 시간 t로 주어질 때 기울기는 두 t미분의 비율 — dy/dx = (dy/dt)/(dx/dt)"],
+        "figure": { "kind": "animset", "scenes": [
+          { "id": "t", "anim": "stage", "label": "시간표로 움직이는 버스", "play": { "speed": 1 },
+            "caption": "x도 y도 시간 t로 주어질 때 기울기는 두 t미분의 비율 — dy/dx = (dy/dt)/(dx/dt)",
+            "tl": [{ "d": 1400, "t": 600, "x": 0.52, "y": 0.38, "ease": "linear", "target": "bus" }, { "d": 500, "t": 1400, "ease": "out", "fade": 1, "target": "tan" }, { "d": 400, "t": 2600, "ease": "out", "fade": 1, "target": "d" }, { "d": 1, "t": 5299, "target": "ax" }],
+            "subs": [{ "t": 0, "text": "x도 y도 시간표 t로 주어져요" }, { "t": 1400, "text": "t로 각각 미분해서" }, { "t": 2600, "text": "비율을 구하면 기울기 — dy/dx = (dy/dt)/(dx/dt)" }, { "t": 3800, "text": "매개변수 미분법" }],
+            "layers": [
+              { "w": 0.005, "id": "ax", "x1": 0.08, "x2": 0.92, "y1": 0.56, "y2": 0.56, "mark": "line" },
+              { "w": 0.005, "id": "ay", "x1": 0.12, "x2": 0.12, "y1": 0.08, "y2": 0.6, "mark": "line" },
+              { "w": 0.16, "x": 0.2, "y": 0.5, "z": 2, "id": "bus", "slot": 36 },
+              { "w": 0.14, "x": 0.84, "y": 0.16, "z": 1, "id": "sp", "slot": 129 },
+              { "x": 0.84, "y": 0.3, "id": "tl", "mark": "label", "size": 0.038, "text": "시간 t", "weight": 800 },
+              { "x": 0.4, "y": 0.1, "id": "xy", "mark": "label", "size": 0.045, "text": "x = f(t), y = g(t)", "weight": 800 },
+              { "x": 0.4, "y": 0.2, "id": "d", "mark": "label", "size": 0.045, "text": "dy/dx = (dy/dt) / (dx/dt)", "color": "accent", "weight": 800, "opacity": 0 },
+              { "w": 0.005, "id": "tan", "x1": 0.38, "x2": 0.66, "y1": 0.5, "y2": 0.26, "dash": true, "mark": "line", "color": "accent", "opacity": 0 }
+            ],
+            "math": {
+              "tl": [{ "d": 400, "t": 500, "fade": 1, "target": "r1" }, { "d": 400, "t": 1300, "fade": 1, "target": "r2" }, { "d": 400, "t": 2100, "fade": 1, "target": "r3" }],
+              "subs": [{ "t": 0, "text": "x도 y도 시간 t로 주어져요" }, { "t": 1300, "text": "각각 t로 미분해서" }, { "t": 2100, "text": "비율을 구하면 기울기" }, { "t": 2900, "text": "매개변수 미분법" }],
+              "layers": [
+                { "x": 0.5, "y": 0.14, "id": "r0", "mark": "label", "size": 0.046, "text": "x = t², y = t³ — 시간표 t" },
+                { "x": 0.5, "y": 0.27, "id": "r1", "mark": "label", "size": 0.046, "text": "dx/dt = 2t,  dy/dt = 3t²", "opacity": 0 },
+                { "x": 0.5, "y": 0.4, "id": "r2", "mark": "label", "size": 0.046, "text": "dy/dx = (dy/dt)/(dx/dt)", "color": "accent", "opacity": 0 },
+                { "x": 0.5, "y": 0.53, "id": "r3", "mark": "label", "size": 0.046, "text": "= 3t²/2t = 3t/2", "color": "accent", "opacity": 0 }
+              ],
+              "caption": "dy/dx = (dy/dt)/(dx/dt)"
+            } }
+        ] } },
+      { "id": "b4", "type": "warning", "label": "주의 — 긴 낱말이 든 경고", "icon": { "kind": "emoji", "value": "⚠️" },
+        "style": { "size": "md", "tone": "coral", "width": "full" },
+        "items": ["**합성함수 = composite function** — ponere 가족의 세 번째 출동(exponent·proposition에 이어) — 그리고 **compose**(작곡하다!— 음들을 함께 놓기)", "x = 4503599627370496/1501199875790165 처럼 끝없는 분수가 나오면 소수 계산이 샌 것 — 정확히 x = 3", "가족(position·postpone·opponent)"] },
+      { "id": "b5", "type": "check", "label": "확인 문제", "icon": { "kind": "emoji", "value": "✅" },
+        "style": { "size": "md", "tone": "teal", "width": "full" },
+        "question": "다음 중 **정비례**인 것을 모두 고르시오: y = 3602879701896397/36028797018963968x, y = x + 1, xy = 6, 2y = 5x",
+        "answer": [{ "group": "정비례", "nums": "y = 3602879701896397/36028797018963968x, 2y = 5x", "tone": "teal" }, { "group": "아님", "nums": "y = x + 1, xy = 6", "tone": "coral" }] },
+      { "id": "b6", "type": "image", "label": "그림 자리", "icon": { "kind": "emoji", "value": "🖼" },
+        "style": { "size": "md", "tone": "slate", "width": "full" }, "caption": "그림이 아직 없을 때 — combinations_with_replacement" }
+    ]
+  },
+  "siblings": [
+    { "id": "m1-1-89", "unit_id": "m1-1", "title": "앞 개념 — 이름이 아주 긴 개념 제목(Science·Technology·Engineering·Math)", "subtitle": "", "sort_order": 89 },
+    { "id": "m1-1-91", "unit_id": "m1-1", "title": "다음 개념 — combinations_with_replacement 로 세는 중복조합", "subtitle": "", "sort_order": 91 }
+  ]
+}

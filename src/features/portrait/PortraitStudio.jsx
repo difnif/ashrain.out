@@ -5,7 +5,7 @@ import { applyRibbedGlass, PRESETS } from "./ribbedGlass";
 // props: theme, onDone(blob)  ← 아바타 저장 훅
 
 const CSS = `
-.pt-root { max-width: 460px; margin: 0 auto; padding: 20px 14px;
+.pt-root { max-width: 460px; margin: 0 auto; padding: 56px 14px 20px;   /* 위 막대가 없는 화면 — 오른쪽 위 다크/라이트 단추 자리를 비운다 */
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
 .pt-root * { box-sizing: border-box; }
 .pt-drop { border: 2px dashed #C3C9D0; border-radius: 14px; padding: 34px 16px; text-align: center;

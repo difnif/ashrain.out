@@ -55,7 +55,8 @@ export const avItem = (id) => AV_BY_ID.get(id) || UNIT_DONE.get(avUnitOf(id))?.[
 const unitsToLoad = (key) => [...new Set(key.split(",").filter((id) => id && !AV_BY_ID.has(id)).map(avUnitOf).filter((u) => u && !UNIT_DONE.has(u)))];
 
 const CSS = `
-.cav { margin: 14px 0 2px; border-radius: 14px; overflow: hidden; border: 1px solid var(--cav-bd); background: var(--cav-bg); }
+.cav { margin: 14px 0 2px; border-radius: 14px; overflow: hidden; border: 1px solid var(--cav-bd); background: var(--cav-bg);
+  container: cav / inline-size; }
 .cav-wait { min-height: 120px; }
 .cav-head { display: flex; align-items: baseline; gap: 8px; padding: 9px 12px 6px; }
 .cav-tag { font-size: 11.5px; font-weight: 800; letter-spacing: .4px; color: var(--cav-ac); white-space: nowrap; }
@@ -67,7 +68,8 @@ const CSS = `
 .cav-stage { position: relative; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
 .cav-stage svg { display: block; width: 100%; height: auto; }
 .cav-hint { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); padding: 6px 13px; border-radius: 999px; font-size: 12px; font-weight: 800;
-  background: var(--cav-hintbg); color: var(--cav-hint); pointer-events: none; white-space: nowrap; animation: cavhint 2.6s ease forwards; }
+  background: var(--cav-hintbg); color: var(--cav-hint); pointer-events: none; white-space: nowrap; animation: cavhint 2.6s ease forwards;
+  max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; }
 @keyframes cavhint { 0% { opacity: 0; } 12% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }   /* 잠깐 알려 주고 사라진다(판을 가리지 않게) */
 .cav-ctl { display: flex; align-items: center; gap: 8px; padding: 7px 10px 9px; }
 .cav-btn { flex-shrink: 0; width: 32px; height: 32px; border-radius: 999px; border: 1px solid var(--cav-bd); background: transparent; color: var(--cav-ink);
@@ -81,6 +83,20 @@ const CSS = `
 .cav-sp { flex-shrink: 0; border: 1px solid var(--cav-bd); background: transparent; color: var(--cav-mut); border-radius: 999px; font-size: 11.5px; font-weight: 800;
   padding: 6px 9px; cursor: pointer; font-family: inherit; min-width: 42px; }
 .cav-sp.on { color: var(--cav-ac); border-color: var(--cav-ac); }
+.cav-sp, .cav-tag { white-space: nowrap; }
+/* 좁은 카드(휴대폰 세로 · 접기 칸 안)에서는 막대를 윗줄 전체로 올리고 단추를 아랫줄에 — 한 줄에 두면 오른쪽 배속 단추가 잘렸다 */
+@container cav (max-width: 290px) {
+  .cav-ctl { flex-wrap: wrap; gap: 4px 6px; padding-top: 4px; }
+  .cav-bar { order: -1; flex: 1 1 100%; min-width: 0; }
+  .cav-sp { min-width: 0; padding: 6px 8px; }
+}
+@supports not (container-type: inline-size) {
+  @media (max-width: 380px) {
+    .cav-ctl { flex-wrap: wrap; gap: 4px 6px; padding-top: 4px; }
+    .cav-bar { order: -1; flex: 1 1 100%; min-width: 0; }
+    .cav-sp { min-width: 0; padding: 6px 8px; }
+  }
+}
 `;
 const VARS = {
   light: { "--cav-bg": "#fbf6ea", "--cav-bd": "#e3d6b8", "--cav-ink": "#3B3021", "--cav-mut": "#7B6C55", "--cav-ac": "#9a6a0c", "--cav-acbg": "rgba(179,122,14,.13)",

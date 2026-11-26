@@ -3,6 +3,7 @@
 // 헌법: 발언권은 독서로 번다. AI 큐레이션은 선별·배치·표제만 — 본문 무수정.
 import { useState } from "react";
 import { Kit, Page, Card, Row, Chip, Tabs } from "../shared/demo";
+import ThemeToggle from "../components/ThemeToggle";
 
 const FEED = [
   { k: "독후감", t: "358년을 기다린 한 줄의 증명", s: "『페르마의 마지막 정리』 · 라별의등대", tone: "ac" },
@@ -90,12 +91,15 @@ export default function News({ hash }) {
       <Kit />
       <div className="ap-wrap">
         <Page title={title}
-          right={sub === "" ? (
-            <span style={{ display: "flex", gap: 6 }}>
-              <button className="d-btn" onClick={() => (location.hash = "#/news/tips")}>팁</button>
-              <button className="d-btn pri" onClick={() => (location.hash = "#/news/write")}>쓰기</button>
-            </span>
-          ) : null}>
+          right={<>
+            {sub === "" && (
+              <span style={{ display: "flex", gap: 6 }}>
+                <button className="d-btn" onClick={() => (location.hash = "#/news/tips")}>팁</button>
+                <button className="d-btn pri" onClick={() => (location.hash = "#/news/write")}>쓰기</button>
+              </span>
+            )}
+            <ThemeToggle className="d-btn d-thm" />
+          </>}>
           {sub === "post" ? <Post /> : sub === "write" ? <Write /> : sub === "tips" ? <TipsPage /> : <Feed />}
           {sub === "" && <p className="d-note">발언권은 독서로 벌어요 — 메인 신문이 유일한 광장이에요.</p>}
         </Page>

@@ -44,6 +44,7 @@ const CSS = `
 .d-btn{background:var(--card);border:1px solid var(--bd);border-radius:10px;color:var(--ink);font-size:12.5px;font-weight:700;padding:9px 13px;cursor:pointer;font-family:inherit}
 .d-btn.pri{background:var(--ac);border-color:var(--ac);color:var(--bg)}
 .d-btn.full{width:100%}
+.d-thm{width:36px;height:36px;padding:0;flex:none}
 .d-in{width:100%;box-sizing:border-box;background:var(--in);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;color:var(--ink);font-family:inherit;font-size:13.5px}
 textarea.d-in{min-height:84px;resize:vertical}
 .d-lbl{font-size:12px;color:var(--mut);font-weight:700;margin:4px 0 6px}

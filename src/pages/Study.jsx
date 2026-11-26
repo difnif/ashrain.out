@@ -26,7 +26,7 @@ const SchoolExams = lazy(() => import("./mock/SchoolExams"));
 import "./solve/solve.css";
 
 const CSS = `
-.st-root { min-height: 100vh; padding: 12px 14px 96px; box-sizing: border-box; background: var(--pbg);
+.st-root { min-height: 100vh; padding: 12px 14px 96px; box-sizing: border-box; background: var(--pbg); overflow-wrap: break-word;
   font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; color: var(--text); }
 .st-root * { box-sizing: border-box; }
 .st-light { --pbg:#EDEFF2; --text:#1F2937; --muted:#8A929C; --surface:#fff; --surface2:#F4F6F8; --surface3:#E7EAEE;
@@ -54,8 +54,8 @@ const CSS = `
 .st-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 15px; margin-bottom: 10px; }
 .st-empty { background: var(--surface2); border: 1px dashed var(--border); border-radius: 12px; padding: 16px 12px;
   font-size: 12.5px; color: var(--muted); line-height: 1.65; text-align: center; }
-.st-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-@media (max-width: 380px) { .st-grid { grid-template-columns: 1fr; } }
+.st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 380px) { .st-grid { grid-template-columns: minmax(0, 1fr); } }
 .st-tile { display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--border);
   border-radius: 12px; padding: 12px; text-align: left; color: var(--text); cursor: pointer; font-family: inherit; }
 .st-tile .tt { font-size: 13.5px; font-weight: 800; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -86,7 +86,7 @@ const CSS = `
 .st-crumb button { background: none; border: none; padding: 0; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; }
 .st-crumb b { font-weight: 800; }
 .st-cdesc { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 0 2px 4px; }
-.st-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.st-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(76px, 100%), 1fr)); gap: 8px; }
 .st-ic { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 4px 9px; background: var(--surface);
   border: 1px solid var(--border); border-radius: 16px; color: var(--text); cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; }
 .st-ic:active { transform: scale(.97); }
@@ -132,13 +132,13 @@ const CSS = `
 .st-per-h { display: flex; align-items: baseline; gap: 8px; width: 100%; border: 0; background: none; color: inherit; font: inherit; padding: 8px 2px; cursor: pointer; }
 .st-per-h b { font-size: 15px; font-weight: 800; }
 .st-per-h small { flex: 1; text-align: left; font-size: 12px; color: var(--muted); }
-.st-wk { display: grid; grid-template-columns: 3.6em 1fr; gap: 8px; align-items: stretch; padding: 6px 0; border-top: 1px solid var(--border); }
+.st-wk { display: grid; grid-template-columns: 3.6em minmax(0, 1fr); gap: 8px; align-items: stretch; padding: 6px 0; border-top: 1px solid var(--border); }
 .st-wk .wl { display: flex; flex-direction: column; justify-content: center; }
 .st-wk .wl b { font-size: 14px; font-weight: 800; }
 .st-wk .wl small { font-size: 10.5px; color: var(--muted); }
 .st-wk .wl em { font-style: normal; font-size: 10px; font-weight: 800; color: var(--accent); }
 .st-wk.now { background: var(--surface2); border-radius: 12px; padding: 6px; }
-.st-wk .ws { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; min-width: 0; }
+.st-wk .ws { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; min-width: 0; }
 .st-sess { position: relative; display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; border: 1px solid var(--border);
   background: var(--surface); color: inherit; border-radius: 12px; padding: 8px 9px; font: inherit; cursor: pointer; }
 .st-sess .k { font-size: 10.5px; font-weight: 800; color: var(--muted); display: flex; align-items: center; gap: 4px; }

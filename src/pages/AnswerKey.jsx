@@ -22,10 +22,10 @@ const CSS = `
 .ak-top h1 { font-size: 19px; font-weight: 800; margin: 0; letter-spacing: -.01em; }
 .ak-top p { color: var(--mut); font-size: 12.5px; margin: 1px 0 0; }
 .ak-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
-  margin: 10px -16px 0; padding: 10px 16px; border-bottom: 1px solid var(--bd); display: grid; gap: 10px; }
-.ak-seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--soft); border-radius: 12px; padding: 3px; gap: 3px; }
+  margin: 10px -16px 0; padding: 10px 16px; border-bottom: 1px solid var(--bd); display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.ak-seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--soft); border-radius: 12px; padding: 3px; gap: 3px; }
 .ak-seg button { border: 0; background: transparent; color: var(--mut); font: inherit; font-weight: 700; font-size: 13.5px;
-  line-height: 1.25; padding: 9px 6px; border-radius: 9px; cursor: pointer; min-width: 0; }
+  line-height: 1.25; padding: 9px 6px; border-radius: 9px; cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
 .ak-seg button small { display: block; font-weight: 400; font-size: 11px; opacity: .85; }
 .ak-seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
 .ak-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }

@@ -11,6 +11,8 @@ import { BETA } from "../lib/beta";
 import { WellButton, WellSheet, useWellCfg, WELL_CSS } from "./Well";
 import { runningJobs, unseenJobs } from "../lib/photoJobs";
 import { warmStudy } from "../lib/studyCache";
+import { useThemeHost } from "../lib/theme";
+import { ThemeButton } from "./ThemeToggle";
 
 // 게시판 탭은 「기록」으로 대체(사용자 확정 2026-09-20) — 게시판은 종성 작업 때 정교화 후 재공개.
 export const TABS = [
@@ -72,6 +74,7 @@ let ddayAt = 0;
 export function ShellTop({ theme, hash }) {
   const [me, setMe] = useState(() => (authCache === true ? { isAdmin: roleCache?.isAdmin || false } : authCache));
   const [dday, setDday] = useState(() => (ddayCache === undefined ? null : ddayCache));
+  useThemeHost(me !== false);   // 상단 막대의 다크/라이트 단추가 있으니 떠 있는 단추는 숨긴다(로그인 전엔 그리지 않음)
   useEffect(() => {
     let alive = true;
     supabase.auth.getSession().then(async ({ data }) => {
@@ -116,6 +119,7 @@ export function ShellTop({ theme, hash }) {
             <span className="sh-dday" title={dday.title}>{dday.days === 0 ? "D-DAY" : `D-${dday.days}`}</span>
           )}
           <span className="sh-sp" />
+          <ThemeButton className="sh-my" />
           <button className="sh-my" title="마이페이지" onClick={() => (location.hash = "#/me")}>👤</button>
         </div>
         {me.isAdmin && (
@@ -246,10 +250,11 @@ const SH_CSS = `
 .sh-row { font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
 .sh-tabs-in { max-width: 520px; margin: 0 auto; display: flex; align-items: stretch;
   height: var(--wt-h, 52px); padding: 0 10px; }
-.sh-tab { -webkit-tap-highlight-color: transparent; flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center;
+.sh-tab { -webkit-tap-highlight-color: transparent; flex: 1; min-width: 0; background: none; border: none; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 1px; color: var(--mut); cursor: pointer; padding: 3px 0 4px; font-family: inherit; }
 .sh-tab .ic { font-size: calc(17px * var(--wt-s, 1)); line-height: 1; position: relative; }
-.sh-tab .lb { font-size: calc(9.5px * var(--wt-s, 1)); font-weight: 800; }
+.sh-tab .lb { font-size: calc(9.5px * var(--wt-s, 1)); font-weight: 800; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 340px) { .sh-tabs-in { padding: 0 4px; } }   /* 갤럭시 폴드 겉화면(280) · 320 폰 — 탭 넷과 우물이 한 줄에 들어가게 */
 .sh-tab.on { color: var(--ac); }
 .sh-dot { position: absolute; top: -2px; right: -7px; width: 8px; height: 8px; border-radius: 999px; }
 .sh-dot.new { background: #EF4444; }

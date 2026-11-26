@@ -27,6 +27,7 @@
 //       처음부터 다시 튼다. 장면마다 기기에 기억한다. 장면은 render(mode, t, C, P) 의 P 로 설정을 받는다.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { useThemeHost } from "../lib/theme";
 import { PAIRS, GROUPS } from "../features/display/pairs";
 import { PALETTE, W, H, SceneTitle, clearMeasureCache } from "../features/display/draw";
 import { E, clamp } from "../features/display/core";
@@ -99,6 +100,7 @@ export default function AdminDisplay() {
 
 /** av: null(교실 모니터) | { key, cat, frame, grp, title } — 학생앱 시청각 학습(AvPlayer) */
 export function Stage({ av = null }) {
+  useThemeHost();   // 무대는 제 밝기 단추(조작 막대)와 오른쪽 위 액자·학년 단추가 있다 — 앱의 떠 있는 테마 단추는 숨긴다
   const [mode, setMode] = useState(() => (lsGet(LS.mode, "e") === "m" ? "m" : "e"));
   const [idx, setIdx] = useState(() => {
     const n = Number(lsGet(LS.idx, 0));

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { useTheme } from "./lib/theme";
+import { ThemeDock } from "./components/ThemeToggle";
 import SplashAuth from "./components/SplashAuth";
 import HomeDash from "./components/HomeDash";
 // P0 셸 — 관문·경로층 라우터
@@ -527,5 +528,10 @@ function PathRouter() {
 }
 
 export default function App() {
-  return <PathRouter />;
+  return (
+    <>
+      <PathRouter />
+      <ThemeDock />{/* 위 막대가 없는 화면에만 오른쪽 위 다크/라이트 단추 (components/ThemeToggle.jsx) */}
+    </>
+  );
 }

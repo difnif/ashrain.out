@@ -1,6 +1,7 @@
 // 문제풀이 화면 공용 껍데기 — 상단(뒤로·제목·오른쪽 슬롯) + 본문
 import { useEffect, useState } from "react";
 import "./solve.css";
+import ThemeToggle from "../../components/ThemeToggle";
 
 export function useToast() {
   const [msg, setMsg] = useState(null);
@@ -17,6 +18,7 @@ export default function SolveShell({ title, sub, back = "#/study/practice", righ
         <h1 className="sv-h1">{title}</h1>
         <span className="sv-sp" />
         {right}
+        <ThemeToggle className="sv-back sv-thm" />
       </div>
       {sub && <p className="sv-sub">{sub}</p>}
       {children}

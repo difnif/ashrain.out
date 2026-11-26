@@ -397,7 +397,7 @@ export default function PracticeViewer({ conceptId }) {
 function Style() {
   return (
     <style>{`
-      .pv-wrap{max-width:640px;margin:0 auto;padding:16px 14px 60px;color:var(--text,#1c1c1e);
+      .pv-wrap{max-width:640px;margin:0 auto;padding:16px 14px 60px;color:var(--text,#1c1c1e);overflow-wrap:break-word;
         font-family:'Pretendard Variable',Pretendard,'Malgun Gothic',system-ui,sans-serif}
       .pv-flash{position:fixed;inset:0;pointer-events:none;z-index:50;animation:pvFlash .55s ease-out}
       .pv-flash-no{background:radial-gradient(circle at 50% 40%, rgba(220,38,38,.28), rgba(220,38,38,.12) 60%, transparent)}
@@ -419,18 +419,18 @@ function Style() {
       .pv-chip.on{border-color:var(--accent,#0DA95F);color:var(--text,#111);box-shadow:0 0 0 2px var(--accent,#0DA95F) inset}
       .pv-chip.done{background:var(--accent,#0DA95F);border-color:var(--accent,#0DA95F);color:#fff}
       .pv-chip.miss{border-color:var(--bad,#dc2626);color:var(--bad,#dc2626)}
-      .pv-card{background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:16px;padding:16px}
+      .pv-card{background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:16px;padding:16px;overflow-wrap:anywhere}
       .pv-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
       .pv-lv{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px}
       .lv-기본{background:#DCFCE7;color:#166534}.lv-표준{background:#DBEAFE;color:#1E40AF}.lv-상{background:#FEE2E2;color:#991B1B}
       .pv-kind{font-size:12px;color:var(--muted,#8a8f98);font-weight:700}
       .pv-review{font-size:11px;background:var(--surface2,#f1f2f4);color:var(--muted,#6b7280);
         padding:3px 8px;border-radius:999px}
-      .pv-text{font-size:16.5px;line-height:2.2;margin:0 0 6px;word-break:keep-all}
+      .pv-text{font-size:16.5px;line-height:2.2;margin:0 0 6px;word-break:keep-all;overflow-wrap:anywhere}
       .pv-seg{border-radius:5px;padding:1px 2px;transition:background .35s}
       .pv-choices{display:flex;flex-direction:column;gap:6px;margin:8px 0 4px;
         border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:12px 14px}
-      .pv-choice{font-size:15px;line-height:1.6;text-align:left;color:inherit;background:none;border:1px solid transparent;
+      .pv-choice{font-size:15px;line-height:1.6;text-align:left;color:inherit;background:none;border:1px solid transparent;max-width:calc(100% + 16px);overflow-wrap:anywhere;
         border-radius:9px;padding:4px 8px;margin:0 -8px;font:inherit}
       .pv-choices.pick .pv-choice{cursor:pointer}
       .pv-choices.pick .pv-choice:hover{background:var(--surface2,#f4f6f8)}
