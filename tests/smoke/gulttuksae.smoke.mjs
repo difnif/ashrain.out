@@ -1,7 +1,8 @@
 // 굴뚝새(시록고 #/games) 스모크 — 게임과 시록고의 게임 자리를 실제 브라우저로 해 본다.
 //   node tests/smoke/gulttuksae.smoke.mjs [--headed]     빌드 후(dist/ 필요): 강사 권한 · 더보기 → 게임 · iframe · 테마 · 저장 · 전체 화면 + 게임 검사
 //   node tests/smoke/gulttuksae.smoke.mjs --game-only    빌드 없이 게임 HTML 한 장만 바로 열어 게임 검사
-// 준비: playwright + Chromium(없으면 설치된 Chrome). 1 ~ 2분 걸린다. 시간은 게임의 시험 갈고리(__gtDebug.jump)로 앞당긴다.
+// 준비: playwright + Chromium(없으면 설치된 Chrome). 1 ~ 2분 걸린다. 시간은 게임의 시험 갈고리(__gtDebug.jump)로 앞당기고,
+//   표지 · 책장 · 길 긋기 · 손잡이 · 둥지 끌기는 진짜 마우스로, 장치 속 손놀림은 갈고리(pull · drill · flick · lever)로 한다.
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -74,245 +75,226 @@ async function mockSupabase(page) {
 let pass = 0, fail = 0;
 const ok = (c, name) => { if (c) { pass++; console.log("ok   -", name); } else { fail++; console.log("FAIL -", name); } };
 
-// ── 게임 검사 — fr: 게임 문서가 든 프레임 ──
-async function gameChecks(fr, shot) {
+// ── 게임 검사 — fr: 게임 문서가 든 프레임, page: 마우스를 쥔 쪽, off: 프레임의 자리 ──
+async function gameChecks(fr, shot, page, off) {
   const S = () => fr.evaluate(() => window.__gulttuksae());
   const dbg = (fn, ...a) => fr.evaluate(([fn, a]) => window.__gtDebug[fn](...a), [fn, a]);
+  const st = (expr, arg) => fr.evaluate(expr, arg);
   const until = async (pred, ms = 6000) => { const t0 = Date.now(); let s; while (Date.now() - t0 < ms) { s = await S(); if (pred(s)) return s; await fr.waitForTimeout(60); } return s; };
-  const answer = async (good) => { await dbg("answer", good); await fr.waitForTimeout(40); await dbg("next"); };
-  const firstLens = (s) => Object.keys(s.enc.lenses)[0];
+  const click = (p) => page.mouse.click(off.x + p.x, off.y + p.y);
+  const drag = async (pts, wait = 16) => { await page.mouse.move(off.x + pts[0].x, off.y + pts[0].y); await page.mouse.down(); for (const q of pts.slice(1)) { await page.mouse.move(off.x + q.x, off.y + q.y); await fr.waitForTimeout(wait); } await page.mouse.up(); };
+  const line = (a, b, n = 12) => Array.from({ length: n + 1 }, (_, i) => ({ x: a.x + (b.x - a.x) * i / n, y: a.y + (b.y - a.y) * i / n }));
+  const vp = await fr.evaluate(() => ({ w: innerWidth, h: innerHeight }));
+  const mid = { x: vp.w / 2, y: vp.h / 2 };
 
-  // G. 시작 화면
+  // G. 표지 — 글자 없는 그림 한 장
   await fr.locator("#lobby").waitFor({ timeout: 20000 });
+  await fr.waitForTimeout(300);
   let s = await S();
-  ok((await fr.locator('#levelSeg, [data-level]').count()) === 0 && s.params.dayLen === 20 && !("dayAce" in s.params), "G1 난이도 단계가 없다 — 같은 벌판, 다른 물음(오픈 월드) · 하루 20초 하나");
-  ok(s.self.name === "wren" && /굴뚝새/.test(await fr.locator("#selfCard").innerText()), "G2 처음 자아는 가운데 — 굴뚝새");
-  await fr.waitForTimeout(400);
-  ok(/시계는 멈추지 않는다/.test(await fr.locator("#lvDesc").innerText()) && (await dbg("heroLum")) > 100 && (await fr.locator("#heroLine").innerText()).length > 4, "G3 시작 화면 — 눈벌판 풍경(덤불 위 굴뚝새)과 한 줄");
+  const words = await fr.evaluate(() => document.body.innerText.replace(/\s+/g, ""));
+  ok(s.v === 3 && s.scene === "cover" && words === "" && (await fr.locator("#levelSeg, [data-level], #btnNew, #helpOv").count()) === 0, "G1 표지 — 글자 · 난이도 · 설명 없이 책 한 권");
+  ok(s.params.dayLen === 15 && s.self.name === "wren" && !s.cur, "G2 하루 15초 · 처음의 나는 가운데(굴뚝새)");
+  ok((await dbg("lum", vp.w * 0.4, vp.h * 0.4, vp.w * 0.6, vp.h * 0.6)) > 8, "G3 캔버스에 표지 그림이 그려진다");
 
-  // N. 새 겨울 — 도움말(시계 멈춤) → 벌판 입구의 첫 물음
-  await fr.locator("#btnNew").click();
-  await fr.locator("#helpOv").waitFor({ state: "visible", timeout: 5000 });
-  ok((await S()).paused === true, "N1 첫 겨울엔 도움말이 열리고 시계가 멈춘다");
-  await fr.locator("#hClose").click();
+  // N. 책장을 넘기면 — 노래의 터전 → 빈 종이에서 세상이 생긴다
+  await click(mid);
   s = await S();
-  ok(s.mode === "enc" && s.enc.type === "start" && s.enc.pieces.length === 3
-    && new Set(s.enc.pieces.map((p) => p.lens)).size === 3 && new Set(s.enc.pieces.map((p) => p.form)).size === 3, "N2 벌판 입구 — 서로 다른 렌즈 · 형식의 문제 조각 셋");
-  const drawn = await fr.evaluate(() => { const c = document.getElementById("map"), g = c.getContext("2d"); const d = g.getImageData(c.width / 2 | 0, c.height / 2 | 0, 1, 1).data; return c.width > 100 && d[3] > 0; });
-  ok(drawn, "N3 지도(스페이스)를 그린다 — 풍경 · 안개 · 길");
-  // ST. 이야기 — 자막 · 장면 · 일행
-  await fr.waitForFunction(() => document.getElementById("narr").classList.contains("on"), null, { timeout: 8000 }).catch(() => {});
+  ok(s.turning === true, "N1 표지를 누르면 책장이 넘어간다");
+  s = await until((x) => x.scene === "legend" && !x.turning, 4000);
+  ok(s.scene === "legend" && (await fr.evaluate(() => document.body.innerText.replace(/\s+/g, ""))) === "", "N2 첫 장 — 글 없이 굴뚝새의 터전(지평선 · 덤불 · 눈)을 그린다");
+  await fr.waitForTimeout(500); await shot("gt-legend");
+  await click(mid); await fr.waitForTimeout(150); await click(mid);
+  s = await until((x) => x.scene === "world" && !x.turning, 4000);
+  ok(s.scene === "world" && s.forming < 0.7 && s.hud.length === 0, "N3 한 장 더 — 빈 종이에서 세상이 번져 나온다(손잡이도 아직 없다)");
+  s = await until((x) => x.forming >= 1, 8000);
+  ok(s.forming >= 1 && ["wood", "food", "hope", "people", "pause", "leave"].every((k) => s.hud.includes(k)), "N4 세 사람이 둥지를 지으면 살림(그림 + 숫자)과 손잡이가 떠오른다");
+  const d0 = s.day; await fr.waitForTimeout(800); s = await S();
+  ok(s.day > d0 && !s.walking && s.paths === 0, `N5 시계는 저절로 흐른다(${d0} → ${s.day}일)`);
+  await click(await dbg("hudPx", "pause")); const dp = (await S()).day; await fr.waitForTimeout(400); s = await S();
+  ok(s.paused && Math.abs(s.day - dp) < 1e-3, "N6 멈춤 — 시계가 선다");
+  await click(await dbg("hudPx", "pause"));
   s = await S();
-  ok(s.story >= 3 && /벌판|봄 나루/.test(s.narr), "ST1 겨울이 열리면 이야기가 지도 위 자막으로 흐른다");
-  ok((await fr.locator("#panel .scene .crew").count()) === 2 && (await fr.locator("#panel .scene .sc-intro").innerText()).length > 10, "ST2 조우마다 장면 한 줄과 일행 두 사람의 말");
-  const d0 = s.day; await fr.waitForTimeout(900); s = await S();
-  ok(s.day > d0, `N4 시계는 저절로 흐른다(${d0} → ${s.day}일)`);
-  await fr.locator("#btnPause").click(); const dp = (await S()).day; await fr.waitForTimeout(500);
-  s = await S();
-  ok(s.paused && Math.abs(s.day - dp) < 0.001 && await fr.locator("#pauseCover").isVisible(), "N5 멈추면 시계가 서고 근거 · 문항이 가려진다");
-  await fr.locator("#btnResumeClock").click();
-  // 하루의 빛 — 같은 날의 밤과 한낮
-  const dN = Math.floor((await S()).day);
-  await dbg("setDay", dN + 0.92); await fr.waitForTimeout(250);
-  const night = await dbg("lum", 0, 0, 260, 260);
-  await dbg("setDay", dN + 0.4); await fr.waitForTimeout(250);
-  const noon = await dbg("lum", 0, 0, 260, 260);
-  ok(night < noon * 0.85 && (await S()).tod === "day", `V4 밤이 오면 지도가 어두워진다(밝기 ${Math.round(noon)} → ${Math.round(night)})`);
-  const iHow = s.enc.pieces.findIndex((p) => p.form === "how"), iBad = s.enc.pieces.findIndex((p) => p.form !== "how");
-  await fr.locator(`[data-act="start"][data-i="${iHow}"]`).click();
-  await fr.locator("#probOv").waitFor({ state: "visible" });
-  // 입력 검사 — 빈칸 · 잘못된 값은 넘어가지 않는다
-  const kind = (await S()).problem.type;
-  await fr.locator("#pOk").click();
-  ok((await fr.locator("#pErr").innerText()).length > 0 && (await S()).problem.done === false, "V1 빈 답은 넘어가지 않고 알려 준다");
-  if (kind !== "choice") {
-    await fr.locator("#pA").fill("abc"); await fr.locator("#pOk").click();
-    ok(/숫자/.test(await fr.locator("#pErr").innerText()) && (await S()).problem.done === false, "V2 숫자가 아니면 알려 준다");
-  } else ok(true, "V2 (고르기 문항이라 건너뜀)");
-  ok(await fr.evaluate(() => [window.__gtDebug.parse("2/3"), window.__gtDebug.parse("−6"), window.__gtDebug.parse("7.5"), window.__gtDebug.parse("x")]).then((v) => Math.abs(v[0] - 2 / 3) < 1e-9 && v[1] === -6 && v[2] === 7.5 && Number.isNaN(v[3])), "V3 분수 2/3 · 음수 −6 · 소수 7.5 를 읽는다");
-  const jeong0 = (await S()).res.jeong;
-  await answer(true);
-  s = await S();
-  ok(s.enc.pieces[iHow].done === "ok" && s.self.A < 0 && s.res.jeong > jeong0 + 1.2, `N6 첫 물음(어떻게?)을 맞히면 씨앗 — 자아가 '어떻게' 쪽(A ${s.self.A}) · 정성 +1.5`);
-  await fr.locator(`[data-act="start"][data-i="${iBad}"]`).click();
-  await answer(false);
-  s = await S();
-  ok(s.weathers.length === 1, "N7 첫 오답은 첫 날씨가 된다");
-  await shot("gt-start");
-  await fr.locator('[data-act="decide"][data-opt="go"]').click();
-  s = await until((x) => x.mode === "route");
-  ok(s.mode === "route" && s.next.length >= 2 && s.next.length <= 3, `N8 길을 나서면 갈 곳을 고른다(${s.next.length}곳)`);
+  ok(!s.paused, "N7 다시 누르면 흐른다");
 
-  // T. 이동 → 조우
-  const pick = s.next.find((n) => n.type === "sea") || s.next[0];
-  const pos = await dbg("nodeRel", pick.id);
-  await fr.locator("#map").click({ position: pos });
-  s = await S();
-  ok(s.mode === "travel" && s.travel.days >= 1, "T1 지도에서 자리를 누르면 그쪽으로 떠난다");
-  await dbg("jump", s.travel.days + 0.05);
-  s = await until((x) => x.mode === "enc");
-  ok(s.mode === "enc" && s.enc.type === pick.type && Object.values(s.enc.lenses).every((l) => l.E === 0), `T2 도착 — ${pick.type} 조우, 근거는 날것부터`);
-  ok((await fr.locator("#chap.on").count()) === 1 && (await fr.locator("#chapT").innerText()).length > 0 && /마디/.test(await fr.locator("#chapK").innerText()), "ST3 도착하면 마디 제목이 지도 위에 뜬다");
-  await shot("gt-enc");
-  const L0 = firstLens(s), opt0 = s.enc.opts.find((o) => o.lo < 1 && o.hi - o.lo > 0.1) || s.enc.opts[0];
-  ok(opt0.lo <= opt0.p && opt0.p <= opt0.hi, "T3 결정의 성공률은 폭으로 보인다(참값은 그 안)");
-  const w0 = opt0.hi - opt0.lo, p0 = opt0.p;
-  await fr.locator(`[data-act="ask"][data-lens="${L0}"][data-form="how"]`).click();
-  await answer(true);
-  s = await S();
-  const opt1 = s.enc.opts.find((o) => o.id === opt0.id);
-  ok(s.enc.lenses[L0].I > 0 && s.roads >= 1, "T4 맞히면 읽어 낸 만큼 근거가 단단해지고 길이 난다");
-  ok(s.fx.includes("road"), "FX1 길이 나면 금빛 고리가 퍼진다");
-  ok(opt1.hi - opt1.lo < w0 - 0.01 || p0 >= 0.96, `T5 근거가 단단해지면 폭이 좁아진다(${Math.round(w0 * 100)} → ${Math.round((opt1.hi - opt1.lo) * 100)}%p)`);
-  const L1 = Object.keys(s.enc.lenses)[1];
-  const j1 = s.res.jeong;
-  await fr.locator(`[data-act="up"][data-lens="${L1}"]`).click();
-  s = await S();
-  ok(s.enc.lenses[L1].up && s.res.jeong < j1, "T6 다듬기 — 정성을 쓰고 시간이 걸린다");
-  await dbg("jump", 0.6);
-  s = await until((x) => x.enc && x.enc.lenses[L1].E === 1);
-  ok(s.enc.lenses[L1].E === 1, "T7 시간이 지나면 근거가 '정리'로 친절해진다");
-  const pBefore = s.enc.opts.find((o) => o.id === opt0.id).p;
-  const L2 = Object.keys(s.enc.lenses)[2];
-  await dbg("setRes", "jeong", 6);
-  await fr.locator(`[data-act="ask"][data-lens="${L2}"][data-form="what"]`).click();
-  const hb = fr.locator("#pHintBuy");
-  if (await hb.count()) {
-    const j0 = (await S()).res.jeong; await hb.click(); s = await S();
-    ok(await fr.locator("#pHint").isVisible() && s.res.jeong < j0 - 0.4, "H1 실마리 보기 — 정성을 내면 실마리가 보인다");
-  } else ok(false, "H1 실마리 보기 단추가 없다");
-  await answer(false);
-  s = await S();
-  ok(s.weathers.some((w) => w.type === pick.type && w.lens === L2), "T8 틀리면 그 조우 · 렌즈의 날씨(오개념 돌풍)가 생긴다");
-  const u0 = s.res.unique;
-  await fr.locator(`[data-act="ai"][data-lens="${L2}"]`).click();
-  s = await S();
-  ok(s.enc.lenses[L2].E === 3 && s.enc.lenses[L2].ai && s.res.unique < u0 - 5 && s.self.C < 0, "T9 독수리 — 가장 친절한 근거를 바로, 대신 고유함이 닳고 자아가 '기대기' 쪽으로");
-  ok(s.fx.includes("eagle") && /독수리/.test(s.lastStory), "FX2 독수리가 그림자를 드리우며 지나가고, 이야기에 남는다");
-  await shot("gt-enc2");
-  ok(pBefore > 0, "T10 결정 막대가 계속 계산된다");
+  // V. 하루의 빛
+  const Wr = (await dbg("layout")).Wr, box = [Wr.x, Wr.y, Wr.x + Wr.w, Wr.y + Wr.h];
+  const dN = Math.floor(s.day);
+  await dbg("setDay", dN + 0.92); await fr.waitForTimeout(250); const night = await dbg("lum", ...box);
+  await dbg("setDay", dN + 0.4); await fr.waitForTimeout(250); const noon = await dbg("lum", ...box);
+  ok(night < noon * 0.85 && (await S()).tod === "day", `V1 밤이 오면 그림이 어두워진다(밝기 ${Math.round(noon)} → ${Math.round(night)})`);
+  await dbg("setDay", dN + 0.3);
 
-  // S. 자아 — 이름 · 질문 값의 종류
-  ok((await dbg("setSelf", 0, 0, 0)) === "wren" && (await dbg("setSelf", 0.3, 0.3)) === "wren" && (await dbg("setSelf", 0.35, 0.35)) === "olppaemi" && (await dbg("setSelf", 0.3, 0.3)) === "olppaemi",
+  // P. 길 — 손가락으로 선을 긋는다
+  const hp = await dbg("homePx"), fp = await dbg("sitePx", "forestA");
+  await drag(line(hp, fp));
+  s = await S();
+  ok(s.paths === 1 && s.walking, "P1 집에서 선을 그으면 그 길을 걷는다(입력 칸 없이)");
+  const rv0 = s.reveal;
+  await dbg("arrive"); s = await S();
+  ok(s.sites.forestA.linked && s.reveal > rv0, `P2 걸은 만큼 세상이 드러나고(${rv0} → ${s.reveal}) 숲에 닿으면 이어진다`);
+  await dbg("jump", 3);
+  ok(await st(() => { const g = window.__gtDebug.state().lastGain; return !!g && g.kind === "wood"; }), "P3 이어진 숲에서 장작이 길을 따라 흘러온다");
+  await shot("gt-path");
+
+  // D1. 숲 — 뽑기 통(숨은 규칙: 끝 빛깔)
+  await click(fp); await fr.waitForTimeout(400);
+  s = await S();
+  ok(s.dev === "forestA", "D1 숲을 누르면 장치가 펼쳐진다(뽑기 통 둘)");
+  const dd = s.day; await fr.waitForTimeout(500);
+  ok(Math.abs((await S()).day - dd) < 1e-6, "D2 장치를 펼치면 바깥 시계는 서고, 손을 쓸 때만 시간이 든다");
+  const w0 = (await S()).res.wood;
+  await dbg("pull", 0, true); s = await S();
+  ok(s.res.wood > w0 + 0.4 && s.day > dd, "D3 막대를 끝까지 뽑으면 장작 — 뽑는 데도 시간이 든다");
+  ok(await st(() => { const D = window.__gtDebug.state(); const c = D.sites.forestA.data.cups[0]; return c.log.length >= 1; }), "D4 뽑은 것은 여백에 표로 쌓인다");
+  const lowCup = (await dbg("cups")).findIndex((c) => c.ratio <= 0.62);
+  await st(([ci]) => { const c = window.__gtDebug.state().sites.forestA.data.cups[ci]; c.sticks = c.sticks.map((k, i) => ({ good: i < 7, sh: k.sh })); c.streak = 0; }, [lowCup]);
+  for (let i = 0; i < 5; i++) await dbg("pull", lowCup, true);
+  s = await S();
+  ok(s.stars.includes("forest"), "D5 숨은 규칙 — 덜 나오는 통에서 끝 빛깔만 보고 다섯 번 내리 뽑으면 별");
+  await shot("gt-forest");
+  await dbg("close");
+
+  // D2. 바다 — 돌림판(숨은 규칙: 같은 세기는 같은 자리)
+  ok(await dbg("drawTo", "shore") && await dbg("arrive") && (await S()).sites.shore.linked, "D6 바다까지 선을 긋는다");
+  await dbg("dev", "shore"); await fr.waitForTimeout(300);
+  const fog0 = (await dbg("wheel")).fog; await dbg("gull");
+  ok((await dbg("wheel")).fog < fog0, "D7 갈매기를 쫓으면 돌림판의 안개가 걷힌다");
+  const k6 = await dbg("landing", 6), r6 = await dbg("flick", 6), k11 = await dbg("landing", 11), r11 = await dbg("flick", 11);
+  ok(k6 === r6 && k11 === r11, `D8 돌림판은 운처럼 보여도 같은 세기면 같은 자리(${r6} · ${r11})`);
+  ok(await dbg("launch"), "D9 배를 띄운다");
+  const f0 = (await S()).res.food; const kk = await dbg("flick", 6); s = await S();
+  ok((kk === "calm" && s.res.food > f0) || (kk === "swell" && s.res.food > f0) || (kk === "storm" && s.res.food <= f0), `D10 띄운 배는 돌림판이 멈춘 자리대로(${kk})`);
+  await dbg("close");
+
+  // D3. 강 — 얼음 뚫기(숨은 규칙: 두 번 재면 언제 건널지 보인다)
+  await dbg("drawTo", "village"); await dbg("arrive");
+  s = await S();
+  ok(s.blocked && s.sites.ford.placed, "D11 강가에서 길이 멈추고 그 자리에 여울이 생긴다");
+  await dbg("dev", "ford"); await fr.waitForTimeout(300);
+  await dbg("drill"); await dbg("wait", 2); const probes = await dbg("drill");
+  const ice = await dbg("ice");
+  ok(probes >= 2 && ice.th > 0 && ice.safe > (await S()).day - 3, `D12 두 번 뚫어 두께를 재면 여백에 점이 찍힌다(${ice.th.toFixed(1)} / ${ice.need})`);
+  if (ice.th < ice.need) {
+    const food0 = (await S()).res.food; await dbg("cross"); s = await S();
+    ok(!s.riverCrossed && s.res.food < food0, "D13 얼음이 얇을 때 건너면 깨진다(식량 · 희망을 잃는다)");
+    await dbg("jump", ice.safe - (await S()).day + 0.1);
+  } else ok(true, "D13 (이미 두꺼워 건너뜀)");
+  ok(await dbg("cross"), "D14 두꺼워지면 건넌다");
+  s = await S();
+  ok(s.stars.includes("river"), "D15 숨은 규칙 — 재 보고 알맞은 날에 건너면 별");
+  s = await until((x) => x.walking && !x.dev, 3000);
+  ok(s.walking && !s.blocked, "D16 건너고 나면 멈췄던 길이 이어진다");
+  await dbg("arrive"); s = await S();
+  ok(s.sites.village.linked, "D17 마을에 닿는다");
+
+  // D4. 장터 — 머신(숨은 규칙: 당긴 횟수와 하루의 때)
+  await dbg("dev", "village"); await fr.waitForTimeout(300);
+  await dbg("setRes", "wood", 30); await dbg("setRes", "food", 30);
+  let sl = await dbg("slot");
+  await dbg("lever");
+  ok((await dbg("slot")).n === sl.n, "D18 값을 넣지 않으면 손잡이가 덜컥 — 돌지 않는다");
+  await dbg("pay", "log"); const row = await dbg("lever");
+  ok(row && row.r.length === 3 && (await dbg("slot")).n === sl.n + 1, "D19 장작 하나를 넣고 손잡이를 당기면 세 칸이 돈다 — 장부(여백)에 남는다");
+  for (let i = 0; i < 3 && (await dbg("slot")).n % 3 !== 2; i++) { await dbg("pay", "grain"); await dbg("lever"); }
+  sl = await dbg("slot");
+  const phDay = Math.floor((await S()).day), ph = sl.pm.indexOf(2);
+  await dbg("setDay", phDay + 1 + [0.07, 0.4, 0.9][ph]);
+  sl = await dbg("slot");
+  ok(sl.next[0] === sl.next[1] && sl.next[1] === sl.next[2], `D20 맞는 때 · 맞는 차례를 알면 다음 판이 보인다(${sl.next.join(",")})`);
+  await dbg("pay", "log"); await dbg("lever");
+  s = await S();
+  ok((await dbg("slot")).jack >= 1 && s.stars.includes("village"), "D21 숨은 규칙 — 세 칸이 맞으면 큰 몫 · 별");
+  // 독수리 깃털 — 답을 바로 보여 주는 대신 덤불 하나가 돌이 된다
+  const c0 = (await S()).self.C, stones0 = (await S()).stones;
+  await dbg("eagle"); s = await S();
+  ok(s.stones === stones0 + 1 && s.self.C < c0 && await st(() => !!window.__gtDebug.state().sites.village.data.eagle), "D22 독수리 깃털 — 다음 판을 바로 보여 주고, 덤불이 돌로 굳고, 나는 '기대기' 쪽으로");
+  await shot("gt-village");
+  await dbg("close");
+
+  // M. 산 — 곧장 오르기보다 비스듬히 갈지자로 오르면 빠르다(기울기)
+  const top = await dbg("site", "summit"), y0 = 0.5, zig = [[0.36, 0.6], [top.u, y0]];
+  for (let i = 1; i <= 4; i++) zig.push([top.u + (i % 2 ? 0.026 : -0.026), y0 + (top.v - y0) * i / 4]);
+  zig.push([top.u, top.v]);
+  await dbg("drawPts", zig); await dbg("arrive");
+  s = await S();
+  const mtry = await st(() => window.__gtDebug.state().mountTry);
+  ok(s.sites.summit.linked && s.stars.includes("mount"), `MT1 숨은 규칙 — 갈지자로 산마루에 오르면 곧장 오를 때보다 빨라 별(${mtry && mtry.mt} / ${mtry && mtry.ms}일)`);
+
+  // H. 둥지 · 떠돌이 · 징조 — 한겨울은 며칠 뒤로, 지나가던 새 떼 · 떠돌이는 치우고 시작
+  await st(() => { const D = window.__gtDebug.state(); Object.assign(D.mw, { on: false, done: false, known: false, start: D.day + 4 }); D.signs = []; D.wand = []; D.nextSign = D.day + 5; });
+  await dbg("setRes", "wood", 12);
+  const spot = await dbg("leeSpot");
+  await click(hp); s = await S();
+  ok(s.nestTok, "H1 집을 누르면 둥지 하나가 손에 들린다");
+  const tok = await dbg("px", (await st(() => window.__gtDebug.state().nestTok.u)), (await st(() => window.__gtDebug.state().nestTok.v)));
+  const sp1 = await dbg("px", spot.u, spot.v);
+  await drag(line(tok, sp1, 8));
+  s = await S();
+  ok(s.nests === 2 && s.lee === 1, `H2 끌어다 놓으면 둥지 — 덤불 바람 그늘이면 연기가 곧게(장작이 덜 든다) [둥지 ${s.nests} · 그늘 ${s.lee}]`);
+  const spot2 = await dbg("leeSpot"); if (spot2) await dbg("nest", spot2.u, spot2.v);
+  s = await S();
+  ok(s.lee >= 2 && s.stars.includes("nest"), "H3 숨은 규칙 — 바람 그늘 둥지 둘이면 별");
+  const wp = await dbg("wanderer"); await click({ x: wp.x, y: wp.y - 4 }); s = await S();
+  ok(s.wand.includes("join"), "H4 기다리는 떠돌이를 누르면 맞아들인다(등불)");
+  const sgp = await dbg("spawnSign", "crow"); await click(sgp); s = await S();
+  ok(s.mw.known && s.stats.signs >= 1, "H5 남쪽으로 가는 까마귀 떼를 잡으면 한겨울을 미리 안다(책갈피 끈에 푸른 띠)");
+  await shot("gt-busy");
+
+  // S. 자아 — 문턱 두 겹
+  ok((await dbg("setSelf", 0, 0, 0)) === "wren" && (await dbg("setSelf", 0.2, 0.2, 0)) === "wren" && (await dbg("setSelf", 0.3, 0.3, 0)) === "owl" && (await dbg("setSelf", 0.2, 0.2, 0)) === "owl" && (await dbg("setSelf", 0.1, 0.1, 0)) === "wren",
     "S1 자아 이름은 문턱을 두 겹으로 — 들어갈 땐 높게, 나올 땐 낮게");
-  await dbg("setSelf", -1, -1, 0); s = await S();
-  ok(s.self.name === "jebi" && s.enc.costs.how.cur === "food", "S2 제비 — 질문 값을 식량으로 치른다");
-  await dbg("setSelf", 1, -1, 0); s = await S();
-  ok(s.self.name === "kkachi" && s.enc.costs.how.cur === "morale", "S3 까치 — 질문 값을 사기로 치른다");
-  await dbg("setSelf", 1, 1, 0); s = await S();
-  ok(s.self.name === "olppaemi" && s.enc.costs.why.cur === "jeong" && s.enc.costs.why.amt < 2, `S4 올빼미 — 왜?가 싸다(정성 ${s.enc.costs.why.amt})`);
-  await dbg("setSelf", -1, 1, 0); s = await S();
-  ok(s.self.name === "durumi" && s.enc.costs.how.cur === "days", "S5 두루미 — 질문 값을 날짜로 치른다");
-  const free = Object.entries(s.enc.lenses).find(([, l]) => !l.ai && !l.asked.why);
-  if (free) {
-    await fr.locator(`[data-act="ask"][data-lens="${free[0]}"][data-form="why"]`).click();
-    s = await S();
-    ok(s.prep === true && !s.problem, "S6 두루미가 물으면 먼저 시간이 흐른다(천천히 물음을 고른다)");
-    await dbg("jump", 1.2);
-    s = await until((x) => !!x.problem);
-    ok(!!s.problem && s.problem.form === "why", "S7 날짜를 치르고 나면 문항이 열린다");
-    await answer(true);
-  } else { ok(true, "S6 (건너뜀)"); ok(true, "S7 (건너뜀)"); }
+  ok((await dbg("setSelf", -0.4, -0.4, 0)) === "swallow" && (await dbg("setSelf", 0.4, -0.4, 0)) === "magpie" && (await dbg("setSelf", -0.4, 0.4, 0)) === "crane", "S2 제비 · 까치 · 두루미 — 네 갈래");
   await dbg("setSelf", 0, 0, 0);
 
-  // P. 질문 트리 — 정답 셋마다 하나
-  s = await S();
-  if (s.polya.points < 1) {
-    for (const p of [...Array(3)]) {
-      const e = await S(); const lz = Object.entries(e.enc.lenses).find(([, l]) => !l.ai && ["what", "how", "why"].some((f) => !l.asked[f]));
-      if (!lz) break;
-      const f = ["what", "how", "why"].find((x) => !lz[1].asked[x]);
-      await fr.locator(`[data-act="ask"][data-lens="${lz[0]}"][data-form="${f}"]`).click().catch(() => {});
-      if ((await S()).problem) await answer(true);
-      if ((await S()).polya.points >= 1) break;
-    }
-  }
-  s = await S();
-  if (s.polya.points >= 1) {
-    await fr.locator('[data-act="polya"][data-id="part"]').click();
-    s = await S();
-    ok(s.polya.open.includes("part"), "P1 질문 트리 — 정답이 쌓이면 폴리아의 물음을 연다");
-  } else ok(false, "P1 질문 트리 점수가 쌓이지 않았다");
-
-  // D. 결정 → 다음 길
-  const dec = await fr.locator('[data-act="decide"]:not([disabled])').first();
-  await dec.click();
-  s = await until((x) => x.mode === "route" || x.mode === "busy");
-  ok(s.mode === "route" || s.mode === "busy", `D1 정하면 결과가 나고 다음 길로(${s.mode})`);
-  if (s.mode === "busy") { await dbg("jump", s.busy.left + 0.1); s = await until((x) => x.mode === "route"); }
-  ok(s.lastStory.length > 8 && (await fr.locator("#panel .tale .tl").count()) >= 1, "ST4 결정의 결과가 이야기로 남는다(방금 지나온 이야기)");
-
-  // SG. 징조 — 눌러서 잡는다
-  await dbg("spawnSign", "winter");
-  const sp = await dbg("signRel");
-  await fr.locator("#map").click({ position: sp });
-  s = await S();
-  ok(s.winter.warned === true && s.stats.signs >= 1, "SG1 남쪽으로 가는 까마귀 떼(징조)를 눌러 잡으면 한겨울을 미리 안다(前知)");
-
-  // W. 한겨울 — 이동 · 결정이 멈추고 되돌아보기만
-  await fr.locator('[data-act="route"]').first().click();
-  s = await S(); const travelDone = s.travel.done;
-  await dbg("forceWinter"); await dbg("jump", 0.05);
-  s = await until((x) => x.winter.on);
-  ok(s.winter.on && await fr.locator("#banner").isVisible(), "W1 한겨울이 오면 배너 — 땅은 쇠처럼, 물은 돌처럼");
-  await dbg("jump", 1);
-  s = await S();
-  ok(s.travel && Math.abs(s.travel.done - travelDone) < 0.2, "W2 한겨울엔 길 위에서도 멈춘다");
-  ok(s.rates.fuel > s.params.fuelPerDay * 1.1, `W3 한겨울엔 연료가 더 든다(미리 알아 ×${s.params.winterFuelKnown})`);
-  const reflect = fr.locator('[data-act="reflect"]').first();
-  ok(await reflect.count() > 0 || await fr.locator('[data-act="wx"]').count() > 0, "W4 남는 동사는 질문 — 날씨 다시 묻기 · 되돌아보기");
-  if (await reflect.count()) { const f0 = (await S()).res.fuel; await reflect.click(); await answer(true); s = await S(); ok(s.res.fuel > f0 + 0.5, "W5 되돌아보기를 맞히면 연료 · 사기로 버틴다"); }
-  else ok(true, "W5 (되돌아보기 없음)");
-  const wx = fr.locator('[data-act="wx"]').first();
-  if (await wx.count()) { const n0 = (await S()).weathers.length; await wx.click(); await answer(true); s = await S(); ok(s.weathers.length === n0 - 1, "W6 날씨를 다시 물어 맞히면 걷힌다"); }
-  else ok(true, "W6 (날씨 없음)");
-  await shot("gt-winter");
-  await dbg("jump", s.params.winterLen + 0.5);
-  s = await until((x) => !x.winter.on);
-  ok(!s.winter.on && s.winter.done, "W7 한겨울이 지나간다");
-
-  // F. 독수리가 앞자리를 굳힌다
-  await dbg("fossilNext"); await dbg("jump", 0.05);
-  s = await S();
-  ok(await fr.evaluate(() => Object.values(window.__gtDebug.state().map.nodes).some((n) => n.fossil)), "F1 독수리가 앞의 자리를 먼저 굳힌다(화석)");
-
-  // R. 저장하고 나가기 → 이어 하기
+  // R. 덮어 두기 → 이어 하기(책갈피 끈)
   const dayR = (await S()).day;
-  await fr.locator("#btnLeave").click(); await fr.locator("#leaveYes").click();
-  await fr.locator("#lobby").waitFor();
-  ok(await fr.locator("#btnResume").isVisible(), "R1 저장하고 나가면 '이어 하기'");
-  await fr.locator("#btnResume").click();
-  s = await S();
-  ok(s.screen === "game" && s.paused && Math.abs(s.day - dayR) < 0.3, "R2 이어 하면 멈춘 채로 그 날에서 다시");
-  await fr.locator("#btnResumeClock").click();
-  s = await S();
-  ok(s.narrQ + (s.narr ? 1 : 0) >= 1 && s.story >= 6, "R3 이어 하면 지난 이야기 한 줄이 다시 흐른다");
+  await click(await dbg("hudPx", "leave")); await fr.waitForTimeout(120);
+  ok((await S()).scene === "world", "R1 덮기는 한 번 누르면 붉은 고리 — 두 번 눌러야 덮인다");
+  await click(await dbg("hudPx", "leave"));
+  s = await until((x) => x.scene === "cover" && !x.turning, 4000);
+  ok(s.scene === "cover" && s.cur, "R2 덮으면 표지에 책갈피 끈이 걸린다");
+  await click(await dbg("ribbonPx"));
+  s = await until((x) => x.scene === "world" && !x.turning, 4000);
+  ok(s.scene === "world" && Math.abs(s.day - dayR) < 0.3 && s.lee >= 2 && s.stars.length >= 4, "R3 끈을 당기면 그 날 그 자리에서 다시");
 
-  // E. 겨울 끝내기 → 결산(자아 일지 · 스페이스)
-  await fr.locator("#btnLeave").click(); await fr.locator("#leaveEnd").click();
-  await fr.locator("#sumOv").waitFor({ state: "visible" });
-  ok((await fr.locator(".journal li").count()) >= 4 && /y = /.test(await fr.locator("#spaceNote").innerText()), "E1 결산 — 자아 일지 · 내 스페이스 곡선");
-  ok(JSON.parse(await fr.locator("#sumJson").inputValue()).stats.forms.how >= 1, "E2 다듬을 때 쓸 기록(JSON)");
-  ok((await fr.locator("#sumBody .ending").innerText()).length > 10 && (await fr.locator(".story-all .tl").count()) >= 5 && (await fr.locator(".story-all .tl.chap").count()) >= 2, "E5 결산 — 맺음말과 이 겨울의 이야기(마디마다)");
-  await shot("gt-summary");
-  await fr.locator("#sumAgain").click();
-  await fr.locator("#btnLeave").click(); await fr.locator("#leaveEnd").click();
-  await fr.locator("#sumOv").waitFor({ state: "visible" });
-  ok(/만나는 점/.test(await fr.locator("#spaceNote").innerText()), "E3 두 번째 겨울부터 지난 곡선과 만나는 점(2막의 문)을 센다");
-  await fr.locator("#sumLobby").click();
-  s = await S();
-  ok(s.runs >= 2 && (await fr.locator("#runsList .run").count()) >= 2 && (await fr.locator("#runsList .rend").count()) >= 2, "E4 지난 겨울들이 맺음말과 함께 시작 화면에 쌓인다");
+  // W. 한겨울
+  await dbg("forceMw"); await dbg("jump", 0.1);
+  s = await until((x) => x.mw.on, 2000);
+  ok(s.mw.on, "W1 한겨울 — 서리가 끼고, 둥지를 지을 수 없고, 장작이 더 든다");
+  await shot("gt-midwinter");
 
-  // TU. 다듬기 패널
+  // E. 봄 → 끝 장 → 표지
+  await dbg("setRes", "food", 40); await dbg("setRes", "wood", 40); await dbg("setRes", "hope", 9);
+  await dbg("jump", 30);
+  s = await S();
+  ok(s.over && s.over.kind === "spring", "E1 버티면 봄이 온다(꽃 · 제비)");
+  s = await until((x) => x.scene === "keep" && !x.turning, 7000);
+  ok(s.scene === "keep" && s.runs === 1 && s.keepMeets === 0, "E2 끝 장 — 이 겨울의 그림 한 장 · 별 · 사람 · 돌, 내 곡선");
+  await shot("gt-keep");
+  await click(mid);
+  s = await until((x) => x.scene === "cover" && !x.turning, 4000);
+  ok(s.scene === "cover" && !s.cur, "E3 끝 장을 누르면 표지로");
+  // 두 번째 겨울 — 지난 곡선과 만나는 점(2막의 문)
+  await dbg("open"); await dbg("skip");
+  await dbg("setSelf", 0.6, -0.6, 0.3);
+  await dbg("end", "scatter");
+  s = await until((x) => x.scene === "keep" && !x.turning, 7000);
+  ok(s.runs === 2 && typeof s.keepMeets === "number", `E4 두 번째 겨울부터 지난 곡선과 만나는 점을 센다(${s.keepMeets})`);
+  await click(mid);
+  s = await until((x) => x.scene === "cover" && !x.turning, 4000);
+
+  // TU. 다듬기(강사용)
   await fr.locator("#btnTune").click();
-  await fr.locator('#tuneBody [data-k="dayLen"]').fill("25");
+  ok(/숨은 규칙|규칙/.test(await fr.locator("#tuneMemo").innerText()), "TU1 다듬기 — 강사에게만 숨은 규칙 메모");
+  await fr.locator('#tuneBody [data-k="dayLen"]').fill("20");
   await fr.locator("#tApply").click();
   s = await S();
-  ok(s.params.dayLen === 25 && (await fr.locator(".trow.chg").count()) >= 1, "TU1 다듬기 — 하루 길이를 바꿔 적용하면 저장되고 금빛으로 표시");
+  ok(s.params.dayLen === 20 && (await fr.locator(".trow.chg").count()) >= 1, "TU2 하루 길이를 바꿔 적용하면 저장되고 금빛으로 표시");
   await fr.locator("#tReset").click();
   s = await S();
-  ok(s.params.dayLen === 20, "TU2 기본값으로 되돌린다");
+  ok(s.params.dayLen === 15, "TU3 기본값으로 되돌린다");
   await fr.locator("#tClose").click();
+  await dbg("setSelf", 0, 0, 0);
 }
 
 (async () => {
@@ -334,7 +316,7 @@ async function gameChecks(fr, shot) {
   try {
     if (GAME_ONLY) {
       await page.goto(base);
-      await gameChecks(page.mainFrame(), shot);
+      await gameChecks(page.mainFrame(), shot, page, { x: 0, y: 0 });
     } else {
       await mockSupabase(page);
 
@@ -366,11 +348,12 @@ async function gameChecks(fr, shot) {
       ok((await fr.evaluate(() => document.documentElement.dataset.theme)) === "light", "B7 앱 테마(라이트)를 문서에 심어 연다");
       ok(await fr.evaluate(() => { try { localStorage.getItem("x"); return false; } catch { return true; } }), "B8 게임 안에서는 앱 저장소에 닿지 않는다");
 
-      await gameChecks(fr, shot);
+      const fb = await el.boundingBox();
+      await gameChecks(fr, shot, page, { x: fb.x, y: fb.y });
 
       // M. 저장 — 앱이 이 기기에 맡아 두고, 새로고침하면 돌려준다
       const saved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem("ashrain.games.gulttuksae") || "null"); } catch { return null; } });
-      ok(saved && saved.v === 1 && saved.runs.length >= 2 && saved.self, `M1 기록은 앱이 맡아 둔다(ashrain.games.gulttuksae · 지난 겨울 ${saved && saved.runs.length})`);
+      ok(saved && saved.v === 3 && saved.runs.length >= 2 && saved.self, `M1 기록은 앱이 맡아 둔다(ashrain.games.gulttuksae · 지난 겨울 ${saved && saved.runs.length})`);
       await page.reload();
       const el2 = page.locator("iframe.sg-frame");
       await el2.waitFor({ timeout: 20000 });
