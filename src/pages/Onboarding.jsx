@@ -3,7 +3,7 @@
 //  · 소셜(구글·카카오) 로그인은 나이 정보를 주지 않으므로 여기서 생년월일을 필수로 받는다.
 //  · 만 14세 미만 → 전화 인증 없이 저장 후 보호자 동의(#/guardian)로 안내(동의 확인 전까지 개념 열람만).
 //  · 만 14세 이상 → 휴대폰 본인 인증(5분 타이머) 후 완료.
-//  · 고유번호는 선택 — 있으면 즉시 확정(AI 기능 활성화), 없어도 진행 가능.
+//  · 고유번호는 선택 — 있으면 즉시 확정(학원 연결), 없어도 진행 가능. 2026-11-26부터 AI 기능 조건 아님.
 // 서버: /api/account { action: 'social-onboard' }
 import { useEffect, useState } from 'react';
 import BirthInput from '../shared/BirthInput';
@@ -196,7 +196,7 @@ export default function Onboarding() {
               <label className="ob-label">닉네임</label>
               <input className="ob-inp" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="앱에서 표시될 이름" />
 
-              <label className="ob-label">학원 고유번호 <i className="ob-opt">AI 기능 활성화</i></label>
+              <label className="ob-label">학원 고유번호 <i className="ob-opt">선택 — 학원 연결</i></label>
               <input className="ob-inp ob-code" value={code} onChange={(e) => setCode(e.target.value)}
                 placeholder="ASH37-1A2B3CD-4E5 (없으면 비워두세요)" autoCapitalize="characters" />
               {normCode(code).length === 15 && <p className="ob-hint">{fmtCode(code)}</p>}

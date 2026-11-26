@@ -1,5 +1,6 @@
-// ashrain.out — 관리자 보호자 승인 화면 (v1.0, #/admin/guardians)
-// 학생이 제출한 보호자 동의를 강사가 최종 확인·승인/반려.
+// ashrain.out — 관리자 보호자 동의 화면 (v1.1, #/admin/guardians)
+// v1.1(2026-11-26): 문자 인증을 마친 동의는 제출 즉시 활성 — 승인 단계 없음. 이 화면은 사후 확인용:
+//   이상한 건은 「연결 해제(반려)」. 반려됐던 번호로 다시 낸 건만 ⏳ 대기로 들어온다.
 // ⚠ 배지: 나이간극(보호자-학생 출생연도 차 16년 미만), 다계정(같은 번호가 3명 이상의 학생 보호자로 등록).
 // 반려 건은 5일 뒤 자동 파기됩니다(제출 API가 청소).
 import { useEffect, useState } from "react";
@@ -9,7 +10,7 @@ const TABS = [["pending", "⏳ 대기"], ["active", "✅ 활성"], ["rejected", 
 
 export default function AdminGuardians() {
   const [isAdmin, setIsAdmin] = useState(null);
-  const [tab, setTab] = useState("pending");
+  const [tab, setTab] = useState("active");
   const [rows, setRows] = useState(null);      // 전체 동의 목록
   const [students, setStudents] = useState({}); // id → {name, grade}
   const [busy, setBusy] = useState(false);
@@ -98,11 +99,12 @@ export default function AdminGuardians() {
       <style>{CSS}</style>
       <div className="ag-head">
         <span className="ag-back" onClick={() => (location.hash = "")}>← 홈</span>
-        <h1 className="ag-h1">🛡️ 보호자 승인</h1>
+        <h1 className="ag-h1">🛡️ 보호자 동의</h1>
       </div>
       <p className="ag-desc">
-        문자 인증을 마친 보호자 동의를 강사가 최종 확인합니다. 등록 상담 등에서 <b>실제 학부모임을 확인한 경우에만</b> 승인하세요.
-        반려 건의 보호자 정보는 5일 뒤 자동 파기됩니다.
+        문자 인증을 마친 보호자 동의는 <b>제출하는 즉시 활성</b>돼요(승인 단계 없음). 이상한 건(⚠ 표시 등)은 「연결 해제(반려)」로 막고,
+        반려했던 번호로 다시 낸 건만 ⏳ 대기로 들어와요. 반려 건의 보호자 정보는 5일 뒤 자동 파기됩니다.
+        누가 언제 가입했는지는 「📋 가입」 화면에서 봐요.
       </p>
       <div className="ag-tabs">
         {TABS.map(([v, l]) => (

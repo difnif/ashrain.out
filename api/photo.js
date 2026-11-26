@@ -16,6 +16,7 @@ import { createClient } from "@supabase/supabase-js";
 import { parseText } from "../src/lib/mathir.js";
 import { overlapScore, decideRetention, buildLabels, normalizePolicy, GRADES } from "../src/lib/retention.js";
 import { assessHandler } from "./_lib/assess.js";
+import { learnGate, GATE_MSG } from "../src/lib/learnAccess.js";
 
 export const config = { maxDuration: 60 };
 
@@ -340,12 +341,9 @@ export default async function handler(req, res) {
     const task = String(body.task || "");
     if (!["scan", "approach", "essay", "process"].includes(task)) return res.status(400).json({ error: "알 수 없는 task: " + task });
 
-    // 학생 자격 게이트 (ai.js 와 동일)
-    const { data: prof } = await sb.from("profiles").select("role, member_code").eq("id", uid).single();
-    if (prof?.role !== "admin") {
-      if (prof?.role === "trial") return res.status(403).json({ error: "체험 계정은 개념 열람만 가능해요 — 정식 가입 후 이용할 수 있어요" });
-      if (!prof?.member_code) return res.status(403).json({ error: "AI 기능은 학원 고유번호 등록 후 열려요 — 학원에서 고유번호를 받아 등록해주세요" });
-    }
+    // 학생 자격 게이트 — 가입을 끝까지 마쳤으면 연다 (src/lib/learnAccess.js, ai.js 와 같은 규칙)
+    const gate = await learnGate(sb, userData.user);
+    if (!gate.ok) return res.status(403).json({ error: GATE_MSG[gate.why] || GATE_MSG.need_verify });
     // 입력 검증은 한도 차감보다 먼저 (잘못된 요청이 하루치 호출을 갉아먹지 않게)
     const image = typeof body.image === "string" ? body.image : "";
     const question = str(body.question);

@@ -3,7 +3,7 @@
 // v2 변경:
 // · 첫 화면에서 만 14세 이상/미만 선택 → 미만은 전화 인증 없이 가입하고, 로그인 후 보호자 동의(#/guardian)로 해금
 // · 필수: 이름, 생년월일, 아이디, 비밀번호, 이메일 (+만 14세 이상은 휴대폰 인증)
-//   선택: 닉네임, 주소, 고유번호(있으면 AI 기능 활성화 — 없어도 가입 가능, 나중에 등록 가능)
+//   선택: 닉네임, 주소, 고유번호(학원 연결용 — 없어도 가입·모든 학습 기능 이용 가능, 나중에 등록 가능. 2026-11-26부터 AI 기능 조건 아님)
 // · 생년월일과 선택한 나이대가 어긋나면 진행 불가(만 나이 기준)
 import { useEffect, useState } from 'react';
 import {
@@ -256,12 +256,12 @@ export default function Signup() {
           <label className="su-label">주소 <i className="su-opt">선택</i></label>
           <input className="su-input" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="예: 서울시 ○○구 (동까지만 적어도 돼요)" />
 
-          <label className="su-label">학원 고유번호 <i className="su-opt">선택 — AI 기능 활성화</i></label>
+          <label className="su-label">학원 고유번호 <i className="su-opt">선택 — 학원 연결</i></label>
           <input className="su-input su-code" value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="ASH37-1A2B3CD-4E5 (없으면 비워두세요)" autoCapitalize="characters" />
           {normCode(code).length === 15 && <p className="su-hint">{fmtCode(code)}</p>}
-          <p className="su-hint">고유번호가 없어도 가입돼요. 나중에 학원에서 받아 등록하면 AI 기능이 열려요.</p>
+          <p className="su-hint">고유번호가 없어도 가입되고 모든 학습 기능을 쓸 수 있어요. 학원에서 받은 번호가 있으면 넣어 주세요.</p>
 
           <button className="su-btn su-btn-main" disabled={busy} onClick={submit}>가입하기</button>
           <button className="su-btn su-ghost" disabled={busy}
