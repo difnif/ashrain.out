@@ -249,12 +249,16 @@ export async function exportAnalysis(b, ctx) {
       }
     }
     const sd = `${root}/학생/${safe(st.name, 20)}/${pdir}`;
-    const scanNames = [];
+    // 스캔본 이름 끝 = 언제 스캔한 것인지(선생님이 올릴 때 표시): _1차 = 1차 채점 때 · _2차 = 2차 채점 때 · _차수모름 = 확실하지 않음
+    const scanNames = [], when = new Map();
     for (let i = 0; i < d.scans.length; i++) {
       const sc = d.scans[i];
       const ext = (/\.([A-Za-z0-9]{1,5})$/.exec(sc.name) || [, sc.kind === "pdf" ? "pdf" : "jpg"])[1].toLowerCase();
-      try { files.push({ name: `${sd}/스캔_${String(i + 1).padStart(2, "0")}.${ext}`, data: await ctx.bytes(sc.path) }); nScans++; scanNames.push(`학생/${safe(st.name, 20)}/${pdir}/스캔_${String(i + 1).padStart(2, "0")}.${ext}`); } catch { /* */ }
+      const fn = `스캔_${String(i + 1).padStart(2, "0")}_${sc.round ? sc.round + "차" : "차수모름"}.${ext}`;
+      try { files.push({ name: `${sd}/${fn}`, data: await ctx.bytes(sc.path) }); nScans++; scanNames.push(`학생/${safe(st.name, 20)}/${pdir}/${fn}`); } catch { /* */ }
+      when.set(sc.round || 0, (when.get(sc.round || 0) || 0) + 1);
     }
+    const whenLine = [...when.entries()].sort((a, c) => (a[0] || 99) - (c[0] || 99)).map(([r, n]) => `${r ? r + "차 채점 때" : "확실하지 않음"} ${n}`).join(" · ");
     const gItems = [];
     for (const it of d.items) {
       const m = it.mark || {};
@@ -271,7 +275,8 @@ export async function exportAnalysis(b, ctx) {
     data.push({ student: st.name, code: fmtCode(p.code), title: p.title, status: g.status, started: g.created_at, updated: g.updated_at, sessions: d.sessions, summary: s, scans: scanNames, items: gItems });
     const nr = Math.max(1, ...gItems.flatMap((gi) => gi.rounds.map((x) => x.round)));
     let md = `# ${st.name} · ${p.title} (${fmtCode(p.code)})\n\n- 결과: 맞음 ${s.O} · 틀림 ${s.X} · 안 풂 ${s.U} · 안 매김 ${s.none} / ${s.total}문항\n`;
-    md += `- 채점: ${nr}차까지 · 회차 ${d.sessions.length} · 스캔본 ${d.scans.length}개 (2차·3차 = 틀리거나 안 푼 문항을 다시 푼 것)\n\n`;
+    md += `- 채점: ${nr}차까지 · 회차 ${d.sessions.length} (2차·3차 = 틀리거나 안 푼 문항을 다시 푼 것)\n`;
+    md += `- 스캔본 ${d.scans.length}개${d.scans.length ? `: ${whenLine} — 파일 이름 끝 \`_1차\` · \`_2차\` · \`_차수모름\`` : ""}\n\n`;
     md += `| 번호 | 정답 | 학생 답 | ${Array.from({ length: nr }, (_, k) => `${k + 1}차`).join(" | ")} | 최종 |\n|${"---|".repeat(nr + 4)}\n`;
     for (const gi of gItems) {
       const by = Object.fromEntries(gi.rounds.map((x) => [x.round, x.result]));

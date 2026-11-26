@@ -158,6 +158,13 @@
 .tt-root .scanlist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .tt-root .scanlist .file a{color:var(--ink);text-decoration:none}
 .tt-root .scanlist .file a.btn{color:var(--ink)}
+.tt-root .scanwhen{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 10px}
+.tt-root .scanwhen.need{background:#fffbeb;border:1.5px solid #fbbf24;border-radius:12px;padding:8px 10px}
+.tt-root .scanlist .file .sround{margin-left:auto;min-width:0;padding:3px 6px;font-size:13px;border-radius:8px}
+.tt-root .scanlist .file .sround.unk{color:var(--u)}
+.tt-root .scanlist .file .x{margin-left:0}
+.tt-root .scanlist .file .x.armed{color:#b91c1c;font-size:13px;font-weight:700;white-space:nowrap}
+.tt-root .modal-box.scanmodal{width:min(760px,96vw)}
 .tt-root .prog{height:8px;border-radius:99px;background:#e2e8f0;overflow:hidden;margin-top:12px}
 .tt-root .prog i{display:block;height:100%;background:var(--acc)}
 .tt-root .exptbl td input{width:18px;height:18px}

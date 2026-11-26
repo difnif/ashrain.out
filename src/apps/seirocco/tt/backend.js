@@ -78,10 +78,26 @@ async function sessionsOf(gids) {
   if (!gids.length) return [];
   return all(() => T("tt_sessions").select("*").in("grading_id", gids).order("no"));
 }
+// 스캔본 차수(round) = 언제 스캔한 것인지: 1 = 1차 채점 때, 2 = 2차 채점 때 …, null = 확실하지 않음.
+// 운영 DB에 칸이 아직 없으면(supabase/2026-11_tt_scans_round.sql 을 안 돌렸으면) 차수 없이 그대로 쓴다.
+const SCAN_COLS = "id,name,size,pages,mime,path,created_at";
+let scanRoundCol = true;
+const noRoundCol = (r) => !!r.error && /\bround\b/.test(r.error.message || "") && /column|schema cache/i.test(r.error.message || "");
+export const scanRoundOk = () => scanRoundCol;
+const cleanRound = (v) => { const n = Number(v); return v !== null && v !== "" && Number.isInteger(n) && n >= 1 && n <= 9 ? n : null; };
 async function scanList(gid) {
-  const rows = must(await T("tt_scans").select("id,name,size,pages,mime,path,created_at").eq("grading_id", gid).eq("deleted", false).order("id"));
-  return rows.map((r) => ({ ...r, kind: /pdf/.test(r.mime) || /\.pdf$/i.test(r.name) ? "pdf" : "image", pages: r.pages || 1 }));
+  let r = scanRoundCol ? await T("tt_scans").select(SCAN_COLS + ",round").eq("grading_id", gid).eq("deleted", false).order("id") : null;
+  if (r && noRoundCol(r)) { scanRoundCol = false; r = null; }
+  if (!r) r = await T("tt_scans").select(SCAN_COLS).eq("grading_id", gid).eq("deleted", false).order("id");
+  // 1차 → 2차 → … → 확실하지 않음, 같은 차는 올린 차례 (목록·한 PDF·분석용 내보내기가 모두 이 차례)
+  return must(r).map((x) => ({ ...x, round: x.round ?? null, kind: /pdf/.test(x.mime) || /\.pdf$/i.test(x.name) ? "pdf" : "image", pages: x.pages || 1 }))
+    .sort((a, b) => (a.round ?? 99) - (b.round ?? 99) || a.id - b.id);
 }
+const scanRoundsCount = (scans) => {
+  const o = {};
+  for (const s of scans) { const k = s.round ? `${s.round}차` : "확실하지 않음"; o[k] = (o[k] || 0) + 1; }
+  return o;
+};
 
 // 학생의 다른 채점에서 같은 문항(해시)을 틀린 횟수 (어느 차든 X면 그 채점에서 1번)
 async function wrongHistory(sid, hashes, excludeGid = null) {
@@ -374,7 +390,7 @@ export async function gradingData(gid) {
     kind: "ashrain.grading", version: 1, made: nowIso(), student: d.student.name, code: p.code_fmt, title: p.title,
     status: d.grading.status, started: d.grading.created_at, updated: d.grading.updated_at,
     rounds: d.rounds.map((r) => ({ round: r.round, kind: r.kind, targets: r.targets, sessions: r.sessions, started_at: r.started_at, ended_at: r.ended_at, summary: r.summary })),
-    summary: d.summary, scans: d.scans.length,
+    summary: d.summary, scans: d.scans.length, ...(d.scans.length ? { scans_when: scanRoundsCount(d.scans) } : {}),
     items: d.items.map((it) => {
       const m = it.mark || {};
       const key = itemKey(p.code, it), t = ["X", "U"].includes(m.result) ? tr.get(key) : null;
@@ -484,7 +500,8 @@ export async function api(path, body) {
       const gs = must(await T("tt_gradings").select("id,status,updated_at,student_id").eq("print_id", pr.id).order("id", { ascending: false }));
       const sm = await studentsMap(gs.map((g) => g.student_id));
       const marks = await marksOf(gs.map((g) => g.id)), sessions = await sessionsOf(gs.map((g) => g.id));
-      d.gradings = gs.map((g) => ({ ...g, name: sm.get(g.student_id)?.name || "?",
+      const scans = gs.length ? await all(() => T("tt_scans").select("grading_id").in("grading_id", gs.map((g) => g.id)).eq("deleted", false)) : [];
+      d.gradings = gs.map((g) => ({ ...g, name: sm.get(g.student_id)?.name || "?", n_scans: scans.filter((s) => s.grading_id === g.id).length,
         ...gradingStats(marks.filter((x) => x.grading_id === g.id), sessions.filter((x) => x.grading_id === g.id), d.n_items) }));
       d.answer_pages = d.answer_pdf ? await pagesOf(d.answer_pdf, pr.files?.answer_pages) : [];
       d.sheet_pages = d.items.some((it) => !it.png) && d.pdf ? await pagesOf(d.pdf, pr.pages) : [];
@@ -548,6 +565,17 @@ export async function api(path, body) {
   if ((m = /^gradings\/(\d+)\/close$/.exec(p))) {
     const st = await rpc("tt_close_grading", { p_grading: Number(m[1]), p_reason: body.reason || "done", p_untouched: !!body.untouched });
     return { status: st };
+  }
+  if ((m = /^scans\/(\d+)$/.exec(p)) && post && "round" in body && !body.delete) {      // 언제 스캔한 것인지 바꾸기
+    const r = must(await T("tt_scans").select("id,grading_id,name").eq("id", Number(m[1])).maybeSingle());
+    if (!r) throw new Error("없음");
+    const rd = cleanRound(body.round);
+    const u = await T("tt_scans").update({ round: rd }).eq("id", r.id);
+    if (noRoundCol(u)) { scanRoundCol = false; throw new Error("차수를 적을 칸이 DB에 아직 없어요 — supabase/2026-11_tt_scans_round.sql 을 SQL Editor에서 한 번 실행해 주세요"); }
+    must(u);
+    const g = must(await T("tt_gradings").select("student_id,print_id").eq("id", r.grading_id).single());
+    log("scan_round", g.student_id, g.print_id, { grading: r.grading_id, name: r.name, round: rd });
+    return { scans: await scanList(r.grading_id) };
   }
   if ((m = /^scans\/(\d+)$/.exec(p)) && post && body.delete) {
     const r = must(await T("tt_scans").select("*").eq("id", Number(m[1])).maybeSingle());
@@ -700,8 +728,9 @@ export async function link(href) {
   throw new Error("없는 주소: " + u.pathname);
 }
 
-// 스캔본 올리기
-export async function uploadScan(gid, file) {
+// 스캔본 올리기 — round: 1 = 1차 채점 때, 2 = 2차 채점 때 …, null = 확실하지 않음
+export async function uploadScan(gid, file, round = null) {
+  const rd = cleanRound(round);
   const g = must(await T("tt_gradings").select("id,print_id,student_id").eq("id", gid).single());
   const pr = must(await T("tt_prints").select("code").eq("id", g.print_id).single());
   const name = cleanName(file.name);
@@ -712,7 +741,10 @@ export async function uploadScan(gid, file) {
   let pages = 1;
   if (ext === ".pdf") { try { pages = await (await engine()).pageCount(buf); } catch { pages = 1; } }
   await put(rel, file, file.type || (ext === ".pdf" ? "application/pdf" : "application/octet-stream"));
-  must(await T("tt_scans").insert({ grading_id: gid, path: rel, name, size: file.size, mime: file.type || "", pages }));
-  log("scan_upload", g.student_id, g.print_id, { grading: gid, name, pages });
+  const row = { grading_id: gid, path: rel, name, size: file.size, mime: file.type || "", pages };
+  let r = await T("tt_scans").insert(scanRoundCol ? { ...row, round: rd } : row);
+  if (scanRoundCol && noRoundCol(r)) { scanRoundCol = false; r = await T("tt_scans").insert(row); }
+  must(r);
+  log("scan_upload", g.student_id, g.print_id, { grading: gid, name, pages, round: scanRoundCol ? rd : undefined });
   return { scans: await scanList(gid) };
 }
