@@ -2,7 +2,7 @@
 // 본질: 기록. 서고(장서고·문서고·기록고) · 사무(행정, 무료) · 서무(코퍼스, 유료) + 공통 광장(하소·방).
 // 내부 해시: #/ 홈 · #/seogo(/:tab) · #/samu(/:id) · #/seomu(/:tab) · #/more
 //           #/haso · #/bang · #/my · #/support · #/fonts(관리자) · #/tt(/…) 강사도구(PC 강사도구의 웹판)
-//           #/games 게임(강사가 해 보며 다듬는 게임 — 굴뚝새 1막 베타, 더보기에서)
+//           #/games 게임(강사가 해 보며 다듬는 게임 — 무제(예전 굴뚝새) 1막 베타, 더보기에서)
 //           #/gyeok 격언 도우미(PRZ-1 코드 → 그달 격언 · 보고서 문장, 격언 1,009개 찾아보기 — 더보기에서)
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
