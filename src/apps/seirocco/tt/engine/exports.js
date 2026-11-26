@@ -3,6 +3,7 @@ import { zipStore } from "../../../../lib/zipstore";
 import { parseText, parseAnswer, checkFigure } from "../../../../lib/mathir";
 import { twoPass, A4W, A4H, pngToImg } from "./base";
 import { Pen } from "./layout";
+import { baseHash, splitLabel } from "../parts";
 import { supabase } from "../../../../supabaseClient";
 import GUIDE_T from "../guides/전사가이드.md?raw";
 import GUIDE_A from "../guides/분석가이드.md?raw";
@@ -43,14 +44,15 @@ async function plan(ctx, prints, corpus, includeDone) {
   const byTag = new Map();
   for (const r of corpus || []) for (const t of r.src_tags || []) { if (!byTag.has(t)) byTag.set(t, []); byTag.get(t).push(r); }
   const items = await itemsFor(ctx, prints.map((p) => p.id));
-  const keys = items.map((it) => it.hash || `${prints.find((p) => p.id === it.print_id).code}:${it.seq}`);
+  // 하위 문제로 나눈 문항(「3 (1)」 「3 (2)」)은 그림이 같은 한 문제 — 전사는 한 번(열쇠 = 하위 문제 표시를 뗀 지문)
+  const keys = items.map((it) => baseHash(it.hash) || `${prints.find((p) => p.id === it.print_id).code}:${it.seq}`);
   const tr = await transcripts(ctx, [...new Set(keys)]);
   const out = [], seen = new Map();
   for (const p of prints) {
     for (const it of items.filter((x) => x.print_id === p.id)) {
       if (!it.png) continue;
-      const key = it.hash || `${p.code}:${it.seq}`;
-      if (seen.has(key)) { seen.get(key).also.push(`${p.code}-${pad3(it.seq)}`); continue; }
+      const key = baseHash(it.hash) || `${p.code}:${it.seq}`;
+      if (seen.has(key)) { if (seen.get(key).code !== p.code) seen.get(key).also.push(`${p.code}-${pad3(it.seq)}`); continue; }
       let task, match = null;
       if (String(key).startsWith("key:")) task = "db_item";
       else {
@@ -64,7 +66,7 @@ async function plan(ctx, prints, corpus, includeDone) {
         const q = !!(t && t.question), s = !!(t && t.solution);
         task = s && (q || match) ? "done" : q || match ? "solution" : "all";
       }
-      const row = { id: `${p.code}-${pad3(it.seq)}`, key, code: p.code, title: p.title, seq: it.seq, label: it.label || String(it.seq), level: p.level || "중등",
+      const row = { id: `${p.code}-${pad3(it.seq)}`, key, code: p.code, title: p.title, seq: it.seq, label: splitLabel(it.label || String(it.seq)).base, level: p.level || "중등",
         task, tag: it.tag || "", rate: it.rate || "", quick_answer: it.answer || "", choice: !!it.choice, png: `${p.code}/${it.png}`,
         answer_png: it.answer_png ? `${p.code}/${it.answer_png}` : null, sol_png: it.sol_png ? `${p.code}/${it.sol_png}` : null,
         corpus: match ? Object.fromEntries(["id", "question", "choices", "answer", "qtype", "unit_id"].map((k) => [k, match[k] ?? null])) : null, also: [] };
@@ -155,7 +157,7 @@ async function itemsPdf(rows, ctx) {
       pen.text(34, y, "■ 매쓰플랫 해설 (이것을 옮겨 적기)", { size: 10, bold: true });
       await fit(r._spng, 40, y + 6, A4W - 80, A4H - y - 50);
     }
-    pen.text(34, A4H - 22, `${r.title} · ${r.code} ${r.seq}번`, { size: 7.5, color: [0.5, 0.5, 0.5] });
+    pen.text(34, A4H - 22, `${r.title} · ${r.code} ${r.label || r.seq}번`, { size: 7.5, color: [0.5, 0.5, 0.5] });
   }
   void ctx;
   return c.doc.save();

@@ -5,6 +5,7 @@ import { fmtCode, buildAnswerPdf, TEMPLATE_KEYS } from "./layout";
 import { nn } from "../sb";
 import { settings, reserveCode, storePrint } from "./print";
 import { parseQuick, renderQuick, solutionPages, parseSolutions, pageImageNoNames } from "./mathflat";
+import { partsFromAnswer, partsFromLines, expandParts, splitLabel, groupProblems, partLabel } from "../parts";
 
 const CODE_ALPHA = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 const CIRC = "①②③④⑤⑥⑦⑧⑨⑩";
@@ -158,6 +159,27 @@ function regions(D, items) {
     }
     return [it.page, [x0, top, x1, Math.max(top + 20, bottom)]];
   });
+}
+
+// 문항 자리 안의 하위 문제 수 — 줄머리의 (1) (2) (3) … (하위 문제를 따로 채점하려고)
+function subsInRect(pg, r) {
+  if (!pg || !r) return 0;
+  const [x0, y0, x1, y1] = r;
+  return partsFromLines(pg.lines.filter((l) => l.x >= x0 - 3 && l.x <= x1 && l.y >= y0 - 2 && l.y1 <= y1 + 3).map((l) => l.text));
+}
+// 이미 등록한 프린트(문제지 PDF)의 문항마다 하위 문제 수 — {seq: n}. items: [{seq, page(1부터), bbox}]
+export async function partsInSheet(bytes, items) {
+  const D = await readDoc(bytes);
+  const out = {};
+  for (const it of items) if (it.page && it.bbox) out[it.seq] = subsInRect(D.pages[it.page - 1], it.bbox);
+  return out;
+}
+// 문항 하나의 하위 문제: 정답 글자 「(1) 12 (2) 5」 와 문항 자리 줄머리 표시 중 많은 쪽. 객관식은 나누지 않음
+export function partsOf(it) {
+  if (it.choice) return null;
+  const a = partsFromAnswer(it.answer);
+  const n = Math.max(a ? a.length : 0, it.subs >= 2 ? it.subs : 0);
+  return n >= 2 ? Array.from({ length: n }, (_, k) => ({ label: partLabel(k + 1), answer: a && a[k] ? a[k].answer : "" })) : null;
 }
 
 // ── 자르기 (150dpi) — 가장자리 긴 줄 지우기 · 여백 줄이기
@@ -435,6 +457,7 @@ async function analyze(D, A, manifest, draft, trust = false, T = D, TA = A) {
       it.hash = it.key ? "key:" + it.key : imgHash(im);
       if (!m) it.choice = looksChoice(T.pages[it.page], it.rect);
       it.bbox = it.rect.map((v) => Math.round(v * 10) / 10);
+      it.subs = subsInRect(T.pages[it.page], it.rect);          // 지우기 전 글자에서
       delete it.rect;
     } else {
       it.png = null;
@@ -527,7 +550,8 @@ export async function registerCommit(b, ctx) {
       const src = bySeq.get(Number(e.seq));
       if (!src) continue;
       items.push({ label: String(e.label || src.label), answer: String(e.answer || "").trim(), choice: !!e.choice, png: src.png, hash: src.hash,
-        points: src.points, topic: src.topic || "", answer_png: src.answer_png, bbox: src.bbox, page: src.page, sol: src.sol || "", ans: src.ans || "" });
+        points: src.points, topic: src.topic || "", answer_png: src.answer_png, bbox: src.bbox, page: src.page, sol: src.sol || "", ans: src.ans || "",
+        subs: e.subs != null ? Number(e.subs) || 0 : src.subs || 0 });
     }
   }
   if (!items.length) throw new Error("문항이 하나도 없어요");
@@ -549,9 +573,12 @@ export async function registerCommit(b, ctx) {
     if (libPid && it.ans && !row.answer_png) row.answer_png = it.ans;     // 〃 정답 그림(분수 · 그림으로 답하는 문항) — <코드>/anss/NNN.png
     return row;
   });
+  // 하위 문제 (1)(2)(3) 가 있는 문항은 하위 문제마다 한 줄(따로 채점) — 그림 · 정답 그림 · 해설은 같이 씀
+  const prows = expandParts(rows.map((row, i) => ({ row, no: items[i].label || String(i + 1), parts: partsOf(items[i]) })));
+  rows.length = 0; rows.push(...prows);
   const sub = String(b.sub || dr.sub || "").trim();
-  const rowP = { title, sub, kind: "registered", template: "등록", label, level: b.level || ctx.guessLevel(title, sub, ""), n_items: items.length,
-    n_choice: items.filter((it) => it.choice).length, pages: D.pages.length, sources: [dr.sheet_name, dr.answer_name].filter(Boolean),
+  const rowP = { title, sub, kind: "registered", template: "등록", label, level: b.level || ctx.guessLevel(title, sub, ""), n_items: rows.length,
+    n_choice: rows.filter((r) => r.choice).length, pages: D.pages.length, sources: [dr.sheet_name, dr.answer_name].filter(Boolean),
     files: { sheet: `${code}/sheet.pdf`, answer: dr.answer ? `${code}/answer.pdf` : null, src: [], extras: [] },
     name_boxes: dr.name_boxes || [], options: { method: dr.method, mode: b.mode || "items" }, shelf: "active" };
   if (libPid) {
@@ -566,12 +593,12 @@ export async function registerCommit(b, ctx) {
     must(await T("tt_print_items").insert(nn("tt_print_items", rows.map((r) => ({ print_id: libPid, ...r })))));
     if (sids.length) must(await T("tt_targets").upsert(sids.map((s) => ({ print_id: libPid, student_id: s })), { onConflict: "print_id,student_id", ignoreDuplicates: true }));
     log("library_register", null, libPid, { code, title });
-    log("register", null, libPid, { code, title, items: items.length, method: dr.method, mode: b.mode || "items", answers: items.filter((it) => it.answer).length });
+    log("register", null, libPid, { code, title, items: items.length, parts: rows.length - items.length, method: dr.method, mode: b.mode || "items", answers: items.filter((it) => it.answer).length });
     DRAFTS.delete(draft.id);
     return ctx.printBrief(libPid);
   }
   const brief = await storePrint(ctx, { code, row: rowP, items: rows, files, targets: sids, logKind: "register",
-    logDetail: { title, items: items.length, method: dr.method, mode: b.mode || "items", answers: items.filter((it) => it.answer).length } });
+    logDetail: { title, items: items.length, parts: rows.length - items.length, method: dr.method, mode: b.mode || "items", answers: items.filter((it) => it.answer).length } });
   DRAFTS.delete(draft.id);
   return brief;
 }
@@ -605,7 +632,7 @@ export async function libraryAuto(pr, ctx) {
   const targets = (lib.for || []).filter((n) => active.has(n));     // 있는 학생만 (새로 만들지 않음)
   const print = await registerCommit({
     draft: d.draft, title: d.title, sub: d.sub, label: d.label || "서답형", level: pr.level || lib.level || "", targets, mode: "items",
-    items: d.items.map((it) => ({ seq: it.seq, keep: true, label: it.label, choice: it.choice,
+    items: d.items.map((it) => ({ seq: it.seq, keep: true, label: it.label, choice: it.choice, subs: it.subs || 0,
       answer: it.choice ? CIRC_NUM[String(it.answer).trim()] || String(it.answer || "").trim() : String(it.answer || "").trim() })),
   }, ctx);
   return { done: true, auto: true, print, n_items: d.items.length, n_answers: d.items.filter((it) => String(it.answer || "").trim()).length,
@@ -629,17 +656,23 @@ export async function attachAnswer(pr, up, ctx) {
   try { quick = await parseQuick(A0.doc); } catch { quick = {}; }
   const single = new Set(items.map((it) => it.src)).size <= 1;
   if (Object.keys(quick).length && single) {
-    for (const it of items) {
-      const key = pr.kind !== "registered" ? it.src_no : it.label;
+    // 하위 문제로 나눈 문항(「3 (1)」 「3 (2)」)은 문제 번호로 찾고, 정답 그림은 함께 · 정답 글자는 하위 문제마다
+    for (const g of groupProblems(items)) {
+      const it0 = g.rows[0];
+      const key = pr.kind !== "registered" ? it0.src_no : g.base;
       const q = /^\d+$/.test(String(key || "")) ? quick[Number(key)] : null;
       if (!q) continue;
       const rq = await renderQuick(A.doc, q);
-      const arel = `answers/${String(it.seq).padStart(3, "0")}.png`;
+      const arel = `answers/${String(it0.seq).padStart(3, "0")}.png`;
       await put(`${pr.code}/${arel}`, rq.png, "image/png");
-      const ans = it.answer || q.choice || q.text || "";
-      must(await T("tt_print_items").update({ answer: ans, answer_png: arel }).eq("print_id", pr.id).eq("seq", it.seq));
-      it.answer = ans; it.answer_png = arel; it._wh = rq.wh; it._png = rq.png;
-      n++;
+      const split = g.parts ? partsFromAnswer(q.text || "") : null;
+      for (const it of g.rows) {
+        const k = splitLabel(it.label).part;
+        const ans = it.answer || (g.parts ? (split && split[k - 1] ? split[k - 1].answer : "") : q.choice || q.text || "");
+        must(await T("tt_print_items").update({ answer: ans, answer_png: arel }).eq("print_id", pr.id).eq("seq", it.seq));
+        it.answer = ans; it.answer_png = arel; it._wh = rq.wh; it._png = rq.png;
+        n++;
+      }
     }
   }
   let designed = false;
@@ -659,7 +692,7 @@ export async function attachAnswer(pr, up, ctx) {
             must(await T("tt_print_items").update({ sol_png: srel }).eq("print_id", pr.id).eq("seq", it.seq));
             solE = { png, w: sol.w, h: sol.h };
           }
-          entries.push({ seq: it.seq, choice: !!it.choice, answer: it.answer || "", answer_png: it._png || null, answer_wh: it._wh || null, sol: solE });
+          entries.push({ seq: it.seq, label: it.label || undefined, choice: !!it.choice, answer: it.answer || "", answer_png: it._png || null, answer_wh: it._wh || null, sol: solE });
         }
         const cfg = settings({ template: TEMPLATE_KEYS.includes(pr.template) ? pr.template : "문정중" });
         cfg.코드 = pr.code;
