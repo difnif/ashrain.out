@@ -125,6 +125,22 @@
   "cpm",
   "eoq",
   "newsvendor",
-  "queue"
+  "queue",
+  "truth",
+  "venn",
+  "tromino",
+  "pascal",
+  "hanoi",
+  "eulerpath",
+  "euclid",
+  "dfa",
+  "bigo",
+  "sorting",
+  "rectree",
+  "heap",
+  "bfsdfs",
+  "mst",
+  "dptable",
+  "tsp"
  ]
 }

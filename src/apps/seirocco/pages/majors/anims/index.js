@@ -18,6 +18,8 @@ export const MODS = {
   fin: () => import("./fin.jsx"),
   game: () => import("./game.jsx"),
   ops: () => import("./ops.jsx"),
+  discrete: () => import("./discrete.jsx"),
+  algo: () => import("./algo.jsx"),
 };
 
 export const KINDS = {
@@ -71,6 +73,12 @@ export const KINDS = {
   hawkdove: ["game", "HawkDove"], cournot: ["game", "Cournot"], auction: ["game", "Auction"],
   // 경영과학
   lp: ["ops", "LP"], dijkstra: ["ops", "Dijkstra"], cpm: ["ops", "CPM"], eoq: ["ops", "EOQ"], newsvendor: ["ops", "Newsvendor"], queue: ["ops", "Queue"],
+  // 이산수학
+  truth: ["discrete", "Truth"], venn: ["discrete", "Venn"], tromino: ["discrete", "Tromino"], pascal: ["discrete", "Pascal"],
+  hanoi: ["discrete", "Hanoi"], eulerpath: ["discrete", "EulerPath"], euclid: ["discrete", "Euclid"], dfa: ["discrete", "DFA"],
+  // 알고리즘
+  bigo: ["algo", "BigO"], sorting: ["algo", "Sorting"], rectree: ["algo", "RecTree"], heap: ["algo", "Heap"],
+  bfsdfs: ["algo", "BfsDfs"], mst: ["algo", "MST"], dptable: ["algo", "DPTable"], tsp: ["algo", "TSP"],
 };
 
 const loaded = {};
