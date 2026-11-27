@@ -208,6 +208,14 @@
   "titration",
   "arrhenius",
   "nernst",
-  "hlines"
+  "hlines",
+  "leslie",
+  "compete",
+  "herd",
+  "drift",
+  "mm",
+  "neuron",
+  "phylo",
+  "turing"
  ]
 }
