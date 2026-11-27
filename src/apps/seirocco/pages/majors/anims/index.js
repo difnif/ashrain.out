@@ -23,6 +23,10 @@ export const MODS = {
   ml: () => import("./ml.jsx"),
   data: () => import("./data.jsx"),
   info: () => import("./info.jsx"),
+  analysis: () => import("./analysis.jsx"),
+  complex: () => import("./complex.jsx"),
+  numer: () => import("./numer.jsx"),
+  opt: () => import("./opt.jsx"),
 };
 
 export const KINDS = {
@@ -91,6 +95,18 @@ export const KINDS = {
   // 정보이론 · 암호
   entropy: ["info", "Entropy"], huffman: ["info", "Huffman"], lz: ["info", "LZ"], mutual: ["info", "Mutual"],
   bsc: ["info", "BSC"], hamming: ["info", "Hamming"], caesar: ["info", "Caesar"], modring: ["info", "ModRing"],
+  // 해석학
+  supinf: ["analysis", "SupInf"], epsn: ["analysis", "EpsN"], rearrange: ["analysis", "Rearrange"], unifcont: ["analysis", "UnifCont"],
+  zoomdiff: ["analysis", "ZoomDiff"], darboux: ["analysis", "Darboux"], unifconv: ["analysis", "UnifConv"], contract: ["analysis", "Contract"], cantor: ["analysis", "Cantor"],
+  // 복소해석
+  cmul: ["complex", "CMul"], roots: ["complex", "Roots"], cmap: ["complex", "CMap"], cr: ["complex", "CR"], branch: ["complex", "Branch"],
+  winding: ["complex", "Winding"], cauchyint: ["complex", "CauchyInt"], pseries: ["complex", "PSeries"], residue: ["complex", "Residue"],
+  // 수치해석
+  float: ["numer", "Float"], convrate: ["numer", "ConvRate"], interp: ["numer", "Interp"], quad: ["numer", "Quad"],
+  condnum: ["numer", "CondNum"], jacobi: ["numer", "Jacobi"], powerit: ["numer", "PowerIt"], odestab: ["numer", "OdeStab"],
+  // 최적화
+  critpt: ["opt", "CritPt"], convex: ["opt", "Convex"], linesearch: ["opt", "LineSearch"], newtonopt: ["opt", "NewtonOpt"],
+  kkt: ["opt", "KKT"], barrier: ["opt", "Barrier"], bnb: ["opt", "BnB"], anneal: ["opt", "Anneal"],
 };
 
 const loaded = {};
