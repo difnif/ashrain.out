@@ -13,6 +13,11 @@ export const MODS = {
   circuit: () => import("./circuit.jsx"),
   signal: () => import("./signal.jsx"),
   orbit: () => import("./orbit.jsx"),
+  econ: () => import("./econ.jsx"),
+  trade: () => import("./trade.jsx"),
+  fin: () => import("./fin.jsx"),
+  game: () => import("./game.jsx"),
+  ops: () => import("./ops.jsx"),
 };
 
 export const KINDS = {
@@ -53,6 +58,19 @@ export const KINDS = {
   // 천문우주
   kepler: ["orbit", "Kepler"], cannon: ["orbit", "Cannon"], hohmann: ["orbit", "Hohmann"], rocket: ["orbit", "Rocket"],
   parallax: ["orbit", "Parallax"], blackbody: ["orbit", "Blackbody"], transit: ["orbit", "Transit"], hubble: ["orbit", "Hubble"],
+  // 경제
+  market: ["econ", "Market"], tax: ["econ", "Tax"], elastic: ["econ", "Elastic"], utility: ["econ", "Utility"], costs: ["econ", "Costs"],
+  monopoly: ["econ", "Monopoly"], cobweb: ["econ", "Cobweb"], solow: ["econ", "Solow"], keynes: ["econ", "Keynes"], lorenz: ["econ", "Lorenz"],
+  // 무역
+  comparative: ["trade", "Comparative"], ppf: ["trade", "PPF"], tariff: ["trade", "Tariff"], parity: ["trade", "Parity"], incoterms: ["trade", "Incoterms"],
+  // 금융
+  compound: ["fin", "Compound"], npv: ["fin", "NPV"], amort: ["fin", "Amort"], bond: ["fin", "Bond"], frontier: ["fin", "Frontier"],
+  gbm: ["fin", "GBM"], option: ["fin", "Option"], bintree: ["fin", "BinTree"],
+  // 게임이론
+  nash2: ["game", "Nash2"], mixed: ["game", "Mixed"], backward: ["game", "Backward"], repeated: ["game", "Repeated"],
+  hawkdove: ["game", "HawkDove"], cournot: ["game", "Cournot"], auction: ["game", "Auction"],
+  // 경영과학
+  lp: ["ops", "LP"], dijkstra: ["ops", "Dijkstra"], cpm: ["ops", "CPM"], eoq: ["ops", "EOQ"], newsvendor: ["ops", "Newsvendor"], queue: ["ops", "Queue"],
 };
 
 const loaded = {};

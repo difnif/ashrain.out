@@ -18,8 +18,8 @@ export const CSS = `
 .ma-sl{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);flex:1 1 150px;min-width:0}
 .ma-sl b{color:var(--ink);font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
 .ma-sl input{flex:1;min-width:60px;accent-color:var(--sp,var(--ac))}
-.ma-seg{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden}
-.ma-seg button{border:0;background:var(--card);color:var(--mut);font:inherit;font-size:12px;font-weight:800;padding:6px 9px;cursor:pointer}
+.ma-seg{display:inline-flex;flex-wrap:wrap;max-width:100%;border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+.ma-seg button{border:0;background:var(--card);color:var(--mut);font:inherit;font-size:12px;font-weight:800;padding:6px 9px;cursor:pointer;flex:1 1 auto}
 .ma-seg button+button{border-left:1px solid var(--bd)}
 .ma-seg button.on{background:var(--sp,var(--ac));color:var(--bg)}
 .ma-read{font-size:12px;color:var(--ink);padding:6px 10px 0;line-height:1.6;font-variant-numeric:tabular-nums}
@@ -58,9 +58,10 @@ export function advanceT(x, dt, period = 0, speed = 1) {
 
 /**
  * 시계 — 화면에 보이면 저절로 돌고(줄인 움직임 설정이면 멈춘 채), 안 보이면 쉰다.
- * period 가 있으면 0 … period 를 되풀이한다. 반환: { t, playing, toggle, reset, setT, ref }
+ * period 가 있으면 0 … period 를 되풀이한다. rest: 움직임 줄이기 설정에서 멈춰 보여 줄 시각(전 → 후를 보여 주는 그림).
+ * 반환: { t, playing, toggle, reset, setT, ref }
  */
-export function useClock({ period = 0, speed = 1, auto = true } = {}) {
+export function useClock({ period = 0, speed = 1, auto = true, rest } = {}) {
   // 검산은 서버 그리기에서 여러 순간을 보려고 globalThis.__MA_T0 (초)를 둔다 — 앱에서는 늘 0 에서 시작
   const [t, setT] = useState(() => {
     const t0 = typeof globalThis !== "undefined" && typeof globalThis.__MA_T0 === "number" ? globalThis.__MA_T0 : 0;
@@ -73,6 +74,8 @@ export function useClock({ period = 0, speed = 1, auto = true } = {}) {
     const el = ref.current;
     if (!el || typeof IntersectionObserver === "undefined") return undefined;
     const reduce = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // 움직임 줄이기 설정이면 돌지 않으니, 한 장으로 볼 때 뜻이 가장 잘 보이는 순간(rest)에 세워 둔다(검산이 시각을 정했으면 그대로)
+    if (reduce && rest != null && typeof globalThis.__MA_T0 !== "number") setT(rest);
     const io = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) { if (auto && !reduce && !userPaused.current) setPlaying(true); }
       else setPlaying(false);
