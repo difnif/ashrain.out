@@ -192,6 +192,14 @@
   "condnum",
   "jacobi",
   "powerit",
-  "odestab"
+  "odestab",
+  "critpt",
+  "convex",
+  "linesearch",
+  "newtonopt",
+  "kkt",
+  "barrier",
+  "bnb",
+  "anneal"
  ]
 }
