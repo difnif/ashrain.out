@@ -284,13 +284,14 @@ function route() {
   routeSeq++;
   curHash = location.hash;
   const parts = (location.hash.replace(/^#\/?(tt\/?)?/, "") || "today").split("/").map(decodeURIComponent);      // 처음 열면 「오늘」
-  const tab = { print: "prints", wrong: "students", parts: "prints" }[parts[0]] || parts[0];
+  const tab = { print: "prints", wrong: "students", parts: "prints", bookcopy: "books", ask: "today" }[parts[0]] || parts[0];
   $$("#tt-tabs a").forEach((a) => a.classList.toggle("on", a.dataset.tab === tab));
   window.scrollTo(0, 0);
   document.onkeydown = null;
   if (!location.hash.startsWith("#/tt")) return;
   const R = { convert: viewConvert, register: viewRegister, grade: viewGrade, class: viewClass, students: viewStudents, prints: viewPrints, print: viewPrint, log: viewLog,
     export: viewExport, account: viewAccount, wrong: viewWrong, inbox: viewInbox, parts: viewParts, books: viewBooks, today: viewToday,
+    bookcopy: viewBookCopy, ask: viewAsk,
     import: (...a) => importView({ view, $, $$, esc, toast, modal, api, fmtCode }, ...a) }[parts[0]];
   view.innerHTML = `<div class="card"><span class="busy"></span>불러오는 중…</div>`;
   refreshInboxTab();
@@ -1526,6 +1527,176 @@ async function studentDetail(id) {
   $("#dJson").onclick = () => openLink(`/dl/student/${id}.json?${per()}`, true);
 }
 
+/* ───────────────────────── 교재 분석 · 포스트잇 (#/tt/bookcopy/<학생 교재 코드>) · 물어볼 것 (#/tt/ask)
+   분석은 채팅에서 Claude가 한다: 「분석 맡기기」 묶음 → 결과 JSON → 「분석 결과 넣기」(미리 보기 → 넣기, 업무 기록 · 되돌리기 한 번에).
+   포스트잇 = 지금 틀림인 문항(안 풀었지만 오답 포함). 색은 틀린 차: 1차 노랑 · 2차 주황 · 3차부터 빨강. 체크(넘어감)는 포스트잇이 아니다. */
+const PCOL = { 1: "y", 2: "o", 3: "r" };
+const RES_KO = { O: "O", X: "X", U: "안 풂" };
+const roundChips = (it) => it.rounds.map((r) => `<span class="tag ${r.result === "O" ? "o" : r.result === "X" ? "x" : "u"}" title="${md(r.day)} · ${r.graded_by === "claude" ? "Claude 채점" : "선생님 채점"}${r.mark ? " · 표시 " + esc(r.mark) : ""}${r.answer ? " · 학생 답 " + esc(r.answer) : ""}">${r.round}차 ${r.unsolved ? "안 풀고 X" : RES_KO[r.result]}${r.graded_by === "claude" ? "·C" : ""}</span>`).join(" ");
+// 문항 그림 자리 보기 — 스캔본 그 쪽을 그려 box 만큼 잘라 보여 줌(box 가 없으면 쪽 전체)
+async function showCrop(crop, title) {
+  if (!crop || !crop.scan_id) return toast("그림 자리가 없어요");
+  await modal(`<h2>${esc(title)}</h2><div id="cropBox" class="cropbox"><span class="busy"></span> 그리는 중…</div>`, [{ label: "닫기", value: null, cls: "ghost" }], {
+    onOpen: async (box) => {
+      try {
+        const blob = await B.scanImage(crop.scan_id, crop.page_index || 0);
+        const bmp = await createImageBitmap(blob);
+        const [x, y, w, h] = crop.box && crop.box.length === 4 ? crop.box : [0, 0, 1, 1];
+        const sx = Math.round(x * bmp.width), sy = Math.round(y * bmp.height), sw = Math.max(1, Math.round(w * bmp.width)), sh = Math.max(1, Math.round(h * bmp.height));
+        const cv = document.createElement("canvas");
+        cv.width = sw; cv.height = sh;
+        cv.getContext("2d").drawImage(bmp, sx, sy, sw, sh, 0, 0, sw, sh);
+        const el = $("#cropBox", box);
+        if (el) { el.innerHTML = ""; cv.style.maxWidth = "100%"; el.appendChild(cv); }
+      } catch (e) { const el = $("#cropBox", box); if (el) el.textContent = "그림을 그리지 못했어요: " + e.message; }
+    },
+  });
+}
+// 분석 결과 넣기 — 파일을 고르면 미리 보기, 「넣기」로 넣음
+function pickResultFile(after = () => route()) {
+  const old = document.getElementById("ttResultPick");
+  if (old) old.remove();
+  const inp = document.createElement("input");             // 화면에 붙여 두어야 어느 브라우저에서나 고른 뒤 change 가 온다
+  inp.type = "file"; inp.accept = ".json,application/json,text/plain"; inp.id = "ttResultPick"; inp.hidden = true;
+  document.body.appendChild(inp);
+  inp.onchange = async () => {
+    const f = inp.files && inp.files[0];
+    inp.remove();
+    if (!f) return;
+    const text = await f.text();
+    let pv;
+    try { pv = await api("books/import", { text, dry: true }); } catch (e) { return toast(e.message, 6000); }
+    const s = pv.summary;
+    const v = await modal(`<h2>분석 결과 넣기 — ${esc(pv.student)} · ${esc(pv.title)}</h2>
+      <table class="t small"><tr><td>새 문항</td><td><b>${s.items_new}</b></td></tr><tr><td>정답 · 단원을 채운 문항</td><td>${s.items_changed}</td></tr>
+        <tr><td>새 채점 결과</td><td><b>${s.marks_new}</b></td></tr><tr><td>바뀌는 채점 결과</td><td>${s.marks_changed}</td></tr><tr><td>이미 같은 결과</td><td>${s.marks_same}</td></tr>
+        <tr><td>확인할 것(물어볼 것)</td><td><b>${s.checks}</b></td></tr><tr><td>분석함으로 표시할 스캔본</td><td>${s.scans}</td></tr><tr><td>채점한 날 기록</td><td>${s.graded_days}</td></tr></table>
+      ${s.skipped.length ? `<p class="small warn-t">읽지 못해 건너뛸 줄 ${s.skipped.length}개: ${esc(s.skipped.slice(0, 8).join(" · "))}${s.skipped.length > 8 ? " …" : ""}</p>` : ""}
+      <p class="sub small">넣은 뒤에도 업무 기록에서 한 번에 되돌릴 수 있어요.</p>`,
+      [{ label: "그만두기", value: null, cls: "ghost" }, { label: "넣기", value: 1 }]);
+    if (!v) return;
+    try {
+      const r = await api("books/import", { text });
+      undoToast(`넣었어요 — 결과 ${r.summary.marks_new + r.summary.marks_changed}개 · 확인할 것 ${r.summary.checks}개`, r.events);
+      after(r);
+    } catch (e) { toast(e.message, 6000); }
+  };
+  inp.click();
+}
+// 분석 맡기기 — 학생 교재 하나의 묶음(zip) 받기
+async function downloadPack(copy, all = false) {
+  toast("묶음을 만드는 중…", 8000);
+  try {
+    const r = await api(`bookcopy/${copy}/pack`, { all });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(r.blob); a.download = r.zip_name; document.body.appendChild(a); a.click();
+    setTimeout(() => a.remove(), 1000);
+    toast(`받았어요 — 스캔본 ${r.n_scans}개. 채팅에서 Claude에게 zip을 주고 「분석해 줘」라고 하면 돼요`, 6000);
+  } catch (e) { toast(e.message, 6000); }
+}
+async function viewBookCopy(code) {
+  const d = await api("bookcopy/" + normCode(code));
+  let mode = store.get("bcMode", "postit");
+  if (!d.n_postits && mode === "postit") mode = "all";
+  const nUn = d.scans.filter((x) => !x.analyzed_at).length;
+  const draw = () => {
+    const q = ($("#bcQ") && $("#bcQ").value.trim()) || "";
+    const list = d.items.filter((it) => (mode === "all" || it.postit) && (!q || String(it.page) === q || `${it.page}쪽 ${it.label}`.includes(q)));
+    const pages = [...new Set(list.map((it) => it.page))];
+    $("#bcList").innerHTML = list.length ? pages.map((pg) => `<div class="bcpage"><div class="bcpg">${pg}쪽</div>${list.filter((it) => it.page === pg).map((it) => {
+      const nxt = it.cur ? it.cur.round + 1 : 1;
+      return `<div class="bcitem${it.postit ? " postit p" + PCOL[it.postit] : ""}" data-it="${it.id}">
+        <div class="bclabel"><b>${esc(it.label)}</b>${it.topic ? ` <span class="sub small">${esc(it.topic)}</span>` : ""}</div>
+        <div class="bcans small">${it.answer ? `정답 <b>${esc(it.answer)}</b>${it.answer_src === "claude" ? ` <span class="sub" title="Claude가 푼 정답">C</span>` : ""}` : `<span class="muted">정답 모름</span>`}</div>
+        <div class="bcrounds">${roundChips(it)}</div>
+        <div class="bcact">${it.crop ? `<button class="btn ghost small" data-crop="${it.id}">그림</button>` : ""}
+          ${it.postit ? `<button class="btn small" data-mk="O" data-rd="${nxt}" title="${nxt}차에 맞았어요 — 포스트잇을 떼요">${nxt}차 O</button><button class="btn ghost small" data-mk="X" data-rd="${nxt}" title="${nxt}차에도 틀렸어요">${nxt}차 X</button>` : ""}</div></div>`;
+    }).join("")}</div>`).join("") : `<div class="empty">${mode === "postit" ? "포스트잇이 붙은 문항이 없어요 👏" : "아직 분석해 넣은 문항이 없어요 — 「분석 맡기기」로 시작해요"}</div>`;
+    $$("[data-crop]", $("#bcList")).forEach((b) => (b.onclick = () => { const it = d.items.find((x) => x.id === +b.dataset.crop); showCrop(it.crop, `${it.page}쪽 ${it.label}`); }));
+    $$("[data-mk]", $("#bcList")).forEach((b) => (b.onclick = async () => {
+      const it = d.items.find((x) => x.id === +b.closest("[data-it]").dataset.it);
+      try { const r = await api("bookmarks", { copy: d.copy, item_id: it.id, round: +b.dataset.rd, result: b.dataset.mk }); undoToast(`${it.page}쪽 ${it.label} · ${b.dataset.rd}차 ${b.dataset.mk}`, r.events); route(); }
+      catch (e) { toast(e.message, 5000); }
+    }));
+  };
+  view.innerHTML = `<h1>${esc(d.student.name)} · ${esc(d.title)} <a class="btn ghost small" href="#/tt/books/${d.master}">교재 화면</a></h1>
+    ${d.ok ? "" : `<div class="card" style="background:#fffbeb;border-color:#fde68a"><b>교재 분석 표가 DB에 아직 없어요.</b> <span class="small">supabase/2026-11_tt_book_analysis.sql 을 넣어야 해요.</span></div>`}
+    <div class="card"><div class="row" style="justify-content:space-between"><div class="gsum"><span class="n">문항 ${d.items.length}</span><span class="n x">포스트잇 ${d.n_postits}</span>
+        ${d.questions.length ? `<a class="n" href="#/tt/ask" style="text-decoration:none">물어볼 것 ${d.questions.length}</a>` : ""}</div>
+      <div class="row"><button class="btn" id="bcPack" title="아직 분석 안 한 스캔본 + 지금까지 기록 + 가이드">분석 맡기기${nUn ? ` (스캔본 ${nUn})` : ""}</button>
+        <button class="btn ghost small" id="bcPackAll" title="분석한 것까지 모든 스캔본">모든 스캔본으로</button><button class="btn ghost" id="bcImport">분석 결과 넣기</button></div></div>
+      <p class="sub small" style="margin:8px 0 0">「분석 맡기기」 zip을 채팅에서 Claude에게 주고 「분석해 줘」 → 받은 결과 JSON을 「분석 결과 넣기」로 올려요. 포스트잇은 지금 틀린 문항(1차 노랑 · 2차 주황 · 3차부터 빨강)이에요.</p></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><span id="bcSeg"></span><input class="tin" id="bcQ" placeholder="쪽으로 찾기 (예: 12)" autocomplete="off" style="min-width:0;width:170px"></div>
+      <div id="bcList" style="margin-top:10px"></div></div>`;
+  seg($("#bcSeg"), [["postit", `포스트잇만 (${d.n_postits})`], ["all", `모두 (${d.items.length})`]], mode, (v) => { mode = v; store.set("bcMode", v); draw(); });
+  $("#bcQ").oninput = draw;
+  $("#bcPack").onclick = () => downloadPack(d.copy, false);
+  $("#bcPackAll").onclick = () => downloadPack(d.copy, true);
+  $("#bcImport").onclick = () => pickResultFile();
+  draw();
+}
+// 물어볼 것 — 확인할 것(선생님 ○인데 틀림 · 빨간 표시 + ○ · 애매한 표시 · 안 푼 문제 표시) · 이유 몰아 적기 · 모은 이유
+async function viewAsk(tab) {
+  const d = await api("questions");
+  tab = tab || (d.open.length ? "open" : d.later.length ? "later" : "reasons");
+  const qHead = (q) => `<div class="row" style="justify-content:space-between"><div><b>${esc(q.name)}</b> · ${esc(q.title)} ${q.item ? `· <b>${q.item.page}쪽 ${esc(q.item.label)}</b>` : ""}${q.detail.round ? ` · ${q.detail.round}차` : ""}
+      <span class="tag ${q.kind === "o_but_wrong" || q.kind === "red_note_o" ? "x" : "u"}">${esc(q.kind_ko)}</span></div>
+      <div class="row">${q.item && q.item.crop ? `<button class="btn ghost small" data-qcrop="${q.id}">그림</button>` : ""}${q.copy ? `<a class="btn ghost small" href="#/tt/bookcopy/${q.copy}">교재 문항</a>` : ""}</div></div>
+    <div class="small" style="margin-top:4px">${q.detail.why ? esc(q.detail.why) : ""}${q.detail.student_answer ? ` · 학생 답 <b>${esc(q.detail.student_answer)}</b>` : ""}${q.detail.correct_answer ? ` · 정답 <b>${esc(q.detail.correct_answer)}</b>` : ""}${q.mark ? ` <span class="sub">(지금 기록: ${q.mark.round}차 ${q.mark.unsolved ? "안 풀고 X" : RES_KO[q.mark.result]})</span>` : ""}</div>`;
+  const openCard = (q) => `<div class="card qcard" data-q="${q.id}">${qHead(q)}
+    <div class="row" style="margin-top:8px">${q.kind === "o_but_wrong" || q.kind === "red_note_o"
+      ? `<button class="btn ghost" data-qa="fix">내 실수 — 틀림으로 고치기</button><input class="tin" data-qr placeholder="맞다고 인정하는 이유 (예: 과정은 맞고 옮겨 쓰다 틀림)" style="flex:1;min-width:200px" autocomplete="off">
+         <button class="btn" data-qa="accept">맞다고 인정</button><button class="btn ghost small" data-qa="later" title="인정하고 이유는 나중에 몰아서 적어요">이유는 나중에</button>`
+      : q.kind === "unsolved_mark"
+        ? `<button class="btn ghost" data-qs="U">넘어감(체크)</button><button class="btn ghost" data-qs="wrong_unsolved">안 풀었지만 오답(별표 · 빗금)</button>`
+        : `${(q.detail.candidates && q.detail.candidates.length ? q.detail.candidates : ["O", "X", "U"]).filter((c) => RES_KO[c]).map((c) => `<button class="btn ghost" data-qs="${c}">${RES_KO[c]}</button>`).join("")}`}
+      <button class="btn ghost small" data-qa="dismiss" title="묻지 않아도 되는 것">넘기기</button></div></div>`;
+  const laterCard = (q) => `<div class="card qcard" data-q="${q.id}">${qHead(q)}<div class="row" style="margin-top:8px"><textarea class="tin" data-qr placeholder="맞다고 인정한 이유" style="flex:1;min-height:44px"></textarea></div></div>`;
+  view.innerHTML = `<h1>물어볼 것</h1>
+    ${d.ok ? "" : `<div class="card" style="background:#fffbeb;border-color:#fde68a"><b>교재 분석 표가 DB에 아직 없어요.</b> <span class="small">supabase/2026-11_tt_book_analysis.sql 을 넣어야 해요.</span></div>`}
+    <div class="card"><span id="askSeg"></span><p class="sub small" style="margin:8px 0 0">분석에서 Claude가 선생님께 여쭙는 것이에요. 「맞다고 인정」한 이유는 모아 두었다가 받을 수 있어요(선생님의 교육관 자료).</p></div>
+    <div id="askBody"></div>`;
+  seg($("#askSeg"), [["open", `확인할 것 (${d.open.length})`], ["later", `이유 몰아 적기 (${d.later.length})`], ["reasons", `모은 이유 (${d.reasons.length})`]], tab, (v) => { location.hash = "#/tt/ask/" + v; });
+  const body = $("#askBody");
+  if (tab === "open") body.innerHTML = d.open.length ? d.open.map(openCard).join("") : `<div class="card"><div class="empty">확인할 것이 없어요 👏</div></div>`;
+  else if (tab === "later") body.innerHTML = d.later.length ? d.later.map(laterCard).join("") + `<div class="card"><button class="btn big" id="askLaterSave">적은 이유 저장</button></div>` : `<div class="card"><div class="empty">나중에 적기로 한 이유가 없어요</div></div>`;
+  else body.innerHTML = `<div class="card">${d.reasons.length ? `<div class="row" style="justify-content:flex-end"><button class="btn ghost small" id="askExport">이유 받기 (JSON)</button></div>
+      <table class="t" style="margin-top:6px"><tr><th>날짜</th><th>학생 · 교재</th><th>문항</th><th>무엇</th><th>이유</th></tr>${d.reasons.map((q) => `<tr><td class="sub small nowrap">${shortWhen(q.answered_at)}</td><td>${esc(q.name)} · ${esc(q.title)}</td>
+      <td class="nowrap">${q.item ? `${q.item.page}쪽 ${esc(q.item.label)}` : ""}</td><td class="small">${esc(q.kind_ko)}${q.detail.why ? ` — ${esc(q.detail.why)}` : ""}</td><td><b>${esc(q.reason)}</b></td></tr>`).join("")}</table>` : `<div class="empty">아직 모은 이유가 없어요</div>`}</div>`;
+  const all = [...d.open, ...d.later, ...d.reasons];
+  $$("[data-qcrop]", view).forEach((b) => (b.onclick = () => { const q = all.find((x) => x.id === +b.dataset.qcrop); showCrop(q.item.crop, `${q.item.page}쪽 ${q.item.label}`); }));
+  const send = async (q, payload, msg) => {
+    try { const r = await api("questions/" + q.id, payload); undoToast(msg, r.events); route(); } catch (e) { toast(e.message, 5000); }
+  };
+  $$(".qcard", body).forEach((card) => {
+    const q = all.find((x) => x.id === +card.dataset.q);
+    if (!q) return;
+    $$("[data-qa]", card).forEach((b) => (b.onclick = () => {
+      const a = b.dataset.qa, reason = $("[data-qr]", card) ? $("[data-qr]", card).value.trim() : "";
+      if (a === "fix") return send(q, { action: "fix" }, "틀림으로 고쳤어요");
+      if (a === "accept") { if (!reason) { toast("이유를 적거나 「이유는 나중에」를 눌러 주세요", 4000); return $("[data-qr]", card).focus(); } return send(q, { action: "accept", reason }, "맞다고 인정했어요 — 이유를 모아 두었어요"); }
+      if (a === "later") return send(q, { action: "accept", reason: "" }, "맞다고 인정했어요 — 이유는 「이유 몰아 적기」에서");
+      if (a === "dismiss") return send(q, { action: "dismiss" }, "넘겼어요");
+    }));
+    $$("[data-qs]", card).forEach((b) => (b.onclick = () => send(q, { action: "set", result: b.dataset.qs }, "골랐어요")));
+  });
+  if ($("#askLaterSave")) $("#askLaterSave").onclick = async () => {
+    const filled = $$(".qcard", body).map((card) => ({ q: d.later.find((x) => x.id === +card.dataset.q), reason: $("[data-qr]", card).value.trim() })).filter((x) => x.q && x.reason);
+    if (!filled.length) return toast("적은 이유가 없어요");
+    const events = [];
+    for (const x of filled) { try { events.push(...(await api("questions/" + x.q.id, { action: "reason", reason: x.reason })).events); } catch (e) { toast(e.message, 5000); } }
+    undoToast(`이유 ${filled.length}개를 저장했어요`, events); route();
+  };
+  if ($("#askExport")) $("#askExport").onclick = () => {
+    const out = { kind: "ashrain.teacher.reasons", made: new Date().toISOString(), note: "선생님이 「맞다고 인정」한 이유 — 학생을 어떻게 보고 가르치는지(교육관) 자료",
+      reasons: d.reasons.map((q) => ({ day: (q.answered_at || "").slice(0, 10), student: q.name, book: q.title, page: q.item ? q.item.page : null, label: q.item ? q.item.label : null,
+        kind: q.kind_ko, what: q.detail.why || "", student_answer: q.detail.student_answer || "", correct_answer: q.detail.correct_answer || "", reason: q.reason })) };
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: "application/json" })); a.download = `인정이유_${todayStr()}.json`;
+    document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 1000);
+  };
+}
+
 /* ───────────────────────── 오늘 (#/tt/today[/날짜]) — 대시보드: 결석부(당일 확인) · 확인 안 한 지난 것 · 다가오는 7일 · 재원 안 적은 학생 · 오래 채점하지 않은 교재
    결석부는 학생 · 날마다 하나. 나중에 학부모 모드(종성)에서 학부모가 넣은 것도 여기로 들어온다(source = parent). */
 const AK = { absent: ["결석", "x"], absent_maybe: ["결석 예정", "u"], late: ["지각", "u"], late_maybe: ["지각 예정", "u"], early_maybe: ["조퇴 예정", "u"], no_contact: ["연락 없음", "x"] };
@@ -1599,8 +1770,11 @@ async function viewToday(date) {
   const d = await api("today" + (date ? "?date=" + encodeURIComponent(date) : ""));
   const isToday = d.date === d.today;
   const flagged = (d.need_month || []);
+  const ask = d.ask || { open: 0, later: 0 };
   view.innerHTML = `<h1>${isToday ? "오늘" : "그날"} <span class="sub">${dayLabel(d.date)}</span></h1>
     ${d.ok ? "" : attWarn}
+    ${ask.open || ask.later ? `<div class="card" style="border-color:#fca5a5"><div class="row" style="justify-content:space-between"><h2 style="margin:0">물어볼 것 <span class="sub small">스캔본 분석에서 Claude가 여쭙는 것</span></h2>
+      <div class="row">${ask.open ? `<a class="btn" href="#/tt/ask/open">확인할 것 ${ask.open}</a>` : ""}${ask.later ? `<a class="btn ghost" href="#/tt/ask/later">이유 몰아 적기 ${ask.later}</a>` : ""}</div></div></div>` : ""}
     <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">결석부 <span class="sub small">${isToday ? "오늘" : md(d.date)} 결석 · 지각 · 조퇴 — 그날 「왔음 · 안 옴 · 늦음」으로 확인해요</span></h2>
         <div class="row"><a class="btn ghost small" href="#/tt/today/${shiftDay(d.date, -1)}">◀ ${md(shiftDay(d.date, -1))}</a>${isToday ? "" : `<a class="btn ghost small" href="#/tt/today">오늘</a>`}<a class="btn ghost small" href="#/tt/today/${shiftDay(d.date, 1)}">${md(shiftDay(d.date, 1))} ▶</a></div></div>
       ${d.day_rows.length ? `<div id="tDay" style="margin-top:8px">${attTable(d.day_rows)}</div>` : `<div class="empty">${isToday ? "오늘" : "이날"} 적힌 결석 · 지각이 없어요</div>`}
@@ -1803,7 +1977,7 @@ async function viewBooks(code, arg) {
       ${stale.map((x) => `<tr class="click" data-href="#/tt/books/${x.book.code}"><td><b>${esc(x.name)}</b></td><td>${esc(x.book.title)}</td><td>${gradedText(x)}</td><td>${progText(x)}</td><td>${solText(x)}</td></tr>`).join("")}</table></div>` : ""}
     <div class="card"><h2>교재 목록</h2>${list.length ? `<table class="t"><tr><th>교재</th><th>출판사 · 학년</th><th>학생 · 스캔본</th><th></th></tr>
       ${list.map((b) => `<tr class="click" data-href="#/tt/books/${b.code}"><td><b>${esc(b.title)}</b>${b.memo ? `<div class="small muted">${esc(b.memo)}</div>` : ""}</td><td class="small">${bookSub(b) || "-"}</td>
-        <td><div class="chips">${b.students.map((x) => `<span class="bkst${x.active ? "" : " off"}">${esc(x.name)} ${idleTag(x)} ${bookScanBtn(x, b.title, x.name)}</span>`).join("") || `<span class="muted small">아직 없음</span>`}</div></td>
+        <td><div class="chips">${b.students.map((x) => `<span class="bkst${x.active ? "" : " off"}">${esc(x.name)} ${idleTag(x)}${x.n_postits ? ` <a class="tag postit-t" href="#/tt/bookcopy/${x.code}" title="지금 틀린 문항">포스트잇 ${x.n_postits}</a>` : ""} ${bookScanBtn(x, b.title, x.name)}</span>`).join("") || `<span class="muted small">아직 없음</span>`}</div></td>
         <td><a class="btn small ghost nowrap" href="#/tt/books/${b.code}">학생 · 기록</a></td></tr>`).join("")}</table>` : `<div class="empty">아직 등록한 교재가 없어요</div>`}</div>
     <div class="card"><h2>교재 등록 <span class="sub small">학생마다 교재 하나에 스캔본 · 진도 · 채점 기록을 모아요</span></h2>
       <div class="opt">
@@ -1853,14 +2027,17 @@ async function bookDetail(code) {
   const openSid = store.get("bookOpen", null);
   view.innerHTML = `<h1>${esc(b.title)} ${bookSub(b) ? `<span class="sub small">${bookSub(b)}</span>` : ""}</h1>
     ${logsWarn(b.logs_ok)}
-    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">이 교재를 쓰는 학생</h2><a class="btn ghost small" href="#/tt/books/day">수업 끝 진도 적기</a></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">이 교재를 쓰는 학생</h2><div class="row"><button class="btn ghost small" id="bImport" title="채팅에서 Claude가 만든 결과 JSON 올리기">분석 결과 넣기</button><a class="btn ghost small" href="#/tt/books/day">수업 끝 진도 적기</a></div></div>
       ${b.students.length ? `<table class="t" style="margin-top:8px"><tr><th>학생</th><th>진도</th><th>마지막 채점</th><th>해설지</th><th>스캔본</th><th></th></tr>
       ${b.students.map((x) => `<tr${x.active ? "" : ` style="opacity:.55"`}><td><a href="#/tt/students/${x.sid}"><b>${esc(x.name)}</b></a><div class="sub small">붙인 날 ${md(x.since)}</div></td>
         <td>${progText(x)}${x.unchecked && x.unchecked.known && x.unchecked.text ? `<div class="small warn-t" title="적은 진도와 채점한 쪽으로 어림했어요">채점 기록 없는 쪽 ${esc(x.unchecked.text)}</div>` : ""}</td>
         <td>${gradedText(x)}</td>
         <td>${x.solution ? `${solText(x)} <button class="x" data-bldel="${x.solution.id}" title="해설지 기록 지우기">×</button>` : `<button class="btn small ghost" data-sol="${x.code}" title="오늘 해설지를 줬다고 적어요">해설지 줬어요</button>`}</td>
-        <td>${bookScanBtn(x, b.title, x.name)}</td>
-        <td>${x.n_scans || (x.logs || []).length ? "" : `<button class="btn small ghost warn-t" data-unas="${x.sid}" title="이 학생에게서 교재를 빼요 (스캔본 · 기록이 없을 때만)">빼기</button>`}</td></tr>
+        <td><div class="row" style="gap:4px;flex-wrap:wrap">${bookScanBtn(x, b.title, x.name)}
+          <a class="btn small ghost nowrap" href="#/tt/bookcopy/${x.code}" title="분석해 넣은 문항 · 지금 틀린 문항(포스트잇)">문항${x.n_postits ? ` · <span class="pdot"></span>포스트잇 ${x.n_postits}` : x.n_items ? ` ${x.n_items}` : ""}</a>
+          ${x.n_scans ? `<button class="btn small ghost nowrap" data-pack="${x.code}" title="아직 분석 안 한 스캔본 + 지금까지 기록 + 가이드 (zip)">분석 맡기기${x.n_unanalyzed ? ` (${x.n_unanalyzed})` : ""}</button>` : ""}
+          ${x.n_ask ? `<a class="btn small ghost warn-t nowrap" href="#/tt/ask">물어볼 것 ${x.n_ask}</a>` : ""}</div></td>
+        <td>${x.n_scans || (x.logs || []).length || x.n_items ? "" : `<button class="btn small ghost warn-t" data-unas="${x.sid}" title="이 학생에게서 교재를 빼요 (스캔본 · 기록이 없을 때만)">빼기</button>`}</td></tr>
         <tr class="blogrow"><td colspan="6"><details data-sid="${x.sid}"${openSid === x.sid ? " open" : ""}><summary class="small">기록 ${(x.logs || []).length} · 적기</summary>
           <div class="row blogform" data-code="${x.code}">
             <select class="tin" data-f="kind"><option value="graded">채점한 날</option><option value="solved">진도(몇 쪽까지)</option></select>
@@ -1882,6 +2059,8 @@ async function bookDetail(code) {
         ${b.students.length ? "" : `<button class="btn ghost warn-t" id="bDel">교재 지우기</button>`}<a class="btn ghost" href="#/tt/books">교재 목록</a></div></div>
     ${bookHowto()}`;
   bindScanButtons(view, undefined, (bt, sc) => { if (!sc.length !== !+bt.dataset.had) route(); });     // 스캔본이 생기거나 다 지우면 「빼기」를 다시 그림
+  $$("[data-pack]", view).forEach((bt) => (bt.onclick = () => downloadPack(bt.dataset.pack, false)));
+  if ($("#bImport")) $("#bImport").onclick = () => pickResultFile();
   $$("details[data-sid]", view).forEach((d) => d.addEventListener("toggle", () => { if (d.open) store.set("bookOpen", +d.dataset.sid); else if (store.get("bookOpen", null) === +d.dataset.sid) store.set("bookOpen", null); }));
   $$(".blogform", view).forEach((f) => {
     const kind = $('[data-f="kind"]', f), round = $('[data-f="round"]', f), pages = $('[data-f="pages"]', f);
@@ -2504,7 +2683,7 @@ const EV = {
   grading_reopen: "채점 다시 엶", retry_start: "다음 차 채점 시작", round_delete: "마지막 차 지움", grading_delete: "채점 기록 지움",
   print_purge: "프린트 완전히 지움", print_restore: "프린트 되살림", wrongset_make: "오답 프린트 만듦", library_register: "보관함에서 등록",
   library_import: "보관함에 옮겨 옴", pc_import: "PC 자료 옮겨 옴",
-  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움", book_log: "교재 기록", student_month: "재원 · 원비", attendance: "결석부",
+  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움", book_log: "교재 기록", student_month: "재원 · 원비", attendance: "결석부", book_import: "교재 분석 넣음", book_mark: "교재 채점", question: "물어볼 것", export_book: "교재 분석 맡기기",
 };
 function evDetail(e) {
   const d = e.detail || {};
@@ -2518,6 +2697,13 @@ function evDetail(e) {
       return [esc(d.name || ""), "round" in d ? esc(whenText(d.round)) : "", d.pages ? `${d.pages}쪽` : ""].filter(Boolean).join(" · ");
     case "grading_start": case "student_add": return "";
     case "book_add": case "book_edit": case "book_assign": case "book_unassign": case "book_delete": return esc(d.title || "");
+    case "book_import": { const s0 = d.summary || {}; return `${d.undo_of ? "<b>되돌림</b> · " : ""}${esc(d.title || "")}${d.undo_of ? "" : ` · 새 결과 ${s0.marks_new || 0} · 바뀐 결과 ${s0.marks_changed || 0} · 확인할 것 ${s0.checks || 0}`}`; }
+    case "book_mark": {
+      const one = (x) => (!x ? "없음" : `${x.round}차 ${x.unsolved ? "안 풀고 X" : RES_KO[x.result] || x.result}`);
+      return `${d.undo_of ? "<b>되돌림</b> · " : ""}${esc(d.title || "")} · ${d.page ?? ""}쪽 ${esc(d.label || "")} · ${esc(!d.before ? "적음: " + one(d.after) : !d.after ? "지움: " + one(d.before) : one(d.before) + " → " + one(d.after))}`;
+    }
+    case "question": { const s0 = d.summary || {}; return `${d.undo_of ? "<b>되돌림</b> · " : ""}${esc(d.title || "")}${s0.page != null ? ` · ${s0.page}쪽 ${esc(s0.label || "")}` : ""} · ${esc({ fix: "내 실수 — 틀림으로", accept: "맞다고 인정", reason: "이유 적음", set: "골랐음", dismiss: "넘김" }[s0.action] || "")}`; }
+    case "export_book": return `${esc(d.title || "")} · 스캔본 ${d.scans || 0}개`;
     case "attendance": {
       const one = (x) => (!x ? "없음" : `${(AK[x.kind] || [x.kind])[0]}${x.reason ? ` (${x.reason})` : ""}${x.checked ? ` · 확인 ${CHK[x.checked]}` : ""}`);
       const what = !d.before ? `적음: ${one(d.after)}` : !d.after ? `지움: ${one(d.before)}` : `${one(d.before)} → ${one(d.after)}`;
@@ -2544,7 +2730,7 @@ async function viewLog() {
   const ev = await api("events?limit=1000");
   let f = store.get("logFilter", "all");
   const groups = { all: "전체", convert: "변환·등록", grading: "채점", class: "수업 기록", book: "교재", student: "학생 · 재원", att: "결석부", etc: "기타" };
-  const grp = (k) => (k === "convert" || k === "register" ? "convert" : k.startsWith("grading") ? "grading" : k.startsWith("class") ? "class" : k.startsWith("book") ? "book" : k.startsWith("student") ? "student" : k === "attendance" ? "att" : "etc");
+  const grp = (k) => (k === "convert" || k === "register" ? "convert" : k.startsWith("grading") ? "grading" : k.startsWith("class") ? "class" : k.startsWith("book") || k === "question" || k === "export_book" ? "book" : k.startsWith("student") ? "student" : k === "attendance" ? "att" : "etc");
   const week = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
   const recent = ev.filter((e) => day(e.at) >= week);
   const cnt = (pred) => recent.filter(pred).length;

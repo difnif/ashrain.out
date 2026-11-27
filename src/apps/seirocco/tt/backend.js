@@ -302,13 +302,23 @@ const logOut = (l) => ({ id: l.id, day: l.day, kind: l.kind, page_to: l.page_to,
 async function booksList(onlyMaster = null) {
   const { masters, copies } = await bookCopies();
   const sel = onlyMaster ? copies.filter((c) => c.master.id === onlyMaster) : copies;
-  const [logs, scans] = await Promise.all([bookLogs(sel.map((c) => c.x.id)), bookScans(sel.map((c) => c.g?.id).filter(Boolean))]);
+  const ids = sel.map((c) => c.x.id);
+  const [logs, scans, bm, bq] = await Promise.all([bookLogs(ids), bookScans(sel.map((c) => c.g?.id).filter(Boolean)),
+    ids.length ? anaRows("tt_book_marks", () => T("tt_book_marks").select("print_id,item_id,round,result").in("print_id", ids)) : [],
+    ids.length ? anaRows("tt_questions", () => T("tt_questions").select("print_id,status,reason,reason_later").in("print_id", ids)) : []]);
   const today = todayStr();
+  const postits = (pid) => {                       // 지금 틀림인 문항 수(문항마다 가장 늦은 차)
+    const last = new Map();
+    for (const m of bm) if (m.print_id === pid && (!last.has(m.item_id) || last.get(m.item_id).round < m.round)) last.set(m.item_id, m);
+    return { n_items: last.size, n_postits: [...last.values()].filter((m) => m.result === "X").length };
+  };
+  const asks = (pid) => bq.filter((q) => q.print_id === pid && (q.status === "open" || (q.status === "accepted" && q.reason_later && !q.reason))).length;
   return [...masters.values()].filter((mst) => !onlyMaster || mst.id === onlyMaster).map((mst) => {
     const b = bookOf(mst);
     const students = sel.filter((c) => c.master.id === mst.id).map((c) => ({
       code: c.x.code, sid: c.sid, name: c.st.name, active: c.st.active !== false, gid: c.g ? c.g.id : null, since: c.x.created_at,
-      ...bookState(c, logs, scans, today),
+      ...bookState(c, logs, scans, today), ...postits(c.x.id), n_ask: asks(c.x.id),
+      n_unanalyzed: c.g ? scans.filter((x) => x.grading_id === c.g.id && !x.analyzed_at).length : 0,
       logs: onlyMaster ? logs.filter((l) => l.print_id === c.x.id).sort(byDay).reverse().map(logOut) : undefined,
     })).sort((a, c) => a.name.localeCompare(c.name, "ko"));
     return { id: mst.id, code: mst.code, code_fmt: fmtCode(mst.code), title: mst.title, publisher: b.publisher || "", grade: b.grade || "", memo: b.memo || "",
@@ -527,8 +537,10 @@ async function todayView(date) {
       .map((x) => ({ book: b.title, code: b.code, sid: x.sid, name: x.name, idle_days: x.idle_days, never_graded: x.never_graded, last_graded: x.last_graded, since: x.since })))
       .sort((a, b) => b.idle_days - a.idle_days);
   } catch { stale = []; }
+  const qs = await anaRows("tt_questions", () => T("tt_questions").select("status,reason,reason_later"));
   return {
     date: day, today: todayStr(), ok: attTable, months_ok: monthTable, this_month: thisM,
+    ask: { open: qs.filter((q) => q.status === "open").length, later: qs.filter((q) => q.status === "accepted" && q.reason_later && !q.reason).length },
     day_rows: out.filter((r) => r.day === day),
     unchecked: out.filter((r) => r.day < day && !r.checked && ATT_UNSURE.includes(r.kind)),
     upcoming: out.filter((r) => r.day > day),
@@ -536,6 +548,259 @@ async function todayView(date) {
     need_month: needMonth, stale_books: stale,
     students: sts.map((s) => ({ id: s.id, name: s.name, active: s.active !== false })),
   };
+}
+
+// ── 교재 분석 (supabase/2026-11_tt_book_analysis.sql) — 교재 문항(tt_book_items, 교재 자체에) · 채점 결과(tt_book_marks, 학생 교재에) · 물어볼 것(tt_questions)
+//   분석은 채팅에서 Claude가 한다: 「분석 맡기기」 묶음(스캔본 + 가이드 + 지금까지 기록) → 결과 JSON → 「분석 결과 넣기」
+let anaTable = true;
+const ANA_SQL = "교재 분석 표가 DB에 아직 없어요 — supabase/2026-11_tt_book_analysis.sql 을 넣어야 해요";
+const noAnaTable = (e) => { const t = String((e && e.message) || e || ""); return /tt_book_items|tt_book_marks|tt_questions|analyzed_at/.test(t) && /does not exist|schema cache|Could not find/i.test(t); };
+const anaFail = (e) => { if (noAnaTable(e)) { anaTable = false; throw new Error(ANA_SQL); } throw e; };
+const pick = (x, ks) => Object.fromEntries(ks.map((k) => [k, x[k] ?? null]));
+const sameBy = (ks) => (a, b) => !!a && !!b && ks.every((k) => JSON.stringify(a[k] ?? null) === JSON.stringify(b[k] ?? null));
+const snapBy = (ks, fs) => (r) => (r ? { id: r.id, ...pick(r, ks), ...pick(r, fs) } : null);
+const ITEM_F = ["page", "label", "answer", "answer_src", "topic", "crop"];
+const MARK_F = ["round", "result", "unsolved", "mark", "answer", "graded_by", "day", "report_day", "scan_id", "note"];
+const Q_K = ["student_id", "print_id", "item_id", "mark_id", "grading_id", "seq"];
+const Q_F = ["kind", "detail", "status", "answer", "reason", "reason_later", "answered_at"];
+const snapItem = snapBy(["print_id"], ITEM_F), snapMark = snapBy(["print_id", "student_id", "item_id"], MARK_F), snapQ = snapBy(Q_K, Q_F);
+const QKIND = { o_but_wrong: "선생님 ○인데 틀림", red_note_o: "빨간 표시 · 메모 + ○", unsolved_mark: "안 푼 문제 표시", unsure_mark: "애매한 표시", late_grade: "늦은 채점" };
+async function anaRows(t, build) {
+  if (!anaTable) return [];
+  try { return await all(build); } catch (e) { if (noAnaTable(e)) { anaTable = false; return []; } throw e; }
+}
+// 스캔본 「분석함」 때 — 칸이 아직 없으면(SQL 전) 빈 것
+async function analyzedMap(gid) {
+  const r = gid ? await anaRows("tt_scans", () => T("tt_scans").select("id,analyzed_at").eq("grading_id", gid)) : [];
+  return new Map(r.map((x) => [x.id, x.analyzed_at || null]));
+}
+// 문항마다 지금 결과 = 가장 늦은 차. 포스트잇 = 지금 틀림(안 풀었지만 오답 포함)인 문항, 색은 그 차(1 노랑 · 2 주황 · 3 이상 빨강)
+function itemState(marks) {
+  const rs = marks.slice().sort((a, b) => a.round - b.round);
+  const cur = rs.length ? rs[rs.length - 1] : null;
+  return { rounds: rs.map((m) => ({ id: m.id, round: m.round, result: m.result, unsolved: !!m.unsolved, mark: m.mark || "", answer: m.answer || "", day: m.day, report_day: m.report_day, graded_by: m.graded_by, scan_id: m.scan_id, note: m.note || "" })),
+    cur: cur ? { round: cur.round, result: cur.result, unsolved: !!cur.unsolved } : null, postit: cur && cur.result === "X" ? Math.min(cur.round, 3) : null };
+}
+// 학생 교재 하나의 문항 · 결과 · 물어볼 것
+async function bookCopyItems(code) {
+  const c = await bookCopyByCode(code);
+  const [items, marks, qs, scans, am] = await Promise.all([
+    anaRows("tt_book_items", () => T("tt_book_items").select("*").eq("print_id", c.master.id).order("page").order("id")),
+    anaRows("tt_book_marks", () => T("tt_book_marks").select("*").eq("print_id", c.x.id).order("id")),
+    anaRows("tt_questions", () => T("tt_questions").select("*").eq("print_id", c.x.id).order("id")),
+    c.g ? scanList(c.g.id) : [], analyzedMap(c.g ? c.g.id : null)]);
+  const out = items.map((it) => ({ id: it.id, page: it.page, label: it.label, answer: it.answer || "", answer_src: it.answer_src || "", topic: it.topic || "", crop: it.crop || null,
+    ...itemState(marks.filter((m) => m.item_id === it.id)) })).filter((it) => it.rounds.length);
+  return { ok: anaTable, copy: c.x.code, master: c.master.code, title: c.x.title, student: { id: c.sid, name: c.st.name }, gid: c.g ? c.g.id : null,
+    items: out, n_postits: out.filter((x) => x.postit).length, scans: scans.map((x) => ({ id: x.id, name: x.name, round: x.round, kind: x.kind, pages: x.pages, created_at: x.created_at, analyzed_at: am.get(x.id) || null })),
+    questions: qs.filter((q) => q.status === "open" || (q.status === "accepted" && q.reason_later && !q.reason)).map((q) => ({ id: q.id, kind: q.kind, status: q.status, item_id: q.item_id })) };
+}
+// 「분석 맡기기」 묶음에 넣을 지금까지 기록
+async function bookPackData(code, all = false) {
+  const c = await bookCopyByCode(code);
+  const [items, marks, logs, scans, am] = await Promise.all([
+    anaRows("tt_book_items", () => T("tt_book_items").select("*").eq("print_id", c.master.id).order("page").order("id")),
+    anaRows("tt_book_marks", () => T("tt_book_marks").select("*").eq("print_id", c.x.id).order("id")),
+    bookLogs([c.x.id]), c.g ? scanList(c.g.id) : [], analyzedMap(c.g ? c.g.id : null)]);
+  scans.forEach((x) => { x.analyzed_at = am.get(x.id) || null; });
+  const pick2 = scans.filter((x) => all || !x.analyzed_at);
+  const b = bookOf(c.master);
+  return {
+    c, scans: pick2,
+    context: {
+      kind: "ashrain.book.context", version: 1, made: nowIso(), today: todayStr(), copy: c.x.code,
+      book: { title: c.x.title, publisher: b.publisher || "", grade: b.grade || "", master: c.master.code },
+      student: { name: c.st.name, grade: c.st.grade || "" },
+      items: items.map((it) => ({ page: it.page, label: it.label, answer: it.answer || "", answer_src: it.answer_src || "", topic: it.topic || "" })),
+      history: items.map((it) => ({ page: it.page, label: it.label, rounds: marks.filter((m) => m.item_id === it.id).sort((a, x) => a.round - x.round)
+        .map((m) => ({ round: m.round, result: m.result, unsolved: !!m.unsolved, mark: m.mark || "", day: m.day, graded_by: m.graded_by })) })).filter((h) => h.rounds.length),
+      progress: logs.filter((l) => l.kind === "solved").map((l) => ({ day: l.day, page_to: l.page_to, pages: l.pages || "" })),
+      graded: logs.filter((l) => l.kind === "graded").map((l) => ({ day: l.day, round: l.round, pages: l.pages || "" })),
+      scans: pick2.map((x, i) => ({ file: `스캔본/${String(i + 1).padStart(2, "0")}_${x.round ? x.round + "차" : "차수모름"}${(/\.[A-Za-z0-9]{1,5}$/.exec(x.name) || [x.kind === "pdf" ? ".pdf" : ".jpg"])[0].toLowerCase()}`,
+        scan_id: x.id, round: x.round ?? null, uploaded: localDay(x.created_at), pages: x.pages || 1, analyzed: !!x.analyzed_at })),
+    },
+  };
+}
+// 분석 결과 읽기 — 코드 블록 · 앞뒤 글이 섞여 있어도 JSON 한 덩어리를 찾는다
+function parseResult(text) {
+  const t = String(text || "").replace(/^﻿/, "").trim();
+  let o = null;
+  try { o = JSON.parse(t); } catch {
+    const m = /```(?:json)?\s*([\s\S]*?)```/.exec(t) || /(\{[\s\S]*\})/.exec(t);
+    if (m) { try { o = JSON.parse(m[1]); } catch { o = null; } }
+  }
+  if (!o || o.kind !== "ashrain.book.result") throw new Error("분석 결과 파일(ashrain.book.result)을 읽지 못했어요");
+  return o;
+}
+const ROUND_OK = (r) => Number.isInteger(r) && r >= 1 && r <= 9;
+const cleanLabel = (s) => String(s ?? "").trim().slice(0, 40);
+// 분석 결과 넣기 — dry 면 무엇이 바뀌는지만. 넣으면 문항 · 결과 · 물어볼 것을 한 업무 기록(여러 줄)으로 남기고, 채점한 날은 교재 기록에 더한다
+async function bookImport(b) {
+  if (!anaTable) throw new Error(ANA_SQL);
+  const o = parseResult(b.text);
+  const c = await bookCopyByCode(o.copy || b.code || "");
+  const today = todayStr();
+  try {
+    const items = await anaRows("tt_book_items", () => T("tt_book_items").select("*").eq("print_id", c.master.id));
+    const marks = await anaRows("tt_book_marks", () => T("tt_book_marks").select("*").eq("print_id", c.x.id));
+    const key = (pg, lb) => `${pg}|${cleanLabel(lb)}`;
+    const im = new Map(items.map((it) => [key(it.page, it.label), it]));
+    const scanIds = new Set(c.g ? (await scanList(c.g.id)).map((x) => x.id) : []);
+    const bad = [];
+    // 1) 문항
+    const itemPlan = new Map();
+    const wantItem = (pg, lb) => {
+      const k = key(pg, lb);
+      if (!itemPlan.has(k)) itemPlan.set(k, { page: pg, label: cleanLabel(lb), old: im.get(k) || null, set: {} });
+      return itemPlan.get(k);
+    };
+    for (const it of o.items || []) {
+      const pg = Number(it.page), lb = cleanLabel(it.label);
+      if (!Number.isInteger(pg) || pg < 0 || pg > 9999 || !lb) { bad.push(`문항 ${it.page}쪽 ${it.label}`); continue; }
+      const p = wantItem(pg, lb);
+      const ans = String(it.answer ?? "").trim().slice(0, 300), src = ["claude", "teacher", "book"].includes(it.answer_src) ? it.answer_src : ans ? "claude" : "";
+      if (ans && (!p.old || !p.old.answer || (p.old.answer_src !== "teacher" && p.old.answer !== ans))) { p.set.answer = ans; p.set.answer_src = src; }
+      if (it.topic && (!p.old || !p.old.topic)) p.set.topic = String(it.topic).trim().slice(0, 100);
+      if (it.crop && it.crop.scan_id && Array.isArray(it.crop.box) && it.crop.box.length === 4 && (!p.old || !p.old.crop)) p.set.crop = { scan_id: Number(it.crop.scan_id), page_index: Number(it.crop.page_index) || 0, box: it.crop.box.map((v) => Math.max(0, Math.min(1, Number(v) || 0))) };
+    }
+    // 2) 채점 결과
+    const markPlan = [];
+    for (const m of o.marks || []) {
+      const pg = Number(m.page), lb = cleanLabel(m.label), rd = Number(m.round);
+      if (!Number.isInteger(pg) || !lb || !ROUND_OK(rd) || !["O", "X", "U"].includes(m.result)) { bad.push(`결과 ${m.page}쪽 ${m.label} ${m.round}차`); continue; }
+      const day = /^\d{4}-\d{2}-\d{2}$/.test(m.day || "") ? m.day : today;
+      const row = { round: rd, result: m.result, unsolved: !!m.unsolved && m.result === "X", mark: String(m.mark || "").slice(0, 20), answer: String(m.answer ?? "").slice(0, 300),
+        graded_by: m.graded_by === "claude" ? "claude" : "teacher", day, scan_id: scanIds.has(Number(m.scan_id)) ? Number(m.scan_id) : null, note: String(m.note || "").slice(0, 300) };
+      const p = wantItem(pg, lb);
+      const old = p.old ? marks.find((x) => x.item_id === p.old.id && x.round === rd) || null : null;
+      markPlan.push({ p, row, old });
+    }
+    // 3) 물어볼 것
+    const qPlan = [];
+    for (const q of o.checks || []) {
+      if (!QKIND[q.kind] || q.kind === "late_grade") { bad.push(`확인할 것 ${q.kind}`); continue; }
+      const pg = Number(q.page), lb = cleanLabel(q.label);
+      if (!Number.isInteger(pg) || !lb) { bad.push(`확인할 것 ${q.page}쪽 ${q.label}`); continue; }
+      qPlan.push({ p: wantItem(pg, lb), q });
+    }
+    const nNewItems = [...itemPlan.values()].filter((p) => !p.old).length;
+    const markChanged = markPlan.filter((x) => !x.old || !sameBy(MARK_F)(x.old, { ...x.old, ...x.row, report_day: x.old.report_day }));
+    const summary = { items_new: nNewItems, items_changed: [...itemPlan.values()].filter((p) => p.old && Object.keys(p.set).length).length,
+      marks_new: markChanged.filter((x) => !x.old).length, marks_changed: markChanged.filter((x) => x.old).length, marks_same: markPlan.length - markChanged.length,
+      checks: qPlan.length, postits_after: null, scans: (o.analyzed_scans || []).filter((id) => scanIds.has(Number(id))).length, graded_days: (o.graded_days || []).length, skipped: bad };
+    if (b.dry) return { ok: true, dry: true, copy: c.x.code, title: c.x.title, student: c.st.name, summary };
+    // 넣기
+    const rows = [];
+    for (const p of itemPlan.values()) {
+      if (!p.old) {
+        const saved = must(await T("tt_book_items").insert({ print_id: c.master.id, page: p.page, label: p.label, ...p.set }).select("*").single());
+        p.id = saved.id; rows.push({ table: "tt_book_items", row_id: saved.id, before: null, after: snapItem(saved) });
+      } else {
+        p.id = p.old.id;
+        if (Object.keys(p.set).length) {
+          const saved = must(await T("tt_book_items").update({ ...p.set, updated_at: nowIso() }).eq("id", p.old.id).select("*").single());
+          rows.push({ table: "tt_book_items", row_id: saved.id, before: snapItem(p.old), after: snapItem(saved) });
+        }
+      }
+    }
+    const markIds = new Map();
+    for (const x of markPlan) {
+      if (x.old && !markChanged.includes(x)) { markIds.set(`${x.p.id}|${x.row.round}`, x.old.id); continue; }
+      const saved = x.old ? must(await T("tt_book_marks").update({ ...x.row, updated_at: nowIso() }).eq("id", x.old.id).select("*").single())
+        : must(await T("tt_book_marks").insert({ print_id: c.x.id, student_id: c.sid, item_id: x.p.id, ...x.row }).select("*").single());
+      markIds.set(`${x.p.id}|${x.row.round}`, saved.id);
+      rows.push({ table: "tt_book_marks", row_id: saved.id, before: snapMark(x.old), after: snapMark(saved) });
+    }
+    for (const { p, q } of qPlan) {
+      const rd = ROUND_OK(Number(q.round)) ? Number(q.round) : null;
+      const detail = { page: p.page, label: p.label, round: rd, why: String(q.why || "").slice(0, 500), student_answer: String(q.student_answer ?? "").slice(0, 200),
+        correct_answer: String(q.correct_answer ?? "").slice(0, 200), candidates: Array.isArray(q.candidates) ? q.candidates.slice(0, 4) : undefined, scan_id: q.scan_id ?? null, title: c.x.title };
+      const saved = must(await T("tt_questions").insert({ kind: q.kind, student_id: c.sid, print_id: c.x.id, item_id: p.id, mark_id: rd ? markIds.get(`${p.id}|${rd}`) || null : null, detail }).select("*").single());
+      rows.push({ table: "tt_questions", row_id: saved.id, before: null, after: snapQ(saved) });
+    }
+    const analyzed = (o.analyzed_scans || []).map(Number).filter((id) => scanIds.has(id));
+    if (analyzed.length) must(await T("tt_scans").update({ analyzed_at: nowIso() }).in("id", analyzed));
+    const events = [];
+    const eid = await logRow("book_import", c.sid, c.x.id, { table: "multi", rows, title: c.x.title, summary: { ...summary, skipped: bad.length } });
+    if (eid) events.push(eid);
+    for (const g of o.graded_days || []) {                // 채점한 날 → 교재 기록
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(g.day || "")) continue;
+      try { events.push(...(await bookLogPut(c, { kind: "graded", day: g.day, round: ROUND_OK(Number(g.round)) ? Number(g.round) : null, pages: String(g.pages || "") })).events); } catch { /* 쪽을 못 읽으면 건너뜀 */ }
+    }
+    return { ok: true, copy: c.x.code, master: c.master.code, summary, events };
+  } catch (e) { anaFail(e); }
+}
+// 포스트잇 문항 바로 매기기 — 다음 차(또는 고른 차)를 오늘 날짜 · 선생님 채점으로
+async function bookMarkSet(b) {
+  if (!anaTable) throw new Error(ANA_SQL);
+  const c = await bookCopyByCode(b.copy);
+  try {
+    const it = must(await T("tt_book_items").select("*").eq("id", Number(b.item_id)).eq("print_id", c.master.id).maybeSingle());
+    if (!it) throw new Error("그런 문항이 없어요");
+    const rd = Number(b.round);
+    if (!ROUND_OK(rd) || !["O", "X", "U"].includes(b.result)) throw new Error("몇 차 · 결과를 골라 주세요");
+    const old = must(await T("tt_book_marks").select("*").eq("print_id", c.x.id).eq("item_id", it.id).eq("round", rd).maybeSingle());
+    const row = { result: b.result, unsolved: !!b.unsolved && b.result === "X", graded_by: "teacher", day: cleanDay(b.day || todayStr()), mark: old ? old.mark : "", note: old ? old.note : "" };
+    if (old && sameBy(MARK_F)(old, { ...old, ...row })) return { ok: true, events: [] };
+    const saved = old ? must(await T("tt_book_marks").update({ ...row, updated_at: nowIso() }).eq("id", old.id).select("*").single())
+      : must(await T("tt_book_marks").insert({ print_id: c.x.id, student_id: c.sid, item_id: it.id, round: rd, ...row }).select("*").single());
+    const eid = await logRow("book_mark", c.sid, c.x.id, { table: "tt_book_marks", row_id: saved.id, title: c.x.title, page: it.page, label: it.label, before: snapMark(old), after: snapMark(saved) });
+    return { ok: true, events: eid ? [eid] : [] };
+  } catch (e) { anaFail(e); }
+}
+// 물어볼 것 목록 — 열린 것 · 이유를 나중에 적기로 한 것 · 모은 이유
+async function questionsView() {
+  const qs = await anaRows("tt_questions", () => T("tt_questions").select("*").order("id", { ascending: false }).limit(1000));
+  const sm = await studentsMap(qs.map((q) => q.student_id));
+  const pids = [...new Set(qs.map((q) => q.print_id).filter(Boolean))], iids = [...new Set(qs.map((q) => q.item_id).filter(Boolean))], mids = [...new Set(qs.map((q) => q.mark_id).filter(Boolean))];
+  const [ps, its, ms] = await Promise.all([
+    pids.length ? must(await T("tt_prints").select("id,code,title,options").in("id", pids)) : [],
+    iids.length ? anaRows("tt_book_items", () => T("tt_book_items").select("*").in("id", iids)) : [],
+    mids.length ? anaRows("tt_book_marks", () => T("tt_book_marks").select("*").in("id", mids)) : []]);
+  const pm = new Map(ps.map((x) => [x.id, x])), itm = new Map(its.map((x) => [x.id, x])), mm = new Map(ms.map((x) => [x.id, x]));
+  const out = qs.map((q) => {
+    const p = pm.get(q.print_id), it = itm.get(q.item_id), mk = mm.get(q.mark_id), bk = bookOf(p);
+    return { id: q.id, kind: q.kind, kind_ko: QKIND[q.kind], status: q.status, detail: q.detail || {}, answer: q.answer, reason: q.reason || "", reason_later: !!q.reason_later,
+      created_at: q.created_at, answered_at: q.answered_at, sid: q.student_id, name: sm.get(q.student_id)?.name || "?",
+      copy: p ? p.code : null, master: bk ? bk.master_code || "" : "", title: p ? p.title : "",
+      item: it ? { id: it.id, page: it.page, label: it.label, answer: it.answer || "", crop: it.crop || null } : null,
+      mark: mk ? { id: mk.id, round: mk.round, result: mk.result, unsolved: !!mk.unsolved, mark: mk.mark || "", answer: mk.answer || "", day: mk.day } : null };
+  });
+  return { ok: anaTable, open: out.filter((q) => q.status === "open"), later: out.filter((q) => q.status === "accepted" && q.reason_later && !q.reason),
+    reasons: out.filter((q) => q.status === "accepted" && q.reason), done: out.filter((q) => q.status !== "open").slice(0, 100) };
+}
+// 물어볼 것에 답하기 — fix(내 실수: 틀림으로) · accept(맞다고 인정 + 이유 · 나중에) · reason(이유만 적기) · set(결과 고르기: O · X · U · wrong_unsolved) · dismiss
+async function questionAnswer(id, b) {
+  if (!anaTable) throw new Error(ANA_SQL);
+  try {
+    const q = must(await T("tt_questions").select("*").eq("id", id).maybeSingle());
+    if (!q) throw new Error("그런 물어볼 것이 없어요");
+    const rows = [];
+    const setMark = async (patch) => {
+      if (!q.mark_id) return;
+      const old = must(await T("tt_book_marks").select("*").eq("id", q.mark_id).maybeSingle());
+      if (!old || sameBy(MARK_F)(old, { ...old, ...patch })) return;
+      const saved = must(await T("tt_book_marks").update({ ...patch, updated_at: nowIso() }).eq("id", old.id).select("*").single());
+      rows.push({ table: "tt_book_marks", row_id: saved.id, before: snapMark(old), after: snapMark(saved) });
+    };
+    const up = { updated_at: nowIso() };
+    const reason = String(b.reason || "").trim().slice(0, 1000);
+    if (b.action === "fix") { await setMark({ result: "X", unsolved: false, note: "선생님 실수로 고침" }); Object.assign(up, { status: "fixed", answer: { action: "fix" }, answered_at: nowIso() }); }
+    else if (b.action === "accept") Object.assign(up, { status: "accepted", answer: { action: "accept" }, reason, reason_later: !reason, answered_at: nowIso() });
+    else if (b.action === "reason") { if (!reason) throw new Error("이유를 적어 주세요"); Object.assign(up, { reason, reason_later: false }); }
+    else if (b.action === "set") {
+      const v = b.result;
+      if (!["O", "X", "U", "wrong_unsolved"].includes(v)) throw new Error("결과를 골라 주세요");
+      await setMark(v === "wrong_unsolved" ? { result: "X", unsolved: true } : { result: v, unsolved: false });
+      Object.assign(up, { status: "answered", answer: { action: "set", result: v }, answered_at: nowIso() });
+    } else if (b.action === "dismiss") Object.assign(up, { status: "dismissed", answer: { action: "dismiss" }, answered_at: nowIso() });
+    else throw new Error("무엇을 할지 몰라요");
+    const saved = must(await T("tt_questions").update(up).eq("id", q.id).select("*").single());
+    rows.push({ table: "tt_questions", row_id: saved.id, before: snapQ(q), after: snapQ(saved) });
+    const eid = await logRow("question", q.student_id, q.print_id, { table: "multi", rows, title: (q.detail || {}).title || "", kind: q.kind,
+      summary: { action: b.action, page: (q.detail || {}).page, label: (q.detail || {}).label } });
+    return { ok: true, events: eid ? [eid] : [] };
+  } catch (e) { anaFail(e); }
 }
 
 // ── 되돌리기 — 지금 모습이 그 기록의 「후」와 같을 때만 「전」으로 돌린다(그 뒤에 또 바뀌었으면 막음). 되돌릴 수 있는 표:
@@ -553,30 +818,55 @@ const UNDO = {
     fields: (x) => ({ day: x.day, kind: x.kind, reason: x.reason || "", checked: x.checked ?? null, checked_at: x.checked ? nowIso() : null, source: x.source || "teacher" }),
     keys: (ev) => ({ student_id: ev.student_id }), same: sameAtt, snap: snapAtt, missing: noAttTable, sql: ATT_SQL, where: "오늘 화면",
   },
+  tt_book_items: { fields: (x) => pick(x, ITEM_F), keys: (ev, x) => ({ print_id: x.print_id }), same: sameBy(ITEM_F), snap: snapItem, missing: noAnaTable, sql: ANA_SQL, where: "교재 문항 화면" },
+  tt_book_marks: { fields: (x) => pick(x, MARK_F), keys: (ev, x) => pick(x, ["print_id", "student_id", "item_id"]), same: sameBy(MARK_F), snap: snapMark, missing: noAnaTable, sql: ANA_SQL, where: "교재 문항 화면" },
+  tt_questions: { fields: (x) => pick(x, Q_F), keys: (ev, x) => pick(x, Q_K), same: sameBy(Q_F), snap: snapQ, missing: noAnaTable, sql: ANA_SQL, where: "물어볼 것 화면" },
 };
+// 한 줄 되돌리기 — 지금 모습이 그 줄의 「후」와 같은지 본 뒤 「전」으로 돌린다
+async function undoCheck(r) {
+  const U = UNDO[r.table];
+  const cur = r.row_id ? must(await T(r.table).select("*").eq("id", r.row_id).maybeSingle()) : null;
+  return { U, cur, ok: r.after ? U.same(cur, r.after) : !cur };
+}
+async function undoApply(r, ev, cur) {
+  const U = UNDO[r.table];
+  let restored = null;
+  if (!r.before) { if (cur) must(await T(r.table).delete().eq("id", cur.id)); }
+  else if (!r.after) {
+    const x = await T(r.table).insert({ ...U.keys(ev, r.before), ...U.fields(r.before) }).select("*").single();
+    if (x.error && /duplicate|unique/i.test(x.error.message || "")) throw new Error(`같은 기록이 이미 있어서 되돌릴 수 없어요 — ${U.where}에서 고쳐 주세요`);
+    restored = must(x);
+  } else restored = must(await T(r.table).update({ ...U.fields(r.before), updated_at: nowIso() }).eq("id", cur.id).select("*").single());
+  if (U.after) await U.after(ev, restored);
+  return { table: r.table, row_id: (restored || cur) ? (restored || cur).id : r.row_id, before: U.snap(cur), after: U.snap(restored) };
+}
+// 기록 하나(한 줄 또는 여러 줄 = table "multi") 되돌리기 — 여러 줄은 모두 되돌릴 수 있을 때만
 async function undoEvent(id) {
   const ev = must(await T("tt_events").select("*").eq("id", id).maybeSingle());
   if (!ev) throw new Error("그런 기록이 없어요");
   const d = ev.detail || {};
   if (d.undone_by) throw new Error("이미 되돌린 기록이에요");
-  const U = UNDO[d.table];
-  if (!U) throw new Error("이 기록은 되돌릴 수 없어요");
+  const rows = d.table === "multi" ? d.rows || [] : [{ table: d.table, row_id: d.row_id, before: d.before, after: d.after }];
+  if (!rows.length || rows.some((r) => !UNDO[r.table])) throw new Error("이 기록은 되돌릴 수 없어요");
   try {
-    const cur = d.row_id ? must(await T(d.table).select("*").eq("id", d.row_id).maybeSingle()) : null;
-    if (d.after ? !U.same(cur, d.after) : !!cur) throw new Error(`그 뒤에 또 바뀌어서 되돌릴 수 없어요 — ${U.where}에서 고쳐 주세요`);
-    let restored = null;
-    if (!d.before) must(await T(d.table).delete().eq("id", cur.id));
-    else if (!d.after) {
-      const r = await T(d.table).insert({ ...U.keys(ev, d.before), ...U.fields(d.before) }).select("*").single();
-      if (r.error && /duplicate|unique/i.test(r.error.message || "")) throw new Error(`같은 기록이 이미 있어서 되돌릴 수 없어요 — ${U.where}에서 고쳐 주세요`);
-      restored = must(r);
-    } else restored = must(await T(d.table).update({ ...U.fields(d.before), updated_at: nowIso() }).eq("id", cur.id).select("*").single());
-    if (U.after) await U.after(ev, restored);
-    const keep = Object.fromEntries(["title", "name", "kind", "month", "day"].filter((k) => k in d).map((k) => [k, d[k]]));
-    const nid = await logRow(ev.kind, ev.student_id, ev.print_id, { ...keep, table: d.table, row_id: (restored || cur).id, before: U.snap(cur), after: U.snap(restored), undo_of: ev.id });
+    const plan = [];
+    for (const r of [...rows].reverse()) {              // 나중에 바뀐 줄부터
+      const c = await undoCheck(r);
+      if (!c.ok) throw new Error(`그 뒤에 또 바뀌어서 되돌릴 수 없어요 — ${c.U.where}에서 고쳐 주세요`);
+      plan.push([r, c.cur]);
+    }
+    const out = [];
+    for (const [r, cur] of plan) out.push(await undoApply(r, ev, cur));
+    const keep = Object.fromEntries(["title", "name", "kind", "month", "day", "summary"].filter((k) => k in d).map((k) => [k, d[k]]));
+    const nd = d.table === "multi" ? { ...keep, table: "multi", rows: out.reverse(), undo_of: ev.id } : { ...keep, ...out[0], undo_of: ev.id };
+    const nid = await logRow(ev.kind, ev.student_id, ev.print_id, nd);
     must(await T("tt_events").update({ detail: { ...d, undone_by: nid || -1, undone_at: nowIso() } }).eq("id", ev.id));
     return nid;
-  } catch (e) { if (U.missing(e)) throw new Error(U.sql); throw e; }
+  } catch (e) {
+    const U = rows.map((r) => UNDO[r.table]).find((u) => u.missing(e));
+    if (U) throw new Error(U.sql);
+    throw e;
+  }
 }
 async function undoEvents(ids) {
   const list = [...new Set((ids || []).map(Number).filter(Boolean))].sort((a, b) => b - a);       // 나중 것부터
@@ -1067,6 +1357,15 @@ export async function api(path, body) {
   // 교재 — 등록 · 학생에게 붙이기 · 빼기 · 고치기 · 지우기 (스캔본은 학생 몫의 채점 기록에: gradings/<id>/scans 그대로)
   if (p === "months") return post ? monthsSave(body) : monthsView(q.month);            // 재원 · 원비
   if (p === "today") return todayView(q.date);                                        // 오늘 대시보드
+  if ((m = /^bookcopy\/([A-Za-z0-9-]+)$/.exec(p)) && !post) return bookCopyItems(m[1]);     // 학생 교재 문항 · 포스트잇
+  if ((m = /^bookcopy\/([A-Za-z0-9-]+)\/pack$/.exec(p))) {                                   // 분석 맡기기 묶음
+    const d = await bookPackData(m[1], !!(body && body.all));
+    return (await engine()).exportBookPack(d, ctx());
+  }
+  if (p === "books/import" && post) return bookImport(body);                         // 분석 결과 넣기(dry = 미리 보기)
+  if (p === "bookmarks" && post) return bookMarkSet(body);                            // 포스트잇 문항 바로 매기기
+  if (p === "questions" && !post) return questionsView();                             // 물어볼 것
+  if ((m = /^questions\/(\d+)$/.exec(p)) && post) return questionAnswer(Number(m[1]), body);
   if (p === "attendance" && post) return attPut(body);                                // 결석부 적기
   if ((m = /^attendance\/(\d+)$/.exec(p)) && post) return attEdit(Number(m[1]), body);  // 당일 확인 · 고치기 · 지우기
   if (p === "books") return post ? bookCreate(body) : booksList();
@@ -1348,6 +1647,19 @@ export async function link(href) {
     return { url, name: r.name, view: q.dl !== "1" };
   }
   throw new Error("없는 주소: " + u.pathname);
+}
+
+// 스캔본 한 쪽 그림(문항 그림 자리 보기) — PDF면 그 쪽을 그림으로, 사진이면 그대로. 한 번 만든 것은 기억
+const scanImgCache = new Map();
+export async function scanImage(scanId, pageIndex = 0) {
+  const k = `${scanId}:${pageIndex}`;
+  if (!scanImgCache.has(k)) scanImgCache.set(k, (async () => {
+    const r = must(await T("tt_scans").select("path,mime,name").eq("id", Number(scanId)).single());
+    const buf = await bytes(r.path);
+    if (/pdf/.test(r.mime || "") || /\.pdf$/i.test(r.name || "")) return (await engine()).renderPagePng(buf, Number(pageIndex) + 1, 2);
+    return new Blob([buf], { type: r.mime || "image/jpeg" });
+  })());
+  try { return await scanImgCache.get(k); } catch (e) { scanImgCache.delete(k); throw e; }
 }
 
 // 스캔본 올리기 — round: 1 = 1차 채점 때, 2 = 2차 채점 때 …, null = 확실하지 않음

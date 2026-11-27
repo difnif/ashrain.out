@@ -2,7 +2,7 @@
 import { openPdf, renderClip, canvas, toBlob, imgToCanvas } from "./base";
 export { convert, wrongMake } from "./print";
 export { registerAnalyze, registerCommit, libraryDraft, libraryAuto, draftUrl, partsInSheet } from "./register";
-export { exportPrints, exportTranscribe, exportAnalysis, importTranscripts } from "./exports";
+export { exportPrints, exportTranscribe, exportAnalysis, importTranscripts, exportBookPack } from "./exports";
 export { gradingPdf, studentPdf, stampNames, mergeScans } from "./reports";
 import { attachAnswer as attach } from "./register";
 

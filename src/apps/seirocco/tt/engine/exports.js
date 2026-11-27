@@ -7,6 +7,7 @@ import { baseHash, splitLabel } from "../parts";
 import { supabase } from "../../../../supabaseClient";
 import GUIDE_T from "../guides/전사가이드.md?raw";
 import GUIDE_A from "../guides/분석가이드.md?raw";
+import GUIDE_B from "../guides/교재분석가이드.md?raw";
 
 const CIRC = { 1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤" };
 const TASKS = { all: "문항+정답+해설", solution: "해설만", done: "끝남(문항·해설 있음)", db_item: "DB 문항(애쉬레인 문항 key)" };
@@ -360,3 +361,31 @@ export async function importTranscripts(body, ctx) {
   return { ok, review, bad };
 }
 export { pngToImg };
+
+// 교재 「분석 맡기기」 묶음 — 학생 교재 하나: 스캔본(아직 분석 안 한 것, 또는 모두) + 지금까지 기록(context.json) + 가이드 + 결과 양식
+export async function exportBookPack(d, ctx) {
+  const ctxJ = d.context;
+  if (!d.scans.length) throw new Error("분석할 스캔본이 없어요 — 스캔본을 먼저 올리거나 「모든 스캔본」으로 받아 주세요");
+  const root = `${ctx.todayStr()} 교재분석 ${safe(ctxJ.student.name, 20)} ${safe(ctxJ.book.title, 30)} ${stampNow()}`;
+  const files = [];
+  let n = 0;
+  for (let i = 0; i < d.scans.length; i++) {
+    try { files.push({ name: `${root}/${ctxJ.scans[i].file}`, data: await ctx.bytes(d.scans[i].path) }); n++; } catch { /* 받지 못한 스캔본은 건너뜀 */ }
+  }
+  const template = {
+    kind: "ashrain.book.result", version: 1, copy: ctxJ.copy, analyzed_scans: ctxJ.scans.map((x) => x.scan_id),
+    items: [{ page: 12, label: "3", answer: "5", answer_src: "claude", topic: "", crop: { scan_id: ctxJ.scans[0].scan_id, page_index: 0, box: [0.08, 0.12, 0.42, 0.18] } }],
+    marks: [{ page: 12, label: "3", round: 1, result: "X", unsolved: false, mark: "slash", answer: "4", graded_by: "teacher", day: ctxJ.scans[0].uploaded, scan_id: ctxJ.scans[0].scan_id, note: "" }],
+    checks: [{ kind: "o_but_wrong", page: 12, label: "5", round: 1, why: "선생님 ○ — 학생 답 7, 정답 8", student_answer: "7", correct_answer: "8", scan_id: ctxJ.scans[0].scan_id }],
+    graded_days: [{ day: ctxJ.scans[0].uploaded, round: 1, pages: "12-15" }],
+    notes: "",
+  };
+  const guide = GUIDE_B.replaceAll("{{STUDENT}}", ctxJ.student.name).replaceAll("{{BOOK}}", ctxJ.book.title).replaceAll("{{COPY}}", ctxJ.copy)
+    .replaceAll("{{N_SCANS}}", String(n)).replaceAll("{{N_ITEMS}}", String(ctxJ.items.length)).replaceAll("{{TODAY}}", ctxJ.today);
+  files.push({ name: `${root}/00_교재분석_가이드.md`, data: enc(guide) });
+  files.push({ name: `${root}/context.json`, data: enc(JSON.stringify(ctxJ, null, 1)) });
+  files.push({ name: `${root}/결과양식.json`, data: enc(JSON.stringify(template, null, 1)) });
+  const zip = zipStore(files);
+  ctx.log("export_book", null, null, { copy: ctxJ.copy, title: ctxJ.book.title, scans: n });
+  return { n_scans: n, zip_name: `${root}.zip`, blob: new Blob([zip], { type: "application/zip" }) };
+}
