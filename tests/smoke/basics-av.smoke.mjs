@@ -3,7 +3,8 @@
 //     · 주차별: 학기 · 방학으로 접고 펴기 → 펼치면 104회차, 회차를 꾹 누르면 우물 추천 6가지 → 카드 위에서 떼면 그 회차가 열림
 //     · 유형별 문제 세트: 프린트마다 한 줄 — 기본기 단원과 시그니처 프린트(중등 22장 — 그 단원 바로 뒤)가 같은 서열(유형 줄 없음)
 //       · 시그니처 프린트를 누르면 #/av/<액자>:<세트>(cnt100:sel) — 그 세트로 돌고 본 기록이 프린트 key 로 → 목록에 진행 막대
-//   꾹 눌러 「📄 프린트」에서 떼면 받기 판 — 회차는 [확인] → 인쇄 창(20문항), 단원은 [확인] → 개별 | 압축 다운 · 시그니처 프린트는 📄 없음
+//   꾹 눌러 「📄 프린트」에서 떼면 받기 판 — 회차는 [확인] → 인쇄 창(20문항), 단원은 [확인] → 개별 | 압축 다운 ·
+//   시그니처 프린트는 원본(문제지 · 정답) — 아직 안 올라갔으면 「아직 올라가지 않았어요」, 올라가 있으면 받기
 //   꾹 누르기: 우물이 떠서 추천 6가지(기록이 없으면 단원 지도 기본 추천)가 둘레에 → 카드 위에서 떼면 그 콘텐츠가 열림 · 우물에서 떼면 그대로 · 빈 곳에서 떼도 그대로
 //   단원 재생 → 단원 목록(U — 머리에 「유형별 문제 세트 | 주차별 학년」) → 번호 · 단계 목록 · 예전 유형 주소(#/av/e-ten.3)도 열림
 //   듀얼: 판마다 「콘텐츠」 → 문제 풀이 해설 전부(📚 유형별 문제 세트 「전체」 — 시그니처 프린트 포함 · 🗓 주차별) — 왼쪽 그래프 심화 · 오른쪽 중2 회차
@@ -198,7 +199,7 @@ try {
   step("우물에서 떼면 그대로 · 빈 곳에서 떼도 그대로 · 짧게 누르면 그 단원이 바로 열린다");
 
   // 꾹 눌러 「📄 프린트」 — 유형 · 단원 · 회차
-  const holdPrint = async (loc, shot) => {
+  const holdPrint = async (loc, shot, docs = "문제지 · 해설지 · 빠른 정답 · OMR") => {
     await loc.scrollIntoViewIfNeeded();
     await page.waitForTimeout(150);
     const a = await center(loc);
@@ -212,7 +213,8 @@ try {
     await page.mouse.move(b.x, b.y, { steps: 10 });
     await page.waitForTimeout(150);
     assert.equal(await page.locator(".wpk-pr.on").count(), 1, "프린트 위");
-    assert.ok((await page.locator(".wpk-hint").textContent()).includes("프린트 받기"));
+    const hint = await page.locator(".wpk-hint").textContent();
+    assert.ok(hint.includes("프린트 받기") && hint.includes(docs), hint);
     if (shot) await page.screenshot({ path: path.join(SHOTS, shot) });
     await page.mouse.up();
     await page.locator(".aps-in").waitFor({ timeout: 3000 });
@@ -226,7 +228,7 @@ try {
   };
   await go("#/study/av/sol");
   await page.locator(".st-item").first().waitFor();
-  // 시그니처 프린트를 꾹 — 우물(추천 6가지)은 뜨고 「📄 프린트」는 없다(앱에 프린트 문서가 없음) · 빈 곳에서 떼면 그대로
+  // 시그니처 프린트를 꾹 — 우물(추천 6가지)과 「📄 프린트」 · 빈 곳에서 떼면 그대로 · 📄 에서 떼면 원본 받기 판(문제지 · 정답 · 해설)
   await page.locator(".st-lv button", { hasText: "중등" }).click();
   {
     const r = page.locator(".st-item", { hasText: avItem("cnt100:ball").title });
@@ -238,15 +240,37 @@ try {
     await page.locator(".wpk").waitFor({ timeout: 2000 });
     await page.waitForTimeout(450);
     assert.equal(await page.locator(".wpk-card").count(), 6, "시그니처 프린트도 추천 6가지");
-    assert.equal(await page.locator(".wpk-pr").count(), 0, "시그니처 프린트는 📄 없음");
+    assert.equal(await page.locator(".wpk-pr").count(), 1, "시그니처 프린트도 📄 프린트(원본)");
     await page.screenshot({ path: path.join(SHOTS, "bs-2p-sig-well.png") });
     await page.mouse.move(12, 300, { steps: 6 });
     await page.mouse.up();
     await page.waitForTimeout(250);
     assert.equal(await page.evaluate(() => location.hash), "#/study/av/sol");
+    // 📄 에서 떼면 원본 받기 판 — 아직 안 올라갔으면(보관함에 없음) 「아직 올라가지 않았어요」, 올라가 있으면 압축 · 개별 다운
+    await holdPrint(r, "bs-2q-sig-print.png", "원본 문제지 · 정답");
+    const T = await page.locator(".aps-in").textContent();
+    assert.ok(T.includes("시그니처 프린트 · 원본 받기") && T.includes(avItem("cnt100:ball").title) && T.includes("코드 QS7-3DF"), T);
+    assert.deepEqual(await page.locator(".aps-row .nm").allTextContents(), ["문제지", "정답 · 해설"]);
+    pdfMode = "none";
+    await page.locator(".aps-in button", { hasText: "확인" }).click();
+    await page.locator(".aps-in button", { hasText: "개별 다운" }).click();
+    await page.locator(".aps-in", { hasText: "아직 올라가지 않았어요" }).waitFor();
+    assert.equal(await page.locator(".aps-in button", { hasText: "인쇄 창으로 열기" }).count(), 0, "원본만 — 앱에서 새로 만들지 않음");
+    pdfMode = "ok";
+    await page.locator(".aps-in button", { hasText: "다시 고르기" }).click();
+    await page.locator(".aps-in button", { hasText: "확인" }).click();
+    const [sz] = await Promise.all([page.waitForEvent("download"), page.locator(".aps-in button", { hasText: "압축 다운" }).click()]);
+    assert.equal(sz.suggestedFilename(), "중등-주머니공100.zip");
+    const sp = path.join(SHOTS, "bs-sig.zip");
+    await sz.saveAs(sp);
+    const sb = fs.readFileSync(sp);
+    for (const nm of ["문제지", "정답"]) assert.ok(sb.includes(Buffer.from(`중등-주머니공100-${nm}.pdf`)), nm);
+    pdfMode = "none";
+    await page.keyboard.press("Escape");
+    await page.locator(".aps").waitFor({ state: "detached" });
   }
   await page.locator(".st-lv button", { hasText: "초등" }).click();
-  step("시그니처 프린트를 꾹 누르면 우물 추천 6가지 · 「📄 프린트」는 없음(앱에 프린트 문서가 없는 프린트)");
+  step("시그니처 프린트를 꾹 누르면 우물 추천 6가지 · 「📄 프린트」 — 원본 받기 판(문제지 · 정답 · 해설): 안 올라갔으면 「아직 올라가지 않았어요」, 있으면 「중등-주머니공100.zip」");
 
   await holdPrint(page.locator(".st-item", { hasText: first.title }));
   await sheetAll();
@@ -437,11 +461,12 @@ try {
   const lt = await page.locator(".lsn-pane-ctl.L .dsp-chip.lsn-unit").textContent(), rt = await page.locator(".lsn-pane-ctl.R .dsp-chip.lsn-unit").textContent();
   assert.ok(lt.includes("심화 64"), lt);
   assert.ok(rt.includes("중2 11주 A"), rt);
-  assert.equal(await page.locator('button[aria-label="문서"]').count(), 1, "📄 은 회차 판만");
+  assert.equal(await page.locator('button[aria-label="문서"]').count(), 2, "📄 — 회차 판 · 시그니처 프린트 판(원본)");
+  assert.equal(await page.locator('button[title="원본 프린트 — 문제지 · 정답"]').count(), 1, "왼쪽 시그니처 프린트 판은 원본 받기");
   await page.screenshot({ path: path.join(SHOTS, "bs-9-dual-all.png") });
   await page.locator('.dsp-seg button[role="radio"]', { hasText: "단일" }).first().click();
   await page.waitForTimeout(600);
-  step(`듀얼: 판마다 「콘텐츠」 → 문제 풀이 해설 전부 — 왼쪽 「${lt.trim()}」 · 오른쪽 「${rt.trim()}」 · 📄 은 프린트 있는 판만`);
+  step(`듀얼: 판마다 「콘텐츠」 → 문제 풀이 해설 전부 — 왼쪽 「${lt.trim()}」 · 오른쪽 「${rt.trim()}」 · 📄 은 판마다(시그니처 프린트는 원본)`);
 
   // 예전 주소(학년별 해설 #/av/h3) → 그 학년 첫 단원
   await go("#/av/h3");

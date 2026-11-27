@@ -15,6 +15,7 @@ import { CATEGORIES, loadIndex, readProgress, setProgressUser, pad2 } from "../l
 import { supabase } from "../supabaseClient";
 import { AV_CATS, AV_LEVELS, avOfCat, avOfLevel, weekCard, unitCard } from "../lib/av";
 import { hasPrint } from "../lib/avsrc";
+import { sigOf } from "../lib/sigprint";
 import { WGRADES, gradesOfLevel, loadWeekIndex, weekIndexCached, PERIODS, KIND_ICON, weekOfDate, weekLabel, periodOf } from "../features/display/weeks/index.js";
 import { recommend } from "../lib/recommend";
 import { loadProfile } from "../lib/recommendLoad";
@@ -480,6 +481,7 @@ function usePool(gk) {
  *   줄마다 교과서 단원 · 학년 · 문항 수 · 다 봤음 ✓ · 본 만큼 진행 막대.
  * 꾹 누르면 우물이 떠서 6가지를 추천한다 — 기록이 넉넉하면 수준 맞춤(lib/recommend.js), 아니면 단원 지도 기본.
  *   프린트 문서가 있으면(기본기 단원 · 회차) 위에 「📄 프린트」도 — 그 위에서 떼면 문제지 · 해설지 · 빠른 정답 · OMR 받기 판(AvPrintSheet).
+ *   시그니처 프린트는 원본 그대로 — 문제지 · 정답 · 해설(강사도구 보관함 원본, lib/sigprint.js).
  */
 function SolList() {
   const [lv, setLv] = useState(() => { const v = lsGet("ash.study.av.lv", "초등"); return AV_LEVELS.includes(v) ? v : "초등"; });
@@ -495,7 +497,8 @@ function SolList() {
   const pool = usePool(gk);
   const go = (it) => { location.hash = `#/av/${it.key}`; };
   const [print, setPrint] = useState(null);           // 프린트 받기 판을 연 콘텐츠 key
-  const wp = useWellPick({ related: (it) => recommend(it, pool, profile).cards, onGo: go, onPrint: (it) => setPrint(it.key), canPrint: (it) => hasPrint(it.key) });
+  const wp = useWellPick({ related: (it) => recommend(it, pool, profile).cards, onGo: go, onPrint: (it) => setPrint(it.key), canPrint: (it) => hasPrint(it.key) || !!sigOf(it.key),
+    printDocs: (it) => (sigOf(it.key) ? "원본 문제지 · 정답" : null) });
   const W = profile.watched || {};
   return (
     <>
@@ -516,7 +519,7 @@ function SolList() {
         <button type="button" className={view === "unit" ? "on" : ""} onClick={() => pickView("unit")}>📚 유형별 문제 세트 <small>{avOfLevel(lv).length}</small></button>
       </div>
       <p className="st-hold">꾹 누르면 우물이 떠서 6가지를 골라 줘요 — 본 기록 · 푼 기록이 쌓이면 내 수준에 맞춰서. 누른 채 손가락을 옮겨 놓으면 바로 열리고,
-        위 「📄 프린트」에서 놓으면 그 문제의 프린트(문제지 · 해설지 · 빠른 정답 · OMR)를 받아요.</p>
+        위 「📄 프린트」에서 놓으면 그 문제의 프린트(문제지 · 해설지 · 빠른 정답 · OMR — 시그니처 프린트는 원본 문제지 · 정답)를 받아요.</p>
       {view === "week" ? <WeekList key={gk} gk={gk} wp={wp} profile={profile} /> : (
         <div className="st-list" role="tabpanel">
           {avOfLevel(lv).map((it) => {

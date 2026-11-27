@@ -45,7 +45,7 @@ const basicItem = (b) => ({
 });
 /** 시그니처 프린트 하나 = 학생앱 한 항목 (그 해설 액자를 그 세트로 연다) — 기본기 단원과 같은 서열 */
 const printItem = (f, p) => ({
-  key: `${f.key}:${p.set}`, frame: f.key, set: p.set, sig: true, grp: null, cat: "sol", icon: p.icon || ICON[f.key] || "🎬", kind: "해설",
+  key: `${f.key}:${p.set}`, frame: f.key, set: p.set, sig: true, code: p.code || null, grp: null, cat: "sol", icon: p.icon || ICON[f.key] || "🎬", kind: "해설",
   title: p.title, short: p.short, desc: p.desc, grade: p.grade || f.grade, level: p.level || f.level, unit: p.unit || f.unit, n: p.n,
 });
 const frameItem = (f) => ({

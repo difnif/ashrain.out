@@ -17,6 +17,7 @@ import { stepMarks } from "./scrub.jsx";
 import { LessonFrame } from "./lesson.jsx";
 import { boardLayout, wrapMath as wrapMath0, STAGE_REGION, PANE_REGION } from "../board.js";
 import { Board, FigSlot } from "./board.jsx";
+import { sigTop } from "./sigdocs.jsx";
 
 /* ══════════ 배치 (1600×900) — 글자 판은 ../board.js 가 놓는다(문제는 판 너비를 다 쓰고, 좌표평면은 남은 빈자리에) ══════════ */
 const FIG = { x0: 884, y0: 166, x1: 1544, y1: 858 };          // 그림의 제 칸(예전 오른쪽 칸) — 시험이 글자 자리를 이 칸으로 본다
@@ -471,6 +472,7 @@ export function areaScenes(setKey, sp = 1, lv = 0) {
 /* ══════════ 액자 — 조작은 해설 액자 공통 틀(frames/lesson.jsx) ══════════ */
 export const AREA_SPEC = {
   lsk: "ash.display.area", title: "일차함수 그래프와 넓이 해설", defSet: "A", cols: 5,
+  topExtra: sigTop("area"),                                 // 오른쪽 위 📄 — 원본 프린트(문제지 · 정답) 받기
   sets: AREA_KEYS.map((k) => ({ key: k, name: AREA_SETS[k].name, short: AREA_SETS[k].short })),
   stages: (set) => { const st = AREA_SETS[set]?.stage; return st ? Object.keys(st).map(Number).map((v) => ({ v, lab: `${v}단계 ${st[v]}`, chip: `${v}단계` })) : []; },
   scenes: (set, sp, st) => areaScenes(set, sp, AREA_SETS[set]?.stage ? st : 0),

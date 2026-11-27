@@ -26,6 +26,7 @@ import { boardLayout, STAGE_REGION, PANE_REGION } from "../board.js";
 import { Board, FigSlot } from "./board.jsx";
 import { seatsBox, gradesBox, bagBox } from "./c100fig.jsx";
 import { dslBox } from "./figdsl.jsx";
+import { sigTop } from "./sigdocs.jsx";
 
 /* ══════════ 배치 (1600×900) — 글자 판은 ../board.js 가 놓는다 ══════════ */
 // 그림은 제 크기(FIG 칸 660 × 680 안에서 실제로 차지하는 네모)로 그린 뒤, 글자를 다 놓고 남은 빈자리에 맞춰 줄여 넣는다.
@@ -264,6 +265,7 @@ export function l10Scenes(setKey, sp = 1, stage = 0) {
 /* ══════════ 액자 — 조작은 해설 액자 공통 틀(frames/lesson.jsx) ══════════ */
 export const L10_SPEC = {
   lsk: "ash.display.lin10", title: "일차함수 10단계 계산 해설", defSet: 1, cols: 5,
+  topExtra: sigTop("lin10"),                                 // 오른쪽 위 📄 — 원본 프린트(문제지 · 정답) 받기
   sets: [1, 2].map((k) => ({ key: k, name: L10_SETS[k].name, short: L10_SETS[k].name })),
   stages: () => Array.from({ length: 10 }, (_, i) => i + 1).map((v) => ({
     v, lab: `${v}단계 ${L10_STAGE[v]}${L10_HIGH.has(v) ? " (고1)" : ""}`, chip: `${v}단계${L10_HIGH.has(v) ? "(고1)" : ""}` })),

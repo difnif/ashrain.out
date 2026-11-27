@@ -15,6 +15,7 @@ import { stepMarks } from "./scrub.jsx";
 import { LessonFrame } from "./lesson.jsx";
 import { PRINT_FRAMES, printCached, loadPrintSet } from "../prints/index.js";
 import { THUMBS } from "../prints/thumbs.js";
+import { sigTop } from "./sigdocs.jsx";
 
 /* ══════════ 장면 목록 (StoryPlayer 형식) ══════════ */
 const SCENES = new Map();
@@ -43,7 +44,7 @@ export function printScenes(fk, setKey, sp = 1, stage = 0) {
 function makeSpec(fk) {
   const F = PRINT_FRAMES[fk];
   return {
-    lsk: `ash.display.${fk}`, title: F.title, defSet: F.keys[0], cols: 5,
+    lsk: `ash.display.${fk}`, title: F.title, defSet: F.keys[0], cols: 5, topExtra: sigTop(fk),
     sets: F.keys.map((k) => ({ key: k, name: F.sets[k].name, short: F.sets[k].short })),
     stages: (set) => {
       const st = F.sets[set]?.stage || {};

@@ -2,15 +2,89 @@
 // 그 콘텐츠(유형별 문제 세트 · 유형 · 주차별 회차)의 ☐ 문제지 · ☐ 해설지 · ☐ 빠른 정답 · ☐ OMR → [확인] →
 //   PDF 가 올라가 있으면(유형별 문제 세트) [개별 다운] | [압축 다운] · 없으면(유형 · 회차 — 미리 찍어 두지 않음) [인쇄 창으로 열기]
 //   (인쇄 창에서 「PDF로 저장」). 받기 흐름은 액자 오른쪽 위 📄 문서와 같다(frames/docsmenu.jsx 의 useDocsFlow) — 코드 · 문항 · 그림도 같다.
+// 시그니처 프린트(「meet:tri」 같은 key)는 원본 그대로 — ☐ 문제지 · ☐ 정답 · 해설 → [확인] → [개별 다운] | [압축 다운]
+//   (frames/sigdocs.jsx 의 useSigDocsFlow · 강사도구 보관함 원본, 아직 안 올라갔으면 「아직 올라가지 않았어요」).
 // pages/Study.jsx 가 늦게 들여온다(React.lazy) — 인쇄 문서 · 그림 모듈이 목록 화면을 무겁게 하지 않게.
 import { useEffect, useState } from "react";
 import { avSource } from "../lib/avsrc";
 import { unitLabel } from "../lib/units";
 import { AV_DOCS, useDocsFlow, fmtBytes, fmtCode } from "../features/display/frames/docsmenu.jsx";
+import { useSigDocsFlow, sigCode, sigNoFile } from "../features/display/frames/sigdocs.jsx";
+import { SIG_DOCS, sigOf } from "../lib/sigprint";
 
 const KIND = { unit: "유형별 문제 세트", type: "유형", week: "주차별 회차" };
 
 export default function AvPrintSheet({ itemKey, onClose }) {
+  const sig = sigOf(itemKey);
+  return sig ? <SigSheet sig={sig} onClose={onClose} /> : <DocSheet itemKey={itemKey} onClose={onClose} />;
+}
+
+/** 시그니처 프린트 — 원본 문제지 · 정답 받기 */
+function SigSheet({ sig, onClose }) {
+  useEffect(() => {
+    const esc = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onClose]);
+  const F = useSigDocsFlow({ sig, open: true });
+  const { order, step, setStep, msg } = F;
+  const labels = order.map((id) => SIG_DOCS.find((d) => d.id === id).label).join(" · ");
+  return (
+    <div className="aps" onClick={onClose}>
+      <style>{APS_CSS}</style>
+      <div className="aps-in" role="dialog" aria-modal="true" aria-label="프린트 받기" onClick={(e) => e.stopPropagation()}>
+        <div className="aps-grip" aria-hidden="true" />
+        <div className="aps-h">
+          <span className="i" aria-hidden="true">{sig.icon || "📄"}</span>
+          <span className="t">
+            <small>시그니처 프린트 · 원본 받기</small>
+            <b>{sig.title}</b>
+            <small>{[sig.grade, unitLabel(sig.unit), sig.n ? `${sig.n}문항` : "", `코드 ${sigCode(sig)}`].filter(Boolean).join(" · ")}</small>
+          </span>
+          <button type="button" className="x" onClick={onClose} aria-label="닫기">✕</button>
+        </div>
+        {step === "pick" && (<>
+          <div className="aps-list" role="group" aria-label="받을 문서 고르기">
+            {SIG_DOCS.map((d) => {
+              const on = F.picks.includes(d.id);
+              return (
+                <button key={d.id} type="button" className={"aps-row" + (on ? " on" : "")} role="checkbox" aria-checked={on} onClick={() => F.tog(d.id)}>
+                  <span className="ck" aria-hidden="true">{on ? "✓" : ""}</span>
+                  <span className="nm">{d.label}</span>
+                  <small>원본</small>
+                </button>
+              );
+            })}
+          </div>
+          <button type="button" className="aps-ok" disabled={!order.length} onClick={F.confirm}>확인</button>
+        </>)}
+        {step === "how" && (<>
+          <p className="aps-p">{labels} — 어떻게 받을까요?</p>
+          <div className="aps-two">
+            <button type="button" className="aps-ok" onClick={() => F.down("each")}>개별 다운</button>
+            <button type="button" className="aps-ok alt" onClick={() => F.down("zip")}>압축 다운</button>
+          </div>
+          <button type="button" className="aps-back" onClick={() => setStep("pick")}>← 다시 고르기</button>
+        </>)}
+        {step === "busy" && <p className="aps-p">{msg || "받는 중…"}</p>}
+        {step === "done" && (<>
+          <p className="aps-p">{msg}</p>
+          <div className="aps-two">
+            <button type="button" className="aps-ok alt" onClick={() => setStep("pick")}>다른 문서 받기</button>
+            <button type="button" className="aps-ok" onClick={onClose}>닫기</button>
+          </div>
+        </>)}
+        {step === "nofile" && (<>
+          <p className="aps-p">{sigNoFile(sig)}</p>
+          <button type="button" className="aps-back" onClick={() => setStep("pick")}>← 다시 고르기</button>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+/** 기본기 단원 · 유형 · 회차 — 문제지 · 해설지 · 빠른 정답 · OMR */
+function DocSheet({ itemKey, onClose }) {
   const src = avSource(itemKey);
   const [, bump] = useState(0);
   const [err, setErr] = useState(null);
