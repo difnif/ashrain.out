@@ -22,6 +22,7 @@ export const MODS = {
   algo: () => import("./algo.jsx"),
   ml: () => import("./ml.jsx"),
   data: () => import("./data.jsx"),
+  info: () => import("./info.jsx"),
 };
 
 export const KINDS = {
@@ -87,6 +88,9 @@ export const KINDS = {
   // 데이터 공학
   knn: ["data", "KNN"], abtest: ["data", "ABTest"], hashtable: ["data", "HashTable"], bloom: ["data", "Bloom"],
   btree: ["data", "BTree"], join: ["data", "Join"], reservoir: ["data", "Reservoir"], pagerank: ["data", "PageRank"],
+  // 정보이론 · 암호
+  entropy: ["info", "Entropy"], huffman: ["info", "Huffman"], lz: ["info", "LZ"], mutual: ["info", "Mutual"],
+  bsc: ["info", "BSC"], hamming: ["info", "Hamming"], caesar: ["info", "Caesar"], modring: ["info", "ModRing"],
 };
 
 const loaded = {};

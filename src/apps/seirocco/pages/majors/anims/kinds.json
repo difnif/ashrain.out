@@ -158,6 +158,14 @@
   "btree",
   "join",
   "reservoir",
-  "pagerank"
+  "pagerank",
+  "entropy",
+  "huffman",
+  "lz",
+  "mutual",
+  "bsc",
+  "hamming",
+  "caesar",
+  "modring"
  ]
 }
