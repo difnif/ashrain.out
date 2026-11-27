@@ -25,6 +25,7 @@ export const MODS = {
   info: () => import("./info.jsx"),
   analysis: () => import("./analysis.jsx"),
   complex: () => import("./complex.jsx"),
+  numer: () => import("./numer.jsx"),
 };
 
 export const KINDS = {
@@ -99,6 +100,9 @@ export const KINDS = {
   // 복소해석
   cmul: ["complex", "CMul"], roots: ["complex", "Roots"], cmap: ["complex", "CMap"], cr: ["complex", "CR"], branch: ["complex", "Branch"],
   winding: ["complex", "Winding"], cauchyint: ["complex", "CauchyInt"], pseries: ["complex", "PSeries"], residue: ["complex", "Residue"],
+  // 수치해석
+  float: ["numer", "Float"], convrate: ["numer", "ConvRate"], interp: ["numer", "Interp"], quad: ["numer", "Quad"],
+  condnum: ["numer", "CondNum"], jacobi: ["numer", "Jacobi"], powerit: ["numer", "PowerIt"], odestab: ["numer", "OdeStab"],
 };
 
 const loaded = {};

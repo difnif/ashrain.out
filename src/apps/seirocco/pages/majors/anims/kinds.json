@@ -184,6 +184,14 @@
   "winding",
   "cauchyint",
   "pseries",
-  "residue"
+  "residue",
+  "float",
+  "convrate",
+  "interp",
+  "quad",
+  "condnum",
+  "jacobi",
+  "powerit",
+  "odestab"
  ]
 }
