@@ -11,7 +11,7 @@ export default function Jangseogo() {
         <Row main="수학의 정석 (1966 초판 영인)" sub="소장 자료 · 열람만" right={<Chip tone="ac">귀중서</Chip>} />
       </Card>
       <Card title="전공 수학 서가">
-        <Row main="대학 전공 수학 9권 — 바로 읽기" sub="대학수학 · 경제수학 · 무역학 · 기계공학 · 천문공학 · 전자공학 · 데이터 공학 · 물리학 · 통계학"
+        <Row main="대학 전공 수학 — 분야별 서가" sub="미적분학 · 선형대수 · 미분방정식 · 확률 · 통계에서 공학 · 자연과학 · 데이터 · 경제까지 — 움직이는 그림 · 풀이가 있는 연습"
           right={<Chip tone="ok">열람</Chip>} onClick={() => go("#/seogo/jeon")} />
       </Card>
       <p className="d-note" style={{ marginTop: 12 }}>빌리고, 돌려놓고, 기록이 남아요.</p>
