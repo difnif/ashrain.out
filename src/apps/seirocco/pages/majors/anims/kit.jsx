@@ -46,8 +46,15 @@ export const ease = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 export const fmt = (v, d = 2) => {
   if (!Number.isFinite(v)) return "—";
   const s = Math.abs(v) >= 1000 ? v.toFixed(0) : v.toFixed(d);
-  return s.replace(/\.?0+$/, (m) => (m.includes(".") ? "" : m)).replace("-", "−");
+  const out = s.replace(/\.?0+$/, (m) => (m.includes(".") ? "" : m)).replace("-", "−");
+  return out === "−0" ? "0" : out;
 };
+
+/** 시계 한 걸음 — 시간이 거꾸로 가면 그림이 음수 칸(배열[−1])을 읽어 장 전체가 멈추므로 0 아래로 내려가지 않게, 주기는 0 부터 다시 */
+export function advanceT(x, dt, period = 0, speed = 1) {
+  const v = x + Math.max(0, dt) * speed;
+  return period ? ((v % period) + period) % period : Math.max(0, v);
+}
 
 /**
  * 시계 — 화면에 보이면 저절로 돌고(줄인 움직임 설정이면 멈춘 채), 안 보이면 쉰다.
@@ -57,7 +64,7 @@ export function useClock({ period = 0, speed = 1, auto = true } = {}) {
   // 검산은 서버 그리기에서 여러 순간을 보려고 globalThis.__MA_T0 (초)를 둔다 — 앱에서는 늘 0 에서 시작
   const [t, setT] = useState(() => {
     const t0 = typeof globalThis !== "undefined" && typeof globalThis.__MA_T0 === "number" ? globalThis.__MA_T0 : 0;
-    return period ? t0 % period : t0;
+    return period ? ((t0 % period) + period) % period : t0;
   });
   const [playing, setPlaying] = useState(false);
   const ref = useRef(null);
@@ -77,9 +84,10 @@ export function useClock({ period = 0, speed = 1, auto = true } = {}) {
     if (!playing) return undefined;
     let raf = 0, last = performance.now();
     const step = (now) => {
+      // 첫 프레임의 시각(now)이 last 보다 이를 수 있다(rAF 는 프레임 시작 시각을 준다) — 그래서 dt 가 음수일 수 있다
       const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
-      setT((x) => { const v = x + dt * speed; return period ? v % period : v; });
+      last = Math.max(last, now);
+      setT((x) => advanceT(x, dt, period, speed));
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
