@@ -15,6 +15,7 @@ const SKELETON = `
     <a href="#/tt/class" data-tab="class">수업 기록</a>
     <a href="#/tt/students" data-tab="students">학생</a>
     <a href="#/tt/prints" data-tab="prints">프린트함</a>
+    <a href="#/tt/books" data-tab="books">교재</a>
     <a href="#/tt/export" data-tab="export">내보내기</a>
     <a href="#/tt/log" data-tab="log">활동 로그</a>
     <a href="#/tt/import" data-tab="import" class="tt-mig">옮겨 오기</a>

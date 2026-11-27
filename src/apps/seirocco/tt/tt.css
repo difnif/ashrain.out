@@ -39,7 +39,8 @@
 .tt-root .files{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .tt-root .file{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#fff;border:1px solid var(--line);border-radius:10px;font-size:14px}
 .tt-root .file .x{margin-left:auto;border:none;background:none;color:var(--mute);font-size:18px}
-.tt-root .opt{display:grid;grid-template-columns:110px 1fr;gap:10px 14px;align-items:center}
+.tt-root .opt{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px 14px;align-items:center}
+@media (max-width:560px){.tt-root .opt{grid-template-columns:minmax(0,1fr);gap:4px 0}.tt-root .opt label.k{margin-top:6px}}
 .tt-root .opt label.k{font-weight:700;color:var(--sub);font-size:14px}
 .tt-root .seg{display:inline-flex;background:#f1f5f9;border-radius:12px;padding:3px;gap:3px;flex-wrap:wrap}
 .tt-root .seg button{border:none;background:none;padding:6px 14px;border-radius:9px;font-weight:600;color:var(--sub)}
@@ -51,6 +52,9 @@
 .tt-root .chip.sel button{color:#fff}
 .tt-root .chip.pick{background:#fff;border:1.5px solid var(--line);color:var(--sub);cursor:pointer}
 .tt-root .chip.pick:hover{border-color:var(--acc);color:var(--acc)}
+.tt-root .bkst{display:inline-flex;align-items:center;gap:6px;padding:2px 3px 2px 10px;border-radius:999px;background:#e0f2f1;color:#134e4a;font-weight:600;font-size:14px;white-space:nowrap}
+.tt-root .bkst .btn,.tt-root .nowrap{white-space:nowrap}
+.tt-root .bkst.off{opacity:.55}
 .tt-root .tin{padding:7px 10px;border:1.5px solid var(--line);border-radius:10px;min-width:160px}
 .tt-root .tin:focus{outline:none;border-color:var(--acc)}
 .tt-root textarea.tin{width:100%;min-height:70px}

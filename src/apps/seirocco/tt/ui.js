@@ -88,6 +88,7 @@ mo.observe(root, { subtree: true, childList: true, attributes: true, attributeFi
    opts.rounds = 그 채점의 차 수(3차까지 했으면 3차도 고를 수 있게) · opts.meta = {title, student}(vFlat 공유로 받을 때 파일 이름)
    안드로이드: 「vFlat으로 스캔」 → vFlat에서 「공유 → 강사도구」(앱으로 설치했을 때) → 이 채점 · 고른 차수로 저절로 올라감(#/tt/inbox) */
 const whenText = (r) => (r ? `${r}차 채점 때` : "확실하지 않음");
+const BOOK_R = 3;           // 교재 스캔본은 1 · 2 · 3차 채점 때 / 확실하지 않음 중에서 고름
 function scanPanel(el, gid, scans, onChange = () => {}, opts = {}) {
   let pick = "";                 // "1" · "2" · … · "u"(확실하지 않음)
   let pending = [], busy = false, vwant = false;
@@ -174,11 +175,13 @@ function confirmInline(b) {
 }
 const scanLabel = (scans) => (scans && scans.length ? `스캔본 ${scans.length}` : "스캔본 올리기");
 // [data-scan=채점id] 단추 (data-r = 차 수, data-t = 프린트 제목, data-n = 학생 이름) → 스캔본 창, 닫으면 단추 글자를 개수로
-function bindScanButtons(el, nameOf = (b) => b.dataset.n || "") {
-  $$("[data-scan]", el).forEach((b) => (b.onclick = (e) => {
+// afterClose(단추, 스캔본 목록) — 창을 닫은 뒤 화면을 다시 그릴 때(교재 화면: 스캔본이 생기면 「빼기」를 감춤)
+function bindScanButtons(el, nameOf = (b) => b.dataset.n || "", afterClose = null) {
+  $$("[data-scan]", el).forEach((b) => (b.onclick = async (e) => {
     e.stopPropagation();
-    scanModal(+b.dataset.scan, `${esc(nameOf(b))} · ${esc(b.dataset.t || "")} · 스캔본`, { rounds: +b.dataset.r || 1, meta: { title: b.dataset.t || "", student: nameOf(b) },
-      onChange: (sc) => { b.textContent = scanLabel(sc); } });
+    const sc = await scanModal(+b.dataset.scan, `${esc(nameOf(b))} · ${esc(b.dataset.t || "")} · 스캔본`, { rounds: +b.dataset.r || 1, meta: { title: b.dataset.t || "", student: nameOf(b) },
+      onChange: (x) => { b.textContent = scanLabel(x); } });
+    if (afterClose && sc) afterClose(b, sc);
   }));
 }
 // 스캔본 창 — 채점 화면·학생 기록·프린트 채점 기록에서 같이 씀
@@ -269,7 +272,7 @@ function route() {
   document.onkeydown = null;
   if (!location.hash.startsWith("#/tt")) return;
   const R = { convert: viewConvert, register: viewRegister, grade: viewGrade, class: viewClass, students: viewStudents, prints: viewPrints, print: viewPrint, log: viewLog,
-    export: viewExport, account: viewAccount, wrong: viewWrong, inbox: viewInbox, parts: viewParts,
+    export: viewExport, account: viewAccount, wrong: viewWrong, inbox: viewInbox, parts: viewParts, books: viewBooks,
     import: (...a) => importView({ view, $, $$, esc, toast, modal, api, fmtCode }, ...a) }[parts[0]];
   view.innerHTML = `<div class="card"><span class="busy"></span>불러오는 중…</div>`;
   refreshInboxTab();
@@ -683,6 +686,8 @@ async function viewGrade(code, sid, extra) {
       return;
     }
   }
+  const bw = bookWhere(p);
+  if (bw) { location.replace(bw); return; }          // 교재는 채점 화면 대신 교재 탭에서(스캔본)
   if (!sid || sid === "pick") return gradePick(p, sid === "pick");
   return gradeRun(p, +sid, extra);
 }
@@ -1272,6 +1277,7 @@ viewGrade = async function (code, sid, extra) {
   const gs = await api("gradings?student=" + sid);
   const g = gs.find((x) => x.code === normCode(code));
   if (!g) return _viewGrade(code);          // 채점 기록이 없으면(취소했으면) 새로 열지 않고 학생 고르기로
+  if (g.book) { location.replace("#/tt/books/" + g.book); return; }
   const d = await api("gradings/" + g.id);
   const R = d.rounds || [];
   const last = R[R.length - 1] || { round: 1, kind: "solve" };
@@ -1413,7 +1419,7 @@ async function viewStudents(id) {
   view.innerHTML = `<h1>학생</h1>
     <div class="card"><h2>학생 추가</h2><div class="row"><textarea class="tin" id="sNew" placeholder="이름을 쭉 적어 주세요 (줄바꿈·쉼표로 구분)" style="min-height:44px;flex:1"></textarea><button class="btn" id="sAdd">추가</button></div></div>
     <div class="card">${list.length ? `<table class="t"><tr><th>이름</th><th>학년</th><th>받은 프린트</th><th>마지막 출제</th><th>메모</th><th></th></tr>
-      ${list.map((s) => `<tr class="click" data-href="#/tt/students/${s.id}" style="${s.active ? "" : "opacity:.5"}"><td><b>${esc(s.name)}</b></td><td>${esc(s.grade)}</td><td>${s.n_prints}</td>
+      ${list.map((s) => `<tr class="click" data-href="#/tt/students/${s.id}" style="${s.active ? "" : "opacity:.5"}"><td><b>${esc(s.name)}</b></td><td>${esc(s.grade)}</td><td>${s.n_prints}${s.n_books ? ` <span class="small muted">· 교재 ${s.n_books}</span>` : ""}</td>
         <td class="sub small">${shortWhen(s.last_issued)}</td><td class="sub small">${esc(s.memo)}</td><td>${s.active ? "" : `<span class="tag">쉬는 중</span>`}</td></tr>`).join("")}</table>` : `<div class="empty">아직 학생이 없어요</div>`}</div>`;
   $("#sAdd").onclick = async () => {
     const names = splitNames($("#sNew").value);
@@ -1426,8 +1432,10 @@ async function viewStudents(id) {
 }
 
 async function studentDetail(id) {
-  const d = await api("students/" + id);
+  const [d, allBooks] = await Promise.all([api("students/" + id), api("books").catch(() => [])]);
   const s = d.student;
+  const myBooks = d.books || [];
+  const freeBooks = allBooks.filter((b) => !b.students.some((x) => x.sid === s.id));
   const nWrongNow = d.prints.reduce((a, p) => a + ((p.summary && p.summary.X) || 0), 0);
   const recByDate = {};
   d.records.forEach((r) => ((recByDate[r.date] ||= {})[r.kind] ||= []).push(r));
@@ -1447,6 +1455,13 @@ async function studentDetail(id) {
     <div class="card"><h2>반복 오답 <span class="sub small">같은 문항을 두 번 이상 틀린 것</span></h2>${d.repeat_wrong.length ? `<div class="wrongs">${d.repeat_wrong.map((w) => `<div class="wrong">
       <span class="tag rep">${w.count}번 틀림</span> <span class="small sub">${w.where.map((x) => `${esc(x.title)} ${esc(x.label && !/^\d+$/.test(x.label) ? x.label : (x.label || x.seq) + "번")}`).join(" · ")}</span>
       ${w.png ? `<img src="${fileUrl(w.png)}" alt="">` : ""}</div>`).join("")}</div>` : `<div class="empty">아직 없어요</div>`}</div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">교재 <span class="sub small">스캔본은 교재마다 모아요</span></h2>
+        ${freeBooks.length ? `<select class="tin" id="bkAdd" style="min-width:0"><option value="">교재 붙이기…</option>${freeBooks.map((b) => `<option value="${b.code}">${esc(b.title)}${b.publisher ? ` (${esc(b.publisher)})` : ""}</option>`).join("")}</select>`
+          : `<a class="btn ghost small" href="#/tt/books">${allBooks.length ? "교재 탭" : "교재 등록하러 가기"}</a>`}</div>
+      ${myBooks.length ? `<table class="t" style="margin-top:8px"><tr><th>교재</th><th>출판사 · 학년</th><th>붙인 날</th><th></th></tr>
+        ${myBooks.map((b) => `<tr><td><a href="#/tt/books/${b.master_code}"><b>${esc(b.title)}</b></a></td><td class="small">${bookSub(b) || "-"}</td><td class="sub small">${shortWhen(b.issued_at)}</td>
+          <td>${b.grading ? bookScanBtn({ gid: b.grading.id, n_scans: b.n_scans }, b.title, s.name) : ""}</td></tr>`).join("")}</table>`
+        : `<div class="empty">아직 붙인 교재가 없어요</div>`}</div>
     <div class="card"><h2>받은 프린트</h2>${d.prints.length ? `<table class="t"><tr><th>출제일</th><th>코드</th><th>제목</th><th>채점</th><th>결과</th><th></th></tr>
       ${d.prints.map((p) => `<tr><td class="sub small">${shortWhen(p.issued_at)}</td><td class="code">${esc(p.code_fmt)}</td><td>${esc(p.title)}</td>
         <td>${p.grading ? statusTag(p.grading.status) : `<span class="muted small">안 함</span>`}${p.n_rounds > 1 ? ` <span class="tag ses">${p.n_rounds}차</span>` : ""}</td><td>${sumText(p.summary)}${roundNote(p)}</td>
@@ -1468,9 +1483,117 @@ async function studentDetail(id) {
   $$(".wrong img").forEach((im) => (im.onclick = () => zoom(im.src)));
   $$("[data-pout]").forEach((b) => (b.onclick = () => printOut(b.dataset.pout, id)));
   bindScanButtons(view, () => s.name);
+  if ($("#bkAdd")) $("#bkAdd").onchange = async (e) => {
+    const code = e.target.value;
+    if (!code) return;
+    e.target.disabled = true;
+    try { await api("books/" + code, { assign: s.id }); toast(`「${allBooks.find((b) => b.code === code)?.title || "교재"}」를 붙였어요`); route(); }
+    catch (err) { toast(err.message, 4000); e.target.disabled = false; e.target.value = ""; }
+  };
   const per = () => { const q = new URLSearchParams(); if ($("#dFrom").value) q.set("from", $("#dFrom").value); if ($("#dTo").value) q.set("to", $("#dTo").value); return q.toString(); };
   $("#dPdf").onclick = () => openLink(`/dl/student/${id}.pdf?view=1&${per()}`);
   $("#dJson").onclick = () => openLink(`/dl/student/${id}.json?${per()}`, true);
+}
+
+/* ───────────────────────── 교재 (#/tt/books · #/tt/books/<교재 코드>)
+   교재 하나를 학생마다 채점 기록 하나로 둔다(백엔드 options.textbook). 지금은 스캔본 올리기 · 받기 · 1 · 2 · 3차 표시까지 — 프린트와 같은 스캔본 창.
+   분석(채점 표시 읽기 · 문항 · 정답 쌓기) · 포스트잇은 다음 단계에서 붙인다. */
+function bookWhere(p) {               // 교재(교재 자체나 학생 몫)면 그 교재 화면 주소, 아니면 null
+  const b = p && p.options && p.options.textbook;
+  return b ? "#/tt/books/" + (b.role === "master" ? p.code : b.master_code || "") : null;
+}
+function bookSub(b) { return [b.publisher, b.grade].filter(Boolean).map(esc).join(" · "); }
+function bookScanBtn(x, title, name) {
+  return x.gid ? `<button class="btn small ghost" data-scan="${x.gid}" data-r="${BOOK_R}" data-t="${esc(title)}" data-n="${esc(name)}" data-had="${x.n_scans || 0}" title="학생이 푼 교재 스캔본 올리기 · 받기 · 1·2·3차 표시">${scanLabel({ length: x.n_scans || 0 })}</button>` : "";
+}
+function bookHowto() {
+  return `<div class="card"><h2>스캔본 올리는 법 <span class="sub small">프린트와 같아요</span></h2><ol class="small" style="margin:0;padding-left:20px;line-height:1.8">
+    <li>학생 이름 옆 「스캔본」을 눌러요.</li>
+    <li>언제 스캔한 것인지(1차 · 2차 · 3차 채점 때 / 확실하지 않음)를 고르고, 파일(PDF · 사진)을 놓아요. 안드로이드에서는 「📷 vFlat으로 스캔」 → vFlat에서 「공유 → 강사도구」를 누르면 그 학생 교재로 저절로 올라와요.</li>
+    <li>올린 스캔본은 받기 · 한 PDF로 보기 · 지우기 · 차수 바꾸기가 돼요.</li></ol>
+    <p class="sub small" style="margin:8px 0 0">스캔본을 분석해 채점 · 정답을 쌓는 기능과 포스트잇은 다음에 붙여요.</p></div>`;
+}
+async function viewBooks(code) {
+  if (code) return bookDetail(normCode(code));
+  const [list, students] = await Promise.all([api("books"), api("students")]);
+  view.innerHTML = `<h1>교재</h1>
+    <div class="card"><h2>교재 등록 <span class="sub small">학생마다 교재 하나에 스캔본을 모아요</span></h2>
+      <div class="opt">
+        <label class="k">교재 이름</label><input class="tin" id="bTitle" placeholder="예: 개념원리 중2-1" autocomplete="off">
+        <label class="k">출판사</label><input class="tin" id="bPub" placeholder="예: 개념원리" autocomplete="off">
+        <label class="k">학년</label><input class="tin" id="bGrade" placeholder="예: 중2" autocomplete="off">
+        <label class="k">메모</label><input class="tin" id="bMemo" placeholder="없어도 돼요" autocomplete="off">
+        <label class="k">학생</label><div id="bStu"></div>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="bAdd">등록</button><span class="sub small">학생은 나중에 붙여도 돼요</span></div></div>
+    <div class="card"><h2>교재 목록</h2>${list.length ? `<table class="t"><tr><th>교재</th><th>출판사 · 학년</th><th>학생 · 스캔본</th><th></th></tr>
+      ${list.map((b) => `<tr class="click" data-href="#/tt/books/${b.code}"><td><b>${esc(b.title)}</b>${b.memo ? `<div class="small muted">${esc(b.memo)}</div>` : ""}</td><td class="small">${bookSub(b) || "-"}</td>
+        <td><div class="chips">${b.students.map((x) => `<span class="bkst${x.active ? "" : " off"}">${esc(x.name)} ${bookScanBtn(x, b.title, x.name)}</span>`).join("") || `<span class="muted small">아직 없음</span>`}</div></td>
+        <td><a class="btn small ghost nowrap" href="#/tt/books/${b.code}">학생 붙이기 · 고치기</a></td></tr>`).join("")}</table>` : `<div class="empty">아직 등록한 교재가 없어요</div>`}</div>
+    ${bookHowto()}`;
+  const chips = nameChips($("#bStu"), students);
+  const btn = $("#bAdd");
+  btn.onclick = async () => {
+    const title = $("#bTitle").value.trim();
+    if (!title) { toast("교재 이름을 넣어 주세요"); $("#bTitle").focus(); return; }
+    btn.disabled = true;
+    try {
+      const r = await api("books", { title, publisher: $("#bPub").value, grade: $("#bGrade").value, memo: $("#bMemo").value, students: chips.get() });
+      toast(`「${title}」 등록했어요${r.n_students ? ` · 학생 ${r.n_students}명` : ""}`);
+      route();
+    } catch (e) { toast(e.message, 4000); btn.disabled = false; }
+  };
+  bindRows(view);
+  bindScanButtons(view);
+}
+async function bookDetail(code) {
+  let b;
+  try { b = await api("books/" + code); } catch (e) {
+    let p = null;                      // 학생 몫 코드로 왔으면 그 교재로
+    try { p = await api("prints/" + code); } catch { /* 없음 */ }
+    const bw = bookWhere(p);
+    if (bw && bw !== "#/tt/books/" + code) { location.replace(bw); return; }
+    throw e;
+  }
+  const students = await api("students");
+  const have = new Set(b.students.map((x) => x.sid));
+  const free = students.filter((s) => s.active && !have.has(s.id));
+  view.innerHTML = `<h1>${esc(b.title)} ${bookSub(b) ? `<span class="sub small">${bookSub(b)}</span>` : ""}</h1>
+    <div class="card"><h2>이 교재를 쓰는 학생</h2>${b.students.length ? `<table class="t"><tr><th>학생</th><th>붙인 날</th><th>스캔본</th><th></th></tr>
+      ${b.students.map((x) => `<tr${x.active ? "" : ` style="opacity:.55"`}><td><a href="#/tt/students/${x.sid}"><b>${esc(x.name)}</b></a></td><td class="sub small">${shortWhen(x.since)}</td>
+        <td>${bookScanBtn(x, b.title, x.name)}</td>
+        <td>${x.n_scans ? "" : `<button class="btn small ghost warn-t" data-unas="${x.sid}" title="이 학생에게서 교재를 빼요 (스캔본이 없을 때만)">빼기</button>`}</td></tr>`).join("")}</table>`
+      : `<div class="empty">아직 붙인 학생이 없어요</div>`}
+      <div style="margin-top:12px"><b class="small">학생 붙이기</b> <span class="sub small">눌러서 바로 붙여요</span><div class="chips" style="margin-top:6px">${free.map((s) => `<span class="chip pick" data-as="${s.id}">+ ${esc(s.name)}</span>`).join("") || `<span class="muted small">붙일 학생이 없어요</span>`}</div></div></div>
+    <div class="card"><h2>교재 정보</h2><div class="opt">
+        <label class="k">교재 이름</label><input class="tin" id="bTitle" value="${esc(b.title)}" autocomplete="off">
+        <label class="k">출판사</label><input class="tin" id="bPub" value="${esc(b.publisher)}" autocomplete="off">
+        <label class="k">학년</label><input class="tin" id="bGrade" value="${esc(b.grade)}" autocomplete="off">
+        <label class="k">메모</label><input class="tin" id="bMemo" value="${esc(b.memo)}" autocomplete="off">
+      </div><div class="row" style="margin-top:10px"><button class="btn" id="bSave">저장</button>
+        ${b.students.length ? "" : `<button class="btn ghost warn-t" id="bDel">교재 지우기</button>`}<a class="btn ghost" href="#/tt/books">교재 목록</a></div></div>
+    ${bookHowto()}`;
+  bindScanButtons(view, undefined, (bt, sc) => { if (!sc.length !== !+bt.dataset.had) route(); });     // 스캔본이 생기거나 다 지우면 「빼기」를 다시 그림
+  $$("[data-as]", view).forEach((c) => (c.onclick = async () => {
+    if (c.dataset.busy) return;
+    c.dataset.busy = "1";
+    try { await api("books/" + b.code, { assign: +c.dataset.as }); toast(`${c.textContent.replace(/^\+\s*/, "")}에게 붙였어요`); route(); }
+    catch (e) { toast(e.message, 4000); c.dataset.busy = ""; }
+  }));
+  $$("[data-unas]", view).forEach((x) => (x.onclick = async () => {
+    if (!confirmInline(x)) return;
+    try { await api("books/" + b.code, { unassign: +x.dataset.unas }); toast("뺐어요"); route(); } catch (e) { toast(e.message, 5000); }
+  }));
+  $("#bSave").onclick = async () => {
+    try { await api("books/" + b.code, { title: $("#bTitle").value, publisher: $("#bPub").value, grade: $("#bGrade").value, memo: $("#bMemo").value }); toast("저장했어요"); route(); }
+    catch (e) { toast(e.message, 4000); }
+  };
+  if ($("#bDel")) $("#bDel").onclick = async () => {
+    const v = await modal(`<h2>「${esc(b.title)}」를 지울까요?</h2><p>붙인 학생이 없는 교재만 지울 수 있어요.</p>`,
+      [{ label: "그만두기", value: null, cls: "ghost" }, { label: "지우기", value: 1, cls: "warn" }]);
+    if (!v) return;
+    try { await api("books/" + b.code, { delete: true }); toast("지웠어요"); location.hash = "#/tt/books"; } catch (e) { toast(e.message, 4000); }
+  };
 }
 
 /* ───────────────────────── 오답 모아 출제 (#/tt/wrong/s/<학생> · #/tt/wrong/p/<코드> · #/tt/wrong/sp/<학생>/<코드>) */
@@ -1640,6 +1763,8 @@ function parseKeyText(txt, n) {
 
 async function viewPrint(code) {
   const p = await api("prints/" + normCode(code));
+  const bw = bookWhere(p);
+  if (bw) { location.replace(bw); return; }
   const students = await api("students");
   const ans = Object.fromEntries(p.items.map((it) => [it.seq, it.answer || ""]));
   view.innerHTML = `<h1>${esc(p.title)}</h1>
@@ -1910,7 +2035,8 @@ async function inboxUpload(files, target) {
   let d;
   try { d = await api("gradings/" + target.gid); } catch (e) { toast(e.message, 5000); return inboxPick(files); }
   const rd = target.round ?? null;
-  const head = `${esc(d.student.name)} · ${esc(d.print.title)} <span class="code sub">${esc(d.print.code_fmt)}</span> · ${esc(whenText(rd))}`;
+  const bw = bookWhere(d.print);
+  const head = `${esc(d.student.name)} · ${esc(d.print.title)} ${bw ? `<span class="tag">교재</span>` : `<span class="code sub">${esc(d.print.code_fmt)}</span>`} · ${esc(whenText(rd))}`;
   const taken = new Set((d.scans || []).map((x) => x.name));
   const done = [], fail = [];
   for (let i = 0; i < files.length; i++) {
@@ -1929,8 +2055,8 @@ async function inboxUpload(files, target) {
     <div class="card" style="${done.length ? "background:#f0fdf4;border-color:#bbf7d0" : ""}"><h2>${done.length ? `올렸어요 — ${head}` : "올리지 못했어요"}</h2>
       ${done.length ? `<div class="files">${done.map((n) => `<div class="file">${/\.pdf$/i.test(n) ? "📄" : "🖼"} ${esc(n)}</div>`).join("")}</div>` : ""}
       ${fail.length ? `<p class="small" style="color:var(--x)">${fail.map(esc).join("<br>")}</p>` : ""}
-      <div class="row" style="margin-top:10px"><a class="btn" href="#/tt/grade/${d.print.code}/${d.student.id}/done">이 채점의 스캔본 보기</a>
-        ${fail.length ? `<button class="btn ghost" id="ibAgain">남은 것 다시</button>` : ""}<a class="btn ghost" href="#/tt/grade">채점으로</a></div></div>`;
+      <div class="row" style="margin-top:10px">${bw ? `<a class="btn" href="${bw}">이 교재의 스캔본 보기</a>` : `<a class="btn" href="#/tt/grade/${d.print.code}/${d.student.id}/done">이 채점의 스캔본 보기</a>`}
+        ${fail.length ? `<button class="btn ghost" id="ibAgain">남은 것 다시</button>` : ""}${bw ? `<a class="btn ghost" href="#/tt/books">교재로</a>` : `<a class="btn ghost" href="#/tt/grade">채점으로</a>`}</div></div>`;
   if ($("#ibAgain")) $("#ibAgain").onclick = () => route();
 }
 // 기다리는 채점이 없을 때: 어느 채점 · 몇 차인지 골라 올림
@@ -1954,7 +2080,7 @@ async function inboxPick(files) {
   };
   const drawSeg = () => {
     const g = gs.find((x) => x.id === sel);
-    const n = Math.max(2, (g && g.n_rounds) || 1);
+    const n = g && g.book ? BOOK_R : Math.max(2, (g && g.n_rounds) || 1);
     seg($("#ibSeg"), [...Array.from({ length: n }, (_, i) => [String(i + 1), whenText(i + 1)]), ["u", "확실하지 않음"]], pick, (v) => { pick = v; upd(); });
     upd();
   };
@@ -1962,8 +2088,8 @@ async function inboxPick(files) {
     const q = $("#ibQ").value.trim().toLowerCase().replace(/-/g, "");
     const rows = gs.filter((g) => !q || `${g.name} ${g.title} ${g.code}`.toLowerCase().replace(/-/g, "").includes(q));
     $("#ibList").innerHTML = rows.length ? `<table class="t">${rows.slice(0, 60).map((g) => `<tr class="click${g.id === sel ? " sel" : ""}" data-g="${g.id}">
-      <td style="width:28px"><input type="radio" name="ibg" ${g.id === sel ? "checked" : ""}></td><td><b>${esc(g.name)}</b></td><td>${esc(g.title)}</td><td class="code">${esc(g.code_fmt)}</td>
-      <td>${statusTag(g.status)}${g.n_rounds > 1 ? ` <span class="tag ses">${g.n_rounds}차</span>` : ""}</td><td class="sub small">${shortWhen(g.updated_at)}</td></tr>`).join("")}</table>`
+      <td style="width:28px"><input type="radio" name="ibg" ${g.id === sel ? "checked" : ""}></td><td><b>${esc(g.name)}</b></td><td>${esc(g.title)}</td><td class="code">${g.book ? "" : esc(g.code_fmt)}</td>
+      <td>${g.book ? `<span class="tag">교재</span>` : `${statusTag(g.status)}${g.n_rounds > 1 ? ` <span class="tag ses">${g.n_rounds}차</span>` : ""}`}</td><td class="sub small">${shortWhen(g.updated_at)}</td></tr>`).join("")}</table>`
       : `<div class="empty">맞는 채점이 없어요</div>`;
     $$("#ibList tr[data-g]").forEach((tr) => (tr.onclick = () => { sel = +tr.dataset.g; drawList(); drawSeg(); }));
   };
@@ -1987,6 +2113,7 @@ const EV = {
   grading_reopen: "채점 다시 엶", retry_start: "다음 차 채점 시작", round_delete: "마지막 차 지움", grading_delete: "채점 기록 지움",
   print_purge: "프린트 완전히 지움", print_restore: "프린트 되살림", wrongset_make: "오답 프린트 만듦", library_register: "보관함에서 등록",
   library_import: "보관함에 옮겨 옴", pc_import: "PC 자료 옮겨 옴",
+  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움",
 };
 function evDetail(e) {
   const d = e.detail || {};
@@ -1999,6 +2126,7 @@ function evDetail(e) {
     case "scan_upload": case "scan_round": case "scan_delete":
       return [esc(d.name || ""), "round" in d ? esc(whenText(d.round)) : "", d.pages ? `${d.pages}쪽` : ""].filter(Boolean).join(" · ");
     case "grading_start": case "student_add": return "";
+    case "book_add": case "book_edit": case "book_assign": case "book_unassign": case "book_delete": return esc(d.title || "");
     default:
       if (e.kind.startsWith("class_")) return `${d.date} · ${d.prints ? d.prints.length : 0}개${d.edited ? " (수정)" : ""}`;
       return Object.entries(d).map(([k, v]) => `${esc(k)}: ${esc(typeof v === "object" ? JSON.stringify(v) : v)}`).join(" · ");

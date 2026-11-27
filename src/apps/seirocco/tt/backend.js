@@ -180,18 +180,24 @@ async function studentDetail(sid) {
   if (!st) throw new Error("그런 학생이 없어요");
   const tg = must(await T("tt_targets").select("print_id,issued_at").eq("student_id", sid).order("issued_at", { ascending: false }));
   const pids = tg.map((t) => t.print_id);
-  const prints = pids.length ? must(await T("tt_prints").select("id,code,title,n_items,shelf").in("id", pids)) : [];
+  const prints = pids.length ? must(await T("tt_prints").select("id,code,title,n_items,shelf,options").in("id", pids)) : [];
   const pm = new Map(prints.map((p) => [p.id, p]));
   const gs = must(await T("tt_gradings").select("id,print_id,status").eq("student_id", sid));
   const gids = gs.map((g) => g.id);
   const [marks, sessions] = await Promise.all([marksOf(gids), sessionsOf(gids)]);
   const scans = gids.length ? await all(() => T("tt_scans").select("grading_id").in("grading_id", gids).eq("deleted", false)) : [];
-  const out = [];
+  const out = [], books = [];
   for (const t of tg) {
     const p = pm.get(t.print_id);
     if (!p || p.shelf !== "active") continue;
-    const row = { id: p.id, code: p.code, code_fmt: fmtCode(p.code), title: p.title, n_items: p.n_items, issued_at: t.issued_at, grading: null };
     const g = gs.find((x) => x.print_id === p.id);
+    const bk = bookOf(p);
+    if (bk) {             // 교재: 학생마다 교재 하나 = 채점 기록 하나 (스캔본은 프린트처럼)
+      books.push({ id: p.id, code: p.code, code_fmt: fmtCode(p.code), title: p.title, master_code: bk.master_code || "", publisher: bk.publisher || "", grade: bk.grade || "",
+        issued_at: t.issued_at, grading: g ? { id: g.id, status: g.status } : null, n_scans: g ? scans.filter((s) => s.grading_id === g.id).length : 0 });
+      continue;
+    }
+    const row = { id: p.id, code: p.code, code_fmt: fmtCode(p.code), title: p.title, n_items: p.n_items, issued_at: t.issued_at, grading: null };
     if (g) {
       row.grading = { id: g.id, status: g.status };
       Object.assign(row, gradingStats(marks.filter((m) => m.grading_id === g.id), sessions.filter((s) => s.grading_id === g.id), p.n_items));
@@ -220,7 +226,122 @@ async function studentDetail(sid) {
   const rep = [...wrong.values()].filter((w) => w.count >= 2).sort((a, b) => b.count - a.count);
   const recs = must(await T("tt_class_records").select("day,kind,print_id").eq("student_id", sid).order("day", { ascending: false }));
   const records = recs.map((r) => ({ date: r.day, kind: r.kind, code: apm.get(r.print_id)?.code || pm.get(r.print_id)?.code || "", title: apm.get(r.print_id)?.title || pm.get(r.print_id)?.title || "" }));
-  return { student: st, prints: out, repeat_wrong: rep, records };
+  return { student: st, prints: out, books, repeat_wrong: rep, records };
+}
+
+// ── 교재 — 프린트 표(tt_prints)에 options.textbook 으로 둔다(DB는 그대로).
+//   role 'master' = 교재 자체(이름 · 출판사 · 학년), role 'student' = 학생마다 붙인 교재(채점 기록 · 스캔본이 여기 달림)
+const bookOf = (p) => (p && p.options && p.options.textbook) || null;
+async function freeCode() {
+  for (let i = 0; i < 50; i++) { const c = newCode(); if (!must(await T("tt_prints").select("id").eq("code", c).limit(1)).length) return c; }
+  throw new Error("코드를 만들지 못했어요");
+}
+async function bookPrints() {
+  const ps = must(await T("tt_prints").select("id,code,title,options,created_at,shelf").eq("shelf", "active").order("id", { ascending: false }).limit(2000));
+  return ps.filter((x) => bookOf(x));
+}
+async function booksList() {
+  const bs = await bookPrints();
+  const masters = bs.filter((x) => bookOf(x).role === "master"), studs = bs.filter((x) => bookOf(x).role === "student");
+  const ids = studs.map((x) => x.id);
+  const [tg, gs] = ids.length ? await Promise.all([all(() => T("tt_targets").select("print_id,student_id").in("print_id", ids)),
+    all(() => T("tt_gradings").select("id,print_id,student_id,status").in("print_id", ids))]) : [[], []];
+  const sidOf = (x) => bookOf(x).student || gs.find((g) => g.print_id === x.id)?.student_id || tg.find((t) => t.print_id === x.id)?.student_id || null;
+  const sm = await studentsMap(studs.map(sidOf));
+  const scans = gs.length ? await all(() => T("tt_scans").select("grading_id").in("grading_id", gs.map((g) => g.id)).eq("deleted", false)) : [];
+  return masters.map((mst) => {
+    const b = bookOf(mst);
+    const students = studs.filter((x) => bookOf(x).master === mst.id && sm.has(sidOf(x))).map((x) => {
+      const sid = sidOf(x), st = sm.get(sid);
+      const g = gs.find((y) => y.print_id === x.id && y.student_id === sid);
+      return { code: x.code, sid, name: st.name, active: st.active !== false, gid: g ? g.id : null, since: x.created_at,
+        n_scans: g ? scans.filter((s) => s.grading_id === g.id).length : 0 };
+    }).sort((a, c) => a.name.localeCompare(c.name, "ko"));
+    return { id: mst.id, code: mst.code, code_fmt: fmtCode(mst.code), title: mst.title, publisher: b.publisher || "", grade: b.grade || "", memo: b.memo || "",
+      created_at: mst.created_at, students };
+  });
+}
+async function bookMaster(code) {
+  const mst = await printRow(code);
+  if (!mst || mst.shelf !== "active" || bookOf(mst)?.role !== "master") throw new Error("그런 교재가 없어요");
+  return mst;
+}
+// 그 학생 몫(role student) 찾기 — 없으면 null
+async function bookCopy(mst, sid) {
+  const mine = (await bookPrints()).filter((x) => bookOf(x).role === "student" && bookOf(x).master === mst.id);
+  const direct = mine.find((x) => bookOf(x).student === sid);
+  if (direct) return direct;
+  const old = mine.filter((x) => !bookOf(x).student);
+  if (!old.length) return null;
+  const tg = must(await T("tt_targets").select("print_id").in("print_id", old.map((x) => x.id)).eq("student_id", sid));
+  return (tg.length && old.find((y) => y.id === tg[0].print_id)) || null;
+}
+// 학생에게 교재 붙이기: 그 학생 몫을 만들고 채점 기록(스캔본이 달릴 자리)을 연다 — 이미 붙였으면 그대로
+async function bookAssign(mst, sid) {
+  if (!must(await T("tt_students").select("id").eq("id", sid)).length) throw new Error("그런 학생이 없어요");
+  const x = await bookCopy(mst, sid);
+  if (x) {
+    const g = must(await T("tt_gradings").select("id").eq("print_id", x.id).eq("student_id", sid).limit(1));
+    return { code: x.code, gid: g.length ? g[0].id : await rpc("tt_open_grading", { p_print: x.id, p_student: sid, p_purpose: null }), existed: true };
+  }
+  const b = bookOf(mst);
+  const code = await freeCode();
+  const row = must(await T("tt_prints").insert({ code, title: mst.title, kind: "registered", label: "교재", shelf: "active",
+    options: { textbook: { role: "student", master: mst.id, master_code: mst.code, student: sid, publisher: b.publisher || "", grade: b.grade || "" } } }).select("id,code").single());
+  const gid = await rpc("tt_open_grading", { p_print: row.id, p_student: sid, p_purpose: null });
+  log("book_assign", sid, row.id, { code, master: mst.code, title: mst.title });
+  return { code, gid, existed: false };
+}
+async function bookCreate(b) {
+  const title = String(b.title || "").trim().slice(0, 80);
+  if (!title) throw new Error("교재 이름을 넣어 주세요");
+  const pub = String(b.publisher || "").trim().slice(0, 40);
+  const same = (await bookPrints()).find((x) => bookOf(x).role === "master" && x.title === title && (bookOf(x).publisher || "") === pub);
+  if (same) throw new Error("같은 이름의 교재가 이미 있어요");
+  const code = await freeCode();
+  const tb = { role: "master", publisher: pub, grade: String(b.grade || "").trim().slice(0, 20), memo: String(b.memo || "").trim().slice(0, 200) };
+  const row = must(await T("tt_prints").insert({ code, title, kind: "registered", label: "교재", shelf: "active", options: { textbook: tb } }).select("id,code,title,options").single());
+  log("book_add", null, row.id, { code, title });
+  const sids = [...new Set([...(b.student_ids || []).map(Number).filter(Boolean), ...(b.students?.length ? await ensureStudents(b.students) : [])])];
+  for (const sid of sids) await bookAssign(row, sid);
+  return { ok: true, code, n_students: sids.length };
+}
+async function bookEdit(code, b) {
+  const mst = await bookMaster(code);
+  const studs = (await bookPrints()).filter((x) => bookOf(x).role === "student" && bookOf(x).master === mst.id);
+  if (b.assign) return { ok: true, ...(await bookAssign(mst, Number(b.assign))) };
+  if (b.unassign) {
+    const sid = Number(b.unassign);
+    const x = await bookCopy(mst, sid);
+    if (!x) return { ok: true };
+    const gs = must(await T("tt_gradings").select("id").eq("print_id", x.id));
+    const gids = gs.map((g) => g.id);
+    const nScan = gids.length ? must(await T("tt_scans").select("id").in("grading_id", gids).eq("deleted", false)).length : 0;
+    const nMark = gids.length ? must(await T("tt_marks").select("id").in("grading_id", gids).limit(1)).length : 0;
+    if (nScan || nMark) throw new Error("올린 스캔본이나 채점 기록이 있어서 뺄 수 없어요 — 스캔본을 먼저 지워 주세요");
+    await purgePrint(x.id);
+    log("book_unassign", sid, mst.id, { code: x.code, master: mst.code, title: mst.title });
+    return { ok: true };
+  }
+  if (b.delete) {
+    if (studs.length) throw new Error("이 교재를 쓰는 학생이 있어서 지울 수 없어요 — 학생에게서 먼저 빼 주세요");
+    await purgePrint(mst.id);
+    log("book_delete", null, null, { code: mst.code, title: mst.title });
+    return { ok: true };
+  }
+  const tb = { ...bookOf(mst) };
+  const up = {};
+  if ("title" in b) { const t = String(b.title || "").trim().slice(0, 80); if (!t) throw new Error("교재 이름을 넣어 주세요"); up.title = t; }
+  for (const k of ["publisher", "grade", "memo"]) if (k in b) tb[k] = String(b[k] || "").trim().slice(0, k === "memo" ? 200 : k === "grade" ? 20 : 40);
+  const dup = (await bookPrints()).find((x) => x.id !== mst.id && bookOf(x).role === "master" && x.title === (up.title || mst.title) && (bookOf(x).publisher || "") === (tb.publisher || ""));
+  if (dup) throw new Error("같은 이름의 교재가 이미 있어요");
+  must(await T("tt_prints").update({ ...up, options: { ...mst.options, textbook: tb }, updated_at: nowIso() }).eq("id", mst.id));
+  for (const x of studs) {          // 학생 몫에도 이름 · 출판사 · 학년을 맞춘다
+    const xb = { ...bookOf(x), publisher: tb.publisher || "", grade: tb.grade || "" };
+    must(await T("tt_prints").update({ ...up, options: { ...x.options, textbook: xb }, updated_at: nowIso() }).eq("id", x.id));
+  }
+  log("book_edit", null, mst.id, { code: mst.code, ...up });
+  return { ok: true };
 }
 
 async function gradingsList(q) {
@@ -232,14 +353,16 @@ async function gradingsList(q) {
   };
   const gs = must(await qq());
   if (!gs.length) return [];
-  const prints = must(await T("tt_prints").select("id,code,title,n_items,shelf").in("id", [...new Set(gs.map((g) => g.print_id))]));
+  const prints = must(await T("tt_prints").select("id,code,title,n_items,shelf,options").in("id", [...new Set(gs.map((g) => g.print_id))]));
   const pm = new Map(prints.map((p) => [p.id, p]));
   const sm = await studentsMap(gs.map((g) => g.student_id));
   const gids = gs.map((g) => g.id);
   const [marks, sessions] = await Promise.all([marksOf(gids), sessionsOf(gids)]);
-  return gs.filter((g) => pm.get(g.print_id)?.shelf === "active").map((g) => {
-    const p = pm.get(g.print_id);
+  // 교재는 늘 열려 있는 기록(스캔본 자리)이라 「이어서 채점할 것」에는 넣지 않는다
+  return gs.filter((g) => pm.get(g.print_id)?.shelf === "active" && !(q.status === "unfinished" && bookOf(pm.get(g.print_id)))).map((g) => {
+    const p = pm.get(g.print_id), bk = bookOf(p);
     return { ...g, name: sm.get(g.student_id)?.name || "?", code: p.code, code_fmt: fmtCode(p.code), title: p.title, n_items: p.n_items,
+             book: bk ? bk.master_code || p.code : null,
              ...gradingStats(marks.filter((m) => m.grading_id === g.id), sessions.filter((s) => s.grading_id === g.id), p.n_items) };
   });
 }
@@ -254,8 +377,8 @@ async function classView(date, sids, days) {
     if (!st) continue;
     const tg = must(await T("tt_targets").select("print_id,issued_at").eq("student_id", sid)
       .gte("issued_at", from + "T00:00:00").lte("issued_at", date + "T23:59:59.999").order("issued_at", { ascending: false }));
-    const prints = tg.length ? must(await T("tt_prints").select("id,code,title,n_items,shelf").in("id", tg.map((t) => t.print_id))) : [];
-    const pm = new Map(prints.map((p) => [p.id, p]));
+    const prints = tg.length ? must(await T("tt_prints").select("id,code,title,n_items,shelf,options").in("id", tg.map((t) => t.print_id))) : [];
+    const pm = new Map(prints.filter((p) => !bookOf(p)).map((p) => [p.id, p]));        // 교재는 수업 기록의 「받은 프린트」에서 뺌
     const gs = tg.length ? must(await T("tt_gradings").select("id,print_id,status").eq("student_id", sid).in("print_id", tg.map((t) => t.print_id))) : [];
     const marks = await marksOf(gs.map((g) => g.id));
     const sessions = await sessionsOf(gs.map((g) => g.id));
@@ -458,10 +581,12 @@ export async function api(path, body) {
   if (p === "students") {
     if (post) return { ids: await ensureStudents(body.names || []) };
     const sts = must(await T("tt_students").select("*").order("active", { ascending: false }).order("name"));
-    const tg = await all(() => T("tt_targets").select("student_id,issued_at"));
+    const [tg, bk] = await Promise.all([all(() => T("tt_targets").select("student_id,print_id,issued_at")), bookPrints()]);
+    const bids = new Set(bk.map((x) => x.id));
     return sts.map((s) => {
-      const mine = tg.filter((t) => t.student_id === s.id);
-      return { ...s, n_prints: mine.length, last_issued: mine.map((t) => t.issued_at).sort().pop() || null };
+      const mine = tg.filter((t) => t.student_id === s.id && !bids.has(t.print_id));
+      return { ...s, n_prints: mine.length, n_books: tg.filter((t) => t.student_id === s.id && bids.has(t.print_id)).length,
+        last_issued: mine.map((t) => t.issued_at).sort().pop() || null };
     });
   }
   if ((m = /^students\/(\d+)$/.exec(p))) {
@@ -482,7 +607,7 @@ export async function api(path, body) {
       const c = normCode(s);
       x = x.or(`title.ilike.%${s}%,code.ilike.%${c || s}%,sub.ilike.%${s}%`);
     }
-    let prints = must(await x);
+    let prints = must(await x).filter((pr) => !bookOf(pr));       // 교재는 교재 탭에서
     if (q.student) {
       const tg = must(await T("tt_targets").select("print_id").eq("student_id", Number(q.student)));
       const ids = new Set(tg.map((t) => t.print_id));
@@ -537,6 +662,13 @@ export async function api(path, body) {
     const res = { ok: true };
     if (body.answer_upload) res.quick = await (await engine()).attachAnswer(pr, await takeUpload(body.answer_upload), ctx());
     return res;
+  }
+  // 교재 — 등록 · 학생에게 붙이기 · 빼기 · 고치기 · 지우기 (스캔본은 학생 몫의 채점 기록에: gradings/<id>/scans 그대로)
+  if (p === "books") return post ? bookCreate(body) : booksList();
+  if ((m = /^books\/([A-Za-z0-9-]+)$/.exec(p))) {
+    if (post) return bookEdit(m[1], body);
+    const mst = await bookMaster(m[1]);
+    return (await booksList()).find((x) => x.id === mst.id);
   }
   if (p === "gradings" && !post) return gradingsList(q);
   if (p === "gradings" && post) {
