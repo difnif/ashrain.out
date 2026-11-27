@@ -150,6 +150,14 @@
   "kernel",
   "kmeans",
   "pca",
-  "nnet"
+  "nnet",
+  "knn",
+  "abtest",
+  "hashtable",
+  "bloom",
+  "btree",
+  "join",
+  "reservoir",
+  "pagerank"
  ]
 }

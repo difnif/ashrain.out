@@ -21,6 +21,7 @@ export const MODS = {
   discrete: () => import("./discrete.jsx"),
   algo: () => import("./algo.jsx"),
   ml: () => import("./ml.jsx"),
+  data: () => import("./data.jsx"),
 };
 
 export const KINDS = {
@@ -83,6 +84,9 @@ export const KINDS = {
   // 머신러닝
   optim: ["ml", "Optim"], logreg: ["ml", "LogReg"], overfit: ["ml", "Overfit"], roc: ["ml", "ROC"], tree2d: ["ml", "Tree2D"],
   kernel: ["ml", "Kernel"], kmeans: ["ml", "KMeans"], pca: ["ml", "PCA"], nnet: ["ml", "NNet"],
+  // 데이터 공학
+  knn: ["data", "KNN"], abtest: ["data", "ABTest"], hashtable: ["data", "HashTable"], bloom: ["data", "Bloom"],
+  btree: ["data", "BTree"], join: ["data", "Join"], reservoir: ["data", "Reservoir"], pagerank: ["data", "PageRank"],
 };
 
 const loaded = {};
