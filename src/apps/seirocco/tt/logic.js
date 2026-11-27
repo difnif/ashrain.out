@@ -16,11 +16,12 @@ export const todayStr = () => {
 };
 export const normName = (s) => String(s || "").replace(/\s+/g, " ").trim();
 
+// 결과: O 맞음 · X 틀림 · U 안 풂 · P 넘어감(푼 만큼만 매기고 넘긴 문항 — 다시 풀기 · 오답 · 정답률에 넣지 않음) · none 안 매김
 export function summarize(marksOrItems) {
-  const s = { O: 0, X: 0, U: 0, none: 0 };
+  const s = { O: 0, X: 0, U: 0, P: 0, none: 0 };
   for (const it of marksOrItems) {
     const r = (it && it.mark ? it.mark.result : it && it.result) || "";
-    s[["O", "X", "U"].includes(r) ? r : "none"]++;
+    s[["O", "X", "U", "P"].includes(r) ? r : "none"]++;
   }
   s.total = marksOrItems.length;
   return s;

@@ -82,7 +82,7 @@ async function report(blocks, footer) {
   return doc.save();
   });
 }
-const res = (r) => ({ O: "O", X: "X", U: "안 풂" }[r || ""] || "·");
+const res = (r) => ({ O: "O", X: "X", U: "안 풂", P: "넘어감" }[r || ""] || "·");
 
 export async function gradingPdf(d) {
   const nr = Math.max(1, ...d.rounds.map((r) => r.round));
@@ -91,20 +91,23 @@ export async function gradingPdf(d) {
     const by = Object.fromEntries((it.rounds || []).map((x) => [x.round, x.result]));
     return [it.label, it.answer, ...Array.from({ length: nr }, (_, k) => res(by[k + 1])), res(it.final), it.given, it.tag, it.rate];
   });
-  const rs = d.rounds.map((r) => [`${r.round}차`, r.kind === "solve" ? "처음 풀기" : "다시 풀기", r.summary.total, r.summary.O, r.summary.X, r.summary.U, r.summary.none, String(r.started_at || "").slice(0, 10)]);
+  const hasP = (d.summary.P || 0) > 0 || d.rounds.some((r) => r.summary.P);
+  const rs = d.rounds.map((r) => [`${r.round}차`, r.kind === "solve" ? "처음 풀기" : "다시 풀기", r.summary.total, r.summary.O, r.summary.X, r.summary.U, ...(hasP ? [r.summary.P || 0] : []), r.summary.none, String(r.started_at || "").slice(0, 10)]);
   const s = d.summary;
   return report([
     { h1: `채점 결과 — ${d.title}` },
     { meta: `${d.student} · 코드 ${d.code} · 처음 채점 ${String(d.started || "").slice(0, 10)} · 스캔본 ${d.scans}개` },
-    { box: `최종: 맞음 ${s.O} · 틀림 ${s.X} · 안 풂 ${s.U} · 안 매김 ${s.none} / ${s.total}문항` },
-    { h2: "차수별" }, { table: { head: ["차", "종류", "문항", "맞음", "틀림", "안 풂", "안 매김", "날짜"], rows: rs } },
+    { box: `최종: 맞음 ${s.O} · 틀림 ${s.X} · 안 풂 ${s.U}${s.P ? ` · 넘어감 ${s.P}` : ""} · 안 매김 ${s.none} / ${s.total}문항` },
+    ...(s.P ? [{ meta: "넘어감 = 푼 만큼만 매기고 넘긴 문항(학습 계획상 풀지 않음 — 틀림 · 안 풂으로 세지 않음)" }] : []),
+    { h2: "차수별" }, { table: { head: ["차", "종류", "문항", "맞음", "틀림", "안 풂", ...(hasP ? ["넘어감"] : []), "안 매김", "날짜"], rows: rs } },
     { h2: "문항별" }, { table: { head, rows, left: [head.length - 2] } },
   ], `${d.title} · ${d.code} · ${d.student}`);
 }
 export async function studentPdf(d) {
   const rows = d.gradings.map((g) => {
     const s = g.summary, s1 = g.rounds.length ? g.rounds[0].summary : s;
-    return [String(g.started || "").slice(0, 10), g.title, g.code, `${s1.O}/${s1.total}`, g.rounds.length, `${s.O}/${s.total}`, s.X, s.U];
+    const tot = (x) => x.total - (x.P || 0);                 // 넘어감(푼 만큼만 매기고 넘긴 문항)은 문항 수에서 뺌
+    return [String(g.started || "").slice(0, 10), g.title, g.code, `${s1.O}/${tot(s1)}`, g.rounds.length, `${s.O}/${tot(s)}${s.P ? ` (넘어감 ${s.P})` : ""}`, s.X, s.U];
   });
   const wr = d.wrong_items.map((w) => [`${w.title || ""} ${w.code_fmt || ""}`, w.label, w.answer, (w.rounds || []).map((x) => `${x.round}차 ${x.result}`).join(" → "), res(w.final), w.tag]);
   const per = `${d.period.from || "처음"} ~ ${d.period.to || "오늘"}`;

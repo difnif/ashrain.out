@@ -145,7 +145,14 @@ export async function gradingDetail(gid) {
     it.repeat = it.wrong_before + (it.rounds.some((x) => x.result === "X") ? 1 : 0) >= 2;
   }
   const last = sessions[sessions.length - 1] || {};
+  // 마지막 넘어가기(푼 만큼만) — 그 뒤 다시 열지 않았으면 결과 화면에서 되돌릴 수 있음
+  const pe = must(await T("tt_events").select("id,at,detail").eq("kind", "grading_pass").eq("print_id", g.print_id).eq("student_id", g.student_id)
+    .order("id", { ascending: false }).limit(1))[0];
+  const pd = (pe && pe.detail) || {};
+  const pass = pe && Number(pd.grading) === g.id && Number(pd.session) === last.no && last.ended_at
+    ? { id: pe.id, at: pe.at, kind: pd.kind, round: pd.round, n: pd.n, undone: !!pd.undone_by } : null;
   return {
+    pass,
     grading: g, print: p, student: st, items, sessions, rounds: roundsInfo(sessions, marks, items.map((i) => i.seq)),
     cur: { round: last.round || 1, kind: last.kind || "solve", targets: last.targets || null, no: last.no || 1 },
     summary: summarize(items), scans,
@@ -908,6 +915,10 @@ async function undoEvent(id) {
   if (!ev) throw new Error("그런 기록이 없어요");
   const d = ev.detail || {};
   if (d.undone_by) throw new Error("이미 되돌린 기록이에요");
+  if (ev.kind === "grading_pass") {               // 넘어가기 되돌리기 — DB 함수가 넘기기 전 상태로(그 뒤 다시 열었으면 안 됨)
+    const r = await passFn(() => rpc("tt_unpass_grading", { p_event: ev.id }));
+    return r && r.event;
+  }
   const rows = d.table === "multi" ? d.rows || [] : [{ table: d.table, row_id: d.row_id, before: d.before, after: d.after }];
   if (!rows.length || rows.some((r) => !UNDO[r.table])) throw new Error("이 기록은 되돌릴 수 없어요");
   try {
@@ -1234,7 +1245,7 @@ export async function wrongCandidates(f) {
 
 // ── 받기용 JSON (PC print_data · grading_data · student_data)
 const CIRC_ANS = { 1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤" };
-const RES_KO = { O: "맞음", X: "틀림", U: "안 풂", "": "안 매김" };
+const RES_KO = { O: "맞음", X: "틀림", U: "안 풂", P: "넘어감", "": "안 매김" };
 const ansText = (it) => { const a = String(it.answer || ""); return (it.choice ? CIRC_ANS[a] || a : a) || (it.answer_png ? "(그림)" : ""); };
 
 export async function printData(code) {
@@ -1256,7 +1267,7 @@ export async function printData(code) {
       return { no: it.seq, label: it.label || String(it.src_no || it.seq), choice: !!it.choice, answer: ansText(it), points: it.points,
         topic: it.topic || "", tag: it.tag || "", rate: it.rate || "", key, origin: it.origin || null,
         image: it.png ? `시험지 ${splitLabel(it.label || String(it.seq)).base}번` : null, answer_image: !!it.answer_png, solution_image: !!it.sol_png,
-        results: { graded: res.filter(Boolean).length, O: res.filter((x) => x === "O").length, X: res.filter((x) => x === "X").length, U: res.filter((x) => x === "U").length },
+        results: { graded: res.filter((x) => x && x !== "P").length, O: res.filter((x) => x === "O").length, X: res.filter((x) => x === "X").length, U: res.filter((x) => x === "U").length, P: res.filter((x) => x === "P").length },
         ...(t ? { question: t.question, solution: t.solution } : {}) };
     }),
   };
@@ -1489,6 +1500,12 @@ export async function api(path, body) {
     if (post && r && r.paths?.length) { try { await remove(r.paths); } catch { /* 다음에 */ } }
     return r;
   }
+  // 푼 만큼만 매기고 넘어가기(패스) — 남은 문항을 넘어감(1차) · 이번 차에서 뺌(2차부터)으로 두고 끝냄 (supabase/2026-11_tt_pass.sql)
+  if ((m = /^gradings\/(\d+)\/pass$/.exec(p)) && post) {
+    const seqs = [...new Set((body.seqs || []).map(Number).filter(Number.isInteger))];
+    if (!seqs.length) throw new Error("넘길 문항이 없어요");
+    return passFn(() => rpc("tt_pass_grading", { p_grading: Number(m[1]), p_seqs: seqs }));
+  }
   if ((m = /^gradings\/(\d+)\/close$/.exec(p))) {
     const st = await rpc("tt_close_grading", { p_grading: Number(m[1]), p_reason: body.reason || "done", p_untouched: !!body.untouched });
     return { status: st };
@@ -1543,6 +1560,15 @@ export async function api(path, body) {
 }
 
 // 앞 차 고치기 · 채점 취소 함수가 운영 DB에 아직 없으면 알아듣게
+async function passFn(call) {
+  try { return await call(); } catch (e) {
+    const msg = e.message || "";
+    if (/tt_(un)?pass_grading/.test(msg) && /function|schema cache/i.test(msg)) throw new Error(PASS_SQL);
+    if (/tt_marks_result_check/.test(msg)) throw new Error(PASS_SQL);
+    throw e;
+  }
+}
+const PASS_SQL = "DB에 「넘어가기」가 아직 없어요 — supabase/2026-11_tt_pass.sql 을 넣어야 해요";
 async function roundFn(call) {
   try { return await call(); } catch (e) {
     const msg = e.message || "";

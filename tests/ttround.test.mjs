@@ -76,3 +76,18 @@ test("앞 차까지의 결과", () => {
   assert.equal(resultBefore(rounds, 1), "");
   assert.equal(resultBefore([], 2), "");
 });
+
+test("넘어감(P) — 셈에서 따로, 다시 풀 문항(n_retry)에 넣지 않음, 나중에 매기면 그 결과", async () => {
+  const { summarize, gradingStats } = await import("../src/apps/seirocco/tt/logic.js");
+  const s = summarize([{ result: "O" }, { result: "X" }, { result: "P" }, { result: "P" }, { result: "U" }, {}]);
+  assert.deepEqual([s.O, s.X, s.U, s.P, s.none, s.total], [1, 1, 1, 2, 1, 6]);
+  const sessions = [{ no: 1, round: 1, kind: "solve" }];
+  const marks = [
+    { id: 1, seq: 1, result: "O", session_no: 1 }, { id: 2, seq: 2, result: "X", session_no: 1 },
+    { id: 3, seq: 3, result: "P", session_no: 1 }, { id: 4, seq: 4, result: "P", session_no: 1 },
+    { id: 5, seq: 4, result: "O", session_no: 1 },          // 넘긴 뒤 풀어 와서 O
+  ];
+  const st = gradingStats(marks, sessions, 4);
+  assert.deepEqual([st.summary.O, st.summary.X, st.summary.P, st.summary.none], [2, 1, 1, 0]);
+  assert.equal(st.n_retry, 1);                                // 넘어감은 다시 풀 문항이 아님
+});
