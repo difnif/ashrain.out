@@ -24,6 +24,7 @@ export const MODS = {
   data: () => import("./data.jsx"),
   info: () => import("./info.jsx"),
   analysis: () => import("./analysis.jsx"),
+  complex: () => import("./complex.jsx"),
 };
 
 export const KINDS = {
@@ -95,6 +96,9 @@ export const KINDS = {
   // 해석학
   supinf: ["analysis", "SupInf"], epsn: ["analysis", "EpsN"], rearrange: ["analysis", "Rearrange"], unifcont: ["analysis", "UnifCont"],
   zoomdiff: ["analysis", "ZoomDiff"], darboux: ["analysis", "Darboux"], unifconv: ["analysis", "UnifConv"], contract: ["analysis", "Contract"], cantor: ["analysis", "Cantor"],
+  // 복소해석
+  cmul: ["complex", "CMul"], roots: ["complex", "Roots"], cmap: ["complex", "CMap"], cr: ["complex", "CR"], branch: ["complex", "Branch"],
+  winding: ["complex", "Winding"], cauchyint: ["complex", "CauchyInt"], pseries: ["complex", "PSeries"], residue: ["complex", "Residue"],
 };
 
 const loaded = {};

@@ -175,6 +175,15 @@
   "darboux",
   "unifconv",
   "contract",
-  "cantor"
+  "cantor",
+  "cmul",
+  "roots",
+  "cmap",
+  "cr",
+  "branch",
+  "winding",
+  "cauchyint",
+  "pseries",
+  "residue"
  ]
 }
