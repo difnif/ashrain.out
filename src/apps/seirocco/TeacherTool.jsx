@@ -1,6 +1,6 @@
 // 시록고 「강사도구」 — PC 강사도구를 웹으로 옮긴 것 (2026-11-23)
 // 화면은 tt/ui.js(PC 화면 그대로), 자료는 Supabase(tt_* 표 · teacher-tool 저장 공간의 <uid>/tt/), PDF 일은 tt/engine (브라우저 안).
-// 해시: #/tt/grade[/코드[/학생]] · #/tt/convert · #/tt/register · #/tt/class · #/tt/students · #/tt/prints · #/tt/print/코드 · #/tt/export · #/tt/log · #/tt/import
+// 해시: #/tt/today[/날짜] · #/tt/grade[/코드[/학생]] · #/tt/convert · #/tt/register · #/tt/class · #/tt/students · #/tt/prints · #/tt/print/코드 · #/tt/export · #/tt/log · #/tt/import
 //       #/tt/inbox (vFlat 등에서 「공유 → 강사도구」로 받은 스캔본 — public/tt-sw.js 가 연다)
 import { useEffect, useRef } from "react";
 import "./tt/tt.css";
@@ -9,6 +9,7 @@ const SKELETON = `
 <header class="top">
   <div class="brand">강사도구 <span class="brand-sub">웹</span></div>
   <nav class="tabs" id="tt-tabs">
+    <a href="#/tt/today" data-tab="today">오늘</a>
     <a href="#/tt/convert" data-tab="convert">매쓰플랫 변환</a>
     <a href="#/tt/register" data-tab="register">프린트 등록</a>
     <a href="#/tt/grade" data-tab="grade">채점</a>
@@ -35,7 +36,7 @@ export default function TeacherTool() {
   useEffect(() => {
     const root = ref.current;
     root.innerHTML = SKELETON;
-    if (!/^#\/tt\/./.test(location.hash)) history.replaceState(null, "", "#/tt/grade");
+    if (!/^#\/tt\/./.test(location.hash)) history.replaceState(null, "", "#/tt/today");      // 처음 열면 「오늘」(결석부 · 확인할 것)
     let off = null, dead = false;
     import("./tt/ui.js").then(({ mountTeacherTool }) => {
       if (!dead) off = mountTeacherTool(root);
