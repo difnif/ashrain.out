@@ -178,8 +178,8 @@ export const anim = (mod, name, p) => { const C = MODS[mod][name]; return render
     banner: { js: "import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);" },
   });
   const m = await import(pathToFileURL(out).href);
-  const BAD = /NaN|undefined|Infinity|\[object Object\]|\[\[/;
-  const bad = (s) => (s.match(/.{40}(NaN|undefined|Infinity|\[object Object\]|\[\[).{30}/) || [""])[0];
+  const BAD = /NaN|undefined|Infinity|\[object Object\]|\[\[|\^\(|[\uE000-\uE002]/;
+  const bad = (s) => (s.match(/.{40}(NaN|undefined|Infinity|\[object Object\]|\[\[|\^\(|[\uE000-\uE002]).{30}/) || [""])[0];
   globalThis.location = { hash: "" };
   const at = (h) => { globalThis.location.hash = h; };
 
@@ -190,14 +190,25 @@ export const anim = (mod, name, p) => { const C = MODS[mod][name]; return render
     assert.ok(Math.abs(m.advanceT(2, 0.016, 10, 1) - 2.016) < 1e-9);
   });
 
-  test("richHtml: **굵게** · 분수 표식은 상하로 · 평문 1/2 도 상하로 · 꺾쇠는 이스케이프", () => {
+  test("richHtml: **굵게** · 분수 표식은 상하로 · 평문 1/2 도 상하로 · 꺾쇠는 이스케이프 · 평문 지수 X^(…) 는 위첨자", () => {
     const s = m.richHtml("**정의** — [[frac(a,b)]] 와 1/2 그리고 <b>");
     assert.ok(s.startsWith("<b>정의</b>"), s);
     assert.equal((s.match(/class="mf"/g) || []).length, 2, s);
     assert.ok(s.includes("&lt;b&gt;"), "이스케이프");
+    // 평문 지수 X^(…) → 위첨자 — 괄호 짝 · 안쪽 / 는 세우지 않음 · 마커 안은 그대로 · 짝이 없으면 그대로
+    const e = m.richHtml("v = V(1 − e^(−t/τ)) 와 x^(1/3), e^(jω(t − τ)) · **H(e^(jω))** · [[pow(x,2)]] · 2^(3");
+    assert.ok(e.includes('e<sup class="mm-sup">−t/τ</sup>'), e);
+    assert.ok(e.includes('x<sup class="mm-sup">1/3</sup>'), e);
+    assert.ok(e.includes('e<sup class="mm-sup">jω(t − τ)</sup>'), e);
+    assert.ok(e.includes('<b>H(e<sup class="mm-sup">jω</sup>)</b>'), e);
+    assert.ok(!/class="mf"/.test(e), "지수 안의 / 는 분수로 세우지 않는다: " + e);
+    assert.ok(e.endsWith("2^(3"), "짝이 없는 ^( 는 그대로: " + e);
+    assert.ok(!/[\uE000-\uE002]/.test(e), "자리표가 남지 않는다");
+    const ir = m.richHtml("[[lim(x,0,frac(pow(e,x)-1,x))]] = 1");
+    assert.ok(ir.includes('e<sup class="mm-sup">x</sup>') && !ir.includes("^("), "표식이 그린 지수도 위첨자: " + ir);
   });
 
-  test("그림: 52종 모두 — 값 없이 · 책이 주는 값으로, 여러 시각(t)에서 그려 오류 · NaN · Infinity 없음", () => {
+  test(`그림: ${Object.keys(KINDS).length}종 모두 — 값 없이 · 책이 주는 값으로, 여러 시각(t)에서 그려 오류 · NaN · Infinity 없음`, () => {
     const params = {};
     for (const id of IDS) for (const x of anims(BOOKS[id])) (params[x.kind] ||= []).push(x.p);
     let shots = 0;
@@ -256,7 +267,7 @@ export const anim = (mod, name, p) => { const C = MODS[mod][name]; return render
     }
   });
 
-  test("모든 장 그리기 — 오류 · NaN · 남은 표식 없음 · 목표 · 용어 · 요약 · 예제 · 연습 · 증명 단추 · 그림 자리 · 이전/다음 장", () => {
+  test("모든 장 그리기 — 오류 · NaN · 남은 표식 · 남은 ^( 없음 · 목표 · 용어 · 요약 · 예제 · 연습 · 증명 단추 · 그림 자리 · 이전/다음 장", () => {
     let cnt = 0;
     for (const id of IDS) {
       const B = BOOKS[id];

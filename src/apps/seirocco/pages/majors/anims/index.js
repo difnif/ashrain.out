@@ -8,6 +8,11 @@ export const MODS = {
   ode: () => import("./ode.jsx"),
   prob: () => import("./prob.jsx"),
   stat: () => import("./stat.jsx"),
+  phys: () => import("./phys.jsx"),
+  mech: () => import("./mech.jsx"),
+  circuit: () => import("./circuit.jsx"),
+  signal: () => import("./signal.jsx"),
+  orbit: () => import("./orbit.jsx"),
 };
 
 export const KINDS = {
@@ -32,6 +37,22 @@ export const KINDS = {
   // 통계
   summary: ["stat", "Summary"], sampling: ["stat", "Sampling"], confint: ["stat", "ConfInt"], hyptest: ["stat", "HypTest"],
   regression: ["stat", "Regression"], anova: ["stat", "Anova"], beta: ["stat", "BetaUpdate"], bootstrap: ["stat", "Bootstrap"],
+  // 물리
+  projectile: ["phys", "Projectile"], pendulum: ["phys", "Pendulum"], collision: ["phys", "Collision"], wave: ["phys", "Wave"],
+  efield: ["phys", "EField"], maxwell: ["phys", "Maxwell"], qbox: ["phys", "QBox"], lightclock: ["phys", "LightClock"],
+  // 기계
+  beam: ["mech", "Beam"], stressstrain: ["mech", "StressStrain"], heat: ["mech", "Heat"], pv: ["mech", "PVCycle"],
+  venturi: ["mech", "Venturi"], rolling: ["mech", "Rolling"],
+  // 회로 · 제어
+  dcircuit: ["circuit", "DCircuit"], maxpower: ["circuit", "MaxPower"], rc: ["circuit", "RC"], phasor: ["circuit", "Phasor"],
+  bode: ["circuit", "Bode"], diode: ["circuit", "Diode"], adder: ["circuit", "Adder"], pid: ["circuit", "PID"],
+  poles: ["circuit", "Poles"], rootlocus: ["circuit", "RootLocus"],
+  // 신호
+  fourier: ["signal", "Fourier"], alias: ["signal", "Alias"], convolve: ["signal", "Convolve"], modulation: ["signal", "Modulation"],
+  dft: ["signal", "DFT"], dct: ["signal", "DCT"],
+  // 천문우주
+  kepler: ["orbit", "Kepler"], cannon: ["orbit", "Cannon"], hohmann: ["orbit", "Hohmann"], rocket: ["orbit", "Rocket"],
+  parallax: ["orbit", "Parallax"], blackbody: ["orbit", "Blackbody"], transit: ["orbit", "Transit"], hubble: ["orbit", "Hubble"],
 };
 
 const loaded = {};

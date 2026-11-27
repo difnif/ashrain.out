@@ -27,10 +27,50 @@ const READ_KEY = "srk.majors.read.v2";   // v2 에서 책 · 장이 새로 짜�
 function loadRead() { try { return JSON.parse(localStorage.getItem(READ_KEY) || "{}") || {}; } catch { return {}; } }
 function saveRead(r) { try { localStorage.setItem(READ_KEY, JSON.stringify(r)); } catch { /* 저장이 막힌 기기 */ } }
 
-/** 평문 + **굵게** + 수식 표식 → HTML (mathHtml 이 이스케이프한다) */
+/** 평문 지수 X^(…) → 위첨자: 괄호 짝을 맞춰 찾고(e^(jω(t − τ)) 도), 마커 [[…]] 안은 건드리지 않는다.
+ *  지수 안의 / 는 분수로 세우지 않는다(e^(−t/τ) · x^(1/3) 는 위첨자 안에서 한 줄로). 짝이 안 맞으면 그대로 둔다. */
+const SUP_O = "\uE000", SUP_C = "\uE001", SLASH = "\uE002";
+function supMark(t) {
+  return String(t).split(/(\[\[[\s\S]*?\]\])/g).map((part, i) => {
+    if (i % 2) return part;
+    let out = "", k = 0;
+    for (;;) {
+      const j = part.indexOf("^(", k);
+      if (j < 0) { out += part.slice(k); break; }
+      let d = 0, e = j + 1;
+      for (; e < part.length; e++) { const c = part[e]; if (c === "(") d++; else if (c === ")" && --d === 0) break; }
+      if (e >= part.length) { out += part.slice(k); break; }
+      out += part.slice(k, j) + SUP_O + supMark(part.slice(j + 2, e)).replace(/\//g, SLASH) + SUP_C;
+      k = e + 1;
+    }
+    return out;
+  }).join("");
+}
+const supHtml = (h) => h.replace(/\uE000/g, '<sup class="mm-sup">').replace(/\uE001/g, "</sup>").replace(/\uE002/g, "/");
+/** 표식이 그린 지수(pow(e,x) → e^(x))도 위첨자로 — HTML 에서 태그는 건너뛰고 괄호 짝을 센다 */
+function supPost(h) {
+  let out = "", k = 0, i = h.indexOf("^(");
+  while (i >= 0) {
+    let d = 0, e = i + 1, tag = false;
+    for (; e < h.length; e++) {
+      const c = h[e];
+      if (tag) { if (c === ">") tag = false; continue; }
+      if (c === "<") tag = true;
+      else if (c === "(") d++;
+      else if (c === ")" && --d === 0) break;
+    }
+    if (e >= h.length) break;
+    out += h.slice(k, i) + '<sup class="mm-sup">' + supPost(h.slice(i + 2, e)) + "</sup>";
+    k = e + 1;
+    i = h.indexOf("^(", k);
+  }
+  return out + h.slice(k);
+}
+const rich1 = (t) => supPost(supHtml(mathHtml(supMark(t))));
+/** 평문 + **굵게** + 수식 표식 + 평문 지수 → HTML (mathHtml 이 이스케이프한다) */
 export function richHtml(t) {
   return String(t ?? "").split(/(\*\*(?:(?!\*\*)[\s\S])+\*\*)/g)
-    .map((seg) => (/^\*\*[\s\S]+\*\*$/.test(seg) ? `<b>${mathHtml(seg.slice(2, -2))}</b>` : mathHtml(seg))).join("");
+    .map((seg) => (/^\*\*[\s\S]+\*\*$/.test(seg) ? `<b>${rich1(seg.slice(2, -2))}</b>` : rich1(seg))).join("");
 }
 function R({ t, as: Tag = "span", className, style }) {
   const html = useMemo(() => richHtml(t), [t]);
@@ -117,6 +157,21 @@ const CSS = `
 .mm-btns{display:flex;gap:6px;flex-wrap:wrap}
 .mm-terms td:first-child{font-weight:800;white-space:nowrap}
 .mm-terms td:nth-child(2){font-style:italic;color:var(--mut);white-space:nowrap}
+.mm-termw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.mm-sup{font-size:.72em;line-height:0;vertical-align:.55em;letter-spacing:.01em}
+@media (max-width:560px){
+.mm-terms,.mm-terms tbody{display:block;width:100%}
+.mm-terms tr{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;row-gap:3px;align-items:baseline;border:1px solid var(--bd);border-radius:9px;padding:7px 10px;margin-bottom:6px}
+.mm-terms td{border:0;padding:0}
+.mm-terms td:first-child{white-space:normal;word-break:keep-all}
+.mm-terms td:nth-child(2){white-space:normal;overflow-wrap:anywhere}
+.mm-terms td:nth-child(3){grid-column:1/-1}
+}
+@media (max-width:420px){
+.mm-tbl{font-size:12.5px}
+.mm-tbl th,.mm-tbl td{padding:5px 7px}
+.mm-code{font-size:11.5px;padding:10px 11px}
+}
 .mm-recap{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
 .mm-recap li{font-size:13.5px;line-height:1.8}
 .mm-nav{display:flex;gap:8px;justify-content:space-between;margin-top:4px;flex-wrap:wrap}
@@ -413,7 +468,7 @@ export function Chapter({ book, n, onRead }) {
       {c.terms?.length > 0 && (
         <div className="d-card">
           <p className="d-ct">용어</p>
-          <div className="mm-tw"><table className="mm-tbl mm-terms"><tbody>
+          <div className="mm-termw"><table className="mm-tbl mm-terms"><tbody>
             {c.terms.map(([ko, en, mean], i) => <tr key={i}><td>{ko}</td><td>{en}</td><td><R t={mean} /></td></tr>)}
           </tbody></table></div>
         </div>
