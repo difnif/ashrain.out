@@ -159,6 +159,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { richHtml, Shelf, Toc, Chapter, searchBooks } from ${JSON.stringify(path.join(ROOT, "src/apps/seirocco/pages/MajorMath.jsx"))};
 import Seogo from ${JSON.stringify(path.join(ROOT, "src/apps/seirocco/pages/Seogo.jsx"))};
 ${mods.map((m) => `import * as M_${m} from ${JSON.stringify(path.join(ANIM_DIR, `${m}.jsx`))};`).join("\n")}
+import { advanceT } from ${JSON.stringify(path.join(ANIM_DIR, "kit.jsx"))};
+export { advanceT };
 const MODS = { ${mods.map((m) => `${m}: M_${m}`).join(", ")} };
 export { richHtml, searchBooks };
 export const seogo = (p) => renderToStaticMarkup(<Seogo param={p} />);
@@ -180,6 +182,13 @@ export const anim = (mod, name, p) => { const C = MODS[mod][name]; return render
   const bad = (s) => (s.match(/.{40}(NaN|undefined|Infinity|\[object Object\]|\[\[).{30}/) || [""])[0];
   globalThis.location = { hash: "" };
   const at = (h) => { globalThis.location.hash = h; };
+
+  test("시계: 첫 프레임 시각이 앞서도(음수 dt) 시간이 0 아래로 가지 않고, 주기를 넘으면 0 부터 다시", () => {
+    assert.equal(m.advanceT(0, -0.003, 10, 1), 0);
+    assert.equal(m.advanceT(0, -0.003, 0, 1), 0);
+    assert.ok(Math.abs(m.advanceT(9.99, 0.02, 10, 1) - 0.01) < 1e-9);
+    assert.ok(Math.abs(m.advanceT(2, 0.016, 10, 1) - 2.016) < 1e-9);
+  });
 
   test("richHtml: **굵게** · 분수 표식은 상하로 · 평문 1/2 도 상하로 · 꺾쇠는 이스케이프", () => {
     const s = m.richHtml("**정의** — [[frac(a,b)]] 와 1/2 그리고 <b>");
