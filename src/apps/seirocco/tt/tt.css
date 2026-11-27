@@ -256,3 +256,16 @@
 .tt-root .t button.x{border:none;background:none;color:var(--sub);font-size:16px;cursor:pointer;padding:0 4px}
 .tt-root .t button.x.armed{color:#b91c1c;font-size:12px;font-weight:700}
 .tt-root .toast .tbtn{margin-left:12px;background:#fff;color:var(--ink);border:none;border-radius:8px;padding:4px 12px;font-weight:800;cursor:pointer}
+/* 재원 · 원비 — 이번 달을 안 적었으면 노랑, 지난달부터 비었으면 빨강 */
+.tt-root .tag.mflag.y{background:#fef3c7;color:#92400e}
+.tt-root .tag.mflag.r{background:#fee2e2;color:#b91c1c}
+.tt-root tr.mflag-y > td:first-child{box-shadow:inset 4px 0 #f59e0b}
+.tt-root tr.mflag-r > td:first-child{box-shadow:inset 4px 0 #ef4444}
+.tt-root .mcard.mflag-y{border-color:#fcd34d;background:#fffbeb}
+.tt-root .mcard.mflag-r{border-color:#fca5a5;background:#fef2f2}
+.tt-root .mtab .tin.fee{min-width:0;width:120px}
+.tt-root .mtab .tin.mnote{min-width:0;width:160px}
+.tt-root .mseg button{padding:5px 11px}
+.tt-root .chip.mchip.pause{background:#fef3c7;color:#92400e}
+.tt-root .chip.mchip.quit{background:#e5e7eb;color:#4b5563}
+.tt-root tr.sel > td{background:#f0fdfa}

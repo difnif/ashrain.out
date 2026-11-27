@@ -329,3 +329,50 @@ export function uncheckedPages(solved, graded) {
   const left = subtractRanges(done, g);
   return { known: true, ranges: left, text: fmtPages(left) };
 }
+
+// ── 재원 · 원비 — 달은 그달 1일(YYYY-MM-01)로 적는다
+export const monthStart = (d) => String(d || todayStr()).slice(0, 7) + "-01";
+export function addMonths(m, k) {
+  const [y, mo] = String(m).split("-").map(Number);
+  const t = new Date(Date.UTC(y, mo - 1 + k, 1));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-01`;
+}
+export const monthLabel = (m) => `${+String(m).slice(5, 7)}월`;
+// 원비 칸: 「300000」 · 「300,000」 · 「30만」 · 「35.5만」 · 「30만 5천」 → 원. 비면 null, 못 읽으면 NaN
+export function parseFee(s) {
+  const t = String(s ?? "").replace(/[\s,원₩]/g, "");
+  if (!t) return null;
+  let m = /^(\d+)$/.exec(t);
+  if (m) return +m[1];
+  m = /^(\d+(?:\.\d+)?)만(?:(\d+(?:\.\d+)?)천)?$/.exec(t);
+  if (m) return Math.round(+m[1] * 10000 + (m[2] ? +m[2] * 1000 : 0));
+  m = /^(\d+(?:\.\d+)?)천$/.exec(t);
+  if (m) return Math.round(+m[1] * 1000);
+  return NaN;
+}
+export const fmtWon = (n) => (n == null ? "" : `${Number(n).toLocaleString("ko-KR")}원`);
+export function fmtMan(n) {          // 300000 → 「30만」, 355000 → 「35만 5천」, 12345 → 「12,345원」
+  if (n == null) return "";
+  if (n % 1000 !== 0) return fmtWon(n);
+  const man = Math.floor(n / 10000), cheon = (n % 10000) / 1000;
+  return man ? `${man}만${cheon ? ` ${cheon}천` : ""}` : `${cheon}천`;
+}
+// 재원 표시 — 이번 달을 적었으면 그 상태.
+// 안 적었으면 노랑(y: 지난달은 적었거나 처음) · 빨강(r: 지난달도 비었음). 그만둠으로 끝났거나, 기록 없이 쉬는 중인 옛 학생은 묻지 않는다.
+export function monthFlag(st, rows, cur) {
+  const mine = rows.filter((r) => r.student_id === st.id && r.month <= cur).sort((a, b) => a.month.localeCompare(b.month));
+  const now = mine.find((r) => r.month === cur) || null;
+  const last = mine.length ? mine[mine.length - 1] : null;
+  if (now) return { status: now.status, fee: now.fee ?? null, note: now.note || "", flag: "", last: now };
+  if (last && last.status === "quit") return { status: null, flag: "", quit: true, last };
+  if (!last && st.active === false) return { status: null, flag: "", last: null };
+  const prev = mine.find((r) => r.month === addMonths(cur, -1));
+  return { status: null, flag: !last || prev ? "y" : "r", last };
+}
+// 달마다 모아 보기 — 다님 · 휴원 · 그만둠 수, 매출(다님 원비 합), 원비 안 적은 다님 수
+export function monthTotals(rows, m) {
+  const r = rows.filter((x) => x.month === m);
+  const at = r.filter((x) => x.status === "attend");
+  return { month: m, attend: at.length, pause: r.filter((x) => x.status === "pause").length, quit: r.filter((x) => x.status === "quit").length,
+    revenue: at.reduce((a, x) => a + (x.fee || 0), 0), no_fee: at.filter((x) => x.fee == null).length, entered: r.length };
+}
