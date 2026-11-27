@@ -579,10 +579,12 @@ export async function api(path, body) {
     if (body.light) return r;
     return { ...(await gradingDetail(gid)), fix: r };
   }
-  if ((m = /^gradings\/(\d+)\/retry-add$/.exec(p))) {
-    const gid = Number(m[1]);
-    const r = await roundFn(() => rpc("tt_retry_add", { p_grading: gid, p_seq: Number(body.seq) }));
-    return { ...(await gradingDetail(gid)), added: !!(r && r.added) };
+  // 채점 취소 — 읽기(GET): 무엇을 되돌릴지만, 보내기(POST): 지금 열린 회차와 그 뒤 매긴 것을 되돌림(처음 연 채점이면 기록째 없앰)
+  // (supabase/2026-11_tt_round_follow.sql 의 tt_cancel_grading)
+  if ((m = /^gradings\/(\d+)\/cancel$/.exec(p))) {
+    const r = await roundFn(() => rpc("tt_cancel_grading", { p_grading: Number(m[1]), p_dry: !post }));
+    if (post && r && r.paths?.length) { try { await remove(r.paths); } catch { /* 다음에 */ } }
+    return r;
   }
   if ((m = /^gradings\/(\d+)\/close$/.exec(p))) {
     const st = await rpc("tt_close_grading", { p_grading: Number(m[1]), p_reason: body.reason || "done", p_untouched: !!body.untouched });
@@ -637,11 +639,14 @@ export async function api(path, body) {
   throw new Error("없는 요청: " + p);
 }
 
-// 앞 차 고치기 함수(tt_mark_round · tt_retry_add)가 운영 DB에 아직 없으면 알아듣게
+// 앞 차 고치기 · 채점 취소 함수가 운영 DB에 아직 없으면 알아듣게
 async function roundFn(call) {
   try { return await call(); } catch (e) {
-    if (/tt_mark_round|tt_retry_add/.test(e.message || "") && /function|schema cache/i.test(e.message || "")) {
-      throw new Error("DB에 「앞 차 고치기」 함수가 아직 없어요 — supabase/2026-11_tt_round_fix.sql 을 한 번 실행해야 해요");
+    const msg = e.message || "";
+    if (/tt_mark_round|tt_cancel_grading/.test(msg) && /function|schema cache/i.test(msg)) {
+      throw new Error(/tt_cancel_grading/.test(msg)
+        ? "DB에 「채점 취소」 함수가 아직 없어요 — supabase/2026-11_tt_round_follow.sql 을 한 번 실행해야 해요"
+        : "DB에 「앞 차 고치기」 함수가 아직 없어요 — supabase/2026-11_tt_round_fix.sql 을 한 번 실행해야 해요");
     }
     throw e;
   }

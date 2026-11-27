@@ -1,7 +1,7 @@
 // 강사도구 — 2차를 시작한 뒤에도 1차(앞 차) 결과 고치기: 차 순서로 고르는 지금 결과 · 틀린 적 판정 (node --test tests/ttround.test.mjs)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { currentMarks, roundMarks, roundsInfo, gradingStats, everWrong, resultBefore } from "../src/apps/seirocco/tt/logic.js";
+import { currentMarks, roundMarks, roundsInfo, gradingStats, everWrong, resultBefore, effectiveMarks } from "../src/apps/seirocco/tt/logic.js";
 
 // 회차 1·2 = 1차(처음 풀기 + 이어서), 3 = 2차(다시 풀기 4 · 5번)
 const sessions = [
@@ -52,6 +52,21 @@ test("틀린 적 = 어느 차든 그 차의 마지막 결과가 X", () => {
     mk(1, 5, "O"), mk(3, 5, "X"), // 2차에서 틀림
   ];
   assert.deepEqual([...everWrong(marks, sessions)].sort(), [2, 5]);
+});
+
+test("다음 차는 앞 차를 따름: 다시 풀기 차의 기록은 그 차 다시 풀 문항 것만 셈", () => {
+  id = 0;
+  const ss = [{ no: 1, round: 1, kind: "solve", targets: null }, { no: 2, round: 2, kind: "retry", targets: [4] }];
+  const marks = [mk(1, 4, "X"), mk(1, 5, "X"), mk(2, 4, "O"), mk(2, 5, "O")]; // 5번은 1차를 고쳐 2차에서 빠졌다가 …
+  assert.deepEqual(effectiveMarks(marks, ss).map((m) => m.id), [1, 2, 3]);
+  assert.equal(currentMarks(marks, ss).get(5).result, "X", "2차 대상이 아니면 2차 기록은 셈에서 빠짐");
+  assert.equal(roundMarks(marks, ss).get(2).has(5), false);
+  const info = roundsInfo(ss, marks, [1, 2, 3, 4, 5]);
+  assert.deepEqual([info[1].summary.total, info[1].summary.O], [1, 1]);
+  const ss2 = [ss[0], { ...ss[1], targets: [4, 5] }];
+  assert.equal(currentMarks(marks, ss2).get(5).result, "O", "다시 들어오면 2차 기록이 다시 보임");
+  const ss3 = [ss[0], { ...ss[1], targets: [4, 5, 6] }];
+  assert.equal(roundsInfo(ss3, marks, [1, 2, 3, 4, 5, 6])[1].summary.none, 1, "새로 들어간 6번은 2차 남음");
 });
 
 test("앞 차까지의 결과", () => {

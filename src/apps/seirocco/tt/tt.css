@@ -207,12 +207,14 @@
 .tt-root .tabs a{padding:7px 10px}
 .tt-root .item.off{opacity:.55;background:#f8fafc}
 .tt-root .roundbar{background:#ecfeff;border-color:#a5f3fc}
-/* 2차부터: 매길 차 고르기 · 앞 차 고치기 */
-.tt-root .roundbar .rbrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
-.tt-root .roundbar .rbtext{flex:1 1 380px;min-width:0;line-height:1.55}
+/* 2차부터: 맨 위 띠의 「1차 채점 수정 · 2차 채점」 단추 · 앞 차 고치기 */
+.tt-root .rbtns{gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.tt-root .rbtns .btn{white-space:nowrap}
+.tt-root .rbtns .left{display:inline-block;margin-left:4px;padding:0 6px;border-radius:8px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:800}
+.tt-root .rbtns .btn:not(.ghost) .left{background:#fff;color:#b91c1c}
+.tt-root .tag.left{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
+.tt-root .roundbar .rbtext{line-height:1.55}
 .tt-root .roundbar.fixing{background:#fff7ed;border-color:#fdba74}
-.tt-root .item .addr{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#fff7ed;border:1px dashed #fdba74;border-radius:10px;padding:6px 8px}
-.tt-root .item.off.canadd{opacity:.9}
 .tt-root .btn.ghost.warn-t{color:#b91c1c}
 .tt-root .btn.ghost.warn-t:hover{border-color:#fca5a5}
 .tt-root #pTrash.on{border-color:var(--acc);color:var(--acc)}

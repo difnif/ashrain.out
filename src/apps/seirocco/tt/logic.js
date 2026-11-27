@@ -32,19 +32,26 @@ export function roundOfSession(sessions) {
   for (const s of sessions) m.set(s.no, s.round || 1);
   return m;
 }
+// 셈에 드는 기록: 다시 풀기 차의 기록은 그 차 다시 풀 문항 것만 — 앞 차를 고쳐 그 차에서 빠진 문항의 기록은 지우지 않고
+// 셈에서만 뺀다(다시 들어오면 다시 보임). SQL tt_marks_eff 와 같음.
+export function effectiveMarks(marks, sessions) {
+  const tg = new Map();
+  for (const s of sessions) if (s.kind === "retry" && Array.isArray(s.targets)) tg.set(s.no, new Set(s.targets));
+  return marks.filter((m) => { const t = tg.get(m.session_no); return !t || t.has(m.seq); });
+}
 // 문항의 한 차 결과 = 그 차의 마지막 기록, 지금(최종) 결과 = 기록이 있는 가장 늦은 차의 결과.
 // 앞 차를 고친 기록(2차를 시작한 뒤 1차를 고침)은 id 가 더 커도 늦은 차 결과를 덮지 않는다 — SQL tt_current 와 같은 차례.
 export function currentMarks(marks, sessions) {
   const rs = roundOfSession(sessions);
   const rd = (m) => rs.get(m.session_no) || 1;
   const out = new Map();
-  for (const m of [...marks].sort((a, b) => rd(a) - rd(b) || a.id - b.id)) out.set(m.seq, { ...m, round: rd(m) });
+  for (const m of [...effectiveMarks(marks, sessions)].sort((a, b) => rd(a) - rd(b) || a.id - b.id)) out.set(m.seq, { ...m, round: rd(m) });
   return out;
 }
 export function roundMarks(marks, sessions) {
   const rs = roundOfSession(sessions);
   const out = new Map(); // round → Map(seq → mark)
-  for (const m of [...marks].sort((a, b) => a.id - b.id)) {
+  for (const m of [...effectiveMarks(marks, sessions)].sort((a, b) => a.id - b.id)) {
     const r = rs.get(m.session_no) || 1;
     if (!out.has(r)) out.set(r, new Map());
     out.get(r).set(m.seq, { ...m, round: r });
