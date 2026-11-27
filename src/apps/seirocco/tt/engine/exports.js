@@ -238,7 +238,7 @@ export async function exportAnalysis(b, ctx) {
   const root = `${ctx.todayStr()} 분석용 A${stampNow()}`;
   const files = [], table = [], data = [], done = new Set();
   let nScans = 0;
-  const KO = { O: "맞음", X: "틀림", U: "안 풂" };
+  const KO = { O: "맞음", X: "틀림", U: "안 풂", P: "넘어감" };
   for (const g of gs) {
     const p = pm.get(g.print_id), st = sm.get(g.student_id) || { name: "?" };
     const d = await ctx.gradingDetail(g.id);
@@ -277,13 +277,13 @@ export async function exportAnalysis(b, ctx) {
     const s = d.summary;
     data.push({ student: st.name, code: fmtCode(p.code), title: p.title, status: g.status, started: g.created_at, updated: g.updated_at, sessions: d.sessions, summary: s, scans: scanNames, items: gItems });
     const nr = Math.max(1, ...gItems.flatMap((gi) => gi.rounds.map((x) => x.round)));
-    let md = `# ${st.name} · ${p.title} (${fmtCode(p.code)})\n\n- 결과: 맞음 ${s.O} · 틀림 ${s.X} · 안 풂 ${s.U} · 안 매김 ${s.none} / ${s.total}문항\n`;
+    let md = `# ${st.name} · ${p.title} (${fmtCode(p.code)})\n\n- 결과: 맞음 ${s.O} · 틀림 ${s.X} · 안 풂 ${s.U}${s.P ? ` · 넘어감 ${s.P}(푼 만큼만 매기고 넘긴 문항 — 틀림 · 안 풂이 아님)` : ""} · 안 매김 ${s.none} / ${s.total}문항\n`;
     md += `- 채점: ${nr}차까지 · 회차 ${d.sessions.length} (2차·3차 = 틀리거나 안 푼 문항을 다시 푼 것)\n`;
     md += `- 스캔본 ${d.scans.length}개${d.scans.length ? `: ${whenLine} — 파일 이름 끝 \`_1차\` · \`_2차\` · \`_차수모름\`` : ""}\n\n`;
     md += `| 번호 | 정답 | 학생 답 | ${Array.from({ length: nr }, (_, k) => `${k + 1}차`).join(" | ")} | 최종 |\n|${"---|".repeat(nr + 4)}\n`;
     for (const gi of gItems) {
       const by = Object.fromEntries(gi.rounds.map((x) => [x.round, x.result]));
-      md += `| ${gi.label} | ${gi.choice ? CIRC[gi.key] || gi.key : gi.key} | ${gi.given} | ${Array.from({ length: nr }, (_, k) => ({ O: "O", X: "X", U: "안 풂" }[by[k + 1]] || "")).join(" | ")} | ${{ O: "O", X: "X", U: "안 풂" }[gi.result] || "-"} |\n`;
+      md += `| ${gi.label} | ${gi.choice ? CIRC[gi.key] || gi.key : gi.key} | ${gi.given} | ${Array.from({ length: nr }, (_, k) => ({ O: "O", X: "X", U: "안 풂", P: "넘어감" }[by[k + 1]] || "")).join(" | ")} | ${{ O: "O", X: "X", U: "안 풂", P: "넘어감" }[gi.result] || "-"} |\n`;
     }
     files.push({ name: `${sd}/채점.md`, data: enc(md) });
   }

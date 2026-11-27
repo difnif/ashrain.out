@@ -305,3 +305,8 @@
 .tt-root .mtab td:first-child{min-width:96px}
 .tt-root .mhist td,.tt-root .mhist th{white-space:nowrap}
 .tt-root .mtab .seg button{white-space:nowrap}
+/* 넘어감(푼 만큼만 매기고 넘긴 문항) */
+.tt-root .item.P{border-color:#cbd5e1;background:#f8fafc}
+.tt-root .tag.pass{background:#e2e8f0;color:#334155}
+.tt-root .gsum .n.p{color:#475569}
+.tt-root .orow.P{background:#f8fafc;border-color:#cbd5e1}
