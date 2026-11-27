@@ -2,7 +2,7 @@
    라우트: #/tt/convert · #/tt/register · #/tt/grade[/코드[/학생id]] · #/tt/class · #/tt/students[/id] · #/tt/prints · #/tt/print/코드 · #/tt/log */
 import * as B from "./backend";
 import { importView, pcAutoSync } from "./importer";
-import { autoJudge, judge, resultBefore, TEMPLATES } from "./logic";
+import { autoJudge, judge, TEMPLATES } from "./logic";
 import * as S from "./share";
 import { splitLabel, partLabel } from "./parts";
 
@@ -230,6 +230,7 @@ const roundNote = (g) => !g || !g.n_rounds || g.n_rounds < 2 || !g.summary1 ? ""
 const KIND_KO = { registered: "등록", wrong: "오답 모음" };
 const nolab = (it) => it.label || String(it.seq);            // 등록 프린트는 "서답형 1" 같은 원래 번호
 const nob = (it) => (/^\d+$/.test(nolab(it)) ? nolab(it) + "번" : nolab(it));
+const groupBy = (arr, key) => { const m = new Map(); for (const x of arr) { const k = key(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; };
 const day = (s) => (s || "").slice(0, 10);
 const hm = (s) => (s || "").slice(11, 16);
 const shortWhen = (s) => { if (!s) return ""; const d = day(s); return (d === today ? "오늘 " : d.slice(5).replace("-", "/") + " ") + hm(s); };
@@ -691,9 +692,10 @@ async function gradeHome() {
   view.innerHTML = `<h1>채점</h1>
     <div class="card"><form class="row" id="gForm" autocomplete="off"><input class="tin" id="gCode" placeholder="프린트 코드 (예: 7KQ-3MP)" style="font-size:20px;font-weight:800;letter-spacing:2px;width:260px;text-transform:uppercase">
       <button class="btn big">채점 열기</button><span class="sub small">시험지 오른쪽 위·아래에 적힌 6글자</span></form></div>
-    <div class="card"><h2>이어서 채점할 것</h2>${unf.length ? `<table class="t"><tr><th>학생</th><th>프린트</th><th>코드</th><th>상태</th><th>지금까지</th><th>마지막</th></tr>
+    <div class="card"><h2>이어서 채점할 것</h2>${unf.length ? `<table class="t"><tr><th>학생</th><th>프린트</th><th>코드</th><th>상태</th><th>지금까지</th><th>마지막</th><th></th></tr>
       ${unf.map((g) => `<tr class="click" data-href="#/tt/grade/${g.code}/${g.student_id}"><td><b>${esc(g.name)}</b></td><td>${esc(g.title)}</td><td class="code">${esc(g.code_fmt)}</td>
-        <td>${statusTag(g.status)}${g.n_rounds > 1 ? ` <span class="tag ses">${g.n_rounds}차</span>` : ""}</td><td>${sumText(g.summary)}</td><td class="sub small">${shortWhen(g.updated_at)}</td></tr>`).join("")}</table>` : `<div class="empty">없어요. 다 끝냈어요 👏</div>`}</div>
+        <td>${statusTag(g.status)}${g.n_rounds > 1 ? ` <span class="tag ses">${g.n_rounds}차</span>` : ""}</td><td>${sumText(g.summary)}</td><td class="sub small">${shortWhen(g.updated_at)}</td>
+        <td><button class="btn ghost small warn-t" data-cancel="${g.id}" title="마지막으로 연 채점을 없던 일로 — 처음 연 채점이면 이 목록에서 빠져요">채점 취소</button></td></tr>`).join("")}</table>` : `<div class="empty">없어요. 다 끝냈어요 👏</div>`}</div>
     <div class="card"><h2>최근 만든 프린트</h2>${prints.length ? `<table class="t"><tr><th>코드</th><th>제목</th><th>대상</th><th>정답</th><th>만든 때</th></tr>
       ${prints.slice(0, 15).map((p) => `<tr class="click" data-href="#/tt/grade/${p.code}"><td class="code">${esc(p.code_fmt)}</td><td>${esc(p.title)}</td>
         <td>${p.targets.map((t) => esc(t.name)).join(", ") || "<span class='muted'>-</span>"}</td><td class="small">${p.n_answers}/${p.n_items}</td><td class="sub small">${shortWhen(p.created_at)}</td></tr>`).join("")}</table>` : `<div class="empty">아직 없어요. 변환 탭에서 만들어 주세요.</div>`}</div>`;
@@ -701,6 +703,10 @@ async function gradeHome() {
   $("#gForm").onsubmit = (e) => { e.preventDefault(); const c = normCode($("#gCode").value); if (c.length !== 6) return toast("코드 6글자를 넣어 주세요"); location.hash = "#/tt/grade/" + c; };
   $("#gCode").focus();
   bindRows(view);
+  $$("[data-cancel]", view).forEach((b) => (b.onclick = async (e) => {
+    e.stopPropagation();
+    if (await cancelGrading(Number(b.dataset.cancel), true)) gradeHome();
+  }));
 }
 function bindRows(el) { $$("tr[data-href]", el).forEach((tr) => (tr.onclick = (e) => { if (!e.target.closest("a,button")) location.hash = tr.dataset.href; })); }
 
@@ -755,11 +761,17 @@ async function gradeRun(p, sid, extra) {
   const resCur = (it) => (retry ? (roundMark(it) || {}).result || "" : (it.mark && it.mark.result) || "");      // 이번 차 결과
   const res = (it) => (past() ? (roundMark(it, edRound) || {}).result || "" : resCur(it));                 // 보고 있는 차 결과
   const isTarget = (it) => (past() ? !edSet() || edSet().has(it.seq) : !retry || tset.has(it.seq));
-  // 앞 차를 틀림 · 안 풂으로 고쳐 이번 차 다시 풀기에 넣을 수 있는 문항(넣기는 선생님이 고름)
-  const canAdd = (it) => retry && !tset.has(it.seq) && ["X", "U"].includes(resultBefore(it.rounds, cur.round));
+  // 다 끝난 채점을 다시 연 회차(고치기) — 지난 회차의 '안 풂'은 할 일로 치지 않는다
+  const reopened = !!(prevSess && prevSess.end_reason === "done");
   // 할 일 = 아직 안 매긴 문항 + 지난 회차에 '안 풂'으로 남은 문항 (다시 풀기 차에서는 이번 차에 아직 안 매긴 다시 풀 문항) — 늘 이번 차 기준
-  const isTodo = (it) => (retry ? tset.has(it.seq) && !resCur(it) : !it.mark || !it.mark.result || (it.mark.result === "U" && it.mark.session_no < sessNo));
+  const isTodo = (it) => (retry ? tset.has(it.seq) && !resCur(it)
+    : !it.mark || !it.mark.result || (!reopened && it.mark.result === "U" && it.mark.session_no < sessNo));
+  // 앞 차들에 아직 안 매긴 문항(앞 차를 고쳐 새로 들어간 것) — [{round, none}]
+  const pastLeft = () => (d.rounds || []).filter((r) => r.round < cur.round && r.summary && r.summary.none > 0);
+  const roundLeft = (r) => (r === cur.round ? blanks() : ((d.rounds || []).find((x) => x.round === r)?.summary?.none || 0));
   const blanks = () => d.items.filter(isTodo).length;
+  // 다 끝난 차를 다시 연 것(남은 문항 없음)이면 「N차 채점 수정」, 앞 차를 고쳐 남은 문항이 생겨 이어서 매기는 것이면 「N차 채점」
+  const fixingLast = reopened && blanks() === 0;
   const marked = () => d.items.filter((it) => it.mark && it.mark.result && it.mark.session_no === sessNo).length;
   const visible = () => d.items.map((it, i) => i).filter((i) => isTarget(d.items[i]) || showAll);
 
@@ -774,8 +786,10 @@ async function gradeRun(p, sid, extra) {
           <a class="btn ghost small" href="#/tt/print/${p.code}">정답 입력</a>
           <button class="btn ghost small" id="scanBtn" title="학생이 푼 종이 스캔본 올리기 · 1차·2차 표시">${scanLabel(d.scans)}</button>
           <a class="btn ghost small" href="#/tt/grade/${p.code}/pick">다른 학생</a>
+          <button class="btn ghost small warn-t" id="cancelG" title="이번에 연 채점을 없던 일로 — 이어서 채점할 것에 남지 않아요">채점 취소</button>
           <button class="btn" id="finish">채점 끝내기</button></div>
       </div>
+      ${retry ? `<div class="row rbtns" id="roundBtns"></div>` : ""}
       <div class="gsum" style="margin-top:8px" id="gsum"></div>
     </div></div>
     ${retry ? `<div class="card roundbar" id="roundbar"></div>` : ""}
@@ -788,23 +802,35 @@ async function gradeRun(p, sid, extra) {
 
   seg($("#modeSeg"), [["ox", "O/X로 매기기"], ["input", "OMR 카드 → 자동 채점"]], mode, (v) => { mode = v; store.set("gradeMode", v); drawBar(); drawOmr(true); drawItems(); });
 
-  // 2차부터: 위 띠에서 매길 차를 고른다 — 이번 차(다시 풀기) / 앞 차 고치기
+  // 2차부터: 맨 위 띠의 차 단추로 매길 차를 고른다 — 「1차 채점 수정」 … 「2차 채점」(이번 차)
+  function drawRoundBtns() {
+    const btns = $("#roundBtns");
+    if (!btns) return;
+    const rs = [];
+    for (let r = 1; r <= cur.round; r++) rs.push(r);
+    btns.innerHTML = rs.map((r) => {
+      const n = roundLeft(r);
+      const lab = r < cur.round ? `${r}차 채점 수정` : `${r}차 채점${fixingLast ? " 수정" : ""}`;
+      return `<button type="button" class="btn small ${r === edRound ? "" : "ghost"}" data-rd="${r}" aria-pressed="${r === edRound}">${lab}${n ? ` <span class="left">남음 ${n}</span>` : ""}</button>`;
+    }).join("");
+    $$("[data-rd]", btns).forEach((b) => (b.onclick = () => setRound(+b.dataset.rd)));
+  }
   function drawBar() {
+    drawRoundBtns();
     const bar = $("#roundbar");
     if (!bar) return;
     const ri = edInfo();
-    const opts = [];
-    for (let r = 1; r <= cur.round; r++) opts.push([String(r), r === cur.round ? `${r}차 · 이번 차` : `${r}차 고치기`]);
+    const nx = edRound + 1;
+    const warn = pastLeft().filter((r) => r.round !== edRound);
     bar.classList.toggle("fixing", past());
-    bar.innerHTML = `<div class="rbrow"><div class="rbtext">${past()
-      ? `<b>${edRound}차 결과 고치기</b> — ${edRound}차에 매긴 결과를 O · X · 안 풂으로 바꿔요${ri && ri.kind === "retry" ? ` (${edRound}차에 다시 푼 ${(ri.targets || []).length}문항)` : ""}.
-        <span class="sub small">${cur.round}차에서 이미 매긴 문항은 ${cur.round}차 결과가 최종이에요. 맞음으로 고친 문항은 ${cur.round}차에서 아직 안 매겼으면 ${cur.round}차 다시 풀기에서 빠지고,
-        틀림 · 안 풂으로 고친 문항은 「${cur.round}차에도 넣기」로 ${cur.round}차에서 다시 풀게 할 수 있어요.${mode === "input" ? " OMR 카드는 이번 차에서만 써요." : ""}</span>`
+    bar.innerHTML = `<div class="rbtext">${past()
+      ? `<b>${edRound}차 채점 수정</b> — ${edRound}차에 매긴 결과를 O · X · 안 풂으로 바꿔요${ri && ri.kind === "retry" ? ` (${edRound}차에 다시 푼 ${(ri.targets || []).length}문항)` : ""}.
+        <span class="sub small">바꾸면 ${nx}차가 따라 바뀌어요: 틀림 · 안 풂으로 바꾼 문항은 ${nx}차 다시 풀 문항에 들어가 아직 안 매긴 문항이 되고(${nx}차 미완성),
+        맞음으로 바꾼 문항은 ${nx}차에서 빠져요.${mode === "input" ? " OMR 카드는 이번 차에서만 써요." : ""}</span>`
       : `<b>${cur.round}차 채점 · 다시 풀기</b> — 지난번에 틀리거나 안 푼 <b>${tset.size}문항</b>만 매겨요.
-        여기서 매긴 결과가 최종이 되고, ${cur.round - 1}차까지의 결과는 그대로 남아요. ${cur.round - 1}차 결과를 바꾸려면 오른쪽 「${cur.round - 1}차 고치기」.`}
-      ${!past() || (ri && ri.kind === "retry") ? `<label class="small" style="margin-left:6px;white-space:nowrap"><input type="checkbox" id="showAll"${showAll ? " checked" : ""}> 다른 문항도 보기</label>` : ""}</div>
-      <div id="roundSeg"></div></div>`;
-    seg($("#roundSeg"), opts, String(edRound), (v) => setRound(+v));
+        여기서 매긴 결과가 최종이 되고, 앞 차 결과는 그대로 남아요. 앞 차를 고치려면 위 「${cur.round - 1}차 채점 수정」.`}
+      ${warn.length ? `<div class="small" style="margin-top:4px;color:#b91c1c">${warn.map((r) => `${r.round}차에 아직 안 매긴 문항 ${r.summary.none}개`).join(" · ")} — 앞 차를 고쳐 새로 들어간 문항이에요. 위 「${warn[0].round}차 채점 수정」에서 매겨 주세요.</div>` : ""}
+      ${!past() || (ri && ri.kind === "retry") ? `<label class="small" style="margin-left:6px;white-space:nowrap"><input type="checkbox" id="showAll"${showAll ? " checked" : ""}> 다른 문항도 보기</label>` : ""}</div>`;
     if ($("#showAll")) $("#showAll").onchange = (e) => { showAll = e.target.checked; e.target.blur(); drawItems(); setFocus(focus, false); };
   }
   function setRound(r) {
@@ -842,14 +868,14 @@ async function gradeRun(p, sid, extra) {
     const r = res(it);
     const lastSess = it.mark && it.mark.session_no;
     const hist = (it.rounds || []).filter((x) => (past() ? x.round !== edRound : x.round < cur.round)).map((x) => `<span class="tag ${x.result === "O" ? "o" : x.result === "X" ? "x" : "u"}">${x.round}차 ${RK[x.result] || x.result}</span>`).join("");
-    // 앞 차를 틀림 · 안 풂으로 고친 문항 → 이번 차에도 넣기
-    const addUi = canAdd(it) ? `<div class="addr"><span class="small sub">${cur.round - 1 > 1 ? "앞 차까지" : "1차"} ${RK[resultBefore(it.rounds, cur.round)]} — ${cur.round}차 다시 풀 문항이 아니에요</span>
-      <button class="btn ghost small" data-add="${it.seq}">${cur.round}차에도 넣기</button></div>` : "";
+    // 앞 차를 고칠 때: 다음 차 다시 풀 문항인데 그 차에 아직 안 매겼으면 「2차 남음」
+    const nxt = past() ? (d.rounds || []).find((x) => x.round === edRound + 1) : null;
+    const nextLeft = nxt && nxt.targets && nxt.targets.includes(it.seq) && !roundMark(it, nxt.round) ? `<span class="tag left">${nxt.round}차 남음</span>` : "";
     const badges = [
       it.choice ? `<span class="tag">객관식</span>` : `<span class="tag">${esc(p.label || "서답형")}</span>`,
       it.repeat ? `<span class="tag rep">반복 오답</span>` : it.wrong_before ? `<span class="tag prev">전에 ${it.wrong_before}번 틀림</span>` : "",
-      hist,
-      !retry && prevSess && lastSess && lastSess < sessNo && r === "U" ? `<span class="tag u">지난번 안 풂</span>` : "",
+      hist, nextLeft,
+      !retry && !reopened && prevSess && lastSess && lastSess < sessNo && r === "U" ? `<span class="tag u">지난번 안 풂</span>` : "",
       !retry && prevSess && lastSess === sessNo ? `<span class="tag ses">이번 회차</span>` : "",
     ].join("");
     const sl = splitLabel(it.label);
@@ -859,8 +885,8 @@ async function gradeRun(p, sid, extra) {
           ${it.answer_png && !cont ? `<img class="ansimg" src="${fileUrl(p.code + "/" + it.answer_png)}" alt="정답">` : ""}</div>`;
     const f = (it.mark && it.mark.result) || "";
     if (!isTarget(it)) {
-      return `<div class="item off${cont ? " cont" : ""}${addUi ? " canadd" : ""}" data-i="${i}"><div class="no ${/^\d+$/.test(nolab(it)) ? "" : "lab"}">${esc(nolab(it))}</div><div>${img}</div>
-        <div class="side">${key}<div class="badges">${badges}</div><div class="small sub">${past() ? `${edRound}차에 다시 푼 문항이 아니에요` : "이번 차에 다시 풀 문항이 아니에요"} · 최종 <b>${RK[f] || "안 매김"}</b></div>${addUi}</div></div>`;
+      return `<div class="item off${cont ? " cont" : ""}" data-i="${i}"><div class="no ${/^\d+$/.test(nolab(it)) ? "" : "lab"}">${esc(nolab(it))}</div><div>${img}</div>
+        <div class="side">${key}<div class="badges">${badges}</div><div class="small sub">${past() ? `${edRound}차에 다시 푼 문항이 아니에요` : "이번 차에 다시 풀 문항이 아니에요"} · 최종 <b>${RK[f] || "안 매김"}</b></div></div></div>`;
     }
     const rm = past() ? roundMark(it, edRound) : retry ? roundMark(it) : it.mark;
     const given = rm && rm.answer ? `<div class="small sub">적은 답: <b>${esc(rm.answer)}</b></div>` : "";
@@ -874,7 +900,6 @@ async function gradeRun(p, sid, extra) {
         <div class="badges">${badges}</div>
         ${inputUi}${given}${fin}
         <div class="marks"><button class="mo ${r === "O" ? "on" : ""}" data-r="O">O</button><button class="mx ${r === "X" ? "on" : ""}" data-r="X">X</button><button class="mu ${r === "U" ? "on" : ""}" data-r="U">안 풂</button></div>
-        ${past() ? addUi : ""}
       </div></div>`;
   }
   function drawItems() {
@@ -884,13 +909,13 @@ async function gradeRun(p, sid, extra) {
       return sb.part > 1 && sa.part > 0 && sa.base === sb.base && (a.png || null) === (b.png || null); };
     $("#items").innerHTML = vis.map((i, k) => itemHtml(d.items[i], i, cont(k))).join("") || `<div class="empty">매길 문항이 없어요</div>`;
     drawSum();
+    drawRoundBtns();
     drawOmr();
     $$("#items .item").forEach((el) => {
       const i = +el.dataset.i, it = d.items[i];
       el.onclick = (e) => { if (!e.target.closest("button,input,img")) setFocus(i, false); };
       if ($("img", el)) $("img", el).onclick = (e) => zoom(e.target.src);
       $$(".marks button", el).forEach((b) => (b.onclick = () => mark(i, res(it) === b.dataset.r ? "" : b.dataset.r)));
-      $$("[data-add]", el).forEach((b) => (b.onclick = () => addTarget(i)));
       $$("[data-ans]", el).forEach((b) => (b.onclick = () => mark(i, "auto", b.dataset.ans)));
       const f = $("form.ansin", el);
       if (f) f.onsubmit = (e) => { e.preventDefault(); const v = $("input", f).value.trim(); if (v) mark(i, "auto", v); };
@@ -1028,7 +1053,7 @@ async function gradeRun(p, sid, extra) {
     d.summary = s;
   }
   let sentMode = null;
-  const removedNow = [];          // 앞 차를 맞음으로 고쳐 이번 차 다시 풀기에서 빠진 문항(다 보낸 뒤 알림)
+  const follow = { added: [], removed: [] };      // 앞 차를 고쳐 다음 차에 들어가거나 빠진 문항(다 보낸 뒤 알림) — [{seq, round(s)}]
   function flushMarks() {
     if (flushing) return flushing;
     flushing = (async () => {
@@ -1038,9 +1063,10 @@ async function gradeRun(p, sid, extra) {
             const job = { ...queue[0], light: true };
             if (job.mode === sentMode) delete job.mode;
             try {
-              if (job.fix) {           // 앞 차 고치기
+              if (job.fix) {           // 앞 차 고치기 — 다음 차가 따라 바뀜
                 const r = await api(`gradings/${gid}/fix`, { round: job.fix, seq: job.seq, result: job.result, light: true });
-                if (r && r.removed) removedNow.push(job.seq);
+                if (r && r.added_round) follow.added.push({ seq: job.seq, round: r.added_round });
+                if (r && r.removed_rounds && r.removed_rounds.length) follow.removed.push({ seq: job.seq, rounds: r.removed_rounds });
               } else await api(`gradings/${gid}/mark`, job);
             } catch (e) {
               queue.length = 0;
@@ -1055,10 +1081,14 @@ async function gradeRun(p, sid, extra) {
           const r = await api("gradings/" + gid);
           if (!queue.length) {
             d = r; syncT(); drawBar(); drawItems(); setFocus(focus, false);
-            if (removedNow.length) {
-              const labs = removedNow.splice(0).map((s) => nob(d.items.find((x) => x.seq === s) || { seq: s })).join(", ");
-              toast(`${cur.round}차 다시 풀기에서 뺐어요 — ${labs} (앞 차를 맞음으로 고쳐서)`, 4500);
-            }
+            const lab = (s) => nob(d.items.find((x) => x.seq === s) || { seq: s });
+            const msg = [];
+            // 같은 문항을 여러 번 바꿨으면 마지막 것만
+            const lastOf = (arr) => [...new Map(arr.map((x) => [x.seq, x])).values()];
+            const add = lastOf(follow.added.splice(0)), rem = lastOf(follow.removed.splice(0));
+            for (const [rd, xs] of groupBy(add, (x) => x.round)) msg.push(`${rd}차 다시 풀 문항에 넣었어요 — ${xs.map((x) => lab(x.seq)).join(", ")} (${rd}차 남음)`);
+            for (const [rds, xs] of groupBy(rem, (x) => x.rounds.join("·"))) msg.push(`${rds}차에서 뺐어요 — ${xs.map((x) => lab(x.seq)).join(", ")}`);
+            if (msg.length) toast(msg.join(" · "), 5000);
             break;
           }
         }
@@ -1084,16 +1114,6 @@ async function gradeRun(p, sid, extra) {
     goNext();
     queue.push({ fix: edRound, seq: it.seq, result });
     flushMarks();
-  }
-  // 앞 차를 틀림 · 안 풂으로 고친 문항을 이번 차 다시 풀기에도 넣기
-  async function addTarget(i) {
-    const it = d.items[i];
-    await flushMarks();
-    try {
-      const r = await api(`gradings/${gid}/retry-add`, { seq: it.seq });
-      d = r; syncT(); drawBar(); drawItems(); setFocus(i, false);
-      toast(r.added ? `${cur.round}차 다시 풀 문항에 넣었어요 — ${nob(it)}` : `이미 ${cur.round}차 다시 풀 문항이에요 — ${nob(it)}`);
-    } catch (e) { toast(e.message, 4000); }
   }
   async function mark(i, result, answer) {
     if (past()) return fixMark(i, result);
@@ -1126,18 +1146,32 @@ async function gradeRun(p, sid, extra) {
     else if (focus >= 0 && ["KeyO", "KeyX", "KeyU"].includes(k)) { e.preventDefault(); mark(focus, k.slice(3)); }
   };
 
-  // 닫을 때: 다 매겼으면 완료, 덜 매겼으면 이유를 묻는다
+  // 아직 안 매긴 문항(모든 차) 한 줄 — 「2차 1문항 · 3차 2문항」
+  const leftText = () => (d.rounds || []).map((r) => [r.round, r.round === cur.round ? blanks() : (r.summary && r.summary.none) || 0])
+    .filter(([, n]) => n > 0).map(([r, n]) => `${r}차 ${n}문항`).join(" · ");
+  // 닫을 때: 다 매겼으면 완료, 덜 매겼으면 이유를 묻는다. 돌려주는 것: false(그대로 있음) · true · "deleted"(처음 연 채점을 열어 보기만 함)
   async function askClose() {
     await flushMarks();
     const b = blanks();
     if (d.grading.status !== "open") return true;
-    if (marked() === 0) {     // 열어 보기만 했으면 원래 상태로 되돌려 닫음(빈 회차는 서버가 없앰)
-      await api(`gradings/${gid}/close`, { reason: b === 0 ? "done" : (prevSess && prevSess.end_reason) || "ungraded", untouched: true });
+    if (marked() === 0) {     // 열어 보기만 했으면(앞 차만 고쳤어도) 원래 상태로 되돌려 닫음 — 빈 회차는 서버가 없앰
+      const r = await api(`gradings/${gid}/close`, { reason: b === 0 ? "done" : (prevSess && prevSess.end_reason) || "ungraded", untouched: true });
+      if (r && r.status === "deleted") { toast("열어 보기만 해서 채점 기록을 남기지 않았어요"); return "deleted"; }
+      if (r && r.status === "paused_ungraded" && leftText()) toast(`아직 안 매긴 문항(${leftText()})이 있어 '채점 덜 함'(미완성)으로 두었어요`, 5000);
       return true;
     }
     if (b === 0) {
-      await api(`gradings/${gid}/close`, { reason: "done" });
-      toast(retry ? `${d.student.name} · ${cur.round}차 채점 완료 (최종 O ${d.summary.O} / X ${d.summary.X})` : `${d.student.name} · 채점 완료 (O ${d.summary.O} / X ${d.summary.X})`);
+      const pl = pastLeft();
+      if (pl.length) {        // 앞 차를 고쳐 앞 차에 새로 들어간 문항이 아직 안 매겨짐
+        const v = await modal(`<h2>${pl.map((r) => `${r.round}차에 아직 안 매긴 문항이 ${r.summary.none}개`).join(" · ")} 있어요</h2>
+          <p>앞 차를 고쳐 새로 들어간 문항이에요. 지금 매기거나, 나중에 「${pl[0].round}차 채점 수정」에서 매겨도 돼요. 다 매기기 전까지는 '채점 덜 함'(미완성)으로 남아요.</p>`,
+          [{ label: "그대로 있기", value: null, cls: "ghost" }, { label: `「${pl[0].round}차 채점 수정」으로`, value: "go", cls: "ghost" }, { label: "나중에 매길게요", value: "later" }]);
+        if (v === "go") { setRound(pl[0].round); return false; }
+        if (!v) return false;
+      }
+      const r = await api(`gradings/${gid}/close`, { reason: "done" });
+      if (r && r.status !== "done") toast(`아직 안 매긴 문항(${leftText()})이 있어 '채점 덜 함'(미완성)으로 두었어요`, 5000);
+      else toast(retry ? `${d.student.name} · ${cur.round}차 채점 완료 (최종 O ${d.summary.O} / X ${d.summary.X})` : `${d.student.name} · 채점 완료 (O ${d.summary.O} / X ${d.summary.X})`);
       return true;
     }
     const v = retry
@@ -1168,7 +1202,18 @@ async function gradeRun(p, sid, extra) {
     leaveGuard = null;
     let ok = false;
     try { ok = await askClose(); } finally { if (!ok) leaveGuard = guard; }
-    if (ok) location.hash = "#/tt/grade/" + p.code + "/" + sid + "/done";
+    if (ok === "deleted") location.hash = "#/tt/grade";
+    else if (ok) location.hash = "#/tt/grade/" + p.code + "/" + sid + "/done";
+  };
+  // 채점 취소: 이번에 연 회차와 그 뒤 매긴 것을 되돌려 연 전 상태로(처음 연 채점이면 기록째 없앰) — 이어서 채점할 것에 남지 않음
+  $("#cancelG").onclick = async () => {
+    const guard = leaveGuard;
+    leaveGuard = null;
+    queue.length = 0;           // 보내지 못한 것은 버림(어차피 되돌림)
+    if (flushing) { try { await flushing; } catch { /* */ } }
+    const r = await cancelGrading(gid);
+    if (!r) { leaveGuard = guard; return; }
+    location.hash = r.result === "deleted" ? "#/tt/grade" : "#/tt/grade/" + p.code + "/" + sid + "/done";
   };
   if ($("#showAns")) $("#showAns").onclick = () => modal(`<h2>정답해설</h2><div class="ansimgs">${p.answer_pages.map((s) => `<img src="${fileUrl(s)}" alt="">`).join("")}</div>`);
   $("#scanBtn").onclick = () => scanModal(gid, `${esc(d.student.name)} · 스캔본`, {
@@ -1180,6 +1225,28 @@ async function gradeRun(p, sid, extra) {
   const firstBlank = d.items.findIndex(isTodo);
   if (past()) setFocus(Math.max(0, d.items.findIndex(isTarget)), false);
   else setFocus(firstBlank >= 0 ? firstBlank : 0, firstBlank > 0);
+}
+
+/* 채점 취소: 이번에 연 채점을 없던 일로(처음 연 채점이면 기록째 없앰). 되돌릴 기록이 있을 때만 묻는다. 돌려주는 것: 서버 결과 | null */
+async function cancelGrading(gid, fromList = false) {
+  let info;
+  try { info = await api(`gradings/${gid}/cancel`); } catch (e) { toast(e.message, 4500); return null; }
+  const nm = info.marks || 0, ns = info.scans || 0;
+  const back = (STATUS[{ done: "done", unsolved: "paused_unsolved" }[info.back] || "paused_ungraded"] || [""])[0];
+  if (info.result === "deleted" ? nm + ns > 0 : nm > 0) {
+    const v = await modal(info.result === "deleted"
+      ? `<h2>채점을 취소할까요?</h2><p>이 채점 기록이 없어져요 — ${[nm ? `매긴 기록 <b>${nm}개</b>` : "", ns ? `올린 스캔본 <b>${ns}개</b>` : ""].filter(Boolean).join(" · ")}도 함께 지워져요.</p>
+        <p class="sub small">「이어서 채점할 것」에서도 빠져요.</p>`
+      : `<h2>채점을 취소할까요?</h2><p>${fromList ? `마지막으로 연 ${info.round || ""}차 회차에서` : "이번에 연 뒤"} 매긴 기록 <b>${nm}개</b>(앞 차를 고친 것 포함)를 되돌리고, 열기 전 상태(<b>${esc(back)}</b>)로 돌아가요.</p>
+        <p class="sub small">올린 스캔본은 그대로 둬요.</p>`,
+      [{ label: "그만두기", value: null, cls: "ghost" }, { label: "채점 취소", value: 1, cls: "warn" }]);
+    if (!v) return null;
+  }
+  try {
+    const r = await api(`gradings/${gid}/cancel`, {});
+    toast(r.result === "deleted" ? "채점을 취소했어요 — 채점 기록을 없앴어요" : `채점을 취소했어요 — ${(STATUS[r.status] || [r.status])[0]}(으)로 돌아갔어요`);
+    return r;
+  } catch (e) { toast(e.message, 4500); return null; }
 }
 
 /* 다음 차(2차·3차) 채점 시작: 틀리거나 안 푼 문항만 다시 매김 */
@@ -1204,7 +1271,7 @@ viewGrade = async function (code, sid, extra) {
   if (extra !== "done") return _viewGrade(code, sid, extra);
   const gs = await api("gradings?student=" + sid);
   const g = gs.find((x) => x.code === normCode(code));
-  if (!g) return _viewGrade(code, sid);
+  if (!g) return _viewGrade(code);          // 채점 기록이 없으면(취소했으면) 새로 열지 않고 학생 고르기로
   const d = await api("gradings/" + g.id);
   const R = d.rounds || [];
   const last = R[R.length - 1] || { round: 1, kind: "solve" };
@@ -1223,8 +1290,8 @@ viewGrade = async function (code, sid, extra) {
       <div class="row" style="margin-top:12px">
         ${!done ? `<a class="btn" href="#/tt/grade/${d.print.code}/${sid}">${last.round > 1 ? last.round + "차 " : ""}이어서 채점</a>` : ""}
         ${done && nextN ? `<button class="btn" id="retryGo" title="틀리거나 안 푼 문항만 다시 풀게 한 뒤 매겨요">${last.round + 1}차 채점 시작 — 틀린·안 푼 ${nextN}문항</button>` : ""}
-        <a class="btn ghost" href="#/tt/grade/${d.print.code}/${sid}" title="${last.round}차에 매긴 것을 고쳐요">${R.length > 1 ? `${last.round}차 ` : ""}다시 열기 / 고치기</a>
-        ${R.length > 1 ? `<a class="btn ghost" id="fixPrev" href="#/tt/grade/${d.print.code}/${sid}/fix${last.round - 1}" title="${last.round}차를 시작한 뒤에도 앞 차에 매긴 결과를 바꿔요">${last.round === 2 ? "1차" : `앞 차(1~${last.round - 1}차)`} 결과 고치기</a>` : ""}
+        ${(R.length ? R : [last]).filter((r) => done || r.round < last.round).map((r) => `<a class="btn ghost" data-fixr="${r.round}" href="#/tt/grade/${d.print.code}/${sid}${r.round < last.round ? "/fix" + r.round : ""}"
+          title="${r.round}차에 매긴 결과를 바꿔요${r.round < last.round ? ` — 바꾸면 ${r.round + 1}차가 따라 바뀌어요` : ""}">${r.round}차 채점 수정${r.summary && r.summary.none && r.round < last.round ? ` · 남음 ${r.summary.none}` : ""}</a>`).join("")}
         <a class="btn ghost" href="#/tt/students/${sid}">학생 기록</a><a class="btn ghost" href="#/tt/grade">다른 프린트 채점</a></div>
       <div class="row" style="margin-top:8px"><span class="sub small">받기</span>
         <a class="btn ghost small" href="/dl/grading/${g.id}.pdf?view=1" target="_blank">채점 결과 PDF</a>
@@ -1383,8 +1450,10 @@ async function studentDetail(id) {
     <div class="card"><h2>받은 프린트</h2>${d.prints.length ? `<table class="t"><tr><th>출제일</th><th>코드</th><th>제목</th><th>채점</th><th>결과</th><th></th></tr>
       ${d.prints.map((p) => `<tr><td class="sub small">${shortWhen(p.issued_at)}</td><td class="code">${esc(p.code_fmt)}</td><td>${esc(p.title)}</td>
         <td>${p.grading ? statusTag(p.grading.status) : `<span class="muted small">안 함</span>`}${p.n_rounds > 1 ? ` <span class="tag ses">${p.n_rounds}차</span>` : ""}</td><td>${sumText(p.summary)}${roundNote(p)}</td>
-        <td class="row" style="gap:4px;flex-wrap:nowrap"><button class="btn small ghost" data-pout="${p.code}" title="${esc(s.name)} 이름을 넣은 시험지">출력</button>
+        <td class="row" style="gap:4px;flex-wrap:wrap"><button class="btn small ghost" data-pout="${p.code}" title="${esc(s.name)} 이름을 넣은 시험지">출력</button>
           ${p.grading ? `<button class="btn small ghost" data-scan="${p.grading.id}" data-r="${p.n_rounds || 1}" data-t="${esc(p.title)}" title="학생이 푼 종이 스캔본 올리기 · 1차·2차 표시">${scanLabel({ length: p.n_scans || 0 })}</button>` : ""}
+          ${p.grading ? Array.from({ length: p.n_rounds || 1 }, (_, k) => k + 1).filter((r) => p.grading.status === "done" || r < (p.n_rounds || 1))
+            .map((r) => `<a class="btn small ghost" href="#/tt/grade/${p.code}/${s.id}${r < (p.n_rounds || 1) ? "/fix" + r : ""}" title="${r}차에 매긴 결과를 바꿔요">${r}차 수정</a>`).join("") : ""}
           <a class="btn small ${p.grading && p.grading.status === "done" ? "ghost" : ""}" href="#/tt/grade/${p.code}/${s.id}${p.grading && p.grading.status === "done" ? "/done" : ""}">${p.grading ? (p.grading.status === "done" ? "보기" : "이어서") : "채점"}</a></td></tr>`).join("")}</table>
       <p class="sub small" style="margin:6px 0 0">스캔본은 채점을 시작한 프린트에 올려요. 아직 채점하지 않았으면 「채점」을 먼저 눌러 주세요.</p>` : `<div class="empty">아직 없어요</div>`}</div>
     <div class="card"><h2>수업 기록</h2>${Object.keys(recByDate).length ? `<table class="t"><tr><th>날짜</th>${Object.keys(KIND).map((k) => `<th>${KIND[k][0].replace(" 프린트", "").replace("오늘 ", "")}</th>`).join("")}</tr>
