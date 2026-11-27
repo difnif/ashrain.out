@@ -1,5 +1,5 @@
 // 시청각 해설 — 유형별 문제 세트 = 프린트마다 한 줄(기본기 단원 · 시그니처 프린트가 같은 서열) 시험.  node tests/display-prints.test.mjs
-// ① 시그니처 프린트(frames/index.js 의 prints — 21장) — 해설 액자 여섯의 세트와 하나씩(같은 key · 차례) · 문항 수 n = 장면 수 · 번호 1 ~ n.
+// ① 시그니처 프린트(frames/index.js 의 prints — 22장) — 해설 액자 여섯의 세트와 하나씩(같은 key · 차례) · 문항 수 n = 장면 수 · 번호 1 ~ n.
 // ② 학생앱 항목(lib/av.js) — 프린트마다 #/av/<액자>:<세트> · cat sol · 해설 · 교과서 단원 · 학년 · n · 그 단원 바로 뒤 · 예전 액자 주소 · 우물 카드.
 // ③ 재생 — 고른 프린트로 단일 모드(숫자 세트 lin10:2 도) · 본 기록은 프린트 key 로(printSeen: 처음 연 횟수 · 가장 멀리 · 다 봤음).
 // ④ 듀얼 「전부」 — 프린트 key 풀이 · 이름표는 학생앱과 같은 이름 · 단계(1 ~ 5 · 10 · 없음) · 반쪽 판 장면 수 · 📄 없음.
@@ -71,7 +71,7 @@ export const menu = (spec, cur, side = "왼쪽") => { const M = spec.Menu; retur
   const PR = LESSONS.flatMap((f) => f.prints.map((p) => ({ f, p, key: `${f.key}:${p.set}` })));
   const specOf = (fk) => m.LESSON_FRAMES.find((F) => F.fk === fk).spec;
 
-  await test("시그니처 프린트 — 해설 액자 여섯의 세트와 하나씩(같은 key · 차례) · 모두 21장 · 문항 수 n = 장면 수 · 번호 1 ~ n · 이름 겹침 없음", async () => {
+  await test("시그니처 프린트 — 해설 액자 여섯의 세트와 하나씩(같은 key · 차례) · 모두 22장 · 문항 수 n = 장면 수 · 번호 1 ~ n · 이름 겹침 없음", async () => {
     assert.deepEqual(LESSONS.map((f) => f.key), m.LESSON_FRAMES.map((F) => F.fk), "해설 액자 여섯 = 듀얼 「전부」의 액자 여섯");
     for (const f of LESSONS) {
       assert.deepEqual(f.prints.map((p) => p.set), specOf(f.key).sets.map((S) => S.key), `${f.key} 세트 key(숫자는 숫자로)`);
@@ -86,7 +86,7 @@ export const menu = (spec, cur, side = "왼쪽") => { const M = spec.Menu; retur
         assert.ok(!/순열|조합|여사건|배반|√|\d!/.test(p.title + p.desc), `${f.key}:${p.set} 중2 용어`);
       }
     }
-    assert.equal(PR.length, 21);
+    assert.equal(PR.length, 22);
     const sol = m.avOfCat("sol");
     assert.equal(new Set(sol.map((x) => x.title)).size, sol.length, "유형별 문제 세트 이름 겹침");
     for (const { key } of PR) { const it = m.avItem(key); assert.equal(sol.filter((x) => x.short === it.short).length, 1, `${key} 짧은 이름 겹침`); }
@@ -197,7 +197,7 @@ export const menu = (spec, cur, side = "왼쪽") => { const M = spec.Menu; retur
       assert.ok(!BAD.test(h), bad(h));
     }
     const sig = (m.menu(A, "m-lin").match(/class="lsn-set( on)?( hot)? sig"/g) || []).length;
-    assert.equal(sig, 21, "시그니처 프린트 줄 21");
+    assert.equal(sig, 22, "시그니처 프린트 줄 22");
   });
 
   await test("기본기 해설 보기 칩 — 「🧩 유형」은 유형 보기로 열렸을 때만 · 예전에 기억한 유형 보기는 유형별 문제 세트로 · 주차별 학년은 그대로", async () => {

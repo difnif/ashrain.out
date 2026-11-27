@@ -374,12 +374,12 @@ export const sheet = (key) => renderToStaticMarkup(<AvPrintSheet itemKey={key} o
     const u = m.menu(A, "m-lin");
     for (const w of ["문제 풀이 해설 전부", "📚 유형별 문제 세트", "🗓 주차별", "전체", "초등", "중등", "고등", "왼쪽 판"]) assert.ok(u.includes(w), `목록 — ${w}`);
     for (const w of ["🧩 유형", "🎬 해설 액자"]) assert.ok(!u.includes(w), `탭 없음 — ${w}`);
-    assert.equal((u.match(ROW) || []).length, m.BASICS.length + 21, "전체 = 기본기 단원 100 + 시그니처 프린트 21");
+    assert.equal((u.match(ROW) || []).length, m.BASICS.length + 22, "전체 = 기본기 단원 100 + 시그니처 프린트 22");
     assert.ok(u.includes('class="lsn-set on"') && u.includes("일차함수"), "지금 단원 표시");
-    for (const w of ["학년별 선발 100", "그래프 그리기 심화 64", "10단계 계산 세트 2", "그래프와 넓이 240", "초등 · 유형별 문제 세트 36", "중등 · 유형별 문제 세트 51"]) assert.ok(u.includes(w), `전체 목록 — ${w}`);
+    for (const w of ["학년별 선발 100", "그래프 그리기 심화 64", "10단계 계산 세트 2", "그래프와 넓이 240", "초등 · 유형별 문제 세트 36", "중등 · 유형별 문제 세트 52"]) assert.ok(u.includes(w), `전체 목록 — ${w}`);
     const f = m.menu(A, "cnt100:ball");
     assert.ok(f.includes('class="lsn-set on sig"') && f.includes("주머니 공 100"), "지금 시그니처 프린트 표시");
-    assert.equal((f.match(ROW) || []).length, m.BASICS.length + 21, "시그니처 프린트에서 열어도 전체");
+    assert.equal((f.match(ROW) || []).length, m.BASICS.length + 22, "시그니처 프린트에서 열어도 전체");
     const t = m.menu(A, "e-ten.3");
     assert.ok(t.includes('class="lsn-set on"'), "예전 유형 기억 → 그 단원 줄");
     const w = m.menu(A, "w-e3-07a");
