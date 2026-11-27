@@ -20,6 +20,7 @@ export const MODS = {
   ops: () => import("./ops.jsx"),
   discrete: () => import("./discrete.jsx"),
   algo: () => import("./algo.jsx"),
+  ml: () => import("./ml.jsx"),
 };
 
 export const KINDS = {
@@ -79,6 +80,9 @@ export const KINDS = {
   // 알고리즘
   bigo: ["algo", "BigO"], sorting: ["algo", "Sorting"], rectree: ["algo", "RecTree"], heap: ["algo", "Heap"],
   bfsdfs: ["algo", "BfsDfs"], mst: ["algo", "MST"], dptable: ["algo", "DPTable"], tsp: ["algo", "TSP"],
+  // 머신러닝
+  optim: ["ml", "Optim"], logreg: ["ml", "LogReg"], overfit: ["ml", "Overfit"], roc: ["ml", "ROC"], tree2d: ["ml", "Tree2D"],
+  kernel: ["ml", "Kernel"], kmeans: ["ml", "KMeans"], pca: ["ml", "PCA"], nnet: ["ml", "NNet"],
 };
 
 const loaded = {};

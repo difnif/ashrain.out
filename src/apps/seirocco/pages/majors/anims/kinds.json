@@ -141,6 +141,15 @@
   "bfsdfs",
   "mst",
   "dptable",
-  "tsp"
+  "tsp",
+  "optim",
+  "logreg",
+  "overfit",
+  "roc",
+  "tree2d",
+  "kernel",
+  "kmeans",
+  "pca",
+  "nnet"
  ]
 }
