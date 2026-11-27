@@ -292,3 +292,16 @@
 .tt-root .pdot{display:inline-block;width:8px;height:8px;border-radius:2px;background:#facc15;margin-right:3px;vertical-align:middle}
 .tt-root .cropbox{min-height:80px;max-height:70vh;overflow:auto}
 .tt-root .qcard .tin[data-qr]{min-width:0}
+/* 원비표 · 주당 횟수 */
+.tt-root .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tt-root .fhint{margin-top:3px;line-height:1.35;max-width:240px}
+.tt-root .fhint:empty{display:none}
+.tt-root .pwseg button{padding:5px 9px}
+.tt-root .fpedit{border-top:1px dashed var(--line);margin-top:10px;padding-top:4px}
+.tt-root .fpedit .tin{padding:6px 8px}
+.tt-root .fpset .t td,.tt-root .fpset .t th{white-space:nowrap}
+.tt-root .mtab{min-width:760px}
+.tt-root .mtab .seg{flex-wrap:nowrap}
+.tt-root .mtab td:first-child{min-width:96px}
+.tt-root .mhist td,.tt-root .mhist th{white-space:nowrap}
+.tt-root .mtab .seg button{white-space:nowrap}

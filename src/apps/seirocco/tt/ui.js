@@ -2,7 +2,8 @@
    라우트: #/tt/convert · #/tt/register · #/tt/grade[/코드[/학생id]] · #/tt/class · #/tt/students[/id] · #/tt/prints · #/tt/print/코드 · #/tt/log */
 import * as B from "./backend";
 import { importView, pcAutoSync } from "./importer";
-import { autoJudge, judge, TEMPLATES, parseProgress, parsePages, todayStr, monthStart, addMonths, monthLabel, parseFee, fmtWon, fmtMan } from "./logic";
+import { autoJudge, judge, TEMPLATES, parseProgress, parsePages, todayStr, monthStart, addMonths, monthLabel, parseFee, fmtWon, fmtMan,
+  gradeKey, feeFor, planStart, parseGrades, fmtGrades, perWeekOpts, suggestFee } from "./logic";
 import * as S from "./share";
 import { splitLabel, partLabel } from "./parts";
 
@@ -1820,6 +1821,8 @@ function monthTag(m, cur) {
 }
 const flagMsg = (m, cur) => (!m || !m.flag ? "" : m.flag === "r" ? `${m.last_month ? monthLabel(addMonths(m.last_month, 1)) + "부터 " : ""}재원을 안 적었어요 — ${monthLabel(cur)} 것을 적어 주세요` : `${monthLabel(cur)} 재원을 아직 안 적었어요`);
 const msegHtml = (v) => `<span class="seg mseg">${Object.entries(MST).map(([k, t]) => `<button type="button" data-v="${k}" class="${v === k ? "on" : ""}">${t}</button>`).join("")}</span>`;
+// 주당 횟수 고르기(주2 · 주3 …) — 그달 원비표에 있는 횟수
+const pwHtml = (opts, v) => `<span class="seg mseg pwseg">${opts.map((n) => `<button type="button" data-v="${n}" class="${Number(v) === n ? "on" : ""}">주${n}</button>`).join("")}</span>`;
 // 상태 고르기: 누르면 그것, 고른 것을 다시 누르면 비움(저장하면 그달 기록을 지움)
 function bindMseg(el, onChange) {
   $$("button", el).forEach((b) => (b.onclick = () => {
@@ -1829,13 +1832,30 @@ function bindMseg(el, onChange) {
     onChange(on ? "" : b.dataset.v);
   }));
 }
-const msegVal = (el) => ($("button.on", el) || { dataset: { v: "" } }).dataset.v;
+const msegVal = (el) => ((el && $("button.on", el)) || { dataset: { v: "" } }).dataset.v;
+const pwVal = (el) => { const v = msegVal(el); return v ? +v : null; };
+const setSeg = (el, v) => { if (el) $$("button", el).forEach((b) => b.classList.toggle("on", v != null && v !== "" && b.dataset.v === String(v))); };
+const stEl = (box) => $(".mseg:not(.pwseg)", box), pwEl = (box) => $(".pwseg", box);
+// 원비 칸 밑 한 줄 — 원비표 값과 같은지(다님일 때만)
+function feeHint(plans, month, grade, pw, feeText, status, prev) {
+  if (status !== "attend" || !(plans || []).length) return "";
+  const gk = gradeKey(grade);
+  if (!gk) return `<span class="muted">학년(「${esc(grade || "없음")}」)을 못 읽어 원비표를 못 봐요</span>`;
+  if (!pw) return `<span class="muted">주당 횟수를 고르면 원비표로 채워요</span>`;
+  const p = feeFor(plans, month, gk, pw);
+  if (!p) return `<span class="muted">${monthLabel(month)} 원비표에 ${gk} 주${pw}회가 없어요</span>`;
+  const f = parseFee(feeText), diff = f != null && !Number.isNaN(f) && f !== p.fee;
+  const asPrev = diff && prev && prev.fee === f ? " · 지난달 원비 그대로" : "";
+  return `원비표 ${esc(p.level)} 주${pw} ${fmtMan(p.fee)}${diff ? ` · <b class="warn-t">다름</b>${asPrev}` : ""}`;
+}
 async function monthView(m) {
   const d = await api("months" + (m ? "?month=" + encodeURIComponent(m) : ""));
   const cur = d.month, prevM = addMonths(cur, -1), nextM = addMonths(cur, 1), t = d.totals;
+  const pwOn = d.per_week_ok !== false;
   let showQuit = store.get("monthQuit", false);
   const hiddenQuit = (s) => !s.row && s.quit;
   const nNeed = d.students.filter((s) => s.flag).length;
+  const prevTxt = (x) => `${MST[x.status]}${x.per_week ? ` 주${x.per_week}` : ""}${x.fee != null ? ` <span class="sub">${fmtMan(x.fee)}</span>` : ""}`;
   view.innerHTML = `<h1>재원 · 원비 <span class="sub">${ymLabel(cur)}</span></h1>
     ${d.ok ? "" : monthWarn}
     <div class="card"><div class="row" style="justify-content:space-between">
@@ -1844,52 +1864,77 @@ async function monthView(m) {
       <div class="gsum"><span class="n o">다님 ${t.attend}</span><span class="n">휴원 ${t.pause}</span><span class="n">그만둠 ${t.quit}</span>
         <span class="n">매출 ${fmtWon(t.revenue)}</span>${t.no_fee ? `<span class="n x" title="다님인데 원비를 안 적은 학생">원비 안 적음 ${t.no_fee}</span>` : ""}</div></div>
       ${nNeed ? `<p class="small warn-t" style="margin:8px 0 0"><b>${monthLabel(cur)} 재원을 아직 안 적은 학생 ${nNeed}명</b> — 노랑은 이번 달만, 빨강은 지난달부터 비었어요</p>` : ""}</div>
-    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">학생마다 <span class="sub small">다님 · 휴원 · 그만둠과 그달 원비(30만 · 300000)</span></h2>
-      <div class="row"><button class="btn ghost small" id="mCopy" title="이 달을 안 적은 학생을 지난달 상태 · 원비로 채워요(저장해야 들어가요)">안 적은 학생을 지난달과 같게</button>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">학생마다 <span class="sub small">다님 · 휴원 · 그만둠${pwOn ? ", 주당 횟수" : ""}과 그달 원비(30만 · 300000)</span></h2>
+      <div class="row"><button class="btn ghost small" id="mCopy" title="이 달을 안 적은 학생을 지난달 상태 · 주당 횟수로 채워요. 원비는 원비표가 바뀐 달이면 새 원비표로(저장해야 들어가요)">안 적은 학생을 지난달과 같게</button>
         <label class="small nowrap"><input type="checkbox" id="mQuit"${showQuit ? " checked" : ""}> 그만둔 학생도 보기</label></div></div>
-      <table class="t mtab" style="margin-top:8px"><tr><th>학생</th><th>지난달</th><th>${monthLabel(cur)}</th><th>원비</th><th>메모</th></tr>
-      ${d.students.map((s) => `<tr data-sid="${s.id}" data-q="${hiddenQuit(s) ? 1 : 0}" class="${s.flag ? "mflag-" + s.flag : ""}" data-is="${s.row ? s.row.status : ""}" data-if="${s.row && s.row.fee != null ? s.row.fee : ""}" data-in="${esc(s.row ? s.row.note : "")}"${hiddenQuit(s) && !showQuit ? " hidden" : ""}>
+      <div class="tscroll"><table class="t mtab" style="margin-top:8px"><tr><th>학생</th><th>지난달</th><th>${monthLabel(cur)}</th>${pwOn ? "<th>주당</th>" : ""}<th>원비</th><th>메모</th></tr>
+      ${d.students.map((s) => `<tr data-sid="${s.id}" data-q="${hiddenQuit(s) ? 1 : 0}" class="${s.flag ? "mflag-" + s.flag : ""}" data-is="${s.row ? s.row.status : ""}" data-if="${s.row && s.row.fee != null ? s.row.fee : ""}" data-ip="${s.row && s.row.per_week ? s.row.per_week : ""}" data-in="${esc(s.row ? s.row.note : "")}"${hiddenQuit(s) && !showQuit ? " hidden" : ""}>
         <td><a href="#/tt/students/${s.id}"><b>${esc(s.name)}</b></a>${s.grade ? ` <span class="sub small">${esc(s.grade)}</span>` : ""}${s.flag ? `<div>${monthTag(s, cur)}</div>` : ""}</td>
-        <td class="small">${s.prev ? `${MST[s.prev.status]}${s.prev.fee != null ? ` <span class="sub">${fmtMan(s.prev.fee)}</span>` : ""}` : `<span class="muted">-</span>`}</td>
+        <td class="small">${s.prev ? prevTxt(s.prev) : `<span class="muted">-</span>`}</td>
         <td>${msegHtml(s.row ? s.row.status : "")}</td>
-        <td><input class="tin fee" value="${s.row && s.row.fee != null ? s.row.fee.toLocaleString("ko-KR") : ""}" placeholder="${s.prev && s.prev.fee != null ? fmtMan(s.prev.fee) : "예: 30만"}" autocomplete="off"></td>
-        <td><input class="tin mnote" value="${esc(s.row ? s.row.note : "")}" placeholder="메모" autocomplete="off"></td></tr>`).join("")}</table>
+        ${pwOn ? `<td>${pwHtml(perWeekOpts(d.plans, cur, [s.row && s.row.per_week, s.prev && s.prev.per_week]), s.row ? s.row.per_week : null)}</td>` : ""}
+        <td><input class="tin fee" value="${s.row && s.row.fee != null ? s.row.fee.toLocaleString("ko-KR") : ""}" placeholder="${s.prev && s.prev.fee != null ? fmtMan(s.prev.fee) : "예: 30만"}" autocomplete="off"><div class="fhint small sub"></div></td>
+        <td><input class="tin mnote" value="${esc(s.row ? s.row.note : "")}" placeholder="메모" autocomplete="off"></td></tr>`).join("")}</table></div>
       <div class="row" style="margin-top:12px"><button class="btn big" id="mSave">저장</button><span class="sub small" id="mNote"></span></div></div>
-    <div class="card"><h2>달마다 <span class="sub small">매출 = 그달 「다님」 학생 원비의 합</span></h2><table class="t"><tr><th>달</th><th>다님</th><th>휴원</th><th>그만둠</th><th>매출</th><th>원비 안 적음</th></tr>
+    <div class="card"><h2>달마다 <span class="sub small">매출 = 그달 「다님」 학생 원비의 합</span></h2><div class="tscroll"><table class="t mhist"><tr><th>달</th><th>다님</th><th>휴원</th><th>그만둠</th><th>매출</th><th>원비 안 적음</th></tr>
       ${d.history.map((h) => `<tr class="click${h.month === cur ? " sel" : ""}" data-href="#/tt/students/month/${h.month.slice(0, 7)}"><td><b>${ymLabel(h.month)}</b></td><td>${h.attend}</td><td>${h.pause}</td><td>${h.quit}</td>
-        <td>${h.entered ? fmtWon(h.revenue) : `<span class="muted">-</span>`}</td><td>${h.no_fee || ""}</td></tr>`).join("")}</table></div>`;
+        <td>${h.entered ? fmtWon(h.revenue) : `<span class="muted">-</span>`}</td><td>${h.no_fee || ""}</td></tr>`).join("")}</table></div></div>
+    ${feeCard(d)}`;
   bindRows(view);
+  bindFeeCard(d);
   const rows = () => $$("tr[data-sid]", view);
+  const stu = (tr) => d.students.find((x) => x.id === +tr.dataset.sid);
   const feeOk = (inp) => { const f = parseFee(inp.value); const bad = Number.isNaN(f) || (f != null && f > 100000000); inp.classList.toggle("bad", bad); return !bad; };
+  const pwOf = (tr) => (pwOn ? pwVal(pwEl(tr)) : null);
+  const hint = (tr) => { const s = stu(tr); $(".fhint", tr).innerHTML = feeHint(d.plans, cur, s.grade, pwOf(tr), $("input.fee", tr).value, msegVal(stEl(tr)), s.prev); };
+  // 원비 채우기: 칸이 비었거나 방금 자동으로 채운 값 그대로일 때만(손으로 적은 원비는 그대로)
+  const fill = (tr) => {
+    const s = stu(tr), fi = $("input.fee", tr), v = fi.value.trim(), auto = tr.dataset.auto;
+    if (msegVal(stEl(tr)) === "attend" && (!v || (auto && parseFee(v) === +auto))) {
+      const sg = suggestFee(d.plans, cur, gradeKey(s.grade), pwOf(tr), s.prev);
+      if (sg) { fi.value = sg.fee.toLocaleString("ko-KR"); tr.dataset.auto = sg.fee; feeOk(fi); }
+    }
+    hint(tr);
+  };
   const changed = () => rows().map((tr) => {
-    const st = msegVal(tr), fee = $("input.fee", tr).value.trim(), note = $("input.mnote", tr).value.trim();
+    const st = msegVal(stEl(tr)), fee = $("input.fee", tr).value.trim(), note = $("input.mnote", tr).value.trim();
     const f = parseFee(fee), f0 = tr.dataset.if === "" ? null : +tr.dataset.if;
-    if (st === tr.dataset.is && (st === "" || (f === f0 && note === tr.dataset.in))) return null;
-    return { sid: +tr.dataset.sid, status: st, fee, note };
+    const pw = pwOf(tr), pw0 = tr.dataset.ip === "" ? null : +tr.dataset.ip;
+    if (st === tr.dataset.is && (st === "" || (f === f0 && note === tr.dataset.in && (!pwOn || pw === pw0)))) return null;
+    return { sid: +tr.dataset.sid, status: st, fee, note, ...(pwOn ? { per_week: pw } : {}) };
   }).filter(Boolean);
   const note = () => { const n = changed().length; $("#mNote").textContent = n ? `바꾼 학생 ${n}명` : ""; };
   rows().forEach((tr) => {
-    const s = d.students.find((x) => x.id === +tr.dataset.sid);
-    bindMseg($(".mseg", tr), (v) => {
-      const fi = $("input.fee", tr);
-      if (v === "attend" && !fi.value.trim() && s.prev && s.prev.fee != null) fi.value = s.prev.fee.toLocaleString("ko-KR");      // 다님을 고르면 지난달 원비를 채워 줌
-      note();
+    const s = stu(tr);
+    bindMseg(stEl(tr), (v) => {
+      if (v === "attend" && pwOn && !pwOf(tr) && s.prev && s.prev.per_week) setSeg(pwEl(tr), s.prev.per_week);       // 다님을 고르면 지난달 주당 횟수 · 원비표(없으면 지난달) 원비
+      fill(tr); note();
     });
-    $("input.fee", tr).oninput = (e) => { feeOk(e.target); note(); };
+    if (pwOn) bindMseg(pwEl(tr), () => { fill(tr); note(); });
+    $("input.fee", tr).oninput = (e) => { delete tr.dataset.auto; feeOk(e.target); hint(tr); note(); };
     $("input.mnote", tr).oninput = note;
+    hint(tr);
   });
   $("#mQuit").onchange = (e) => { showQuit = e.target.checked; store.set("monthQuit", showQuit); rows().forEach((tr) => { if (tr.dataset.q === "1") tr.hidden = !showQuit; }); };
   $("#mCopy").onclick = () => {
-    let n = 0;
+    let n = 0, nNew = 0;
     rows().forEach((tr) => {
-      const s = d.students.find((x) => x.id === +tr.dataset.sid);
-      if (tr.hidden || msegVal(tr) || !s.prev) return;
-      $$(".mseg button", tr).forEach((b) => b.classList.toggle("on", b.dataset.v === s.prev.status));
-      if (s.prev.fee != null && !$("input.fee", tr).value.trim()) $("input.fee", tr).value = s.prev.fee.toLocaleString("ko-KR");
+      const s = stu(tr);
+      if (tr.hidden || msegVal(stEl(tr)) || !s.prev) return;
+      setSeg(stEl(tr), s.prev.status);
+      if (pwOn && s.prev.per_week) setSeg(pwEl(tr), s.prev.per_week);
+      const fi = $("input.fee", tr);
+      if (!fi.value.trim()) {
+        if (s.prev.status === "attend") {
+          const sg = suggestFee(d.plans, cur, gradeKey(s.grade), pwOf(tr), s.prev);
+          if (sg) { fi.value = sg.fee.toLocaleString("ko-KR"); tr.dataset.auto = sg.fee; if (s.prev.fee != null && sg.fee !== s.prev.fee) nNew++; }
+        } else if (s.prev.fee != null) fi.value = s.prev.fee.toLocaleString("ko-KR");
+      }
+      hint(tr);
       n++;
     });
     note();
-    toast(n ? `${n}명을 지난달과 같게 채웠어요 — 「저장」을 눌러야 들어가요` : "지난달 기록이 있는 안 적은 학생이 없어요", 4000);
+    toast(n ? `${n}명을 지난달과 같게 채웠어요${nNew ? ` (원비표가 바뀌어 ${nNew}명은 새 원비로)` : ""} — 「저장」을 눌러야 들어가요` : "지난달 기록이 있는 안 적은 학생이 없어요", 5000);
   };
   $("#mSave").onclick = async () => {
     const bad = $$("input.fee", view).filter((x) => !feeOk(x));
@@ -1901,29 +1946,160 @@ async function monthView(m) {
     catch (e) { toast(e.message, 5000); $("#mSave").disabled = false; }
   };
 }
-// 학생 화면의 재원 · 원비 카드 — 이번 달 상태 · 원비를 바로 적고, 지난 달들을 보여 줌
+// ── 원비표 카드 — 언제부터 · 대상 · 학년 · 수업 길이 · 주당 횟수마다 원비. 「고치기」 · 「새 원비표」(저장하면 업무 기록 · 되돌리기)
+const fmtMin = (m) => (m % 60 === 0 ? `${m / 60}시간` : m > 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`);
+function feeLevels(ps) {             // 대상마다 한 줄 {level, grades, minutes, fees: {주당: 원비}}
+  const by = new Map();
+  for (const p of ps) {
+    if (!by.has(p.level)) by.set(p.level, { level: p.level, grades: p.grades || [], minutes: p.minutes ?? null, fees: {} });
+    by.get(p.level).fees[p.per_week] = p.fee;
+  }
+  const ord = (g) => (g && g.length ? "초중고".indexOf(g[0][0]) * 10 + +g[0].slice(1) : 99);
+  return [...by.values()].sort((a, b) => ord(a.grades) - ord(b.grades));
+}
+function feeCard(d) {
+  if (d.fees_ok === false) return `<div class="card" style="background:#fffbeb;border-color:#fde68a"><b>원비표 표가 DB에 아직 없어요.</b> <span class="small">supabase/2026-11_tt_fee_plans.sql 을 넣으면 학년 · 주당 횟수로 원비를 채워요.</span></div>`;
+  const plans = d.plans || [];
+  const starts = [...new Set(plans.map((p) => p.start_month))].sort().reverse();
+  const act = planStart(plans, d.month);
+  const setHtml = (st) => {
+    const ps = plans.filter((p) => p.start_month === st), pws = [...new Set(ps.map((p) => +p.per_week))].sort((a, b) => a - b);
+    return `<div class="fpset" data-st="${st}"><div class="row" style="justify-content:space-between;margin-top:12px"><div><b>${ymLabel(st)}부터</b>${st === act ? ` <span class="tag done">${monthLabel(d.month)}에 씀</span>` : ""}</div>
+      <button class="btn ghost small" data-fpedit="${st}">고치기</button></div>
+      <table class="t" style="margin-top:6px"><tr><th>대상</th><th>학년</th><th>수업</th>${pws.map((n) => `<th>주${n}회</th>`).join("")}</tr>
+      ${feeLevels(ps).map((l) => `<tr><td><b>${esc(l.level)}</b></td><td>${esc(fmtGrades(l.grades))}</td><td class="small">${l.minutes ? fmtMin(l.minutes) : `<span class="muted">-</span>`}</td>${pws.map((n) => `<td>${l.fees[n] != null ? fmtMan(l.fees[n]) : `<span class="muted">-</span>`}</td>`).join("")}</tr>`).join("")}</table></div>`;
+  };
+  return `<div class="card" id="feeCard"><div class="row" style="justify-content:space-between"><h2 style="margin:0">원비표 <span class="sub small">다님을 고르면 학년 · 주당 횟수로 원비 칸을 채워요(고쳐 써도 돼요)</span></h2>
+    <button class="btn ghost small" id="fpNew">새 원비표</button></div>
+    <div id="fpEdit"></div>
+    ${starts.length ? starts.map(setHtml).join("") : `<div class="empty" style="margin-top:8px">원비표가 없어요 — 「새 원비표」로 만들어요</div>`}</div>`;
+}
+function bindFeeCard(d) {
+  if (!$("#feeCard")) return;
+  const plans = d.plans || [];
+  let state = null;
+  const box = $("#fpEdit");
+  const read = () => {
+    if (!state) return;
+    if (!$("#fpStart", box).disabled) state.start = $("#fpStart", box).value ? $("#fpStart", box).value + "-01" : "";
+    state.rows = $$("tr[data-fpr]", box).map((tr) => ({ level: $('[data-k="level"]', tr).value, grades: $('[data-k="grades"]', tr).value, minutes: $('[data-k="minutes"]', tr).value,
+      fees: Object.fromEntries($$("[data-pw]", tr).map((x) => [x.dataset.pw, x.value])) }));
+  };
+  const draw = () => {
+    const S = state;
+    box.innerHTML = `<div class="fpedit"><h2 style="margin:12px 0 6px">${S.edit ? `${ymLabel(S.edit)}부터 원비표 고치기` : "새 원비표"}</h2>
+      <div class="row"><label class="small">언제부터 <input type="month" class="tin" id="fpStart" value="${S.start ? S.start.slice(0, 7) : ""}"${S.edit ? " disabled" : ""} style="min-width:0;width:160px"></label>
+        ${S.edit ? "" : `<span class="sub small">그달부터 다음 원비표 전까지 써요${S.from ? ` · ${ymLabel(S.from)}부터 원비표를 본떠 채웠어요` : ""}</span>`}</div>
+      <div class="tscroll"><table class="t" style="margin-top:8px"><tr><th>대상</th><th>학년 <span class="sub small">(초1-4 · 중등)</span></th><th>수업(분)</th>${S.pws.map((n) => `<th class="nowrap">주${n}회 <button type="button" class="x" data-fpdelpw="${n}" title="주${n}회 칸 빼기">×</button></th>`).join("")}<th></th></tr>
+      ${S.rows.map((r, i) => `<tr data-fpr="${i}"><td><input class="tin" data-k="level" value="${esc(r.level)}" placeholder="예: 초5-6" style="min-width:0;width:110px"></td>
+        <td><input class="tin" data-k="grades" value="${esc(r.grades)}" placeholder="초5-6" style="min-width:0;width:110px"></td>
+        <td><input class="tin" data-k="minutes" value="${esc(String(r.minutes ?? ""))}" placeholder="180" inputmode="numeric" style="min-width:0;width:70px"></td>
+        ${S.pws.map((n) => `<td><input class="tin" data-pw="${n}" value="${esc(r.fees[n] || "")}" placeholder="예: 30만" style="min-width:0;width:100px"></td>`).join("")}
+        <td><button type="button" class="btn ghost small" data-fpdel="${i}">빼기</button></td></tr>`).join("")}</table></div>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn ghost small" id="fpAddRow">+ 대상</button>
+        <span class="small nowrap">주 <input class="tin" id="fpPwN" inputmode="numeric" style="min-width:0;width:48px">회 <button type="button" class="btn ghost small" id="fpAddPw">+ 칸</button></span></div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="fpSave">저장</button><button class="btn ghost" id="fpCancel">그만두기</button>
+        ${S.edit ? `<button class="btn ghost small warn-t" id="fpDrop" title="이 원비표를 지워요(업무 기록에서 되돌릴 수 있어요)">이 원비표 지우기</button>` : ""}</div></div>`;
+    $$('[data-k="grades"]', box).forEach((x) => (x.oninput = () => x.classList.toggle("bad", !!x.value.trim() && !parseGrades(x.value))));
+    $$("[data-pw]", box).forEach((x) => (x.oninput = () => { const f = parseFee(x.value); x.classList.toggle("bad", Number.isNaN(f)); }));
+    $$("[data-fpdel]", box).forEach((b) => (b.onclick = () => { read(); S.rows.splice(+b.dataset.fpdel, 1); if (!S.rows.length) S.rows.push(blankRow()); draw(); }));
+    $$("[data-fpdelpw]", box).forEach((b) => (b.onclick = () => { read(); S.pws = S.pws.filter((n) => n !== +b.dataset.fpdelpw); draw(); }));
+    $("#fpAddRow", box).onclick = () => { read(); S.rows.push(blankRow()); draw(); };
+    $("#fpAddPw", box).onclick = () => {
+      const n = +$("#fpPwN", box).value;
+      if (!Number.isInteger(n) || n < 1 || n > 7) return toast("주당 횟수는 1 ~ 7");
+      read(); if (!S.pws.includes(n)) S.pws = [...S.pws, n].sort((a, b) => a - b); draw();
+    };
+    $("#fpCancel", box).onclick = () => { state = null; box.innerHTML = ""; };
+    $("#fpSave", box).onclick = () => save();
+    if ($("#fpDrop", box)) $("#fpDrop", box).onclick = async () => {
+      try { const r = await api("feeplans", { start_month: S.edit, rows: [] }); undoToast(`${ymLabel(S.edit)}부터 원비표를 지웠어요`, r.events); route(); }
+      catch (e) { toast(e.message, 5000); }
+    };
+    box.scrollIntoView({ block: "nearest" });
+  };
+  const blankRow = () => ({ level: "", grades: "", minutes: "", fees: {} });
+  const open = (edit) => {
+    const from = edit || planStart(plans, "9999-12-01");
+    const ps = from ? plans.filter((p) => p.start_month === from) : [];
+    const pws = ps.length ? [...new Set(ps.map((p) => +p.per_week))].sort((a, b) => a - b) : [2, 3];
+    const rows = feeLevels(ps).map((l) => ({ level: l.level, grades: fmtGrades(l.grades), minutes: l.minutes ?? "",
+      fees: Object.fromEntries(pws.map((n) => [n, l.fees[n] != null ? l.fees[n].toLocaleString("ko-KR") : ""])) }));
+    state = { edit: edit || null, from: edit ? null : from, start: edit || addMonths(d.this_month, 1), pws, rows: rows.length ? rows : [blankRow()] };
+    draw();
+  };
+  const save = async () => {
+    read();
+    const S = state;
+    if (!/^\d{4}-\d{2}-01$/.test(S.start || "")) return toast("언제부터인지 달을 골라 주세요");
+    if (!S.edit && plans.some((p) => p.start_month === S.start)) return toast(`${ymLabel(S.start)}부터 원비표가 이미 있어요 — 그 원비표의 「고치기」로 고쳐 주세요`, 5000);
+    const out = [];
+    for (const r of S.rows) {
+      const level = r.level.trim(), has = S.pws.some((n) => String(r.fees[n] || "").trim());
+      if (!level && !r.grades.trim() && !has) continue;          // 빈 줄
+      if (!level) return toast("대상 이름을 적어 주세요(예: 초5-6)");
+      const gs = parseGrades(r.grades);
+      if (!gs) return toast(`${level}: 학년을 「초1-4」 · 「중등」 · 「고1 고2」처럼 적어 주세요`, 5000);
+      const min = String(r.minutes ?? "").trim();
+      if (min && !(/^\d+$/.test(min) && +min >= 10 && +min <= 600)) return toast(`${level}: 수업 길이는 분으로(10 ~ 600)`);
+      for (const n of S.pws) {
+        const v = String(r.fees[n] || "").trim();
+        if (!v) continue;
+        const f = parseFee(v);
+        if (f == null || Number.isNaN(f)) return toast(`${level} 주${n}회: 원비는 300000 · 30만 처럼 적어 주세요`, 5000);
+        out.push({ level, grades: gs, per_week: n, minutes: min ? +min : null, fee: f });
+      }
+    }
+    if (!out.length) return toast("원비를 하나 이상 적어 주세요");
+    try {
+      const r = await api("feeplans", { start_month: S.start, rows: out });
+      undoToast(r.events.length ? `${ymLabel(S.start)}부터 원비표를 저장했어요` : "바뀐 것이 없어요", r.events);
+      route();
+    } catch (e) { toast(e.message, 5000); }
+  };
+  $("#fpNew").onclick = () => open(null);
+  $$("[data-fpedit]", $("#feeCard")).forEach((b) => (b.onclick = () => open(b.dataset.fpedit)));
+}
+// 학생 화면의 재원 · 원비 카드 — 이번 달 상태 · 주당 횟수 · 원비를 바로 적고, 지난 달들을 보여 줌
 function monthCard(d) {
   if (d.months_ok === false) return monthWarn;
   const m = d.month || {}, cur = d.this_month, now = (d.months || []).find((r) => r.month === cur) || null, prev = d.month_prev;
+  const pwOn = d.per_week_ok !== false;
   const msg = flagMsg(m, cur);
   return `<div class="card mcard${m.flag ? " mflag-" + m.flag : ""}"><div class="row" style="justify-content:space-between"><h2 style="margin:0">재원 · 원비</h2><a class="btn ghost small" href="#/tt/students/month">달마다 보기 · 매출</a></div>
     ${msg ? `<p class="small" style="margin:6px 0 0"><b>${esc(msg)}</b></p>` : ""}
     <div class="row" style="margin-top:8px"><b>${monthLabel(cur)}</b><span id="smSeg">${msegHtml(now ? now.status : "")}</span>
+      ${pwOn ? `<span id="smPw">${pwHtml(perWeekOpts(d.plans, cur, [now && now.per_week, prev && prev.per_week]), now ? now.per_week : null)}</span>` : ""}
       <input class="tin fee" id="smFee" value="${now && now.fee != null ? now.fee.toLocaleString("ko-KR") : ""}" placeholder="${prev && prev.fee != null ? "지난달 " + fmtMan(prev.fee) : "원비 (예: 30만)"}" autocomplete="off" style="width:150px;min-width:0">
       <input class="tin" id="smNote" value="${esc(now ? now.note : "")}" placeholder="메모" autocomplete="off" style="width:170px;min-width:0">
       <button class="btn" id="smSave">저장</button></div>
-    ${(d.months || []).length ? `<div class="chips" style="margin-top:8px">${d.months.slice(0, 12).map((r) => `<span class="chip mchip ${r.status}" title="${esc(r.note || "")}">${monthLabel(r.month)} ${MST[r.status]}${r.fee != null ? " · " + fmtMan(r.fee) : ""}</span>`).join("")}</div>` : ""}</div>`;
+    <div class="small sub" id="smHint" style="margin-top:4px"></div>
+    ${(d.months || []).length ? `<div class="chips" style="margin-top:8px">${d.months.slice(0, 12).map((r) => `<span class="chip mchip ${r.status}" title="${esc(r.note || "")}">${monthLabel(r.month)} ${MST[r.status]}${r.per_week ? " · 주" + r.per_week : ""}${r.fee != null ? " · " + fmtMan(r.fee) : ""}</span>`).join("")}</div>` : ""}</div>`;
 }
 function bindMonthCard(d) {
   if (!$("#smSave")) return;
-  const s = d.student, prev = d.month_prev;
-  bindMseg($("#smSeg .mseg"), (v) => { if (v === "attend" && !$("#smFee").value.trim() && prev && prev.fee != null) $("#smFee").value = prev.fee.toLocaleString("ko-KR"); });
-  $("#smFee").oninput = (e) => { const f = parseFee(e.target.value); e.target.classList.toggle("bad", Number.isNaN(f)); };
+  const s = d.student, prev = d.month_prev, cur = d.this_month;
+  let auto = null;
+  const st = () => msegVal($("#smSeg"));
+  const pw = () => ($("#smPw") ? pwVal($("#smPw")) : null);
+  const hint = () => { $("#smHint").innerHTML = feeHint(d.plans, cur, s.grade, pw(), $("#smFee").value, st(), prev); };
+  const fill = () => {        // 원비 칸이 비었거나 방금 자동으로 채운 값이면 원비표(없으면 지난달)로
+    const v = $("#smFee").value.trim();
+    if (st() === "attend" && (!v || (auto != null && parseFee(v) === auto))) {
+      const sg = suggestFee(d.plans, cur, gradeKey(s.grade), pw(), prev);
+      if (sg) { $("#smFee").value = sg.fee.toLocaleString("ko-KR"); auto = sg.fee; $("#smFee").classList.remove("bad"); }
+    }
+    hint();
+  };
+  bindMseg($("#smSeg .mseg"), (v) => { if (v === "attend" && $("#smPw") && !pw() && prev && prev.per_week) setSeg($("#smPw .pwseg"), prev.per_week); fill(); });
+  if ($("#smPw")) bindMseg($("#smPw .pwseg"), () => fill());
+  $("#smFee").oninput = (e) => { auto = null; const f = parseFee(e.target.value); e.target.classList.toggle("bad", Number.isNaN(f)); hint(); };
+  hint();
   $("#smSave").onclick = async () => {
     const f = parseFee($("#smFee").value);
     if (Number.isNaN(f)) return toast("원비는 300000 · 30만 처럼 적어 주세요", 4000);
     try {
-      const r = await api("months", { month: d.this_month, rows: [{ sid: s.id, status: msegVal($("#smSeg")), fee: $("#smFee").value, note: $("#smNote").value }] });
+      const r = await api("months", { month: d.this_month, rows: [{ sid: s.id, status: st(), fee: $("#smFee").value, note: $("#smNote").value, ...($("#smPw") ? { per_week: pw() } : {}) }] });
       undoToast(r.n ? `${monthLabel(d.this_month)} 재원을 적었어요` : "바뀐 것이 없어요", r.events); route();
     } catch (e) { toast(e.message, 5000); }
   };
@@ -2683,7 +2859,7 @@ const EV = {
   grading_reopen: "채점 다시 엶", retry_start: "다음 차 채점 시작", round_delete: "마지막 차 지움", grading_delete: "채점 기록 지움",
   print_purge: "프린트 완전히 지움", print_restore: "프린트 되살림", wrongset_make: "오답 프린트 만듦", library_register: "보관함에서 등록",
   library_import: "보관함에 옮겨 옴", pc_import: "PC 자료 옮겨 옴",
-  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움", book_log: "교재 기록", student_month: "재원 · 원비", attendance: "결석부", book_import: "교재 분석 넣음", book_mark: "교재 채점", question: "물어볼 것", export_book: "교재 분석 맡기기",
+  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움", book_log: "교재 기록", student_month: "재원 · 원비", fee_plan: "원비표", attendance: "결석부", book_import: "교재 분석 넣음", book_mark: "교재 채점", question: "물어볼 것", export_book: "교재 분석 맡기기",
 };
 function evDetail(e) {
   const d = e.detail || {};
@@ -2710,9 +2886,14 @@ function evDetail(e) {
       return `${d.undo_of ? "<b>되돌림</b> · " : ""}${d.day ? md(d.day) + " · " : ""}${esc(what)}`;
     }
     case "student_month": {
-      const one = (x) => (!x ? "없음" : `${MST[x.status] || x.status}${x.fee != null ? " " + fmtMan(x.fee) : ""}${x.note ? ` (${x.note})` : ""}`);
+      const one = (x) => (!x ? "없음" : `${MST[x.status] || x.status}${x.per_week ? " 주" + x.per_week : ""}${x.fee != null ? " " + fmtMan(x.fee) : ""}${x.note ? ` (${x.note})` : ""}`);
       const what = !d.before ? `적음: ${one(d.after)}` : !d.after ? `지움: ${one(d.before)}` : `${one(d.before)} → ${one(d.after)}`;
       return `${d.undo_of ? "<b>되돌림</b> · " : ""}${d.month ? monthLabel(d.month) + " · " : ""}${esc(what)}`;
+    }
+    case "fee_plan": {
+      const rows = d.rows || [], one = (x) => `${x.level} 주${x.per_week} ${fmtMan(x.fee)}`;
+      const parts = rows.slice(0, 4).map((r) => (!r.before ? `+ ${one(r.after)}` : !r.after ? `− ${one(r.before)}` : `${one(r.before)}${r.before.fee !== r.after.fee ? " → " + fmtMan(r.after.fee) : " 고침"}`));
+      return `${d.undo_of ? "<b>되돌림</b> · " : ""}${d.month ? ymLabel(d.month) + "부터 · " : ""}${esc(parts.join(" · "))}${rows.length > 4 ? ` 외 ${rows.length - 4}칸` : ""}`;
     }
     case "book_log": {
       const one = (x) => (!x ? "없음" : x.kind === "solved" ? `${x.pages ? x.pages + "쪽 · " : ""}${x.page_to}쪽까지` : x.kind === "graded" ? `${x.round ? x.round + "차 " : ""}${x.pages ? x.pages + "쪽" : "쪽 안 적음"}` : `${md(x.day)} 줌`);
@@ -2730,7 +2911,7 @@ async function viewLog() {
   const ev = await api("events?limit=1000");
   let f = store.get("logFilter", "all");
   const groups = { all: "전체", convert: "변환·등록", grading: "채점", class: "수업 기록", book: "교재", student: "학생 · 재원", att: "결석부", etc: "기타" };
-  const grp = (k) => (k === "convert" || k === "register" ? "convert" : k.startsWith("grading") ? "grading" : k.startsWith("class") ? "class" : k.startsWith("book") || k === "question" || k === "export_book" ? "book" : k.startsWith("student") ? "student" : k === "attendance" ? "att" : "etc");
+  const grp = (k) => (k === "convert" || k === "register" ? "convert" : k.startsWith("grading") ? "grading" : k.startsWith("class") ? "class" : k.startsWith("book") || k === "question" || k === "export_book" ? "book" : k.startsWith("student") || k === "fee_plan" ? "student" : k === "attendance" ? "att" : "etc");
   const week = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
   const recent = ev.filter((e) => day(e.at) >= week);
   const cnt = (pred) => recent.filter(pred).length;
