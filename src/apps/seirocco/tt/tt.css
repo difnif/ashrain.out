@@ -269,3 +269,12 @@
 .tt-root .chip.mchip.pause{background:#fef3c7;color:#92400e}
 .tt-root .chip.mchip.quit{background:#e5e7eb;color:#4b5563}
 .tt-root tr.sel > td{background:#f0fdfa}
+/* 오늘 · 결석부 */
+.tt-root .attform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.tt-root .attform .tin{min-width:0}
+.tt-root .attform [data-af="reason"]{flex:1;min-width:180px}
+.tt-root .akseg button,.tt-root .attchk button{padding:5px 10px}
+.tt-root .attt td{vertical-align:middle}
+.tt-root .attchk button.on[data-chk="came"]{color:#166534}
+.tt-root .attchk button.on[data-chk="absent"]{color:#b91c1c}
+.tt-root .attchk button.on[data-chk="late"]{color:#92400e}

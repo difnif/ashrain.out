@@ -283,14 +283,14 @@ window.addEventListener("beforeunload", onUnload);
 function route() {
   routeSeq++;
   curHash = location.hash;
-  const parts = (location.hash.replace(/^#\/?(tt\/?)?/, "") || "grade").split("/").map(decodeURIComponent);
+  const parts = (location.hash.replace(/^#\/?(tt\/?)?/, "") || "today").split("/").map(decodeURIComponent);      // 처음 열면 「오늘」
   const tab = { print: "prints", wrong: "students", parts: "prints" }[parts[0]] || parts[0];
   $$("#tt-tabs a").forEach((a) => a.classList.toggle("on", a.dataset.tab === tab));
   window.scrollTo(0, 0);
   document.onkeydown = null;
   if (!location.hash.startsWith("#/tt")) return;
   const R = { convert: viewConvert, register: viewRegister, grade: viewGrade, class: viewClass, students: viewStudents, prints: viewPrints, print: viewPrint, log: viewLog,
-    export: viewExport, account: viewAccount, wrong: viewWrong, inbox: viewInbox, parts: viewParts, books: viewBooks,
+    export: viewExport, account: viewAccount, wrong: viewWrong, inbox: viewInbox, parts: viewParts, books: viewBooks, today: viewToday,
     import: (...a) => importView({ view, $, $$, esc, toast, modal, api, fmtCode }, ...a) }[parts[0]];
   view.innerHTML = `<div class="card"><span class="busy"></span>불러오는 중…</div>`;
   refreshInboxTab();
@@ -1474,6 +1474,7 @@ async function studentDetail(id) {
       <label class="k">메모</label><input class="tin" id="eMemo" value="${esc(s.memo)}">
     </div><div class="row" style="margin-top:10px"><button class="btn" id="eSave">저장</button><span class="sub small">다니는지는 아래 「재원 · 원비」에서 달마다 적어요</span></div></div>
     ${monthCard(d)}
+    ${attCard(d)}
     <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">오답 · 기록 받기</h2>
       <a class="btn" href="#/tt/wrong/s/${s.id}">오답 모아 출제${nWrongNow ? ` <span class="small" style="opacity:.8">(지금 틀린 ${nWrongNow}문항)</span>` : ""}</a></div>
       <div class="row" style="margin-top:10px"><span class="sub small">기간</span><input type="date" class="tin" id="dFrom" style="min-width:0"> ~ <input type="date" class="tin" id="dTo" style="min-width:0">
@@ -1505,6 +1506,7 @@ async function studentDetail(id) {
       ${Object.entries(recByDate).map(([dte, r]) => `<tr><td><b>${dte}</b></td>${Object.keys(KIND).map((k) => `<td class="small">${(r[k] || []).map((x) => esc(x.title)).join("<br>") || "<span class='muted'>-</span>"}</td>`).join("")}</tr>`).join("")}</table>
       <p class="sub small">고치려면 수업 기록 탭에서 그 날짜와 이 학생을 불러와 다시 확인하세요.</p>` : `<div class="empty">아직 없어요</div>`}</div>`;
   bindMonthCard(d);
+  bindAttCard(d);
   $("#eSave").onclick = async () => {
     try { await api("students/" + id, { name: $("#eName").value, grade: $("#eGrade").value, memo: $("#eMemo").value }); toast("저장했어요"); route(); }
     catch (e) { toast(e.message.includes("UNIQUE") ? "같은 이름의 학생이 이미 있어요" : e.message); }
@@ -1522,6 +1524,111 @@ async function studentDetail(id) {
   const per = () => { const q = new URLSearchParams(); if ($("#dFrom").value) q.set("from", $("#dFrom").value); if ($("#dTo").value) q.set("to", $("#dTo").value); return q.toString(); };
   $("#dPdf").onclick = () => openLink(`/dl/student/${id}.pdf?view=1&${per()}`);
   $("#dJson").onclick = () => openLink(`/dl/student/${id}.json?${per()}`, true);
+}
+
+/* ───────────────────────── 오늘 (#/tt/today[/날짜]) — 대시보드: 결석부(당일 확인) · 확인 안 한 지난 것 · 다가오는 7일 · 재원 안 적은 학생 · 오래 채점하지 않은 교재
+   결석부는 학생 · 날마다 하나. 나중에 학부모 모드(종성)에서 학부모가 넣은 것도 여기로 들어온다(source = parent). */
+const AK = { absent: ["결석", "x"], absent_maybe: ["결석 예정", "u"], late: ["지각", "u"], late_maybe: ["지각 예정", "u"], early_maybe: ["조퇴 예정", "u"], no_contact: ["연락 없음", "x"] };
+const CHK = { came: "왔음", absent: "안 옴", late: "늦음" };
+const DOW = "일월화수목금토";
+const dayLabel = (d) => `${+d.slice(5, 7)}월 ${+d.slice(8, 10)}일 (${DOW[new Date(d + "T00:00:00Z").getUTCDay()]})`;
+const shiftDay = (d, k) => new Date(Date.parse(d + "T00:00:00Z") + k * 86400000).toISOString().slice(0, 10);
+const attWarn = `<div class="card" style="background:#fffbeb;border-color:#fde68a"><b>결석부 표가 DB에 아직 없어요.</b> <span class="small">적으려면 supabase/2026-11_tt_attendance.sql 을 넣어야 해요.</span></div>`;
+const akSeg = (v) => `<span class="seg akseg">${Object.entries(AK).map(([k, [t]]) => `<button type="button" data-v="${k}" class="${v === k ? "on" : ""}">${t}</button>`).join("")}</span>`;
+function attRow(r, { withDay = false, withName = true } = {}) {
+  return `<tr data-att="${r.id}">${withDay ? `<td class="nowrap"><b>${md(r.day)}</b> <span class="sub small">${DOW[new Date(r.day + "T00:00:00Z").getUTCDay()]}</span></td>` : ""}
+    ${withName ? `<td class="nowrap"><a href="#/tt/students/${r.sid}"><b>${esc(r.name)}</b></a>${r.source === "parent" ? ` <span class="tag open" title="학부모가 넣음">학부모</span>` : ""}</td>` : ""}
+    <td class="nowrap"><span class="tag ${AK[r.kind][1]}">${AK[r.kind][0]}</span></td><td class="small">${esc(r.reason || "")}</td>
+    <td><span class="seg attchk" title="그날 확인 — 다시 누르면 지움">${Object.entries(CHK).map(([v, t]) => `<button type="button" data-chk="${v}" class="${r.checked === v ? "on" : ""}">${t}</button>`).join("")}</span></td>
+    <td class="nowrap"><button class="btn ghost small" data-attedit>고치기</button><button class="x" data-attdel title="지우기">×</button></td></tr>`;
+}
+const attTable = (rows, opt) => `<table class="t attt">${rows.map((r) => attRow(r, opt)).join("")}</table>`;
+// 결석부 줄의 단추들(당일 확인 · 고치기 · 지우기) — 저장하면 다시 그림(알림에 되돌리기)
+function bindAttRows(el, rows) {
+  $$("tr[data-att]", el).forEach((tr) => {
+    const r = rows.find((x) => x.id === +tr.dataset.att);
+    if (!r) return;
+    $$("[data-chk]", tr).forEach((b) => (b.onclick = async () => {
+      const v = b.classList.contains("on") ? null : b.dataset.chk;
+      try { const x = await api("attendance/" + r.id, { check: v }); undoToast(v ? `${r.name} · ${CHK[v]}` : `${r.name} · 확인을 지웠어요`, x.events); route(); } catch (e) { toast(e.message, 5000); }
+    }));
+    $("[data-attdel]", tr).onclick = async (e) => {
+      if (!confirmInline(e.currentTarget)) return;
+      try { const x = await api("attendance/" + r.id, { delete: true }); undoToast("결석부 기록을 지웠어요", x.events); route(); } catch (err) { toast(err.message, 5000); }
+    };
+    $("[data-attedit]", tr).onclick = async () => {
+      let kind = r.kind, reason = r.reason || "";          // 창을 닫으면 내용이 지워지므로 고를 때마다 잡아 둠
+      const v = await modal(`<h2>${esc(r.name)} · ${dayLabel(r.day)}</h2><div id="aeSeg">${akSeg(r.kind)}</div>
+        <input class="tin" id="aeReason" value="${esc(r.reason || "")}" placeholder="사유" style="width:100%;margin-top:10px" autocomplete="off">`,
+        [{ label: "그만두기", value: null, cls: "ghost" }, { label: "저장", value: 1 }],
+        { onOpen: (box) => {
+          $$("#aeSeg button", box).forEach((b) => (b.onclick = () => { $$("#aeSeg button", box).forEach((x) => x.classList.toggle("on", x === b)); kind = b.dataset.v; }));
+          $("#aeReason", box).oninput = (e) => { reason = e.target.value; };
+        } });
+      if (!v) return;
+      try { const x = await api("attendance/" + r.id, { kind, reason }); undoToast("결석부를 고쳤어요", x.events); route(); } catch (e) { toast(e.message, 5000); }
+    };
+  });
+}
+// 결석부 적기 칸 — students: [{id, name, active}] · fixedSid 가 있으면 그 학생(학생 화면)
+function attFormHtml(students, day, fixedSid = null) {
+  return `<div class="attform">
+    ${fixedSid ? "" : `<select class="tin" data-af="sid"><option value="">학생 고르기…</option>${students.filter((s) => s.active).map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}
+      ${students.some((s) => !s.active) ? `<optgroup label="쉬는 중">${students.filter((s) => !s.active).map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}</optgroup>` : ""}</select>`}
+    <input type="date" class="tin" data-af="day" value="${day}">
+    ${akSeg("")}
+    <input class="tin" data-af="reason" placeholder="사유 (예: 감기, 학교 행사)" autocomplete="off">
+    <button class="btn" data-af="go">적기</button></div>`;
+}
+function bindAttForm(el, fixedSid = null) {
+  const f = $(".attform", el);
+  if (!f) return;
+  let kind = "";
+  $$(".akseg button", f).forEach((b) => (b.onclick = () => { $$(".akseg button", f).forEach((x) => x.classList.toggle("on", x === b)); kind = b.dataset.v; }));
+  $('[data-af="go"]', f).onclick = async () => {
+    const sid = fixedSid || +$('[data-af="sid"]', f).value;
+    if (!sid) return toast("학생을 골라 주세요");
+    if (!kind) return toast("결석 · 지각 · 조퇴 중에서 골라 주세요");
+    try {
+      const x = await api("attendance", { sid, day: $('[data-af="day"]', f).value || todayStr(), kind, reason: $('[data-af="reason"]', f).value });
+      undoToast(x.events && x.events.length ? "결석부에 적었어요" : "바뀐 것이 없어요", x.events); route();
+    } catch (e) { toast(e.message, 5000); }
+  };
+}
+async function viewToday(date) {
+  const d = await api("today" + (date ? "?date=" + encodeURIComponent(date) : ""));
+  const isToday = d.date === d.today;
+  const flagged = (d.need_month || []);
+  view.innerHTML = `<h1>${isToday ? "오늘" : "그날"} <span class="sub">${dayLabel(d.date)}</span></h1>
+    ${d.ok ? "" : attWarn}
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">결석부 <span class="sub small">${isToday ? "오늘" : md(d.date)} 결석 · 지각 · 조퇴 — 그날 「왔음 · 안 옴 · 늦음」으로 확인해요</span></h2>
+        <div class="row"><a class="btn ghost small" href="#/tt/today/${shiftDay(d.date, -1)}">◀ ${md(shiftDay(d.date, -1))}</a>${isToday ? "" : `<a class="btn ghost small" href="#/tt/today">오늘</a>`}<a class="btn ghost small" href="#/tt/today/${shiftDay(d.date, 1)}">${md(shiftDay(d.date, 1))} ▶</a></div></div>
+      ${d.day_rows.length ? `<div id="tDay" style="margin-top:8px">${attTable(d.day_rows)}</div>` : `<div class="empty">${isToday ? "오늘" : "이날"} 적힌 결석 · 지각이 없어요</div>`}
+      <div id="tForm" style="margin-top:12px"><b class="small">결석부 적기</b>${attFormHtml(d.students, d.date)}</div></div>
+    ${d.unchecked.length ? `<div class="card" style="border-color:#fcd34d"><h2>확인 안 한 지난 결석부 <span class="sub small">예정 · 연락 없음으로 적고 그날 확인하지 않은 것</span></h2><div id="tUn">${attTable(d.unchecked, { withDay: true })}</div></div>` : ""}
+    ${d.upcoming.length ? `<div class="card"><h2>다가오는 7일</h2><div id="tUp">${attTable(d.upcoming, { withDay: true })}</div></div>` : ""}
+    ${flagged.length ? `<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">재원을 안 적은 학생 <span class="sub small">${monthLabel(d.this_month)}</span></h2><a class="btn small" href="#/tt/students/month">재원 · 원비 적기</a></div>
+      <div class="chips" style="margin-top:8px">${flagged.map((s) => `<a class="chip" style="text-decoration:none" href="#/tt/students/${s.id}">${esc(s.name)} ${monthTag(s, d.this_month)}</a>`).join("")}</div></div>` : ""}
+    ${d.stale_books.length ? `<div class="card"><h2>오래 채점하지 않은 교재 <span class="sub small">마지막 채점에서 ${IDLE_Y}일 넘게</span></h2><table class="t">
+      ${d.stale_books.slice(0, 15).map((x) => `<tr class="click" data-href="#/tt/books/${x.code}"><td><b>${esc(x.name)}</b></td><td>${esc(x.book)}</td><td>${idleTag(x)}</td></tr>`).join("")}</table></div>` : ""}
+    <div class="card"><details${store.get("todayRecent", false) ? " open" : ""} id="tRecentD"><summary><b>지난 30일 결석부</b> <span class="sub small">${d.recent.length}건</span></summary>
+      ${d.recent.length ? `<div id="tRecent" style="margin-top:8px">${attTable(d.recent, { withDay: true })}</div>` : `<div class="empty">없어요</div>`}</details></div>`;
+  bindRows(view);
+  for (const [id, rows] of [["#tDay", d.day_rows], ["#tUn", d.unchecked], ["#tUp", d.upcoming], ["#tRecent", d.recent]]) if ($(id)) bindAttRows($(id), rows);
+  bindAttForm($("#tForm"));
+  $("#tRecentD").addEventListener("toggle", (e) => store.set("todayRecent", e.target.open));
+}
+// 학생 화면의 결석부 카드
+function attCard(d) {
+  if (d.att_ok === false) return attWarn;
+  const rows = d.attendance || [];
+  return `<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">결석부 <span class="sub small">지난 120일 · 앞으로 60일</span></h2><a class="btn ghost small" href="#/tt/today">오늘 화면</a></div>
+    ${rows.length ? `<div id="sAtt" style="margin-top:8px">${attTable(rows, { withDay: true, withName: false })}</div>` : `<div class="empty">적힌 결석 · 지각이 없어요</div>`}
+    <div id="sAttForm" style="margin-top:10px">${attFormHtml([], todayStr(), d.student.id)}</div></div>`;
+}
+function bindAttCard(d) {
+  if ($("#sAtt")) bindAttRows($("#sAtt"), (d.attendance || []).map((r) => ({ ...r, name: d.student.name })));
+  if ($("#sAttForm")) bindAttForm($("#sAttForm"), d.student.id);
 }
 
 /* ───────────────────────── 재원 · 원비 (#/tt/students/month[/YYYY-MM]) — 학생 · 달마다 다님 · 휴원 · 그만둠 + 원비, 매출 = 다님 원비 합.
@@ -2397,7 +2504,7 @@ const EV = {
   grading_reopen: "채점 다시 엶", retry_start: "다음 차 채점 시작", round_delete: "마지막 차 지움", grading_delete: "채점 기록 지움",
   print_purge: "프린트 완전히 지움", print_restore: "프린트 되살림", wrongset_make: "오답 프린트 만듦", library_register: "보관함에서 등록",
   library_import: "보관함에 옮겨 옴", pc_import: "PC 자료 옮겨 옴",
-  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움", book_log: "교재 기록", student_month: "재원 · 원비",
+  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움", book_log: "교재 기록", student_month: "재원 · 원비", attendance: "결석부",
 };
 function evDetail(e) {
   const d = e.detail || {};
@@ -2411,6 +2518,11 @@ function evDetail(e) {
       return [esc(d.name || ""), "round" in d ? esc(whenText(d.round)) : "", d.pages ? `${d.pages}쪽` : ""].filter(Boolean).join(" · ");
     case "grading_start": case "student_add": return "";
     case "book_add": case "book_edit": case "book_assign": case "book_unassign": case "book_delete": return esc(d.title || "");
+    case "attendance": {
+      const one = (x) => (!x ? "없음" : `${(AK[x.kind] || [x.kind])[0]}${x.reason ? ` (${x.reason})` : ""}${x.checked ? ` · 확인 ${CHK[x.checked]}` : ""}`);
+      const what = !d.before ? `적음: ${one(d.after)}` : !d.after ? `지움: ${one(d.before)}` : `${one(d.before)} → ${one(d.after)}`;
+      return `${d.undo_of ? "<b>되돌림</b> · " : ""}${d.day ? md(d.day) + " · " : ""}${esc(what)}`;
+    }
     case "student_month": {
       const one = (x) => (!x ? "없음" : `${MST[x.status] || x.status}${x.fee != null ? " " + fmtMan(x.fee) : ""}${x.note ? ` (${x.note})` : ""}`);
       const what = !d.before ? `적음: ${one(d.after)}` : !d.after ? `지움: ${one(d.before)}` : `${one(d.before)} → ${one(d.after)}`;
@@ -2431,8 +2543,8 @@ function evDetail(e) {
 async function viewLog() {
   const ev = await api("events?limit=1000");
   let f = store.get("logFilter", "all");
-  const groups = { all: "전체", convert: "변환·등록", grading: "채점", class: "수업 기록", book: "교재", student: "학생 · 재원", etc: "기타" };
-  const grp = (k) => (k === "convert" || k === "register" ? "convert" : k.startsWith("grading") ? "grading" : k.startsWith("class") ? "class" : k.startsWith("book") ? "book" : k.startsWith("student") ? "student" : "etc");
+  const groups = { all: "전체", convert: "변환·등록", grading: "채점", class: "수업 기록", book: "교재", student: "학생 · 재원", att: "결석부", etc: "기타" };
+  const grp = (k) => (k === "convert" || k === "register" ? "convert" : k.startsWith("grading") ? "grading" : k.startsWith("class") ? "class" : k.startsWith("book") ? "book" : k.startsWith("student") ? "student" : k === "attendance" ? "att" : "etc");
   const week = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
   const recent = ev.filter((e) => day(e.at) >= week);
   const cnt = (pred) => recent.filter(pred).length;
@@ -2444,7 +2556,7 @@ async function viewLog() {
       <span class="n">덜 풂 ${cnt((e) => e.kind === "grading_close" && e.detail.reason === "unsolved")}</span>
       <span class="n">수업 기록 ${new Set(recent.filter((e) => e.kind.startsWith("class_")).map((e) => e.student_id + ":" + e.detail.date)).size}</span>
       <span class="n">학생 ${new Set(recent.filter((e) => e.student_id).map((e) => e.student_id)).size}명</span></div>
-      <p class="sub small" style="margin-bottom:0">입력 · 활동이 모두 여기에 남아요. 잘못 넣은 교재 기록 · 재원 · 원비는 줄 끝 「되돌리기」로 되돌려요(그 뒤에 또 바뀌었으면 그 화면에서 고쳐 주세요).</p></div>
+      <p class="sub small" style="margin-bottom:0">입력 · 활동이 모두 여기에 남아요. 잘못 넣은 교재 기록 · 재원 · 원비 · 결석부는 줄 끝 「되돌리기」로 되돌려요(그 뒤에 또 바뀌었으면 그 화면에서 고쳐 주세요).</p></div>
     <div class="card"><div id="lf"></div><div id="lt" style="margin-top:10px"></div></div>`;
   const draw = () => {
     const list = ev.filter((e) => f === "all" || grp(e.kind) === f).slice(0, 400);

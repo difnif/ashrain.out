@@ -233,7 +233,8 @@ async function studentDetail(sid) {
   const curM = monthStart(todayStr()), mrows = await monthRows(null, sid);
   return { student: st, prints: out, books: bookRows, logs_ok: bookLogTable, repeat_wrong: rep, records,
     month: mflagOut(monthFlag(st, mrows.filter((r) => r.month <= curM), curM)), months: mrows.slice().reverse().slice(0, 24).map(snapMonth), months_ok: monthTable,
-    month_prev: snapMonth(mrows.find((r) => r.month === addMonths(curM, -1)) || null), this_month: curM };
+    month_prev: snapMonth(mrows.find((r) => r.month === addMonths(curM, -1)) || null), this_month: curM,
+    attendance: (await attOut(await attRows(addDays(todayStr(), -120), addDays(todayStr(), 60), sid))).reverse(), att_ok: attTable };
 }
 
 // ── 교재 — 프린트 표(tt_prints)에 options.textbook 으로 둔다(DB는 그대로).
@@ -452,6 +453,91 @@ async function monthsSave(b) {
   return { ok: true, n: events.length, events };
 }
 
+// ── 결석부 (supabase/2026-11_tt_attendance.sql) — 학생 · 날마다 하나: 결석 확정 · 결석 예정 · 지각 · 지각 예정 · 조퇴 예정 · 연락 없음 + 사유.
+//   당일 확인(왔음 · 안 옴 · 늦음). source = 누가 넣었나(강사 · 나중에 학부모 모드 종성에서 학부모)
+let attTable = true;
+const ATT_SQL = "결석부 표가 DB에 아직 없어요 — supabase/2026-11_tt_attendance.sql 을 넣어야 적을 수 있어요";
+const noAttTable = (e) => { const t = String((e && e.message) || e || ""); return /tt_attendance/.test(t) && /does not exist|schema cache|Could not find/i.test(t); };
+const ATT_KINDS = ["absent", "absent_maybe", "late", "late_maybe", "early_maybe", "no_contact"];
+const ATT_UNSURE = ["absent_maybe", "late_maybe", "early_maybe", "no_contact"];        // 당일에 확인해야 하는 것
+const snapAtt = (r) => (r ? { id: r.id, day: r.day, kind: r.kind, reason: r.reason || "", checked: r.checked ?? null, source: r.source || "teacher" } : null);
+const sameAtt = (a, b) => !!a && !!b && a.day === b.day && a.kind === b.kind && (a.reason || "") === (b.reason || "") && (a.checked ?? null) === (b.checked ?? null);
+const addDays = (d, k) => new Date(Date.parse(d + "T00:00:00Z") + k * 86400000).toISOString().slice(0, 10);
+async function attRows(from, to, sid = null) {
+  if (!attTable) return [];
+  try { return await all(() => { let x = T("tt_attendance").select("*").order("day").order("id"); if (from) x = x.gte("day", from); if (to) x = x.lte("day", to); if (sid) x = x.eq("student_id", sid); return x; }); }
+  catch (e) { if (noAttTable(e)) { attTable = false; return []; } throw e; }
+}
+async function attOut(rows) {
+  const sm = await studentsMap(rows.map((r) => r.student_id));
+  return rows.map((r) => ({ ...snapAtt(r), sid: r.student_id, name: sm.get(r.student_id)?.name || "?", checked_at: r.checked_at || null }));
+}
+const attFail = (e) => { if (noAttTable(e)) { attTable = false; throw new Error(ATT_SQL); } throw e; };
+// 결석부 적기 — 학생 · 날마다 하나(이미 있으면 종류 · 사유를 고침)
+async function attPut(b) {
+  if (!attTable) throw new Error(ATT_SQL);
+  const sid = Number(b.sid), day = cleanDay(b.day || todayStr());
+  if (!ATT_KINDS.includes(b.kind)) throw new Error("결석 · 지각 · 조퇴 중에서 골라 주세요");
+  const st = (await studentsMap([sid])).get(sid);
+  if (!st) throw new Error("학생을 골라 주세요");
+  try {
+    const old = must(await T("tt_attendance").select("*").eq("student_id", sid).eq("day", day).limit(1))[0] || null;
+    const row = { kind: b.kind, reason: String(b.reason ?? (old ? old.reason : "")).trim().slice(0, 300) };
+    if (old && sameAtt(old, { ...old, ...row })) return { ok: true, events: [] };
+    const saved = old ? must(await T("tt_attendance").update({ ...row, updated_at: nowIso() }).eq("id", old.id).select("*").single())
+      : must(await T("tt_attendance").insert({ student_id: sid, day, ...row }).select("*").single());
+    const id = await logRow("attendance", sid, null, { table: "tt_attendance", row_id: saved.id, name: st.name, day, before: snapAtt(old), after: snapAtt(saved) });
+    return { ok: true, events: id ? [id] : [] };
+  } catch (e) { attFail(e); }
+}
+// 당일 확인 · 고치기 · 지우기
+async function attEdit(id, b) {
+  if (!attTable) throw new Error(ATT_SQL);
+  try {
+    const old = must(await T("tt_attendance").select("*").eq("id", id).maybeSingle());
+    if (!old) throw new Error("그런 결석부 기록이 없어요");
+    const st = (await studentsMap([old.student_id])).get(old.student_id);
+    let saved = null;
+    if (b.delete) must(await T("tt_attendance").delete().eq("id", id));
+    else {
+      const up = {};
+      if ("check" in b) {
+        if (b.check !== null && !["came", "absent", "late"].includes(b.check)) throw new Error("왔음 · 안 옴 · 늦음 중에서 골라 주세요");
+        up.checked = b.check; up.checked_at = b.check ? nowIso() : null;
+      }
+      if ("kind" in b) { if (!ATT_KINDS.includes(b.kind)) throw new Error("결석 · 지각 · 조퇴 중에서 골라 주세요"); up.kind = b.kind; }
+      if ("reason" in b) up.reason = String(b.reason || "").trim().slice(0, 300);
+      if (sameAtt(old, { ...old, ...up })) return { ok: true, events: [] };
+      saved = must(await T("tt_attendance").update({ ...up, updated_at: nowIso() }).eq("id", id).select("*").single());
+    }
+    const eid = await logRow("attendance", old.student_id, null, { table: "tt_attendance", row_id: id, name: st ? st.name : "", day: old.day, before: snapAtt(old), after: snapAtt(saved) });
+    return { ok: true, events: eid ? [eid] : [] };
+  } catch (e) { attFail(e); }
+}
+// 오늘 대시보드 — 그날 결석부 · 확인 안 한 지난 것 · 다가오는 7일 · 지난 30일 · 재원을 안 적은 학생 · 오래 채점하지 않은 교재
+async function todayView(date) {
+  const day = cleanDay(date || todayStr()), thisM = monthStart(todayStr());
+  const out = await attOut(await attRows(addDays(day, -30), addDays(day, 7)));
+  const sts = must(await T("tt_students").select("id,name,grade,active").order("name"));
+  const mrows = await monthRows(thisM);
+  const needMonth = monthTable ? sts.map((s) => ({ id: s.id, name: s.name, ...mflagOut(monthFlag(s, mrows, thisM)) })).filter((x) => x.flag) : [];
+  let stale = [];
+  try {
+    stale = (await booksList()).flatMap((b) => b.students.filter((x) => x.active && (x.idle_days ?? 0) >= 14)
+      .map((x) => ({ book: b.title, code: b.code, sid: x.sid, name: x.name, idle_days: x.idle_days, never_graded: x.never_graded, last_graded: x.last_graded, since: x.since })))
+      .sort((a, b) => b.idle_days - a.idle_days);
+  } catch { stale = []; }
+  return {
+    date: day, today: todayStr(), ok: attTable, months_ok: monthTable, this_month: thisM,
+    day_rows: out.filter((r) => r.day === day),
+    unchecked: out.filter((r) => r.day < day && !r.checked && ATT_UNSURE.includes(r.kind)),
+    upcoming: out.filter((r) => r.day > day),
+    recent: out.filter((r) => r.day < day).reverse(),
+    need_month: needMonth, stale_books: stale,
+    students: sts.map((s) => ({ id: s.id, name: s.name, active: s.active !== false })),
+  };
+}
+
 // ── 되돌리기 — 지금 모습이 그 기록의 「후」와 같을 때만 「전」으로 돌린다(그 뒤에 또 바뀌었으면 막음). 되돌릴 수 있는 표:
 const UNDO = {
   tt_book_logs: {
@@ -462,6 +548,10 @@ const UNDO = {
     fields: (x) => ({ month: x.month, status: x.status, fee: x.fee ?? null, note: x.note || "" }),
     keys: (ev) => ({ student_id: ev.student_id }), same: sameMonth, snap: snapMonth, missing: noMonthTable, sql: MONTH_SQL, where: "재원 · 원비 화면",
     after: (ev) => syncActive(ev.student_id),
+  },
+  tt_attendance: {
+    fields: (x) => ({ day: x.day, kind: x.kind, reason: x.reason || "", checked: x.checked ?? null, checked_at: x.checked ? nowIso() : null, source: x.source || "teacher" }),
+    keys: (ev) => ({ student_id: ev.student_id }), same: sameAtt, snap: snapAtt, missing: noAttTable, sql: ATT_SQL, where: "오늘 화면",
   },
 };
 async function undoEvent(id) {
@@ -482,7 +572,7 @@ async function undoEvent(id) {
       restored = must(r);
     } else restored = must(await T(d.table).update({ ...U.fields(d.before), updated_at: nowIso() }).eq("id", cur.id).select("*").single());
     if (U.after) await U.after(ev, restored);
-    const keep = Object.fromEntries(["title", "name", "kind", "month"].filter((k) => k in d).map((k) => [k, d[k]]));
+    const keep = Object.fromEntries(["title", "name", "kind", "month", "day"].filter((k) => k in d).map((k) => [k, d[k]]));
     const nid = await logRow(ev.kind, ev.student_id, ev.print_id, { ...keep, table: d.table, row_id: (restored || cur).id, before: U.snap(cur), after: U.snap(restored), undo_of: ev.id });
     must(await T("tt_events").update({ detail: { ...d, undone_by: nid || -1, undone_at: nowIso() } }).eq("id", ev.id));
     return nid;
@@ -976,6 +1066,9 @@ export async function api(path, body) {
   }
   // 교재 — 등록 · 학생에게 붙이기 · 빼기 · 고치기 · 지우기 (스캔본은 학생 몫의 채점 기록에: gradings/<id>/scans 그대로)
   if (p === "months") return post ? monthsSave(body) : monthsView(q.month);            // 재원 · 원비
+  if (p === "today") return todayView(q.date);                                        // 오늘 대시보드
+  if (p === "attendance" && post) return attPut(body);                                // 결석부 적기
+  if ((m = /^attendance\/(\d+)$/.exec(p)) && post) return attEdit(Number(m[1]), body);  // 당일 확인 · 고치기 · 지우기
   if (p === "books") return post ? bookCreate(body) : booksList();
   if (p === "books/day") return post ? bookDaySave(body) : bookDay(q.date);          // 수업 끝 진도 적기
   if (p === "booklogs" && post) return bookLogPut(await bookCopyByCode(body.code), body);   // 교재 기록 하나 (진도 · 채점한 날 · 해설지)
