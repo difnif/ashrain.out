@@ -243,6 +243,7 @@ const STATUS = {
 };
 const statusTag = (s) => { const [t, c] = STATUS[s] || [s, ""]; return `<span class="tag ${c}">${esc(t)}</span>`; };
 const sumText = (s) => !s ? "" : `<span class="tag o">O ${s.O}</span> <span class="tag x">X ${s.X}</span>` +
+  (s.T ? ` <span class="tag taught" title="O 가운데 선생님이 풀어 준 문제(번호에 박스)">풀어 줌 ${s.T}</span>` : "") +
   (s.U ? ` <span class="tag u">안 풂 ${s.U}</span>` : "") + (s.P ? ` <span class="tag pass" title="푼 만큼만 매기고 넘긴 문항">넘어감 ${s.P}</span>` : "") + (s.none ? ` <span class="tag">남음 ${s.none}</span>` : "");
 const CIRC = { 1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤" };
 // 목록용: 2차 이상이면 "1차 O 13 · X 8 → 최종" 한 줄을 덧붙임
@@ -783,8 +784,9 @@ async function gradeRun(p, sid, extra) {
   const edSet = () => { const ri = edInfo(); return ri && ri.kind === "retry" && ri.targets ? new Set(ri.targets) : null; };   // null = 모든 문항(1차)
 
   const roundMark = (it, r = cur.round) => (it.rounds || []).find((x) => x.round === r);
-  const resCur = (it) => (retry ? (roundMark(it) || {}).result || "" : (it.mark && it.mark.result) || "");      // 이번 차 결과
-  const res = (it) => (past() ? (roundMark(it, edRound) || {}).result || "" : resCur(it));                 // 보고 있는 차 결과
+  const rk = (m) => (!m || !m.result ? "" : m.result === "O" && m.taught ? "T" : m.result);           // 풀어 줌 = 맞음 + taught → "T"
+  const resCur = (it) => (retry ? rk(roundMark(it)) : rk(it.mark));      // 이번 차 결과
+  const res = (it) => (past() ? rk(roundMark(it, edRound)) : resCur(it));                 // 보고 있는 차 결과
   const isTarget = (it) => (past() ? !edSet() || edSet().has(it.seq) : !retry || tset.has(it.seq));
   // 다 끝난 채점을 다시 연 회차(고치기) — 지난 회차의 '안 풂'은 할 일로 치지 않는다
   const reopened = !!(prevSess && prevSess.end_reason === "done");
@@ -824,7 +826,7 @@ async function gradeRun(p, sid, extra) {
     ${!p.n_answers ? `<div class="card" style="background:#fffbeb;border-color:#fde68a">정답이 아직 없어요. O/X로 바로 매기거나, <a href="#/tt/print/${p.code}">정답 입력</a>에서 빠른정답을 넣으면 답 입력 자동 채점을 쓸 수 있어요.</div>` : ""}
     <div id="omr" hidden></div>
     <div class="items" id="items"></div>
-    <p class="sub small" style="margin-top:14px">단축키: ↑↓ 문항 이동 · <b>O</b> 맞음 · <b>X</b> 틀림 · <b>U</b> 안 풂 (한글 입력 상태여도 됨) · 켜진 O/X 버튼을 한 번 더 누르면 이번에 매긴 것이 지워져요</p>`;
+    <p class="sub small" style="margin-top:14px">단축키: ↑↓ 문항 이동 · <b>O</b> 맞음 · <b>X</b> 틀림 · <b>U</b> 안 풂 · <b>B</b> 풀어 줌(번호에 박스 — 맞음으로 셈) (한글 입력 상태여도 됨) · 켜진 O/X 버튼을 한 번 더 누르면 이번에 매긴 것이 지워져요</p>`;
 
   seg($("#modeSeg"), [["ox", "O/X로 매기기"], ["input", "OMR 카드 → 자동 채점"]], mode, (v) => { mode = v; store.set("gradeMode", v); drawBar(); drawOmr(true); drawItems(); });
 
@@ -883,18 +885,18 @@ async function gradeRun(p, sid, extra) {
       $("#gsum").innerHTML = `<span class="sub small" style="font-weight:700">${cur.round}차</span><span class="n o">O ${c("O")}</span><span class="n x">X ${c("X")}</span><span class="n u">안 풂 ${c("U")}</span><span class="n">남음 ${left}</span>
         <span class="sub small">/ 다시 풀 ${tg.length}문항 · 최종 O ${s.O} · X ${s.X}${s.U ? " · 안 풂 " + s.U : ""} (전체 ${s.total}문항)</span>`;
     } else {
-      $("#gsum").innerHTML = `<span class="n o">O ${s.O}</span><span class="n x">X ${s.X}</span><span class="n u">안 풂 ${s.U}</span>${s.P ? `<span class="n p">넘어감 ${s.P}</span>` : ""}<span class="n">남음 ${s.none}</span>
+      $("#gsum").innerHTML = `<span class="n o">O ${s.O}</span>${s.T ? `<span class="n t" title="O 가운데 풀어 준 문제">풀어 줌 ${s.T}</span>` : ""}<span class="n x">X ${s.X}</span><span class="n u">안 풂 ${s.U}</span>${s.P ? `<span class="n p">넘어감 ${s.P}</span>` : ""}<span class="n">남음 ${s.none}</span>
         <span class="sub small">/ ${s.total}문항 · ${s.O + s.X ? Math.round((100 * s.O) / (s.O + s.X)) + "% 정답 (푼 것 기준)" : ""}</span>
         ${d.items.some((it) => it.repeat) ? `<span class="tag rep">반복 오답 ${d.items.filter((it) => it.repeat).length}</span>` : ""}`;
     }
     $("#stTag").innerHTML = statusTag(d.grading.status);
     if ($("#passG")) $("#passG").hidden = past() || blanks() === 0 || d.grading.status === "done";
   }
-  const RK = { O: "O", X: "X", U: "안 풂", P: "넘어감" };
+  const RK = { O: "O", X: "X", U: "안 풂", P: "넘어감", T: "풀어 줌" };
   function itemHtml(it, i, cont = false) {
     const r = res(it);
     const lastSess = it.mark && it.mark.session_no;
-    const hist = (it.rounds || []).filter((x) => (past() ? x.round !== edRound : x.round < cur.round)).map((x) => `<span class="tag ${x.result === "O" ? "o" : x.result === "X" ? "x" : x.result === "P" ? "pass" : "u"}">${x.round}차 ${RK[x.result] || x.result}</span>`).join("");
+    const hist = (it.rounds || []).filter((x) => (past() ? x.round !== edRound : x.round < cur.round)).map((x) => `<span class="tag ${x.result === "O" ? (x.taught ? "taught" : "o") : x.result === "X" ? "x" : x.result === "P" ? "pass" : "u"}">${x.round}차 ${RK[rk(x)] || x.result}</span>`).join("");
     // 앞 차를 고칠 때: 다음 차 다시 풀 문항인데 그 차에 아직 안 매겼으면 「2차 남음」
     const nxt = past() ? (d.rounds || []).find((x) => x.round === edRound + 1) : null;
     const nextLeft = nxt && nxt.targets && nxt.targets.includes(it.seq) && !roundMark(it, nxt.round) ? `<span class="tag left">${nxt.round}차 남음</span>` : "";
@@ -911,7 +913,7 @@ async function gradeRun(p, sid, extra) {
       : it.png ? `<img loading="lazy" src="${fileUrl(p.code + "/" + it.png)}" alt="${esc(nob(it))}">` : `<div class="noimg">${esc(nob(it))} — 그림 없이 등록 (위 '시험지 보기')</div>`;
     const key = `<div class="key">${it.answer ? `정답 <b>${esc(CIRC[it.answer] && (it.choice || it.answer_png) ? CIRC[it.answer] : it.answer)}</b>` : it.answer_png ? (cont ? `<span class="muted">정답은 위 그림</span>` : "정답") : `<span class="muted">정답 미입력</span>`}
           ${it.answer_png && !cont ? `<img class="ansimg" src="${fileUrl(p.code + "/" + it.answer_png)}" alt="정답">` : ""}</div>`;
-    const f = (it.mark && it.mark.result) || "";
+    const f = rk(it.mark);
     if (!isTarget(it)) {
       return `<div class="item off${cont ? " cont" : ""}" data-i="${i}"><div class="no ${/^\d+$/.test(nolab(it)) ? "" : "lab"}">${esc(nolab(it))}</div><div>${img}</div>
         <div class="side">${key}<div class="badges">${badges}</div><div class="small sub">${past() ? `${edRound}차에 다시 푼 문항이 아니에요` : "이번 차에 다시 풀 문항이 아니에요"} · 최종 <b>${RK[f] || "안 매김"}</b></div></div></div>`;
@@ -927,7 +929,7 @@ async function gradeRun(p, sid, extra) {
       <div class="side">${key}
         <div class="badges">${badges}</div>
         ${inputUi}${given}${fin}
-        <div class="marks"><button class="mo ${r === "O" ? "on" : ""}" data-r="O">O</button><button class="mx ${r === "X" ? "on" : ""}" data-r="X">X</button><button class="mu ${r === "U" ? "on" : ""}" data-r="U">안 풂</button></div>
+        <div class="marks"><button class="mo ${r === "O" ? "on" : ""}" data-r="O">O</button><button class="mx ${r === "X" ? "on" : ""}" data-r="X">X</button><button class="mu ${r === "U" ? "on" : ""}" data-r="U">안 풂</button><button class="mt ${r === "T" ? "on" : ""}" data-r="T" title="선생님이 풀어 준 문제(번호에 박스) — 맞음으로 세고 따로도 셈 · 단축키 B">풀어 줌</button></div>
       </div></div>`;
   }
   function drawItems() {
@@ -1066,8 +1068,8 @@ async function gradeRun(p, sid, extra) {
   function markMany(list) {
     for (const { i, result, answer } of list) {
       const it = d.items[i];
-      it.mark = { ...(it.mark || {}), seq: it.seq, result, answer, session_no: sessNo, round: cur.round };
-      it.rounds = (it.rounds || []).filter((x) => x.round !== cur.round).concat([{ round: cur.round, result, answer }]).sort((a, b) => a.round - b.round);
+      it.mark = { ...(it.mark || {}), seq: it.seq, result, answer, taught: false, session_no: sessNo, round: cur.round };
+      it.rounds = (it.rounds || []).filter((x) => x.round !== cur.round).concat([{ round: cur.round, result, answer, taught: false }]).sort((a, b) => a.round - b.round);
       queue.push({ seq: it.seq, result, answer, mode });
     }
     sumLocal();
@@ -1076,8 +1078,8 @@ async function gradeRun(p, sid, extra) {
   }
 
   function sumLocal() {
-    const s = { O: 0, X: 0, U: 0, P: 0, none: 0, total: d.items.length };
-    for (const it of d.items) { const r = (it.mark && it.mark.result) || ""; s[["O", "X", "U", "P"].includes(r) ? r : "none"]++; }
+    const s = { O: 0, X: 0, U: 0, P: 0, T: 0, none: 0, total: d.items.length };
+    for (const it of d.items) { const r = (it.mark && it.mark.result) || ""; s[["O", "X", "U", "P"].includes(r) ? r : "none"]++; if (r === "O" && it.mark.taught) s.T++; }
     d.summary = s;
   }
   let sentMode = null;
@@ -1127,16 +1129,17 @@ async function gradeRun(p, sid, extra) {
   // 앞 차 고치기: 화면에 먼저 적고 차례로 보낸다(다 보낸 뒤 서버 기록으로 맞춤 — 이번 차 다시 풀 문항도)
   function fixMark(i, result) {
     const it = d.items[i];
-    if (!["O", "X", "U"].includes(result)) return toast(`${edRound}차 결과는 지우지 않아요 — O · X · 안 풂 중에서 골라 바꿔 주세요`);
+    if (!["O", "X", "U", "T"].includes(result)) return toast(`${edRound}차 결과는 지우지 않아요 — O · X · 안 풂 · 풀어 줌 중에서 골라 바꿔 주세요`);
     if (!isTarget(it)) return;
     const vis = visible().filter((k) => isTarget(d.items[k]));
     const goNext = () => { const at = vis.indexOf(i); setFocus(at >= 0 && at + 1 < vis.length ? vis[at + 1] : i); };
     const pm = roundMark(it, edRound);
-    if (pm && pm.result === result) return goNext();
+    if (pm && rk(pm) === result) return goNext();
     const ans = (pm && pm.answer) || "";
-    it.rounds = (it.rounds || []).filter((x) => x.round !== edRound).concat([{ round: edRound, result, answer: ans }]).sort((a, b) => a.round - b.round);
+    const R0 = result === "T" ? "O" : result, tg = result === "T";
+    it.rounds = (it.rounds || []).filter((x) => x.round !== edRound).concat([{ round: edRound, result: R0, answer: ans, taught: tg }]).sort((a, b) => a.round - b.round);
     const top = it.rounds[it.rounds.length - 1];          // 최종 = 기록이 있는 가장 늦은 차의 결과
-    if (top.round === edRound) it.mark = { ...(it.mark || {}), seq: it.seq, result, answer: ans, round: edRound, session_no: null };
+    if (top.round === edRound) it.mark = { ...(it.mark || {}), seq: it.seq, result: R0, answer: ans, taught: tg, round: edRound, session_no: null };
     sumLocal();
     drawItems();
     goNext();
@@ -1157,8 +1160,9 @@ async function gradeRun(p, sid, extra) {
       await flushMarks();
       return;
     }
-    it.mark = { ...(it.mark || {}), seq: it.seq, result, answer: ans, session_no: sessNo, round: cur.round };
-    it.rounds = (it.rounds || []).filter((x) => x.round !== cur.round).concat([{ round: cur.round, result, answer: ans }]).sort((a, b) => a.round - b.round);
+    const R0 = result === "T" ? "O" : result, tg = result === "T";          // 풀어 줌 = 맞음 + taught
+    it.mark = { ...(it.mark || {}), seq: it.seq, result: R0, answer: ans, taught: tg, session_no: sessNo, round: cur.round };
+    it.rounds = (it.rounds || []).filter((x) => x.round !== cur.round).concat([{ round: cur.round, result: R0, answer: ans, taught: tg }]).sort((a, b) => a.round - b.round);
     sumLocal();
     drawItems();
     const next = d.items.findIndex((x, k) => k > i && isTodo(x));
@@ -1172,6 +1176,7 @@ async function gradeRun(p, sid, extra) {
     if (k === "ArrowDown" || k === "KeyJ") { e.preventDefault(); move(1); }
     else if (k === "ArrowUp" || k === "KeyK") { e.preventDefault(); move(-1); }
     else if (focus >= 0 && ["KeyO", "KeyX", "KeyU"].includes(k)) { e.preventDefault(); mark(focus, k.slice(3)); }
+    else if (focus >= 0 && k === "KeyB") { e.preventDefault(); mark(focus, "T"); }          // 풀어 줌(박스)
   };
 
   // 아직 안 매긴 문항(모든 차) 한 줄 — 「2차 1문항 · 3차 2문항」
@@ -1331,7 +1336,7 @@ async function startRetry(code, sid, d) {
 // 채점한 날(매긴 날) — 프린트 차마다 「1차 11/20 · 2차 11/25~26」
 const dayRange = (a, b) => (!a ? "" : !b || b === a ? md(a) : `${md(a)}~${a.slice(0, 7) === b.slice(0, 7) ? String(+b.slice(8, 10)) : md(b)}`);
 const gdLine = (gd) => ((gd || []).length ? `<div class="sub small nowrap" title="채점한 날(매긴 날)">채점 ${gd.map((x) => `${(gd.length > 1 ? x.round + "차 " : "")}${dayRange(x.first, x.last)}`).join(" · ")}</div>` : "");
-const roundsLine = (it) => (it.rounds || []).map((x) => `${x.round}차 ${{ O: "O", X: "X", U: "안 풂", P: "넘어감" }[x.result] || x.result}`).join(" → ");
+const roundsLine = (it) => (it.rounds || []).map((x) => `${x.round}차 ${x.result === "O" && x.taught ? "풀어 줌" : { O: "O", X: "X", U: "안 풂", P: "넘어감" }[x.result] || x.result}`).join(" → ");
 
 /* 채점 끝난 뒤 요약 (#/tt/grade/코드/학생/done) */
 const _viewGrade = viewGrade;
@@ -1350,10 +1355,10 @@ viewGrade = async function (code, sid, extra) {
   const nextN = d.retry_candidates.length;
   const done = d.grading.status === "done";
   const hasP = d.summary.P > 0 || R.some((r) => r.summary && r.summary.P);
-  const sm = (s) => `<td>${s.O}</td><td>${s.X}</td><td>${s.U}</td>${hasP ? `<td>${s.P || 0}</td>` : ""}<td>${s.none}</td>`;
+  const sm = (s) => `<td>${s.O}${s.T ? ` <span class="sub small">(풀어 줌 ${s.T})</span>` : ""}</td><td>${s.X}</td><td>${s.U}</td>${hasP ? `<td>${s.P || 0}</td>` : ""}<td>${s.none}</td>`;
   const pz = d.pass && !d.pass.undone ? d.pass : null;            // 마지막 넘어가기(아직 되돌릴 수 있으면)
   view.innerHTML = `<h1>${esc(d.student.name)} · ${esc(d.print.title)} <span class="code sub">${esc(d.print.code_fmt)}</span></h1>
-    <div class="card"><div class="gsum"><span class="n o">O ${d.summary.O}</span><span class="n x">X ${d.summary.X}</span><span class="n u">안 풂 ${d.summary.U}</span>${d.summary.P ? `<span class="n p">넘어감 ${d.summary.P}</span>` : ""}${d.summary.none ? `<span class="n">남음 ${d.summary.none}</span>` : ""} ${statusTag(d.grading.status)}
+    <div class="card"><div class="gsum"><span class="n o">O ${d.summary.O}</span>${d.summary.T ? `<span class="n t" title="O 가운데 선생님이 풀어 준 문제">풀어 줌 ${d.summary.T}</span>` : ""}<span class="n x">X ${d.summary.X}</span><span class="n u">안 풂 ${d.summary.U}</span>${d.summary.P ? `<span class="n p">넘어감 ${d.summary.P}</span>` : ""}${d.summary.none ? `<span class="n">남음 ${d.summary.none}</span>` : ""} ${statusTag(d.grading.status)}
       ${R.length > 1 ? `<span class="tag ses">${last.round}차까지</span>` : ""}</div>
       ${d.summary.P ? `<p class="sub small" style="margin:6px 0 0">넘어감 ${d.summary.P}문항은 푼 만큼만 매기고 넘긴 문항이에요 — 다시 풀기 · 오답 · 정답률에 넣지 않아요. 나중에 풀어 오면 「1차 채점 수정」에서 매겨요.</p>` : ""}
       ${pz ? `<div class="row" style="margin-top:6px"><span class="sub small">${pz.kind === "retry" ? `${pz.round}차에서 ${pz.n}문항을 빼고 끝냈어요` : `${pz.n}문항을 넘어감으로 두고 끝냈어요`} (${shortWhen(pz.at)})</span>
@@ -1580,8 +1585,9 @@ async function studentDetail(id) {
    분석은 채팅에서 Claude가 한다: 「분석 맡기기」 묶음 → 결과 JSON → 「분석 결과 넣기」(미리 보기 → 넣기, 업무 기록 · 되돌리기 한 번에).
    포스트잇 = 지금 틀림인 문항(안 풀었지만 오답 포함). 색은 틀린 차: 1차 노랑 · 2차 주황 · 3차부터 빨강. 체크(넘어감)는 포스트잇이 아니다. */
 const PCOL = { 1: "y", 2: "o", 3: "r" };
-const RES_KO = { O: "O", X: "X", U: "안 풂", P: "넘어감" };
-const roundChips = (it) => it.rounds.map((r) => `<span class="tag ${r.result === "O" ? "o" : r.result === "X" ? "x" : "u"}" title="${md(r.day)} · ${r.graded_by === "claude" ? "Claude 채점" : "선생님 채점"}${r.mark ? " · 표시 " + esc(r.mark) : ""}${r.answer ? " · 학생 답 " + esc(r.answer) : ""}">${r.round}차 ${r.unsolved ? "안 풀고 X" : RES_KO[r.result]}${r.graded_by === "claude" ? "·C" : ""}</span>`).join(" ");
+const RES_KO = { O: "O", X: "X", U: "안 풂", P: "넘어감", T: "풀어 줌" };
+const roundChips = (it) => it.rounds.map((r) => { const tg = r.result === "O" && r.mark === "box";      // 번호에 박스 = 풀어 줌(맞음)
+  return `<span class="tag ${tg ? "taught" : r.result === "O" ? "o" : r.result === "X" ? "x" : "u"}" title="${md(r.day)} · ${r.graded_by === "claude" ? "Claude 채점" : "선생님 채점"}${r.mark ? " · 표시 " + esc(r.mark) : ""}${r.answer ? " · 학생 답 " + esc(r.answer) : ""}">${r.round}차 ${r.unsolved ? "안 풀고 X" : tg ? "풀어 줌" : RES_KO[r.result]}${r.graded_by === "claude" ? "·C" : ""}</span>`; }).join(" ");
 // 문항 그림 자리 보기 — 스캔본 그 쪽을 그려 box 만큼 잘라 보여 줌(box 가 없으면 쪽 전체)
 async function showCrop(crop, title) {
   if (!crop || !crop.scan_id) return toast("그림 자리가 없어요");
@@ -1659,18 +1665,18 @@ async function viewBookCopy(code) {
         <div class="bcans small">${it.answer ? `정답 <b>${esc(it.answer)}</b>${it.answer_src === "claude" ? ` <span class="sub" title="Claude가 푼 정답">C</span>` : ""}` : `<span class="muted">정답 모름</span>`}</div>
         <div class="bcrounds">${roundChips(it)}</div>
         <div class="bcact">${it.crop ? `<button class="btn ghost small" data-crop="${it.id}">그림</button>` : ""}
-          ${it.postit ? `<button class="btn small" data-mk="O" data-rd="${nxt}" title="${nxt}차에 맞았어요 — 포스트잇을 떼요">${nxt}차 O</button><button class="btn ghost small" data-mk="X" data-rd="${nxt}" title="${nxt}차에도 틀렸어요">${nxt}차 X</button>` : ""}</div></div>`;
+          ${it.postit ? `<button class="btn small" data-mk="O" data-rd="${nxt}" title="${nxt}차에 맞았어요 — 포스트잇을 떼요">${nxt}차 O</button><button class="btn ghost small" data-mk="T" data-rd="${nxt}" title="선생님이 풀어 줬어요(번호에 박스) — 맞음으로 세고 포스트잇을 떼요">풀어 줌</button><button class="btn ghost small" data-mk="X" data-rd="${nxt}" title="${nxt}차에도 틀렸어요">${nxt}차 X</button>` : ""}</div></div>`;
     }).join("")}</div>`).join("") : `<div class="empty">${mode === "postit" ? "포스트잇이 붙은 문항이 없어요 👏" : "아직 분석해 넣은 문항이 없어요 — 「분석 맡기기」로 시작해요"}</div>`;
     $$("[data-crop]", $("#bcList")).forEach((b) => (b.onclick = () => { const it = d.items.find((x) => x.id === +b.dataset.crop); showCrop(it.crop, `${it.page}쪽 ${it.label}`); }));
     $$("[data-mk]", $("#bcList")).forEach((b) => (b.onclick = async () => {
       const it = d.items.find((x) => x.id === +b.closest("[data-it]").dataset.it);
-      try { const r = await api("bookmarks", { copy: d.copy, item_id: it.id, round: +b.dataset.rd, result: b.dataset.mk }); undoToast(`${it.page}쪽 ${it.label} · ${b.dataset.rd}차 ${b.dataset.mk}`, r.events); route(); }
+      try { const r = await api("bookmarks", { copy: d.copy, item_id: it.id, round: +b.dataset.rd, result: b.dataset.mk }); undoToast(`${it.page}쪽 ${it.label} · ${b.dataset.rd}차 ${b.dataset.mk === "T" ? "풀어 줌" : b.dataset.mk}`, r.events); route(); }
       catch (e) { toast(e.message, 5000); }
     }));
   };
   view.innerHTML = `<h1>${esc(d.student.name)} · ${esc(d.title)} <a class="btn ghost small" href="#/tt/books/${d.master}">교재 화면</a></h1>
     ${d.ok ? "" : `<div class="card" style="background:#fffbeb;border-color:#fde68a"><b>교재 분석 표가 DB에 아직 없어요.</b> <span class="small">supabase/2026-11_tt_book_analysis.sql 을 넣어야 해요.</span></div>`}
-    <div class="card"><div class="row" style="justify-content:space-between"><div class="gsum"><span class="n">문항 ${d.items.length}</span><span class="n x">포스트잇 ${d.n_postits}</span>
+    <div class="card"><div class="row" style="justify-content:space-between"><div class="gsum"><span class="n">문항 ${d.items.length}</span><span class="n x">포스트잇 ${d.n_postits}</span>${d.n_taught ? `<span class="n t" title="선생님이 풀어 준 문제(번호에 박스) — 맞음으로 셈">풀어 줌 ${d.n_taught}</span>` : ""}
         ${d.questions.length ? `<a class="n" href="#/tt/ask" style="text-decoration:none">물어볼 것 ${d.questions.length}</a>` : ""}</div>
       <div class="row"><button class="btn" id="bcPack" title="아직 분석 안 한 스캔본 + 지금까지 기록 + 가이드">분석 맡기기${nUn ? ` (스캔본 ${nUn})` : ""}</button>
         <button class="btn ghost small" id="bcPackAll" title="분석한 것까지 모든 스캔본">모든 스캔본으로</button><button class="btn ghost" id="bcImport">분석 결과 넣기</button></div></div>
@@ -2926,7 +2932,7 @@ function evDetail(e) {
     case "book_add": case "book_edit": case "book_assign": case "book_unassign": case "book_delete": return esc(d.title || "");
     case "book_import": { const s0 = d.summary || {}; return `${d.undo_of ? "<b>되돌림</b> · " : ""}${esc(d.title || "")}${d.undo_of ? "" : ` · 새 결과 ${s0.marks_new || 0} · 바뀐 결과 ${s0.marks_changed || 0} · 확인할 것 ${s0.checks || 0}`}`; }
     case "book_mark": {
-      const one = (x) => (!x ? "없음" : `${x.round}차 ${x.unsolved ? "안 풀고 X" : RES_KO[x.result] || x.result}`);
+      const one = (x) => (!x ? "없음" : `${x.round}차 ${x.unsolved ? "안 풀고 X" : x.result === "O" && x.mark === "box" ? "풀어 줌" : RES_KO[x.result] || x.result}`);
       return `${d.undo_of ? "<b>되돌림</b> · " : ""}${esc(d.title || "")} · ${d.page ?? ""}쪽 ${esc(d.label || "")} · ${esc(!d.before ? "적음: " + one(d.after) : !d.after ? "지움: " + one(d.before) : one(d.before) + " → " + one(d.after))}`;
     }
     case "question": { const s0 = d.summary || {}; return `${d.undo_of ? "<b>되돌림</b> · " : ""}${esc(d.title || "")}${s0.page != null ? ` · ${s0.page}쪽 ${esc(s0.label || "")}` : ""} · ${esc({ fix: "내 실수 — 틀림으로", accept: "맞다고 인정", reason: "이유 적음", set: "골랐음", dismiss: "넘김" }[s0.action] || "")}`; }

@@ -82,13 +82,13 @@ async function report(blocks, footer) {
   return doc.save();
   });
 }
-const res = (r) => ({ O: "O", X: "X", U: "안 풂", P: "넘어감" }[r || ""] || "·");
+const res = (r) => ({ O: "O", X: "X", U: "안 풂", P: "넘어감", T: "풀어 줌" }[r || ""] || "·");
 
 export async function gradingPdf(d) {
   const nr = Math.max(1, ...d.rounds.map((r) => r.round));
   const head = ["번호", "정답", ...Array.from({ length: nr }, (_, k) => `${k + 1}차`), "최종", "학생 답", "유형", "정답률"];
   const rows = d.items.map((it) => {
-    const by = Object.fromEntries((it.rounds || []).map((x) => [x.round, x.result]));
+    const by = Object.fromEntries((it.rounds || []).map((x) => [x.round, x.result === "O" && x.taught ? "T" : x.result]));
     return [it.label, it.answer, ...Array.from({ length: nr }, (_, k) => res(by[k + 1])), res(it.final), it.given, it.tag, it.rate];
   });
   const hasP = (d.summary.P || 0) > 0 || d.rounds.some((r) => r.summary.P);
@@ -97,7 +97,8 @@ export async function gradingPdf(d) {
   return report([
     { h1: `채점 결과 — ${d.title}` },
     { meta: `${d.student} · 코드 ${d.code} · 처음 채점 ${String(d.started || "").slice(0, 10)} · 스캔본 ${d.scans}개` },
-    { box: `최종: 맞음 ${s.O} · 틀림 ${s.X} · 안 풂 ${s.U}${s.P ? ` · 넘어감 ${s.P}` : ""} · 안 매김 ${s.none} / ${s.total}문항` },
+    { box: `최종: 맞음 ${s.O}${s.T ? `(풀어 줌 ${s.T})` : ""} · 틀림 ${s.X} · 안 풂 ${s.U}${s.P ? ` · 넘어감 ${s.P}` : ""} · 안 매김 ${s.none} / ${s.total}문항` },
+    ...(s.T ? [{ meta: "풀어 줌 = 선생님이 풀어 준 문제(번호에 박스) — 맞음으로 셈" }] : []),
     ...(s.P ? [{ meta: "넘어감 = 푼 만큼만 매기고 넘긴 문항(학습 계획상 풀지 않음 — 틀림 · 안 풂으로 세지 않음)" }] : []),
     { h2: "차수별" }, { table: { head: ["차", "종류", "문항", "맞음", "틀림", "안 풂", ...(hasP ? ["넘어감"] : []), "안 매김", "날짜"], rows: rs } },
     { h2: "문항별" }, { table: { head, rows, left: [head.length - 2] } },

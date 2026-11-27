@@ -238,7 +238,7 @@ export async function exportAnalysis(b, ctx) {
   const root = `${ctx.todayStr()} 분석용 A${stampNow()}`;
   const files = [], table = [], data = [], done = new Set();
   let nScans = 0;
-  const KO = { O: "맞음", X: "틀림", U: "안 풂", P: "넘어감" };
+  const KO = { O: "맞음", X: "틀림", U: "안 풂", P: "넘어감", T: "풀어 줌(맞음)" };
   for (const g of gs) {
     const p = pm.get(g.print_id), st = sm.get(g.student_id) || { name: "?" };
     const d = await ctx.gradingDetail(g.id);
@@ -266,24 +266,26 @@ export async function exportAnalysis(b, ctx) {
     for (const it of d.items) {
       const m = it.mark || {};
       const rr = (it.rounds || []).filter((x) => x.result);
-      const by = Object.fromEntries(rr.map((x) => [x.round, x.result]));
+      const by = Object.fromEntries(rr.map((x) => [x.round, x.result === "O" && x.taught ? "T" : x.result]));
+      const fin = m.result === "O" && m.taught ? "T" : m.result;
       const row = { 학생: st.name, 학년: st.grade || "", 코드: fmtCode(p.code), 프린트: p.title, 학교급: p.level || "", 번호: it.label || String(it.seq), 객관식: it.choice ? "예" : "",
-        정답: it.answer || (it.answer_png ? "(그림)" : ""), "학생 답": m.answer || "", 결과: KO[m.result] || "안 매김", "1차": KO[by[1]] || "", "2차": KO[by[2]] || "", "3차": KO[by[3]] || "",
-        차수별: rr.map((x) => `${x.round}차 ${x.result}`).join(" → "), "최종 차": m.round || "", 회차: m.session_no || "", "매긴 때": String(m.at || "").slice(0, 16),
+        정답: it.answer || (it.answer_png ? "(그림)" : ""), "학생 답": m.answer || "", 결과: KO[fin] || "안 매김", "1차": KO[by[1]] || "", "2차": KO[by[2]] || "", "3차": KO[by[3]] || "",
+        차수별: rr.map((x) => `${x.round}차 ${x.result === "O" && x.taught ? "풀어 줌" : x.result}`).join(" → "), "최종 차": m.round || "", 회차: m.session_no || "", "매긴 때": String(m.at || "").slice(0, 16),
         유형: it.tag || it.topic || "", 정답률: it.rate || "", "문항 그림": it.png ? `프린트/${pdir}/문항/${pad3(it.seq)}.png` : "" };
       table.push(row);
-      gItems.push({ seq: it.seq, label: row.번호, choice: !!it.choice, key: row.정답, given: m.answer || "", result: m.result || "", rounds: rr, session: m.session_no || null, tag: row.유형, rate: row.정답률 });
+      gItems.push({ seq: it.seq, label: row.번호, choice: !!it.choice, key: row.정답, given: m.answer || "", result: fin || "", rounds: rr, session: m.session_no || null, tag: row.유형, rate: row.정답률 });
     }
     const s = d.summary;
     data.push({ student: st.name, code: fmtCode(p.code), title: p.title, status: g.status, started: g.created_at, updated: g.updated_at, sessions: d.sessions, summary: s, scans: scanNames, items: gItems });
     const nr = Math.max(1, ...gItems.flatMap((gi) => gi.rounds.map((x) => x.round)));
-    let md = `# ${st.name} · ${p.title} (${fmtCode(p.code)})\n\n- 결과: 맞음 ${s.O} · 틀림 ${s.X} · 안 풂 ${s.U}${s.P ? ` · 넘어감 ${s.P}(푼 만큼만 매기고 넘긴 문항 — 틀림 · 안 풂이 아님)` : ""} · 안 매김 ${s.none} / ${s.total}문항\n`;
+    let md = `# ${st.name} · ${p.title} (${fmtCode(p.code)})\n\n- 결과: 맞음 ${s.O}${s.T ? `(풀어 줌 ${s.T} — 선생님이 풀어 준 문제)` : ""} · 틀림 ${s.X} · 안 풂 ${s.U}${s.P ? ` · 넘어감 ${s.P}(푼 만큼만 매기고 넘긴 문항 — 틀림 · 안 풂이 아님)` : ""} · 안 매김 ${s.none} / ${s.total}문항\n`;
     md += `- 채점: ${nr}차까지 · 회차 ${d.sessions.length} (2차·3차 = 틀리거나 안 푼 문항을 다시 푼 것)\n`;
     md += `- 스캔본 ${d.scans.length}개${d.scans.length ? `: ${whenLine} — 파일 이름 끝 \`_1차\` · \`_2차\` · \`_차수모름\`` : ""}\n\n`;
     md += `| 번호 | 정답 | 학생 답 | ${Array.from({ length: nr }, (_, k) => `${k + 1}차`).join(" | ")} | 최종 |\n|${"---|".repeat(nr + 4)}\n`;
     for (const gi of gItems) {
-      const by = Object.fromEntries(gi.rounds.map((x) => [x.round, x.result]));
-      md += `| ${gi.label} | ${gi.choice ? CIRC[gi.key] || gi.key : gi.key} | ${gi.given} | ${Array.from({ length: nr }, (_, k) => ({ O: "O", X: "X", U: "안 풂", P: "넘어감" }[by[k + 1]] || "")).join(" | ")} | ${{ O: "O", X: "X", U: "안 풂", P: "넘어감" }[gi.result] || "-"} |\n`;
+      const by = Object.fromEntries(gi.rounds.map((x) => [x.round, x.result === "O" && x.taught ? "T" : x.result]));
+      const L = { O: "O", X: "X", U: "안 풂", P: "넘어감", T: "풀어 줌" };
+      md += `| ${gi.label} | ${gi.choice ? CIRC[gi.key] || gi.key : gi.key} | ${gi.given} | ${Array.from({ length: nr }, (_, k) => L[by[k + 1]] || "").join(" | ")} | ${L[gi.result] || "-"} |\n`;
     }
     files.push({ name: `${sd}/채점.md`, data: enc(md) });
   }

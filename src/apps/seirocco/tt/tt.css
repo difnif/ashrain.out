@@ -310,3 +310,10 @@
 .tt-root .tag.pass{background:#e2e8f0;color:#334155}
 .tt-root .gsum .n.p{color:#475569}
 .tt-root .orow.P{background:#f8fafc;border-color:#cbd5e1}
+/* 풀어 줌(번호에 박스 — 맞음으로 셈) */
+.tt-root .marks button.mt{font-size:13px;font-weight:700}
+.tt-root .marks button.mt.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.tt-root .item.T{border-color:#93c5fd;background:#eff6ff}
+.tt-root .tag.taught{background:#dbeafe;color:#1e40af}
+.tt-root .gsum .n.t{color:#1d4ed8}
+.tt-root .orow.T{background:#eff6ff;border-color:#93c5fd}

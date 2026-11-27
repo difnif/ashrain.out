@@ -17,11 +17,14 @@ export const todayStr = () => {
 export const normName = (s) => String(s || "").replace(/\s+/g, " ").trim();
 
 // 결과: O 맞음 · X 틀림 · U 안 풂 · P 넘어감(푼 만큼만 매기고 넘긴 문항 — 다시 풀기 · 오답 · 정답률에 넣지 않음) · none 안 매김
+// T = 맞음 중 선생님이 풀어 준 문제(종이에는 번호에 박스, 기록은 O + taught) — O에 들어 있고 따로도 셈
 export function summarize(marksOrItems) {
-  const s = { O: 0, X: 0, U: 0, P: 0, none: 0 };
+  const s = { O: 0, X: 0, U: 0, P: 0, T: 0, none: 0 };
   for (const it of marksOrItems) {
-    const r = (it && it.mark ? it.mark.result : it && it.result) || "";
+    const mk = it && it.mark ? it.mark : it;
+    const r = (mk && mk.result) || "";
     s[["O", "X", "U", "P"].includes(r) ? r : "none"]++;
+    if (r === "O" && mk.taught) s.T++;
   }
   s.total = marksOrItems.length;
   return s;

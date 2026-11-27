@@ -91,3 +91,13 @@ test("넘어감(P) — 셈에서 따로, 다시 풀 문항(n_retry)에 넣지 �
   assert.deepEqual([st.summary.O, st.summary.X, st.summary.P, st.summary.none], [2, 1, 1, 0]);
   assert.equal(st.n_retry, 1);                                // 넘어감은 다시 풀 문항이 아님
 });
+
+test("풀어 줌(T) — 맞음(O)에 들어가고 따로도 셈, 다시 풀 문항이 아님", async () => {
+  const { summarize, gradingStats } = await import("../src/apps/seirocco/tt/logic.js");
+  const s = summarize([{ result: "O", taught: true }, { result: "O" }, { result: "X" }, { mark: { result: "O", taught: true } }]);
+  assert.deepEqual([s.O, s.T, s.X, s.none, s.total], [3, 2, 1, 0, 4]);
+  const sessions = [{ no: 1, round: 1, kind: "solve" }];
+  const marks = [{ id: 1, seq: 1, result: "O", taught: true, session_no: 1 }, { id: 2, seq: 2, result: "X", session_no: 1 }, { id: 3, seq: 2, result: "O", taught: true, session_no: 1 }];
+  const st = gradingStats(marks, sessions, 2);
+  assert.deepEqual([st.summary.O, st.summary.T, st.summary.X, st.n_retry], [2, 2, 0, 0]);
+});
