@@ -400,18 +400,15 @@ export default function AdminConcepts() {
   }
 
   // 기본 제공 초등 개념(public/concepts/elem — elemgen/ 생성기) — 아직 등록되지 않은 id 만 새로 등록한다(이미 있는 개념은 고친 내용을 지키려고 덮어쓰지 않음)
+  // 관리자가 앱을 열 때도 셸이 같은 함수를 한 번 돌린다(lib/elemSeed.js) — 이 단추는 지금 바로 다시 맞출 때
   async function importBundled() {
     setErr(""); setMsg("");
     try {
-      const idx = await fetch("/concepts/elem/index.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null));
-      if (!idx?.units?.length) { setErr("기본 제공 초등 개념 목록(/concepts/elem/index.json)을 찾지 못했어요."); return; }
-      const packs = await Promise.all(idx.units.map((u) =>
-        fetch(`/concepts/elem/${u}.json`, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : []))));
-      const all = packs.flat();
-      const have = new Set(list.map((c) => c.id));
-      const fresh = all.filter((c) => c && !have.has(c.id));
-      if (!fresh.length) { setMsg(`기본 제공 초등 개념 ${all.length}개가 모두 이미 등록되어 있어요.`); return; }
-      await saveItems(fresh);
+      const { seedBundledElem } = await import("../lib/elemSeed.js");
+      const r = await seedBundledElem({ force: true });
+      if (!r.total) { setErr("기본 제공 초등 개념 목록(/concepts/elem/index.json)을 찾지 못했어요."); return; }
+      setMsg(r.added ? `기본 제공 초등 개념 ${r.added}개를 새로 등록했어요 (전체 ${r.total}개).` : `기본 제공 초등 개념 ${r.total}개가 모두 이미 등록되어 있어요.`);
+      load();
     } catch (e) {
       setErr("기본 제공 초등 개념을 불러오지 못했어요: " + (e?.message || e));
     }

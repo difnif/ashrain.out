@@ -9,6 +9,7 @@ import ReviewMode from "./ReviewMode";
 import FeatureBar, { FbAct } from "./FeatureBar";
 import { getRecentConcepts, recentIds, pushRecentConcept } from "../lib/review";
 import { avForBlock, avMarker } from "../lib/conceptAv";
+import { CONCEPT_UNIT_NAMES } from "../lib/items";
 
 // 움직이는 예시(해설 액자와 같은 판서 재생기) — 예시가 붙은 단락이 있을 때만 그림 엔진을 받는다
 const ConceptAv = lazy(() => import("./ConceptAv"));
@@ -490,7 +491,7 @@ export default function ConceptViewer({ conceptId: rawId, theme = "light" }) {
   };
   return (
     <FigModeContext.Provider value={figMode}>
-    <FeatureBar theme={theme} title={concept.title} sub={concept.unit_id.toUpperCase()} back="#/study/concept"
+    <FeatureBar theme={theme} title={concept.title} sub={CONCEPT_UNIT_NAMES[concept.unit_id] || concept.unit_id.toUpperCase()} back="#/study/concept"
       actions={<FbAct pri={!review} onClick={() => setReview((v) => !v)} title="순서대로 읽고 퀴즈를 맞히면 Ⓓ 를 받아요">
         🔁 {review ? "복습 끄기" : "복습"}</FbAct>} />
     <div className={`cv-root cv-${theme}${review ? " cv-review" : ""}`}>
@@ -500,7 +501,7 @@ export default function ConceptViewer({ conceptId: rawId, theme = "light" }) {
           {concept.cover?.src && <img src={concept.cover.src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .45 }} />}
           <div className="cv-cover-body">
             <p className="cv-eyebrow">
-              <span className="cv-crumb" onClick={goHome}>{concept.unit_id.toUpperCase()}</span>
+              <span className="cv-crumb" onClick={goHome}>{CONCEPT_UNIT_NAMES[concept.unit_id] || concept.unit_id.toUpperCase()}</span>
               {" · "}
               <span className="cv-crumb" onClick={goHome}>개념 {String(concept.sort_order).padStart(2, "0")}</span>
             </p>

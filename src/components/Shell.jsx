@@ -69,6 +69,12 @@ let authCache = null;   // null 미확인 | true | false
 let roleCache = null;   // { isAdmin } | null
 let ddayCache;          // undefined 미조회 | null 없음 | { days, title }
 let ddayAt = 0;
+let elemSeeded = false; // 세션에 한 번 — 관리자가 앱을 열면 기본 제공 초등 개념 중 DB 에 없는 것을 넣는다(lib/elemSeed.js)
+function seedElemOnce() {
+  if (elemSeeded) return;
+  elemSeeded = true;
+  import("../lib/elemSeed.js").then((m) => m.seedBundledElem()).catch(() => { elemSeeded = false; });
+}
 
 /** 상단: 로고(모/강 토글 유지) · 베타 · D-day · 마이페이지 + 현재 탭의 서브탭 */
 export function ShellTop({ theme, hash }) {
@@ -87,6 +93,7 @@ export function ShellTop({ theme, hash }) {
         roleCache = { isAdmin: p?.role === "admin" };
         if (alive) setMe({ isAdmin: roleCache.isAdmin });
       }
+      if (roleCache?.isAdmin) seedElemOnce();
     });
     if (ddayCache === undefined || Date.now() - ddayAt > 10 * 60e3) {
       const today = new Date().toISOString().slice(0, 10);

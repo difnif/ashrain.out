@@ -15,6 +15,15 @@ export const UNIT_NAMES = {
 };
 export const UNIT_ORDER = Object.keys(UNIT_NAMES);
 
+/** 개념 목록용 학기 — 초등(초1-1 … 초6-2) 을 앞에 더한다. 문항 쪽(UNIT_NAMES · UNIT_ORDER)은 그대로 — 초등 문항은 아직 없다 */
+export const ELEM_UNIT_NAMES = Object.fromEntries(
+  [1, 2, 3, 4, 5, 6].flatMap((g) => [1, 2].map((s) => [`e${g}-${s}`, `초${g}-${s}`])));
+export const CONCEPT_UNIT_NAMES = { ...ELEM_UNIT_NAMES, ...UNIT_NAMES };
+export const CONCEPT_UNIT_ORDER = Object.keys(CONCEPT_UNIT_NAMES);
+/** 학기 id → 학교급 「초등 · 중등 · 고등」 */
+export const levelOfUnit = (u) => ({ e: "초등", m: "중등", h: "고등" })[String(u || "")[0]] || "중등";
+export const CONCEPT_LEVELS = ["초등", "중등", "고등"];
+
 function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
