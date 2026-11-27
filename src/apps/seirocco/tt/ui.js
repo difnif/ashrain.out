@@ -2,7 +2,7 @@
    라우트: #/tt/convert · #/tt/register · #/tt/grade[/코드[/학생id]] · #/tt/class · #/tt/students[/id] · #/tt/prints · #/tt/print/코드 · #/tt/log */
 import * as B from "./backend";
 import { importView, pcAutoSync } from "./importer";
-import { autoJudge, judge, TEMPLATES, parseProgress, parsePages, todayStr } from "./logic";
+import { autoJudge, judge, TEMPLATES, parseProgress, parsePages, todayStr, monthStart, addMonths, monthLabel, parseFee, fmtWon, fmtMan } from "./logic";
 import * as S from "./share";
 import { splitLabel, partLabel } from "./parts";
 
@@ -1435,13 +1435,19 @@ function bindClassCard(s, st) {
 }
 
 /* ───────────────────────── 4. 학생 */
-async function viewStudents(id) {
+async function viewStudents(id, arg) {
+  if (id === "month") return monthView(arg);
   if (id) return studentDetail(+id);
   const list = await api("students");
+  const curM = monthStart(todayStr());
+  const need = list.filter((s) => s.month && s.month.flag);
   view.innerHTML = `<h1>학생</h1>
+    ${list.length && list.every((s) => s.month === null) ? monthWarn : ""}
+    <div class="card"><div class="row"><a class="btn big" href="#/tt/students/month">${monthLabel(curM)} 재원 · 원비</a>
+      <span class="small">${need.length ? `<b class="warn-t">${monthLabel(curM)} 재원을 아직 안 적은 학생 ${need.length}명</b> <span class="sub">(노랑 · 빨강)</span>` : `${monthLabel(curM)} 재원을 다 적었어요`}</span></div></div>
     <div class="card"><h2>학생 추가</h2><div class="row"><textarea class="tin" id="sNew" placeholder="이름을 쭉 적어 주세요 (줄바꿈·쉼표로 구분)" style="min-height:44px;flex:1"></textarea><button class="btn" id="sAdd">추가</button></div></div>
-    <div class="card">${list.length ? `<table class="t"><tr><th>이름</th><th>학년</th><th>받은 프린트</th><th>마지막 출제</th><th>메모</th><th></th></tr>
-      ${list.map((s) => `<tr class="click" data-href="#/tt/students/${s.id}" style="${s.active ? "" : "opacity:.5"}"><td><b>${esc(s.name)}</b></td><td>${esc(s.grade)}</td><td>${s.n_prints}${s.n_books ? ` <span class="small muted">· 교재 ${s.n_books}</span>` : ""}</td>
+    <div class="card">${list.length ? `<table class="t"><tr><th>이름</th><th>학년</th><th>${monthLabel(curM)}</th><th>받은 프린트</th><th>마지막 출제</th><th>메모</th><th></th></tr>
+      ${list.map((s) => `<tr class="click${s.month && s.month.flag ? " mflag-" + s.month.flag : ""}" data-href="#/tt/students/${s.id}" style="${s.active ? "" : "opacity:.5"}"><td><b>${esc(s.name)}</b></td><td>${esc(s.grade)}</td><td>${monthTag(s.month, curM)}</td><td>${s.n_prints}${s.n_books ? ` <span class="small muted">· 교재 ${s.n_books}</span>` : ""}</td>
         <td class="sub small">${shortWhen(s.last_issued)}</td><td class="sub small">${esc(s.memo)}</td><td>${s.active ? "" : `<span class="tag">쉬는 중</span>`}</td></tr>`).join("")}</table>` : `<div class="empty">아직 학생이 없어요</div>`}</div>`;
   $("#sAdd").onclick = async () => {
     const names = splitNames($("#sNew").value);
@@ -1466,8 +1472,8 @@ async function studentDetail(id) {
       <label class="k">이름</label><input class="tin" id="eName" value="${esc(s.name)}">
       <label class="k">학년</label><input class="tin" id="eGrade" value="${esc(s.grade)}" placeholder="예: 중2">
       <label class="k">메모</label><input class="tin" id="eMemo" value="${esc(s.memo)}">
-      <label class="k">상태</label><div id="eActive"></div>
-    </div><div class="row" style="margin-top:10px"><button class="btn" id="eSave">저장</button></div></div>
+    </div><div class="row" style="margin-top:10px"><button class="btn" id="eSave">저장</button><span class="sub small">다니는지는 아래 「재원 · 원비」에서 달마다 적어요</span></div></div>
+    ${monthCard(d)}
     <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">오답 · 기록 받기</h2>
       <a class="btn" href="#/tt/wrong/s/${s.id}">오답 모아 출제${nWrongNow ? ` <span class="small" style="opacity:.8">(지금 틀린 ${nWrongNow}문항)</span>` : ""}</a></div>
       <div class="row" style="margin-top:10px"><span class="sub small">기간</span><input type="date" class="tin" id="dFrom" style="min-width:0"> ~ <input type="date" class="tin" id="dTo" style="min-width:0">
@@ -1498,10 +1504,9 @@ async function studentDetail(id) {
     <div class="card"><h2>수업 기록</h2>${Object.keys(recByDate).length ? `<table class="t"><tr><th>날짜</th>${Object.keys(KIND).map((k) => `<th>${KIND[k][0].replace(" 프린트", "").replace("오늘 ", "")}</th>`).join("")}</tr>
       ${Object.entries(recByDate).map(([dte, r]) => `<tr><td><b>${dte}</b></td>${Object.keys(KIND).map((k) => `<td class="small">${(r[k] || []).map((x) => esc(x.title)).join("<br>") || "<span class='muted'>-</span>"}</td>`).join("")}</tr>`).join("")}</table>
       <p class="sub small">고치려면 수업 기록 탭에서 그 날짜와 이 학생을 불러와 다시 확인하세요.</p>` : `<div class="empty">아직 없어요</div>`}</div>`;
-  let active = s.active;
-  seg($("#eActive"), [["1", "다니는 중"], ["0", "쉬는 중"]], String(s.active), (v) => (active = +v));
+  bindMonthCard(d);
   $("#eSave").onclick = async () => {
-    try { await api("students/" + id, { name: $("#eName").value, grade: $("#eGrade").value, memo: $("#eMemo").value, active }); toast("저장했어요"); route(); }
+    try { await api("students/" + id, { name: $("#eName").value, grade: $("#eGrade").value, memo: $("#eMemo").value }); toast("저장했어요"); route(); }
     catch (e) { toast(e.message.includes("UNIQUE") ? "같은 이름의 학생이 이미 있어요" : e.message); }
   };
   $$(".wrong img").forEach((im) => (im.onclick = () => zoom(im.src)));
@@ -1517,6 +1522,130 @@ async function studentDetail(id) {
   const per = () => { const q = new URLSearchParams(); if ($("#dFrom").value) q.set("from", $("#dFrom").value); if ($("#dTo").value) q.set("to", $("#dTo").value); return q.toString(); };
   $("#dPdf").onclick = () => openLink(`/dl/student/${id}.pdf?view=1&${per()}`);
   $("#dJson").onclick = () => openLink(`/dl/student/${id}.json?${per()}`, true);
+}
+
+/* ───────────────────────── 재원 · 원비 (#/tt/students/month[/YYYY-MM]) — 학생 · 달마다 다님 · 휴원 · 그만둠 + 원비, 매출 = 다님 원비 합.
+   선생님이 매월 직접 적는다. 이번 달을 안 적었으면 노랑, 지난달부터 비었으면 빨강. 적을 때마다 업무 기록(되돌리기). */
+const MST = { attend: "다님", pause: "휴원", quit: "그만둠" };
+const ymLabel = (m) => `${String(m).slice(0, 4)}년 ${+String(m).slice(5, 7)}월`;
+const monthWarn = `<div class="card" style="background:#fffbeb;border-color:#fde68a"><b>재원 · 원비 표가 DB에 아직 없어요.</b> <span class="small">적으려면 supabase/2026-11_tt_student_months.sql 을 넣어야 해요.</span></div>`;
+function monthTag(m, cur) {
+  if (!m) return `<span class="muted small">-</span>`;
+  if (m.status) return `<span class="tag ${m.status === "attend" ? "done" : m.status === "pause" ? "pause" : ""}">${MST[m.status]}</span>${m.status === "attend" && m.fee != null ? ` <span class="sub small">${fmtMan(m.fee)}</span>` : ""}`;
+  if (m.quit) return `<span class="tag" title="${monthLabel(m.last_month)}에 그만둠">그만둠 · ${monthLabel(m.last_month)}</span>`;
+  if (m.flag === "r") return `<span class="tag mflag r" title="이번 달과 지난달 재원을 안 적었어요">${m.last_month ? monthLabel(addMonths(m.last_month, 1)) + "부터 " : ""}안 적음</span>`;
+  if (m.flag === "y") return `<span class="tag mflag y" title="이번 달 재원을 안 적었어요">${monthLabel(cur)} 안 적음</span>`;
+  return `<span class="muted small">-</span>`;
+}
+const flagMsg = (m, cur) => (!m || !m.flag ? "" : m.flag === "r" ? `${m.last_month ? monthLabel(addMonths(m.last_month, 1)) + "부터 " : ""}재원을 안 적었어요 — ${monthLabel(cur)} 것을 적어 주세요` : `${monthLabel(cur)} 재원을 아직 안 적었어요`);
+const msegHtml = (v) => `<span class="seg mseg">${Object.entries(MST).map(([k, t]) => `<button type="button" data-v="${k}" class="${v === k ? "on" : ""}">${t}</button>`).join("")}</span>`;
+// 상태 고르기: 누르면 그것, 고른 것을 다시 누르면 비움(저장하면 그달 기록을 지움)
+function bindMseg(el, onChange) {
+  $$("button", el).forEach((b) => (b.onclick = () => {
+    const on = b.classList.contains("on");
+    $$("button", el).forEach((x) => x.classList.remove("on"));
+    if (!on) b.classList.add("on");
+    onChange(on ? "" : b.dataset.v);
+  }));
+}
+const msegVal = (el) => ($("button.on", el) || { dataset: { v: "" } }).dataset.v;
+async function monthView(m) {
+  const d = await api("months" + (m ? "?month=" + encodeURIComponent(m) : ""));
+  const cur = d.month, prevM = addMonths(cur, -1), nextM = addMonths(cur, 1), t = d.totals;
+  let showQuit = store.get("monthQuit", false);
+  const hiddenQuit = (s) => !s.row && s.quit;
+  const nNeed = d.students.filter((s) => s.flag).length;
+  view.innerHTML = `<h1>재원 · 원비 <span class="sub">${ymLabel(cur)}</span></h1>
+    ${d.ok ? "" : monthWarn}
+    <div class="card"><div class="row" style="justify-content:space-between">
+      <div class="row"><a class="btn ghost small" href="#/tt/students/month/${prevM.slice(0, 7)}">◀ ${monthLabel(prevM)}</a><b style="font-size:18px">${ymLabel(cur)}</b>
+        <a class="btn ghost small" href="#/tt/students/month/${nextM.slice(0, 7)}">${monthLabel(nextM)} ▶</a>${cur !== d.this_month ? `<a class="btn ghost small" href="#/tt/students/month">이번 달로</a>` : ""}</div>
+      <div class="gsum"><span class="n o">다님 ${t.attend}</span><span class="n">휴원 ${t.pause}</span><span class="n">그만둠 ${t.quit}</span>
+        <span class="n">매출 ${fmtWon(t.revenue)}</span>${t.no_fee ? `<span class="n x" title="다님인데 원비를 안 적은 학생">원비 안 적음 ${t.no_fee}</span>` : ""}</div></div>
+      ${nNeed ? `<p class="small warn-t" style="margin:8px 0 0"><b>${monthLabel(cur)} 재원을 아직 안 적은 학생 ${nNeed}명</b> — 노랑은 이번 달만, 빨강은 지난달부터 비었어요</p>` : ""}</div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">학생마다 <span class="sub small">다님 · 휴원 · 그만둠과 그달 원비(30만 · 300000)</span></h2>
+      <div class="row"><button class="btn ghost small" id="mCopy" title="이 달을 안 적은 학생을 지난달 상태 · 원비로 채워요(저장해야 들어가요)">안 적은 학생을 지난달과 같게</button>
+        <label class="small nowrap"><input type="checkbox" id="mQuit"${showQuit ? " checked" : ""}> 그만둔 학생도 보기</label></div></div>
+      <table class="t mtab" style="margin-top:8px"><tr><th>학생</th><th>지난달</th><th>${monthLabel(cur)}</th><th>원비</th><th>메모</th></tr>
+      ${d.students.map((s) => `<tr data-sid="${s.id}" data-q="${hiddenQuit(s) ? 1 : 0}" class="${s.flag ? "mflag-" + s.flag : ""}" data-is="${s.row ? s.row.status : ""}" data-if="${s.row && s.row.fee != null ? s.row.fee : ""}" data-in="${esc(s.row ? s.row.note : "")}"${hiddenQuit(s) && !showQuit ? " hidden" : ""}>
+        <td><a href="#/tt/students/${s.id}"><b>${esc(s.name)}</b></a>${s.grade ? ` <span class="sub small">${esc(s.grade)}</span>` : ""}${s.flag ? `<div>${monthTag(s, cur)}</div>` : ""}</td>
+        <td class="small">${s.prev ? `${MST[s.prev.status]}${s.prev.fee != null ? ` <span class="sub">${fmtMan(s.prev.fee)}</span>` : ""}` : `<span class="muted">-</span>`}</td>
+        <td>${msegHtml(s.row ? s.row.status : "")}</td>
+        <td><input class="tin fee" value="${s.row && s.row.fee != null ? s.row.fee.toLocaleString("ko-KR") : ""}" placeholder="${s.prev && s.prev.fee != null ? fmtMan(s.prev.fee) : "예: 30만"}" autocomplete="off"></td>
+        <td><input class="tin mnote" value="${esc(s.row ? s.row.note : "")}" placeholder="메모" autocomplete="off"></td></tr>`).join("")}</table>
+      <div class="row" style="margin-top:12px"><button class="btn big" id="mSave">저장</button><span class="sub small" id="mNote"></span></div></div>
+    <div class="card"><h2>달마다 <span class="sub small">매출 = 그달 「다님」 학생 원비의 합</span></h2><table class="t"><tr><th>달</th><th>다님</th><th>휴원</th><th>그만둠</th><th>매출</th><th>원비 안 적음</th></tr>
+      ${d.history.map((h) => `<tr class="click${h.month === cur ? " sel" : ""}" data-href="#/tt/students/month/${h.month.slice(0, 7)}"><td><b>${ymLabel(h.month)}</b></td><td>${h.attend}</td><td>${h.pause}</td><td>${h.quit}</td>
+        <td>${h.entered ? fmtWon(h.revenue) : `<span class="muted">-</span>`}</td><td>${h.no_fee || ""}</td></tr>`).join("")}</table></div>`;
+  bindRows(view);
+  const rows = () => $$("tr[data-sid]", view);
+  const feeOk = (inp) => { const f = parseFee(inp.value); const bad = Number.isNaN(f) || (f != null && f > 100000000); inp.classList.toggle("bad", bad); return !bad; };
+  const changed = () => rows().map((tr) => {
+    const st = msegVal(tr), fee = $("input.fee", tr).value.trim(), note = $("input.mnote", tr).value.trim();
+    const f = parseFee(fee), f0 = tr.dataset.if === "" ? null : +tr.dataset.if;
+    if (st === tr.dataset.is && (st === "" || (f === f0 && note === tr.dataset.in))) return null;
+    return { sid: +tr.dataset.sid, status: st, fee, note };
+  }).filter(Boolean);
+  const note = () => { const n = changed().length; $("#mNote").textContent = n ? `바꾼 학생 ${n}명` : ""; };
+  rows().forEach((tr) => {
+    const s = d.students.find((x) => x.id === +tr.dataset.sid);
+    bindMseg($(".mseg", tr), (v) => {
+      const fi = $("input.fee", tr);
+      if (v === "attend" && !fi.value.trim() && s.prev && s.prev.fee != null) fi.value = s.prev.fee.toLocaleString("ko-KR");      // 다님을 고르면 지난달 원비를 채워 줌
+      note();
+    });
+    $("input.fee", tr).oninput = (e) => { feeOk(e.target); note(); };
+    $("input.mnote", tr).oninput = note;
+  });
+  $("#mQuit").onchange = (e) => { showQuit = e.target.checked; store.set("monthQuit", showQuit); rows().forEach((tr) => { if (tr.dataset.q === "1") tr.hidden = !showQuit; }); };
+  $("#mCopy").onclick = () => {
+    let n = 0;
+    rows().forEach((tr) => {
+      const s = d.students.find((x) => x.id === +tr.dataset.sid);
+      if (tr.hidden || msegVal(tr) || !s.prev) return;
+      $$(".mseg button", tr).forEach((b) => b.classList.toggle("on", b.dataset.v === s.prev.status));
+      if (s.prev.fee != null && !$("input.fee", tr).value.trim()) $("input.fee", tr).value = s.prev.fee.toLocaleString("ko-KR");
+      n++;
+    });
+    note();
+    toast(n ? `${n}명을 지난달과 같게 채웠어요 — 「저장」을 눌러야 들어가요` : "지난달 기록이 있는 안 적은 학생이 없어요", 4000);
+  };
+  $("#mSave").onclick = async () => {
+    const bad = $$("input.fee", view).filter((x) => !feeOk(x));
+    if (bad.length) { bad[0].focus(); return toast("원비는 300000 · 30만 처럼 적어 주세요", 4000); }
+    const list = changed();
+    if (!list.length) return toast("바꾼 것이 없어요");
+    $("#mSave").disabled = true;
+    try { const r = await api("months", { month: cur, rows: list }); undoToast(`${r.n || list.length}명 저장했어요`, r.events); route(); }
+    catch (e) { toast(e.message, 5000); $("#mSave").disabled = false; }
+  };
+}
+// 학생 화면의 재원 · 원비 카드 — 이번 달 상태 · 원비를 바로 적고, 지난 달들을 보여 줌
+function monthCard(d) {
+  if (d.months_ok === false) return monthWarn;
+  const m = d.month || {}, cur = d.this_month, now = (d.months || []).find((r) => r.month === cur) || null, prev = d.month_prev;
+  const msg = flagMsg(m, cur);
+  return `<div class="card mcard${m.flag ? " mflag-" + m.flag : ""}"><div class="row" style="justify-content:space-between"><h2 style="margin:0">재원 · 원비</h2><a class="btn ghost small" href="#/tt/students/month">달마다 보기 · 매출</a></div>
+    ${msg ? `<p class="small" style="margin:6px 0 0"><b>${esc(msg)}</b></p>` : ""}
+    <div class="row" style="margin-top:8px"><b>${monthLabel(cur)}</b><span id="smSeg">${msegHtml(now ? now.status : "")}</span>
+      <input class="tin fee" id="smFee" value="${now && now.fee != null ? now.fee.toLocaleString("ko-KR") : ""}" placeholder="${prev && prev.fee != null ? "지난달 " + fmtMan(prev.fee) : "원비 (예: 30만)"}" autocomplete="off" style="width:150px;min-width:0">
+      <input class="tin" id="smNote" value="${esc(now ? now.note : "")}" placeholder="메모" autocomplete="off" style="width:170px;min-width:0">
+      <button class="btn" id="smSave">저장</button></div>
+    ${(d.months || []).length ? `<div class="chips" style="margin-top:8px">${d.months.slice(0, 12).map((r) => `<span class="chip mchip ${r.status}" title="${esc(r.note || "")}">${monthLabel(r.month)} ${MST[r.status]}${r.fee != null ? " · " + fmtMan(r.fee) : ""}</span>`).join("")}</div>` : ""}</div>`;
+}
+function bindMonthCard(d) {
+  if (!$("#smSave")) return;
+  const s = d.student, prev = d.month_prev;
+  bindMseg($("#smSeg .mseg"), (v) => { if (v === "attend" && !$("#smFee").value.trim() && prev && prev.fee != null) $("#smFee").value = prev.fee.toLocaleString("ko-KR"); });
+  $("#smFee").oninput = (e) => { const f = parseFee(e.target.value); e.target.classList.toggle("bad", Number.isNaN(f)); };
+  $("#smSave").onclick = async () => {
+    const f = parseFee($("#smFee").value);
+    if (Number.isNaN(f)) return toast("원비는 300000 · 30만 처럼 적어 주세요", 4000);
+    try {
+      const r = await api("months", { month: d.this_month, rows: [{ sid: s.id, status: msegVal($("#smSeg")), fee: $("#smFee").value, note: $("#smNote").value }] });
+      undoToast(r.n ? `${monthLabel(d.this_month)} 재원을 적었어요` : "바뀐 것이 없어요", r.events); route();
+    } catch (e) { toast(e.message, 5000); }
+  };
 }
 
 /* ───────────────────────── 교재 (#/tt/books · #/tt/books/<교재 코드> · #/tt/books/day[/날짜])
@@ -2268,7 +2397,7 @@ const EV = {
   grading_reopen: "채점 다시 엶", retry_start: "다음 차 채점 시작", round_delete: "마지막 차 지움", grading_delete: "채점 기록 지움",
   print_purge: "프린트 완전히 지움", print_restore: "프린트 되살림", wrongset_make: "오답 프린트 만듦", library_register: "보관함에서 등록",
   library_import: "보관함에 옮겨 옴", pc_import: "PC 자료 옮겨 옴",
-  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움", book_log: "교재 기록",
+  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움", book_log: "교재 기록", student_month: "재원 · 원비",
 };
 function evDetail(e) {
   const d = e.detail || {};
@@ -2282,6 +2411,11 @@ function evDetail(e) {
       return [esc(d.name || ""), "round" in d ? esc(whenText(d.round)) : "", d.pages ? `${d.pages}쪽` : ""].filter(Boolean).join(" · ");
     case "grading_start": case "student_add": return "";
     case "book_add": case "book_edit": case "book_assign": case "book_unassign": case "book_delete": return esc(d.title || "");
+    case "student_month": {
+      const one = (x) => (!x ? "없음" : `${MST[x.status] || x.status}${x.fee != null ? " " + fmtMan(x.fee) : ""}${x.note ? ` (${x.note})` : ""}`);
+      const what = !d.before ? `적음: ${one(d.after)}` : !d.after ? `지움: ${one(d.before)}` : `${one(d.before)} → ${one(d.after)}`;
+      return `${d.undo_of ? "<b>되돌림</b> · " : ""}${d.month ? monthLabel(d.month) + " · " : ""}${esc(what)}`;
+    }
     case "book_log": {
       const one = (x) => (!x ? "없음" : x.kind === "solved" ? `${x.pages ? x.pages + "쪽 · " : ""}${x.page_to}쪽까지` : x.kind === "graded" ? `${x.round ? x.round + "차 " : ""}${x.pages ? x.pages + "쪽" : "쪽 안 적음"}` : `${md(x.day)} 줌`);
       const k = { solved: "진도", graded: "채점한 날", solution: "해설지" }[d.kind] || d.kind;
@@ -2297,8 +2431,8 @@ function evDetail(e) {
 async function viewLog() {
   const ev = await api("events?limit=1000");
   let f = store.get("logFilter", "all");
-  const groups = { all: "전체", convert: "변환·등록", grading: "채점", class: "수업 기록", book: "교재", etc: "기타" };
-  const grp = (k) => (k === "convert" || k === "register" ? "convert" : k.startsWith("grading") ? "grading" : k.startsWith("class") ? "class" : k.startsWith("book") ? "book" : "etc");
+  const groups = { all: "전체", convert: "변환·등록", grading: "채점", class: "수업 기록", book: "교재", student: "학생 · 재원", etc: "기타" };
+  const grp = (k) => (k === "convert" || k === "register" ? "convert" : k.startsWith("grading") ? "grading" : k.startsWith("class") ? "class" : k.startsWith("book") ? "book" : k.startsWith("student") ? "student" : "etc");
   const week = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
   const recent = ev.filter((e) => day(e.at) >= week);
   const cnt = (pred) => recent.filter(pred).length;
@@ -2310,7 +2444,7 @@ async function viewLog() {
       <span class="n">덜 풂 ${cnt((e) => e.kind === "grading_close" && e.detail.reason === "unsolved")}</span>
       <span class="n">수업 기록 ${new Set(recent.filter((e) => e.kind.startsWith("class_")).map((e) => e.student_id + ":" + e.detail.date)).size}</span>
       <span class="n">학생 ${new Set(recent.filter((e) => e.student_id).map((e) => e.student_id)).size}명</span></div>
-      <p class="sub small" style="margin-bottom:0">입력 · 활동이 모두 여기에 남아요. 잘못 넣은 교재 기록은 줄 끝 「되돌리기」로 되돌려요(그 뒤에 또 바뀌었으면 교재 화면에서 고쳐 주세요).</p></div>
+      <p class="sub small" style="margin-bottom:0">입력 · 활동이 모두 여기에 남아요. 잘못 넣은 교재 기록 · 재원 · 원비는 줄 끝 「되돌리기」로 되돌려요(그 뒤에 또 바뀌었으면 그 화면에서 고쳐 주세요).</p></div>
     <div class="card"><div id="lf"></div><div id="lt" style="margin-top:10px"></div></div>`;
   const draw = () => {
     const list = ev.filter((e) => f === "all" || grp(e.kind) === f).slice(0, 400);

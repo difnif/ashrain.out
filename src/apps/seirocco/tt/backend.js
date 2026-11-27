@@ -5,6 +5,7 @@ import {
   fmtCode, normCode, newCode, nowIso, todayStr, normName, summarize, currentMarks, roundMarks, roundsInfo, gradingStats,
   everWrong, autoJudge, guessLevel, safeName, cleanName, stripNames,
   localDay, daysBetween, parsePages, fmtPages, mergeRanges, parseProgress, uncheckedPages,
+  monthStart, addMonths, parseFee, monthFlag, monthTotals,
 } from "./logic";
 import { groupProblems, relayout, partsFromAnswer, splitLabel, partLabel, baseHash } from "./parts";
 
@@ -229,7 +230,10 @@ async function studentDetail(sid) {
   const records = recs.map((r) => ({ date: r.day, kind: r.kind, code: apm.get(r.print_id)?.code || pm.get(r.print_id)?.code || "", title: apm.get(r.print_id)?.title || pm.get(r.print_id)?.title || "" }));
   const blogs = await bookLogs(books.map((b) => b.p.id));
   const bookRows = books.map((b) => ({ ...b.row, ...bookState({ x: b.p, g: b.g }, blogs, scans) }));
-  return { student: st, prints: out, books: bookRows, logs_ok: bookLogTable, repeat_wrong: rep, records };
+  const curM = monthStart(todayStr()), mrows = await monthRows(null, sid);
+  return { student: st, prints: out, books: bookRows, logs_ok: bookLogTable, repeat_wrong: rep, records,
+    month: mflagOut(monthFlag(st, mrows.filter((r) => r.month <= curM), curM)), months: mrows.slice().reverse().slice(0, 24).map(snapMonth), months_ok: monthTable,
+    month_prev: snapMonth(mrows.find((r) => r.month === addMonths(curM, -1)) || null), this_month: curM };
 }
 
 // ── 교재 — 프린트 표(tt_prints)에 options.textbook 으로 둔다(DB는 그대로).
@@ -383,28 +387,106 @@ async function bookLogDelete(id) {
     return { ok: true, events: await bookLogEvent(c, r, null) };
   } catch (e) { logErr(e); }
 }
-// 되돌리기 — 지금 모습이 그 기록의 「후」와 같을 때만 「전」으로 돌린다(그 뒤에 또 바뀌었으면 막음)
+// ── 재원 · 원비 (supabase/2026-11_tt_student_months.sql) — 학생 · 달마다 다님 · 휴원 · 그만둠 + 그달 원비. 매출 = 그달 다님 학생 원비 합
+let monthTable = true;
+const MONTH_SQL = "재원 · 원비 표가 DB에 아직 없어요 — supabase/2026-11_tt_student_months.sql 을 넣어야 적을 수 있어요";
+const noMonthTable = (e) => { const t = String((e && e.message) || e || ""); return /tt_student_months/.test(t) && /does not exist|schema cache|Could not find/i.test(t); };
+async function monthRows(to = null, sid = null) {
+  if (!monthTable) return [];
+  try {
+    return await all(() => { let x = T("tt_student_months").select("*").order("month").order("id"); if (to) x = x.lte("month", to); if (sid) x = x.eq("student_id", sid); return x; });
+  } catch (e) { if (noMonthTable(e)) { monthTable = false; return []; } throw e; }
+}
+const snapMonth = (r) => (r ? { id: r.id, month: r.month, status: r.status, fee: r.fee ?? null, note: r.note || "" } : null);
+const sameMonth = (a, b) => !!a && !!b && a.month === b.month && a.status === b.status && (a.fee ?? null) === (b.fee ?? null) && (a.note || "") === (b.note || "");
+const mflagOut = (f) => ({ status: f.status, fee: f.fee ?? null, flag: f.flag, quit: !!f.quit, last_month: f.last ? f.last.month : null, last_status: f.last ? f.last.status : null, last_fee: f.last ? f.last.fee ?? null : null });
+// 재원으로 학생의 「다니는 중 · 쉬는 중」(active — 학생 고르기 칩 등에 쓰임)을 맞춘다: 이번 달까지의 마지막 기록이 다님이면 다니는 중
+async function syncActive(sid) {
+  const r = must(await T("tt_student_months").select("status").eq("student_id", sid).lte("month", monthStart(todayStr())).order("month", { ascending: false }).limit(1))[0];
+  if (r) must(await T("tt_students").update({ active: r.status === "attend", updated_at: nowIso() }).eq("id", sid));
+}
+async function monthsView(m) {
+  const cur = monthStart(/^\d{4}-\d{2}/.test(m || "") ? m : todayStr());
+  const sts = must(await T("tt_students").select("id,name,grade,active").order("name"));
+  const rows = await monthRows(cur);
+  const prevM = addMonths(cur, -1);
+  const students = sts.map((st) => {
+    const row = rows.find((r) => r.student_id === st.id && r.month === cur) || null;
+    const prev = rows.find((r) => r.student_id === st.id && r.month === prevM) || null;
+    return { id: st.id, name: st.name, grade: st.grade || "", active: st.active !== false, row: snapMonth(row), prev: snapMonth(prev), ...mflagOut(monthFlag(st, rows, cur)) };
+  });
+  return { month: cur, this_month: monthStart(todayStr()), ok: monthTable, students, totals: monthTotals(rows, cur),
+    history: Array.from({ length: 12 }, (_, i) => monthTotals(rows, addMonths(cur, -i))) };
+}
+// 달 재원 · 원비 적기 — 바뀐 줄만. 상태를 비우면 그달 기록을 지움. 줄마다 업무 기록(되돌리기)
+async function monthsSave(b) {
+  if (!monthTable) throw new Error(MONTH_SQL);
+  const cur = monthStart(b.month);
+  if (!/^\d{4}-\d{2}-01$/.test(cur)) throw new Error("달을 골라 주세요");
+  const sm = await studentsMap((b.rows || []).map((r) => Number(r.sid)));
+  const plan = (b.rows || []).map((r) => {
+    const st = sm.get(Number(r.sid));
+    const fee = parseFee(r.fee);
+    if (st && (Number.isNaN(fee) || (fee != null && fee > 100000000))) throw new Error(`${st.name}: 원비는 300000 · 30만 처럼 적어 주세요`);
+    if (r.status && !["attend", "pause", "quit"].includes(r.status)) throw new Error("재원 상태를 골라 주세요");
+    return { st, status: r.status || "", fee, note: "note" in r ? String(r.note || "").trim().slice(0, 300) : null };
+  }).filter((r) => r.st);
+  const thisM = monthStart(todayStr()), events = [];
+  try {
+    for (const r of plan) {
+      const sid = r.st.id;
+      const old = must(await T("tt_student_months").select("*").eq("student_id", sid).eq("month", cur).limit(1))[0] || null;
+      let saved = null;
+      if (!r.status) { if (!old) continue; must(await T("tt_student_months").delete().eq("id", old.id)); }
+      else {
+        const row = { status: r.status, fee: r.fee, note: r.note ?? (old ? old.note : "") };
+        if (old && sameMonth(old, { ...old, ...row })) continue;
+        saved = old ? must(await T("tt_student_months").update({ ...row, updated_at: nowIso() }).eq("id", old.id).select("*").single())
+          : must(await T("tt_student_months").insert({ student_id: sid, month: cur, ...row }).select("*").single());
+      }
+      if (cur <= thisM) await syncActive(sid);
+      const id = await logRow("student_month", sid, null, { table: "tt_student_months", row_id: (saved || old).id, name: r.st.name, month: cur, before: snapMonth(old), after: snapMonth(saved) });
+      if (id) events.push(id);
+    }
+  } catch (e) { if (noMonthTable(e)) { monthTable = false; throw new Error(MONTH_SQL); } throw e; }
+  return { ok: true, n: events.length, events };
+}
+
+// ── 되돌리기 — 지금 모습이 그 기록의 「후」와 같을 때만 「전」으로 돌린다(그 뒤에 또 바뀌었으면 막음). 되돌릴 수 있는 표:
+const UNDO = {
+  tt_book_logs: {
+    fields: (x) => ({ day: x.day, page_to: x.page_to ?? null, pages: x.pages || "", round: x.round ?? null, note: x.note || "" }),
+    keys: (ev, x) => ({ print_id: ev.print_id, student_id: ev.student_id, kind: x.kind }), same: sameLog, snap: snapLog, missing: noLogTable, sql: LOG_SQL, where: "교재 화면",
+  },
+  tt_student_months: {
+    fields: (x) => ({ month: x.month, status: x.status, fee: x.fee ?? null, note: x.note || "" }),
+    keys: (ev) => ({ student_id: ev.student_id }), same: sameMonth, snap: snapMonth, missing: noMonthTable, sql: MONTH_SQL, where: "재원 · 원비 화면",
+    after: (ev) => syncActive(ev.student_id),
+  },
+};
 async function undoEvent(id) {
   const ev = must(await T("tt_events").select("*").eq("id", id).maybeSingle());
   if (!ev) throw new Error("그런 기록이 없어요");
   const d = ev.detail || {};
   if (d.undone_by) throw new Error("이미 되돌린 기록이에요");
-  if (d.table !== "tt_book_logs") throw new Error("이 기록은 되돌릴 수 없어요");
+  const U = UNDO[d.table];
+  if (!U) throw new Error("이 기록은 되돌릴 수 없어요");
   try {
-    const cur = d.row_id ? must(await T("tt_book_logs").select("*").eq("id", d.row_id).maybeSingle()) : null;
-    if (d.after ? !sameLog(cur, d.after) : !!cur) throw new Error("그 뒤에 또 바뀌어서 되돌릴 수 없어요 — 교재 화면에서 고쳐 주세요");
-    const fields = (x) => ({ day: x.day, page_to: x.page_to ?? null, pages: x.pages || "", round: x.round ?? null, note: x.note || "" });
+    const cur = d.row_id ? must(await T(d.table).select("*").eq("id", d.row_id).maybeSingle()) : null;
+    if (d.after ? !U.same(cur, d.after) : !!cur) throw new Error(`그 뒤에 또 바뀌어서 되돌릴 수 없어요 — ${U.where}에서 고쳐 주세요`);
     let restored = null;
-    if (!d.before) must(await T("tt_book_logs").delete().eq("id", cur.id));
+    if (!d.before) must(await T(d.table).delete().eq("id", cur.id));
     else if (!d.after) {
-      const r = await T("tt_book_logs").insert({ print_id: ev.print_id, student_id: ev.student_id, kind: d.before.kind, ...fields(d.before) }).select("*").single();
-      if (r.error && /duplicate|unique/i.test(r.error.message || "")) throw new Error("같은 날 기록이 이미 있어서 되돌릴 수 없어요 — 교재 화면에서 고쳐 주세요");
+      const r = await T(d.table).insert({ ...U.keys(ev, d.before), ...U.fields(d.before) }).select("*").single();
+      if (r.error && /duplicate|unique/i.test(r.error.message || "")) throw new Error(`같은 기록이 이미 있어서 되돌릴 수 없어요 — ${U.where}에서 고쳐 주세요`);
       restored = must(r);
-    } else restored = must(await T("tt_book_logs").update({ ...fields(d.before), updated_at: nowIso() }).eq("id", cur.id).select("*").single());
-    const nid = await logRow(ev.kind, ev.student_id, ev.print_id, { table: d.table, row_id: (restored || cur).id, title: d.title || "", kind: d.kind, before: snapLog(cur), after: snapLog(restored), undo_of: ev.id });
+    } else restored = must(await T(d.table).update({ ...U.fields(d.before), updated_at: nowIso() }).eq("id", cur.id).select("*").single());
+    if (U.after) await U.after(ev, restored);
+    const keep = Object.fromEntries(["title", "name", "kind", "month"].filter((k) => k in d).map((k) => [k, d[k]]));
+    const nid = await logRow(ev.kind, ev.student_id, ev.print_id, { ...keep, table: d.table, row_id: (restored || cur).id, before: U.snap(cur), after: U.snap(restored), undo_of: ev.id });
     must(await T("tt_events").update({ detail: { ...d, undone_by: nid || -1, undone_at: nowIso() } }).eq("id", ev.id));
     return nid;
-  } catch (e) { logErr(e); }
+  } catch (e) { if (U.missing(e)) throw new Error(U.sql); throw e; }
 }
 async function undoEvents(ids) {
   const list = [...new Set((ids || []).map(Number).filter(Boolean))].sort((a, b) => b - a);       // 나중 것부터
@@ -810,10 +892,12 @@ export async function api(path, body) {
     const sts = must(await T("tt_students").select("*").order("active", { ascending: false }).order("name"));
     const [tg, bk] = await Promise.all([all(() => T("tt_targets").select("student_id,print_id,issued_at")), bookPrints()]);
     const bids = new Set(bk.map((x) => x.id));
+    const curM = monthStart(todayStr()), mrows = await monthRows(curM);
     return sts.map((s) => {
       const mine = tg.filter((t) => t.student_id === s.id && !bids.has(t.print_id));
       return { ...s, n_prints: mine.length, n_books: tg.filter((t) => t.student_id === s.id && bids.has(t.print_id)).length,
-        last_issued: mine.map((t) => t.issued_at).sort().pop() || null };
+        last_issued: mine.map((t) => t.issued_at).sort().pop() || null,
+        month: monthTable ? mflagOut(monthFlag(s, mrows, curM)) : null };          // 이번 달 재원 (표가 없으면 null)
     });
   }
   if ((m = /^students\/(\d+)$/.exec(p))) {
@@ -891,6 +975,7 @@ export async function api(path, body) {
     return res;
   }
   // 교재 — 등록 · 학생에게 붙이기 · 빼기 · 고치기 · 지우기 (스캔본은 학생 몫의 채점 기록에: gradings/<id>/scans 그대로)
+  if (p === "months") return post ? monthsSave(body) : monthsView(q.month);            // 재원 · 원비
   if (p === "books") return post ? bookCreate(body) : booksList();
   if (p === "books/day") return post ? bookDaySave(body) : bookDay(q.date);          // 수업 끝 진도 적기
   if (p === "booklogs" && post) return bookLogPut(await bookCopyByCode(body.code), body);   // 교재 기록 하나 (진도 · 채점한 날 · 해설지)
