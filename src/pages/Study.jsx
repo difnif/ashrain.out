@@ -3,7 +3,7 @@
 //   시험 보기 › 학교별 모의고사 = 학교 찾기 → 판(융합 · 기본 …) → 회차 → #/mock/<id> (pages/mock/SchoolExams.jsx · lib/mockexams.js)
 //   시청각 학습 = 교실 모니터 콘텐츠(lib/av.js) — 수학 호기심 · 문제 풀이 해설 두 범주, 고르면 #/av/<key> 가로 무대로
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
-import { UNIT_NAMES, UNIT_ORDER } from "../lib/items";
+import { CONCEPT_UNIT_NAMES, CONCEPT_UNIT_ORDER, CONCEPT_LEVELS, levelOfUnit } from "../lib/items";
 import { readLastResult } from "../lib/setplay";
 import { getRecentConcepts } from "../lib/review";
 import { TEST_TYPES, describeTimer, presetOf, isExamOpen } from "../lib/exam";
@@ -162,39 +162,62 @@ function readLastConcept() {
   return r[0] || null;
 }
 
-/* ── 개념 공부: 학기 고르고 개념 목록 (+검색) — 목록·수는 studyCache 로 즉시 그린다 ── */
+/* ── 개념 공부: 「초등 | 중등 | 고등」 → 학기 → 개념 목록 (+검색) — 목록·수는 studyCache 로 즉시 그린다 ──
+ * 초등 개념(초1-1 … 초6-2)은 기본 제공 개념(public/concepts/elem)을 관리자가 앱을 열 때 DB 에 넣어 둔다(lib/elemSeed.js).
+ * 학교급마다 고른 학기를 따로 기억한다(ash.study.unit.<학교급>) — 초등을 보다 중등으로 가도 중등에서 보던 학기로. */
 function ConceptSub() {
   const [all, setAll] = useState(null);
   const [q, setQ] = useState("");
   const [moreU, setMoreU] = useState(false);
   const last = useMemo(readLastConcept, []);
-  const [unit, setUnit] = useState(() => {
-    try { return localStorage.getItem("ash.study.unit") || (last?.id ? last.id.split("-").slice(0, 2).join("-") : "m1-1"); }
-    catch { return "m1-1"; }
+  const lastUnit = last?.id ? last.id.split("-").slice(0, 2).join("-") : null;
+  const [lv, setLv] = useState(() => {
+    const v = lsGet("ash.study.concept.lv", "");
+    if (CONCEPT_LEVELS.includes(v)) return v;
+    return levelOfUnit(lsGet("ash.study.unit", "") || lastUnit || "m1-1");
   });
-  useEffect(() => { let ok = true; swrConcepts((v) => { if (ok) setAll(v || []); }); return () => { ok = false; }; }, []);
-  const pick = (u) => { setUnit(u); try { localStorage.setItem("ash.study.unit", u); } catch { /* 무시 */ } };
+  const [unitBy, setUnitBy] = useState(() => {
+    const legacy = lsGet("ash.study.unit", "");   // 전엔 학교급 없이 학기 하나만 기억했다
+    return Object.fromEntries(CONCEPT_LEVELS.map((l) => {
+      const v = lsGet(`ash.study.unit.${l}`, "") || (legacy && levelOfUnit(legacy) === l ? legacy : "") || (lastUnit && levelOfUnit(lastUnit) === l ? lastUnit : "");
+      return [l, CONCEPT_UNIT_NAMES[v] ? v : ""];
+    }));
+  });
+  useEffect(() => {
+    let ok = true;
+    const load = () => swrConcepts((v) => { if (ok) setAll(v || []); });
+    load();
+    window.addEventListener("ash:concepts-changed", load);   // 기본 제공 초등 개념을 막 넣었을 때 목록을 다시 받는다
+    return () => { ok = false; window.removeEventListener("ash:concepts-changed", load); };
+  }, []);
   const byUnit = useMemo(() => {
     const m = {};
     for (const c of all || []) (m[c.unit_id] = m[c.unit_id] || []).push(c);
     for (const k of Object.keys(m)) m[k].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
     return m;
   }, [all]);
+  const lvUnits = CONCEPT_UNIT_ORDER.filter((u) => levelOfUnit(u) === lv);
+  const lvCount = (l) => CONCEPT_UNIT_ORDER.filter((u) => levelOfUnit(u) === l).reduce((n, u) => n + (byUnit[u] || []).length, 0);
+  // 고른 학기가 없거나 비었으면 그 학교급에서 개념이 있는 첫 학기
+  const unit = (unitBy[lv] && (all === null || (byUnit[unitBy[lv]] || []).length)) ? unitBy[lv]
+    : (lvUnits.find((u) => (byUnit[u] || []).length) || unitBy[lv] || lvUnits[0]);
+  const pick = (u) => { setUnitBy((o) => ({ ...o, [lv]: u })); lsSet(`ash.study.unit.${lv}`, u); lsSet("ash.study.unit", u); };
+  const pickLv = (l) => { setLv(l); setMoreU(false); lsSet("ash.study.concept.lv", l); };
   const rows = byUnit[unit] || [];
   // 개념이 등록된 학기만 기본 노출 — 나머지는 「다른 학기」로
-  const visUnits = all === null || moreU ? UNIT_ORDER : UNIT_ORDER.filter((u) => u === unit || (byUnit[u] || []).length > 0);
-  const hiddenN = UNIT_ORDER.length - visUnits.length;
-  // 검색 — 학기 무관 전체 개념에서 (이름·부제·학기명, 초성 지원)
+  const visUnits = all === null || moreU ? lvUnits : lvUnits.filter((u) => u === unit || (byUnit[u] || []).length > 0);
+  const hiddenN = lvUnits.length - visUnits.length;
+  // 검색 — 학교급 · 학기 무관 전체 개념에서 (이름·부제·학기명, 초성 지원)
   const found = useMemo(() => {
     if (!q.trim()) return null;
-    const list = (all || []).slice().sort((a, b) => UNIT_ORDER.indexOf(a.unit_id) - UNIT_ORDER.indexOf(b.unit_id) || (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    return koFilter(list, q, (c) => [c.title, c.subtitle, UNIT_NAMES[c.unit_id]], 30);
+    const list = (all || []).slice().sort((a, b) => CONCEPT_UNIT_ORDER.indexOf(a.unit_id) - CONCEPT_UNIT_ORDER.indexOf(b.unit_id) || (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    return koFilter(list, q, (c) => [c.title, c.subtitle, CONCEPT_UNIT_NAMES[c.unit_id]], 30);
   }, [all, q]);
 
   const item = (c, withUnit) => (
     <button key={c.id} className="st-item" onClick={() => (location.hash = `#/c/${encodeURIComponent(c.id)}`)}>
       <span className="num">{String(c.sort_order ?? "").padStart(2, "0")}</span>
-      <span className="nm"><b>{c.title}</b>{(c.subtitle || withUnit) && <small>{withUnit ? `${UNIT_NAMES[c.unit_id] || c.unit_id}${c.subtitle ? " · " : ""}` : ""}{c.subtitle || ""}</small>}</span>
+      <span className="nm"><b>{c.title}</b>{(c.subtitle || withUnit) && <small>{withUnit ? `${CONCEPT_UNIT_NAMES[c.unit_id] || c.unit_id}${c.subtitle ? " · " : ""}` : ""}{c.subtitle || ""}</small>}</span>
       {last?.id === c.id && <span className="tag">이어보기</span>}
     </button>
   );
@@ -209,10 +232,17 @@ function ConceptSub() {
           : <div className="st-list">{found.map((c) => item(c, true))}</div>
       ) : (
         <>
+          <div className="st-lv" role="tablist" aria-label="학교급">
+            {CONCEPT_LEVELS.map((l) => (
+              <button key={l} type="button" role="tab" aria-selected={l === lv} className={l === lv ? "on" : ""} onClick={() => pickLv(l)}>
+                {l}{all !== null && <small>{lvCount(l)}</small>}
+              </button>
+            ))}
+          </div>
           <div className="st-chips">
             {visUnits.map((u) => (
               <button key={u} className={"st-chip" + (u === unit ? " on" : "")} onClick={() => pick(u)}>
-                {UNIT_NAMES[u] || u}{byUnit[u] ? <small>{byUnit[u].length}</small> : null}
+                {CONCEPT_UNIT_NAMES[u] || u}{byUnit[u] ? <small>{byUnit[u].length}</small> : null}
               </button>
             ))}
             {all !== null && (hiddenN > 0 || moreU) && (
@@ -222,7 +252,9 @@ function ConceptSub() {
             )}
           </div>
           {all === null ? <div className="st-empty">개념을 불러오는 중…</div>
-            : rows.length === 0 ? <div className="st-empty">이 학기에는 아직 등록된 개념이 없어요.</div>
+            : rows.length === 0 ? <div className="st-empty">{lv === "초등" && lvCount("초등") === 0
+              ? "초등 개념을 준비하고 있어요. 곧 1학년 1학기부터 6학년 2학기까지 차례로 볼 수 있어요."
+              : "이 학기에는 아직 등록된 개념이 없어요."}</div>
             : <div className="st-list">{rows.map((c) => item(c, false))}</div>}
         </>
       )}
