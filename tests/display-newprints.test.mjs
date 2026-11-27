@@ -97,7 +97,7 @@ export const frame = (spec, th, pick = null) => renderToStaticMarkup(<LessonFram
   const SETS = ["lin2", "meet"].flatMap((fk) => m.PRINT_FRAMES[fk].keys.map((k) => ({ fk, k, items: m.printCached(fk, k), S: m.PRINT_FRAMES[fk].sets[k] })));
 
   await test("문항: 세트마다 100 · 번호 1 ~ 100 · 단계(lin2 10단계 × 10 · meet 5단계 × 20) · 발문 · 방침 · 판서 · 답 · 그림", () => {
-    assert.equal(SETS.length, 9);
+    assert.equal(SETS.length, 10);
     for (const { fk, k, items, S } of SETS) {
       assert.equal(items.length, 100, `${fk}:${k}`);
       const nst = Object.keys(S.stage).length, per = 100 / nst;
@@ -176,9 +176,46 @@ export const frame = (spec, th, pick = null) => renderToStaticMarkup(<LessonFram
     }
   });
 
+  await test("삼각형이 만들어지지 않을 조건(meet ntri): 모든 문항이 「만들어지지 않을」 조건 · 단계마다 답 꼴 · 1단계는 돌아서 나란해지는 직선 · 교점으로 도는 직선", () => {
+    const its = m.printCached("meet", "ntri");
+    assert.equal(its.length, 100);
+    const vals = (a) => a.replace(/^.*?a = /, "").split(", ");
+    for (const it of its) {
+      const tag = `ntri ${it.no}`;
+      assert.ok(it.q.includes("만들어지지 않"), `${tag} 만들어지지 않을 조건만`);
+      assert.ok(!it.q.includes("만들어지도록"), `${tag} 만들어지는 조건은 묻지 않음`);
+      const rot = it.fig.els.filter((e) => e.k === "L" && e.mv && e.mv.r);
+      const dash = it.fig.els.filter((e) => e.k === "L" && e.d && e.c === "coral");
+      if (it.st === 1) {
+        assert.ok(/^a = [^,]+, [^,]+$/.test(it.ans), `${tag} 평행 값 둘 ${it.ans}`);
+        assert.ok(rot.length === 2 && rot.every((e) => e.un != null), `${tag} 돌아서 나란해지는 직선 둘(다음 줄에 넘겨줌)`);
+        assert.equal(dash.length, 2, `${tag} 나란해진 자리에 산호 점선 둘`);
+        assert.ok(it.lines.filter((l) => /[과와] 평행: /.test(l.s)).length === 2, `${tag} 평행 줄 둘`);
+      } else if (it.st === 2) {
+        assert.ok(/^a = [^,]+$/.test(it.ans), `${tag} 한 점 값 하나 ${it.ans}`);
+        assert.ok(it.lines.some((l) => l.s.includes("교점 (")), `${tag} 교점`);
+      } else if (it.st <= 4) {
+        assert.ok(/^평행 (a = .+|없음) · 한 점 (a = .+|없음)$/.test(it.ans), `${tag} 두 칸 ${it.ans}`);
+        const [p, c] = it.ans.split(" · 한 점 ");
+        if (!p.includes("없음") && !c.includes("없음")) {
+          const pv = vals(p), cv = vals(c);
+          assert.ok(cv.every((v) => !pv.includes(v)), `${tag} 평행 값과 한 점 값이 겹치지 않음`);
+        }
+      } else {
+        assert.ok(it.no <= 90 ? /^(−?[\d{}/]+|\d+개)$/.test(it.ans) : /^a = /.test(it.ans), `${tag} 답 꼴 ${it.ans}`);
+      }
+      if (it.st >= 2 && !/없음/.test(it.ans.split(" · 한 점 ")[1] || "") && /y = \*?a|\*a|y = \(a|ay =|ax/.test(it.q)) {
+        // 늘 지나는 점이 있는 미지수 직선은 그 점을 축으로 돌아 교점을 지난다(기울기가 정해진 직선 · x = a · y = a 는 미끄러짐)
+        assert.ok(rot.length >= 1 || it.fig.els.some((e) => e.mv && (e.mv.dx || e.mv.dy)), `${tag} 움직이는 직선`);
+      }
+    }
+    assert.ok(its.slice(70, 80).filter((it) => it.ans.includes("없음")).length >= 4, "축에 평행한 직선 쪽에 「없음」");
+    assert.deepEqual([...new Set(its.slice(80, 90).map((it) => it.q.match(/(합|개수|곱)을 구하시오/)[1]))].sort(), ["개수", "곱", "합"]);
+  });
+
   await test("액자: 세트 · 단계 · 장면 수 · 고른 세트로 열기(숫자 세트도) · 목록 그림 두 테마", () => {
     assert.deepEqual(m.LIN2_SPEC.sets.map((s) => s.key), [1, 2, 3, 4, 5]);
-    assert.deepEqual(m.MEET_SPEC.sets.map((s) => s.key), ["ix", "mE", "mH", "tri"]);
+    assert.deepEqual(m.MEET_SPEC.sets.map((s) => s.key), ["ix", "mE", "mH", "tri", "ntri"]);
     assert.equal(m.LIN2_SPEC.stages(1).length, 10); assert.equal(m.MEET_SPEC.stages("tri").length, 5);
     assert.deepEqual(m.AREA_SPEC.sets.map((s) => s.key), ["A", "B", "C", "D"]);
     assert.equal(m.AREA_SPEC.stages("C").length, 5); assert.equal(m.AREA_SPEC.stages("A").length, 0);
@@ -198,7 +235,7 @@ export const frame = (spec, th, pick = null) => renderToStaticMarkup(<LessonFram
     }
   });
 
-  await test("그리기 훑기: 새 문항 1,100개 × (문제 · 방침 · 줄마다 · 답 · 끝) × 두 테마 — 오류 · NaN 없음", () => {
+  await test("그리기 훑기: 새 문항 1,200개 × (문제 · 방침 · 줄마다 · 답 · 끝) × 두 테마 — 오류 · NaN 없음", () => {
     let cnt = 0;
     for (const { fk, k, items } of SETS) for (const it of items) {
       const P = m.l10Plan(it), ts = [0, 900, P.plan[0] + 300, P.ans + 300, P.dur - 1];
