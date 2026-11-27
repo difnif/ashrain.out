@@ -166,6 +166,15 @@
   "bsc",
   "hamming",
   "caesar",
-  "modring"
+  "modring",
+  "supinf",
+  "epsn",
+  "rearrange",
+  "unifcont",
+  "zoomdiff",
+  "darboux",
+  "unifconv",
+  "contract",
+  "cantor"
  ]
 }

@@ -23,6 +23,7 @@ export const MODS = {
   ml: () => import("./ml.jsx"),
   data: () => import("./data.jsx"),
   info: () => import("./info.jsx"),
+  analysis: () => import("./analysis.jsx"),
 };
 
 export const KINDS = {
@@ -91,6 +92,9 @@ export const KINDS = {
   // 정보이론 · 암호
   entropy: ["info", "Entropy"], huffman: ["info", "Huffman"], lz: ["info", "LZ"], mutual: ["info", "Mutual"],
   bsc: ["info", "BSC"], hamming: ["info", "Hamming"], caesar: ["info", "Caesar"], modring: ["info", "ModRing"],
+  // 해석학
+  supinf: ["analysis", "SupInf"], epsn: ["analysis", "EpsN"], rearrange: ["analysis", "Rearrange"], unifcont: ["analysis", "UnifCont"],
+  zoomdiff: ["analysis", "ZoomDiff"], darboux: ["analysis", "Darboux"], unifconv: ["analysis", "UnifConv"], contract: ["analysis", "Contract"], cantor: ["analysis", "Cantor"],
 };
 
 const loaded = {};
