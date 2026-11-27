@@ -73,8 +73,15 @@ const ITEM_COLS = "seq,src,src_no,choice,hash,png,answer,label,points,topic,answ
 async function itemsOf(pid) {
   return all(() => T("tt_print_items").select(ITEM_COLS).eq("print_id", pid).order("seq"));
 }
+// taught = 풀어 줌(맞음으로 셈) — 칸이 아직 없으면(supabase/2026-11_tt_taught.sql 전) 그 칸 없이
+let taughtCol = true;
+const TAUGHT_SQL = "「풀어 줌」은 DB에 supabase/2026-11_tt_taught.sql 을 넣어야 써요";
 async function marksOf(gids) {
   if (!gids.length) return [];
+  if (taughtCol) {
+    try { return await all(() => T("tt_marks").select("id,grading_id,session_no,seq,result,answer,at,taught").in("grading_id", gids).order("id")); }
+    catch (e) { if (!/taught/.test(String(e.message || e))) throw e; taughtCol = false; }
+  }
   return all(() => T("tt_marks").select("id,grading_id,session_no,seq,result,answer,at").in("grading_id", gids).order("id"));
 }
 async function sessionsOf(gids) {
@@ -140,7 +147,7 @@ export async function gradingDetail(gid) {
   for (const it of items) {
     it.mark = cur.get(it.seq) || null;
     it.rounds = [...rm.keys()].sort((a, b) => a - b).filter((r) => rm.get(r).has(it.seq))
-      .map((r) => ({ round: r, result: rm.get(r).get(it.seq).result, answer: rm.get(r).get(it.seq).answer }));
+      .map((r) => ({ round: r, result: rm.get(r).get(it.seq).result, answer: rm.get(r).get(it.seq).answer, taught: !!rm.get(r).get(it.seq).taught }));
     it.wrong_before = hist.get(it.hash) || 0;
     it.repeat = it.wrong_before + (it.rounds.some((x) => x.result === "X") ? 1 : 0) >= 2;
   }
@@ -647,7 +654,7 @@ function itemState(marks) {
   const rs = marks.slice().sort((a, b) => a.round - b.round);
   const cur = rs.length ? rs[rs.length - 1] : null;
   return { rounds: rs.map((m) => ({ id: m.id, round: m.round, result: m.result, unsolved: !!m.unsolved, mark: m.mark || "", answer: m.answer || "", day: m.day, report_day: m.report_day, graded_by: m.graded_by, scan_id: m.scan_id, note: m.note || "" })),
-    cur: cur ? { round: cur.round, result: cur.result, unsolved: !!cur.unsolved } : null, postit: cur && cur.result === "X" ? Math.min(cur.round, 3) : null };
+    cur: cur ? { round: cur.round, result: cur.result, unsolved: !!cur.unsolved, taught: cur.result === "O" && cur.mark === "box" } : null, postit: cur && cur.result === "X" ? Math.min(cur.round, 3) : null };
 }
 // 학생 교재 하나의 문항 · 결과 · 물어볼 것
 async function bookCopyItems(code) {
@@ -660,7 +667,7 @@ async function bookCopyItems(code) {
   const out = items.map((it) => ({ id: it.id, page: it.page, label: it.label, answer: it.answer || "", answer_src: it.answer_src || "", topic: it.topic || "", crop: it.crop || null,
     ...itemState(marks.filter((m) => m.item_id === it.id)) })).filter((it) => it.rounds.length);
   return { ok: anaTable, copy: c.x.code, master: c.master.code, title: c.x.title, student: { id: c.sid, name: c.st.name }, gid: c.g ? c.g.id : null,
-    items: out, n_postits: out.filter((x) => x.postit).length, scans: scans.map((x) => ({ id: x.id, name: x.name, round: x.round, kind: x.kind, pages: x.pages, created_at: x.created_at, analyzed_at: am.get(x.id) || null })),
+    items: out, n_postits: out.filter((x) => x.postit).length, n_taught: out.filter((x) => x.cur && x.cur.taught).length, scans: scans.map((x) => ({ id: x.id, name: x.name, round: x.round, kind: x.kind, pages: x.pages, created_at: x.created_at, analyzed_at: am.get(x.id) || null })),
     questions: qs.filter((q) => q.status === "open" || (q.status === "accepted" && q.reason_later && !q.reason)).map((q) => ({ id: q.id, kind: q.kind, status: q.status, item_id: q.item_id })) };
 }
 // 「분석 맡기기」 묶음에 넣을 지금까지 기록
@@ -806,9 +813,11 @@ async function bookMarkSet(b) {
     const it = must(await T("tt_book_items").select("*").eq("id", Number(b.item_id)).eq("print_id", c.master.id).maybeSingle());
     if (!it) throw new Error("그런 문항이 없어요");
     const rd = Number(b.round);
-    if (!ROUND_OK(rd) || !["O", "X", "U"].includes(b.result)) throw new Error("몇 차 · 결과를 골라 주세요");
+    if (!ROUND_OK(rd) || !["O", "X", "U", "T"].includes(b.result)) throw new Error("몇 차 · 결과를 골라 주세요");
     const old = must(await T("tt_book_marks").select("*").eq("print_id", c.x.id).eq("item_id", it.id).eq("round", rd).maybeSingle());
-    const row = { result: b.result, unsolved: !!b.unsolved && b.result === "X", graded_by: "teacher", day: cleanDay(b.day || todayStr()), mark: old ? old.mark : "", note: old ? old.note : "" };
+    // T = 풀어 줌(맞음 + 표시 box). 다른 결과로 바꾸면 box 표시는 뗌
+    const mk = b.result === "T" ? "box" : old && old.mark !== "box" ? old.mark : "";
+    const row = { result: b.result === "T" ? "O" : b.result, unsolved: !!b.unsolved && b.result === "X", graded_by: "teacher", day: cleanDay(b.day || todayStr()), mark: mk, note: old ? old.note : "" };
     if (old && sameBy(MARK_F)(old, { ...old, ...row })) return { ok: true, events: [] };
     const saved = old ? must(await T("tt_book_marks").update({ ...row, updated_at: nowIso() }).eq("id", old.id).select("*").single())
       : must(await T("tt_book_marks").insert({ print_id: c.x.id, student_id: c.sid, item_id: it.id, round: rd, ...row }).select("*").single());
@@ -837,7 +846,7 @@ async function questionsView() {
   return { ok: anaTable, open: out.filter((q) => q.status === "open"), later: out.filter((q) => q.status === "accepted" && q.reason_later && !q.reason),
     reasons: out.filter((q) => q.status === "accepted" && q.reason), done: out.filter((q) => q.status !== "open").slice(0, 100) };
 }
-// 물어볼 것에 답하기 — fix(내 실수: 틀림으로) · accept(맞다고 인정 + 이유 · 나중에) · reason(이유만 적기) · set(결과 고르기: O · X · U · wrong_unsolved) · dismiss
+// 물어볼 것에 답하기 — fix(내 실수: 틀림으로) · accept(맞다고 인정 + 이유 · 나중에) · reason(이유만 적기) · set(결과 고르기: O · X · U · T 풀어 줌 · wrong_unsolved) · dismiss
 async function questionAnswer(id, b) {
   if (!anaTable) throw new Error(ANA_SQL);
   try {
@@ -858,8 +867,8 @@ async function questionAnswer(id, b) {
     else if (b.action === "reason") { if (!reason) throw new Error("이유를 적어 주세요"); Object.assign(up, { reason, reason_later: false }); }
     else if (b.action === "set") {
       const v = b.result;
-      if (!["O", "X", "U", "wrong_unsolved"].includes(v)) throw new Error("결과를 골라 주세요");
-      await setMark(v === "wrong_unsolved" ? { result: "X", unsolved: true } : { result: v, unsolved: false });
+      if (!["O", "X", "U", "T", "wrong_unsolved"].includes(v)) throw new Error("결과를 골라 주세요");
+      await setMark(v === "wrong_unsolved" ? { result: "X", unsolved: true } : v === "T" ? { result: "O", unsolved: false, mark: "box" } : { result: v, unsolved: false });
       Object.assign(up, { status: "answered", answer: { action: "set", result: v }, answered_at: nowIso() });
     } else if (b.action === "dismiss") Object.assign(up, { status: "dismissed", answer: { action: "dismiss" }, answered_at: nowIso() });
     else throw new Error("무엇을 할지 몰라요");
@@ -1245,7 +1254,7 @@ export async function wrongCandidates(f) {
 
 // ── 받기용 JSON (PC print_data · grading_data · student_data)
 const CIRC_ANS = { 1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤" };
-const RES_KO = { O: "맞음", X: "틀림", U: "안 풂", P: "넘어감", "": "안 매김" };
+const RES_KO = { O: "맞음", X: "틀림", U: "안 풂", P: "넘어감", T: "풀어 줌(맞음)", "": "안 매김" };
 const ansText = (it) => { const a = String(it.answer || ""); return (it.choice ? CIRC_ANS[a] || a : a) || (it.answer_png ? "(그림)" : ""); };
 
 export async function printData(code) {
@@ -1285,8 +1294,9 @@ export async function gradingData(gid) {
     items: d.items.map((it) => {
       const m = it.mark || {};
       const key = itemKey(p.code, it), t = ["X", "U"].includes(m.result) ? tr.get(key) : null;
-      return { no: it.seq, label: it.label || String(it.src_no || it.seq), choice: !!it.choice, answer: ansText(it), final: m.result || "",
-        final_ko: RES_KO[m.result || ""], given: m.answer || "", rounds: it.rounds, repeat_wrong: !!it.repeat, wrong_before: it.wrong_before || 0,
+      const fin = m.result === "O" && m.taught ? "T" : m.result || "";
+      return { no: it.seq, label: it.label || String(it.src_no || it.seq), choice: !!it.choice, answer: ansText(it), final: fin,
+        final_ko: RES_KO[fin], given: m.answer || "", rounds: it.rounds, repeat_wrong: !!it.repeat, wrong_before: it.wrong_before || 0,
         tag: it.tag || it.topic || "", rate: it.rate || "", key, ...(t ? { question: t.question, solution: t.solution } : {}) };
     }),
   };
@@ -1478,8 +1488,9 @@ export async function api(path, body) {
       result = autoJudge(it.answer, body.answer);
       if (!result) return gradingDetail(gid);
     }
-    if (!["O", "X", "U", ""].includes(result)) throw new Error("result");
-    await rpc("tt_mark", { p_grading: gid, p_seq: Number(body.seq), p_result: result, p_answer: body.answer || "" });
+    if (!["O", "X", "U", "T", ""].includes(result)) throw new Error("result");
+    try { await rpc("tt_mark", { p_grading: gid, p_seq: Number(body.seq), p_result: result, p_answer: body.answer || "" }); }
+    catch (e) { if (result === "T" && /tt_marks_result_check|taught|check constraint/i.test(String(e.message || e))) throw new Error(TAUGHT_SQL); throw e; }
     if (body.mode) await T("tt_gradings").update({ mode: body.mode }).eq("id", gid);
     if (body.light) return { ok: true };            // 화면이 먼저 적어 두고 차례로 보내는 경우 — 다 보낸 뒤 한 번만 다시 읽는다
     return gradingDetail(gid);
@@ -1488,8 +1499,9 @@ export async function api(path, body) {
   if ((m = /^gradings\/(\d+)\/fix$/.exec(p))) {
     const gid = Number(m[1]);
     const result = String(body.result || "");
-    if (!["O", "X", "U"].includes(result)) throw new Error("앞 차 결과는 O · X · 안 풂 중에서 골라 바꿔요");
-    const r = await roundFn(() => rpc("tt_mark_round", { p_grading: gid, p_round: Number(body.round), p_seq: Number(body.seq), p_result: result, p_answer: body.answer ?? null }));
+    if (!["O", "X", "U", "T"].includes(result)) throw new Error("앞 차 결과는 O · X · 안 풂 · 풀어 줌 중에서 골라 바꿔요");
+    const r = await roundFn(() => rpc("tt_mark_round", { p_grading: gid, p_round: Number(body.round), p_seq: Number(body.seq), p_result: result, p_answer: body.answer ?? null }))
+      .catch((e) => { if (result === "T" && /O · X · 안 풂 중|taught|check constraint/i.test(String(e.message || e))) throw new Error(TAUGHT_SQL); throw e; });
     if (body.light) return r;
     return { ...(await gradingDetail(gid)), fix: r };
   }
