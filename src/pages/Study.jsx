@@ -2,6 +2,7 @@
 // sub: '' | 'concept' | 'practice' | 'sets[/<범주>]' | 'av[/<범주>]' | 'exam[/school[/<학교>[/<판>]]]'  (''=concept)
 //   시험 보기 › 학교별 모의고사 = 학교 찾기 → 판(융합 · 기본 …) → 회차 → #/mock/<id> (pages/mock/SchoolExams.jsx · lib/mockexams.js)
 //   시청각 학습 = 교실 모니터 콘텐츠(lib/av.js) — 수학 호기심 · 문제 풀이 해설 두 범주, 고르면 #/av/<key> 가로 무대로
+//                 + 「학교별 모의고사」(#/study/av/mock) — 학교 → 판 → 회차 → 해설 영상(#/mock/<id>/video?from=av)
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { CONCEPT_UNIT_NAMES, CONCEPT_UNIT_ORDER, CONCEPT_LEVELS, levelOfUnit } from "../lib/items";
 import { readLastResult } from "../lib/setplay";
@@ -23,6 +24,7 @@ import { useWellPick } from "../components/WellPick";
 import { loadMockIndex } from "../lib/mockexams";
 const AvPrintSheet = lazy(() => import("../components/AvPrintSheet"));
 const SchoolExams = lazy(() => import("./mock/SchoolExams"));
+const MockAv = lazy(() => import("./mock/MockAv"));
 import "./solve/solve.css";
 
 const CSS = `
@@ -612,9 +614,30 @@ function WeekList({ gk, wp, profile }) {
   );
 }
 
+// 「학교별 모의고사」 탭(2026-11-27) — 학교 → 판 → 회차 칸 → 해설 영상(문항마다 문제 → 풀이, pages/mock/MockAv.jsx · MockVideo.jsx)
+const MOCK_AV = { id: "mock", title: "학교별 모의고사", icon: "🏫", sub: "우리 학교 시험지 그대로 — 문항마다 문제 → 풀이를 교실 모니터처럼 넘겨 봐요" };
+
 function AvSub({ path }) {
   const catId = path[0] || "";
   const cat = AV_CATS.find((c) => c.id === catId);
+  const [mockN, setMockN] = useState(null);
+  useEffect(() => {
+    if (catId) return undefined;
+    let ok = true;
+    loadMockIndex().then((ix) => { if (ok) setMockN(ix.exams.length); }).catch(() => {});
+    return () => { ok = false; };
+  }, [catId]);
+  if (catId === MOCK_AV.id) {
+    return (
+      <>
+        <div className="st-crumb">
+          <button onClick={() => (location.hash = "#/study/av")}>시청각 학습</button><span aria-hidden="true">›</span><b>{MOCK_AV.title}</b>
+        </div>
+        <p className="st-cdesc">{MOCK_AV.sub}. 회차를 고르면 해설 영상이 열려요 — 화면을 건드리면 조작 막대가 떠요.</p>
+        <Suspense fallback={<div className="st-empty">불러오는 중…</div>}><MockAv /></Suspense>
+      </>
+    );
+  }
   if (!cat) {
     return (
       <>
@@ -627,6 +650,11 @@ function AvSub({ path }) {
               <span className="go" aria-hidden="true">›</span>
             </button>
           ))}
+          <button className="st-folder" onClick={() => (location.hash = `#/study/av/${MOCK_AV.id}`)}>
+            <span className="fi" aria-hidden="true">{MOCK_AV.icon}</span>
+            <span className="nm"><b>{MOCK_AV.title}</b><small>{MOCK_AV.sub}{mockN ? ` · 모의고사 ${mockN}회` : ""}</small></span>
+            <span className="go" aria-hidden="true">›</span>
+          </button>
         </div>
       </>
     );

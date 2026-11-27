@@ -351,3 +351,18 @@ export function AvList({ exam, from, onItem, max = 0, more }) {
     </div>
   );
 }
+
+// ── 문항별 해설그림(보관함 해설 — exam.json items[].sol) ─────────────────────────
+/** 해설그림 하나 — 누르면 새 창에서 원본 크기로 */
+export function SolImage({ exam, it, title = "📘 해설" }) {
+  if (!it?.sol?.img) return null;
+  const src = fileUrl(exam, it.sol.img);
+  return (
+    <figure className="cs-card mx-sol">
+      <figcaption className="mx-h">{title}<small>{it.kind === "mc" ? `${it.label}번` : it.label} · 누르면 크게</small></figcaption>
+      <a href={src} target="_blank" rel="noopener noreferrer" className="mx-solimg" style={{ aspectRatio: `${it.sol.w} / ${it.sol.h}` }}>
+        <img src={src} alt={`${it.label} 해설`} loading="lazy" draggable={false} />
+      </a>
+    </figure>
+  );
+}

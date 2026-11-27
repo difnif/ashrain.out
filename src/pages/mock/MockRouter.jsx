@@ -6,11 +6,15 @@
 //   #/mock/<id>/key             정답과 채점 기준(MockDocs.jsx)
 //   #/mock/<id>/doc/<자료>       자료 보기 — 문제지 · 빠른 정답지 · 해설지 …(MockDocs.jsx)
 //   #/mock/<id>/av              이 시험의 시청각 해설 — 단원 · 유형별 해설로(돌아오면 이 시험으로)
-// 목록(학교 검색 → 판 → 회차)은 공부하기 탭(#/study/exam/school/…) — pages/mock/SchoolExams.jsx.
+//   #/mock/<id>/video[?i=N]     해설 영상 — 문항마다 문제 → 풀이(보관함 해설그림)를 교실 모니터처럼 넘겨 본다(MockVideo.jsx)
+//                               ?from=av 면 나가기가 공부하기 › 시청각 학습 › 학교별 모의고사로
+// 첫 화면은 컨셉 문제 세트 화면과 같은 짜임 — 바로 풀기 · 강사 모드 / 한 문제씩 · 해설지 보기 · 해설 영상 / 📂 자료(골라 인쇄 · 다운로드)
+//   / 시청각 해설 / 문항(거르기). 목록(학교 검색 → 판 → 회차)은 공부하기 탭(#/study/exam/school/…) — pages/mock/SchoolExams.jsx.
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import FeatureBar, { FbAct } from "../../components/FeatureBar";
-import { readMockPaper, readMockRecord, gradeMock, isAnswered, edInfo, fmtBytes, choiceText } from "../../lib/mockexams";
+import { readMockPaper, readMockRecord, gradeMock, isAnswered, edInfo, choiceText } from "../../lib/mockexams";
 import { useMockExam, useMockUser, useIsAdmin, AvList, Rich, ensureMockFonts } from "./parts";
+import { MockDocsPanel } from "./MockDocs";
 import "../solve/solve.css";
 import "../sets/sets.css";
 import "./mock.css";
@@ -19,15 +23,18 @@ const MockPaper = lazy(() => import("./MockPaper"));
 const MockItem = lazy(() => import("./MockItem"));
 const MockDocs = lazy(() => import("./MockDocs").then((m) => ({ default: m.MockDoc })));
 const MockKey = lazy(() => import("./MockDocs").then((m) => ({ default: m.MockKey })));
+const MockVideo = lazy(() => import("./MockVideo"));
 
 export function parseMockHash(hash) {
   const parts = String(hash || "").split("?")[0].replace(/^#\/mock\/?/, "").split("/").filter(Boolean);
   const id = parts[0] || "";
   const v = parts[1] || "";
-  const view = ["paper", "board", "q", "key", "doc", "av"].includes(v) ? v : "home";
-  const i = view === "q" ? parseInt(parts[2], 10) || 1 : null;
+  const view = ["paper", "board", "q", "key", "doc", "av", "video"].includes(v) ? v : "home";
+  const q = String(hash || "").split("?")[1] || "";
+  const i = view === "q" ? parseInt(parts[2], 10) || 1 : view === "video" ? Number((q.match(/(?:^|&)i=(\d+)/) || [])[1]) || null : null;
   const doc = view === "doc" ? parts[2] || "problems" : null;
-  return { id, view, i, doc };
+  const from = /(?:^|&)from=av(?:&|$)/.test(q) ? "av" : "";
+  return { id, view, i, doc, from };
 }
 
 function useSay() {
@@ -54,6 +61,9 @@ function MockScreen({ r, theme }) {
   const home = `#/mock/${r.id}`;
   const back = r.view !== "home" ? home : exam ? `#/study/exam/school/${exam.school}/${encodeURIComponent(exam.ed)}` : "#/study/exam/school";
   const fall = <div className="cs-wrap sv-muted">불러오는 중…</div>;
+  if (r.view === "video" && exam) {
+    return <Suspense fallback={fall}><MockVideo exam={exam} school={school} at={r.i} back={r.from === "av" ? "#/study/av/mock" : home} /></Suspense>;
+  }
   let body;
   if (err) body = <div className="cs-wrap"><div className="sv-empty">시험을 불러오지 못했어요.<br />{err}</div></div>;
   else if (!exam) body = fall;
@@ -65,7 +75,8 @@ function MockScreen({ r, theme }) {
     <AvList exam={exam} from={`#/mock/${exam.id}/av`} onItem={(i) => (location.hash = `#/mock/${exam.id}/q/${i}`)} /></div>;
   else body = <MockHome exam={exam} school={school} uid={uid} say={say} />;
   const sub = r.view === "q" ? (exam?.items.find((x) => x.i === r.i)?.label || "") + (exam?.items.find((x) => x.i === r.i)?.kind === "mc" ? "번" : "")
-    : r.view === "paper" || r.view === "board" ? "시험지 그대로" : r.view === "key" ? "정답과 채점 기준" : r.view === "doc" ? "자료" : r.view === "av" ? "시청각 해설" : exam?.ed || "";
+    : r.view === "paper" || r.view === "board" ? "시험지 그대로" : r.view === "key" ? "정답과 채점 기준" : r.view === "doc" ? "자료"
+      : r.view === "av" ? "시청각 해설" : r.view === "video" ? "해설 영상" : exam?.ed || "";
   const actions = exam && r.view === "home" ? <FbAct onClick={() => (location.hash = `${home}/key`)}>✅ 정답</FbAct>
     : exam && r.view !== "home" ? <FbAct onClick={() => (location.hash = home)}>목록</FbAct> : null;
   return (
@@ -79,7 +90,6 @@ function MockScreen({ r, theme }) {
 
 // ── 시험 첫 화면 ───────────────────────────────────────────────────────────────
 const FILTERS = [["all", "전체"], ["mc", "선택형"], ["sa", "서답형"], ["todo", "안 푼 문제"], ["wrong", "틀린 문제"]];
-const DOC_IC = { problems: "📄", key: "✅", solutions: "📘", answersheet: "📝", english: "🔤", vocab: "📒", subjects: "🔗" };
 
 function MockHome({ exam, school, uid, say }) {
   const admin = useIsAdmin();
@@ -101,7 +111,12 @@ function MockHome({ exam, school, uid, say }) {
   });
   const go = (p) => { location.hash = `#/mock/${exam.id}${p}`; };
   const nextI = (exam.items.find((it) => !rec.items[it.i]) || exam.items.find((it) => !rec.items[it.i]?.ok) || exam.items[0]).i;
+  const nAnsOne = Object.keys(rec.items).length;
+  const nextIt = exam.items.find((x) => x.i === nextI);
+  const nextLbl = nextIt ? (nextIt.kind === "mc" ? `${nextIt.label}번` : nextIt.label) : "";
   const pages = exam.docs.find((d) => d.id === "problems")?.pages.length || 0;
+  const solDoc = exam.docs.find((d) => d.id === "solutions") || exam.docs.find((d) => d.id === "key");
+  const nSol = exam.items.filter((it) => it.sol?.img).length;
   return (
     <div className="cs-wrap mx-home">
       <div className="cs-hero">
@@ -132,24 +147,21 @@ function MockHome({ exam, school, uid, say }) {
         )}
       </div>
       <div className="cs-go2">
-        <button type="button" className="sv-btn" onClick={() => go(`/q/${nextI}`)}>☝ 한 문제씩</button>
-        <button type="button" className="sv-btn" onClick={() => go("/key")}>✅ 정답 · 채점 기준</button>
-        <button type="button" className="sv-btn" onClick={() => go("/av")}>🎬 시청각 해설</button>
+        <button type="button" className="sv-btn" onClick={() => go(`/q/${nextI}`)}>☝ 한 문제씩{nAnsOne ? ` · ${nextLbl}` : ""}</button>
+        <button type="button" className="sv-btn" onClick={() => go(solDoc ? `/doc/${solDoc.id}` : "/key")}>📘 해설지 보기</button>
+        <button type="button" className="sv-btn" onClick={() => go(nSol ? "/video" : "/av")}>🎬 해설 영상</button>
       </div>
 
+      <MockDocsPanel exam={exam} school={school} say={say} />
+
       <div className="cs-card">
-        <div className="cs-ch"><b>📂 자료</b><span>화면으로 보거나 PDF로 받아 인쇄해요</span></div>
-        <div className="mx-docs">
-          {exam.docs.map((d) => (
-            <div key={d.id} className="mx-doc">
-              <span className="ic" aria-hidden="true">{DOC_IC[d.id] || "📄"}</span>
-              <span className="nm"><b>{d.label}</b><small>{d.pages.length}쪽{d.bytes ? ` · ${fmtBytes(d.bytes)}` : ""}</small></span>
-              <button type="button" className="sv-btn sm" onClick={() => go(`/doc/${d.id}`)}>보기</button>
-              <DocGet exam={exam} doc={d} school={school} say={say} />
-            </div>
-          ))}
+        <div className="cs-ch"><b>📝 채점</b><span>시험지 그대로 풀고 제출하면 바로</span></div>
+        <p className="cs-dnote" style={{ marginTop: 0 }}>「바로 풀기」 화면에서 OMR 답안지에 칠하듯 답을 고르고, 서답형은 하위 문항마다 손글씨나 타자로 써요. 제출하면 선택형은 바로 채점되고,
+          서답형은 모범 답과 채점 요소를 보며 스스로 채점해요. 종이로 풀었다면 인쇄한 OMR 답안지의 답을 그대로 옮겨 칠하면 돼요.</p>
+        <div className="cs-dbtns">
+          <button type="button" className="sv-btn pri" onClick={() => go("/paper")}>📝 {g ? "채점한 시험지 보기" : "시험지에 답 쓰고 채점"}</button>
+          <button type="button" className="sv-btn" onClick={() => go("/key")}>✅ 정답 · 채점 기준</button>
         </div>
-        <p className="cs-dnote">시험지에는 OMR 답안지에 칠하듯 답을 고르고, 서답형은 하위 문항마다 손글씨나 타자로 써요. 제출하면 선택형은 바로 채점되고, 서답형은 모범 답과 채점 요소를 보며 스스로 채점해요.</p>
       </div>
 
       <div className="cs-card">
@@ -186,13 +198,4 @@ function MockHome({ exam, school, uid, say }) {
       {exam.code && <p className="mx-code">프린트 코드 {exam.code}</p>}
     </div>
   );
-}
-
-function DocGet({ exam, doc, school, say }) {
-  const [busy, setBusy] = useState(false);
-  const get = async () => {
-    setBusy(true);
-    try { const m = await import("./MockDocs"); await m.downloadDoc(exam, doc, school?.short, say); } finally { setBusy(false); }
-  };
-  return <button type="button" className="sv-btn sm" disabled={busy} onClick={get}>{busy ? "받는 중…" : "⬇ 받기"}</button>;
 }

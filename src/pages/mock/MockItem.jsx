@@ -2,10 +2,11 @@
 // 시험지에서 그 문항 칸만 잘라 크게 보여 주고 바로 채점한다.
 //   · 선택형: 잘라 본 문항의 보기 번호를 누르거나 아래 ①~⑤ → 「채점」. 맞히면 정답 · 단원 · 🎬 시청각 해설, 틀리면 「다시 풀기」 또는 「정답 보기」.
 //   · 서답형: 하위 문항마다 손글씨 · 타자로 쓰고 → 「모범 답 보고 채점」에서 채점 요소에 체크(스스로 채점).
+//   · 정답을 보면 그 문항의 해설그림(보관함 해설 — 선택형 풀이 · 서답형 모범 답안과 채점 기준)도 아래에.
 // 기록은 이 기기 · 계정에(시험지 풀기와 따로) — 시험 화면 문항 목록의 ✓ · ✗.
 import { useEffect, useState } from "react";
 import { readMockRecord, saveMockAttempt, judgeMc, toggleChoice, isAnswered, choiceText } from "../../lib/mockexams";
-import { ItemCrop, ChoicePad, SaWriter, SaMine, SaGrader, AvButtons, Rich } from "./parts";
+import { ItemCrop, ChoicePad, SaWriter, SaMine, SaGrader, AvButtons, Rich, SolImage } from "./parts";
 
 export default function MockItem({ exam, i, uid }) {
   const it = exam.items.find((x) => x.i === i) || exam.items[0];
@@ -92,6 +93,7 @@ function MockItemInner({ exam, it, uid }) {
         </div>
       )}
 
+      {(open || res === "ok") && <SolImage exam={exam} it={it} title={it.kind === "sa" ? "📘 모범 답안 · 채점 기준" : "📘 해설"} />}
       {(open || res === "ok") && <AvButtons it={it} from={from} />}
       {open && res && res !== "ok" && <button type="button" className="sv-btn full cs-retry" onClick={retry}>↺ 다시 풀어 보기</button>}
 
