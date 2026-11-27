@@ -278,3 +278,17 @@
 .tt-root .attchk button.on[data-chk="came"]{color:#166534}
 .tt-root .attchk button.on[data-chk="absent"]{color:#b91c1c}
 .tt-root .attchk button.on[data-chk="late"]{color:#92400e}
+/* 교재 문항 · 포스트잇 — 1차 노랑 · 2차 주황 · 3차부터 빨강 */
+.tt-root .bcpage{margin-bottom:12px}
+.tt-root .bcpg{font-weight:800;color:var(--sub);margin:6px 0}
+.tt-root .bcitem{display:grid;grid-template-columns:minmax(80px,140px) minmax(90px,160px) 1fr auto;gap:8px;align-items:center;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;margin:4px 0;background:#fff}
+.tt-root .bcitem.postit{border-width:2px}
+.tt-root .bcitem.postit.py{background:#fef9c3;border-color:#facc15;box-shadow:3px 3px 0 #fde047}
+.tt-root .bcitem.postit.po{background:#ffedd5;border-color:#fb923c;box-shadow:3px 3px 0 #fdba74}
+.tt-root .bcitem.postit.pr{background:#fee2e2;border-color:#f87171;box-shadow:3px 3px 0 #fca5a5}
+.tt-root .bcact{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:700px){.tt-root .bcitem{grid-template-columns:1fr 1fr}.tt-root .bcrounds,.tt-root .bcact{grid-column:1/-1;justify-content:flex-start}}
+.tt-root .tag.postit-t{background:#fef9c3;color:#854d0e;text-decoration:none}
+.tt-root .pdot{display:inline-block;width:8px;height:8px;border-radius:2px;background:#facc15;margin-right:3px;vertical-align:middle}
+.tt-root .cropbox{min-height:80px;max-height:70vh;overflow:auto}
+.tt-root .qcard .tin[data-qr]{min-width:0}
