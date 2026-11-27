@@ -224,6 +224,22 @@
   "ebm",
   "isochron",
   "milank",
-  "daisy"
+  "daisy",
+  "beats",
+  "timbre",
+  "pipe",
+  "temper",
+  "dissonance",
+  "erhythm",
+  "clock12",
+  "quantize",
+  "ratio",
+  "frieze",
+  "tiling",
+  "bezier",
+  "contrast",
+  "persp",
+  "fitts",
+  "lsystem"
  ]
 }

@@ -30,6 +30,8 @@ export const MODS = {
   chem: () => import("./chem.jsx"),
   bio: () => import("./bio.jsx"),
   earth: () => import("./earth.jsx"),
+  music: () => import("./music.jsx"),
+  design: () => import("./design.jsx"),
 };
 
 export const KINDS = {
@@ -119,6 +121,12 @@ export const KINDS = {
   // 지구과학
   greatcircle: ["earth", "GreatCircle"], quake: ["earth", "Quake"], coriolis: ["earth", "Coriolis"], tide: ["earth", "Tide"],
   ebm: ["earth", "EBM"], isochron: ["earth", "Isochron"], milank: ["earth", "Milank"], daisy: ["earth", "Daisy"],
+  // 음악
+  beats: ["music", "Beats"], timbre: ["music", "Timbre"], pipe: ["music", "Pipe"], temper: ["music", "Temper"],
+  dissonance: ["music", "Dissonance"], erhythm: ["music", "ERhythm"], clock12: ["music", "Clock12"], quantize: ["music", "Quantize"],
+  // 디자인
+  ratio: ["design", "Ratio"], frieze: ["design", "Frieze"], tiling: ["design", "Tiling"], bezier: ["design", "Bezier"],
+  contrast: ["design", "Contrast"], persp: ["design", "Persp"], fitts: ["design", "Fitts"], lsystem: ["design", "LSystem"],
 };
 
 const loaded = {};
