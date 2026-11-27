@@ -1994,7 +1994,7 @@ function bindFeeCard(d) {
       ${S.rows.map((r, i) => `<tr data-fpr="${i}"><td><input class="tin" data-k="level" value="${esc(r.level)}" placeholder="예: 초5-6" style="min-width:0;width:110px"></td>
         <td><input class="tin" data-k="grades" value="${esc(r.grades)}" placeholder="초5-6" style="min-width:0;width:110px"></td>
         <td><input class="tin" data-k="minutes" value="${esc(String(r.minutes ?? ""))}" placeholder="180" inputmode="numeric" style="min-width:0;width:70px"></td>
-        ${S.pws.map((n) => `<td><input class="tin" data-pw="${n}" value="${esc(r.fees[n] || "")}" placeholder="예: 25만" style="min-width:0;width:100px"></td>`).join("")}
+        ${S.pws.map((n) => `<td><input class="tin" data-pw="${n}" value="${esc(r.fees[n] || "")}" placeholder="예: 30만" style="min-width:0;width:100px"></td>`).join("")}
         <td><button type="button" class="btn ghost small" data-fpdel="${i}">빼기</button></td></tr>`).join("")}</table></div>
       <div class="row" style="margin-top:8px"><button type="button" class="btn ghost small" id="fpAddRow">+ 대상</button>
         <span class="small nowrap">주 <input class="tin" id="fpPwN" inputmode="numeric" style="min-width:0;width:48px">회 <button type="button" class="btn ghost small" id="fpAddPw">+ 칸</button></span></div>
