@@ -29,6 +29,7 @@ export const MODS = {
   opt: () => import("./opt.jsx"),
   chem: () => import("./chem.jsx"),
   bio: () => import("./bio.jsx"),
+  earth: () => import("./earth.jsx"),
 };
 
 export const KINDS = {
@@ -115,6 +116,9 @@ export const KINDS = {
   // 생명과학
   leslie: ["bio", "Leslie"], compete: ["bio", "Compete"], herd: ["bio", "Herd"], drift: ["bio", "Drift"],
   mm: ["bio", "MM"], neuron: ["bio", "Neuron"], phylo: ["bio", "Phylo"], turing: ["bio", "Turing"],
+  // 지구과학
+  greatcircle: ["earth", "GreatCircle"], quake: ["earth", "Quake"], coriolis: ["earth", "Coriolis"], tide: ["earth", "Tide"],
+  ebm: ["earth", "EBM"], isochron: ["earth", "Isochron"], milank: ["earth", "Milank"], daisy: ["earth", "Daisy"],
 };
 
 const loaded = {};

@@ -216,6 +216,14 @@
   "mm",
   "neuron",
   "phylo",
-  "turing"
+  "turing",
+  "greatcircle",
+  "quake",
+  "coriolis",
+  "tide",
+  "ebm",
+  "isochron",
+  "milank",
+  "daisy"
  ]
 }
