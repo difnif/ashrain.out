@@ -238,3 +238,21 @@
 .tt-root .tt-mig{margin-left:4px}
 
 .ap-wrap.tt-wide{max-width:1180px}
+
+/* 교재 기록 — 그대로 둔 날수(14일 노랑 · 30일 빨강) · 기록 적기 · 수업 끝 진도 적기 */
+.tt-root .tag.idle{background:#f1f5f9;color:var(--sub);font-weight:700}
+.tt-root .tag.idle.y{background:#fef3c7;color:#92400e}
+.tt-root .tag.idle.r{background:#fee2e2;color:#b91c1c}
+.tt-root .tin.bad{border-color:#ef4444;background:#fef2f2}
+.tt-root tr.blogrow > td{border-top:none;padding-top:0}
+.tt-root .blogrow details > summary{cursor:pointer;color:var(--sub);padding:2px 0}
+.tt-root .blogform{gap:6px;margin-top:6px}
+.tt-root .blogform .tin{min-width:0}
+.tt-root .blogform [data-f="pages"]{flex:1;min-width:180px}
+.tt-root .blogform [data-f="note"]{width:160px}
+.tt-root .dayt .pin{min-width:0;width:120px}
+.tt-root .dayt td{vertical-align:middle}
+.tt-root .warn-t{color:#b91c1c}
+.tt-root .t button.x{border:none;background:none;color:var(--sub);font-size:16px;cursor:pointer;padding:0 4px}
+.tt-root .t button.x.armed{color:#b91c1c;font-size:12px;font-weight:700}
+.tt-root .toast .tbtn{margin-left:12px;background:#fff;color:var(--ink);border:none;border-radius:8px;padding:4px 12px;font-weight:800;cursor:pointer}

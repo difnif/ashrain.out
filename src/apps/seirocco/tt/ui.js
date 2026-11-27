@@ -2,7 +2,7 @@
    라우트: #/tt/convert · #/tt/register · #/tt/grade[/코드[/학생id]] · #/tt/class · #/tt/students[/id] · #/tt/prints · #/tt/print/코드 · #/tt/log */
 import * as B from "./backend";
 import { importView, pcAutoSync } from "./importer";
-import { autoJudge, judge, TEMPLATES } from "./logic";
+import { autoJudge, judge, TEMPLATES, parseProgress, parsePages, todayStr } from "./logic";
 import * as S from "./share";
 import { splitLabel, partLabel } from "./parts";
 
@@ -28,7 +28,14 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem("tt:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem("tt:" + k, JSON.stringify(v)); } catch { /* 저장 안 돼도 됨 */ } },
 };
-const api = (path, body) => B.api(path, body);
+// 화면을 그리는 중에 다른 화면으로 옮기면(또는 다시 그리면), 앞 화면이 늦게 받은 읽기(GET) 결과는 버린다 — 늦게 끝난 앞 화면이 새 화면을 덮지 않게.
+// 보내기(POST)는 늘 끝까지 간다.
+let routeSeq = 0;
+const api = (path, body) => {
+  if (body !== undefined) return B.api(path, body);
+  const seq = routeSeq;
+  return B.api(path).then((r) => (seq === routeSeq ? r : new Promise(() => {})), (e) => (seq === routeSeq ? Promise.reject(e) : new Promise(() => {})));
+};
 const upload = (file) => B.upload(file);
 const uploadScan = (gid, file, round = null) => B.uploadScan(gid, file, round);
 
@@ -193,12 +200,22 @@ async function scanModal(gid, titleHtml, { rounds = 1, scans = null, meta = null
 }
 
 let toastT = 0;
-function toast(msg, ms = 2600) {
+// action = { label, fn } — 알림 안에 단추(예: 「되돌리기」)를 붙이고 조금 더 오래 보여 준다
+function toast(msg, ms = 2600, action = null) {
   const t = $("#tt-toast");
-  t.textContent = msg;
+  if (action) {
+    t.innerHTML = `<span>${esc(msg)}</span><button type="button" class="tbtn">${esc(action.label)}</button>`;
+    $("button", t).onclick = async () => { t.hidden = true; try { await action.fn(); } catch (e) { toast(e.message, 5000); } };
+    ms = Math.max(ms, 8000);
+  } else t.textContent = msg;
   t.hidden = false;
   clearTimeout(toastT);
   toastT = setTimeout(() => (t.hidden = true), ms);
+}
+// 입력을 마친 뒤 알림 + 「되돌리기」(업무 기록에 남긴 것을 되돌림)
+function undoToast(msg, events) {
+  if (!events || !events.length) return toast(msg);
+  toast(msg, 8000, { label: "되돌리기", fn: async () => { const r = await api("undo", { events }); toast(r.n > 1 ? `${r.n}개 되돌렸어요` : "되돌렸어요"); route(); } });
 }
 
 /* 모달: actions = [{label, value, cls}] → 고른 value (바깥 클릭·Esc = null) */
@@ -264,6 +281,7 @@ const onUnload = (e) => { if (leaveGuard && leaveGuard.dirty && leaveGuard.dirty
 window.addEventListener("beforeunload", onUnload);
 
 function route() {
+  routeSeq++;
   curHash = location.hash;
   const parts = (location.hash.replace(/^#\/?(tt\/?)?/, "") || "grade").split("/").map(decodeURIComponent);
   const tab = { print: "prints", wrong: "students", parts: "prints" }[parts[0]] || parts[0];
@@ -1268,6 +1286,9 @@ async function startRetry(code, sid, d) {
   location.hash = "#/tt/grade/" + code + "/" + sid;
 }
 
+// 채점한 날(매긴 날) — 프린트 차마다 「1차 11/20 · 2차 11/25~26」
+const dayRange = (a, b) => (!a ? "" : !b || b === a ? md(a) : `${md(a)}~${a.slice(0, 7) === b.slice(0, 7) ? String(+b.slice(8, 10)) : md(b)}`);
+const gdLine = (gd) => ((gd || []).length ? `<div class="sub small nowrap" title="채점한 날(매긴 날)">채점 ${gd.map((x) => `${(gd.length > 1 ? x.round + "차 " : "")}${dayRange(x.first, x.last)}`).join(" · ")}</div>` : "");
 const roundsLine = (it) => (it.rounds || []).map((x) => `${x.round}차 ${{ O: "O", X: "X", U: "안 풂" }[x.result] || x.result}`).join(" → ");
 
 /* 채점 끝난 뒤 요약 (#/tt/grade/코드/학생/done) */
@@ -1290,8 +1311,9 @@ viewGrade = async function (code, sid, extra) {
   view.innerHTML = `<h1>${esc(d.student.name)} · ${esc(d.print.title)} <span class="code sub">${esc(d.print.code_fmt)}</span></h1>
     <div class="card"><div class="gsum"><span class="n o">O ${d.summary.O}</span><span class="n x">X ${d.summary.X}</span><span class="n u">안 풂 ${d.summary.U}</span>${d.summary.none ? `<span class="n">남음 ${d.summary.none}</span>` : ""} ${statusTag(d.grading.status)}
       ${R.length > 1 ? `<span class="tag ses">${last.round}차까지</span>` : ""}</div>
-      ${R.length > 1 ? `<table class="t" style="margin-top:10px;max-width:640px"><tr><th>차</th><th>무엇을</th><th>문항</th><th>O</th><th>X</th><th>안 풂</th><th>남음</th><th>날짜</th></tr>
-        ${R.map((r) => `<tr><td><b>${r.round}차</b></td><td class="small">${r.kind === "retry" ? "다시 풀기" : "처음 풀기"}</td><td>${r.summary.total}</td>${sm(r.summary)}<td class="sub small">${shortWhen(r.started_at)}</td></tr>`).join("")}
+      ${R.length === 1 && R[0].graded_first ? `<div class="sub small" style="margin-top:6px">채점한 날 ${dayRange(R[0].graded_first, R[0].graded_last)}</div>` : ""}
+      ${R.length > 1 ? `<table class="t" style="margin-top:10px;max-width:640px"><tr><th>차</th><th>무엇을</th><th>문항</th><th>O</th><th>X</th><th>안 풂</th><th>남음</th><th>채점한 날</th></tr>
+        ${R.map((r) => `<tr><td><b>${r.round}차</b></td><td class="small">${r.kind === "retry" ? "다시 풀기" : "처음 풀기"}</td><td>${r.summary.total}</td>${sm(r.summary)}<td class="sub small">${r.graded_first ? dayRange(r.graded_first, r.graded_last) : "-"}</td></tr>`).join("")}
         <tr style="font-weight:800"><td>최종</td><td></td><td>${d.summary.total}</td>${sm(d.summary)}<td></td></tr></table>` : ""}
       <div class="row" style="margin-top:12px">
         ${!done ? `<a class="btn" href="#/tt/grade/${d.print.code}/${sid}">${last.round > 1 ? last.round + "차 " : ""}이어서 채점</a>` : ""}
@@ -1342,7 +1364,7 @@ async function viewClass() {
     <div class="card"><div class="opt">
       <label class="k">날짜</label><div class="row"><input type="date" class="tin" id="cDate" value="${st.date}"><span class="sub small">최근</span><input type="number" class="tin" id="cDays" min="1" max="120" value="${st.days}" style="min-width:0;width:80px"><span class="sub small">일 동안 출제한 프린트를 같이 보여줘요</span></div>
       <label class="k">오늘 학생</label><div id="cNames"></div>
-    </div><div class="row" style="margin-top:12px"><button class="btn big" id="cGo">불러오기</button></div></div>
+    </div><div class="row" style="margin-top:12px"><button class="btn big" id="cGo">불러오기</button><a class="btn ghost" href="#/tt/books/day" title="학생들이 교재를 몇 쪽까지 풀었는지 한 번에 적어요">교재 진도 적기</a></div></div>
     <div id="cOut"></div>`;
   const chips = nameChips($("#cNames"), students, st.names);
   const load = async () => {
@@ -1458,13 +1480,15 @@ async function studentDetail(id) {
     <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">교재 <span class="sub small">스캔본은 교재마다 모아요</span></h2>
         ${freeBooks.length ? `<select class="tin" id="bkAdd" style="min-width:0"><option value="">교재 붙이기…</option>${freeBooks.map((b) => `<option value="${b.code}">${esc(b.title)}${b.publisher ? ` (${esc(b.publisher)})` : ""}</option>`).join("")}</select>`
           : `<a class="btn ghost small" href="#/tt/books">${allBooks.length ? "교재 탭" : "교재 등록하러 가기"}</a>`}</div>
-      ${myBooks.length ? `<table class="t" style="margin-top:8px"><tr><th>교재</th><th>출판사 · 학년</th><th>붙인 날</th><th></th></tr>
-        ${myBooks.map((b) => `<tr><td><a href="#/tt/books/${b.master_code}"><b>${esc(b.title)}</b></a></td><td class="small">${bookSub(b) || "-"}</td><td class="sub small">${shortWhen(b.issued_at)}</td>
+      ${myBooks.length ? `<table class="t" style="margin-top:8px"><tr><th>교재</th><th>진도</th><th>마지막 채점</th><th>해설지</th><th></th></tr>
+        ${myBooks.map((b) => `<tr><td><a href="#/tt/books/${b.master_code}"><b>${esc(b.title)}</b></a><div class="sub small">${bookSub(b)}${bookSub(b) ? " · " : ""}붙인 날 ${md(b.since)}</div></td>
+          <td>${progText(b)}${b.unchecked && b.unchecked.known && b.unchecked.text ? `<div class="small warn-t" title="적은 진도와 채점한 쪽으로 어림했어요">채점 기록 없는 쪽 ${esc(b.unchecked.text)}</div>` : ""}</td>
+          <td>${gradedText(b)}</td><td>${solText(b)}</td>
           <td>${b.grading ? bookScanBtn({ gid: b.grading.id, n_scans: b.n_scans }, b.title, s.name) : ""}</td></tr>`).join("")}</table>`
         : `<div class="empty">아직 붙인 교재가 없어요</div>`}</div>
     <div class="card"><h2>받은 프린트</h2>${d.prints.length ? `<table class="t"><tr><th>출제일</th><th>코드</th><th>제목</th><th>채점</th><th>결과</th><th></th></tr>
       ${d.prints.map((p) => `<tr><td class="sub small">${shortWhen(p.issued_at)}</td><td class="code">${esc(p.code_fmt)}</td><td>${esc(p.title)}</td>
-        <td>${p.grading ? statusTag(p.grading.status) : `<span class="muted small">안 함</span>`}${p.n_rounds > 1 ? ` <span class="tag ses">${p.n_rounds}차</span>` : ""}</td><td>${sumText(p.summary)}${roundNote(p)}</td>
+        <td>${p.grading ? statusTag(p.grading.status) : `<span class="muted small">안 함</span>`}${p.n_rounds > 1 ? ` <span class="tag ses">${p.n_rounds}차</span>` : ""}${gdLine(p.graded_days)}</td><td>${sumText(p.summary)}${roundNote(p)}</td>
         <td class="row" style="gap:4px;flex-wrap:wrap"><button class="btn small ghost" data-pout="${p.code}" title="${esc(s.name)} 이름을 넣은 시험지">출력</button>
           ${p.grading ? `<button class="btn small ghost" data-scan="${p.grading.id}" data-r="${p.n_rounds || 1}" data-t="${esc(p.title)}" title="학생이 푼 종이 스캔본 올리기 · 1차·2차 표시">${scanLabel({ length: p.n_scans || 0 })}</button>` : ""}
           ${p.grading ? Array.from({ length: p.n_rounds || 1 }, (_, k) => k + 1).filter((r) => p.grading.status === "done" || r < (p.n_rounds || 1))
@@ -1495,9 +1519,12 @@ async function studentDetail(id) {
   $("#dJson").onclick = () => openLink(`/dl/student/${id}.json?${per()}`, true);
 }
 
-/* ───────────────────────── 교재 (#/tt/books · #/tt/books/<교재 코드>)
-   교재 하나를 학생마다 채점 기록 하나로 둔다(백엔드 options.textbook). 지금은 스캔본 올리기 · 받기 · 1 · 2 · 3차 표시까지 — 프린트와 같은 스캔본 창.
+/* ───────────────────────── 교재 (#/tt/books · #/tt/books/<교재 코드> · #/tt/books/day[/날짜])
+   교재 하나를 학생마다 채점 기록 하나로 둔다(백엔드 options.textbook). 스캔본은 프린트와 같은 창(1 · 2 · 3차).
+   교재 기록(tt_book_logs): 진도(그날 몇 쪽까지) · 채점한 날(몇 차 · 쪽) · 해설지 준 날 → 그대로 둔 날수 · 채점 기록이 없는 쪽(어림).
    분석(채점 표시 읽기 · 문항 · 정답 쌓기) · 포스트잇은 다음 단계에서 붙인다. */
+const IDLE_Y = 14, IDLE_R = 30;          // 마지막 채점에서 14일 넘으면 노랑, 30일 넘으면 빨강
+const md = (d) => (d ? String(d).slice(5).replace("-", "/") : "");
 function bookWhere(p) {               // 교재(교재 자체나 학생 몫)면 그 교재 화면 주소, 아니면 null
   const b = p && p.options && p.options.textbook;
   return b ? "#/tt/books/" + (b.role === "master" ? p.code : b.master_code || "") : null;
@@ -1506,6 +1533,16 @@ function bookSub(b) { return [b.publisher, b.grade].filter(Boolean).map(esc).joi
 function bookScanBtn(x, title, name) {
   return x.gid ? `<button class="btn small ghost" data-scan="${x.gid}" data-r="${BOOK_R}" data-t="${esc(title)}" data-n="${esc(name)}" data-had="${x.n_scans || 0}" title="학생이 푼 교재 스캔본 올리기 · 받기 · 1·2·3차 표시">${scanLabel({ length: x.n_scans || 0 })}</button>` : "";
 }
+// 그대로 둔 날수 — 마지막 채점(채점 기록 · 스캔본 올린 날)부터, 채점이 없으면 붙인 날부터
+function idleTag(x) {
+  const n = x.idle_days ?? 0, cls = n >= IDLE_R ? " r" : n >= IDLE_Y ? " y" : "";
+  if (x.never_graded) return `<span class="tag idle${cls}" title="붙인 날(${md(x.since)})부터 채점 기록이 없어요">채점 없음 · ${n}일</span>`;
+  return `<span class="tag idle${cls}" title="마지막 채점 ${md(x.last_graded)}">${n ? `${n}일째 그대로` : "오늘 채점"}</span>`;
+}
+const progText = (x) => (x.last_solved ? `<b>${x.last_solved.page_to}쪽</b>까지 <span class="sub small">${md(x.last_solved.day)}</span>` : `<span class="muted small">없음</span>`);
+const gradedText = (x) => (x.last_graded ? `${md(x.last_graded)} ${idleTag(x)}` : idleTag(x));
+const solText = (x) => (x.solution ? `<span class="tag done" title="해설지를 준 날">해설지 ${md(x.solution.day)}</span>` : `<span class="muted small">안 줌</span>`);
+const logsWarn = (ok) => (ok === false ? `<div class="card" style="background:#fffbeb;border-color:#fde68a"><b>교재 기록 표가 DB에 아직 없어요.</b> <span class="small">진도 · 채점한 날 · 해설지를 적으려면 supabase/2026-11_tt_book_logs.sql 을 넣어야 해요.</span></div>` : "");
 function bookHowto() {
   return `<div class="card"><h2>스캔본 올리는 법 <span class="sub small">프린트와 같아요</span></h2><ol class="small" style="margin:0;padding-left:20px;line-height:1.8">
     <li>학생 이름 옆 「스캔본」을 눌러요.</li>
@@ -1513,11 +1550,26 @@ function bookHowto() {
     <li>올린 스캔본은 받기 · 한 PDF로 보기 · 지우기 · 차수 바꾸기가 돼요.</li></ol>
     <p class="sub small" style="margin:8px 0 0">스캔본을 분석해 채점 · 정답을 쌓는 기능과 포스트잇은 다음에 붙여요.</p></div>`;
 }
-async function viewBooks(code) {
+async function viewBooks(code, arg) {
+  if (code === "day") return bookDayView(arg);
   if (code) return bookDetail(normCode(code));
   const [list, students] = await Promise.all([api("books"), api("students")]);
+  const stale = list.flatMap((b) => b.students.filter((x) => x.active && (x.idle_days ?? 0) >= IDLE_Y).map((x) => ({ ...x, book: b })))
+    .sort((a, b) => b.idle_days - a.idle_days);
   view.innerHTML = `<h1>교재</h1>
-    <div class="card"><h2>교재 등록 <span class="sub small">학생마다 교재 하나에 스캔본을 모아요</span></h2>
+    ${logsWarn(list.length ? list[0].logs_ok : true)}
+    <div class="card"><div class="row" style="justify-content:space-between"><div class="row"><a class="btn big" href="#/tt/books/day">수업 끝 진도 적기</a>
+        <span class="sub small">학생들이 교재를 몇 쪽까지 풀었는지 한 번에 적어요</span></div>
+      <div class="row"><span class="sub small">교재 기록 받기</span><a class="btn ghost small" href="/dl/books.json" download title="학생별 교재 · 진도 · 채점한 날 · 채점 기록이 없는 쪽 · 해설지 — 숙제 낼 때 Claude에게 주세요">JSON</a>
+        <a class="btn ghost small" href="/dl/books.csv" download title="엑셀에서 여는 표">CSV</a></div></div></div>
+    ${stale.length ? `<div class="card"><h2>오래 채점하지 않은 교재 <span class="sub small">마지막 채점에서 ${IDLE_Y}일 넘게 (다니는 학생만)</span></h2>
+      <table class="t"><tr><th>학생</th><th>교재</th><th>마지막 채점</th><th>진도</th><th>해설지</th></tr>
+      ${stale.map((x) => `<tr class="click" data-href="#/tt/books/${x.book.code}"><td><b>${esc(x.name)}</b></td><td>${esc(x.book.title)}</td><td>${gradedText(x)}</td><td>${progText(x)}</td><td>${solText(x)}</td></tr>`).join("")}</table></div>` : ""}
+    <div class="card"><h2>교재 목록</h2>${list.length ? `<table class="t"><tr><th>교재</th><th>출판사 · 학년</th><th>학생 · 스캔본</th><th></th></tr>
+      ${list.map((b) => `<tr class="click" data-href="#/tt/books/${b.code}"><td><b>${esc(b.title)}</b>${b.memo ? `<div class="small muted">${esc(b.memo)}</div>` : ""}</td><td class="small">${bookSub(b) || "-"}</td>
+        <td><div class="chips">${b.students.map((x) => `<span class="bkst${x.active ? "" : " off"}">${esc(x.name)} ${idleTag(x)} ${bookScanBtn(x, b.title, x.name)}</span>`).join("") || `<span class="muted small">아직 없음</span>`}</div></td>
+        <td><a class="btn small ghost nowrap" href="#/tt/books/${b.code}">학생 · 기록</a></td></tr>`).join("")}</table>` : `<div class="empty">아직 등록한 교재가 없어요</div>`}</div>
+    <div class="card"><h2>교재 등록 <span class="sub small">학생마다 교재 하나에 스캔본 · 진도 · 채점 기록을 모아요</span></h2>
       <div class="opt">
         <label class="k">교재 이름</label><input class="tin" id="bTitle" placeholder="예: 개념원리 중2-1" autocomplete="off">
         <label class="k">출판사</label><input class="tin" id="bPub" placeholder="예: 개념원리" autocomplete="off">
@@ -1526,10 +1578,6 @@ async function viewBooks(code) {
         <label class="k">학생</label><div id="bStu"></div>
       </div>
       <div class="row" style="margin-top:10px"><button class="btn" id="bAdd">등록</button><span class="sub small">학생은 나중에 붙여도 돼요</span></div></div>
-    <div class="card"><h2>교재 목록</h2>${list.length ? `<table class="t"><tr><th>교재</th><th>출판사 · 학년</th><th>학생 · 스캔본</th><th></th></tr>
-      ${list.map((b) => `<tr class="click" data-href="#/tt/books/${b.code}"><td><b>${esc(b.title)}</b>${b.memo ? `<div class="small muted">${esc(b.memo)}</div>` : ""}</td><td class="small">${bookSub(b) || "-"}</td>
-        <td><div class="chips">${b.students.map((x) => `<span class="bkst${x.active ? "" : " off"}">${esc(x.name)} ${bookScanBtn(x, b.title, x.name)}</span>`).join("") || `<span class="muted small">아직 없음</span>`}</div></td>
-        <td><a class="btn small ghost nowrap" href="#/tt/books/${b.code}">학생 붙이기 · 고치기</a></td></tr>`).join("")}</table>` : `<div class="empty">아직 등록한 교재가 없어요</div>`}</div>
     ${bookHowto()}`;
   const chips = nameChips($("#bStu"), students);
   const btn = $("#bAdd");
@@ -1546,6 +1594,13 @@ async function viewBooks(code) {
   bindRows(view);
   bindScanButtons(view);
 }
+const LOG_KIND = { solved: "진도", graded: "채점", solution: "해설지" };
+function logLine(l) {
+  const what = l.kind === "solved" ? `${l.pages ? esc(l.pages) + "쪽" : ""}${l.pages ? " · " : ""}<b>${l.page_to}쪽</b>까지`
+    : l.kind === "graded" ? `${l.round ? l.round + "차 " : ""}${l.pages ? esc(l.pages) + "쪽" : "<span class='muted'>쪽 안 적음</span>"}` : "줌";
+  return `<tr><td class="nowrap">${md(l.day)}</td><td><span class="tag ${l.kind === "graded" ? "open" : l.kind === "solution" ? "done" : "ses"}">${LOG_KIND[l.kind]}</span></td><td>${what}</td>
+    <td class="sub small">${esc(l.note || "")}</td><td><button class="x" data-bldel="${l.id}" title="이 기록 지우기">×</button></td></tr>`;
+}
 async function bookDetail(code) {
   let b;
   try { b = await api("books/" + code); } catch (e) {
@@ -1558,11 +1613,28 @@ async function bookDetail(code) {
   const students = await api("students");
   const have = new Set(b.students.map((x) => x.sid));
   const free = students.filter((s) => s.active && !have.has(s.id));
+  const today = todayStr();
+  const openSid = store.get("bookOpen", null);
   view.innerHTML = `<h1>${esc(b.title)} ${bookSub(b) ? `<span class="sub small">${bookSub(b)}</span>` : ""}</h1>
-    <div class="card"><h2>이 교재를 쓰는 학생</h2>${b.students.length ? `<table class="t"><tr><th>학생</th><th>붙인 날</th><th>스캔본</th><th></th></tr>
-      ${b.students.map((x) => `<tr${x.active ? "" : ` style="opacity:.55"`}><td><a href="#/tt/students/${x.sid}"><b>${esc(x.name)}</b></a></td><td class="sub small">${shortWhen(x.since)}</td>
+    ${logsWarn(b.logs_ok)}
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">이 교재를 쓰는 학생</h2><a class="btn ghost small" href="#/tt/books/day">수업 끝 진도 적기</a></div>
+      ${b.students.length ? `<table class="t" style="margin-top:8px"><tr><th>학생</th><th>진도</th><th>마지막 채점</th><th>해설지</th><th>스캔본</th><th></th></tr>
+      ${b.students.map((x) => `<tr${x.active ? "" : ` style="opacity:.55"`}><td><a href="#/tt/students/${x.sid}"><b>${esc(x.name)}</b></a><div class="sub small">붙인 날 ${md(x.since)}</div></td>
+        <td>${progText(x)}${x.unchecked && x.unchecked.known && x.unchecked.text ? `<div class="small warn-t" title="적은 진도와 채점한 쪽으로 어림했어요">채점 기록 없는 쪽 ${esc(x.unchecked.text)}</div>` : ""}</td>
+        <td>${gradedText(x)}</td>
+        <td>${x.solution ? `${solText(x)} <button class="x" data-bldel="${x.solution.id}" title="해설지 기록 지우기">×</button>` : `<button class="btn small ghost" data-sol="${x.code}" title="오늘 해설지를 줬다고 적어요">해설지 줬어요</button>`}</td>
         <td>${bookScanBtn(x, b.title, x.name)}</td>
-        <td>${x.n_scans ? "" : `<button class="btn small ghost warn-t" data-unas="${x.sid}" title="이 학생에게서 교재를 빼요 (스캔본이 없을 때만)">빼기</button>`}</td></tr>`).join("")}</table>`
+        <td>${x.n_scans || (x.logs || []).length ? "" : `<button class="btn small ghost warn-t" data-unas="${x.sid}" title="이 학생에게서 교재를 빼요 (스캔본 · 기록이 없을 때만)">빼기</button>`}</td></tr>
+        <tr class="blogrow"><td colspan="6"><details data-sid="${x.sid}"${openSid === x.sid ? " open" : ""}><summary class="small">기록 ${(x.logs || []).length} · 적기</summary>
+          <div class="row blogform" data-code="${x.code}">
+            <select class="tin" data-f="kind"><option value="graded">채점한 날</option><option value="solved">진도(몇 쪽까지)</option></select>
+            <input type="date" class="tin" data-f="day" value="${today}">
+            <select class="tin" data-f="round"><option value="1">1차</option><option value="2">2차</option><option value="3">3차</option></select>
+            <input class="tin" data-f="pages" placeholder="채점한 쪽 (예: 12-20, 25) · 비워도 돼요" autocomplete="off">
+            <input class="tin" data-f="note" placeholder="메모" autocomplete="off">
+            <button class="btn small" data-blsave>적기</button></div>
+          ${(x.logs || []).length ? `<table class="t small" style="margin-top:6px">${x.logs.map(logLine).join("")}</table>` : `<div class="sub small" style="margin-top:6px">아직 기록이 없어요</div>`}
+        </details></td></tr>`).join("")}</table>`
       : `<div class="empty">아직 붙인 학생이 없어요</div>`}
       <div style="margin-top:12px"><b class="small">학생 붙이기</b> <span class="sub small">눌러서 바로 붙여요</span><div class="chips" style="margin-top:6px">${free.map((s) => `<span class="chip pick" data-as="${s.id}">+ ${esc(s.name)}</span>`).join("") || `<span class="muted small">붙일 학생이 없어요</span>`}</div></div></div>
     <div class="card"><h2>교재 정보</h2><div class="opt">
@@ -1574,6 +1646,38 @@ async function bookDetail(code) {
         ${b.students.length ? "" : `<button class="btn ghost warn-t" id="bDel">교재 지우기</button>`}<a class="btn ghost" href="#/tt/books">교재 목록</a></div></div>
     ${bookHowto()}`;
   bindScanButtons(view, undefined, (bt, sc) => { if (!sc.length !== !+bt.dataset.had) route(); });     // 스캔본이 생기거나 다 지우면 「빼기」를 다시 그림
+  $$("details[data-sid]", view).forEach((d) => d.addEventListener("toggle", () => { if (d.open) store.set("bookOpen", +d.dataset.sid); else if (store.get("bookOpen", null) === +d.dataset.sid) store.set("bookOpen", null); }));
+  $$(".blogform", view).forEach((f) => {
+    const kind = $('[data-f="kind"]', f), round = $('[data-f="round"]', f), pages = $('[data-f="pages"]', f);
+    const sync = () => {
+      const s = kind.value === "solved";
+      round.hidden = s;
+      pages.placeholder = s ? "몇 쪽까지 (예: 45 또는 30-45)" : "채점한 쪽 (예: 12-20, 25) · 비워도 돼요";
+      pages.classList.remove("bad");
+    };
+    kind.onchange = sync;
+    pages.oninput = () => pages.classList.toggle("bad", kind.value === "solved" ? !parseProgress(pages.value) || !!parseProgress(pages.value).empty : !parsePages(pages.value));
+    $("[data-blsave]", f).onclick = async (e) => {
+      const solved = kind.value === "solved";
+      if (solved ? !parseProgress(pages.value) || parseProgress(pages.value).empty : !parsePages(pages.value)) {
+        pages.classList.add("bad"); toast(solved ? "진도는 45 또는 30-45 처럼 적어 주세요" : "채점한 쪽은 12-20, 25 처럼 적어 주세요"); return;
+      }
+      const day = $('[data-f="day"]', f).value || todayStr(), note = $('[data-f="note"]', f).value;
+      e.currentTarget.disabled = true;
+      try {
+        const r = await api("booklogs", solved ? { code: f.dataset.code, kind: "solved", day, progress: pages.value, note } : { code: f.dataset.code, kind: "graded", day, round: +round.value, pages: pages.value, note });
+        undoToast(r.events && r.events.length ? (solved ? "진도를 적었어요" : "채점한 날을 적었어요") : "바뀐 것이 없어요", r.events); route();
+      } catch (err) { toast(err.message, 5000); route(); }
+    };
+    sync();
+  });
+  $$("[data-bldel]", view).forEach((x) => (x.onclick = async () => {
+    if (!confirmInline(x)) return;
+    try { const r = await api("booklogs/" + x.dataset.bldel, { delete: true }); undoToast("기록을 지웠어요", r.events); route(); } catch (e) { toast(e.message, 5000); }
+  }));
+  $$("[data-sol]", view).forEach((x) => (x.onclick = async () => {
+    try { const r = await api("booklogs", { code: x.dataset.sol, kind: "solution", day: todayStr() }); undoToast("해설지를 줬다고 적었어요", r.events); route(); } catch (e) { toast(e.message, 5000); }
+  }));
   $$("[data-as]", view).forEach((c) => (c.onclick = async () => {
     if (c.dataset.busy) return;
     c.dataset.busy = "1";
@@ -1593,6 +1697,57 @@ async function bookDetail(code) {
       [{ label: "그만두기", value: null, cls: "ghost" }, { label: "지우기", value: 1, cls: "warn" }]);
     if (!v) return;
     try { await api("books/" + b.code, { delete: true }); toast("지웠어요"); location.hash = "#/tt/books"; } catch (e) { toast(e.message, 4000); }
+  };
+}
+// 수업 끝 진도 적기 — 다니는 학생 × 붙인 교재, 이날 몇 쪽까지(45 · 30-45) + 채점한 쪽(있으면). 바꾼 칸만 저장, 비우면 그날 기록을 지움
+async function bookDayView(date) {
+  const d = await api("books/day" + (date ? "?date=" + encodeURIComponent(date) : ""));
+  const nBooks = d.students.reduce((a, s) => a + s.books.length, 0);
+  const g0 = (b) => b.graded.find((x) => x.round === 1) || b.graded[0] || null;
+  view.innerHTML = `<h1>수업 끝 진도 적기</h1>
+    ${logsWarn(d.logs_ok)}
+    <div class="card"><div class="row"><b>날짜</b><input type="date" class="tin" id="dDay" value="${d.date}" style="min-width:0">
+      <input class="tin" id="dQ" placeholder="학생 이름으로 찾기" autocomplete="off" style="min-width:0;width:180px">
+      <span class="sub small">진도는 「45」(45쪽까지) 또는 「30-45」 · 채점한 쪽은 「46-52, 55」처럼 · 비운 칸은 저장하지 않아요</span></div></div>
+    <div class="card">${nBooks ? `<table class="t dayt"><tr><th>학생</th><th>교재</th><th>지난 진도</th><th>이날 몇 쪽까지</th><th>채점한 쪽 <span class="sub small">(있으면)</span></th></tr>
+      ${d.students.map((s) => s.books.map((b, i) => `<tr data-sname="${esc(s.name)}" data-code="${b.code}">
+        ${i === 0 ? `<td rowspan="${s.books.length}"><b>${esc(s.name)}</b>${s.grade ? `<div class="sub small">${esc(s.grade)}</div>` : ""}</td>` : ""}
+        <td>${esc(b.title)}${b.publisher ? `<div class="sub small">${esc(b.publisher)}</div>` : ""}</td>
+        <td class="small">${b.prev ? `${b.prev.page_to}쪽 <span class="sub">${md(b.prev.day)}</span>` : `<span class="muted">-</span>`}</td>
+        <td><input class="tin pin" data-p data-init="${esc(b.today ? b.today.pages || String(b.today.page_to) : "")}" value="${esc(b.today ? b.today.pages || String(b.today.page_to) : "")}" placeholder="${b.prev ? `예: ${b.prev.page_to + 6}` : "예: 45"}" inputmode="numeric" autocomplete="off"></td>
+        <td><div class="row" style="gap:4px;flex-wrap:nowrap"><select class="tin" data-r data-init="${g0(b) ? g0(b).round || 1 : 1}" style="min-width:0">${[1, 2, 3].map((r) => `<option value="${r}"${(g0(b) ? g0(b).round || 1 : 1) === r ? " selected" : ""}>${r}차</option>`).join("")}</select>
+          <input class="tin pin" data-g data-init="${esc(g0(b) ? g0(b).pages : "")}" value="${esc(g0(b) ? g0(b).pages : "")}" placeholder="예: 46-52" autocomplete="off">
+          ${b.graded.filter((x) => x !== g0(b)).map((x) => `<span class="sub small nowrap">${x.round || ""}차 ${esc(x.pages)}</span>`).join(" ")}</div></td></tr>`).join("")).join("")}</table>
+      <div class="row" style="margin-top:12px"><button class="btn big" id="dSave">저장</button><span class="sub small" id="dNote"></span></div>`
+      : `<div class="empty">교재를 붙인 학생이 없어요. 교재 탭에서 교재를 등록하고 학생을 붙여 주세요.</div>`}</div>`;
+  $("#dDay").onchange = () => { location.hash = "#/tt/books/day/" + ($("#dDay").value || ""); };
+  $("#dQ").oninput = () => {
+    const q = $("#dQ").value.trim();
+    $$("tr[data-sname]", view).forEach((tr) => (tr.hidden = !!q && !tr.dataset.sname.includes(q)));
+  };
+  const check = (inp) => {
+    const bad = inp.hasAttribute("data-p") ? !parseProgress(inp.value) : !parsePages(inp.value);
+    inp.classList.toggle("bad", bad);
+    return !bad;
+  };
+  const changed = () => $$("tr[data-code]", view).map((tr) => {
+    const p = $("[data-p]", tr), g = $("[data-g]", tr), r = $("[data-r]", tr);
+    const row = { code: tr.dataset.code };
+    if (p.value.trim() !== p.dataset.init) row.progress = p.value.trim();
+    if (g.value.trim() !== g.dataset.init || (g.value.trim() && r.value !== r.dataset.init)) { row.graded = g.value.trim(); row.round = +r.value; }
+    return Object.keys(row).length > 1 ? row : null;
+  }).filter(Boolean);
+  const note = () => { if ($("#dNote")) { const n = changed().length; $("#dNote").textContent = n ? `바꾼 줄 ${n}개` : ""; } };
+  $$("input.pin", view).forEach((inp) => (inp.oninput = () => { check(inp); note(); }));
+  $$("select[data-r]", view).forEach((s) => (s.onchange = note));
+  if ($("#dSave")) $("#dSave").onclick = async () => {
+    const bad = $$("input.pin", view).filter((inp) => !check(inp));
+    if (bad.length) { bad[0].focus(); return toast(`알아볼 수 없는 칸이 ${bad.length}개 있어요 — 진도는 45 또는 30-45, 채점한 쪽은 46-52, 55 처럼`, 5000); }
+    const rows = changed();
+    if (!rows.length) return toast("바꾼 칸이 없어요");
+    $("#dSave").disabled = true;
+    try { const r = await api("books/day", { date: d.date, rows }); undoToast(`${rows.length}줄 저장했어요`, r.events); route(); }
+    catch (e) { toast(e.message, 5000); $("#dSave").disabled = false; }
   };
 }
 
@@ -1780,7 +1935,7 @@ async function viewPrint(code) {
       <div class="card" style="margin:0"><div class="row" style="justify-content:space-between"><h2 style="margin:0">채점 기록</h2>
           ${p.gradings.some((g) => g.summary && (g.summary.X || g.summary.U)) ? `<a class="btn ghost small" href="#/tt/wrong/p/${p.code}" title="이 프린트를 푼 학생들의 틀린 문항을 모아 새 프린트로">오답 출제</a>` : ""}</div>
         ${p.gradings.length ? `<table class="t" style="margin-top:8px">${p.gradings.map((g) => `<tr class="click" data-href="#/tt/grade/${p.code}/${g.student_id}${g.status === "done" ? "/done" : ""}"><td style="white-space:nowrap"><b>${esc(g.name)}</b></td>
-          <td>${statusTag(g.status)}${g.n_rounds > 1 ? ` <span class="tag ses">${g.n_rounds}차</span>` : ""}</td><td>${sumText(g.summary)}${roundNote(g)}</td><td class="sub small">${shortWhen(g.updated_at)}</td>
+          <td>${statusTag(g.status)}${g.n_rounds > 1 ? ` <span class="tag ses">${g.n_rounds}차</span>` : ""}${gdLine(g.graded_days)}</td><td>${sumText(g.summary)}${roundNote(g)}</td><td class="sub small">${shortWhen(g.updated_at)}</td>
           <td><button class="btn small ghost" style="white-space:nowrap" data-scan="${g.id}" data-r="${g.n_rounds || 1}" data-t="${esc(p.title)}" data-n="${esc(g.name)}" title="학생이 푼 종이 스캔본 올리기 · 1차·2차 표시">${scanLabel({ length: g.n_scans || 0 })}</button></td></tr>`).join("")}</table>` : `<div class="empty">아직 없어요</div>`}</div>
     </div>
     <div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><h2 style="margin:0">정답 (빠른정답) <span class="sub small" id="nAns"></span></h2>
@@ -2113,7 +2268,7 @@ const EV = {
   grading_reopen: "채점 다시 엶", retry_start: "다음 차 채점 시작", round_delete: "마지막 차 지움", grading_delete: "채점 기록 지움",
   print_purge: "프린트 완전히 지움", print_restore: "프린트 되살림", wrongset_make: "오답 프린트 만듦", library_register: "보관함에서 등록",
   library_import: "보관함에 옮겨 옴", pc_import: "PC 자료 옮겨 옴",
-  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움",
+  book_add: "교재 등록", book_edit: "교재 고침", book_assign: "교재 붙임", book_unassign: "교재 뺌", book_delete: "교재 지움", book_log: "교재 기록",
 };
 function evDetail(e) {
   const d = e.detail || {};
@@ -2127,6 +2282,13 @@ function evDetail(e) {
       return [esc(d.name || ""), "round" in d ? esc(whenText(d.round)) : "", d.pages ? `${d.pages}쪽` : ""].filter(Boolean).join(" · ");
     case "grading_start": case "student_add": return "";
     case "book_add": case "book_edit": case "book_assign": case "book_unassign": case "book_delete": return esc(d.title || "");
+    case "book_log": {
+      const one = (x) => (!x ? "없음" : x.kind === "solved" ? `${x.pages ? x.pages + "쪽 · " : ""}${x.page_to}쪽까지` : x.kind === "graded" ? `${x.round ? x.round + "차 " : ""}${x.pages ? x.pages + "쪽" : "쪽 안 적음"}` : `${md(x.day)} 줌`);
+      const k = { solved: "진도", graded: "채점한 날", solution: "해설지" }[d.kind] || d.kind;
+      const day0 = (d.after || d.before || {}).day;
+      const what = !d.before ? `적음: ${one(d.after)}` : !d.after ? `지움: ${one(d.before)}` : `${one(d.before)} → ${one(d.after)}`;
+      return `${d.undo_of ? "<b>되돌림</b> · " : ""}${esc(d.title || "")} · ${esc(k)}${d.kind !== "solution" && day0 ? " " + md(day0) : ""} · ${esc(what)}${d.note ? "" : ""}`;
+    }
     default:
       if (e.kind.startsWith("class_")) return `${d.date} · ${d.prints ? d.prints.length : 0}개${d.edited ? " (수정)" : ""}`;
       return Object.entries(d).map(([k, v]) => `${esc(k)}: ${esc(typeof v === "object" ? JSON.stringify(v) : v)}`).join(" · ");
@@ -2135,12 +2297,12 @@ function evDetail(e) {
 async function viewLog() {
   const ev = await api("events?limit=1000");
   let f = store.get("logFilter", "all");
-  const groups = { all: "전체", convert: "변환·등록", grading: "채점", class: "수업 기록", etc: "기타" };
-  const grp = (k) => (k === "convert" || k === "register" ? "convert" : k.startsWith("grading") ? "grading" : k.startsWith("class") ? "class" : "etc");
+  const groups = { all: "전체", convert: "변환·등록", grading: "채점", class: "수업 기록", book: "교재", etc: "기타" };
+  const grp = (k) => (k === "convert" || k === "register" ? "convert" : k.startsWith("grading") ? "grading" : k.startsWith("class") ? "class" : k.startsWith("book") ? "book" : "etc");
   const week = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
   const recent = ev.filter((e) => day(e.at) >= week);
   const cnt = (pred) => recent.filter(pred).length;
-  view.innerHTML = `<h1>활동 로그</h1>
+  view.innerHTML = `<h1>업무 기록</h1>
     <div class="card"><h2>최근 7일</h2><div class="gsum">
       <span class="n">변환 ${cnt((e) => e.kind === "convert")}</span>
       <span class="n">등록 ${cnt((e) => e.kind === "register")}</span>
@@ -2148,13 +2310,18 @@ async function viewLog() {
       <span class="n">덜 풂 ${cnt((e) => e.kind === "grading_close" && e.detail.reason === "unsolved")}</span>
       <span class="n">수업 기록 ${new Set(recent.filter((e) => e.kind.startsWith("class_")).map((e) => e.student_id + ":" + e.detail.date)).size}</span>
       <span class="n">학생 ${new Set(recent.filter((e) => e.student_id).map((e) => e.student_id)).size}명</span></div>
-      <p class="sub small" style="margin-bottom:0">모든 활동이 이 컴퓨터의 기록(data/mf.db)에 쌓여요. 대시보드에서 무엇을 볼지는 같이 정해서 붙일게요.</p></div>
+      <p class="sub small" style="margin-bottom:0">입력 · 활동이 모두 여기에 남아요. 잘못 넣은 교재 기록은 줄 끝 「되돌리기」로 되돌려요(그 뒤에 또 바뀌었으면 교재 화면에서 고쳐 주세요).</p></div>
     <div class="card"><div id="lf"></div><div id="lt" style="margin-top:10px"></div></div>`;
   const draw = () => {
     const list = ev.filter((e) => f === "all" || grp(e.kind) === f).slice(0, 400);
-    $("#lt").innerHTML = list.length ? `<table class="t"><tr><th>때</th><th>무엇</th><th>학생</th><th>프린트</th><th>내용</th></tr>${list.map((e) => `<tr>
+    $("#lt").innerHTML = list.length ? `<table class="t"><tr><th>때</th><th>무엇</th><th>학생</th><th>프린트</th><th>내용</th><th></th></tr>${list.map((e) => `<tr${e.detail && e.detail.undone_by ? ` style="opacity:.55"` : ""}>
       <td class="sub small" style="white-space:nowrap">${shortWhen(e.at)}</td><td><b>${esc(EV[e.kind] || e.kind)}</b></td><td>${esc(e.student || "")}</td>
-      <td class="small">${e.code ? `<a href="#/tt/print/${e.code}">${esc(e.title || "")}</a>` : ""}</td><td class="small sub">${evDetail(e)}</td></tr>`).join("")}</table>` : `<div class="empty">없어요</div>`;
+      <td class="small">${e.code ? `<a href="#/tt/print/${e.code}">${esc(e.title || "")}</a>` : ""}</td><td class="small sub">${evDetail(e)}</td>
+      <td>${e.detail && e.detail.table ? (e.detail.undone_by ? `<span class="tag">되돌림</span>` : `<button class="btn ghost small nowrap" data-undo="${e.id}" title="이 입력 전으로 되돌려요">되돌리기</button>`) : ""}</td></tr>`).join("")}</table>` : `<div class="empty">없어요</div>`;
+    $$("[data-undo]", $("#lt")).forEach((b) => (b.onclick = async () => {
+      b.disabled = true;
+      try { await api("undo", { events: [+b.dataset.undo] }); toast("되돌렸어요"); route(); } catch (e) { toast(e.message, 6000); b.disabled = false; }
+    }));
   };
   seg($("#lf"), Object.entries(groups), f, (v) => { f = v; store.set("logFilter", v); draw(); });
   draw();

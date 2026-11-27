@@ -70,11 +70,14 @@ export function roundsInfo(sessions, marks, seqs) {
     o.end_reason = se.end_reason;
     if (se.targets && o.targets === null) o.targets = se.targets;
   }
+  const gd = new Map(gradedDays(marks, sessions).map((x) => [x.round, x]));
   return [...out.keys()].sort((a, b) => a - b).map((r) => {
     const o = out.get(r);
     const tg = o.targets !== null ? o.targets : seqs;
     const ms = rm.get(r) || new Map();
     o.summary = summarize(tg.map((s) => ({ mark: ms.get(s) })));
+    o.graded_first = gd.get(r)?.first || null;       // 그 차를 매긴 날(처음 · 마지막)
+    o.graded_last = gd.get(r)?.last || null;
     return o;
   });
 }
@@ -85,7 +88,7 @@ export function gradingStats(marks, sessions, nItems) {
   const r1 = roundMarks(marks, sessions).get(1) || new Map();
   const s1 = summarize(pad(r1));
   const nr = Math.max(1, ...sessions.map((s) => s.round || 1));
-  return { summary: fin, summary1: s1, n_rounds: nr, n_retry: fin.X + fin.U };
+  return { summary: fin, summary1: s1, n_rounds: nr, n_retry: fin.X + fin.U, graded_days: gradedDays(marks, sessions) };
 }
 // 어느 차에서든 그 차 결과가 X였던 문항(2차에서 고쳤어도 그 채점에서 한 번 틀린 것).
 // 차 결과 = 그 차의 마지막 기록 — X를 잘못 눌렀다가 고친 것 · 앞 차 결과를 고친 것은 고친 결과로 본다.
@@ -230,4 +233,99 @@ export function stripNames(text, names) {
   for (const n of [...new Set([...(names || [])].filter((x) => x && String(x).length >= 2))].sort((a, b) => b.length - a.length)) t = t.split(n).join(" ");
   t = t.replace(/\s*[_\-]\s*(?=[_\-])/g, "").replace(/^[\s_\-·,]+|[\s_\-·,]+$/g, "").replace(/\(\s*\)|\[\s*\]/g, "");
   return t.replace(/\s{2,}/g, " ").trim();
+}
+
+// ── 날짜 — 이 기기 시간대의 날(YYYY-MM-DD) · 두 날 사이 일수
+export function localDay(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+export const daysBetween = (a, b) => Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86400000);
+
+// 채점한 날 — 차마다 그 차 기록(매긴 것)을 넣은 날. 문제를 푼 날이 아니라 매긴 날(처음 · 마지막).
+export function gradedDays(marks, sessions) {
+  const rs = roundOfSession(sessions);
+  const by = new Map();
+  for (const m of effectiveMarks(marks, sessions)) {
+    const d = localDay(m.at);
+    if (!d) continue;
+    const r = rs.get(m.session_no) || 1;
+    if (!by.has(r)) by.set(r, new Set());
+    by.get(r).add(d);
+  }
+  return [...by.keys()].sort((a, b) => a - b).map((r) => {
+    const ds = [...by.get(r)].sort();
+    return { round: r, first: ds[0], last: ds[ds.length - 1], n_days: ds.length };
+  });
+}
+
+// ── 교재 쪽 — "12-20, 25" ↔ [[12, 20], [25, 25]] (쪽 · p · ~ · 띄어쓰기도 받음). 알아볼 수 없으면 null
+export function mergeRanges(rs) {
+  const s = (rs || []).filter(Boolean).map(([a, b]) => [Math.min(a, b), Math.max(a, b)]).sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+  const out = [];
+  for (const r of s) {
+    const l = out[out.length - 1];
+    if (l && r[0] <= l[1] + 1) l[1] = Math.max(l[1], r[1]);
+    else out.push([...r]);
+  }
+  return out;
+}
+const pageText = (s) => String(s ?? "").replace(/까지|부터|쪽|[pP]\.?/g, " ").replace(/[～〜~–—]/g, "-").replace(/\s*-\s*/g, "-").trim();
+export function parsePages(s) {
+  const t = pageText(s);
+  if (!t) return [];
+  const out = [];
+  for (const part of t.split(/[,，\s]+/)) {
+    if (!part) continue;
+    const m = /^(\d{1,4})(?:-(\d{1,4}))?$/.exec(part);
+    if (!m) return null;
+    out.push([+m[1], m[2] ? +m[2] : +m[1]]);
+  }
+  return mergeRanges(out);
+}
+export const fmtPages = (rs) => (rs || []).map(([a, b]) => (a === b ? String(a) : `${a}-${b}`)).join(", ");
+export function subtractRanges(a, b) {
+  const cut = mergeRanges(b), out = [];
+  for (const [s, e] of mergeRanges(a)) {
+    let cur = s;
+    for (const [bs, be] of cut) {
+      if (be < cur || bs > e) continue;
+      if (bs > cur) out.push([cur, bs - 1]);
+      cur = Math.max(cur, be + 1);
+      if (cur > e) break;
+    }
+    if (cur <= e) out.push([cur, e]);
+  }
+  return out;
+}
+// 진도 칸: "45" = 45쪽까지, "30-45" = 30쪽부터 45쪽까지 → { to, pages } · 비면 { empty } · 알아볼 수 없으면 null
+export function parseProgress(s) {
+  const t = pageText(s);
+  if (!t) return { empty: true };
+  let m = /^(\d{1,4})$/.exec(t);
+  if (m) return { to: +m[1], pages: "" };
+  m = /^(\d{1,4})-(\d{1,4})$/.exec(t);
+  if (m) { const a = Math.min(+m[1], +m[2]), b = Math.max(+m[1], +m[2]); return { to: b, pages: `${a}-${b}` }; }
+  return null;
+}
+// 푼 쪽 중 채점 기록이 없는 쪽(적은 기록으로 어림) — solved: 날짜 차례 [{page_to, pages}], graded: [{pages}]
+// 푼 범위 = 적은 범위(30-45), 없으면 앞 진도 다음 쪽 ~ 이번 쪽. 첫 진도의 시작 쪽을 모르면 채점 기록의 첫 쪽부터 본다.
+// 채점 쪽 기록이 하나도 없으면 { known: false } (어림하지 않음)
+export function uncheckedPages(solved, graded) {
+  const g = mergeRanges((graded || []).flatMap((l) => parsePages(l.pages) || []));
+  if (!g.length) return { known: false, ranges: [], text: "" };
+  const done = [];
+  let prev = null;
+  for (const l of solved || []) {
+    if (l.page_to == null) continue;
+    const r = parsePages(l.pages);
+    if (r && r.length) done.push(...r);
+    else if (prev != null) { if (l.page_to > prev) done.push([prev + 1, l.page_to]); }
+    else if (g[0][0] <= l.page_to) done.push([g[0][0], l.page_to]);
+    prev = Math.max(prev ?? 0, l.page_to);
+  }
+  const left = subtractRanges(done, g);
+  return { known: true, ranges: left, text: fmtPages(left) };
 }
