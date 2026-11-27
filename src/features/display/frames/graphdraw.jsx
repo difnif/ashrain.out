@@ -12,6 +12,7 @@ import { seg, E, clamp } from "../core.js";
 import { GD_SETS, GD_KIND, gdPlan, stepAt, stepAtoms, toM, linStr, qv, qstr, clipLine } from "../graphdraw.js";
 import { stepMarks } from "./scrub.jsx";
 import { LessonFrame } from "./lesson.jsx";
+import { sigTop } from "./sigdocs.jsx";
 
 /* ══════════ 무대 배치 (1600×900) ══════════ */
 // 좌표평면(가운데 · 한 칸 · −5~5)과 글자 판 — 단일 모드는 오른쪽에 큰 좌표평면, 듀얼 모드의 반쪽 판(800 × 900)은
@@ -342,6 +343,7 @@ export function graphScenes(setKey, sp = 1) {
 /* ══════════ 액자 — 조작은 해설 액자 공통 틀(frames/lesson.jsx) ══════════ */
 export const GD_SPEC = {
   lsk: "ash.display.graph", title: "일차함수 그래프 그리기 해설", defSet: "basic", cols: 6,
+  topExtra: sigTop("graph"),                                 // 오른쪽 위 📄 — 원본 프린트(문제지 · 정답) 받기
   sets: [{ key: "basic", name: "기본 96제", short: "기본 96" }, { key: "hard", name: "심화 64제", short: "심화 64" }],
   stages: () => [],
   scenes: (set, sp) => graphScenes(set, sp),

@@ -345,11 +345,12 @@ export const sheet = (key) => renderToStaticMarkup(<AvPrintSheet itemKey={key} o
     assert.equal(A.colsOf("graph:basic"), m.GD_SPEC.cols);
     assert.ok(A.paneHead(m.setOfSpec(A, "graph:basic"), A.scenes("graph:basic", 1, 0)[0]), "그래프 액자 판 머리");
     assert.equal(A.paneHead(m.setOfSpec(A, "e-ten"), A.scenes("e-ten", 1, 0)[0]), null);
-    assert.equal(A.topExtra({ set: "graph:basic", open: false, onOpen() {}, poke() {} }), null, "해설 액자 세트는 📄 없음");
+    const sx = A.topExtra({ set: "graph:basic", open: false, onOpen() {}, poke() {} });
+    assert.ok(sx && sx.props.sig?.code === "TKK-EXN", "해설 액자 세트(시그니처 프린트)는 📄 원본 받기");
     assert.ok(A.topExtra({ set: "m-lin.3", open: false, onOpen() {}, poke() {} }), "유형 📄");
   });
 
-  await test("듀얼 그리기 — 어느 해설 액자에서 나눠도 판마다 「콘텐츠」 단추 · 왼쪽 그래프 액자 + 오른쪽 초등 유형처럼 섞어도 오류 없음 · 📄 은 프린트 있는 판만", () => {
+  await test("듀얼 그리기 — 어느 해설 액자에서 나눠도 판마다 「콘텐츠」 단추 · 왼쪽 그래프 액자 + 오른쪽 초등 유형처럼 섞어도 오류 없음 · 📄 은 판마다(시그니처 프린트는 원본)", () => {
     for (const O of ORIGINS) {
       const A = m.allSpecFor(O);
       store[O.lsk + ".mode"] = JSON.stringify("dual");
@@ -361,7 +362,8 @@ export const sheet = (key) => renderToStaticMarkup(<AvPrintSheet itemKey={key} o
         assert.equal((h.match(/class="lsn-pane-ctl /g) || []).length, 2, `${O.lsk} 판 둘`);
         assert.equal((h.match(/콘텐츠 목록 \(U\)/g) || []).length, 2, `${O.lsk} 판마다 콘텐츠 단추`);
         assert.ok(h.includes("그래프 그리기 심화 64") && h.includes("10 만들기 3단계"), `${O.lsk} 두 판 이름`);
-        assert.equal((h.match(/aria-label="문서"/g) || []).length, 1, `${O.lsk} 📄 은 유형 판만`);
+        assert.equal((h.match(/aria-label="문서"/g) || []).length, 2, `${O.lsk} 📄 — 유형 판 · 시그니처 프린트 판(원본)`);
+        assert.equal((h.match(/title="원본 프린트 — 문제지 · 정답"/g) || []).length, 1, `${O.lsk} 시그니처 프린트 판은 원본 받기`);
         assert.ok(h.includes("6번") || h.includes("4번"), `${O.lsk} 판 머리 번호`);
       }
       delete store[O.lsk + ".mode"]; delete store[A.lsk + ".dual"];

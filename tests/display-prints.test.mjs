@@ -2,7 +2,7 @@
 // ① 시그니처 프린트(frames/index.js 의 prints — 22장) — 해설 액자 여섯의 세트와 하나씩(같은 key · 차례) · 문항 수 n = 장면 수 · 번호 1 ~ n.
 // ② 학생앱 항목(lib/av.js) — 프린트마다 #/av/<액자>:<세트> · cat sol · 해설 · 교과서 단원 · 학년 · n · 그 단원 바로 뒤 · 예전 액자 주소 · 우물 카드.
 // ③ 재생 — 고른 프린트로 단일 모드(숫자 세트 lin10:2 도) · 본 기록은 프린트 key 로(printSeen: 처음 연 횟수 · 가장 멀리 · 다 봤음).
-// ④ 듀얼 「전부」 — 프린트 key 풀이 · 이름표는 학생앱과 같은 이름 · 단계(1 ~ 5 · 10 · 없음) · 반쪽 판 장면 수 · 📄 없음.
+// ④ 듀얼 「전부」 — 프린트 key 풀이 · 이름표는 학생앱과 같은 이름 · 단계(1 ~ 5 · 10 · 없음) · 반쪽 판 장면 수 · 📄 원본 프린트(문제지 · 정답).
 // ⑤ 기본기 해설 보기 칩 — 「🧩 유형」은 그 보기로 열렸을 때만(예전 주소) · 예전에 기억한 유형 보기는 유형별 문제 세트로.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -172,7 +172,7 @@ export const menu = (spec, cur, side = "왼쪽") => { const M = spec.Menu; retur
     delete store["ash.av.hist"];
   });
 
-  await test("듀얼 「전부」 — 프린트 key 풀이 · 이름표는 학생앱과 같은 이름 · 단계(1 ~ 5 · 10 · 없음) · 반쪽 판 장면 수 = n · 📄 없음", () => {
+  await test("듀얼 「전부」 — 프린트 key 풀이 · 이름표는 학생앱과 같은 이름 · 단계(1 ~ 5 · 10 · 없음) · 반쪽 판 장면 수 = n · 📄 원본 프린트", () => {
     const A = m.allSpecFor(m.basicsSpec("m"));
     for (const { f, p, key } of PR) {
       const r = m.allSource(key);
@@ -181,7 +181,10 @@ export const menu = (spec, cur, side = "왼쪽") => { const M = spec.Menu; retur
       assert.equal(L.name, it.title); assert.equal(L.short, it.short); assert.equal(L.icon, it.icon); assert.equal(L.sub, m.unitLabel(it.unit));
       assert.deepEqual(A.stages(key).map((x) => x.v), specOf(f.key).stages(p.set).map((x) => x.v), `${key} 단계`);
       assert.equal(A.scenes(key, 1, 0).length, p.n, `${key} 장면`);
-      assert.equal(A.topExtra({ set: key, open: false, onOpen() {}, poke() {} }), null, `${key} 📄 없음`);
+      const tx = A.topExtra({ set: key, open: false, onOpen() {}, poke() {} });
+      assert.ok(tx && tx.props.sig?.key === key && tx.props.sig.code === p.code, `${key} 📄 원본 프린트(코드 ${p.code})`);
+      const fx = specOf(f.key).topExtra({ set: p.set, open: false, onOpen() {}, poke() {} });
+      assert.ok(fx && fx.props.sig?.key === key, `${key} 해설 액자 오른쪽 위 📄`);
     }
     assert.deepEqual(A.stages("cnt100:sel").map((x) => x.v), [1, 2, 3, 4, 5]);
     assert.equal(A.stages("lin10:1").length, 10);

@@ -9,7 +9,7 @@
 // 액자마다 「전부」 spec 이 하나씩(기억 이름 <액자>.all — 기본기 해설은 단원 · 유형 · 주차별 보기가 한 기억 dualLsk) —
 //   듀얼 두 판의 자리 · 고른 것을 액자마다 따로 기억하고, 처음 열면 두 판 다 단일 모드에서 보던 것(예전 듀얼 기억이 있으면 그대로 옮겨 온다).
 // lesson.jsx 가 이 파일을 들이면 액자 모듈과 서로 물리므로, 이 파일이 읽힐 때 setDualAll 로 넣어 둔다(AdminDisplay 가 들인다).
-// 📄 문서(문제지 · 해설지 · 빠른 정답 · OMR)는 단원 · 유형 · 회차 판에만 — 시그니처 프린트는 앱에 프린트 문서가 없다.
+// 📄 문서 — 단원 · 유형 · 회차 판은 문제지 · 해설지 · 빠른 정답 · OMR(frames/docsmenu.jsx), 시그니처 프린트 판은 원본 문제지 · 정답(frames/sigdocs.jsx).
 import { useEffect, useMemo, useState } from "react";
 import { GD_SPEC } from "./graphdraw.jsx";
 import { L10_SPEC } from "./lin10.jsx";
@@ -18,6 +18,8 @@ import { C100_SPEC } from "./cnt100.jsx";
 import { LIN2_SPEC, MEET_SPEC } from "./prints.jsx";
 import { basicScenes, TYPE_NO } from "./basics.jsx";
 import { DocsMenu } from "./docsmenu.jsx";
+import { SigDocsMenu } from "./sigdocs.jsx";
+import { sigOf } from "../../../lib/sigprint.js";
 import { setDualAll } from "./lesson.jsx";
 import { lsRead, lsWrite } from "./xkit.jsx";
 import { basicOf, levelOf } from "../basics/index.js";
@@ -111,7 +113,11 @@ export function allSpecFor(origin) {
     paneHead: (S, s) => { const r = allSource(S.key); return r?.kind === "frame" && r.fs.paneHead ? r.fs.paneHead(r.S, s) : null; },
     topExtra: ({ set, open, onOpen, poke }) => {
       const r = allSource(set);
-      if (!r || r.kind === "frame" || !r.ready()) return null;
+      if (r?.kind === "frame") {                     // 시그니처 프린트 — 원본(문제지 · 정답) 받기
+        const sig = sigOf(set);
+        return sig ? <SigDocsMenu sig={sig} open={open} onOpen={onOpen} poke={poke} /> : null;
+      }
+      if (!r || !r.ready()) return null;
       return <DocsMenu meta={r.meta()} set={r.set()} open={open} onOpen={onOpen} poke={poke} />;
     },
     titleOf: (k) => {

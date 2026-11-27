@@ -1,7 +1,7 @@
 // 우물 추천 — 콘텐츠를 꾹 누르면 화면 가운데에 우물이 떠오르고, 둘레에 이어지는 콘텐츠 6가지가 뜬다.
 // 누른 채로 손가락을 옮겨 한 콘텐츠 위에서 떼면 그 콘텐츠가 열리고, 우물이나 빈 곳에서 떼면 원래 화면 그대로.
 // 프린트가 있는 콘텐츠(유형별 문제 세트 · 유형 · 주차별 회차)면 위쪽에 「📄 프린트」가 함께 뜬다 — 그 위에서 떼면 그 콘텐츠의
-//   문제지 · 해설지 · 빠른 정답 · OMR 받기 판(components/AvPrintSheet.jsx)이 열린다.
+//   문제지 · 해설지 · 빠른 정답 · OMR 받기 판(components/AvPrintSheet.jsx)이 열린다. 시그니처 프린트는 원본 문제지 · 정답(printDocs 로 안내 글을 바꾼다).
 //   쓰는 곳: pages/Study.jsx(시청각 학습 › 문제 풀이 해설). 추천은 lib/recommend.js — 학습 기록이 넉넉하면 숙달도 맞춤,
 //   없거나 모자라면 교육과정 단원 지도(lib/units.js)로 고르는 기본 추천. 카드의 rel 이 추천 이유(약한 앞 단원 · 이어서 · 다음 단원 도전 …).
 //   우물 그림은 탭바 우물과 같은 1장(components/Well.jsx — 관리자가 바꾼 그림이 있으면 그것).
@@ -34,12 +34,14 @@ export function wellLayout(n, vw, vh) {
 }
 
 /**
- * useWellPick({ related, onGo, onPrint?, canPrint? }) → { bind(item, onTap), overlay, pressing }
+ * useWellPick({ related, onGo, onPrint?, canPrint?, printDocs? }) → { bind(item, onTap), overlay, pressing }
  *   related(item) → 추천 콘텐츠 배열(.key · .icon · .short|.title · .rel · .grade · .unit) — 최대 6
  *   onGo(item) → 고른 콘텐츠 열기 · bind 는 목록 단추에 펼쳐 넣는다(onClick 까지 대신 단다)
  *   onPrint(item) → 「📄 프린트」 위에서 뗐을 때(누른 콘텐츠) · canPrint(item) → 그 콘텐츠에 프린트가 있나(없으면 「📄 프린트」를 띄우지 않는다)
+ *   printDocs(item) → 「📄 프린트」 위 안내 글의 받을 문서(없으면 「문제지 · 해설지 · 빠른 정답 · OMR」)
  */
-export function useWellPick({ related, onGo, onPrint = null, canPrint = null }) {
+export const PRINT_DOCS = "문제지 · 해설지 · 빠른 정답 · OMR";
+export function useWellPick({ related, onGo, onPrint = null, canPrint = null, printDocs = null }) {
   const [st, setSt] = useState(null);           // { item, cards, cx, cy, D, hover }
   const [pressing, setPressing] = useState(null);
   const R = useRef({ timer: 0, id: null, x0: 0, y0: 0, item: null, active: false, swallow: false, st: null });
@@ -75,7 +77,7 @@ export function useWellPick({ related, onGo, onPrint = null, canPrint = null }) 
     const rel = (related(item) || []).slice(0, 6);
     const L = wellLayout(rel.length, window.innerWidth, window.innerHeight);
     const s = { item, cx: L.cx, cy: L.cy, D: L.D, cw: L.cw, ch: L.ch, cards: rel.map((it, i) => ({ it, ...L.pos[i] })), hover: null,
-      print: !!onPrint && (!canPrint || canPrint(item)) };
+      print: !!onPrint && (!canPrint || canPrint(item)), docs: (printDocs && printDocs(item)) || PRINT_DOCS };
     s.hover = hoverAt(s, x, y);
     R.current.active = true;
     R.current.st = s;
@@ -163,7 +165,7 @@ function WellOverlay({ st, img, prRef }) {
       ))}
       {!cards.length && <div className="wpk-none" style={{ top: cy + D / 2 + 28 }}>이어지는 콘텐츠가 아직 없어요</div>}
       <div className="wpk-hint">
-        {on ? <>놓으면 <b>{on.short || on.title}</b> 열기</> : hover === "print" ? <>놓으면 <b>프린트 받기</b> — 문제지 · 해설지 · 빠른 정답 · OMR</>
+        {on ? <>놓으면 <b>{on.short || on.title}</b> 열기</> : hover === "print" ? <>놓으면 <b>프린트 받기</b> — {st.docs}</>
           : hover === "well" ? "우물에서 놓으면 그대로예요" : st.print ? "콘텐츠 위에서 놓으면 열기 · 위 「📄 프린트」에서 놓으면 프린트 받기" : "손가락을 옮겨 콘텐츠 위에서 놓으세요 · 빈 곳에서 놓으면 그대로"}
       </div>
     </div>

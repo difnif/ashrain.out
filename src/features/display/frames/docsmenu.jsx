@@ -8,6 +8,7 @@
 //   유형(e-ten.3) · 주차별 회차는 PDF 를 미리 찍어 두지 않는다(워크플로는 유형별 문제 세트만) — [확인] 다음이 바로 「인쇄 창으로 열기」.
 // 받기 흐름(고르기 → 확인 → 받기 | 인쇄 창)은 useDocsFlow 하나 — 액자 오른쪽 위 📄(DocsMenu)와
 //   학생앱 목록에서 꾹 눌러 「📄 프린트」(components/AvPrintSheet.jsx)가 같이 쓴다.
+// 시그니처 프린트(해설 액자의 세트)는 원본 PDF(문제지 · 정답)를 받는다 — frames/sigdocs.jsx(받기 도우미 · 모양은 여기 것을 같이 쓴다).
 import { useEffect, useState } from "react";
 import { FILES_BASE } from "../../../lib/conceptsets.js";
 import { zipStore } from "../../../lib/zipstore.js";
@@ -38,22 +39,22 @@ export function readPick() {
   try { const v = JSON.parse(localStorage.getItem(PICK_KEY) || "null"); if (Array.isArray(v)) return v.filter((x) => AV_DOCS.some((d) => d.id === x)); } catch { /* 무시 */ }
   return ["problems", "solutions"];
 }
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+export const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 /** PDF 를 미리 찍어 두는 세트인가 — 유형별 문제 세트(유형은 base, 회차는 week 가 있다) */
 export const prerendered = (meta) => !!meta && !meta.base && meta.week == null;
-function saveBlob(blob, name) {
+export function saveBlob(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = name; a.rel = "noopener";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
-function clickLink(url) {
+export function clickLink(url) {
   const a = document.createElement("a");
   a.href = url; a.rel = "noopener";
   document.body.appendChild(a); a.click(); a.remove();
 }
-async function fetchPdf(url) {
+export async function fetchPdf(url) {
   let r;
   try { r = await fetch(url, { cache: "no-cache" }); } catch { throw new Error("NET"); }
   if (!r.ok) throw new Error("NOFILE");
@@ -198,8 +199,9 @@ export function DocsMenu({ meta, set, open, onOpen, poke }) {
   );
 }
 
-const DOC_CSS = `
+export const DOC_CSS = `
 .gdoc { position: relative; }
+.dsp-tr:has(.gdoc-pop) { z-index: 7; }   /* 펼친 동안은 조작 막대(z 6) 위로 — 머리 글이 가리지 않게 */
 .gdoc-btn.on { color: var(--gold); border-color: var(--gold); }
 .gdoc-pop { position: absolute; right: 0; top: calc(100% + .8cqw); width: 25cqw; z-index: 9; background: var(--card); color: var(--ink);
   border: 1px solid var(--chipbd); border-radius: 1.3cqw; padding: 1.1cqw 1.2cqw 1.2cqw; box-shadow: 0 1.6cqw 4cqw rgba(0,0,0,.35);

@@ -16,6 +16,7 @@ import { C100_SETS, C100_KEYS } from "../cnt100.js";
 import { L10Art } from "./lin10.jsx";
 import { stepMarks } from "./scrub.jsx";
 import { LessonFrame, paneLoad as paneLoad0, DUAL_SPEEDS } from "./lesson.jsx";
+import { sigTop } from "./sigdocs.jsx";
 
 export { DUAL_SPEEDS };
 
@@ -43,6 +44,7 @@ export function c100Scenes(setKey, sp = 1, stage = 0) {
 /* ══════════ 액자 ══════════ */
 export const C100_SPEC = {
   lsk: "ash.display.cnt100", title: "경우의 수와 확률 100제 해설", defSet: "sel", cols: 5,
+  topExtra: sigTop("cnt100"),                                 // 오른쪽 위 📄 — 원본 프린트(문제지 · 정답) 받기
   sets: C100_KEYS.map((k) => ({ key: k, name: C100_SETS[k].name, short: C100_SETS[k].short || C100_SETS[k].name })),
   stages: (set) => [1, 2, 3, 4, 5].map((v) => ({ v, lab: `${v}단계 ${C100_SETS[set].stage[v]}`, chip: `${v}단계` })),
   scenes: c100Scenes,
