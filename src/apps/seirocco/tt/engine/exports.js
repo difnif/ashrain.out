@@ -25,7 +25,7 @@ async function pickPrints(ctx, f) {
     ps = await all(() => T("tt_prints").select("*").eq("shelf", "active").gte("created_at", d0 + "T00:00:00").lte("created_at", d1 + "T23:59:59.999").order("id"));
   }
   if (f.level) ps = ps.filter((p) => (p.level || "중등") === f.level);
-  return ps;
+  return ps.filter((p) => !(p.options && p.options.textbook));      // 교재(시험지 파일 없음)는 전사용 목록에서 뺌
 }
 async function itemsFor(ctx, pids) {
   if (!pids.length) return [];
