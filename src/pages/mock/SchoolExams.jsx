@@ -1,5 +1,6 @@
 // ashrain.out — 공부하기 › 시험 보기 › 학교별 모의고사 (#/study/exam/school[/<학교>[/<판>]])
 //   학교 찾기(이름 · 줄임 · 지역 · 초성) → 학교 → 판(융합 · 기본 · 기출 분석 …) → 회차(시기별로 묶음) → 시험 화면(#/mock/<id>)
+//   회차는 컨셉 문제 세트처럼 아이콘 칸(번호 · 판 아이콘 · 회차 · 푼 만큼 막대 · 채점 점수) — ExamTiles 는 시청각 학습 › 학교별 모의고사도 쓴다.
 //   목록은 공개 버킷 mock-exams 의 index.json(lib/mockexams.js) — 학교 · 시험이 늘어도 앱을 고칠 일이 없다.
 import { useMemo, useState } from "react";
 import { searchSchools, editionsOf, examGroups, readRecentSchools, pushRecentSchool, readMockRecord, readMockPaper, edInfo } from "../../lib/mockexams";
@@ -123,29 +124,37 @@ function EdList({ index, school, ed }) {
       ) : groups.map((gr) => (
         <div key={gr.key}>
           <p className="st-sec">{gr.title}</p>
-          <div className="st-list">
-            {gr.exams.map((e) => <ExamRow key={e.id} e={e} uid={uid} />)}
-          </div>
+          {gr.exams[0]?.range && <p className="mx-grange">범위 · {gr.exams[0].range.replace(/\[\[|\]\]|[{}]/g, "")} · 선택형 {gr.exams[0].n?.mc} · 서답형 {gr.exams[0].n?.sa} · {gr.exams[0].minutes}분</p>}
+          <ExamTiles exams={gr.exams} uid={uid} />
         </div>
       ))}
     </>
   );
 }
 
-function ExamRow({ e, uid }) {
+/** 회차 아이콘 칸 — 컨셉 문제 세트 칸과 같은 틀. href(e) 로 여는 곳을 바꾼다(시청각 학습은 해설 영상으로) */
+export function ExamTiles({ exams, uid, href = (e) => `#/mock/${e.id}`, icon }) {
+  return (
+    <div className="st-icons mx-eicons">
+      {exams.map((e) => <ExamTile key={e.id} e={e} uid={uid} href={href(e)} icon={icon} />)}
+    </div>
+  );
+}
+
+function ExamTile({ e, uid, href, icon }) {
   const rec = uid === undefined ? null : readMockRecord(e.id);
   const paper = uid === undefined ? null : readMockPaper(e.id);
   const last = rec?.results?.[0];
   const n = (e.n?.mc || 0) + (e.n?.sa || 0);
-  const wrote = paper ? Object.keys(paper.answers || {}).length : 0;
-  const tag = last ? `${last.score}/${last.max}` : wrote ? `${wrote}/${n}` : "";
+  const done = Math.max(rec ? Object.keys(rec.items || {}).length : 0, paper ? Object.keys(paper.answers || {}).length : 0);
+  const pct = last ? 100 : n ? Math.min(100, Math.round((done / n) * 100)) : 0;
   return (
-    <button type="button" className="st-item mx-erow" onClick={() => (location.hash = `#/mock/${e.id}`)}>
-      <span className="mx-eno" aria-hidden="true">{e.no}<small>회</small></span>
-      <span className="nm"><b>{e.title}{e.sub ? ` · ${e.sub}` : ""}</b>
-        <small>선택형 {e.n?.mc} · 서답형 {e.n?.sa} · {e.minutes}분 · {e.pages}면</small>
-        {e.range && <small className="wrap">{e.range.replace(/\[\[|\]\]|[{}]/g, "")}</small>}</span>
-      {tag && <span className="tag">{last ? "채점" : "푸는 중"}<em>{tag}</em></span>}
+    <button type="button" className={"st-ic mx-eic" + (last ? " done" : "")} title={`${e.title}${e.sub ? ` · ${e.sub}` : ""} · ${e.ed}`}
+      onClick={() => (location.hash = href)}>
+      <span className="no">{String(e.no).padStart(2, "0")}</span>
+      <span className="em" aria-hidden="true">{icon || edInfo(e.ed).icon}</span>
+      <span className="nm">{e.no}회{last ? <small className="sc">{last.score}점</small> : done ? <small>{done}/{n}</small> : null}</span>
+      <span className="pg" aria-label={last ? `채점 ${last.score}/${last.max}` : `${done}/${n}`}><i style={{ width: `${pct}%` }} /></span>
     </button>
   );
 }
