@@ -189,7 +189,7 @@ function auditInPage(opts) {
   return res;
 }
 const AUDIT_OPTS = {
-  hscroll: ["cv-twrap", "st-chips", "st-gk", "st-uchips", "sh-subtabs", "sh-admin", "fig-stage", "mm-eq", "sg-tabs", "pv-expr"],
+  hscroll: ["cv-twrap", "st-chips", "st-gk", "st-uchips", "sh-subtabs", "sh-admin", "fig-stage", "mm-eq", "sg-tabs", "pv-expr", "mm-tw", "mm-code"],
   clipOk: ["sf3-", "afs-", "cv-cover", "cav-stage", "st-ic", "pg", "sh-", "rv-drop"],
 };
 
