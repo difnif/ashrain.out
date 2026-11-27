@@ -67,12 +67,27 @@ export async function reserveCode(ctx, want = null) {
   throw new Error("코드를 만들지 못했어요");
 }
 
+// 여러 파일을 몇 개씩 함께 올린다 — 하나씩 차례로 올리면 파일마다 오가는 시간이 쌓여 문항이 많을수록 오래 걸림.
+// done: 올린 경로를 모음(실패하면 지우기용). 하나라도 실패하면 남은 것은 올리지 않고 그 오류를 던짐.
+export async function putAll(put, files, limit = 8, done = []) {
+  let k = 0, err = null;
+  const worker = async () => {
+    while (!err && k < files.length) {
+      const f = files[k++];
+      try { await put(f.rel, f.data, f.type || "application/octet-stream"); done.push(f.rel); } catch (e) { err = err || e; }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, files.length) }, worker));
+  if (err) throw err;
+  return done;
+}
+
 // 파일 올리고 표에 넣기 → printBrief
 export async function storePrint(ctx, { code, row, items, files, targets = [], logKind, logDetail = {} }) {
   const { T, must, put, remove, log } = ctx;
   const done = [];
   try {
-    for (const f of files) { await put(f.rel, f.data, f.type || "application/octet-stream"); done.push(f.rel); }
+    await putAll(put, files, 8, done);
   } catch (e) { try { await remove(done); } catch { /* */ } throw e; }
   let pid = null;
   try {

@@ -527,6 +527,7 @@ export async function renderClip(page, clip, dpi = 150, grayOnly = false) {
   const vp = page.getViewport({ scale: s, offsetX: -x0 * s, offsetY: -y0 * s });
   await page.render({ canvasContext: ctx, viewport: vp, background: "rgb(255,255,255)" }).promise;
   const im = canvasToImg(c);
+  c.width = 0; c.height = 0;             // 그림판 메모리를 바로 돌려줌(화소는 이미 꺼냄)
   return grayOnly ? gray(im) : im;
 }
 // 덩이 자리의 글자 색(잉크 화소 평균) — 매쓰플랫 파란 번호(0x00ABFF) 찾기
