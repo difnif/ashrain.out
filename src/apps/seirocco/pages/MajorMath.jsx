@@ -5,7 +5,7 @@
 //   · ⚠ 흔한 실수 · 🏭 현장에서 · 표 · 코드 · 연습(힌트 · 답 · 풀이) — 장 머리에 「이 장의 목표」, 끝에 「용어」 · 「한 장 요약」.
 // 수식은 MathIR 표식(components/MathText — 분수는 상하로). 읽은 장은 이 기기에만(localStorage — 막히면 표시 없이).
 // 서가 · 차례 · 장 조각(Shelf · Toc · Chapter)은 검산(tests/majors.test.mjs)이 따로 그린다.
-import { useEffect, useMemo, useState } from "react";
+import { Component, useEffect, useMemo, useState } from "react";
 import { useAppHash, go } from "../../../shared/demo";
 import { mathHtml, ensureMathCss } from "../../../components/MathText";
 import { loadKind } from "./majors/anims/index.js";
@@ -127,6 +127,21 @@ const CSS = `
 @supports not (background:color-mix(in srgb,red 10%,white)){.mm-why,.mm-warn,.mm-use{background:var(--in)}}
 `;
 
+/** 그림 하나가 오류를 내도 장 전체가 비지 않게 — 그 자리에만 안내하고 다시 그릴 수 있게 한다 */
+class AnimGuard extends Component {
+  constructor(p) { super(p); this.state = { err: false }; }
+  static getDerivedStateFromError() { return { err: true }; }
+  componentDidCatch() { /* 장의 나머지는 그대로 둔다 */ }
+  render() {
+    if (!this.state.err) return this.props.children;
+    return (
+      <div className="mm-wait">그림을 그리다 멈췄어요 — 글과 예제는 그대로 볼 수 있어요{" "}
+        <button type="button" className="d-btn" style={{ marginLeft: 6 }} onClick={() => this.setState({ err: false })}>다시 그리기</button>
+      </div>
+    );
+  }
+}
+
 /** 🎬 움직이는 그림 — 화면에 보일 때 그림 묶음을 받아 그린다 */
 function Anim({ x, sp }) {
   const [Comp, setComp] = useState(null);
@@ -139,7 +154,7 @@ function Anim({ x, sp }) {
   return (
     <div className="mm-box mm-anim" style={{ "--sp": sp }}>
       <p className="mm-tag">🎬 움직이는 그림 · <R t={x.h} /></p>
-      {Comp ? <Comp p={x.p || {}} /> : <div className="mm-wait">{err ? "그림을 불러오지 못했어요 — " + err : "움직이는 그림을 불러오는 중…"}</div>}
+      {Comp ? <AnimGuard key={x.kind}><Comp p={x.p || {}} /></AnimGuard> : <div className="mm-wait">{err ? "그림을 불러오지 못했어요 — " + err : "움직이는 그림을 불러오는 중…"}</div>}
       <R as="p" className="mm-cap" t={"이렇게 보세요 — " + x.cap} />
     </div>
   );
