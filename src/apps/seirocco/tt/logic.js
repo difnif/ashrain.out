@@ -434,12 +434,14 @@ export function perWeekOpts(plans, month, extra) {
 }
 // 그달 원비 채우기 — 원비표(학년 · 주당 횟수) 값. 다만 지난달에 원비표와 다른 원비(할인 등)를 같은 주당 횟수로 냈으면
 // 지난달 원비를 그대로 두고 special. 원비표에서 못 찾으면 지난달 원비. 원비표가 바뀐 달(1월 등)에는 원비표대로 낸 학생만 새 원비로.
+// 3월에는 학년이 하나 올랐다고 보고 지난달(2월) 원비표 값을 한 학년 아래로 견준다.
+const gradeDown = (gk) => { if (!gk) return null; const p = gk[0], n = +gk.slice(1); return n > 1 ? p + (n - 1) : p === "중" ? "초6" : p === "고" ? "중3" : null; };
 export function suggestFee(plans, month, gk, perWeek, prev) {
   const plan = perWeek ? feeFor(plans, month, gk, perWeek) : null;
   const pf = prev && prev.status === "attend" && prev.fee != null ? prev.fee : null;
   const samePw = pf != null && (prev.per_week == null || !perWeek || Number(prev.per_week) === Number(perWeek));
   if (samePw) {
-    const was = feeFor(plans, addMonths(month, -1), gk, prev.per_week || perWeek);
+    const was = feeFor(plans, addMonths(month, -1), String(month).slice(5, 7) === "03" ? gradeDown(gk) : gk, prev.per_week || perWeek);
     if (!plan) return { fee: pf, src: "prev", plan: null };
     if (was && pf !== was.fee) return { fee: pf, src: "prev", plan, special: true };
   }

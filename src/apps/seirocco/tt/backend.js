@@ -233,7 +233,7 @@ async function studentDetail(sid) {
   const curM = monthStart(todayStr()), mrows = await monthRows(null, sid);
   return { student: st, prints: out, books: bookRows, logs_ok: bookLogTable, repeat_wrong: rep, records,
     month: mflagOut(monthFlag(st, mrows.filter((r) => r.month <= curM), curM)), months: mrows.slice().reverse().slice(0, 24).map(snapMonth), months_ok: monthTable,
-    month_prev: snapMonth(mrows.find((r) => r.month === addMonths(curM, -1)) || null), this_month: curM, plans: await feePlans(),
+    month_prev: snapMonth(mrows.find((r) => r.month === addMonths(curM, -1)) || null), this_month: curM, plans: await feePlans(), per_week_ok: perWeekCol,
     attendance: (await attOut(await attRows(addDays(todayStr(), -120), addDays(todayStr(), 60), sid))).reverse(), att_ok: attTable };
 }
 
