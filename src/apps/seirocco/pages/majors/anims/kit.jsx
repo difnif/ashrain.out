@@ -41,6 +41,8 @@ export function rng(seed = 1) {
 /** 표준정규 난수(박스-뮬러) */
 export const gauss = (r) => { const u = Math.max(1e-12, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
 export const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+/** 정수를 위첨자 글자로(10⁶ · 2¹⁰) — 그림 글에 ^ 를 쓰지 않으려고 */
+export const sup = (n) => String(n).split("").map((d) => ("⁰¹²³⁴⁵⁶⁷⁸⁹"["0123456789".indexOf(d)] || (d === "-" ? "⁻" : d))).join("");
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const ease = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 export const fmt = (v, d = 2) => {
