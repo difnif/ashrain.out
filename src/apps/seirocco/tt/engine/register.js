@@ -3,7 +3,7 @@ import { openPdf, pdflib, embedText, pageSpans, pageLines, pageGraphics, renderC
   imgHash, A4W, A4H } from "./base";
 import { fmtCode, buildAnswerPdf, TEMPLATE_KEYS } from "./layout";
 import { nn } from "../sb";
-import { settings, reserveCode, storePrint } from "./print";
+import { settings, reserveCode, storePrint, putAll } from "./print";
 import { parseQuick, renderQuick, solutionPages, parseSolutions, pageImageNoNames } from "./mathflat";
 import { partsFromAnswer, partsFromLines, expandParts, splitLabel, groupProblems, partLabel } from "../parts";
 
@@ -48,16 +48,18 @@ function checkManifest(m) {
 }
 
 // ── 쪽 정보 모으기
-async function readDoc(bytes) {
+// keep: 이미 읽은 문서와 바뀐 쪽 번호들 — 바뀌지 않은 쪽은 그 문서의 것을 그대로 씀(이름 지운 뒤 다시 읽을 때)
+// 쪽들을 함께 읽는다(pdf.js 일꾼이 차례로 처리하는 동안 화면 쪽 일이 겹치게)
+async function readDoc(bytes, keep = null) {
   const doc = await openPdf(bytes);
-  const pages = [];
-  for (let i = 0; i < doc.numPages; i++) {
+  const pages = await Promise.all(Array.from({ length: doc.numPages }, async (_, i) => {
+    if (keep && !keep.changed.has(i) && keep.D.pages[i]) return keep.D.pages[i];
     const page = await doc.getPage(i + 1);
     const g = await pageGraphics(page);
     const sp = await pageSpans(page, g.ops);
     const vp = page.getViewport({ scale: 1 });
-    pages.push({ page, sp, lines: pageLines(sp), edges: g.edges, W: vp.width, H: vp.height });
-  }
+    return { page, sp, lines: pageLines(sp), edges: g.edges, gfx: g, W: vp.width, H: vp.height };
+  }));
   return { doc, pages };
 }
 
@@ -219,12 +221,29 @@ function squeezeBlank(im, keep = 28, minRun = 70) {
   rows.forEach((y, i) => out.d.set(im.d.subarray(y * w * 4, (y + 1) * w * 4), i * w * 4));
   return out;
 }
-async function cropItem(page, rect, dpi = 150) {
-  let im = await renderClip(page, rect, dpi);
+function finishCrop(im) {
   im = eraseEdgeRules(im);
   const box = bboxWhere(gray(im), (v) => 255 - v > 30);
   if (box) { const pad = 8; im = crop(im, Math.max(0, box[0] - pad), Math.max(0, box[1] - pad), Math.min(im.w, box[2] + pad), Math.min(im.h, box[3] + pad)); }
   return squeezeBlank(im);
+}
+async function cropItem(page, rect, dpi = 150) {
+  return finishCrop(await renderClip(page, rect, dpi));
+}
+// 같은 쪽의 여러 자리를 한 번에 — 쪽(자리들을 감싸는 띠)을 한 번만 그리고 자리마다 오린다.
+// 자리마다 쪽을 다시 그리면 문항이 많은 쪽일수록 오래 걸림. list: [{key, page, rect, pad}] → Map(key → Img)
+async function clipMany(pages, list, dpi) {
+  const out = new Map(), s = dpi / 72;
+  const byPage = new Map();
+  for (const x of list) { if (!byPage.has(x.page)) byPage.set(x.page, []); byPage.get(x.page).push(x); }
+  for (const [pno, xs] of byPage) {
+    const page = pages[pno];
+    if (xs.length === 1) { out.set(xs[0].key, await renderClip(page, xs[0].rect, dpi)); continue; }
+    const u = [Math.min(...xs.map((x) => x.rect[0])), Math.min(...xs.map((x) => x.rect[1])), Math.max(...xs.map((x) => x.rect[2])), Math.max(...xs.map((x) => x.rect[3]))];
+    const big = await renderClip(page, u, dpi);
+    for (const x of xs) out.set(x.key, crop(big, (x.rect[0] - u[0]) * s, (x.rect[1] - u[1]) * s, (x.rect[2] - u[0]) * s, (x.rect[3] - u[1]) * s));
+  }
+  return out;
 }
 const looksChoice = (pg, r) => {
   const t = pg.sp.filter((s) => s.x >= r[0] - 1 && s.x1 <= r[2] + 1 && s.y >= r[1] - 1 && s.y1 <= r[3] + 1).map((s) => s.t).join("");
@@ -410,7 +429,7 @@ const codePrinted = (D, code) => { const t = D.pages[0] ? D.pages[0].sp.map((s) 
 // ── 분석 → 초안
 // D · A: 이름을 지운 문서(쪽 그림 · 문항 그림 · 정답 그림을 여기서 오림)
 // T · TA: 지우기 전 문서(글자 읽기 — 이름 있는 쪽은 그림으로 바뀌어 글자가 없으므로 문항 번호 · 제목 · 정답은 여기서)
-async function analyze(D, A, manifest, draft, trust = false, T = D, TA = A) {
+async function analyze(D, A, manifest, draft, trust = false, T = D, TA = A, previews = true) {
   if (!D.pages.length) throw new Error("빈 PDF예요");
   let m = manifest || (await readManifest(T.doc));
   const method = m ? "manifest" : "auto";
@@ -421,7 +440,8 @@ async function analyze(D, A, manifest, draft, trust = false, T = D, TA = A) {
     title = big.length ? big[0].text.slice(0, 60) : "";
   }
   const pages = [];
-  for (let i = 0; i < D.pages.length; i++) {
+  // 쪽 미리보기(등록 확인 화면용) — 확인 화면 없이 바로 등록할 때는 그리지 않음
+  if (previews) for (let i = 0; i < D.pages.length; i++) {
     const rel = `pages/p${String(i + 1).padStart(2, "0")}.png`;
     draft.files.set(rel, await toPng(await renderClip(D.pages[i].page, null, 60)));
     pages.push(rel);
@@ -446,37 +466,45 @@ async function analyze(D, A, manifest, draft, trust = false, T = D, TA = A) {
     regions(T, det).forEach(([pno, rect], i) => items.push({ label: det[i].label, answer: "", choice: false, points: null, topic: "", key: "", page: pno, rect }));
   }
   const meth = m ? method : items.length ? "auto" : "pages";
-  for (let i = 0; i < items.length; i++) {
-    const it = items[i];
-    it.seq = i + 1;
-    if (it.rect && D.pages[it.page]) {
-      const im = await cropItem(D.pages[it.page].page, it.rect);
-      const rel = `items/${String(i + 1).padStart(3, "0")}.png`;
-      draft.files.set(rel, await toPng(im));
+  // 문항 그림 — 쪽마다 한 번 그려 그 쪽 문항을 모두 오리고 바로 PNG로(큰 쪽 그림은 다음 쪽 전에 버림)
+  items.forEach((it, i) => { it.seq = i + 1; });
+  const byPage = new Map();
+  for (const it of items) if (it.rect && D.pages[it.page]) { if (!byPage.has(it.page)) byPage.set(it.page, []); byPage.get(it.page).push(it); }
+  for (const [pno, its] of byPage) {
+    const clips = await clipMany([D.pages[pno].page], its.map((it) => ({ key: it.seq, page: 0, rect: it.rect })), 150);
+    const ims = new Map();
+    for (const it of its) {
+      ims.set(it.seq, finishCrop(clips.get(it.seq)));
+    }
+    const pngs = await Promise.all(its.map((it) => toPng(ims.get(it.seq))));        // 그 쪽 문항 PNG를 함께 만듦
+    its.forEach((it, k) => {
+      const im = ims.get(it.seq);
+      const rel = `items/${String(it.seq).padStart(3, "0")}.png`;
+      draft.files.set(rel, pngs[k]);
       it.png = rel;
       it.hash = it.key ? "key:" + it.key : imgHash(im);
       if (!m) it.choice = looksChoice(T.pages[it.page], it.rect);
       it.bbox = it.rect.map((v) => Math.round(v * 10) / 10);
       it.subs = subsInRect(T.pages[it.page], it.rect);          // 지우기 전 글자에서
       delete it.rect;
-    } else {
-      it.png = null;
-      it.hash = it.key ? "key:" + it.key : null;
-      delete it.rect;
-    }
+    });
   }
+  for (const it of items) if (!it.png) { it.png = null; it.hash = it.key ? "key:" + it.key : null; delete it.rect; }
   if (A && items.length) {
     // 정답지 글자로 정답 짐작하기 — 그림으로 답하는 문항(등록 정보의 정답 그림)과
     // 보관함 프린트(등록 정보의 정답이 기준 · 정답 칸이 없는 과제도 있음)는 짐작하지 않는다
     const guess = (it) => !it.answer && !it.ans && !(trust && m);
     try {
-      const quick = await parseQuick(TA.doc);
-      for (const it of items) {
-        const q = /^\d+$/.test(it.label) ? quick[Number(it.label)] : null;
-        if (!q) continue;
-        const rq = await renderQuick(A.doc, q);           // 그림은 이름 지운 쪽에서
+      const quick = await parseQuick(TA.doc, null, (i) => (TA.pages[i] && TA.pages[i].gfx ? TA.pages[i] : null));      // 읽어 둔 쪽을 씀
+      const want = items.map((it) => [it, /^\d+$/.test(it.label) ? quick[Number(it.label)] : null]).filter(([, q]) => q);
+      // 정답 칸 그림 — 쪽마다 한 번만 그리고 오림(그림은 이름 지운 쪽에서), renderQuick 과 같은 자리(가장자리 2pt)
+      const qpages = [];
+      for (let k = 0; k < A.doc.numPages; k++) qpages.push(A.pages[k] ? A.pages[k].page : await A.doc.getPage(k + 1));
+      const qims = await clipMany(qpages, want.map(([it, q]) => ({ key: it.seq, page: q.page, rect: [q.rect[0] - 2, q.rect[1] - 2, q.rect[2] + 2, q.rect[3] + 2] })), 220);
+      const qpng = await Promise.all(want.map(([it]) => toPng(qims.get(it.seq))));
+      for (const [k, [it, q]] of want.entries()) {
         const rel = `answers/${String(it.seq).padStart(3, "0")}.png`;
-        draft.files.set(rel, rq.png);
+        draft.files.set(rel, qpng[k]);
         it.answer_png = rel;
         if (guess(it) && (q.choice || q.text)) { it.answer = q.choice || q.text; it.answer_guess = true; }
       }
@@ -496,19 +524,18 @@ export async function registerAnalyze(b, ctx) {
   const known = (await ctx.knownNames()).concat((b.extra_names || []).map(String).filter((x) => x.trim()));
   return makeDraft(ctx, { sheet: sheetU.bytes, sheetName: b.sheet.name || sheetU.name, answer: ansU && ansU.bytes, answerName: ansU && (b.answer.name || ansU.name), manifest, known });
 }
-async function makeDraft(ctx, { sheet, sheetName, answer, answerName, manifest, known, library = null, extras = [] }) {
+async function makeDraft(ctx, { sheet, sheetName, answer, answerName, manifest, known, library = null, extras = [], previews = true }) {
   const id = "d" + ++dseq + Date.now().toString(36);
   const draft = { id, files: new Map() };
-  let D = await readDoc(sheet);
+  let [D, A] = await Promise.all([readDoc(sheet), answer ? readDoc(answer) : null]);       // 문제지 · 정답지를 함께 읽음
   const fn = findNames(D, known);
-  let A = answer ? await readDoc(answer) : null;
   const fa = A ? findNames(A, known) : { removed: [], targets: new Map() };
-  const sheetClean = await redactPages(sheet, D, fn.targets);
-  const ansClean = A ? await redactPages(answer, A, fa.targets) : null;
+  const [sheetClean, ansClean] = await Promise.all([redactPages(sheet, D, fn.targets), A ? redactPages(answer, A, fa.targets) : null]);
   const D0 = D, A0 = A;                       // 지우기 전 글자(문항 번호 · 정답 읽기용)
-  if (sheetClean !== sheet) D = await readDoc(sheetClean);
-  if (A && ansClean !== answer) A = await readDoc(ansClean);
-  const r = await analyze(D, A, manifest, draft, !!library, D0, A0);
+  const changed = (tg) => new Set([...tg.entries()].filter(([, t]) => t.length).map(([p]) => p));
+  if (sheetClean !== sheet) D = await readDoc(sheetClean, { D, changed: changed(fn.targets) });       // 이름 지운 쪽만 다시 읽음
+  if (A && ansClean !== answer) A = await readDoc(ansClean, { D: A, changed: changed(fa.targets) });
+  const r = await analyze(D, A, manifest, draft, !!library, D0, A0, previews);
   const removed = fn.removed.concat(fa.removed);
   const names = new Set([...known, ...removed.map((x) => x.text)]);
   r.sheet_name = ctx.stripNames(ctx.cleanName(sheetName || "시험지.pdf"), names) || "시험지.pdf";
@@ -523,7 +550,8 @@ async function makeDraft(ctx, { sheet, sheetName, answer, answerName, manifest, 
   if (library) { r.library = library.info; r.code = library.code; r.extras = extras; }
   // 첫 쪽 글자(지우기 전) — 이름 때문에 첫 쪽이 그림으로 바뀌어도 이미 찍힌 코드를 알아보게(코드 두 번 찍기 막기)
   const p1 = D0.pages[0] ? D0.pages[0].sp.map((s) => s.t).join("").replace(/\s/g, "") : "";
-  draft.data = { ...r, sheet: sheetClean, answer: ansClean, libraryPid: library ? library.pid : null, extrasFiles: extras, p1 };
+  draft.data = { ...r, sheet: sheetClean, answer: ansClean, libraryPid: library ? library.pid : null, extrasFiles: extras, p1,
+    npages: D.pages.length, sheetChanged: sheetClean !== sheet, answerChanged: !!answer && ansClean !== answer };
   DRAFTS.set(id, draft);
   return r;
 }
@@ -558,9 +586,11 @@ export async function registerCommit(b, ctx) {
   const sids = await ctx.ensureStudents(b.targets || []);
   const libPid = dr.libraryPid;
   const code = libPid ? dr.code : await reserveCode(ctx, dr.code);
-  const D = await readDoc(dr.sheet);
+  // 쪽 수 · 첫 쪽 글자는 분석 때 읽어 둔 것으로(문서를 다시 읽지 않음)
+  const D = dr.npages ? null : await readDoc(dr.sheet);
+  const npages = dr.npages || D.pages.length;
   const p1 = dr.p1 || "";
-  const sheet = p1.includes(fmtCode(code)) || p1.includes(code) || codePrinted(D, code) ? dr.sheet : await stampCode(dr.sheet, code);
+  const sheet = p1.includes(fmtCode(code)) || p1.includes(code) || (D && codePrinted(D, code)) ? dr.sheet : await stampCode(dr.sheet, code);
   const files = [{ rel: `${code}/sheet.pdf`, data: sheet, type: "application/pdf" }];
   if (dr.answer) files.push({ rel: `${code}/answer.pdf`, data: dr.answer, type: "application/pdf" });
   const rows = items.map((it, i) => {
@@ -578,14 +608,18 @@ export async function registerCommit(b, ctx) {
   rows.length = 0; rows.push(...prows);
   const sub = String(b.sub || dr.sub || "").trim();
   const rowP = { title, sub, kind: "registered", template: "등록", label, level: b.level || ctx.guessLevel(title, sub, ""), n_items: rows.length,
-    n_choice: rows.filter((r) => r.choice).length, pages: D.pages.length, sources: [dr.sheet_name, dr.answer_name].filter(Boolean),
+    n_choice: rows.filter((r) => r.choice).length, pages: npages, sources: [dr.sheet_name, dr.answer_name].filter(Boolean),
     files: { sheet: `${code}/sheet.pdf`, answer: dr.answer ? `${code}/answer.pdf` : null, src: [], extras: [] },
     name_boxes: dr.name_boxes || [], options: { method: dr.method, mode: b.mode || "items" }, shelf: "active" };
   if (libPid) {
     // 보관함 프린트를 꺼내 등록: 같은 줄을 고쳐 쓴다
     const { T, must, put, log } = ctx;
     const old = must(await T("tt_prints").select("files,options").eq("id", libPid).single());
-    for (const f of files) await put(f.rel, f.data, f.type);
+    // 보관함에 이미 같은 자리로 있는 문제지 · 정답지는 바뀌었을 때만(이름을 지웠거나 코드를 찍었을 때) 다시 올림
+    const keepOld = (f) => (f.rel === `${code}/sheet.pdf` && sheet === dr.sheet && !dr.sheetChanged && old.files && old.files.sheet === f.rel)
+      || (f.rel === `${code}/answer.pdf` && !dr.answerChanged && old.files && old.files.answer === f.rel);
+    const upl = files.filter((f) => !keepOld(f));
+    await putAll(put, upl);
     rowP.files.extras = (old.files && old.files.extras) || [];
     rowP.options = { ...(old.options || {}), ...rowP.options };
     must(await T("tt_print_items").delete().eq("print_id", libPid));
@@ -604,17 +638,16 @@ export async function registerCommit(b, ctx) {
 }
 
 // 보관함 프린트(문항을 아직 안 나눈 것) → 등록 확인 화면
-export async function libraryDraft(pr, ctx) {
+export async function libraryDraft(pr, ctx, previews = true, students = null) {
   const f = pr.files || {};
   if (!f.sheet) throw new Error("보관함 프린트에 문제지 파일이 없어요");
-  const sheet = await ctx.bytes(f.sheet);
-  const answer = f.answer ? await ctx.bytes(f.answer) : null;
+  const [sheet, answer] = await Promise.all([ctx.bytes(f.sheet), f.answer ? ctx.bytes(f.answer) : null]);      // 함께 받기
   const lib = (pr.options && pr.options.library) || {};
   const r = await makeDraft(ctx, { sheet, sheetName: f.sheet_name || pr.title + ".pdf", answer, answerName: f.answer_name || null,
     // 프린트를 만들어 준 학생 이름(for)은 지금 학생 목록에 없어도 지운다(보관 프린트는 이름 없는 판으로)
-    manifest: lib.manifest || null, known: (await ctx.knownNames()).concat((lib.for || []).map(String).filter((x) => x.trim())),
+    manifest: lib.manifest || null, known: (students ? students.map((x) => x.name) : await ctx.knownNames()).concat((lib.for || []).map(String).filter((x) => x.trim())),
     library: { pid: pr.id, code: pr.code, info: { files: (lib.roles || []).map((role) => ({ role })), made: lib.made || "", level: pr.level || lib.level || "", for: lib.for || [] } },
-    extras: f.extras || [] });
+    extras: f.extras || [], previews });
   if (lib.title || pr.title) r.title = pr.title || lib.title;
   if (pr.sub) r.sub = pr.sub;
   return r;
@@ -624,11 +657,12 @@ export async function libraryDraft(pr, ctx) {
 // 확인 화면 없이 문항 나누기 · 이름 지우기 · 정답 · 해설 그림까지 넣는다. 못 찾은 문항이 있으면 확인 화면(초안)으로.
 const CIRC_NUM = { "①": "1", "②": "2", "③": "3", "④": "4", "⑤": "5" };
 export async function libraryAuto(pr, ctx) {
-  const d = await libraryDraft(pr, ctx);
+  const students = await ctx.all(() => ctx.T("tt_students").select("name,active"));
+  const d = await libraryDraft(pr, ctx, false, students);          // 바로 등록이면 쪽 미리보기는 안 그림
   const ready = d.method === "manifest" && d.items.length > 0 && d.items.every((it) => it.png);
-  if (!ready) return { done: false, draft: d };
+  if (!ready) { DRAFTS.delete(d.draft); return { done: false, draft: await libraryDraft(pr, ctx, true, students) }; }       // 확인 화면이면 미리보기까지
   const lib = (pr.options && pr.options.library) || {};
-  const active = new Set((await ctx.all(() => ctx.T("tt_students").select("name,active"))).filter((s) => s.active).map((s) => s.name));
+  const active = new Set(students.filter((s) => s.active).map((s) => s.name));
   const targets = (lib.for || []).filter((n) => active.has(n));     // 있는 학생만 (새로 만들지 않음)
   const print = await registerCommit({
     draft: d.draft, title: d.title, sub: d.sub, label: d.label || "서답형", level: pr.level || lib.level || "", targets, mode: "items",

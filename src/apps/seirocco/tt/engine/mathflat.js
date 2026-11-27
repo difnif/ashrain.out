@@ -7,10 +7,12 @@ const GENERIC = new Set(["일일 TEST", "유형별 학습", "MATH SQUARE", "실�
 const nos = (s) => s.replace(/\s+/g, "");
 
 // 쪽 하나 읽기 — 글자 덩이 + 그림 + (필요하면) 색을 보려고 그린 그림
-async function readPage(doc, i, { dpi = 0 } = {}) {
-  const page = await doc.getPage(i + 1);
-  const gfx = await pageGraphics(page);
-  const sp = await pageSpans(page, gfx.ops);
+// pre: (쪽 번호) → 이미 읽어 둔 {page, sp, gfx} — 등록할 때 정답지를 두 번 읽지 않게
+async function readPage(doc, i, { dpi = 0, pre = null } = {}) {
+  const got = pre ? pre(i) : null;
+  const page = got ? got.page : await doc.getPage(i + 1);
+  const gfx = got ? got.gfx : await pageGraphics(page);
+  const sp = got ? got.sp : await pageSpans(page, gfx.ops);
   const vp = page.getViewport({ scale: 1 });
   const r = { page, sp, gfx, W: vp.width, H: vp.height, text: nos(pageLines(sp).map((l) => l.text).join("")) };
   if (dpi) { r.im = await renderClip(page, null, dpi); r.s = dpi / 72; }
@@ -110,9 +112,9 @@ const TEMPLATES = [
 ];
 const TPL = TEMPLATES.map(([lab, h]) => [lab, [...BigInt("0x" + h).toString(2).padStart(256, "0")].map(Number)]);
 
-export async function answerPages(doc, start = 0) {
+export async function answerPages(doc, start = 0, pre = null) {
   const out = [];
-  for (let i = start; i < doc.numPages; i++) if ((await readPage(doc, i)).text.includes("빠른정답")) out.push(i);
+  for (let i = start; i < doc.numPages; i++) if ((await readPage(doc, i, { pre })).text.includes("빠른정답")) out.push(i);
   return out;
 }
 async function feature(page, rect) {
@@ -140,10 +142,10 @@ async function classifyChoice(page, rect) {
   return d1 <= 35 && d2 - d1 >= 15 ? lab : null;
 }
 // {번호: {page, rect:[x0,y0,x1,y1], choice, text}}
-export async function parseQuick(doc, pages = null) {
+export async function parseQuick(doc, pages = null, pre = null) {
   const res = {};
-  for (const pno of pages ?? (await answerPages(doc))) {
-    const pg = await readPage(doc, pno);
+  for (const pno of pages ?? (await answerPages(doc, 0, pre))) {
+    const pg = await readPage(doc, pno, { pre });
     const H = pg.H;
     let top = 0;
     for (const s of pg.sp) if (nos(s.t) === "빠른정답") top = Math.max(top, s.y1);
