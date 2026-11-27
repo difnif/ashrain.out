@@ -27,6 +27,7 @@ export const MODS = {
   complex: () => import("./complex.jsx"),
   numer: () => import("./numer.jsx"),
   opt: () => import("./opt.jsx"),
+  chem: () => import("./chem.jsx"),
 };
 
 export const KINDS = {
@@ -107,6 +108,9 @@ export const KINDS = {
   // 최적화
   critpt: ["opt", "CritPt"], convex: ["opt", "Convex"], linesearch: ["opt", "LineSearch"], newtonopt: ["opt", "NewtonOpt"],
   kkt: ["opt", "KKT"], barrier: ["opt", "Barrier"], bnb: ["opt", "BnB"], anneal: ["opt", "Anneal"],
+  // 화학
+  limiting: ["chem", "Limiting"], vdw: ["chem", "VdW"], gibbs: ["chem", "Gibbs"], equil: ["chem", "Equil"],
+  titration: ["chem", "Titration"], arrhenius: ["chem", "Arrhenius"], nernst: ["chem", "Nernst"], hlines: ["chem", "HLines"],
 };
 
 const loaded = {};

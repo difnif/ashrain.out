@@ -200,6 +200,14 @@
   "kkt",
   "barrier",
   "bnb",
-  "anneal"
+  "anneal",
+  "limiting",
+  "vdw",
+  "gibbs",
+  "equil",
+  "titration",
+  "arrhenius",
+  "nernst",
+  "hlines"
  ]
 }
