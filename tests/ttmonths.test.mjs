@@ -60,3 +60,22 @@ test("달마다 모아 보기 — 매출은 다님 원비 합, 원비 안 적은
   assert.equal(monthTotals(rows, "2026-10-01").revenue, 280000);
   assert.equal(monthTotals(rows, "2026-09-01").entered, 0);
 });
+
+import { gradeKey, feeFor, planStart } from "../src/apps/seirocco/tt/logic.js";
+test("원비표 — 학년 글자 읽기 · 그달 원비표에서 학년 · 주당 횟수로 원비", () => {
+  assert.equal(gradeKey("초4"), "초4"); assert.equal(gradeKey("초등 4학년"), "초4"); assert.equal(gradeKey("중2"), "중2");
+  assert.equal(gradeKey("고등학교 1학년"), "고1"); assert.equal(gradeKey("4학년"), null); assert.equal(gradeKey("중4"), null); assert.equal(gradeKey(""), null);
+  const plans = [   // 시험용 값(실제 원비표 아님)
+    { start_month: "2024-01-01", level: "A", grades: ["초4"], per_week: 3, fee: 100 },
+    { start_month: "2024-01-01", level: "B", grades: ["중1", "중2", "중3"], per_week: 2, fee: 300 },
+    { start_month: "2026-01-01", level: "A2", grades: ["초1", "초2", "초3", "초4"], per_week: 3, fee: 90 },
+    { start_month: "2026-01-01", level: "B", grades: ["중1", "중2", "중3"], per_week: 2, fee: 300 },
+  ];
+  assert.equal(planStart(plans, "2025-12-01"), "2024-01-01");
+  assert.equal(feeFor(plans, "2025-06-01", "초4", 3).fee, 100);
+  assert.equal(feeFor(plans, "2026-01-01", "초4", 3).fee, 90);
+  assert.equal(feeFor(plans, "2025-06-01", "초2", 3), null);          // 그때는 받지 않은 학년
+  assert.equal(feeFor(plans, "2026-03-01", "초2", 3).level, "A2");
+  assert.equal(feeFor(plans, "2026-03-01", "중2", 3), null);          // 그 주당 횟수는 원비표에 없음
+  assert.equal(feeFor(plans, "2023-12-01", "중2", 2), null);          // 원비표가 시작되기 전
+});

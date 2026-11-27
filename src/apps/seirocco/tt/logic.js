@@ -376,3 +376,72 @@ export function monthTotals(rows, m) {
   return { month: m, attend: at.length, pause: r.filter((x) => x.status === "pause").length, quit: r.filter((x) => x.status === "quit").length,
     revenue: at.reduce((a, x) => a + (x.fee || 0), 0), no_fee: at.filter((x) => x.fee == null).length, entered: r.length };
 }
+
+// ── 원비표 — 학생 학년 글자(「초4」 · 「중2」 · 「고등학교 1학년」 …)를 「초4」 꼴로. 알아볼 수 없으면 null
+export function gradeKey(g) {
+  const t = String(g || "").replace(/\s+/g, "");
+  const m = /^(초등학교|초등|초)([1-6])(학년)?$/.exec(t) || /^(중학교|중등|중)([1-3])(학년)?$/.exec(t) || /^(고등학교|고등|고)([1-3])(학년)?$/.exec(t);
+  if (!m) return null;
+  return `${m[1][0]}${m[2]}`;
+}
+// 그달에 쓰는 원비표 = 그달까지 시작한 원비표 중 가장 늦은 것(그 원비표 안에서만 찾음 — 없는 학년은 그때 받지 않은 것)
+export function planStart(plans, month) {
+  const starts = [...new Set((plans || []).map((p) => p.start_month))].filter((s) => s <= month).sort();
+  return starts.length ? starts[starts.length - 1] : null;
+}
+export function feeFor(plans, month, gk, perWeek) {
+  const st = planStart(plans, month);
+  if (!st || !gk || !perWeek) return null;
+  const p = (plans || []).find((x) => x.start_month === st && Number(x.per_week) === Number(perWeek) && (x.grades || []).includes(gk));
+  return p ? { fee: p.fee, level: p.level, minutes: p.minutes ?? null, start_month: p.start_month } : null;
+}
+
+// 원비표의 학년 칸 — 「초1-4」 · 「초5,6」 · 「중등」(= 중1-3) · 「고1 고2」 → ["초1", …]. 못 읽으면 null
+const G_MAX = { 초: 6, 중: 3, 고: 3 }, G_ORDER = ["초", "중", "고"];
+export function parseGrades(s) {
+  const t = String(s || "").replace(/학년|과정|부/g, "").replace(/초등학교|초등/g, "초").replace(/중학교|중등/g, "중").replace(/고등학교|고등/g, "고");
+  const out = new Set();
+  let pre = null, used = true, m;
+  const flush = () => { if (pre && !used) for (let i = 1; i <= G_MAX[pre]; i++) out.add(pre + i); };
+  const re = /([초중고])|(\d)\s*[-~∼〜]\s*(\d)|(\d)|([\s,·/、]+)|(.)/g;
+  while ((m = re.exec(t))) {
+    if (m[1]) { flush(); pre = m[1]; used = false; }
+    else if (m[2]) { const a = +m[2], b = +m[3]; if (!pre || a < 1 || b > G_MAX[pre] || a > b) return null; for (let i = a; i <= b; i++) out.add(pre + i); used = true; }
+    else if (m[4]) { const a = +m[4]; if (!pre || a < 1 || a > G_MAX[pre]) return null; out.add(pre + a); used = true; }
+    else if (m[5]) continue;
+    else return null;
+  }
+  flush();
+  if (!out.size) return null;
+  return [...out].sort((a, b) => G_ORDER.indexOf(a[0]) - G_ORDER.indexOf(b[0]) || a.slice(1) - b.slice(1));
+}
+export function fmtGrades(gs) {           // ["초1", "초2", "초3", "초4"] → 「초1-4」
+  const by = {};
+  for (const g of gs || []) (by[g[0]] = by[g[0]] || []).push(+g.slice(1));
+  return G_ORDER.filter((p) => by[p]).map((p) => {
+    const ns = [...new Set(by[p])].sort((a, b) => a - b), parts = [];
+    for (let i = 0; i < ns.length; ) { let j = i; while (j + 1 < ns.length && ns[j + 1] === ns[j] + 1) j++; parts.push(i === j ? `${ns[i]}` : `${ns[i]}-${ns[j]}`); i = j + 1; }
+    return p + parts.join(",");
+  }).join(" ");
+}
+// 그달 고를 수 있는 주당 횟수 — 그달 원비표에 있는 것(없으면 주2 · 주3), 이미 적힌 값은 늘 보임
+export function perWeekOpts(plans, month, extra) {
+  const st = planStart(plans, month);
+  const s = new Set((plans || []).filter((p) => p.start_month === st).map((p) => Number(p.per_week)));
+  if (!s.size) { s.add(2); s.add(3); }
+  for (const e of [].concat(extra ?? [])) if (e) s.add(Number(e));
+  return [...s].sort((a, b) => a - b);
+}
+// 그달 원비 채우기 — 원비표(학년 · 주당 횟수) 값. 다만 지난달에 원비표와 다른 원비(할인 등)를 같은 주당 횟수로 냈으면
+// 지난달 원비를 그대로 두고 special. 원비표에서 못 찾으면 지난달 원비. 원비표가 바뀐 달(1월 등)에는 원비표대로 낸 학생만 새 원비로.
+export function suggestFee(plans, month, gk, perWeek, prev) {
+  const plan = perWeek ? feeFor(plans, month, gk, perWeek) : null;
+  const pf = prev && prev.status === "attend" && prev.fee != null ? prev.fee : null;
+  const samePw = pf != null && (prev.per_week == null || !perWeek || Number(prev.per_week) === Number(perWeek));
+  if (samePw) {
+    const was = feeFor(plans, addMonths(month, -1), gk, prev.per_week || perWeek);
+    if (!plan) return { fee: pf, src: "prev", plan: null };
+    if (was && pf !== was.fee) return { fee: pf, src: "prev", plan, special: true };
+  }
+  return plan ? { fee: plan.fee, src: "plan", plan } : null;
+}

@@ -233,7 +233,7 @@ async function studentDetail(sid) {
   const curM = monthStart(todayStr()), mrows = await monthRows(null, sid);
   return { student: st, prints: out, books: bookRows, logs_ok: bookLogTable, repeat_wrong: rep, records,
     month: mflagOut(monthFlag(st, mrows.filter((r) => r.month <= curM), curM)), months: mrows.slice().reverse().slice(0, 24).map(snapMonth), months_ok: monthTable,
-    month_prev: snapMonth(mrows.find((r) => r.month === addMonths(curM, -1)) || null), this_month: curM,
+    month_prev: snapMonth(mrows.find((r) => r.month === addMonths(curM, -1)) || null), this_month: curM, plans: await feePlans(),
     attendance: (await attOut(await attRows(addDays(todayStr(), -120), addDays(todayStr(), 60), sid))).reverse(), att_ok: attTable };
 }
 
@@ -405,11 +405,68 @@ const noMonthTable = (e) => { const t = String((e && e.message) || e || ""); ret
 async function monthRows(to = null, sid = null) {
   if (!monthTable) return [];
   try {
-    return await all(() => { let x = T("tt_student_months").select("*").order("month").order("id"); if (to) x = x.lte("month", to); if (sid) x = x.eq("student_id", sid); return x; });
+    const rows = await all(() => { let x = T("tt_student_months").select("*").order("month").order("id"); if (to) x = x.lte("month", to); if (sid) x = x.eq("student_id", sid); return x; });
+    if (rows.length) perWeekCol = "per_week" in rows[0];          // 주당 횟수 칸이 있는지(원비표 SQL을 넣었는지)
+    return rows;
   } catch (e) { if (noMonthTable(e)) { monthTable = false; return []; } throw e; }
 }
-const snapMonth = (r) => (r ? { id: r.id, month: r.month, status: r.status, fee: r.fee ?? null, note: r.note || "" } : null);
-const sameMonth = (a, b) => !!a && !!b && a.month === b.month && a.status === b.status && (a.fee ?? null) === (b.fee ?? null) && (a.note || "") === (b.note || "");
+const snapMonth = (r) => (r ? { id: r.id, month: r.month, status: r.status, fee: r.fee ?? null, per_week: r.per_week ?? null, note: r.note || "" } : null);
+const sameMonth = (a, b) => !!a && !!b && a.month === b.month && a.status === b.status && (a.fee ?? null) === (b.fee ?? null) && (a.per_week ?? null) === (b.per_week ?? null) && (a.note || "") === (b.note || "");
+// 주당 횟수 칸(supabase/2026-11_tt_fee_plans.sql)이 아직 없으면 그 칸 없이 쓴다
+let perWeekCol = true;
+const noPerWeek = (e) => /per_week/.test(String((e && e.message) || e || "")) && /column|schema cache|Could not find/i.test(String((e && e.message) || e || ""));
+async function monthWrite(build) {
+  const r = await build(perWeekCol);
+  if (r.error && perWeekCol && noPerWeek(r.error)) { perWeekCol = false; return build(false); }
+  return r;
+}
+// ── 원비표 (supabase/2026-11_tt_fee_plans.sql) — 언제부터 · 대상(학년 묶음) · 주당 횟수마다 월 원비. 학원 영업 정보라 이 표에만 둔다.
+let feeTable = true;
+const FEE_SQL = "원비표 표가 DB에 아직 없어요 — supabase/2026-11_tt_fee_plans.sql 을 넣어야 해요";
+const noFeeTable = (e) => { const t = String((e && e.message) || e || ""); return /tt_fee_plans/.test(t) && /does not exist|schema cache|Could not find/i.test(t); };
+const FEE_F = ["start_month", "level", "grades", "per_week", "minutes", "fee", "note"];
+const snapFee = (r) => (r ? { id: r.id, ...Object.fromEntries(FEE_F.map((k) => [k, r[k] ?? null])) } : null);
+const sameFee = (a, b) => !!a && !!b && FEE_F.every((k) => JSON.stringify(a[k] ?? null) === JSON.stringify(b[k] ?? null));
+async function feePlans() {
+  if (!feeTable) return [];
+  try { return await all(() => T("tt_fee_plans").select("*").order("start_month").order("level").order("per_week")); }
+  catch (e) { if (noFeeTable(e)) { feeTable = false; return []; } throw e; }
+}
+const GRADE_OK = /^(초[1-6]|중[1-3]|고[1-3])$/;
+// 원비표 한 벌(그 달부터) 바꾸기 — 그 달 것을 모두 지우고 새로 넣음, 업무 기록 하나(여러 줄)로 되돌리기
+async function feePlanSave(b) {
+  if (!feeTable) throw new Error(FEE_SQL);
+  const start = monthStart(b.start_month || "");
+  if (!/^\d{4}-\d{2}-01$/.test(start)) throw new Error("언제부터인지 달을 골라 주세요");
+  const rows = (b.rows || []).map((r) => ({
+    level: String(r.level || "").trim().slice(0, 40), grades: [...new Set((r.grades || []).map((g) => String(g).trim()).filter((g) => GRADE_OK.test(g)))],
+    per_week: Number(r.per_week), minutes: r.minutes === "" || r.minutes == null ? null : Number(r.minutes), fee: parseFee(r.fee), note: String(r.note || "").trim().slice(0, 200),
+  }));
+  for (const r of rows) {
+    if (!r.level || !r.grades.length) throw new Error("대상 이름과 학년(초1 ~ 고3)을 적어 주세요");
+    if (!Number.isInteger(r.per_week) || r.per_week < 1 || r.per_week > 7) throw new Error(`${r.level}: 주당 횟수는 1 ~ 7`);
+    if (r.fee == null || Number.isNaN(r.fee) || r.fee > 100000000) throw new Error(`${r.level} 주${r.per_week}회: 원비는 300000 · 30만 처럼 적어 주세요`);
+    if (r.minutes != null && !(Number.isInteger(r.minutes) && r.minutes >= 10 && r.minutes <= 600)) throw new Error(`${r.level}: 수업 길이(분)는 10 ~ 600`);
+  }
+  const key = (r) => `${r.level}|${r.per_week}`;
+  if (new Set(rows.map(key)).size !== rows.length) throw new Error("같은 대상 · 같은 주당 횟수가 두 번 있어요");
+  try {
+    const old = must(await T("tt_fee_plans").select("*").eq("start_month", start));
+    const out = [];
+    for (const o of old) if (!rows.some((r) => key(r) === key(o))) { must(await T("tt_fee_plans").delete().eq("id", o.id)); out.push({ table: "tt_fee_plans", row_id: o.id, before: snapFee(o), after: null }); }
+    for (const r of rows) {
+      const o = old.find((x) => key(x) === key(r));
+      const want = { start_month: start, ...r };
+      if (o && sameFee(o, want)) continue;
+      const saved = o ? must(await T("tt_fee_plans").update({ ...r, updated_at: nowIso() }).eq("id", o.id).select("*").single())
+        : must(await T("tt_fee_plans").insert(want).select("*").single());
+      out.push({ table: "tt_fee_plans", row_id: saved.id, before: snapFee(o || null), after: snapFee(saved) });
+    }
+    if (!out.length) return { ok: true, events: [] };
+    const eid = await logRow("fee_plan", null, null, { table: "multi", rows: out, month: start, summary: { n: rows.length } });
+    return { ok: true, events: eid ? [eid] : [] };
+  } catch (e) { if (noFeeTable(e)) { feeTable = false; throw new Error(FEE_SQL); } throw e; }
+}
 const mflagOut = (f) => ({ status: f.status, fee: f.fee ?? null, flag: f.flag, quit: !!f.quit, last_month: f.last ? f.last.month : null, last_status: f.last ? f.last.status : null, last_fee: f.last ? f.last.fee ?? null : null });
 // 재원으로 학생의 「다니는 중 · 쉬는 중」(active — 학생 고르기 칩 등에 쓰임)을 맞춘다: 이번 달까지의 마지막 기록이 다님이면 다니는 중
 async function syncActive(sid) {
@@ -426,7 +483,7 @@ async function monthsView(m) {
     const prev = rows.find((r) => r.student_id === st.id && r.month === prevM) || null;
     return { id: st.id, name: st.name, grade: st.grade || "", active: st.active !== false, row: snapMonth(row), prev: snapMonth(prev), ...mflagOut(monthFlag(st, rows, cur)) };
   });
-  return { month: cur, this_month: monthStart(todayStr()), ok: monthTable, students, totals: monthTotals(rows, cur),
+  return { month: cur, this_month: monthStart(todayStr()), ok: monthTable, students, totals: monthTotals(rows, cur), plans: await feePlans(), fees_ok: feeTable, per_week_ok: perWeekCol,
     history: Array.from({ length: 12 }, (_, i) => monthTotals(rows, addMonths(cur, -i))) };
 }
 // 달 재원 · 원비 적기 — 바뀐 줄만. 상태를 비우면 그달 기록을 지움. 줄마다 업무 기록(되돌리기)
@@ -440,20 +497,24 @@ async function monthsSave(b) {
     const fee = parseFee(r.fee);
     if (st && (Number.isNaN(fee) || (fee != null && fee > 100000000))) throw new Error(`${st.name}: 원비는 300000 · 30만 처럼 적어 주세요`);
     if (r.status && !["attend", "pause", "quit"].includes(r.status)) throw new Error("재원 상태를 골라 주세요");
-    return { st, status: r.status || "", fee, note: "note" in r ? String(r.note || "").trim().slice(0, 300) : null };
+    const pw = r.per_week === "" || r.per_week == null ? null : Number(r.per_week);
+    if (st && pw !== null && !(Number.isInteger(pw) && pw >= 1 && pw <= 7)) throw new Error(`${st.name}: 주당 횟수는 1 ~ 7`);
+    return { st, status: r.status || "", fee, per_week: "per_week" in r ? pw : undefined, note: "note" in r ? String(r.note || "").trim().slice(0, 300) : null };
   }).filter((r) => r.st);
   const thisM = monthStart(todayStr()), events = [];
   try {
     for (const r of plan) {
       const sid = r.st.id;
       const old = must(await T("tt_student_months").select("*").eq("student_id", sid).eq("month", cur).limit(1))[0] || null;
+      if (old) perWeekCol = "per_week" in old;
       let saved = null;
       if (!r.status) { if (!old) continue; must(await T("tt_student_months").delete().eq("id", old.id)); }
       else {
-        const row = { status: r.status, fee: r.fee, note: r.note ?? (old ? old.note : "") };
+        const row = { status: r.status, fee: r.fee, note: r.note ?? (old ? old.note : ""), per_week: !perWeekCol ? null : r.per_week !== undefined ? r.per_week : old ? old.per_week ?? null : null };
         if (old && sameMonth(old, { ...old, ...row })) continue;
-        saved = old ? must(await T("tt_student_months").update({ ...row, updated_at: nowIso() }).eq("id", old.id).select("*").single())
-          : must(await T("tt_student_months").insert({ student_id: sid, month: cur, ...row }).select("*").single());
+        const strip = (x, withPw) => { const y = { ...x }; if (!withPw) delete y.per_week; return y; };
+        saved = must(old ? await monthWrite((pw) => T("tt_student_months").update({ ...strip(row, pw), updated_at: nowIso() }).eq("id", old.id).select("*").single())
+          : await monthWrite((pw) => T("tt_student_months").insert({ student_id: sid, month: cur, ...strip(row, pw) }).select("*").single()));
       }
       if (cur <= thisM) await syncActive(sid);
       const id = await logRow("student_month", sid, null, { table: "tt_student_months", row_id: (saved || old).id, name: r.st.name, month: cur, before: snapMonth(old), after: snapMonth(saved) });
@@ -810,7 +871,7 @@ const UNDO = {
     keys: (ev, x) => ({ print_id: ev.print_id, student_id: ev.student_id, kind: x.kind }), same: sameLog, snap: snapLog, missing: noLogTable, sql: LOG_SQL, where: "교재 화면",
   },
   tt_student_months: {
-    fields: (x) => ({ month: x.month, status: x.status, fee: x.fee ?? null, note: x.note || "" }),
+    fields: (x) => ({ month: x.month, status: x.status, fee: x.fee ?? null, note: x.note || "", ...(perWeekCol ? { per_week: x.per_week ?? null } : {}) }),
     keys: (ev) => ({ student_id: ev.student_id }), same: sameMonth, snap: snapMonth, missing: noMonthTable, sql: MONTH_SQL, where: "재원 · 원비 화면",
     after: (ev) => syncActive(ev.student_id),
   },
@@ -818,6 +879,7 @@ const UNDO = {
     fields: (x) => ({ day: x.day, kind: x.kind, reason: x.reason || "", checked: x.checked ?? null, checked_at: x.checked ? nowIso() : null, source: x.source || "teacher" }),
     keys: (ev) => ({ student_id: ev.student_id }), same: sameAtt, snap: snapAtt, missing: noAttTable, sql: ATT_SQL, where: "오늘 화면",
   },
+  tt_fee_plans: { fields: (x) => pick(x, FEE_F), keys: () => ({}), same: sameFee, snap: snapFee, missing: noFeeTable, sql: FEE_SQL, where: "원비표" },
   tt_book_items: { fields: (x) => pick(x, ITEM_F), keys: (ev, x) => ({ print_id: x.print_id }), same: sameBy(ITEM_F), snap: snapItem, missing: noAnaTable, sql: ANA_SQL, where: "교재 문항 화면" },
   tt_book_marks: { fields: (x) => pick(x, MARK_F), keys: (ev, x) => pick(x, ["print_id", "student_id", "item_id"]), same: sameBy(MARK_F), snap: snapMark, missing: noAnaTable, sql: ANA_SQL, where: "교재 문항 화면" },
   tt_questions: { fields: (x) => pick(x, Q_F), keys: (ev, x) => pick(x, Q_K), same: sameBy(Q_F), snap: snapQ, missing: noAnaTable, sql: ANA_SQL, where: "물어볼 것 화면" },
@@ -1356,6 +1418,7 @@ export async function api(path, body) {
   }
   // 교재 — 등록 · 학생에게 붙이기 · 빼기 · 고치기 · 지우기 (스캔본은 학생 몫의 채점 기록에: gradings/<id>/scans 그대로)
   if (p === "months") return post ? monthsSave(body) : monthsView(q.month);            // 재원 · 원비
+  if (p === "feeplans") return post ? feePlanSave(body) : feePlans();                // 원비표
   if (p === "today") return todayView(q.date);                                        // 오늘 대시보드
   if ((m = /^bookcopy\/([A-Za-z0-9-]+)$/.exec(p)) && !post) return bookCopyItems(m[1]);     // 학생 교재 문항 · 포스트잇
   if ((m = /^bookcopy\/([A-Za-z0-9-]+)\/pack$/.exec(p))) {                                   // 분석 맡기기 묶음
