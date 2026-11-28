@@ -89,9 +89,10 @@ test("사전식: 숫자 분석 합 = 번호 · 나무로 찾은 글자 = 답 · 
   let n = 0;
   for (const it of C100_SETS.lex.items) {
     const f = it.fig;
-    const kth = it.planTag === "숫자 분석";
+    const numL = it.lines.find((l) => l.pre === "숫자 분석");        // 「○번째 문자열」 — 덩어리 크기 줄 다음에 숫자 분석 줄
+    const kth = !!numL;
     if (!f) {                                   // 두 단어 사이
-      const [w1, w2] = it.lines.slice(2, 4).map((l) => l.pre);
+      const [w1, w2] = it.lines.filter((l) => /^[A-Z]+$/.test(l.pre || "")).map((l) => l.pre);
       const S = strings(w1.split(""), w1.length);
       const d = Math.abs(S.indexOf(w1) - S.indexOf(w2)) - 1;
       assert.equal(`${d}개`, it.ans, `lex ${it.no}`);
@@ -100,7 +101,7 @@ test("사전식: 숫자 분석 합 = 번호 · 나무로 찾은 글자 = 답 · 
     const word = f.cols.map((c) => c.items.find((x) => x[2])[0]).join("") + f.tail;
     const S = strings(f.cards, word.length);
     if (kth) {
-      const [lhs, rhs] = it.plan.split(" = ");
+      const [lhs, rhs] = numL.s.split(" = ");
       const kk = +lhs, sum = rhs.split(" + ").reduce((a, b) => a + +b, 0);
       assert.equal(sum, kk, `lex ${it.no} 숫자 분석`);
       assert.ok(it.q.includes(`${kk}번째`), `lex ${it.no} 발문의 번호`);
@@ -159,7 +160,8 @@ test("사전식 카드로 순번 찾기: 묶음 · 최종 묶음의 문자열 = 
     for (let i = 0; i < F.j; i++) { assert.equal(F.prefix + nthArr(F.letters, F.len, i), S[F.c0 + i], `${tag} 최종 묶음 ${i}`); strs++; }
     terms.push(F.j);
     // 테이프(지나간 묶음 + 최종 묶음 안 순번) = 판서의 숫자 분석 · 숫자 정리
-    if (it.planTag === "숫자 분석") assert.equal(`${W.total} = ${terms.join(" + ")}`, it.plan, `${tag} 테이프 ≠ 숫자 분석`);
+    const numL = it.lines.find((l) => l.pre === "숫자 분석");
+    if (numL) assert.equal(`${W.total} = ${terms.join(" + ")}`, numL.s, `${tag} 테이프 ≠ 숫자 분석`);
     else {
       const sum = it.lines.find((l) => l.pre === "숫자 정리").s;
       assert.equal(sum, `${terms.join(" + ")} = ${W.total}`, `${tag} 테이프 ≠ 숫자 정리`);

@@ -37,6 +37,13 @@ export function WriteOn({ segs, f, id, C, tip = true }) {
   return <g>{out}</g>;
 }
 
+/** 「이름표: 식」의 이름표 길이(콜론까지) — 이름표에 한글이 있고 콜론 뒤가 수식(수가 든)일 때만, 아니면 0 */
+export function labelLen(s) {
+  const m = /^([^:]*[가-힣][^:]*):\s/.exec(String(s || ""));
+  if (!m) return 0;
+  const rest = String(s).slice(m[0].length);
+  return /\d/.test(rest) && !/[가-힣]{2,}/.test(rest.replace(/\([^)]*\)/g, "")) ? m[1].length + 1 : 0;
+}
 /**
  * 글자 판. it 문항 · Lo 배치(boardLayout) · P 박자표(lines[i].a · m? · plan · ans) · t 1배속 ms · cur 지금 줄 · uid 그림 id 꼬리.
  * planTag — 방침 꼬리표 이름(사전식 「숫자 분석」 · 기본 「방침」).
@@ -82,8 +89,20 @@ export function Board({ it, Lo, P, t, cur, C, uid = "" }) {
     const segs = [];
     if (R.pre) segs.push({ x: R.pre.x, y: R.pre.y, w: mathWidth(R.pre.s, T.s, 600), up: T.s, dn: T.s * 0.35,
       el: <MText x={R.pre.x} y={R.pre.y} s={R.pre.s} size={T.s} weight={600} fill={C.soft} C={C} /> });
-    R.parts.forEach((p, k) => segs.push({ x: p.x, y: p.y, w: p.w, up: upOf(p.s, T.b), dn: dnOf(p.s, T.b),
-      el: <MText key={k} x={p.x} y={p.y} s={p.s} size={T.b} weight={560} fill={C.ink} C={C} /> }));
+    // 「이름표: 식」 줄(경우의 수 해설 — 「빨간 공 4개 중 2개: 4 × 3 ÷ 2 = 6」)은 이름표를 옅게 — 무엇을 센 식인지 한눈에
+    const labN = labelLen(ln.s);
+    let off = 0;
+    R.parts.forEach((p, k) => {
+      const lc = Math.max(0, Math.min(labN - off, p.s.length));
+      off += p.s.length + 1;
+      const el = lc <= 0 ? <MText key={k} x={p.x} y={p.y} s={p.s} size={T.b} weight={560} fill={C.ink} C={C} />
+        : lc >= p.s.length ? <MText key={k} x={p.x} y={p.y} s={p.s} size={T.b} weight={520} fill={C.soft} C={C} />
+        : (<g key={k}>
+            <MText x={p.x} y={p.y} s={p.s.slice(0, lc)} size={T.b} weight={520} fill={C.soft} C={C} />
+            <MText x={p.x + mathWidth(p.s.slice(0, lc), T.b, 520) + T.b * 0.3} y={p.y} s={p.s.slice(lc).trimStart()} size={T.b} weight={560} fill={C.ink} C={C} />
+          </g>);
+      segs.push({ x: p.x, y: p.y, w: p.w, up: upOf(p.s, T.b), dn: dnOf(p.s, T.b), el });
+    });
     const wf = seg(t, TT.a, TT.a + writeMs(segs.reduce((s2, g) => s2 + g.w, 0)), E.lin);
     const barK = seg(t, TT.a, TT.a + 300, E.out);
     return (

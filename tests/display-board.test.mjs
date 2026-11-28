@@ -209,7 +209,8 @@ export const framePick = (spec, pick, th) => renderToStaticMarkup(<LessonFrame s
         assert.ok(f.w * f.h <= m.FIG_AREA * screen + 1, `${tag} 그림이 화면의 25%를 넘음 (${Math.round((100 * f.w * f.h) / screen)}%)`);
         // 꼭 보여야 하는 그림(fig.must — 「다음 그래프 · 표」를 읽는 문항)은 반쪽 판에서 더 줄어도 된다(0.4 까지)
         assert.ok(f.s >= (it.fig.must ? 0.4 : m.FIG_MIN) - 1e-9 && f.s <= 1 + 1e-9, `${tag} 배율 ${f.s}`);
-        assert.ok(!L.two, `${tag} 두 단인 판에 그림`);
+        // 두 단 판은 오른쪽 단 아래 빈자리에만(가운데 세로줄을 넘지 않게)
+        if (L.two) assert.ok(fb[0] >= L.two.x - 1, `${tag} 두 단 판의 그림이 가운데 줄을 넘음`);
         if (L.scroll) assert.ok(it.fig.must || (fam === "cnt100" && it.fig.kind === "tree"), `${tag} 흐르는 판에 그림(꼭 보여야 하는 그림만 — 사전식 카드 · 읽어야 하는 그래프 · 표)`);
         areaSum += (f.w * f.h) / screen;
       }

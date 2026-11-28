@@ -223,6 +223,8 @@ const figCap = (fig, R) => Math.min(1, Math.sqrt((FIG_AREA * screenOf(R)) / (fig
  */
 function figSpot(lay, fig, R) {
   if (!fig) return null;
+  // 두 단 판이면 그림은 오른쪽 단 안에만(가운데 옅은 세로줄이 그림을 가로지르지 않게)
+  const minX = lay.two ? lay.two.x + 12 : R.left;
   const top0 = lay.qBottom + 18, bot0 = R.bottom;
   const els = lay.boxes.filter((b) => b[3] > top0);
   const ys0 = [top0, ...els.map((b) => b[3] + 16)].filter((v) => v < bot0 - 120);
@@ -232,7 +234,7 @@ function figSpot(lay, fig, R) {
   let best = null;
   for (const y0 of ys0) for (const y1 of ys1) {
     if (y1 - y0 < 120) continue;
-    const xr = Math.max(R.left - GAP_FIG, ...els.filter((b) => b[3] > y0 && b[1] < y1).map((b) => b[2]));
+    const xr = Math.max(minX - GAP_FIG, ...els.filter((b) => b[3] > y0 && b[1] < y1).map((b) => b[2]));
     const x0 = xr + GAP_FIG, w = R.right - x0, h = y1 - y0;
     if (w < 120) continue;
     let c;
@@ -364,7 +366,8 @@ export function boardLayout(it, region = STAGE_REGION, fig = null) {
     for (const T of BOARD_TYPE) {
       for (let k = it.lines.length - 1; k >= 1 && !out; k--) {
         const lay = layOnce(it, T, R, R.right, k);
-        if (fitsH(lay)) out = { ...lay, type: T.key, fig: null, scroll: null };
+        // 두 단이어도 오른쪽 단 아래가 비면 그림을 그 자리에(경우의 수 해설처럼 판서 줄이 많은 문항)
+        if (fitsH(lay)) out = { ...lay, type: T.key, fig: fig ? figSpot(lay, fig, R) : null, scroll: null };
       }
       if (out) break;
     }

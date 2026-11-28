@@ -426,6 +426,15 @@ function Obj({ it, o, x, y, r, C, lit = 0, dim = 1, ghost = false, sc = 1 }) {
   );
 }
 
+/** 순서 없음 · 자리 정하기 도장 글 — 공식을 펼쳐서: 2명이면 「÷ 2」, 3명 이상이면 「÷ (3 × 2 × 1)」 · 「× (3 × 2 × 1)」 */
+const FACTS = { 2: 2, 3: 6, 4: 24, 5: 120 };
+function markText(m) {
+  const k = m.to - m.from + 1;
+  const sym = m.type === "div" ? "÷" : "×";
+  if (k >= 3 && FACTS[k] === m.d) return `${sym} (${Array.from({ length: k }, (_, q) => k - q).join(" × ")})`;
+  if (k === 2 && m.d === 2 && m.type !== "div") return `${sym} (2 × 1)`;
+  return `${sym} ${m.d}`;
+}
 function PickFig({ it, t, C }) {
   const f = it.fig, P = l10Plan(it), G = pickGeom(it);
   const base = seg(t, 0, 700, E.sine);
@@ -514,7 +523,7 @@ function PickFig({ it, t, C }) {
       const col = m.type === "div" ? C.red : C.gold;
       els.push(<g key={`mk${m.from}${m.type}`} opacity={(S.fade != null ? S.fade : 1) * Math.min(1, m.k * 2)}>
         <path d={`M${xa} ${yb} q 0 14 14 14 L ${xb - 14} ${yb + 14} q 14 0 14 -14`} fill="none" stroke={col} strokeWidth={3} />
-        <text x={(xa + xb) / 2} y={yb + 52} fontFamily={SANS} fontSize={34 * (0.75 + 0.25 * Math.max(0, E.back(m.k)))} fontWeight={800} fill={col} textAnchor="middle">{m.type === "div" ? `÷ ${m.d}` : `× ${m.d}`}</text>
+        <text x={(xa + xb) / 2} y={yb + 52} fontFamily={SANS} fontSize={34 * (0.75 + 0.25 * Math.max(0, E.back(m.k)))} fontWeight={800} fill={col} textAnchor="middle">{markText(m)}</text>
       </g>);
     }
     if (S.sign && S.sign.k > 0) els.push(<text key="sign" x={T2.x0 - 34} y={T2.y + 14} fontFamily={SANS} fontSize={54} fontWeight={800} fill={S.sign.s === "−" ? C.red : C.gold} textAnchor="middle" opacity={S.sign.k}>{S.sign.s}</text>);
